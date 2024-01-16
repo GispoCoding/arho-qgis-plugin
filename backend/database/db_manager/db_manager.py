@@ -21,7 +21,6 @@ Hame-ryhti database manager, adapted from Tarmo db_manager.
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
-SCHEMA_FILES_PATH = Path("databasemodel")
 INITIAL_MIGRATION = "dca0cf7130d2"
 
 
@@ -112,55 +111,90 @@ class DatabaseHelper:
     def get_db_name(self, db: Db) -> str:
         return self._dbs[db]
 
-
-# def alembic_table_exists(conn: psycopg2.extensions.connection) -> bool:
-#     """Check if the db already uses alembic."""
-#     with conn.cursor() as cur:
-#         cur.execute(
-#             SQL(
-#                 "SELECT table_name FROM information_schema.tables "
-#                 "WHERE table_name='alembic_version'"
-#             )
-#         )
-#         records = cur.fetchall()
-#     return bool(records)
+    def get_users(self) -> Dict[str, dict]:
+        return self._users
 
 
-# def add_alembic_table(connection_params: dict, version: str) -> str:
-#     """Add alembic and set it to specified version"""
-#     alembic_cfg = Config(Path(SCHEMA_FILES_PATH, "alembic.ini"))
-#     alembic_cfg.attributes["connection"] = connection_params
-#     command.ensure_version(alembic_cfg)
-#     command.stamp(alembic_cfg, version)
-#     msg = f"Set alembic to revision {version}"
-#     LOGGER.info(msg)
-#     return msg
-
-
-def create_db(conn: psycopg2.extensions.connection, db_name: str) -> str:
+def create_db(
+    conn: psycopg2.extensions.connection, db_name: str
+) -> str:
     """Creates empty db."""
     with conn.cursor() as cur:
         cur.execute(
-            SQL("CREATE DATABASE {db_name}").format(db_name=Identifier(db_name))
+            SQL("CREATE DATABASE {db_name};").format(db_name=Identifier(db_name))
         )
-    msg = "Created database"
+    msg = "Created empty database."
     LOGGER.info(msg)
     return msg
 
 
-# def populate_data_model(conn: psycopg2.extensions.connection) -> str:
-#     """Populates db with the latest scheme"""
-#     data_model_file = Path(SCHEMA_FILES_PATH, "model.sql")
-#     if not data_model_file.exists():
-#         raise FileNotFoundError(f"Could not find file {data_model_file}")
-#     with open(data_model_file) as f:
-#         sql = f.read()
-
-#     with conn.cursor() as cur:
-#         cur.execute(sql)
-#     msg = "Populated tarmo data model"
-#     LOGGER.info(msg)
-#     return msg
+def configure_db(
+    conn: psycopg2.extensions.connection, users: dict[User, dict]
+) -> str:
+    """
+    Configures given database with hame schemas and users.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            SQL("CREATE SCHEMA codes; CREATE SCHEMA hame;")
+        )
+        for key, user in users.items():
+            if key == User.SU:
+                # superuser exists already
+                pass
+            elif key == User.ADMIN:
+                # To get the quotes right, username will have to be injected
+                # using format, while password must be in vars.
+                cur.execute(
+                    SQL(
+                        "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD %(password)s;"
+                    ).format(username=Identifier(user["username"])),
+                    vars={"password": user["password"]},
+                )
+                # admin user should be able to edit all tables (hame and code tables etc.)
+                cur.execute(
+                    SQL(
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"
+                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                )
+            elif key == User.READ_WRITE:
+                # To get the quotes right, username will have to be injected
+                # using format, while password must be in vars.
+                cur.execute(
+                    SQL(
+                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"
+                    ).format(username=Identifier(user["username"])),
+                    vars={"password": user["password"]},
+                )
+                # read and write user should be able to edit hame tables and read code tables
+                cur.execute(
+                    SQL(
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"
+                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                )
+                cur.execute(
+                    SQL(
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA codes GRANT SELECT ON TABLES TO {username};"
+                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                )
+            else:
+                # To get the quotes right, username will have to be injected
+                # using format, while password must be in vars.
+                cur.execute(
+                    SQL(
+                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"
+                    ).format(username=Identifier(user["username"])),
+                    vars={"password": user["password"]},
+                )
+                # default user should be able to read hame tables and code tables
+                cur.execute(
+                    SQL(
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame, codes GRANT SELECT ON TABLES TO {username};"
+                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                )
+    msg = "Added hame schemas and users."
+    LOGGER.info(msg)
+    return msg
 
 
 def database_exists(conn: psycopg2.extensions.connection, db_name: str) -> bool:
@@ -168,37 +202,6 @@ def database_exists(conn: psycopg2.extensions.connection, db_name: str) -> bool:
     with conn.cursor() as cur:
         cur.execute(query, vars={"db_name": db_name})
         return cur.fetchone()[0] == 1
-
-
-# def create_hame_db(db_helper: DatabaseHelper) -> str:
-#     """Creates a new db with the latest scheme."""
-#     root_conn = psycopg2.connect(
-#         **db_helper.get_connection_parameters(User.SU, Db.MAINTENANCE)
-#     )
-#     try:
-#         root_conn.autocommit = True
-
-#         main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
-#         if not main_db_exists:
-#             msg = create_db(root_conn, db_helper.get_db_name(Db.MAIN))
-#         main_conn_params = db_helper.get_connection_parameters(User.SU, Db.MAIN)
-#         main_conn = psycopg2.connect(**main_conn_params)
-#         try:
-#             main_conn.autocommit = True
-#             if not main_db_exists:
-#                 # new database will have the latest schema
-#                 msg += "\n" + populate_data_model(main_conn)
-#                 msg += "\n" + add_alembic_table(main_conn_params, "head")
-#             elif not alembic_table_exists(main_conn):
-#                 # database without alembic is always in initial schema
-#                 msg = add_alembic_table(main_conn_params, INITIAL_MIGRATION)
-#             else:
-#                 msg = "Database found already."
-#         finally:
-#             main_conn.close()
-#     finally:
-#         root_conn.close()
-#     return msg
 
 
 def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
@@ -215,9 +218,15 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
         main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
         main_conn_params = db_helper.get_connection_parameters(User.SU, Db.MAIN)
         if not main_db_exists:
-            msg = create_db(root_conn, db_helper.get_db_name(Db.MAIN))
+            msg = create_db(
+                root_conn, db_helper.get_db_name(Db.MAIN)
+            )
+            main_conn = psycopg2.connect(**main_conn_params)
+            main_conn.autocommit = True
+            msg += configure_db(main_conn, db_helper.get_users())
             old_version = None
         else:
+            msg = ""
             main_conn = psycopg2.connect(**main_conn_params)
             try:
                 main_conn.autocommit = True
@@ -228,7 +237,7 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
             finally:
                 main_conn.close()
 
-        alembic_cfg = Config(Path(SCHEMA_FILES_PATH, "alembic.ini"))
+        alembic_cfg = Config(Path("alembic.ini"))
         alembic_cfg.attributes["connection"] = main_conn_params
         script_dir = ScriptDirectory.from_config(alembic_cfg)
         current_head_version = script_dir.get_current_head()
@@ -243,12 +252,12 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
                 command.downgrade(alembic_cfg, version)
             except CommandError:
                 command.upgrade(alembic_cfg, version)
-            msg = (
+            msg += "\n" + (
                 f"Database was in version {old_version}.\n"
                 f"Migrated the database to {version}."
             )
         else:
-            msg = (
+            msg += "\n" + (
                 "Requested version is the same as current database "
                 f"version {old_version}.\nNo migrations were run."
             )
@@ -287,14 +296,14 @@ def change_passwords(db_helper: DatabaseHelper) -> str:
 
 def handler(event: Event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
+    # if the code fails before returning response, aws lambda will return http 500
+    # with the exception stack trace, as desired.
     response: Response = {"statusCode": 200, "body": json.dumps("")}
-#     try:
     db_helper = DatabaseHelper()
 
     event_type = event.get("event_type", EventType.CREATE_DB.value)
     if event_type == EventType.CREATE_DB.value:
         msg = migrate_hame_db(db_helper)
-        msg += "\n" + change_passwords(db_helper)
     elif event_type == EventType.CHANGE_PWS.value:
         msg = change_passwords(db_helper)
     elif event_type == EventType.MIGRATE_DB.value:
@@ -304,16 +313,4 @@ def handler(event: Event, _) -> Response:
         else:
             msg = migrate_hame_db(db_helper)
     response["body"] = json.dumps(msg)
-
-    # except psycopg2.OperationalError:
-    #     LOGGER.exception("Error occurred with database connections")
-    #     response["statusCode"] = 500
-    #     response["body"] = json.dumps("Error occurred with database connections")
-    # except Exception as e:
-    #     LOGGER.exception("Uncaught error occurred")
-    #     response["statusCode"] = 500
-    #     response["body"] = json.dumps(
-    #         f"Uncaught error occurred: {e}. Please check the log for details."
-    #     )
-
     return response

@@ -2,10 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from typing_extensions import Annotated
-from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 
 
@@ -36,6 +34,7 @@ class CodeBase(Base):
     Code tables in Ryhti should refer to national Ryhti code table URIs.
     """
     __abstract__ = True
+    __table_args__ = {"schema": "codes"}
     code_list_uri = ""
 
     id: Mapped[autoincrement_pk]
@@ -47,19 +46,12 @@ class CodeBase(Base):
         return f"{self.code_list_uri}/code/{self.value}"
 
 
-class LifeCycleStatus(CodeBase):
-    """
-    This code table is common to all versioned data tables.
-    """
-    __tablename__ = "lifecycle_status"
-    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
-
-
 class VersionedBase(Base):
     """
     Versioned data tables should have some uniform fields.
     """
     __abstract__ = True
+    __table_args__ = {"schema": "hame"}
 
     id: Mapped[uuid_pk]
     created_at: Mapped[timestamp]
@@ -68,8 +60,3 @@ class VersionedBase(Base):
     exported_at: Mapped[Optional[datetime]]
     valid_from: Mapped[Optional[datetime]]
     valid_to: Mapped[Optional[datetime]]
-    lifecycle_status_id: Mapped[int] = mapped_column(ForeignKey("lifecycle_status.id"))
-
-    @declared_attr
-    def lifecycle_status(cls) -> Mapped["LifeCycleStatus"]:
-        return relationship("LifeCycleStatus")

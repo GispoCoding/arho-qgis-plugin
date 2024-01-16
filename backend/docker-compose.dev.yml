@@ -8,15 +8,18 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
+    command: ["postgres", "-c", "log_statement=all"]
 
   db_manager:
     build:
-      context: database/db_manager
+      context: database
+      dockerfile: db_manager.Dockerfile
     env_file:
       - .env.dev
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
+      - READ_FROM_AWS=0
     ports:
       - "8081:8080"
     depends_on:
