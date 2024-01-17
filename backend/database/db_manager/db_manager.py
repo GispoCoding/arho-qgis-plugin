@@ -21,7 +21,7 @@ Hame-ryhti database manager, adapted from Tarmo db_manager.
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
-INITIAL_MIGRATION = "dca0cf7130d2"
+INITIAL_MIGRATION = "6592d88a81df"
 
 
 class EventType(enum.Enum):
@@ -154,7 +154,7 @@ def configure_db(
                 # admin user should be able to edit all tables (hame and code tables etc.)
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} GRANT ALL PRIVILEGES ON TABLES TO {username};"
                     ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
                 )
             elif key == User.READ_WRITE:

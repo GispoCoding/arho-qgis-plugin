@@ -9,7 +9,7 @@ test-migrate-db:
 pytest:
 	docker-compose -f docker-compose.dev.yml down -v
 	docker-compose -f docker-compose.dev.yml build db_manager
-	cd backend; pytest
+	cd database; pytest
 
 rebuild:
 	docker-compose -f docker-compose.dev.yml down -v
