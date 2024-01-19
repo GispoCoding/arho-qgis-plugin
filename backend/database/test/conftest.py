@@ -133,10 +133,10 @@ def hame_database_migrated(root_db_params, main_db_params, current_head_version_
 
 @pytest.fixture()
 def hame_database_migrated_down(hame_database_migrated):
-    event = {"event_type": 3, "version": db_manager.INITIAL_MIGRATION}
+    event = {"event_type": 3, "version": "base"}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
-    yield db_manager.INITIAL_MIGRATION
+    yield "base"
 
 
 def process_revision_directives(context, revision, directives):
@@ -153,21 +153,23 @@ def process_revision_directives(context, revision, directives):
                             "name", sqlalchemy.String(50), nullable=False
                         ),
                     ],
+                    schema="hame",
                 )
             ],
         ),
         ops.DowngradeOps(
-            ops=[ops.DropTableOp("test_table")],
+            ops=[ops.DropTableOp("test_table", schema="hame")],
         ),
     )
 
 
-@pytest.fixture(scope="module")
-def new_migration():
-    alembic_cfg = Config(Path(SCHEMA_FILES_PATH, "alembic.ini"))
+@pytest.fixture()
+def new_migration(alembic_cfg, hame_database_migrated, current_head_version_id):
     revision = command.revision(
         alembic_cfg,
         message="Test migration",
+        head=current_head_version_id,
+        autogenerate=True,
         process_revision_directives=process_revision_directives,
     )
     path = Path(revision.path)
@@ -178,7 +180,7 @@ def new_migration():
 
 
 @pytest.fixture()
-def hame_database_upgraded(hame_database_created, new_migration):
+def hame_database_upgraded(new_migration):
     event = {"event_type": 3}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]

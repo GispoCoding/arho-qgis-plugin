@@ -171,7 +171,7 @@ def test_database_cancel_all_migrations(
             assert cur.fetchall() == [("alembic_version",)]
 
             cur.execute("SELECT version_num FROM alembic_version")
-            assert cur.fetchall() == [(hame_database_migrated_down,)]
+            assert cur.fetchall() == []
 
     finally:
         conn.close()
@@ -191,7 +191,7 @@ def test_database_upgrade(main_db_params_with_root_user, hame_database_upgraded)
                 "SELECT table_name FROM information_schema.tables WHERE table_name='test_table'"
             )
             assert cur.fetchall() == [
-                ("new_table",),
+                ("test_table",),
             ]
 
     finally:

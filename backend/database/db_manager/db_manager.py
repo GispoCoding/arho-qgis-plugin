@@ -21,8 +21,6 @@ Hame-ryhti database manager, adapted from Tarmo db_manager.
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
-INITIAL_MIGRATION = "6592d88a81df"
-
 
 class EventType(enum.Enum):
     CREATE_DB = 1
