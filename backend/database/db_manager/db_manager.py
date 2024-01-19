@@ -136,6 +136,9 @@ def configure_db(
         cur.execute(
             SQL("CREATE SCHEMA codes; CREATE SCHEMA hame;")
         )
+        cur.execute(
+            SQL("CREATE EXTENSION postgis WITH SCHEMA public;")
+        )
         for key, user in users.items():
             if key == User.SU:
                 # superuser exists already
