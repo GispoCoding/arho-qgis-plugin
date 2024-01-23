@@ -23,7 +23,7 @@ jobs:
         run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Test
         run: python -m pytest
-        working-directory: backend
+        working-directory: database
       - uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
