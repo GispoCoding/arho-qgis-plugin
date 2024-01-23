@@ -1,0 +1,123 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches:
+      - "main"
+  push:
+    branches:
+      - "main"
+  release:
+    types: [published]
+
+jobs:
+  test_functions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Test
+        run: python -m pytest
+        working-directory: backend
+      - uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "${{github.sha}} has {status_message}"
+          message_format: "{emoji} *{job}* {status_message}"
+          footer: "<{repo_url}|{repo}> | <{run_url}|View job>"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  code-style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - uses: pre-commit/action@v2.0.3
+      - uses: ravsamhq/notify-slack-action@v2
+        if: always()
+        with:
+          status: ${{ job.status }}
+          notification_title: "${{github.sha}} has {status_message}"
+          message_format: "{emoji} *{job}* {status_message}"
+          footer: "<{repo_url}|{repo}> | <{run_url}|View job>"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  build-and-deploy-lambda-functions:
+    runs-on: ubuntu-latest
+    needs: test_functions
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/release')
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+      - name: Build zip files for lambda
+        run: make build-lambda
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Update dev lambda functions
+        if: github.ref == 'refs/heads/main'
+        run: make prefix=hame-dev update-lambda -C infra
+      - name: Report to slack
+        if: github.ref == 'refs/heads/main'
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          payload: |
+            {
+              "text": "dev lambda functions updated to ${{github.sha}}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Update dev database
+        if: github.ref == 'refs/heads/main'
+        run: make prefix=hame-dev migrate-db -C infra
+      - name: Report to slack
+        if: github.ref == 'refs/heads/main'
+        uses: slackapi/slack-github-action@v1.22.0
+        with:
+          payload: |
+            {
+              "text": "dev database updated to ${{github.sha}}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      # - name: Update production lambda functions
+      #   if: startsWith(github.ref, 'refs/tags/release')
+      #   run: make prefix=tarmo-tampere update-lambda -C infra
+      # - name: Report to slack
+      #   if: startsWith(github.ref, 'refs/tags/release')
+      #   uses: slackapi/slack-github-action@v1.22.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "TAMPERE lambda functions updated to ${{github.sha}}"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      # - name: Update production database
+      #   if: startsWith(github.ref, 'refs/tags/release')
+      #   run: make prefix=tarmo-tampere migrate-db -C infra
+      # - name: Report to slack
+      #   if: startsWith(github.ref, 'refs/tags/release')
+      #   uses: slackapi/slack-github-action@v1.22.0
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "TAMPERE database updated to ${{github.sha}}"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

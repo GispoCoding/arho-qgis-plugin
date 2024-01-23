@@ -19,11 +19,11 @@ rebuild:
 build-lambda:
 	docker-compose -f docker-compose.dev.yml build db_manager
 	docker-compose -f docker-compose.dev.yml up -d --no-deps db_manager
-	cd backend; \
+	cd database; \
 	for func in db_manager ; do \
   	  rm -rf tmp_lambda; \
   	  echo $$func; \
-	  docker cp tarmo_$${func}_1:/var/task tmp_lambda; \
+	  docker cp hame-ryhti_$${func}_1:/var/task tmp_lambda; \
 	  cd tmp_lambda; \
 	  zip -r ../"$${func}.zip" .; \
 	  cd ..; \
