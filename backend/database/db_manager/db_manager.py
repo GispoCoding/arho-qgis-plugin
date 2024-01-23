@@ -13,7 +13,6 @@ from alembic.script import ScriptDirectory
 from alembic.util.exc import CommandError
 from psycopg2.sql import SQL, Identifier
 
-
 """
 Hame-ryhti database manager, adapted from Tarmo db_manager.
 """
@@ -109,13 +108,11 @@ class DatabaseHelper:
     def get_db_name(self, db: Db) -> str:
         return self._dbs[db]
 
-    def get_users(self) -> Dict[str, dict]:
+    def get_users(self) -> Dict[User, dict]:
         return self._users
 
 
-def create_db(
-    conn: psycopg2.extensions.connection, db_name: str
-) -> str:
+def create_db(conn: psycopg2.extensions.connection, db_name: str) -> str:
     """Creates empty db."""
     with conn.cursor() as cur:
         cur.execute(
@@ -126,19 +123,13 @@ def create_db(
     return msg
 
 
-def configure_db(
-    conn: psycopg2.extensions.connection, users: dict[User, dict]
-) -> str:
+def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) -> str:
     """
     Configures given database with hame schemas and users.
     """
     with conn.cursor() as cur:
-        cur.execute(
-            SQL("CREATE SCHEMA codes; CREATE SCHEMA hame;")
-        )
-        cur.execute(
-            SQL("CREATE EXTENSION postgis WITH SCHEMA public;")
-        )
+        cur.execute(SQL("CREATE SCHEMA codes; CREATE SCHEMA hame;"))
+        cur.execute(SQL("CREATE EXTENSION postgis WITH SCHEMA public;"))
         for key, user in users.items():
             if key == User.SU:
                 # superuser exists already
@@ -148,50 +139,64 @@ def configure_db(
                 # using format, while password must be in vars.
                 cur.execute(
                     SQL(
-                        "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD %(password)s;"
+                        "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
                     ).format(username=Identifier(user["username"])),
                     vars={"password": user["password"]},
                 )
-                # admin user should be able to edit all tables (hame and code tables etc.)
+                # admin user should be able to edit all tables
+                # (hame and code tables etc.)
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} GRANT ALL PRIVILEGES ON TABLES TO {username};"
-                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} GRANT ALL PRIVILEGES ON TABLES TO {username};"  # noqa
+                    ).format(
+                        SU_user=Identifier(users[User.SU]["username"]),
+                        username=Identifier(user["username"]),
+                    )
                 )
             elif key == User.READ_WRITE:
                 # To get the quotes right, username will have to be injected
                 # using format, while password must be in vars.
                 cur.execute(
                     SQL(
-                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"
+                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
                     ).format(username=Identifier(user["username"])),
                     vars={"password": user["password"]},
                 )
-                # read and write user should be able to edit hame tables and read code tables
+                # read and write user should be able to edit hame tables and
+                # read code tables
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"
-                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"  # noqa
+                    ).format(
+                        SU_user=Identifier(users[User.SU]["username"]),
+                        username=Identifier(user["username"]),
+                    )
                 )
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA codes GRANT SELECT ON TABLES TO {username};"
-                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA codes GRANT SELECT ON TABLES TO {username};"  # noqa
+                    ).format(
+                        SU_user=Identifier(users[User.SU]["username"]),
+                        username=Identifier(user["username"]),
+                    )
                 )
             else:
                 # To get the quotes right, username will have to be injected
                 # using format, while password must be in vars.
                 cur.execute(
                     SQL(
-                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"
+                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
                     ).format(username=Identifier(user["username"])),
                     vars={"password": user["password"]},
                 )
                 # default user should be able to read hame tables and code tables
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame, codes GRANT SELECT ON TABLES TO {username};"
-                    ).format(SU_user=Identifier(users[User.SU]["username"]), username=Identifier(user["username"]))
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame, codes GRANT SELECT ON TABLES TO {username};"  # noqa
+                    ).format(
+                        SU_user=Identifier(users[User.SU]["username"]),
+                        username=Identifier(user["username"]),
+                    )
                 )
     msg = "Added hame schemas and users."
     LOGGER.info(msg)
@@ -219,9 +224,7 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
         main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
         main_conn_params = db_helper.get_connection_parameters(User.SU, Db.MAIN)
         if not main_db_exists:
-            msg = create_db(
-                root_conn, db_helper.get_db_name(Db.MAIN)
-            )
+            msg = create_db(root_conn, db_helper.get_db_name(Db.MAIN))
             main_conn = psycopg2.connect(**main_conn_params)
             main_conn.autocommit = True
             msg += configure_db(main_conn, db_helper.get_users())
