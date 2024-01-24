@@ -57,3 +57,43 @@ resource "aws_iam_role_policy_attachment" "lambda_secrets_attachment" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.secrets-policy.arn
 }
+
+
+# Lambda update user
+resource "aws_iam_user" "lambda_update_user" {
+  name               = var.AWS_LAMBDA_USER
+  tags               = merge(local.default_tags, { Name = "${var.prefix}_lambda_update" })
+}
+
+# Create the policy to update lambda functions
+resource "aws_iam_policy" "lambda_update_policy" {
+  # We need a separate policy for each hame instance, since they have separate lambda functions
+  name        = "${var.prefix}-lambda_update_policy"
+  path        = "/"
+  description = "Github CI lambda update policy"
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:InvokeFunction",
+          "lambda:UpdateFunctionConfiguration"
+        ],
+        "Resource" : [
+          aws_lambda_function.db_manager.arn,
+          ]
+      }
+    ]
+  })
+  tags   = merge(local.default_tags, { Name = "${var.prefix}-lambda_update_policy" })
+}
+
+resource "aws_iam_policy_attachment" "lambda_update_attachment" {
+  name       = "${var.prefix}-lambda_update_attachment"
+  users      = [aws_iam_user.lambda_update_user.name]
+  policy_arn = aws_iam_policy.lambda_update_policy.arn
+}
