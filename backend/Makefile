@@ -32,5 +32,5 @@ build-lambda:
 
 revision:
 	cd database; \
-	alembic revision -m "$(name)"; \
+	alembic revision --autogenerate -m "$(name)"; \
 	cd ..
