@@ -10,6 +10,7 @@ HAME regional land use planning database compatible with national Ryhti data mod
 - [Development](#development)
   - [Database and functions](#database-and-functions)
   - [Database changes](#database-changes)
+  - [Adding requirements](#adding-requirements)
 - [Data model](#data-model)
 
 ## Architecture
@@ -59,6 +60,17 @@ docker network ls --format {{.Name}} |grep pytest | awk '{print $1}' | xargs -I 
 7. Run `make rebuild` and `make test-create-db` to start development instance with the new model.
 <!-- 8. To update the [database documentation](./backend/databasemodel/dbdoc/README.md) to reflect the changes, install [tbls](https://github.com/k1LoW/tbls) and run `tbls doc --force`. -->
 8. Commit your changes and the new revision file in [alembic versions dir](./database/migrations/versions).
+
+### Adding requirements
+
+To add new requirements:
+1. Add the Python library in requirements.in (if used in production) or requirements-dev.in (if used in development/CI/CD).
+2. `pip-compile requirements.in` or `pip-compile requirements-dev.in`
+3. `pip-sync requirements.txt requirements-dev.txt`
+
+To update requirements to latest versions:
+1. `pip-compile requirements.in --upgrade` and `pip-compile requirements-dev.in --upgrade`
+2. `pip-sync requirements.txt requirements-dev.txt`
 
 <!-- ## Data model
 
