@@ -6,7 +6,7 @@ update-lambda: update-db-manager
 	echo "All updated"
 
 update-db-manager:
-	aws lambda update-function-code --function-name $(prefix)-db_manager --zip-file fileb://../database/db_manager.zip
+	aws lambda update-function-code --function-name $(prefix)-db_manager --zip-file fileb://../db_manager.zip
 
 log-db-manager:
 	aws logs tail "/aws/lambda/$(prefix)-db_manager"
