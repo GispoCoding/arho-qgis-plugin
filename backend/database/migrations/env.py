@@ -48,7 +48,7 @@ def get_url(connection_params: dict):
     host = connection_params.get(
         "host", os.environ.get("DB_INSTANCE_ADDRESS", "localhost")
     )
-    port = connection_params.get("port", os.environ.get("DB_INSTANCE_PORT", "5432"))
+    port = connection_params.get("port", os.environ.get("DB_INSTANCE_PORT", "5434"))
     dbname = connection_params.get("dbname", os.environ.get("DB_MAIN_NAME", "hame"))
     return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
 
