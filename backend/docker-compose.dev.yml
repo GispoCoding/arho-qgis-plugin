@@ -12,8 +12,7 @@ services:
 
   db_manager:
     build:
-      context: database
-      dockerfile: db_manager.Dockerfile
+      dockerfile: database/db_manager.Dockerfile
     env_file:
       - .env.dev
     environment:

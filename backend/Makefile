@@ -19,7 +19,6 @@ rebuild:
 build-lambda:
 	docker-compose -f docker-compose.dev.yml build db_manager
 	docker-compose -f docker-compose.dev.yml up -d --no-deps db_manager
-	cd database; \
 	for func in db_manager ; do \
   	  rm -rf tmp_lambda; \
   	  echo $$func; \
