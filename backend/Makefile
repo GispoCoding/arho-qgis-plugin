@@ -29,5 +29,9 @@ build-lambda:
 	  cd ..; \
 	  rm -rf tmp_lambda; \
 	done
-	cd ../..
 	docker-compose -f docker-compose.dev.yml down -v
+
+revision:
+	cd database; \
+	alembic revision -m "$(name)"; \
+	cd ..
