@@ -33,7 +33,7 @@ uuid_pk = Annotated[
 ]
 unique_str = Annotated[str, mapped_column(unique=True)]
 language_str = Annotated[
-    dict[str, str], mapped_column(server_default='{"fin": "", "swe": ""}')
+    dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
 ]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 
