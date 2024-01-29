@@ -55,15 +55,31 @@ def assert_database_is_alright(
         assert (os.environ.get("ADMIN_USER"), "UPDATE") in grants
         assert (os.environ.get("ADMIN_USER"), "DELETE") in grants
 
-        # TODO: Do we need to check constraint naming?
-        # cur.execute(
-        #     "SELECT con.conname FROM pg_catalog.pg_constraint con INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
-        #     "INNER JOIN pg_catalog.pg_namespace nsp ON nsp.oid = connamespace WHERE "
-        #     f"nsp.nspname = 'kooste' AND rel.relname = '{table_name}';"
-        # )
-        # constraints = cur.fetchall()
-        # if constraints:
-        #     assert (f"{table_name}_pk",) in constraints
+        # Check indexes
+        cur.execute(
+            f"SELECT * FROM pg_indexes WHERE schemaname = 'hame' AND tablename = '{table_name}';"
+        )
+        indexes = cur.fetchall()
+        cur.execute(
+            f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'hame' AND table_name = '{table_name}';"
+        )
+        columns = cur.fetchall()
+        if ("id",) in columns:
+            assert (
+                "hame",
+                table_name,
+                f"{table_name}_pkey",
+                None,
+                f"CREATE UNIQUE INDEX {table_name}_pkey ON hame.{table_name} USING btree (id)",
+            ) in indexes
+        if ("geom",) in columns:
+            assert (
+                "hame",
+                table_name,
+                f"idx_{table_name}_geom",
+                None,
+                f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",
+            ) in indexes
 
     # Check code tables
     cur.execute("SELECT tablename, tableowner FROM pg_tables WHERE schemaname='codes';")
