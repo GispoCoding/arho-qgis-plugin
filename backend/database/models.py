@@ -3,6 +3,7 @@ from typing import Optional
 
 from base import VersionedBase, language_str
 from codes import LifeCycleStatus
+from shapely.geometry import Polygon
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,3 +21,4 @@ class Plan(VersionedBase):
         ForeignKey("codes.lifecycle_status.id")
     )
     lifecycle_status: Mapped[LifeCycleStatus] = relationship(back_populates="plans")
+    geom: Mapped[Polygon]
