@@ -1,4 +1,6 @@
 alembic
 boto3
+geoalchemy2
 psycopg2-binary
+shapely
 sqlalchemy

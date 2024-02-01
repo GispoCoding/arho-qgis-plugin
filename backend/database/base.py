@@ -2,10 +2,14 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from geoalchemy2 import Geometry
+from shapely.geometry import Polygon
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from typing_extensions import Annotated
+
+PROJECT_SRID = 3067
 
 
 class Base(DeclarativeBase):
@@ -16,6 +20,7 @@ class Base(DeclarativeBase):
     type_annotation_map = {
         uuid.UUID: UUID(as_uuid=True),
         dict[str, str]: JSONB,
+        Polygon: Geometry(geometry_type="POLYGON", srid=PROJECT_SRID),
     }
 
 
