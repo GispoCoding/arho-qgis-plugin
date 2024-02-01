@@ -27,11 +27,10 @@ class Base(DeclarativeBase):
 """
 Here we define any custom type annotations we want to use for columns
 """
-autoincrement_pk = Annotated[int, mapped_column(primary_key=True, autoincrement=True)]
 uuid_pk = Annotated[
     uuid.UUID, mapped_column(primary_key=True, server_default=func.gen_random_uuid())
 ]
-unique_str = Annotated[str, mapped_column(unique=True)]
+unique_str = Annotated[str, mapped_column(unique=True, index=True)]
 language_str = Annotated[
     dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
 ]
@@ -40,16 +39,29 @@ timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 metadata = Base.metadata
 
 
-class CodeBase(Base):
+class VersionedBase(Base):
     """
-    Code tables in Ryhti should refer to national Ryhti code table URIs.
+    Versioned data tables should have some uniform fields.
+    """
+
+    __abstract__ = True
+
+    id: Mapped[uuid_pk]
+    created_at: Mapped[timestamp]
+    # TODO: postgresql has no default onupdate. Must implement this with trigger.
+    modified_at: Mapped[timestamp]
+
+
+class CodeBase(VersionedBase):
+    """
+    Code tables in Ryhti should refer to national Ryhti code table URIs. They may
+    have hierarchical structure.
     """
 
     __abstract__ = True
     __table_args__ = {"schema": "codes"}
     code_list_uri = ""
 
-    id: Mapped[autoincrement_pk]
     value: Mapped[unique_str]
     name: Mapped[language_str]
 
@@ -58,18 +70,14 @@ class CodeBase(Base):
         return f"{self.code_list_uri}/code/{self.value}"
 
 
-class VersionedBase(Base):
+class PlanBase(VersionedBase):
     """
-    Versioned data tables should have some uniform fields.
+    All plan data tables should have additional date fields.
     """
 
     __abstract__ = True
     __table_args__ = {"schema": "hame"}
 
-    id: Mapped[uuid_pk]
-    created_at: Mapped[timestamp]
-    # TODO: postgresql has no default onupdate. Will implement this with trigger.
-    modified_at: Mapped[timestamp]
     exported_at: Mapped[Optional[datetime]]
     valid_from: Mapped[Optional[datetime]]
     valid_to: Mapped[Optional[datetime]]

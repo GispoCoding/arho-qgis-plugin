@@ -1,14 +1,14 @@
 from datetime import datetime
 from typing import Optional
 
-from base import VersionedBase, language_str
+from base import PlanBase, language_str
 from codes import LifeCycleStatus
 from shapely.geometry import Polygon
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
-class Plan(VersionedBase):
+class Plan(PlanBase):
     """
     Maakuntakaava, compatible with Ryhti 2.0 specification
     """

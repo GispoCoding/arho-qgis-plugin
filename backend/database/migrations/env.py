@@ -2,7 +2,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from models import VersionedBase
+from models import PlanBase
 from sqlalchemy import create_engine
 
 # this is the Alembic Config object, which provides
@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 
 # Codes are imported in models.py, so models.py metadata will also consider
 # CodeBase.metadata
-target_metadata = VersionedBase.metadata
+target_metadata = PlanBase.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
