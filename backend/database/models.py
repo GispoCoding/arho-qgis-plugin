@@ -2,10 +2,8 @@ from datetime import datetime
 from typing import Optional
 
 from base import PlanBase, language_str
-from codes import LifeCycleStatus
 from shapely.geometry import Polygon
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped
 
 
 class Plan(PlanBase):
@@ -17,8 +15,4 @@ class Plan(PlanBase):
 
     name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
-    lifecycle_status_id: Mapped[int] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id")
-    )
-    lifecycle_status: Mapped[LifeCycleStatus] = relationship(back_populates="plans")
     geom: Mapped[Polygon]

@@ -4,8 +4,15 @@ from typing import Optional
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Polygon
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 from sqlalchemy.sql import func
 from typing_extensions import Annotated
 
@@ -63,7 +70,26 @@ class CodeBase(VersionedBase):
     code_list_uri = ""
 
     value: Mapped[unique_str]
+    short_name: Mapped[unique_str]
     name: Mapped[language_str]
+    description: Mapped[language_str]
+    # For now, level can just be imported from RYTJ. Let's assume the level in RYTJ
+    # is correct, so we don't have to calculate and recalculate it ourselves.
+    level: Mapped[int] = mapped_column(server_default="0")
+
+    # self-reference in abstract base class:
+    # We cannot use @classmethod decorator here. Alembic is buggy and apparently
+    # does not recognize declared attributes that are correctly marked as class methods.
+    @declared_attr
+    def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:  # noqa
+        return mapped_column(
+            ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey")
+        )
+
+    @classmethod
+    @declared_attr
+    def parent(cls) -> Mapped[VersionedBase]:
+        return relationship(cls, back_populates="children")
 
     @property
     def uri(self):
@@ -81,3 +107,13 @@ class PlanBase(VersionedBase):
     exported_at: Mapped[Optional[datetime]]
     valid_from: Mapped[Optional[datetime]]
     valid_to: Mapped[Optional[datetime]]
+    repealed_at: Mapped[Optional[datetime]]
+    lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey")
+    )
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def lifecycle_status(cls) -> Mapped[VersionedBase]:
+        return relationship("LifeCycleStatus", back_populates=f"{cls.__tablename__}s")
