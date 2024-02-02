@@ -77,3 +77,13 @@ class TypeOfUnderground(CodeBase):
 
     __tablename__ = "type_of_underground"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji"
+
+
+class TypeOfDocument(CodeBase):
+    """
+    Asiakirjatyyppi
+    """
+
+    __tablename__ = "type_of_document"
+    # Asiakirjatyyppi is apparently our own code list. It does not exist in RYTJ.
+    code_list_uri = ""

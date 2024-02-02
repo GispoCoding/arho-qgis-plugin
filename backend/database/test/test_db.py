@@ -3,7 +3,7 @@ import os
 import psycopg2
 
 hame_count: int = 1  # adjust me when adding tables
-codes_count: int = 7  # adjust me when adding tables
+codes_count: int = 8  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 
