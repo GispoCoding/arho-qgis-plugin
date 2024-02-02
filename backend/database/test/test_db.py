@@ -109,31 +109,46 @@ def assert_database_is_alright(
         assert (os.environ.get("ADMIN_USER"), "UPDATE") in grants
         assert (os.environ.get("ADMIN_USER"), "DELETE") in grants
 
-        # Check indexes
+        # Check code indexes
         cur.execute(
-            f"SELECT * FROM pg_indexes WHERE schemaname = 'hame' AND tablename = '{table_name}';"
+            f"SELECT * FROM pg_indexes WHERE schemaname = 'codes' AND tablename = '{table_name}';"
         )
         indexes = cur.fetchall()
-        cur.execute(
-            f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'hame' AND table_name = '{table_name}';"
-        )
-        columns = cur.fetchall()
-        if ("id",) in columns:
-            assert (
-                "hame",
-                table_name,
-                f"{table_name}_pkey",
-                None,
-                f"CREATE UNIQUE INDEX {table_name}_pkey ON hame.{table_name} USING btree (id)",
-            ) in indexes
-        if ("geom",) in columns:
-            assert (
-                "hame",
-                table_name,
-                f"idx_{table_name}_geom",
-                None,
-                f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",
-            ) in indexes
+        assert (
+            "codes",
+            table_name,
+            f"{table_name}_pkey",
+            None,
+            f"CREATE UNIQUE INDEX {table_name}_pkey ON codes.{table_name} USING btree (id)",
+        ) in indexes
+        assert (
+            "codes",
+            table_name,
+            f"ix_codes_{table_name}_level",
+            None,
+            f"CREATE INDEX ix_codes_{table_name}_level ON codes.{table_name} USING btree (level)",
+        ) in indexes
+        assert (
+            "codes",
+            table_name,
+            f"ix_codes_{table_name}_parent_id",
+            None,
+            f"CREATE INDEX ix_codes_{table_name}_parent_id ON codes.{table_name} USING btree (parent_id)",
+        ) in indexes
+        assert (
+            "codes",
+            table_name,
+            f"ix_codes_{table_name}_short_name",
+            None,
+            f"CREATE UNIQUE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",
+        ) in indexes
+        assert (
+            "codes",
+            table_name,
+            f"ix_codes_{table_name}_value",
+            None,
+            f"CREATE UNIQUE INDEX ix_codes_{table_name}_value ON codes.{table_name} USING btree (value)",
+        ) in indexes
 
     # TODO: Check materialized views once we have any
     # cur.execute(
