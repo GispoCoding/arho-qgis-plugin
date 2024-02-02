@@ -73,9 +73,12 @@ class CodeBase(VersionedBase):
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
     description: Mapped[language_str]
+    # Let's import code status too. This tells our importer if the koodisto is final,
+    # or if the code can be deleted and/or moved.
+    status: Mapped[str]
     # For now, level can just be imported from RYTJ. Let's assume the level in RYTJ
     # is correct, so we don't have to calculate and recalculate it ourselves.
-    level: Mapped[int] = mapped_column(server_default="0")
+    level: Mapped[int] = mapped_column(server_default="0", index=True)
 
     # self-reference in abstract base class:
     # We cannot use @classmethod decorator here. Alembic is buggy and apparently
@@ -83,7 +86,7 @@ class CodeBase(VersionedBase):
     @declared_attr
     def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:  # noqa
         return mapped_column(
-            ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey")
+            ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
         )
 
     @classmethod
