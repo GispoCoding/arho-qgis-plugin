@@ -1,14 +1,12 @@
 from datetime import datetime
 from typing import Optional
 
-from base import VersionedBase, language_str
-from codes import LifeCycleStatus
+from base import PlanBase, language_str
 from shapely.geometry import Polygon
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped
 
 
-class Plan(VersionedBase):
+class Plan(PlanBase):
     """
     Maakuntakaava, compatible with Ryhti 2.0 specification
     """
@@ -17,8 +15,4 @@ class Plan(VersionedBase):
 
     name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
-    lifecycle_status_id: Mapped[int] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id")
-    )
-    lifecycle_status: Mapped[LifeCycleStatus] = relationship(back_populates="plans")
     geom: Mapped[Polygon]

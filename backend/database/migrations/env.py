@@ -2,7 +2,11 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from models import VersionedBase
+from base import Base
+
+# *ALL* sqlalchemy models have to be imported so that alembic detects all tables
+from codes import *  # noqa
+from models import *  # noqa
 from sqlalchemy import create_engine
 
 # this is the Alembic Config object, which provides
@@ -19,9 +23,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 
-# Codes are imported in models.py, so models.py metadata will also consider
-# CodeBase.metadata
-target_metadata = VersionedBase.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -82,6 +84,7 @@ def run_migrations_offline() -> None:
         include_object=include_object,
         include_schemas=True,
         include_name=include_name,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -107,6 +110,7 @@ def run_migrations_online() -> None:
             include_object=include_object,
             include_schemas=True,
             include_name=include_name,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():
