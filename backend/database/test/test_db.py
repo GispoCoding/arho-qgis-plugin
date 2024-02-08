@@ -2,7 +2,7 @@ import os
 
 import psycopg2
 
-hame_count: int = 1  # adjust me when adding tables
+hame_count: int = 2  # adjust me when adding tables
 codes_count: int = 8  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -79,6 +79,14 @@ def assert_database_is_alright(
                 f"idx_{table_name}_geom",
                 None,
                 f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",
+            ) in indexes
+        if ("short_name",) in columns:
+            assert (
+                "hame",
+                table_name,
+                f"ix_hame_{table_name}_short_name",
+                None,
+                f"CREATE UNIQUE INDEX ix_hame_{table_name}_short_name ON hame.{table_name} USING btree (short_name)",
             ) in indexes
 
     # Check code tables
