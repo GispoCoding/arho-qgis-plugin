@@ -1,9 +1,11 @@
+import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
-from base import PlanBase, VersionedBase, language_str, unique_str
+from base import PlanBase, VersionedBase, autoincrement_int, language_str, unique_str
 from shapely.geometry import Polygon
-from sqlalchemy.orm import Mapped
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class Plan(PlanBase):
@@ -27,3 +29,54 @@ class PlanRegulationGroup(VersionedBase):
 
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
+    # värikoodi?
+    # group_type: oma koodilista
+
+
+class PlanRegulation(PlanBase):
+    """
+    Kaavamääräys
+    """
+
+    __tablename__ = "plan_regulation"
+
+    plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+        )
+    )
+
+    type_of_plan_regulation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_plan_regulation.id", name="type_of_plan_regulation_id_fkey"
+        )
+    )
+    type_of_verbal_plan_regulation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_verbal_plan_regulation.id",
+            name="type_of_verbal_plan_regulation_id_fkey",
+        )
+    )
+    # type_of_additional_information_id: Mapped[uuid.UUID] = mapped_column(
+    #     ForeignKey(
+    #         "codes.type_of_additional_information.id",
+    #         name="type_of_additional_information_id_fkey",
+    #     )
+    # )
+
+    plan_regulation_group = relationship(
+        "PlanRegulationGroup", back_populates="plan_regulations"
+    )
+    type_of_plan_regulation = relationship(
+        "TypeOfPlanRegulation", back_populates="plan_regulations"
+    )
+    # plan_theme: kaavoitusteema-koodilista
+    type_of_verbal_plan_regulation = relationship(
+        "TypeOfVerbalPlanRegulation", back_populates="plan_regulations"
+    )
+    numeric_range: Mapped[Tuple[float, float]]
+    unit: Mapped[str]
+    text_value: Mapped[language_str]
+    numeric_value: Mapped[float]
+    regulation_number: Mapped[autoincrement_int]
+    # ElinkaaritilaX_pvm?
