@@ -52,6 +52,7 @@ class VersionedBase(Base):
     """
 
     __abstract__ = True
+    __table_args__ = {"schema": "hame"}
 
     id: Mapped[uuid_pk]
     created_at: Mapped[timestamp]
@@ -105,7 +106,6 @@ class PlanBase(VersionedBase):
     """
 
     __abstract__ = True
-    __table_args__ = {"schema": "hame"}
 
     exported_at: Mapped[Optional[datetime]]
     valid_from: Mapped[Optional[datetime]]

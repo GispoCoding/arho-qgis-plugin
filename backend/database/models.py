@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from base import PlanBase, language_str, unique_str
+from base import PlanBase, VersionedBase, language_str, unique_str
 from shapely.geometry import Polygon
 from sqlalchemy.orm import Mapped
 
@@ -18,7 +18,7 @@ class Plan(PlanBase):
     geom: Mapped[Polygon]
 
 
-class PlanRegulationGroup(PlanBase):
+class PlanRegulationGroup(VersionedBase):
     """
     Kaavamääräysryhmä
     """
