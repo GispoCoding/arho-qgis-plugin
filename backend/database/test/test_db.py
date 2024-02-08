@@ -17,15 +17,23 @@ def assert_database_is_alright(
     Checks that the database has the right amount of tables with the right
     permissions.
     """
+    # Check schemas
     cur.execute(
         "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN ('hame', 'codes') ORDER BY schema_name DESC"
     )
     assert cur.fetchall() == [("hame",), ("codes",)]
 
+    # Check users
+    hame_users = os.environ.get("DB_USERS", "").split(",")
     cur.execute("SELECT rolname FROM pg_roles")
-    assert set(os.environ.get("DB_USERS", "").split(",")).issubset(
-        {row[0] for row in cur.fetchall()}
-    )
+    assert set(hame_users).issubset({row[0] for row in cur.fetchall()})
+
+    # Check schema permissions
+    for user in hame_users:
+        cur.execute(f"SELECT has_schema_privilege('{user}', 'hame', 'usage')")
+        assert cur.fetchall() == [(True,)]
+        cur.execute(f"SELECT has_schema_privilege('{user}', 'codes', 'usage')")
+        assert cur.fetchall() == [(True,)]
 
     # Check hame tables
     cur.execute("SELECT tablename, tableowner FROM pg_tables WHERE schemaname='hame';")
@@ -39,7 +47,7 @@ def assert_database_is_alright(
         # Check table owner and read permissions
         assert owner == os.environ.get("SU_USER", "")
         cur.execute(
-            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_name='{table_name}';"
+            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_schema = 'hame' AND table_name='{table_name}';"
         )
         grants = cur.fetchall()
         assert (os.environ.get("R_USER"), "SELECT") in grants
@@ -93,7 +101,7 @@ def assert_database_is_alright(
         # Check table owner and read permissions
         assert owner == os.environ.get("SU_USER", "")
         cur.execute(
-            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_name='{table_name}';"
+            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_schema = 'codes' AND table_name='{table_name}';"
         )
         grants = cur.fetchall()
         assert (os.environ.get("R_USER"), "SELECT") in grants
