@@ -148,7 +148,7 @@ def assert_database_is_alright(
             table_name,
             f"ix_codes_{table_name}_short_name",
             None,
-            f"CREATE UNIQUE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",
+            f"CREATE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",
         ) in indexes
         assert (
             "codes",

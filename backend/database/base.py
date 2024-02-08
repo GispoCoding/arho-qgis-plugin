@@ -70,7 +70,7 @@ class CodeBase(VersionedBase):
     code_list_uri = ""
 
     value: Mapped[unique_str]
-    short_name: Mapped[unique_str]
+    short_name: Mapped[str] = mapped_column(server_default="", index=True)
     name: Mapped[language_str]
     description: Mapped[language_str]
     # Let's import code status too. This tells our importer if the koodisto is final,
@@ -78,7 +78,7 @@ class CodeBase(VersionedBase):
     status: Mapped[str]
     # For now, level can just be imported from RYTJ. Let's assume the level in RYTJ
     # is correct, so we don't have to calculate and recalculate it ourselves.
-    level: Mapped[int] = mapped_column(server_default="0", index=True)
+    level: Mapped[int] = mapped_column(server_default="1", index=True)
 
     # self-reference in abstract base class:
     # We cannot use @classmethod decorator here. Alembic is buggy and apparently
