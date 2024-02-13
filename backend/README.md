@@ -39,7 +39,8 @@ To manage Hame-Ryhti AWS resources, check the [infra](./infra) directory.
 1. Run tests with `make pytest`
 2. Build and start the development containers with `docker-compose -f docker-compose.dev.yml up -d` (or `make rebuild`).
 3. Fill the database with current data model by `make test-create-db`.
-4. Edit the lambda functions under [database](./database), run tests and rebuild again.
+4. Populate national code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi) by `make test-koodistot`.
+5. Edit the lambda functions under [database](./database), run tests and rebuild again.
 
 If test using pytest-docker get stuck, you can remove the dangling containers with:
 
