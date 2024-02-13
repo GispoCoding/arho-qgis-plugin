@@ -90,8 +90,6 @@ class KoodistotLoader:
             self.api_base = api_url
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
-        # with self.Session() as session:
-        # self.syncher = Syncher(KoosteBase, session)
 
         # Only load koodistot that have external URI defined
         self.koodistot: List[Type[codes.CodeBase]] = [
