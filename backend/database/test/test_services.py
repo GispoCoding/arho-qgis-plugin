@@ -4,8 +4,7 @@ import json
 import psycopg2
 import pytest
 import requests
-
-from database.koodistot_loader.koodistot_loader import codes
+from koodistot_loader.koodistot_loader import codes
 
 from .conftest import assert_database_is_alright, drop_hame_db
 
