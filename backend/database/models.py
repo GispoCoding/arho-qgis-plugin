@@ -120,3 +120,15 @@ class SourceData(VersionedBase):
     name: Mapped[language_str]
     language: Mapped[language_str]
     additional_information_uri: Mapped[str]
+
+
+class Operator(VersionedBase):
+    """
+    Toimija
+    """
+
+    __tablename__ = "operator"
+
+    name: Mapped[language_str]
+    business_id: Mapped[str]
+    # administrative_region_id: koodilista
