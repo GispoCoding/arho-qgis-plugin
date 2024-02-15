@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Polygon
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -28,6 +28,7 @@ class Base(DeclarativeBase):
         uuid.UUID: UUID(as_uuid=True),
         dict[str, str]: JSONB,
         Polygon: Geometry(geometry_type="POLYGON", srid=PROJECT_SRID),
+        Tuple[float, float]: NUMRANGE,
     }
 
 
@@ -42,6 +43,8 @@ language_str = Annotated[
     dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
 ]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
+
+autoincrement_int = Annotated[int, mapped_column(autoincrement=True, index=True)]
 
 metadata = Base.metadata
 
