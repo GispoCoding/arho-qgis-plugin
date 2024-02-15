@@ -44,7 +44,7 @@ language_str = Annotated[
 ]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 
-autoincrement_int = Annotated[int, mapped_column(autoincrement=True)]
+autoincrement_int = Annotated[int, mapped_column(autoincrement=True, index=True)]
 
 metadata = Base.metadata
 
