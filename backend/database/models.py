@@ -55,7 +55,8 @@ class PlanRegulation(PlanBase):
         ForeignKey(
             "codes.type_of_verbal_plan_regulation.id",
             name="type_of_verbal_plan_regulation_id_fkey",
-        )
+        ),
+        nullable=True,
     )
     # type_of_additional_information_id: Mapped[uuid.UUID] = mapped_column(
     #     ForeignKey(
@@ -74,9 +75,9 @@ class PlanRegulation(PlanBase):
     type_of_verbal_plan_regulation = relationship(
         "TypeOfVerbalPlanRegulation", back_populates="plan_regulations"
     )
-    numeric_range: Mapped[Tuple[float, float]]
-    unit: Mapped[str]
+    numeric_range: Mapped[Tuple[float, float]] = mapped_column(nullable=True)
+    unit: Mapped[str] = mapped_column(nullable=True)
     text_value: Mapped[language_str]
-    numeric_value: Mapped[float]
-    regulation_number: Mapped[autoincrement_int]
+    numeric_value: Mapped[float] = mapped_column(nullable=True)
+    ordering: Mapped[autoincrement_int]
     # ElinkaaritilaX_pvm?
