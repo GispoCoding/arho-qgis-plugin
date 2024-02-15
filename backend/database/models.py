@@ -81,3 +81,25 @@ class PlanRegulation(PlanBase):
     numeric_value: Mapped[float] = mapped_column(nullable=True)
     ordering: Mapped[autoincrement_int]
     # ElinkaaritilaX_pvm?
+
+
+class PlanProposition(PlanBase):
+    """
+    Kaavasuositus
+    """
+
+    __tablename__ = "plan_proposition"
+
+    plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+        )
+    )
+
+    plan_regulation_group = relationship(
+        "PlanRegulationGroup", back_populates="plan_regulations"
+    )
+    text_value: Mapped[language_str]
+    ordering: Mapped[autoincrement_int]
+    # plan_theme: kaavoitusteema-koodilista
+    # ElinkaaritilaX_pvm
