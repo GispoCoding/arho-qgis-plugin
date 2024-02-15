@@ -97,9 +97,26 @@ class PlanProposition(PlanBase):
     )
 
     plan_regulation_group = relationship(
-        "PlanRegulationGroup", back_populates="plan_regulations"
+        "PlanRegulationGroup", back_populates="plan_propositions"
     )
     text_value: Mapped[language_str]
     ordering: Mapped[autoincrement_int]
     # plan_theme: kaavoitusteema-koodilista
     # ElinkaaritilaX_pvm
+
+
+class SourceData(VersionedBase):
+    """
+    Lähtötietoaineistot
+    """
+
+    __tablename__ = "source_data"
+
+    type_of_source_data_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
+    )
+
+    type_of_source_data = relationship("TypeOfSourceData", back_populates="source_data")
+    name: Mapped[language_str]
+    language: Mapped[language_str]
+    additional_information_uri: Mapped[str]
