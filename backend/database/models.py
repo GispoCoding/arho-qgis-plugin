@@ -1,8 +1,15 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
 
-from base import PlanBase, VersionedBase, autoincrement_int, language_str, unique_str
+from base import (
+    PlanBase,
+    VersionedBase,
+    autoincrement_int,
+    language_str,
+    timestamp,
+    unique_str,
+)
 from shapely.geometry import Polygon
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -120,3 +127,24 @@ class SourceData(VersionedBase):
     name: Mapped[language_str]
     language: Mapped[language_str]
     additional_information_uri: Mapped[str]
+
+
+class Document(VersionedBase):
+    """
+    Asiakirja
+    """
+
+    __tablename__ = "document"
+
+    type_of_document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_document.id", name="type_of_document_id_fkey")
+    )
+
+    type_of_document = relationship("TypeOfDocument", back_populates="documents")
+    name: Mapped[language_str]
+    personal_details: Mapped[str]
+    publicity: Literal[""]  # julkinen, ei julkinen?
+    language: Mapped[language_str]
+    decision: Mapped[bool]
+    decision_date: Mapped[Optional[timestamp]]
+    # file
