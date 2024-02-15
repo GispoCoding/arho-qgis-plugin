@@ -1,4 +1,5 @@
-from base import CodeBase
+from models import CodeBase
+from sqlalchemy.orm import relationship
 
 
 class LifeCycleStatus(CodeBase):
@@ -26,6 +27,10 @@ class TypeOfPlanRegulation(CodeBase):
 
     __tablename__ = "type_of_plan_regulation"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+
+    plan_regulations = relationship(
+        "PlanRegulation", back_populates="type_of_plan_regulation"
+    )
 
 
 class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
@@ -58,6 +63,10 @@ class TypeOfVerbalPlanRegulation(CodeBase):
     __tablename__ = "type_of_verbal_plan_regulation"
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji"
+    )
+
+    plan_regulations = relationship(
+        "PlanRegulation", back_populates="type_of_verbal_plan_regulation"
     )
 
 
