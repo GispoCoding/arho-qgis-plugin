@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 
 from geoalchemy2 import Geometry
-from shapely.geometry import Polygon
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -27,7 +27,10 @@ class Base(DeclarativeBase):
     type_annotation_map = {
         uuid.UUID: UUID(as_uuid=True),
         dict[str, str]: JSONB,
-        Polygon: Geometry(geometry_type="POLYGON", srid=PROJECT_SRID),
+        MultiLineString: Geometry(geometry_type="MULTILINE", srid=PROJECT_SRID),
+        MultiPoint: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
+        MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),
+        Tuple[float, float]: NUMRANGE,
     }
 
 
@@ -41,7 +44,9 @@ unique_str = Annotated[str, mapped_column(unique=True, index=True)]
 language_str = Annotated[
     dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
 ]
+numeric_range = Annotated[Tuple[float, float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
+autoincrement_int = Annotated[int, mapped_column(autoincrement=True, nullable=True)]
 
 metadata = Base.metadata
 
@@ -112,7 +117,8 @@ class PlanBase(VersionedBase):
     valid_to: Mapped[Optional[datetime]]
     repealed_at: Mapped[Optional[datetime]]
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey")
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
+        index=True,
     )
 
     # class reference in abstract base class, with backreference to class name:
@@ -120,3 +126,50 @@ class PlanBase(VersionedBase):
     @declared_attr
     def lifecycle_status(cls) -> Mapped[VersionedBase]:
         return relationship("LifeCycleStatus", back_populates=f"{cls.__tablename__}s")
+
+
+class PlanFeatureBase(PlanBase):
+    """
+    All plan feature tables have the same fields, apart from geometry.
+    """
+
+    __abstract__ = True
+
+    name: Mapped[language_str]
+    source_data_object: Mapped[str] = mapped_column(nullable=True)
+    height_range: Mapped[numeric_range]
+    height_unit: Mapped[str] = mapped_column(nullable=True)
+    ordering: Mapped[autoincrement_int]
+    type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
+        index=True,
+    )
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
+    )
+    plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+        ),
+        index=True,
+    )
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def type_of_underground(cls) -> Mapped[VersionedBase]:
+        return relationship("TypeOfUnderground", back_populates=f"{cls.__tablename__}s")
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def plan(cls) -> Mapped[VersionedBase]:
+        return relationship("Plan", back_populates=f"{cls.__tablename__}s")
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def plan_regulation_group(cls) -> Mapped[VersionedBase]:
+        return relationship(
+            "PlanRegulationGroup", back_populates=f"{cls.__tablename__}s"
+        )
