@@ -122,12 +122,12 @@ class SourceData(VersionedBase):
     additional_information_uri: Mapped[str]
 
 
-class Operator(VersionedBase):
+class Organisation(VersionedBase):
     """
     Toimija
     """
 
-    __tablename__ = "operator"
+    __tablename__ = "organisation"
 
     name: Mapped[language_str]
     business_id: Mapped[str]
