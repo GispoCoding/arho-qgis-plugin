@@ -12,8 +12,14 @@ botocore==1.34.15
     # via
     #   boto3
     #   s3transfer
+certifi==2024.2.2
+    # via requests
+charset-normalizer==3.3.2
+    # via requests
 geoalchemy2==0.14.3
     # via -r requirements.in
+idna==3.6
+    # via requests
 jmespath==1.0.1
     # via
     #   boto3
@@ -30,6 +36,8 @@ psycopg2-binary==2.9.9
     # via -r requirements.in
 python-dateutil==2.8.2
     # via botocore
+requests==2.31.0
+    # via -r requirements.in
 s3transfer==0.10.0
     # via boto3
 shapely==2.0.2
@@ -46,4 +54,6 @@ typing-extensions==4.9.0
     #   alembic
     #   sqlalchemy
 urllib3==2.0.7
-    # via botocore
+    # via
+    #   botocore
+    #   requests

@@ -8,6 +8,11 @@ output "lambda_db_manager" {
   value       = aws_lambda_function.db_manager.function_name
 }
 
+output "lambda_koodistot_loader" {
+  description = "Name of the koodistot_loader Lambda function."
+  value       = aws_lambda_function.koodistot_loader.function_name
+}
+
 output "lambda_update_user" {
   description = "Name of the lambda function update user."
   value       = aws_iam_user.lambda_update_user.name

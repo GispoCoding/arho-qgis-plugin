@@ -198,6 +198,18 @@ def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) 
                         username=Identifier(user["username"]),
                     )
                 )
+
+            # Finally, all users must have schema usage permissions
+            cur.execute(
+                SQL("GRANT USAGE ON SCHEMA hame to {username}").format(
+                    username=Identifier(user["username"])
+                )
+            )
+            cur.execute(
+                SQL("GRANT USAGE ON SCHEMA codes to {username}").format(
+                    username=Identifier(user["username"])
+                )
+            )
     msg = "Added hame schemas and users."
     LOGGER.info(msg)
     return msg
