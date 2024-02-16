@@ -1,5 +1,5 @@
-from models import CodeBase
-from sqlalchemy.orm import relationship
+from models import CodeBase, Plan, PlanProposition, PlanRegulation
+from sqlalchemy.orm import Mapped, declared_attr, relationship
 
 
 class LifeCycleStatus(CodeBase):
@@ -9,6 +9,21 @@ class LifeCycleStatus(CodeBase):
 
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
+
+    @classmethod
+    @declared_attr
+    def plans(cls) -> Mapped[Plan]:
+        return relationship(Plan, back_populates="lifecycle_status")
+
+    @classmethod
+    @declared_attr
+    def plan_regulations(cls) -> Mapped[PlanRegulation]:
+        return relationship(PlanRegulation, back_populates="lifecycle_status")
+
+    @classmethod
+    @declared_attr
+    def plan_propositions(cls) -> Mapped[PlanProposition]:
+        return relationship(PlanProposition, back_populates="lifecycle_status")
 
 
 class PlanType(CodeBase):

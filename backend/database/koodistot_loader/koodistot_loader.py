@@ -95,7 +95,7 @@ class KoodistotLoader:
         self.koodistot: List[Type[codes.CodeBase]] = [
             value
             for name, value in inspect.getmembers(codes, inspect.isclass)
-            if value.code_list_uri
+            if issubclass(value, codes.CodeBase) and value.code_list_uri
         ]
         LOGGER.info("Loader initialized with code classes:")
         LOGGER.info(self.koodistot)

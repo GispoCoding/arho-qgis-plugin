@@ -98,6 +98,11 @@ class CodeBase(VersionedBase):
     def parent(cls) -> Mapped[VersionedBase]:
         return relationship(cls, back_populates="children")
 
+    @classmethod
+    @declared_attr
+    def children(cls) -> Mapped[VersionedBase]:
+        return relationship(cls, back_populates="parent")
+
     @property
     def uri(self):
         return f"{self.code_list_uri}/code/{self.value}"
