@@ -39,7 +39,7 @@ class DatabaseHelper:
                 region_name=os.environ.get("AWS_REGION_NAME"),
             )
             self._credentials = json.loads(
-                client.get_secret_value(SecretId=os.environ.get("DB_SECRET_RW_ARN"))[
+                client.get_secret_value(SecretId=os.environ.get("DB_SECRET_ADMIN_ARN"))[
                     "SecretString"
                 ]
             )
