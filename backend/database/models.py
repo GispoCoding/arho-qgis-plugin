@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 # we have to import CodeBase in codes.py from here to allow two-way relationships
 from base import (  # noqa
@@ -10,6 +10,7 @@ from base import (  # noqa
     VersionedBase,
     autoincrement_int,
     language_str,
+    numeric_range,
     unique_str,
 )
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
@@ -140,7 +141,7 @@ class PlanRegulation(PlanBase):
     type_of_verbal_plan_regulation = relationship(
         "TypeOfVerbalPlanRegulation", back_populates="plan_regulations"
     )
-    numeric_range: Mapped[Tuple[float, float]] = mapped_column(nullable=True)
+    numeric_range: Mapped[numeric_range]
     unit: Mapped[str] = mapped_column(nullable=True)
     text_value: Mapped[language_str]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
