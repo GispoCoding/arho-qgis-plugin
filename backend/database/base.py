@@ -46,7 +46,7 @@ language_str = Annotated[
 ]
 numeric_range = Annotated[Tuple[float, float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
-autoincrement_int = Annotated[int, mapped_column(autoincrement=True, nullable=True)]
+autoincrement_int = Annotated[int, mapped_column(autoincrement=True, index=True)]
 
 metadata = Base.metadata
 
@@ -99,6 +99,11 @@ class CodeBase(VersionedBase):
     @declared_attr
     def parent(cls) -> Mapped[VersionedBase]:
         return relationship(cls, back_populates="children")
+
+    @classmethod
+    @declared_attr
+    def children(cls) -> Mapped[VersionedBase]:
+        return relationship(cls, back_populates="parent")
 
     @property
     def uri(self):

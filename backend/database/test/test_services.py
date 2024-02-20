@@ -63,7 +63,7 @@ def test_populate_koodistot(populate_koodistot, main_db_params):
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
                 # some code tables may not have external source
-                if value.code_list_uri:
+                if issubclass(value, codes.CodeBase) and value.code_list_uri:
                     print(value)
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
