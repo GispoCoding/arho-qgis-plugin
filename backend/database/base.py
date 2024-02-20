@@ -133,9 +133,9 @@ class PlanBase(VersionedBase):
         return relationship("LifeCycleStatus", back_populates=f"{cls.__tablename__}s")
 
 
-class PlanFeatureBase(PlanBase):
+class PlanObjectBase(PlanBase):
     """
-    All plan feature tables have the same fields, apart from geometry.
+    All plan object tables have the same fields, apart from geometry.
     """
 
     __abstract__ = True

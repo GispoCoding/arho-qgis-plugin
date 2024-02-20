@@ -6,7 +6,7 @@ from typing import Optional, Tuple
 from base import (  # noqa
     CodeBase,
     PlanBase,
-    PlanFeatureBase,
+    PlanObjectBase,
     VersionedBase,
     autoincrement_int,
     language_str,
@@ -29,7 +29,7 @@ class Plan(PlanBase):
     geom: Mapped[MultiPolygon]
 
 
-class LandUseArea(PlanFeatureBase):
+class LandUseArea(PlanObjectBase):
     """
     Osa-alue
     """
@@ -39,7 +39,7 @@ class LandUseArea(PlanFeatureBase):
     geom: Mapped[MultiPolygon]
 
 
-class OtherArea(PlanFeatureBase):
+class OtherArea(PlanObjectBase):
     """
     Aluevaraus
     """
@@ -49,7 +49,7 @@ class OtherArea(PlanFeatureBase):
     geom: Mapped[MultiPolygon]
 
 
-class Line(PlanFeatureBase):
+class Line(PlanObjectBase):
     """
     Viivat
     """
@@ -59,7 +59,7 @@ class Line(PlanFeatureBase):
     geom: Mapped[MultiLineString]
 
 
-class LandUsePoint(PlanFeatureBase):
+class LandUsePoint(PlanObjectBase):
     """
     Maankäytön pisteet
     """
@@ -69,7 +69,7 @@ class LandUsePoint(PlanFeatureBase):
     geom: Mapped[MultiPoint]
 
 
-class OtherPoint(PlanFeatureBase):
+class OtherPoint(PlanObjectBase):
     """
     Muut pisteet
     """
