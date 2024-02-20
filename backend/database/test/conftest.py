@@ -320,6 +320,14 @@ def assert_database_is_alright(
                 None,
                 f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",  # noqa
             ) in indexes
+        if ("ordering",) in columns:
+            assert (
+                "hame",
+                table_name,
+                f"ix_hame_{table_name}_ordering",
+                None,
+                f"CREATE INDEX ix_hame_{table_name}_ordering ON hame.{table_name} USING btree (ordering)",  # noqa
+            ) in indexes
 
     # Check code tables
     cur.execute("SELECT tablename, tableowner FROM pg_tables WHERE schemaname='codes';")
