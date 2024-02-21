@@ -87,12 +87,6 @@ class PlanRegulationGroup(VersionedBase):
 
     __tablename__ = "plan_regulation_group"
 
-    plan_regulations = relationship(
-        "PlanRegulation", back_populates="plan_regulation_group"
-    )
-    plan_propositions = relationship(
-        "PlanProposition", back_populates="plan_regulation_group"
-    )
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
     # värikoodi?
@@ -132,14 +126,14 @@ class PlanRegulation(PlanBase):
     # )
 
     plan_regulation_group = relationship(
-        "PlanRegulationGroup", back_populates="plan_regulations"
+        "PlanRegulationGroup", backref="plan_regulations"
     )
     type_of_plan_regulation = relationship(
-        "TypeOfPlanRegulation", back_populates="plan_regulations"
+        "TypeOfPlanRegulation", backref="plan_regulations"
     )
     # plan_theme: kaavoitusteema-koodilista
     type_of_verbal_plan_regulation = relationship(
-        "TypeOfVerbalPlanRegulation", back_populates="plan_regulations"
+        "TypeOfVerbalPlanRegulation", backref="plan_regulations"
     )
     numeric_range: Mapped[numeric_range]
     unit: Mapped[str] = mapped_column(nullable=True)
@@ -163,7 +157,7 @@ class PlanProposition(PlanBase):
     )
 
     plan_regulation_group = relationship(
-        "PlanRegulationGroup", back_populates="plan_propositions"
+        "PlanRegulationGroup", backref="plan_propositions"
     )
     text_value: Mapped[language_str]
     ordering: Mapped[autoincrement_int]

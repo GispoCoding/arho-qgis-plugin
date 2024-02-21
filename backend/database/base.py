@@ -98,12 +98,7 @@ class CodeBase(VersionedBase):
     @classmethod
     @declared_attr
     def parent(cls) -> Mapped[VersionedBase]:
-        return relationship(cls, back_populates="children")
-
-    @classmethod
-    @declared_attr
-    def children(cls) -> Mapped[VersionedBase]:
-        return relationship(cls, back_populates="parent")
+        return relationship(cls, backref="children")
 
     @property
     def uri(self):
@@ -130,7 +125,7 @@ class PlanBase(VersionedBase):
     @classmethod
     @declared_attr
     def lifecycle_status(cls) -> Mapped[VersionedBase]:
-        return relationship("LifeCycleStatus", back_populates=f"{cls.__tablename__}s")
+        return relationship("LifeCycleStatus", backref=f"{cls.__tablename__}s")
 
 
 class PlanObjectBase(PlanBase):
@@ -163,18 +158,16 @@ class PlanObjectBase(PlanBase):
     @classmethod
     @declared_attr
     def type_of_underground(cls) -> Mapped[VersionedBase]:
-        return relationship("TypeOfUnderground", back_populates=f"{cls.__tablename__}s")
+        return relationship("TypeOfUnderground", backref=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
     @classmethod
     @declared_attr
     def plan(cls) -> Mapped[VersionedBase]:
-        return relationship("Plan", back_populates=f"{cls.__tablename__}s")
+        return relationship("Plan", backref=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
     @classmethod
     @declared_attr
     def plan_regulation_group(cls) -> Mapped[VersionedBase]:
-        return relationship(
-            "PlanRegulationGroup", back_populates=f"{cls.__tablename__}s"
-        )
+        return relationship("PlanRegulationGroup", backref=f"{cls.__tablename__}s")
