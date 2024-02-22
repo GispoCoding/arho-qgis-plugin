@@ -123,7 +123,9 @@ def create_db(conn: psycopg2.extensions.connection, db_name: str) -> str:
     return msg
 
 
-def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) -> str:
+def configure_schemas_and_users(
+    conn: psycopg2.extensions.connection, users: dict[User, dict]
+) -> str:
     """
     Configures given database with hame schemas and users.
     """
@@ -143,6 +145,33 @@ def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) 
                     ).format(username=Identifier(user["username"])),
                     vars={"password": user["password"]},
                 )
+            else:
+                # To get the quotes right, username will have to be injected
+                # using format, while password must be in vars.
+                cur.execute(
+                    SQL(
+                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
+                    ).format(username=Identifier(user["username"])),
+                    vars={"password": user["password"]},
+                )
+    msg = "Added hame schemas and users."
+    return msg
+
+
+def configure_permissions(
+    conn: psycopg2.extensions.connection, users: dict[User, dict]
+) -> str:
+    """
+    Configures user permissions.
+
+    Can also be run on an existing database to fix user permissions to be up to date.
+    """
+    with conn.cursor() as cur:
+        for key, user in users.items():
+            if key == User.SU:
+                # superuser already has the right permissions
+                pass
+            if key == User.ADMIN:
                 # admin user should be able to edit all tables
                 # (hame and code tables etc.)
                 cur.execute(
@@ -154,14 +183,6 @@ def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) 
                     )
                 )
             elif key == User.READ_WRITE:
-                # To get the quotes right, username will have to be injected
-                # using format, while password must be in vars.
-                cur.execute(
-                    SQL(
-                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
-                    ).format(username=Identifier(user["username"])),
-                    vars={"password": user["password"]},
-                )
                 # read and write user should be able to edit hame tables and
                 # read code tables
                 cur.execute(
@@ -181,14 +202,6 @@ def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) 
                     )
                 )
             else:
-                # To get the quotes right, username will have to be injected
-                # using format, while password must be in vars.
-                cur.execute(
-                    SQL(
-                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
-                    ).format(username=Identifier(user["username"])),
-                    vars={"password": user["password"]},
-                )
                 # default user should be able to read hame tables and code tables
                 cur.execute(
                     SQL(
@@ -198,7 +211,6 @@ def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) 
                         username=Identifier(user["username"]),
                     )
                 )
-
             # Finally, all users must have schema usage permissions
             cur.execute(
                 SQL("GRANT USAGE ON SCHEMA hame to {username}").format(
@@ -210,8 +222,7 @@ def configure_db(conn: psycopg2.extensions.connection, users: dict[User, dict]) 
                     username=Identifier(user["username"])
                 )
             )
-    msg = "Added hame schemas and users."
-    LOGGER.info(msg)
+    msg = "Configured user permissions."
     return msg
 
 
@@ -223,7 +234,8 @@ def database_exists(conn: psycopg2.extensions.connection, db_name: str) -> bool:
 
 
 def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
-    """Migrates an existing db to the latest scheme, or provided version.
+    """Migrates an existing db to the latest scheme, or provided version. Also
+    configures database permissions.
 
     Can also be used to create the database up to any version.
     """
@@ -231,27 +243,32 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
         **db_helper.get_connection_parameters(User.SU, Db.MAINTENANCE)
     )
     try:
+        users = db_helper.get_users()
         root_conn.autocommit = True
-
-        main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
         main_conn_params = db_helper.get_connection_parameters(User.SU, Db.MAIN)
+        msg = ""
+
+        # 1) check and create database and users
+        main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
         if not main_db_exists:
-            msg = create_db(root_conn, db_helper.get_db_name(Db.MAIN))
-            main_conn = psycopg2.connect(**main_conn_params)
-            main_conn.autocommit = True
-            msg += configure_db(main_conn, db_helper.get_users())
-            old_version = None
+            msg += create_db(root_conn, db_helper.get_db_name(Db.MAIN))
+        main_conn = psycopg2.connect(**main_conn_params)
+        main_conn.autocommit = True
+        if not main_db_exists:
+            msg += configure_schemas_and_users(main_conn, users)
+
+        # 2) check and create permissions
+        msg += configure_permissions(main_conn, users)
+
+        # 3) check and upgrade database to correct version
+        if main_db_exists:
+            with main_conn.cursor() as cur:
+                version_query = SQL("SELECT version_num FROM alembic_version")
+                cur.execute(version_query)
+                old_version = cur.fetchone()[0]
         else:
-            msg = ""
-            main_conn = psycopg2.connect(**main_conn_params)
-            try:
-                main_conn.autocommit = True
-                with main_conn.cursor() as cur:
-                    version_query = SQL("SELECT version_num FROM alembic_version")
-                    cur.execute(version_query)
-                    old_version = cur.fetchone()[0]
-            finally:
-                main_conn.close()
+            old_version = None
+        main_conn.close()
 
         alembic_cfg = Config(Path("alembic.ini"))
         alembic_cfg.attributes["connection"] = main_conn_params

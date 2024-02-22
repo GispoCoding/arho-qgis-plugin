@@ -163,3 +163,19 @@ class PlanProposition(PlanBase):
     ordering: Mapped[autoincrement_int]
     # plan_theme: kaavoitusteema-koodilista
     # ElinkaaritilaX_pvm
+
+
+class SourceData(VersionedBase):
+    """
+    Lähtötietoaineistot
+    """
+
+    __tablename__ = "source_data"
+
+    type_of_source_data_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
+    )
+
+    type_of_source_data = relationship("TypeOfSourceData", backref="source_data")
+    name: Mapped[language_str]
+    additional_information_uri: Mapped[str]
