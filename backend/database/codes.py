@@ -1,4 +1,5 @@
-from base import CodeBase
+from models import CodeBase, Plan, PlanProposition, PlanRegulation
+from sqlalchemy.orm import Mapped, declared_attr, relationship
 
 
 class LifeCycleStatus(CodeBase):
@@ -8,6 +9,21 @@ class LifeCycleStatus(CodeBase):
 
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
+
+    @classmethod
+    @declared_attr
+    def plans(cls) -> Mapped[Plan]:
+        return relationship(Plan, back_populates="lifecycle_status")
+
+    @classmethod
+    @declared_attr
+    def plan_regulations(cls) -> Mapped[PlanRegulation]:
+        return relationship(PlanRegulation, back_populates="lifecycle_status")
+
+    @classmethod
+    @declared_attr
+    def plan_propositions(cls) -> Mapped[PlanProposition]:
+        return relationship(PlanProposition, back_populates="lifecycle_status")
 
 
 class PlanType(CodeBase):
@@ -26,6 +42,10 @@ class TypeOfPlanRegulation(CodeBase):
 
     __tablename__ = "type_of_plan_regulation"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+
+    plan_regulations = relationship(
+        "PlanRegulation", back_populates="type_of_plan_regulation"
+    )
 
 
 class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
@@ -58,6 +78,10 @@ class TypeOfVerbalPlanRegulation(CodeBase):
     __tablename__ = "type_of_verbal_plan_regulation"
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji"
+    )
+
+    plan_regulations = relationship(
+        "PlanRegulation", back_populates="type_of_verbal_plan_regulation"
     )
 
 
