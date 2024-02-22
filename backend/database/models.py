@@ -26,6 +26,10 @@ class Plan(PlanBase):
 
     __tablename__ = "plan"
 
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.organisation.id", name="organisation_id_fkey")
+    )
+
     name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
     geom: Mapped[MultiPolygon]
@@ -180,6 +184,18 @@ class SourceData(VersionedBase):
     type_of_source_data = relationship("TypeOfSourceData", backref="source_data")
     name: Mapped[language_str]
     additional_information_uri: Mapped[str]
+
+
+class Organisation(VersionedBase):
+    """
+    Toimija
+    """
+
+    __tablename__ = "organisation"
+
+    name: Mapped[language_str]
+    business_id: Mapped[str]
+    # administrative_region_id: koodilista
 
 
 class Document(VersionedBase):
