@@ -13,7 +13,7 @@ from alembic.script import ScriptDirectory
 from db_manager import db_manager
 from dotenv import load_dotenv
 
-hame_count: int = 5  # adjust me when adding tables
+hame_count: int = 10  # adjust me when adding tables
 codes_count: int = 8  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -319,6 +319,14 @@ def assert_database_is_alright(
                 f"idx_{table_name}_geom",
                 None,
                 f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",  # noqa
+            ) in indexes
+        if ("ordering",) in columns:
+            assert (
+                "hame",
+                table_name,
+                f"ix_hame_{table_name}_ordering",
+                None,
+                f"CREATE INDEX ix_hame_{table_name}_ordering ON hame.{table_name} USING btree (ordering)",  # noqa
             ) in indexes
 
     # Check code tables
