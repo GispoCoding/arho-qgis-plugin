@@ -79,11 +79,13 @@ def iso_639_two_to_three_letter(language_dict: Dict[str, str]) -> Dict[str, str]
     return {language_map[key]: value for key, value in language_dict.items()}
 
 
+def get_code_list_url(api_base: str, code_registry: str, code_list: str) -> str:
+    return f"{api_base}/{code_registry}/codeschemes/{code_list}/codes"
+
+
 class KoodistotLoader:
     HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
-    api_base = (
-        "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes"
-    )
+    api_base = "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries"
 
     def __init__(self, connection_string: str, api_url: Optional[str] = None) -> None:
         if api_url:
@@ -106,10 +108,11 @@ class KoodistotLoader:
         """
         data = dict()
         for koodisto in self.koodistot:
-            name = koodisto.code_list_uri.rsplit("/", 1)[-1]
+            code_registry, name = koodisto.code_list_uri.rsplit("/", 2)[-2:None]
             LOGGER.info(koodisto.code_list_uri)
+            LOGGER.info(code_registry)
             LOGGER.info(name)
-            url = f"{self.api_base}/{name}/codes"
+            url = get_code_list_url(self.api_base, code_registry, name)
             LOGGER.info(f"Loading codes from {url}")
             r = requests.get(url, headers=self.HEADERS)
             r.raise_for_status()
