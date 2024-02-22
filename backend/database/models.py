@@ -1,16 +1,20 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Optional, Tuple
+from typing import Literal, Optional
 
-from base import (
+# we have to import CodeBase in codes.py from here to allow two-way relationships
+from base import (  # noqa
+    CodeBase,
     PlanBase,
+    PlanObjectBase,
     VersionedBase,
     autoincrement_int,
     language_str,
+    numeric_range,
     timestamp,
     unique_str,
 )
-from shapely.geometry import Polygon
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,7 +28,57 @@ class Plan(PlanBase):
 
     name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
-    geom: Mapped[Polygon]
+    geom: Mapped[MultiPolygon]
+
+
+class LandUseArea(PlanObjectBase):
+    """
+    Osa-alue
+    """
+
+    __tablename__ = "land_use_area"
+
+    geom: Mapped[MultiPolygon]
+
+
+class OtherArea(PlanObjectBase):
+    """
+    Aluevaraus
+    """
+
+    __tablename__ = "other_area"
+
+    geom: Mapped[MultiPolygon]
+
+
+class Line(PlanObjectBase):
+    """
+    Viivat
+    """
+
+    __tablename__ = "line"
+
+    geom: Mapped[MultiLineString]
+
+
+class LandUsePoint(PlanObjectBase):
+    """
+    Maankäytön pisteet
+    """
+
+    __tablename__ = "land_use_point"
+
+    geom: Mapped[MultiPoint]
+
+
+class OtherPoint(PlanObjectBase):
+    """
+    Muut pisteet
+    """
+
+    __tablename__ = "other_point"
+
+    geom: Mapped[MultiPoint]
 
 
 class PlanRegulationGroup(VersionedBase):
@@ -73,16 +127,16 @@ class PlanRegulation(PlanBase):
     # )
 
     plan_regulation_group = relationship(
-        "PlanRegulationGroup", back_populates="plan_regulations"
+        "PlanRegulationGroup", backref="plan_regulations"
     )
     type_of_plan_regulation = relationship(
-        "TypeOfPlanRegulation", back_populates="plan_regulations"
+        "TypeOfPlanRegulation", backref="plan_regulations"
     )
     # plan_theme: kaavoitusteema-koodilista
     type_of_verbal_plan_regulation = relationship(
-        "TypeOfVerbalPlanRegulation", back_populates="plan_regulations"
+        "TypeOfVerbalPlanRegulation", backref="plan_regulations"
     )
-    numeric_range: Mapped[Tuple[float, float]] = mapped_column(nullable=True)
+    numeric_range: Mapped[numeric_range]
     unit: Mapped[str] = mapped_column(nullable=True)
     text_value: Mapped[language_str]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
@@ -104,7 +158,7 @@ class PlanProposition(PlanBase):
     )
 
     plan_regulation_group = relationship(
-        "PlanRegulationGroup", back_populates="plan_propositions"
+        "PlanRegulationGroup", backref="plan_propositions"
     )
     text_value: Mapped[language_str]
     ordering: Mapped[autoincrement_int]
@@ -123,9 +177,8 @@ class SourceData(VersionedBase):
         ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
     )
 
-    type_of_source_data = relationship("TypeOfSourceData", back_populates="source_data")
+    type_of_source_data = relationship("TypeOfSourceData", backref="source_data")
     name: Mapped[language_str]
-    language: Mapped[language_str]
     additional_information_uri: Mapped[str]
 
 

@@ -1,4 +1,4 @@
-from base import CodeBase
+from models import CodeBase
 
 
 class LifeCycleStatus(CodeBase):

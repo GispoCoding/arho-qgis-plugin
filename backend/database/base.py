@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, Tuple
 
 from geoalchemy2 import Geometry
-from shapely.geometry import Polygon
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID
 from sqlalchemy.orm import (
@@ -27,7 +27,9 @@ class Base(DeclarativeBase):
     type_annotation_map = {
         uuid.UUID: UUID(as_uuid=True),
         dict[str, str]: JSONB,
-        Polygon: Geometry(geometry_type="POLYGON", srid=PROJECT_SRID),
+        MultiLineString: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
+        MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
+        MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),
         Tuple[float, float]: NUMRANGE,
     }
 
@@ -42,8 +44,8 @@ unique_str = Annotated[str, mapped_column(unique=True, index=True)]
 language_str = Annotated[
     dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
 ]
+numeric_range = Annotated[Tuple[float, float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
-
 autoincrement_int = Annotated[int, mapped_column(autoincrement=True, index=True)]
 
 metadata = Base.metadata
@@ -74,7 +76,7 @@ class CodeBase(VersionedBase):
     code_list_uri = ""
 
     value: Mapped[unique_str]
-    short_name: Mapped[unique_str]
+    short_name: Mapped[str] = mapped_column(server_default="", index=True)
     name: Mapped[language_str]
     description: Mapped[language_str]
     # Let's import code status too. This tells our importer if the koodisto is final,
@@ -82,7 +84,7 @@ class CodeBase(VersionedBase):
     status: Mapped[str]
     # For now, level can just be imported from RYTJ. Let's assume the level in RYTJ
     # is correct, so we don't have to calculate and recalculate it ourselves.
-    level: Mapped[int] = mapped_column(server_default="0", index=True)
+    level: Mapped[int] = mapped_column(server_default="1", index=True)
 
     # self-reference in abstract base class:
     # We cannot use @classmethod decorator here. Alembic is buggy and apparently
@@ -96,7 +98,7 @@ class CodeBase(VersionedBase):
     @classmethod
     @declared_attr
     def parent(cls) -> Mapped[VersionedBase]:
-        return relationship(cls, back_populates="children")
+        return relationship(cls, backref="children")
 
     @property
     def uri(self):
@@ -115,11 +117,57 @@ class PlanBase(VersionedBase):
     valid_to: Mapped[Optional[datetime]]
     repealed_at: Mapped[Optional[datetime]]
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey")
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
+        index=True,
     )
 
     # class reference in abstract base class, with backreference to class name:
     @classmethod
     @declared_attr
     def lifecycle_status(cls) -> Mapped[VersionedBase]:
-        return relationship("LifeCycleStatus", back_populates=f"{cls.__tablename__}s")
+        return relationship("LifeCycleStatus", backref=f"{cls.__tablename__}s")
+
+
+class PlanObjectBase(PlanBase):
+    """
+    All plan object tables have the same fields, apart from geometry.
+    """
+
+    __abstract__ = True
+
+    name: Mapped[language_str]
+    source_data_object: Mapped[str] = mapped_column(nullable=True)
+    height_range: Mapped[numeric_range]
+    height_unit: Mapped[str] = mapped_column(nullable=True)
+    ordering: Mapped[autoincrement_int]
+    type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
+        index=True,
+    )
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
+    )
+    plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+        ),
+        index=True,
+    )
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def type_of_underground(cls) -> Mapped[VersionedBase]:
+        return relationship("TypeOfUnderground", backref=f"{cls.__tablename__}s")
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def plan(cls) -> Mapped[VersionedBase]:
+        return relationship("Plan", backref=f"{cls.__tablename__}s")
+
+    # class reference in abstract base class, with backreference to class name:
+    @classmethod
+    @declared_attr
+    def plan_regulation_group(cls) -> Mapped[VersionedBase]:
+        return relationship("PlanRegulationGroup", backref=f"{cls.__tablename__}s")
