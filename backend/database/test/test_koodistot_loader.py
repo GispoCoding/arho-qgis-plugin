@@ -291,6 +291,7 @@ def mock_koodistot(requests_mock) -> None:
     requests_mock.get(get_url(codes.TypeOfVerbalPlanRegulation), text="")
     requests_mock.get(get_url(codes.TypeOfSourceData), text="")
     requests_mock.get(get_url(codes.TypeOfUnderground), text="")
+    requests_mock.get(get_url(codes.AdministrativeRegion), text="")
 
 
 @pytest.fixture()
@@ -318,7 +319,7 @@ def loader(connection_string) -> KoodistotLoader:
 @pytest.fixture()
 def koodistot_data(mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 7
+    assert len(data) == 8  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     assert len(data[codes.LifeCycleStatus]) == 2
     assert len(data[codes.TypeOfPlanRegulation]) == 4
@@ -329,7 +330,7 @@ def koodistot_data(mock_koodistot, loader):
 @pytest.fixture()
 def changed_koodistot_data(changed_mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 7
+    assert len(data) == 8  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     assert len(data[codes.LifeCycleStatus]) == 3
     assert len(data[codes.TypeOfPlanRegulation]) == 4

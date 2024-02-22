@@ -87,3 +87,12 @@ class TypeOfDocument(CodeBase):
     __tablename__ = "type_of_document"
     # Asiakirjatyyppi is apparently our own code list. It does not exist in RYTJ.
     code_list_uri = ""
+
+
+class AdministrativeRegion(CodeBase):
+    """
+    Maakunta
+    """
+
+    __tablename__ = "administrative_region"
+    code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
