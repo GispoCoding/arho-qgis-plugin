@@ -116,7 +116,6 @@ class SourceData(VersionedBase):
         ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
     )
 
-    type_of_source_data = relationship("TypeOfSourceData", back_populates="source_data")
+    type_of_source_data = relationship("TypeOfSourceData", backref="source_data")
     name: Mapped[language_str]
-    language: Mapped[language_str]
     additional_information_uri: Mapped[str]
