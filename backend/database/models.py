@@ -212,7 +212,7 @@ class Document(VersionedBase):
     type_of_document = relationship("TypeOfDocument", backref="documents")
     name: Mapped[str]
     personal_details: Mapped[str]
-    publicity: Literal["julkinen", "ei julkinen"]  # Muita?
+    publicity: Mapped[Literal["julkinen", "ei julkinen"]]  # Muita?
     language: Mapped[str]
     decision: Mapped[bool]
     decision_date: Mapped[Optional[timestamp]]
