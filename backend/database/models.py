@@ -23,6 +23,10 @@ class Plan(PlanBase):
 
     __tablename__ = "plan"
 
+    organisation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.organisation.id", name="organisation_id_fkey")
+    )
+
     name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
     geom: Mapped[Polygon]
