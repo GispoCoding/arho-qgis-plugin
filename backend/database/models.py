@@ -193,11 +193,11 @@ class Document(VersionedBase):
         ForeignKey("codes.type_of_document.id", name="type_of_document_id_fkey")
     )
 
-    type_of_document = relationship("TypeOfDocument", back_populates="documents")
-    name: Mapped[language_str]
+    type_of_document = relationship("TypeOfDocument", backref="documents")
+    name: Mapped[str]
     personal_details: Mapped[str]
-    publicity: Literal[""]  # julkinen, ei julkinen?
-    language: Mapped[language_str]
+    publicity: Literal["julkinen", "ei julkinen"]  # Muita?
+    language: Mapped[str]
     decision: Mapped[bool]
     decision_date: Mapped[Optional[timestamp]]
     # file
