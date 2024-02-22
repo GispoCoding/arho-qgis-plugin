@@ -2,7 +2,15 @@ import uuid
 from datetime import datetime
 from typing import Optional, Tuple
 
-from base import PlanBase, VersionedBase, autoincrement_int, language_str, unique_str
+# we have to import CodeBase in codes.py from here to allow two-way relationships
+from base import (  # noqa
+    CodeBase,
+    PlanBase,
+    VersionedBase,
+    autoincrement_int,
+    language_str,
+    unique_str,
+)
 from shapely.geometry import Polygon
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -27,6 +35,12 @@ class PlanRegulationGroup(VersionedBase):
 
     __tablename__ = "plan_regulation_group"
 
+    plan_regulations = relationship(
+        "PlanRegulation", back_populates="plan_regulation_group"
+    )
+    plan_propositions = relationship(
+        "PlanProposition", back_populates="plan_regulation_group"
+    )
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
     # värikoodi?
