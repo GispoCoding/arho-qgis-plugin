@@ -23,5 +23,6 @@ Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment; filename="userdata.sh"
 
 #!/bin/bash
-sudo amazon-linux-extras install postgresql13
+sudo dnf update
+sudo dnf install postgresql15 -y
 --//--
