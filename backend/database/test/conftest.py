@@ -13,7 +13,7 @@ from alembic.script import ScriptDirectory
 from db_manager import db_manager
 from dotenv import load_dotenv
 
-hame_count: int = 9  # adjust me when adding tables
+hame_count: int = 12  # adjust me when adding tables
 codes_count: int = 8  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 

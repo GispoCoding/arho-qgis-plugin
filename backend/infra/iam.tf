@@ -98,3 +98,42 @@ resource "aws_iam_policy_attachment" "lambda_update_attachment" {
   users      = [aws_iam_user.lambda_update_user.name]
   policy_arn = aws_iam_policy.lambda_update_policy.arn
 }
+
+#
+# Bastion
+#
+
+# Adding a role for the EC2 machine allows making AWS service APIs available via IAM policies
+resource "aws_iam_role" "ec2-role" {
+  name               = "${var.prefix}-ec2-iam-role"
+  path               = "/"
+  assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": "sts:AssumeRole",
+            "Principal": {
+               "Service": "ec2.amazonaws.com"
+            },
+            "Effect": "Allow",
+            "Sid": ""
+        }
+    ]
+}
+EOF
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-ec2-iam-role"
+  })
+}
+
+resource "aws_iam_instance_profile" "ec2-iam-profile" {
+  name = "${var.prefix}-ec2-iam-profile"
+  role = aws_iam_role.ec2-role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ssm-policy-attachment" {
+  role       = aws_iam_role.ec2-role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}

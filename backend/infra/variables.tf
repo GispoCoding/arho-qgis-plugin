@@ -23,8 +23,8 @@ variable "SLACK_HOOK_URL" {
   type        = string
 }
 
-variable "bastion_public_key" {
-  description = "Public ssh key to access the bastion EC2 instance"
+variable "bastion_ec2_user_public_key" {
+  description = "Public ssh key for bastion EC2 superuser"
   type        = string
 }
 
