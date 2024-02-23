@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Tuple, TypedDict
+from typing import Dict, Optional, Tuple, TypedDict
 
 import boto3
 import psycopg2
@@ -34,6 +34,7 @@ class Response(TypedDict):
 
 class Event(TypedDict):
     event_type: int  # EventType
+    version: Optional[str]  # Ansible version id
 
 
 class User(enum.Enum):
