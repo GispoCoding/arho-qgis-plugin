@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 # we have to import CodeBase in codes.py from here to allow two-way relationships
 from base import (  # noqa
@@ -11,6 +11,7 @@ from base import (  # noqa
     autoincrement_int,
     language_str,
     numeric_range,
+    timestamp,
     unique_str,
 )
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
@@ -195,3 +196,28 @@ class Organisation(VersionedBase):
     name: Mapped[language_str]
     business_id: Mapped[str]
     # administrative_region_id: koodilista
+
+
+class Document(VersionedBase):
+    """
+    Asiakirja
+    """
+
+    __tablename__ = "document"
+
+    type_of_document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_document.id", name="type_of_document_id_fkey")
+    )
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey")
+    )
+
+    type_of_document = relationship("TypeOfDocument", backref="documents")
+    plan = relationship("Plan", backref="documents")
+    name: Mapped[str]
+    personal_details: Mapped[str]
+    publicity: Mapped[Literal["julkinen", "ei julkinen"]]  # Muita?
+    language: Mapped[str]
+    decision: Mapped[bool]
+    decision_date: Mapped[Optional[timestamp]]
+    # file
