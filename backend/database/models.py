@@ -208,8 +208,12 @@ class Document(VersionedBase):
     type_of_document_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_document.id", name="type_of_document_id_fkey")
     )
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey")
+    )
 
     type_of_document = relationship("TypeOfDocument", backref="documents")
+    plan = relationship("Plan", backref="documents")
     name: Mapped[str]
     personal_details: Mapped[str]
     publicity: Mapped[Literal["julkinen", "ei julkinen"]]  # Muita?
