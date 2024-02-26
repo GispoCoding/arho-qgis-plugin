@@ -326,7 +326,7 @@ def loader(connection_string) -> KoodistotLoader:
 @pytest.fixture()
 def koodistot_data(mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 8  # this must be changed if new code lists with uri are added
+    assert len(data) == 9  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     assert len(data[codes.LifeCycleStatus]) == 2
     assert len(data[codes.TypeOfPlanRegulation]) == 4
@@ -337,7 +337,7 @@ def koodistot_data(mock_koodistot, loader):
 @pytest.fixture()
 def changed_koodistot_data(changed_mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 8  # this must be changed if new code lists with uri are added
+    assert len(data) == 9  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     assert len(data[codes.LifeCycleStatus]) == 3
     assert len(data[codes.TypeOfPlanRegulation]) == 4
