@@ -297,6 +297,7 @@ def mock_koodistot(requests_mock) -> None:
     requests_mock.get(get_url(codes.TypeOfVerbalPlanRegulation), text="")
     requests_mock.get(get_url(codes.TypeOfSourceData), text="")
     requests_mock.get(get_url(codes.TypeOfUnderground), text="")
+    requests_mock.get(get_url(codes.TypeOfDocument), text="")
     requests_mock.get(get_url(codes.AdministrativeRegion), text="")
 
 
