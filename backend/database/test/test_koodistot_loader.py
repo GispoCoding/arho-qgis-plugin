@@ -5,7 +5,12 @@ from typing import Type
 
 import psycopg2
 import pytest
-from koodistot_loader.koodistot_loader import DatabaseHelper, KoodistotLoader, codes
+from koodistot_loader.koodistot_loader import (
+    DatabaseHelper,
+    KoodistotLoader,
+    codes,
+    get_code_list_url,
+)
 
 lifecycle_status_response = {
     "meta": {"code": 200, "from": 0, "resultCount": 2, "totalResults": 2},
@@ -272,7 +277,8 @@ type_of_plan_regulation_response = {
 
 
 def get_url(cls: Type[codes.CodeBase]) -> str:
-    return f"http://mock.url/{cls.code_list_uri.rsplit('/', 1)[-1]}/codes"
+    code_registry, name = cls.code_list_uri.rsplit("/", 2)[-2:None]
+    return get_code_list_url("http://mock.url", code_registry, name)
 
 
 @pytest.fixture()
@@ -291,6 +297,8 @@ def mock_koodistot(requests_mock) -> None:
     requests_mock.get(get_url(codes.TypeOfVerbalPlanRegulation), text="")
     requests_mock.get(get_url(codes.TypeOfSourceData), text="")
     requests_mock.get(get_url(codes.TypeOfUnderground), text="")
+    requests_mock.get(get_url(codes.TypeOfDocument), text="")
+    requests_mock.get(get_url(codes.AdministrativeRegion), text="")
 
 
 @pytest.fixture()
@@ -318,7 +326,7 @@ def loader(connection_string) -> KoodistotLoader:
 @pytest.fixture()
 def koodistot_data(mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 7
+    assert len(data) == 9  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     assert len(data[codes.LifeCycleStatus]) == 2
     assert len(data[codes.TypeOfPlanRegulation]) == 4
@@ -329,7 +337,7 @@ def koodistot_data(mock_koodistot, loader):
 @pytest.fixture()
 def changed_koodistot_data(changed_mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 7
+    assert len(data) == 9  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     assert len(data[codes.LifeCycleStatus]) == 3
     assert len(data[codes.TypeOfPlanRegulation]) == 4
