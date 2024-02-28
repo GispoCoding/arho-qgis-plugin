@@ -15,6 +15,12 @@ users:
     sudo:  ALL=(ALL) NOPASSWD:ALL
     ssh-authorized-keys:
     - ${ec2_user_public_key}
+  - name: ec2-tunnel
+    sudo: False
+    ssh-authorized-keys:
+    %{ for key in ec2_tunnel_public_keys ~}
+    - ${key}
+    %{ endfor ~}
 
 --//
 Content-Type: text/x-shellscript; charset="us-ascii"

@@ -17,3 +17,8 @@ output "lambda_update_user" {
   description = "Name of the lambda function update user."
   value       = aws_iam_user.lambda_update_user.name
 }
+
+output "bastion_ip" {
+  description = "EC2 server public IP."
+  value       = aws_instance.bastion-ec2-instance.public_ip
+}
