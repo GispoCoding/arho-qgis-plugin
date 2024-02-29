@@ -92,6 +92,7 @@ class PlanRegulationGroup(VersionedBase):
     __tablename__ = "plan_regulation_group"
 
     short_name: Mapped[unique_str]
+    name: Mapped[language_str]
     # värikoodi?
     # group_type: oma koodilista
 
