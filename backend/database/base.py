@@ -112,6 +112,7 @@ class PlanBase(VersionedBase):
 
     __abstract__ = True
 
+    name: Mapped[language_str]
     exported_at: Mapped[Optional[datetime]]
     valid_from: Mapped[Optional[datetime]]
     valid_to: Mapped[Optional[datetime]]
@@ -135,7 +136,6 @@ class PlanObjectBase(PlanBase):
 
     __abstract__ = True
 
-    name: Mapped[language_str]
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)
