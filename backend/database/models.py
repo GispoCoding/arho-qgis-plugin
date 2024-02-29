@@ -30,7 +30,6 @@ class Plan(PlanBase):
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
 
-    name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
     geom: Mapped[MultiPolygon]
 
@@ -93,7 +92,6 @@ class PlanRegulationGroup(VersionedBase):
     __tablename__ = "plan_regulation_group"
 
     short_name: Mapped[unique_str]
-    name: Mapped[language_str]
     # värikoodi?
     # group_type: oma koodilista
 
