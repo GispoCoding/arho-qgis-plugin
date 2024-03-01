@@ -9,7 +9,7 @@ Run these steps the first time.
    see [AWS Configuration basics](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config)
    and [Where are the configuration settings stored](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
    for more info)
-3. To reconfigure existing instances, install [sops](   ) to decrypt encrypted variable files in the repository.
+3. To manage existing instances, install [sops](   ) to decrypt encrypted variable files in the repository.
 
 ### Multi-factor authentication (MFA)
 
