@@ -58,31 +58,19 @@ variable "hame_db_name" {
 }
 
 variable "su_secrets" {
-  default = {
-    "username" = "postgres",
-    "password" = "postgres"
-  }
+  nullable = false
 }
 
 variable "hame_admin_secrets" {
-  default = {
-    "username" = "hame_admin",
-    "password" = "hame_admin"
-  }
+  nullable = false
 }
 
 variable "hame_r_secrets" {
-  default = {
-    "username" = "hame_read",
-    "password" = "hame_read"
-  }
+  nullable = false
 }
 
 variable "hame_rw_secrets" {
-  default = {
-    "username" = "hame_read_write",
-    "password" = "hame_read_write"
-  }
+  nullable = false
 }
 
 variable "public-subnet-count" {
