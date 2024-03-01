@@ -1,0 +1,35 @@
+{
+    "AWS_REGION_NAME": "<AWS Region name>",
+    "AWS_LAMBDA_USER": "<AWS user for updating lambda functions>",
+    "AWS_HOSTED_DOMAIN": "<Domain for route53 record>",
+    "enable_route53_record": true,
+    "hame_db_name": "<Name of the database to create>",
+    "su_secrets": {
+        "username": "<Superuser name>",
+        "password": "<Superuser password>"
+    },
+    "hame_admin_secrets": {
+        "username": "<Admin user name>",
+        "password": "<Admin user password>"
+    },
+    "hame_r_secrets": {
+        "username": "<Read user name>",
+        "password": "<Read user password>"
+    },
+    "hame_rw_secrets": {
+        "username": "<Read & write user name>",
+        "password": "<Read & write user password>"
+    },
+    "prefix": "<Name of the deployment in case of multiple parallel deploys>",
+    "extra_tags": {
+        "Customer": "<AWS customer tag>",
+        "Project": "<AWS project tag>",
+        "wrike_task_id": "<AWS task id tag>"
+    },
+    "SLACK_HOOK_URL": "<URL to slack hook for event reporting>",
+    "bastion_ec2_user_public_key": "<Public key for ssh tunnel server superuser>",
+    "bastion_ec2_tunnel_public_keys": [
+        "<Public key to access ssh tunnel to database>",
+        "<Another public key to access ssh tunnel to database>"
+    ]
+}
