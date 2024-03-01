@@ -30,7 +30,6 @@ class Plan(PlanBase):
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
 
-    name: Mapped[language_str]
     approved_at: Mapped[Optional[datetime]]
     geom: Mapped[MultiPolygon]
 
