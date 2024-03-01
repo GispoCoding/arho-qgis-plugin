@@ -13,6 +13,11 @@ variable "AWS_HOSTED_DOMAIN" {
   type        = string
 }
 
+variable "bastion_subdomain" {
+  description = "Subdomain for ssh tunneling server"
+  type        = string
+}
+
 variable "enable_route53_record" {
   type    = bool
   default = false
@@ -97,6 +102,7 @@ variable "extra_tags" {
 }
 
 locals {
+  bastion_dns_alias   = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix
