@@ -14,8 +14,7 @@ Run these steps the first time.
 ### Multi-factor authentication (MFA)
 
 If you get a 403 error when deploying or destroying resources with terraform despite having configured a valid AWS
-access key, you may need to set up MFA. Install both AWS CLI and jq, and make sure you have `aws` and `jq` in path. Then
-download and execute the `[get-mfa-vars.sh](https://gist.github.com/mvaaltola/0abced5790401f2454444fb2ffd4acc0)` script,
+access key, you may need to set up MFA. Install both AWS CLI and jq, and make sure you have `aws` and `jq` in path. Execute the `[get-mfa-vars.sh](https://gist.github.com/mvaaltola/0abced5790401f2454444fb2ffd4acc0)` script with your AWS arn and your MFA access code,
 and finally run `. /tmp/aws-mfa-token` to temporarily set the correct MFA environment variables in your shell.
 
 ## Configuration
