@@ -83,9 +83,9 @@ To update requirements to latest versions:
 Connecting the database is done with the secure shell protocol (SSH). To be able to connect to the database, you will have to
 1. Create a SSH key pair on your computer (this has to be done only once)
 2. Have db admin add the public key to the server (this has to be done only once)
-3. Open a SSH tunnel on your computer (this has to be done every time)
+3. Open a SSH tunnel on your computer (this has to be done each time)
 
-Detailed instructions to these steps are given below.
+Detailed instructions to these steps are provided below.
 
 ### Creating SSH key pairs
 
@@ -95,7 +95,7 @@ Generation of the key pair can be done, for example, with a program called ssh-k
 - Type in the command prompt `ssh-keygen -t ed25519` and press enter. This will generate a key pair (using ed25519 algorithm).
 Here you could also spesify the name of the key file and passphrase to protect the key (see Fig.). If you accept the defaults, just press enter.
 
-By default the key pair is saved to <your home directory>/.ssh/ folder: it contains your public key (id25519.pub), a text file which
+By default the key pair is saved to `<your home folder>/.ssh/`: it contains your public key (id25519.pub), a text file which
 you have to provide to the database administrator, and the private key in file `id25519` (without the .pub suffix) which you MUST KEEP PRIVATE AND NOT SHARE IT WITH ANYONE!
 
 ![screenshot of ssh key pair creation dialog](docs/img/ssh-keygen.png)
@@ -103,12 +103,47 @@ you have to provide to the database administrator, and the private key in file `
 
 ### Opening a SSH tunnel to the server
 
-Once an administrator has added your public key to the server, you can connect to the database using ssh. Open the command prompt again
+Once the administrator has added your public key to the server, you can connect to the database using ssh. You are provided also with the necessary connection parameters (host address, port etc.), that are needed in the following commands. Open the command prompt again
 (type 'cmd' in the start menu) and in it, run the command:
-- `ssh -N -L 5433:<database server address>:<port number> -i "~/.ssh/<name of the key>" ec2-tunnel@<host address>`
+- `ssh -N -L 5433:<database server address>:<port number> -i "~/.ssh/<name of the key file>" ec2-tunnel@<host address>`
 - Enter the passphrase for the key (if set) and hit enter.
 - Do not close the command prompt window, otherwise the SSH tunnel is disconnected.
 - Now you can connect to the database using `localhost` as the host and `5433` as the port. The details how to do this with
 different software are given in the following sections.
 
 ### Connecting the database from QGIS
+
+The data is read from a PostgreSQL service named `postgres` with a QGIS authentication which id is `ryhtirw`. Here is a way to set up database connection in QGIS:
+
+1. Create a PostgreSQL service file for each environment (at the moment only development) to some folder for example in `<your home folder>/hameconfig/` (the file can be created, for example, with a text editor). Name the files for example `pg_service_hame_dev.conf`. Add the following with correct values for each environment:
+```ini
+[postgres]
+host=localhost
+port=5433
+dbname=hame-dev
+```
+2. Create a QGIS-profile for each environment. Name the profile for example `ryhti-hame-dev`. A new QGIS window will open to this profile, use that in the following.
+
+![screenshot of new profile menu](docs/img/qgis-new-profile.png)
+
+3. In QGIS settings add a `PGSERVICEFILE` environment variable and fill the file path of corresponding service file as a value.
+
+![screenshot of menu location](docs/img/qgis-settings.png)
+
+![screenshot of the setting dialog](docs/img/qgis-pgservicefile-environment-variable.png)
+
+4. Restart QGIS to make the environment variable to take effect.
+
+5. Create a authentication key to QGIS which ID is `ryhtirw`.
+
+![screenshot of the authentication dialog](docs/img/qgis-authentication.png)
+
+NOTE: you may be prompted for setting a master password in QGIS, if not set earlier. If so, set master password and make sure to save it to a secure place for yourself.
+
+6. Create a new PostgreSQL connection
+
+![screenshot of the new connection menu](docs/img/qgis-new-connection.png)
+
+Add the necessary parameters as follows. You can also test the connection at this point and when done, press OK.
+
+![screenshot of the new connection dialog](docs/img/qgis-create-connection.png)
