@@ -3,7 +3,7 @@
 # Terraform state, variables, secrets etc.
 *.tfvars.json
 .terraform*
-terraform.tfstate
+terraform.tfstate*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
