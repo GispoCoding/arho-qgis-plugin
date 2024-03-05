@@ -2,6 +2,7 @@
     "AWS_REGION_NAME": "<AWS Region name>",
     "AWS_LAMBDA_USER": "<AWS user for updating lambda functions>",
     "AWS_HOSTED_DOMAIN": "<Domain for route53 record>",
+    "bastion_subdomain": "<Subdomain for ssh tunnel server route53 record>",
     "enable_route53_record": true,
     "hame_db_name": "<Name of the database to create>",
     "su_secrets": {
