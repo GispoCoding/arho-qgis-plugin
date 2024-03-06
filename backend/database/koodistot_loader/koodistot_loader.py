@@ -25,8 +25,12 @@ class Response(TypedDict):
 
 
 class Event(TypedDict):
-    pass
-    # event_type: int  # EventType
+    """
+    Supports creating codes both online and from local code classes.
+    """
+
+    suomifi_codes: Optional[bool]
+    local_codes: Optional[bool]
 
 
 class DatabaseHelper:
@@ -86,7 +90,13 @@ class KoodistotLoader:
     HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
     api_base = "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries"
 
-    def __init__(self, connection_string: str, api_url: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        connection_string: str,
+        api_url: Optional[str] = None,
+        load_suomifi_codes: Optional[bool] = True,
+        load_local_codes: Optional[bool] = True,
+    ) -> None:
         if api_url:
             self.api_base = api_url
         engine = create_engine(connection_string)
@@ -97,8 +107,15 @@ class KoodistotLoader:
             value
             for name, value in inspect.getmembers(codes, inspect.isclass)
             if issubclass(value, codes.CodeBase)
-            and (value.code_list_uri or value.local_codes)
+            and (
+                (load_suomifi_codes and value.code_list_uri)
+                or (load_local_codes and value.local_codes)
+            )
         ]
+        if load_suomifi_codes:
+            LOGGER.info("Loading codes from suomi.fi")
+        if load_local_codes:
+            LOGGER.info("Loading local codes")
         LOGGER.info("Loader initialized with code classes:")
         LOGGER.info(self.koodistot)
 
@@ -237,8 +254,14 @@ def handler(event: Event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
     db_helper = DatabaseHelper()
+    load_suomifi_codes = event.get("suomifi_codes", True)
+    load_local_codes = event.get("local_codes", True)
 
-    loader = KoodistotLoader(db_helper.get_connection_string())
+    loader = KoodistotLoader(
+        db_helper.get_connection_string(),
+        load_suomifi_codes=load_suomifi_codes,
+        load_local_codes=load_local_codes,
+    )
     LOGGER.info("Getting objects...")
     objects = loader.get_objects()
 
