@@ -8,7 +8,6 @@ import boto3
 import codes
 import requests
 from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 """
@@ -93,46 +92,60 @@ class KoodistotLoader:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
 
-        # Only load koodistot that have external URI defined
+        # Only load koodistot that have data source defined
         self.koodistot: List[Type[codes.CodeBase]] = [
             value
             for name, value in inspect.getmembers(codes, inspect.isclass)
-            if issubclass(value, codes.CodeBase) and value.code_list_uri
+            if issubclass(value, codes.CodeBase)
+            and (value.code_list_uri or value.local_codes)
         ]
         LOGGER.info("Loader initialized with code classes:")
         LOGGER.info(self.koodistot)
 
-    def get_objects(self) -> Dict[Type[codes.CodeBase], List[dict]]:
+    def get_code_registry_data(self, koodisto: Type[codes.CodeBase]) -> List[Dict]:
+        """
+        Get code registry codes for given koodisto, or empty list if not present.
+        """
+        if not koodisto.code_list_uri:
+            return []
+        code_registry, name = koodisto.code_list_uri.rsplit("/", 2)[-2:None]
+        LOGGER.info(koodisto.code_list_uri)
+        LOGGER.info(code_registry)
+        LOGGER.info(name)
+        url = get_code_list_url(self.api_base, code_registry, name)
+        LOGGER.info(f"Loading codes from {url}")
+        r = requests.get(url, headers=self.HEADERS)
+        r.raise_for_status()
+        try:
+            return r.json()["results"]
+        except (KeyError, requests.exceptions.JSONDecodeError):
+            LOGGER.warning(f"{koodisto} response did not contain data")
+            return []
+
+    def get_objects(self) -> Dict[Type[codes.CodeBase], List[Dict]]:
         """
         Gets all koodistot data, divided by table.
         """
         data = dict()
         for koodisto in self.koodistot:
-            code_registry, name = koodisto.code_list_uri.rsplit("/", 2)[-2:None]
-            LOGGER.info(koodisto.code_list_uri)
-            LOGGER.info(code_registry)
-            LOGGER.info(name)
-            url = get_code_list_url(self.api_base, code_registry, name)
-            LOGGER.info(f"Loading codes from {url}")
-            r = requests.get(url, headers=self.HEADERS)
-            r.raise_for_status()
-            try:
-                data[koodisto] = r.json()["results"]
-            except (KeyError, requests.exceptions.JSONDecodeError):
-                LOGGER.warning(f"{koodisto} response did not contain data")
-                data[koodisto] = []
+            # Fetch external codes
+            data[koodisto] = self.get_code_registry_data(koodisto)
+            # Add local codes with status to distinguish them from other codes
+            local_codes = [dict(code, status="LOCAL") for code in koodisto.local_codes]
+            data[koodisto] += local_codes
         return data
 
-    def get_object(self, element: Dict) -> Optional[dict]:
+    def get_object(self, element: Dict) -> Optional[Dict]:
         """
         Returns database-ready dict of object to import, or None if the data
         was invalid.
         """
+        # local codes are already in database-ready format
+        if element["status"] == "LOCAL":
+            return element
         code_dict = dict()
-        # SQLAlchemy merge() doesn't know how to handle unique constraints that are not
-        # pk. Therefore, we will have to specify the primary key here (not generated in
-        # db) so we will not get an IntegrityError. Use uuids from koodistot.suomi.fi.
-        # https://sqlalchemy.narkive.com/mCDgZiDa/why-does-session-merge-only-look-at-primary-key-and-not-all-unique-keys
+        # Use uuids from koodistot.suomi.fi. This way, we can save all the children
+        # easily by referring to their parents.
         code_dict["id"] = element["id"]
         code_dict["value"] = element["codeValue"]
         short_name = element.get("shortName", None)
@@ -158,33 +171,37 @@ class KoodistotLoader:
             code_dict["parent_id"] = parent["id"]
         return code_dict
 
-    def create_object(
-        self, code_class: Type[codes.CodeBase], incoming: Dict[str, Any]
+    def update_or_create_object(
+        self,
+        code_class: Type[codes.CodeBase],
+        incoming: Dict[str, Any],
+        session: Session,
     ) -> codes.CodeBase:
         """
-        Create code_class instance with incoming field values.
+        Find object based on its unique fields, or create new object. Update fields
+        that are present in the incoming dict.
         """
-        column_keys = set(code_class.__table__.columns.keys())
-        vals = {
+        columns = code_class.__table__.columns
+        unique_keys = set(column.key for column in columns if column.unique)
+        unique_values = {
+            key: incoming[key] for key in set(incoming.keys()).intersection(unique_keys)
+        }
+        instance = session.query(code_class).filter_by(**unique_values).first()
+        column_keys = set(columns.keys())
+        values = {
             key: incoming[key] for key in set(incoming.keys()).intersection(column_keys)
         }
-        return code_class(**vals)
-
-    def save_object(
-        self, code_class: Type[codes.CodeBase], object: Dict[str, Any], session: Session
-    ) -> bool:
-        """
-        Save object defined in the object dict as instance of code_class.
-        """
-        new_obj = self.create_object(code_class, object)
-        try:
-            session.merge(new_obj)
-        except SQLAlchemyError as e:
-            # We want to crash for now. That way we'll know if there is a problem with
-            # the data.
-            raise e
-            # LOGGER.exception(f"Error occurred while saving {object}")
-        return True
+        if instance:
+            # go figure, if we have the instance (and don't want to do the update right
+            # now) sqlalchemy has no way of supplying attribute dict to be updated.
+            # This is because dirtying sqlalchemy objects happens via the __setattr__
+            # method, so we will have to update instance fields one by one.
+            for key, value in values.items():
+                setattr(instance, key, value)
+        else:
+            instance = code_class(**values)
+            session.add(instance)
+        return instance
 
     def save_objects(self, objects: Dict[Type[codes.CodeBase], List[dict]]) -> str:
         """
@@ -201,11 +218,15 @@ class KoodistotLoader:
                         )
                     code = self.get_object(element)
                     if code is not None:
-                        succeeded = self.save_object(code_class, code, session)
+                        succeeded = self.update_or_create_object(
+                            code_class, code, session
+                        )
                         if succeeded:
                             successful_actions += 1
+                        else:
+                            LOGGER.debug(f"Could not save code data {element}")
                     else:
-                        LOGGER.debug(f"Could not save code data {element}")
+                        LOGGER.debug(f"Invalid code data {element}")
             session.commit()
         msg = f"{successful_actions} inserted or updated. 0 deleted."
         LOGGER.info(msg)
