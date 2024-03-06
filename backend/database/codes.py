@@ -95,3 +95,21 @@ class AdministrativeRegion(CodeBase):
 
     __tablename__ = "administrative_region"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
+
+
+class TypeOfPlanRegulationGroup(CodeBase):
+    """
+    Kaavamääräysryhmän tyyppi
+
+    This is our own code list. It does not exist in koodistot.suomi.fi.
+    """
+
+    __tablename__ = "type_of_plan_regulation_group"
+    code_list_uri = ""
+    local_codes = [
+        {"value": "generalRegulations", "name": {"fin": "Yleismääräykset"}},
+        {"value": "landUseRegulations", "name": {"fin": "Aluevaraus"}},
+        {"value": "otherAreaRegulations", "name": {"fin": "Osa-alue"}},
+        {"value": "lineRegulations", "name": {"fin": "Viiva"}},
+        {"value": "otherPointRegulations", "name": {"fin": "Muu piste"}},
+    ]
