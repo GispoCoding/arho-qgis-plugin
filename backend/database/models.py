@@ -94,7 +94,15 @@ class PlanRegulationGroup(VersionedBase):
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
     # värikoodi?
-    # group_type: oma koodilista
+    type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_plan_regulation_group.id",
+            name="type_of_plan_regulation_group_id_fkey",
+        )
+    )
+    type_of_plan_regulation_group = relationship(
+        "TypeOfPlanRegulationGroup", backref="plan_regulation_groups"
+    )
 
 
 class PlanRegulation(PlanBase):
