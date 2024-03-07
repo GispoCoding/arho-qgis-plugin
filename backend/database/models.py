@@ -202,7 +202,14 @@ class Organisation(VersionedBase):
 
     name: Mapped[language_str]
     business_id: Mapped[str]
-    # administrative_region_id: koodilista
+    administrative_region_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.administrative_region.id", name="administrative_region_id_fkey"
+        )
+    )
+    administrative_region = relationship(
+        "AdministrativeRegion", backref="organisations"
+    )
 
 
 class Document(VersionedBase):
