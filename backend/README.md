@@ -3,8 +3,8 @@
 [![CI/CD](https://github.com/GispoCoding/hame-ryhti/actions/workflows/ci.yml/badge.svg)](https://github.com/GispoCoding/hame-ryhti/actions/workflows/ci.yml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
-HAME regional land use planning database compatible with [national Ryhti data model](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) -
-[Ryhti-yhteensopiva](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) tietokanta maakuntakaavoitukseen
+HAME regional land use planning database and QGIS project compatible with [national Ryhti data model](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) -
+[Ryhti-yhteensopiva](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) tietokanta ja QGIS-projekti maakuntakaavoitukseen
 
 - [Architecture](#architecture)
 - [Development requirements](#development-requirements)
