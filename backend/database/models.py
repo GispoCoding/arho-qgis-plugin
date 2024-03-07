@@ -183,6 +183,7 @@ class SourceData(VersionedBase):
     type_of_source_data = relationship("TypeOfSourceData", backref="source_data")
     name: Mapped[language_str]
     additional_information_uri: Mapped[str]
+    detachment_date: Mapped[datetime]
 
 
 class Organisation(VersionedBase):
