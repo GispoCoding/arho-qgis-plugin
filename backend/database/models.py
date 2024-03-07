@@ -94,7 +94,15 @@ class PlanRegulationGroup(VersionedBase):
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
     # värikoodi?
-    # group_type: oma koodilista
+    type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_plan_regulation_group.id",
+            name="type_of_plan_regulation_group_id_fkey",
+        )
+    )
+    type_of_plan_regulation_group = relationship(
+        "TypeOfPlanRegulationGroup", backref="plan_regulation_groups"
+    )
 
 
 class PlanRegulation(PlanBase):
@@ -195,7 +203,14 @@ class Organisation(VersionedBase):
 
     name: Mapped[language_str]
     business_id: Mapped[str]
-    # administrative_region_id: koodilista
+    administrative_region_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.administrative_region.id", name="administrative_region_id_fkey"
+        )
+    )
+    administrative_region = relationship(
+        "AdministrativeRegion", backref="organisations"
+    )
 
 
 class Document(VersionedBase):

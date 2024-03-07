@@ -326,22 +326,28 @@ def loader(connection_string) -> KoodistotLoader:
 @pytest.fixture()
 def koodistot_data(mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 9  # this must be changed if new code lists with uri are added
+    assert len(data) == 10  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
+    print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 2
     assert len(data[codes.TypeOfPlanRegulation]) == 4
     assert len(data[codes.PlanType]) == 0
+    # data should also contain the local codes
+    assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
     return data
 
 
 @pytest.fixture()
 def changed_koodistot_data(changed_mock_koodistot, loader):
     data = loader.get_objects()
-    assert len(data) == 9  # this must be changed if new code lists with uri are added
+    assert len(data) == 10  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
+    print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 3
     assert len(data[codes.TypeOfPlanRegulation]) == 4
     assert len(data[codes.PlanType]) == 0
+    # data should also contain the local codes
+    assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
     return data
 
 
@@ -404,6 +410,20 @@ def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data):
     assert code["parent_id"] == "e6f03e18-f292-4068-b6a6-b9e52206accc"
 
 
+def test_get_yleismaaraysryhma(loader, koodistot_data):
+    code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulationGroup][0])
+    assert code["value"] == codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
+    assert "short_name" not in code.keys()
+    assert (
+        code["name"]["fin"]
+        == codes.TypeOfPlanRegulationGroup.local_codes[0]["name"]["fin"]
+    )
+    assert "description" not in code.keys()
+    assert code["status"] == "LOCAL"
+    assert "level" not in code.keys()
+    assert "parent_id" not in code.keys()
+
+
 def assert_data_is_imported(main_db_params):
     conn = psycopg2.connect(**main_db_params)
     try:
@@ -414,6 +434,8 @@ def assert_data_is_imported(main_db_params):
             assert cur.fetchone()[0] == 4
             cur.execute(f"SELECT count(*) FROM codes.plan_type")
             assert cur.fetchone()[0] == 0
+            cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation_group")
+            assert cur.fetchone()[0] == 5
     finally:
         conn.close()
 
@@ -428,6 +450,8 @@ def assert_changed_data_is_imported(main_db_params):
             assert cur.fetchone()[0] == 4
             cur.execute(f"SELECT count(*) FROM codes.plan_type")
             assert cur.fetchone()[0] == 0
+            cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation_group")
+            assert cur.fetchone()[0] == 5
     finally:
         conn.close()
 
