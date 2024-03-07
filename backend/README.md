@@ -12,6 +12,10 @@ HAME regional land use planning database compatible with national Ryhti data mod
   - [Database changes](#database-changes)
   - [Adding requirements](#adding-requirements)
 - [Data model](#data-model)
+- [Connecting the database](#connecting-the-database)
+  - [Creating SSH key pairs](#creating-ssh-key-pairs)
+  - [Opening a SSH tunnel to the server](#opening-a-ssh-tunnel-to-the-server)
+  - [Connecting the database from QGIS](#connecting-the-database-from-qgis)
 
 ## Architecture
 
@@ -103,25 +107,31 @@ you have to provide to the database administrator, and the private key in file `
 
 ### Opening a SSH tunnel to the server
 
-Once the administrator has added your public key to the server, you can connect to the database using ssh. You are provided also with the necessary connection parameters (host address, port etc.), that are needed in the following commands. Open the command prompt again
+Once the administrator has added your public key to the server, you can connect to the database using ssh. You are provided also with the necessary connection parameters (host address, port etc.) and credentials, that are needed in the following commands. Open the command prompt again
 (type 'cmd' in the start menu) and in it, run the command:
-- `ssh -N -L 5433:<database server address>:<port number> -i "~/.ssh/<name of the key file>" ec2-tunnel@<host address>`
-- Enter the passphrase for the key (if set) and hit enter.
-- Do not close the command prompt window, otherwise the SSH tunnel is disconnected.
+- `ssh -N -L 5433:<database server address>:<port number> -i "~/.ssh/<name of the private key file>" ec2-tunnel@<host address>`
+- Enter the passphrase for the key (if set) and hit enter. If no error messages appear, the tunnel is connected. Do not close the command prompt window, otherwise the SSH tunnel is disconnected.
 - Now you can connect to the database using `localhost` as the host and `5433` as the port. The details how to do this with
 different software are given in the following sections.
+- Additional tips: the connection can automatically terminate, for example, due to server rebooting or network issues (this is usually accompanied by a message, such as `client_loop: send disconnect: Connection reset`). If this happens, run again the previous command. You can usually access the history of the commands run in terminal window by up/down arrow keys on the keyboard. So pressing "up" key and then "Enter" should do the job. In case you want to close an open SSH tunnel, press `Ctrl+C`.
 
 ### Connecting the database from QGIS
 
 The data is read from a PostgreSQL service named `postgres` with a QGIS authentication which id is `ryhtirw`. Here is a way to set up database connection in QGIS:
 
-1. Create a PostgreSQL service file for each environment (at the moment only development) to some folder for example in `<your home folder>/hameconfig/` (the file can be created, for example, with a text editor). Name the files for example `pg_service_hame_dev.conf`. Add the following with correct values for each environment:
+1. Create a PostgreSQL service file for each environment (at the moment, there is only development environment). The file can be created, for example, with a text editor. Add the following with correct values for each environment:
 ```ini
 [postgres]
 host=localhost
 port=5433
 dbname=hame-dev
 ```
+Save the file to some folder, an example location could be `<your home folder>/hameconfig/`. Name the saved file for example `pg_service_hame_dev.conf` (yes, the suffix '.conf' is part of the file name). Do not save this file as a text file (with a suffix .txt), but instead choose 'All types' from the 'Save as type' dropdown menu.
+
+![screenshot of pgservice file made with notepad](docs/img/pg_servicefile_notepad.png)
+
+NOTE: the Postgres service file for the dev environment is also included in in this repository under the docs folder, so alternatively you can copy the file from the into a convenient location on your computer.
+
 2. Create a QGIS-profile for each environment. Name the profile for example `ryhti-hame-dev`. A new QGIS window will open to this profile, use that in the following.
 
 ![screenshot of new profile menu](docs/img/qgis-new-profile.png)
@@ -136,9 +146,13 @@ dbname=hame-dev
 
 5. Create a authentication key to QGIS which ID is `ryhtirw`.
 
-![screenshot of the authentication dialog](docs/img/qgis-authentication.png)
-
 NOTE: you may be prompted for setting a master password in QGIS, if not set earlier. If so, set master password and make sure to save it to a secure place for yourself.
+
+![setting qgis master password](docs/img/qgis-auth-password.png)
+
+Now you can proceed with the database authentication details. As in step 3, open `Settings > Options` in QGIS and choose `Authentication` on the left panel. Click the green plus sign to add a new authentication configuration and fill in details as in the following image. It is important to use the authentication Id `ryhtirw` and database username and password here.
+
+![screenshot of the authentication dialog](docs/img/qgis-authentication.png)
 
 6. Create a new PostgreSQL connection
 
