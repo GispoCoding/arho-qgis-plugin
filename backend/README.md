@@ -146,7 +146,7 @@ NOTE: the Postgres service file for the dev environment is also included in in t
 
 5. Create a authentication key to QGIS which ID is `ryhtirw`.
 
-NOTE: you may be prompted for setting a master password in QGIS, if not set earlier. If so, set master password and make sure to save it to a secure place for yourself.
+NOTE: you may be prompted for setting a master password in QGIS, if not set earlier. If so, set master password and make sure to save it to a secure place for yourself. The master password is used to manage and access the saved authentication configurations in QGIS (for more information, see the [QGIS Documentation](https://docs.qgis.org/latest/en/docs/user_manual/auth_system/auth_overview.html)).
 
 ![setting qgis master password](docs/img/qgis-auth-password.png)
 
