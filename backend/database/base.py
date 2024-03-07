@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
@@ -73,7 +73,8 @@ class CodeBase(VersionedBase):
 
     __abstract__ = True
     __table_args__ = {"schema": "codes"}
-    code_list_uri = ""
+    code_list_uri = ""  # the URI to use for looking for codes online
+    local_codes: List[Dict] = []  # local codes to add to the code list
 
     value: Mapped[unique_str]
     short_name: Mapped[str] = mapped_column(server_default="", index=True)
