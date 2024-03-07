@@ -4,7 +4,9 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 HAME regional land use planning database and QGIS project compatible with [national Ryhti data model](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) -
-[Ryhti-yhteensopiva](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) tietokanta ja QGIS-projekti maakuntakaavoitukseen
+[Ryhti-yhteensopiva](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/) tietokanta ja QGIS-projekti maakuntakaavoitukseen.
+
+The database and functions can be run on AWS (Amazon Web Services) cloud platform.
 
 - [Architecture](#architecture)
 - [Development requirements](#development-requirements)
