@@ -29,6 +29,7 @@ class Plan(PlanBase):
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
+    organisation = relationship("Organisation", backref="plans")
 
     approved_at: Mapped[Optional[datetime]]
     geom: Mapped[MultiPolygon]
