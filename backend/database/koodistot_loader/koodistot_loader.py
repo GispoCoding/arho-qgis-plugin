@@ -62,12 +62,12 @@ class KoodistotLoader:
 
         # Only load koodistot that have data source defined
         self.koodistot: List[Type[codes.CodeBase]] = [
-            value
-            for name, value in inspect.getmembers(codes, inspect.isclass)
-            if issubclass(value, codes.CodeBase)
+            code_class
+            for name, code_class in inspect.getmembers(codes, inspect.isclass)
+            if issubclass(code_class, codes.CodeBase)
             and (
-                (load_suomifi_codes and value.code_list_uri)
-                or (load_local_codes and value.local_codes)
+                (load_suomifi_codes and code_class.code_list_uri)
+                or (load_local_codes and code_class.local_codes)
             )
         ]
         if load_suomifi_codes:
@@ -146,6 +146,24 @@ class KoodistotLoader:
             code_dict["parent_id"] = parent["id"]
         return code_dict
 
+    def update_remote_children_of_local_parents(
+        self,
+        instance: codes.CodeBase,
+        child_values: List[str],
+        session: Session,
+    ) -> None:
+        """
+        After a local parent code is created, update any existing children to point
+        to the local parent, overriding the remote parent. Everything is flushed
+        to the database so that children are queryable.
+        """
+        session.flush()
+        code_class = type(instance)
+        children = (
+            session.query(code_class).filter(code_class.value.in_(child_values)).all()
+        )
+        instance.children = children
+
     def update_or_create_object(
         self,
         code_class: Type[codes.CodeBase],
@@ -176,6 +194,14 @@ class KoodistotLoader:
         else:
             instance = code_class(**values)
             session.add(instance)
+
+        # If children are defined in the incoming dict, they must be updated manually.
+        if "child_values" in incoming.keys():
+            self.update_remote_children_of_local_parents(
+                instance, incoming["child_values"], session
+            )
+            print("instance now has children")
+            print(instance.children)
         return instance
 
     def save_objects(self, objects: Dict[Type[codes.CodeBase], List[dict]]) -> str:

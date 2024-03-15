@@ -99,16 +99,24 @@ def test_populate_suomifi_koodistot(populate_suomifi_koodistot, main_db_params):
     try:
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
-                if issubclass(value, codes.CodeBase) and (
-                    # some code tables have external source, some have local source, some have both
-                    value.code_list_uri
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        value.code_list_uri
+                    )
                 ):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
                     assert code_count > 0
-                if issubclass(value, codes.CodeBase) and (
-                    # some code tables have external source, some have local source, some have both
-                    value.local_codes
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        not value.code_list_uri
+                    )
                 ):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
@@ -125,16 +133,24 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
     try:
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
-                if issubclass(value, codes.CodeBase) and (
-                    # some code tables have external source, some have local source, some have both
-                    value.code_list_uri
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        not value.local_codes
+                    )
                 ):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
                     assert code_count == 0
-                if issubclass(value, codes.CodeBase) and (
-                    # some code tables have external source, some have local source, some have both
-                    value.local_codes
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        value.local_codes
+                    )
                 ):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
