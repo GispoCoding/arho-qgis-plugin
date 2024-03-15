@@ -311,11 +311,6 @@ def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
 
 
 @pytest.fixture(scope="module")
-def connection_string(hame_database_created) -> str:
-    return DatabaseHelper().get_connection_string()
-
-
-@pytest.fixture(scope="module")
 def loader(connection_string) -> KoodistotLoader:
     return KoodistotLoader(
         connection_string,
