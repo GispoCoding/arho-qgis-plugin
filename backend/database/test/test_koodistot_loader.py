@@ -361,7 +361,7 @@ def mock_koodistot(requests_mock) -> None:
     )
     requests_mock.get(get_url(codes.PlanType), text="")
     requests_mock.get(
-        get_url(codes.TypeOfAdditionalInformationForPlanRegulation),
+        get_url(codes.TypeOfAdditionalInformation),
         text=json.dumps(type_of_additional_information_response),
     )
     requests_mock.get(get_url(codes.TypeOfVerbalPlanRegulation), text="")
@@ -400,7 +400,7 @@ def koodistot_data(mock_koodistot, loader):
     # data should also contain the local codes
     assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
     # for mixed local and remote codes, the data should contain both
-    assert len(data[codes.TypeOfAdditionalInformationForPlanRegulation]) == 5
+    assert len(data[codes.TypeOfAdditionalInformation]) == 5
     return data
 
 
@@ -416,7 +416,7 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     # data should also contain the local codes
     assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
     # for mixed local and remote codes, the data should contain both
-    assert len(data[codes.TypeOfAdditionalInformationForPlanRegulation]) == 5
+    assert len(data[codes.TypeOfAdditionalInformation]) == 5
     return data
 
 
@@ -512,19 +512,12 @@ def test_get_kayttotarkoitus(loader, koodistot_data):
     """
     Check that local code with remote children is imported
     """
-    code = loader.get_object(
-        koodistot_data[codes.TypeOfAdditionalInformationForPlanRegulation][2]
-    )
-    assert (
-        code["value"]
-        == codes.TypeOfAdditionalInformationForPlanRegulation.local_codes[0]["value"]
-    )
+    code = loader.get_object(koodistot_data[codes.TypeOfAdditionalInformation][2])
+    assert code["value"] == codes.TypeOfAdditionalInformation.local_codes[0]["value"]
     assert "short_name" not in code.keys()
     assert (
         code["name"]["fin"]
-        == codes.TypeOfAdditionalInformationForPlanRegulation.local_codes[0]["name"][
-            "fin"
-        ]
+        == codes.TypeOfAdditionalInformation.local_codes[0]["name"]["fin"]
     )
     assert "description" not in code.keys()
     assert code["status"] == "LOCAL"
@@ -536,9 +529,7 @@ def test_get_paakayttotarkoitus(loader, koodistot_data):
     """
     Check that remote code with local parent is imported
     """
-    code = loader.get_object(
-        koodistot_data[codes.TypeOfAdditionalInformationForPlanRegulation][1]
-    )
+    code = loader.get_object(koodistot_data[codes.TypeOfAdditionalInformation][1])
     assert code["id"] == "19f05f06-b18f-4d06-917a-2041204266b1"
     assert code["value"] == "paakayttotarkoitus"
     assert "short_name" not in code.keys()

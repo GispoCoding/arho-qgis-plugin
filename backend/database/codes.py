@@ -28,7 +28,7 @@ class TypeOfPlanRegulation(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
 
 
-class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
+class TypeOfAdditionalInformation(CodeBase):
     """
     Kaavamääräyksen lisätiedon laji
 

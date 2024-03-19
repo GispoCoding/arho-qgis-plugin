@@ -503,6 +503,13 @@ def type_of_verbal_plan_regulation_instance(session):
 
 
 @pytest.fixture(scope="module")
+def type_of_additional_information_instance(session):
+    instance = codes.TypeOfAdditionalInformation(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
 def type_of_source_data_instance(session):
     instance = codes.TypeOfSourceData(value="test", status="LOCAL")
     session.add(instance)
