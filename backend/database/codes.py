@@ -28,7 +28,7 @@ class TypeOfPlanRegulation(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
 
 
-class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
+class TypeOfAdditionalInformation(CodeBase):
     """
     Kaavamääräyksen lisätiedon laji
 
@@ -46,6 +46,38 @@ class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji"
     )
+    local_codes = [
+        {
+            "value": "kayttotarkoitus",
+            "name": {"fin": "Käyttötarkoitus"},
+            "child_values": [
+                "paakayttotarkoitus",
+                "osaAlue",
+                "poisluettavaKayttotarkoitus",
+                "yhteystarve",
+            ],
+        },
+        {
+            "value": "olemassaolo",
+            "name": {"fin": "Olemassaolo"},
+            "child_values": [
+                "olemassaOleva",
+                "sailytettava",
+                "uusi",
+                "olennaisestiMuuttuva",
+            ],
+        },
+        {
+            "value": "kehittaminen",
+            "name": {"fin": "Kehittäminen"},
+            "child_values": [
+                "reservialue",
+                "kehitettava",
+                "merkittavastiParannettava",
+                "eheytettavaTaiTiivistettava",
+            ],
+        },
+    ]
 
 
 class TypeOfVerbalPlanRegulation(CodeBase):

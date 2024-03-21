@@ -275,6 +275,75 @@ type_of_plan_regulation_response = {
     ],
 }
 
+type_of_additional_information_response = {
+    "meta": {"code": 200, "from": 0, "resultCount": 2, "totalResults": 2},
+    "results": [
+        {
+            "id": "94ad30a5-9239-4e69-8aac-907e29384ef1",
+            "codeValue": "tyyppi",
+            "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/tyyppi",
+            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji/codes/tyyppi",
+            "status": "DRAFT",
+            "order": 1,
+            "hierarchyLevel": 1,
+            "created": "2023-04-12T08:43:01.971Z",
+            "modified": "2023-11-02T09:22:38.165Z",
+            "statusModified": "2023-04-12T08:43:01.971Z",
+            "prefLabel": {"en": "Type", "fi": "Tyyppi", "sv": "Typ"},
+            "description": {
+                "fi": "Koodistoa jäsentävä otsikkotason koodi, jota ei käytetä kaavamääräyksissä. Kaavamääräysten tyypit tulisi luokitella kaavoissa tarkemmin niitä kuvaavalla kaavamääräyksen lisätiedon laji-koodiarvolla."
+            },
+            "codeScheme": {
+                "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji",
+                "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji",
+            },
+            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji/codes/tyyppi/members/",
+        },
+        {
+            "id": "19f05f06-b18f-4d06-917a-2041204266b1",
+            "codeValue": "paakayttotarkoitus",
+            "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus",
+            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji/codes/paakayttotarkoitus",
+            "status": "DRAFT",
+            "order": 2,
+            "hierarchyLevel": 2,
+            "created": "2023-04-12T08:43:01.978Z",
+            "modified": "2023-11-02T09:22:38.182Z",
+            "statusModified": "2023-04-12T08:43:01.978Z",
+            "prefLabel": {
+                "en": "Principal intended use",
+                "fi": "Pääkäyttötarkoitus",
+                "sv": "Huvudsakligt användningsändamål",
+            },
+            "description": {
+                "fi": "Ilmaisee, että kaavamääräys liittyy kaavakohteeseen, joka muodostaa aluevarauksen. Kaavamääräyksen tyypiksi voidaan määritellä pääkäyttötarkoitus ainoastaan, mikäli kaavamääräys liittyy kaavakohteeseen, joka on geometrialtaan alue. "
+            },
+            "codeScheme": {
+                "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji",
+                "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji",
+            },
+            "broaderCode": {
+                "id": "94ad30a5-9239-4e69-8aac-907e29384ef1",
+                "codeValue": "tyyppi",
+                "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/tyyppi",
+                "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji/codes/tyyppi",
+                "status": "DRAFT",
+                "order": 1,
+                "hierarchyLevel": 1,
+                "created": "2023-04-12T08:43:01.971Z",
+                "modified": "2023-11-02T09:22:38.165Z",
+                "statusModified": "2023-04-12T08:43:01.971Z",
+                "prefLabel": {"en": "Type", "fi": "Tyyppi", "sv": "Typ"},
+                "description": {
+                    "fi": "Koodistoa jäsentävä otsikkotason koodi, jota ei käytetä kaavamääräyksissä. Kaavamääräysten tyypit tulisi luokitella kaavoissa tarkemmin niitä kuvaavalla kaavamääräyksen lisätiedon laji-koodiarvolla."
+                },
+                "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji/codes/tyyppi/members/",
+            },
+            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayksen_Lisatiedonlaji/codes/paakayttotarkoitus/members/",
+        },
+    ],
+}
+
 
 def get_url(cls: Type[codes.CodeBase]) -> str:
     code_registry, name = cls.code_list_uri.rsplit("/", 2)[-2:None]
@@ -292,7 +361,8 @@ def mock_koodistot(requests_mock) -> None:
     )
     requests_mock.get(get_url(codes.PlanType), text="")
     requests_mock.get(
-        get_url(codes.TypeOfAdditionalInformationForPlanRegulation), text=""
+        get_url(codes.TypeOfAdditionalInformation),
+        text=json.dumps(type_of_additional_information_response),
     )
     requests_mock.get(get_url(codes.TypeOfVerbalPlanRegulation), text="")
     requests_mock.get(get_url(codes.TypeOfSourceData), text="")
@@ -308,11 +378,6 @@ def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
         get_url(codes.LifeCycleStatus),
         text=json.dumps(changed_lifecycle_status_response),
     )
-
-
-@pytest.fixture(scope="module")
-def connection_string(hame_database_created) -> str:
-    return DatabaseHelper().get_connection_string()
 
 
 @pytest.fixture(scope="module")
@@ -334,6 +399,8 @@ def koodistot_data(mock_koodistot, loader):
     assert len(data[codes.PlanType]) == 0
     # data should also contain the local codes
     assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
+    # for mixed local and remote codes, the data should contain both
+    assert len(data[codes.TypeOfAdditionalInformation]) == 5
     return data
 
 
@@ -348,10 +415,15 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     assert len(data[codes.PlanType]) == 0
     # data should also contain the local codes
     assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
+    # for mixed local and remote codes, the data should contain both
+    assert len(data[codes.TypeOfAdditionalInformation]) == 5
     return data
 
 
 def test_get_aloite(loader, koodistot_data):
+    """
+    Check that remote code is imported
+    """
     code = loader.get_object(koodistot_data[codes.LifeCycleStatus][0])
     assert code["id"]
     assert code["value"] == "01"
@@ -366,6 +438,9 @@ def test_get_aloite(loader, koodistot_data):
 
 
 def test_get_asumisen_alue(loader, koodistot_data):
+    """
+    Check that remote code with children is imported
+    """
     code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulation][0])
     assert code["id"] == "15934bd8-419b-420b-9b1d-b12608bdf27a"
     assert code["value"] == "asumisenAlue"
@@ -381,6 +456,9 @@ def test_get_asumisen_alue(loader, koodistot_data):
 
 
 def test_get_asuinpientaloalue(loader, koodistot_data):
+    """
+    Check that remote code with parent and children is imported
+    """
     code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulation][1])
     assert code["id"] == "e6f03e18-f292-4068-b6a6-b9e52206accc"
     assert code["value"] == "asuinpientaloalue"
@@ -396,6 +474,9 @@ def test_get_asuinpientaloalue(loader, koodistot_data):
 
 
 def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data):
+    """
+    Check that remote code with parent is imported
+    """
     code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulation][2])
     assert code["id"] == "ba9a86d5-6944-4bc4-a86c-87a78c0cdc2a"
     assert code["value"] == "erillistenAsuinpientalojenAlue"
@@ -411,6 +492,9 @@ def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data):
 
 
 def test_get_yleismaaraysryhma(loader, koodistot_data):
+    """
+    Check that local code is imported
+    """
     code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulationGroup][0])
     assert code["value"] == codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
     assert "short_name" not in code.keys()
@@ -422,6 +506,69 @@ def test_get_yleismaaraysryhma(loader, koodistot_data):
     assert code["status"] == "LOCAL"
     assert "level" not in code.keys()
     assert "parent_id" not in code.keys()
+
+
+def test_get_kayttotarkoitus(loader, koodistot_data):
+    """
+    Check that local code with remote children is imported
+    """
+    code = loader.get_object(koodistot_data[codes.TypeOfAdditionalInformation][2])
+    assert code["value"] == codes.TypeOfAdditionalInformation.local_codes[0]["value"]
+    assert "short_name" not in code.keys()
+    assert (
+        code["name"]["fin"]
+        == codes.TypeOfAdditionalInformation.local_codes[0]["name"]["fin"]
+    )
+    assert "description" not in code.keys()
+    assert code["status"] == "LOCAL"
+    assert "level" not in code.keys()
+    assert "parent_id" not in code.keys()
+
+
+def test_get_paakayttotarkoitus(loader, koodistot_data):
+    """
+    Check that remote code with local parent is imported
+    """
+    code = loader.get_object(koodistot_data[codes.TypeOfAdditionalInformation][1])
+    assert code["id"] == "19f05f06-b18f-4d06-917a-2041204266b1"
+    assert code["value"] == "paakayttotarkoitus"
+    assert "short_name" not in code.keys()
+    assert code["name"]["fin"] == "Pääkäyttötarkoitus"
+    assert (
+        code["description"]["fin"]
+        == "Ilmaisee, että kaavamääräys liittyy kaavakohteeseen, joka muodostaa aluevarauksen. Kaavamääräyksen tyypiksi voidaan määritellä pääkäyttötarkoitus ainoastaan, mikäli kaavamääräys liittyy kaavakohteeseen, joka on geometrialtaan alue. "
+    )
+    assert code["status"] == "DRAFT"
+    assert code["level"] == 2
+    # Code parent is still remote at this stage. We will have to check that parents are reassigned
+    # correctly after the loader has finished saving objects.
+    assert "parent_id" in code.keys()
+
+
+def check_code_parents(cur):
+    """
+    Check that remote codes are correctly assigned to remote or local parents as desired.
+    """
+    # remote code with remote parent
+    cur.execute(
+        f"SELECT parent_id FROM codes.type_of_plan_regulation WHERE value='asuinpientaloalue'"
+    )
+    asuinpientaloalue_parent_id = cur.fetchone()[0]
+    cur.execute(
+        f"SELECT id FROM codes.type_of_plan_regulation WHERE value='asumisenAlue'"
+    )
+    asumisenalue_id = cur.fetchone()[0]
+    assert asuinpientaloalue_parent_id == asumisenalue_id
+    # remote code with local parent
+    cur.execute(
+        f"SELECT parent_id FROM codes.type_of_additional_information WHERE value='paakayttotarkoitus'"
+    )
+    paakayttotarkoitus_parent_id = cur.fetchone()[0]
+    cur.execute(
+        f"SELECT id FROM codes.type_of_additional_information WHERE value='kayttotarkoitus'"
+    )
+    kayttotarkoitus_id = cur.fetchone()[0]
+    assert paakayttotarkoitus_parent_id == kayttotarkoitus_id
 
 
 def assert_data_is_imported(main_db_params):
@@ -436,6 +583,9 @@ def assert_data_is_imported(main_db_params):
             assert cur.fetchone()[0] == 0
             cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation_group")
             assert cur.fetchone()[0] == 5
+            cur.execute(f"SELECT count(*) FROM codes.type_of_additional_information")
+            assert cur.fetchone()[0] == 5
+            check_code_parents(cur)
     finally:
         conn.close()
 
@@ -452,6 +602,9 @@ def assert_changed_data_is_imported(main_db_params):
             assert cur.fetchone()[0] == 0
             cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation_group")
             assert cur.fetchone()[0] == 5
+            cur.execute(f"SELECT count(*) FROM codes.type_of_additional_information")
+            assert cur.fetchone()[0] == 5
+            check_code_parents(cur)
     finally:
         conn.close()
 

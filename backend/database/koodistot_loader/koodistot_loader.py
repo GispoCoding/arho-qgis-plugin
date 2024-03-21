@@ -1,12 +1,11 @@
 import inspect
 import json
 import logging
-import os
 from typing import Any, Dict, List, Optional, Type, TypedDict
 
-import boto3
 import codes
 import requests
+from db_helper import DatabaseHelper
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -31,47 +30,6 @@ class Event(TypedDict):
 
     suomifi_codes: Optional[bool]
     local_codes: Optional[bool]
-
-
-class DatabaseHelper:
-    def __init__(self):
-        if os.environ.get("READ_FROM_AWS", "1") == "1":
-            session = boto3.session.Session()
-            client = session.client(
-                service_name="secretsmanager",
-                region_name=os.environ.get("AWS_REGION_NAME"),
-            )
-            self._credentials = json.loads(
-                client.get_secret_value(SecretId=os.environ.get("DB_SECRET_ADMIN_ARN"))[
-                    "SecretString"
-                ]
-            )
-        else:
-            self._credentials = {
-                "username": os.environ.get("ADMIN_USER"),
-                "password": os.environ.get("ADMIN_USER_PW"),
-            }
-
-        self._host = os.environ.get("DB_INSTANCE_ADDRESS")
-        self._db = os.environ.get("DB_MAIN_NAME")
-        self._port = os.environ.get("DB_INSTANCE_PORT", "5432")
-        self._region_name = os.environ.get("AWS_REGION_NAME")
-
-    def get_connection_parameters(self) -> Dict[str, str]:
-        return {
-            "host": self._host,
-            "port": self._port,
-            "dbname": self._db,
-            "user": self._credentials["username"],
-            "password": self._credentials["password"],
-        }
-
-    def get_connection_string(self) -> str:
-        db_params = self.get_connection_parameters()
-        return (
-            f'postgresql://{db_params["user"]}:{db_params["password"]}'
-            f'@{db_params["host"]}:{db_params["port"]}/{db_params["dbname"]}'
-        )
 
 
 def iso_639_two_to_three_letter(language_dict: Dict[str, str]) -> Dict[str, str]:
@@ -104,12 +62,12 @@ class KoodistotLoader:
 
         # Only load koodistot that have data source defined
         self.koodistot: List[Type[codes.CodeBase]] = [
-            value
-            for name, value in inspect.getmembers(codes, inspect.isclass)
-            if issubclass(value, codes.CodeBase)
+            code_class
+            for name, code_class in inspect.getmembers(codes, inspect.isclass)
+            if issubclass(code_class, codes.CodeBase)
             and (
-                (load_suomifi_codes and value.code_list_uri)
-                or (load_local_codes and value.local_codes)
+                (load_suomifi_codes and code_class.code_list_uri)
+                or (load_local_codes and code_class.local_codes)
             )
         ]
         if load_suomifi_codes:
@@ -188,6 +146,24 @@ class KoodistotLoader:
             code_dict["parent_id"] = parent["id"]
         return code_dict
 
+    def update_remote_children_of_local_parents(
+        self,
+        instance: codes.CodeBase,
+        child_values: List[str],
+        session: Session,
+    ) -> None:
+        """
+        After a local parent code is created, update any existing children to point
+        to the local parent, overriding the remote parent. Everything is flushed
+        to the database so that children are queryable.
+        """
+        session.flush()
+        code_class = type(instance)
+        children = (
+            session.query(code_class).filter(code_class.value.in_(child_values)).all()
+        )
+        instance.children = children
+
     def update_or_create_object(
         self,
         code_class: Type[codes.CodeBase],
@@ -218,6 +194,14 @@ class KoodistotLoader:
         else:
             instance = code_class(**values)
             session.add(instance)
+
+        # If children are defined in the incoming dict, they must be updated manually.
+        if "child_values" in incoming.keys():
+            self.update_remote_children_of_local_parents(
+                instance, incoming["child_values"], session
+            )
+            print("instance now has children")
+            print(instance.children)
         return instance
 
     def save_objects(self, objects: Dict[Type[codes.CodeBase], List[dict]]) -> str:

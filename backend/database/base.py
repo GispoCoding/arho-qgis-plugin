@@ -59,7 +59,11 @@ class VersionedBase(Base):
     __abstract__ = True
     __table_args__ = {"schema": "hame"}
 
-    id: Mapped[uuid_pk]
+    # Go figure. We have to *explicitly state* id is a mapped column, because id will
+    # have to be defined inside all the subclasses for relationship remote_side
+    # definition to work. So even if there is an id field in all the classes,
+    # self-relationships will later break if id is only defined by type annotation.
+    id: Mapped[uuid_pk] = mapped_column()
     created_at: Mapped[timestamp]
     # TODO: postgresql has no default onupdate. Must implement this with trigger.
     modified_at: Mapped[timestamp]
@@ -96,10 +100,12 @@ class CodeBase(VersionedBase):
             ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
         )
 
-    @classmethod
+    # Oh great. Unlike SQLAlchemy documentation states, @classmethod decorator should
+    # absolutely *not* be used. Declared relationships are not correctly set if the
+    # decorator is present.
     @declared_attr
-    def parent(cls) -> Mapped[VersionedBase]:
-        return relationship(cls, backref="children")
+    def parent(cls) -> Mapped[Optional[VersionedBase]]:  # noqa
+        return relationship(cls, remote_side=[cls.id], backref="children")
 
     @property
     def uri(self):
@@ -124,9 +130,8 @@ class PlanBase(VersionedBase):
     )
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def lifecycle_status(cls) -> Mapped[VersionedBase]:
+    def lifecycle_status(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("LifeCycleStatus", backref=f"{cls.__tablename__}s")
 
 
@@ -156,19 +161,16 @@ class PlanObjectBase(PlanBase):
     )
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def type_of_underground(cls) -> Mapped[VersionedBase]:
+    def type_of_underground(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("TypeOfUnderground", backref=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def plan(cls) -> Mapped[VersionedBase]:
+    def plan(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("Plan", backref=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def plan_regulation_group(cls) -> Mapped[VersionedBase]:
+    def plan_regulation_group(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("PlanRegulationGroup", backref=f"{cls.__tablename__}s")

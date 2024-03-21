@@ -29,6 +29,7 @@ class Plan(PlanBase):
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
+    organisation = relationship("Organisation", backref="plans")
 
     approved_at: Mapped[Optional[datetime]]
     geom: Mapped[MultiPolygon]
@@ -130,13 +131,6 @@ class PlanRegulation(PlanBase):
         ),
         nullable=True,
     )
-    # type_of_additional_information_id: Mapped[uuid.UUID] = mapped_column(
-    #     ForeignKey(
-    #         "codes.type_of_additional_information.id",
-    #         name="type_of_additional_information_id_fkey",
-    #     )
-    # )
-
     plan_regulation_group = relationship(
         "PlanRegulationGroup", backref="plan_regulations"
     )
@@ -147,6 +141,112 @@ class PlanRegulation(PlanBase):
     type_of_verbal_plan_regulation = relationship(
         "TypeOfVerbalPlanRegulation", backref="plan_regulations"
     )
+
+    # Käyttötarkoitus
+    intended_use_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="intended_use_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Olemassaolo
+    existence_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="existence_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Tyyppi
+    regulation_type_additional_information_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="regulation_type_additional_information_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Merkittävyys
+    significance_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="significance_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Eri tahojen tarpeisiin varaus
+    reservation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="reservation_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Kehittäminen
+    development_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="development_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Häiriöntorjuntatarve
+    disturbance_prevention_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="disturbance_prevention_id_fkey",
+        ),
+        nullable=True,
+    )
+    # Rakentamisen ohjaus
+    construction_control_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="construction_control_id_fkey",
+        ),
+        nullable=True,
+    )
+    intended_use = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[intended_use_id],
+        backref="intended_use_plan_regulations",
+    )
+    existence = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[existence_id],
+        backref="existence_plan_regulations",
+    )
+    regulation_type_additional_information = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[regulation_type_additional_information_id],
+        backref="type_plan_regulations",
+    )
+    significance = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[significance_id],
+        backref="significance_plan_regulations",
+    )
+    reservation = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[reservation_id],
+        backref="reservation_plan_regulations",
+    )
+    development = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[development_id],
+        backref="development_plan_regulations",
+    )
+    disturbance_prevention = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[disturbance_prevention_id],
+        backref="disturbance_prevention_plan_regulations",
+    )
+    construction_control = relationship(
+        "TypeOfAdditionalInformation",
+        foreign_keys=[construction_control_id],
+        backref="construction_control_plan_regulations",
+    )
+
     numeric_range: Mapped[numeric_range]
     unit: Mapped[str] = mapped_column(nullable=True)
     text_value: Mapped[language_str]
