@@ -87,7 +87,7 @@ data "aws_subnets" "private"{
     }
 }
 
-# Give lambdas access to Internet
+# Give lambdas and X-road security server access to Internet
 resource "aws_eip" "eip" {
   vpc        = true
   depends_on = [aws_internet_gateway.main]
@@ -231,3 +231,82 @@ resource "aws_security_group_rule" "rds-bastion" {
   source_security_group_id = aws_security_group.bastion.id
   security_group_id = aws_security_group.rds.id
 }
+
+# Allow traffic from x-road server to internet
+resource "aws_security_group" "x-road" {
+  name        = "${var.prefix} X-road security server"
+  description = "${var.prefix} X-road security server security group"
+  vpc_id      = aws_vpc.main.id
+
+# To X-road central server and OCSP service
+  egress {
+    from_port   = 0
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 4001
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+# To remote X-road security server
+  egress {
+    from_port   = 0
+    to_port     = 5500
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 5577
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-x-road_securityserver-sg"
+  })
+}
+
+# Allow traffic from lambda to x-road server consumer port
+resource "aws_security_group_rule" "lambda-x-road" {
+  description       = "X-road allow traffic from lambda"
+  type              = "ingress"
+
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+
+  source_security_group_id = aws_security_group.lambda.id
+  security_group_id = aws_security_group.x-road.id
+}
+
+# Allow traffic from bastion to x-road server admin port
+resource "aws_security_group_rule" "x-road-bastion" {
+  description       = "X-road allow traffic from bastion"
+  type              = "ingress"
+
+  from_port         = 4000
+  to_port           = 4000
+  protocol          = "tcp"
+
+  source_security_group_id = aws_security_group.bastion.id
+  security_group_id = aws_security_group.x-road.id
+}
+
+# TODO: allow traffic from x-road to rds and file system if we need to persist some state.
+#
+# Ideally, the configuration should come from terraform, so the x-road server would contain the
+# correct service ids etc. out of the box and no state needs to be stored.
