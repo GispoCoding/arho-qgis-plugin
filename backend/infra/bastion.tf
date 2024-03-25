@@ -11,7 +11,9 @@ resource "aws_instance" "bastion-ec2-instance" {
   tenancy              = "default"
   user_data     = templatefile(
     "bastion_user_data.tpl",
-    {ec2_user_public_key = "${var.bastion_ec2_user_public_key}",
+    {ec2_host_private_key = "${var.bastion_ec2_host_private_key}",
+    ec2_host_public_key = "${var.bastion_ec2_host_public_key}",
+    ec2_user_public_key = "${var.bastion_ec2_user_public_key}",
     ec2_tunnel_public_keys = "${var.bastion_ec2_tunnel_public_keys}"}
     )
 

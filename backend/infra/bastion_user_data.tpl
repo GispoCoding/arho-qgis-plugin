@@ -21,6 +21,10 @@ users:
     %{ for key in ec2_tunnel_public_keys ~}
     - ${key}
     %{ endfor ~}
+ssh_keys:
+  rsa_private: |
+    ${ec2_host_private_key}
+  rsa_public: ${ec2_host_public_key}
 
 --//
 Content-Type: text/x-shellscript; charset="us-ascii"
