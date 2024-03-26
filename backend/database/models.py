@@ -8,7 +8,6 @@ from base import (  # noqa
     PlanBase,
     PlanObjectBase,
     VersionedBase,
-    autoincrement_int,
     language_str,
     numeric_range,
     timestamp,
@@ -251,7 +250,7 @@ class PlanRegulation(PlanBase):
     unit: Mapped[str] = mapped_column(nullable=True)
     text_value: Mapped[language_str]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
-    ordering: Mapped[autoincrement_int]
+    ordering: Mapped[Optional[int]] = mapped_column(index=True)
     # ElinkaaritilaX_pvm?
 
 
@@ -272,7 +271,7 @@ class PlanProposition(PlanBase):
         "PlanRegulationGroup", backref="plan_propositions"
     )
     text_value: Mapped[language_str]
-    ordering: Mapped[autoincrement_int]
+    ordering: Mapped[Optional[int]] = mapped_column(index=True)
     # plan_theme: kaavoitusteema-koodilista
     # ElinkaaritilaX_pvm
 

@@ -46,7 +46,6 @@ language_str = Annotated[
 ]
 numeric_range = Annotated[Tuple[float, float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
-autoincrement_int = Annotated[int, mapped_column(autoincrement=True, index=True)]
 
 metadata = Base.metadata
 
@@ -145,7 +144,7 @@ class PlanObjectBase(PlanBase):
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)
-    ordering: Mapped[autoincrement_int]
+    ordering: Mapped[Optional[int]] = mapped_column(index=True)
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
         index=True,

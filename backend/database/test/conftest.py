@@ -565,7 +565,6 @@ def land_use_area_instance(
             MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
         ),
         lifecycle_status=code_instance,
-        ordering=1,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
         plan_regulation_group=plan_regulation_group_instance,
@@ -595,7 +594,6 @@ def plan_regulation_instance(
         lifecycle_status=code_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=1,
     )
     session.add(instance)
     return instance
@@ -606,7 +604,6 @@ def plan_proposition_instance(session, code_instance, plan_regulation_group_inst
     instance = models.PlanProposition(
         lifecycle_status=code_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=1,
     )
     session.add(instance)
     return instance
