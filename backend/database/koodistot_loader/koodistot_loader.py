@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Type, TypedDict
 
 import codes
 import requests
-from db_helper import DatabaseHelper
+from db_helper import DatabaseHelper, User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -237,7 +237,7 @@ class KoodistotLoader:
 def handler(event: Event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
-    db_helper = DatabaseHelper()
+    db_helper = DatabaseHelper(user=User.ADMIN)
     load_suomifi_codes = event.get("suomifi_codes", True)
     load_local_codes = event.get("local_codes", True)
 

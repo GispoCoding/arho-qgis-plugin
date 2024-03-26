@@ -1,7 +1,7 @@
 import enum
 import json
 import os
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Tuple, Type
 
 import boto3
 
@@ -19,20 +19,28 @@ class Db(enum.Enum):
 
 
 class DatabaseHelper:
-    def __init__(self):
+    def __init__(self, user: Optional[User] = None):
+        """
+        Initialize a database helper with given user privileges.
+
+        If user is not specified, requires that the lambda function has *all* user
+        privileges and secrets specified in lambda function os.environ.
+        """
         if os.environ.get("READ_FROM_AWS", "1") == "1":
             session = boto3.session.Session()
             client = session.client(
                 service_name="secretsmanager",
                 region_name=os.environ.get("AWS_REGION_NAME"),
             )
+            # if user is not specified, iterate through all users
+            users: List | Type[User] = [user] if user else User
             self._users = {
                 user: json.loads(
-                    client.get_secret_value(SecretId=os.environ.get(user.value))[
+                    client.get_secret_value(SecretId=os.environ[user.value])[
                         "SecretString"
                     ]
                 )
-                for user in User
+                for user in users
             }
         else:
             self._users = {
@@ -54,17 +62,20 @@ class DatabaseHelper:
                 },
             }
         self._dbs = {
-            Db.MAIN: os.environ.get("DB_MAIN_NAME"),
-            Db.MAINTENANCE: os.environ.get("DB_MAINTENANCE_NAME"),
+            Db.MAIN: os.environ["DB_MAIN_NAME"],
+            Db.MAINTENANCE: os.environ["DB_MAINTENANCE_NAME"],
         }
-        self._host = os.environ.get("DB_INSTANCE_ADDRESS")
+        self._host = os.environ["DB_INSTANCE_ADDRESS"]
         self._port = os.environ.get("DB_INSTANCE_PORT", "5432")
         self._region_name = os.environ.get("AWS_REGION_NAME")
 
     def get_connection_parameters(
-        self, user: User = User.ADMIN, db: Db = Db.MAIN
+        self, user: Optional[User] = None, db: Db = Db.MAIN
     ) -> Dict[str, str]:
-        user_credentials = self._users.get(user)
+        if not user:
+            # take the first user that has credentials provided
+            user = next(iter(self._users))
+        user_credentials = self._users[user]
         return {
             "host": self._host,
             "port": self._port,
@@ -81,7 +92,7 @@ class DatabaseHelper:
         )
 
     def get_username_and_password(self, user: User) -> Tuple[str, str]:
-        user_credentials = self._users.get(user)
+        user_credentials = self._users[user]
         return user_credentials["username"], user_credentials["password"]
 
     def get_db_name(self, db: Db) -> str:
