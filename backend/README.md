@@ -15,10 +15,10 @@ The database and functions can be run on AWS (Amazon Web Services) cloud platfor
   - [Database changes](#database-changes)
   - [Adding requirements](#adding-requirements)
 - [Data model](#data-model)
-- [Connecting the database](#connecting-the-database)
+- [Connecting to the test database](#connecting-to-the-test-database)
   - [Creating SSH key pairs](#creating-ssh-key-pairs)
-  - [Opening a SSH tunnel to the server](#opening-a-ssh-tunnel-to-the-server)
-  - [Connecting the database from QGIS](#connecting-the-database-from-qgis)
+  - [Opening an SSH tunnel to the server](#opening-an-ssh-tunnel-to-the-server)
+  - [Connecting to the database from QGIS](#connecting-to-the-database-from-qgis)
 
 ## Architecture
 
@@ -85,9 +85,9 @@ To update requirements to latest versions:
 
 [Database documentation](./database/dbdoc/README.md) -->
 
-## Connecting the database
+## Connecting to the test database
 
-Connecting the database is done with the secure shell protocol (SSH). To be able to connect to the database, you will have to
+Connecting to the database is done with the secure shell protocol (SSH). To be able to connect to the database, you will have to
 1. Create a SSH key pair on your computer (this has to be done only once)
 2. Have db admin add the public key to the server (this has to be done only once)
 3. Open a SSH tunnel on your computer (this has to be done each time)
@@ -96,7 +96,7 @@ Detailed instructions to these steps are provided below.
 
 ### Creating SSH key pairs
 
-Generation of the key pair can be done, for example, with a program called ssh-keygen (available also in Windows 10 and 11):
+Generation of the key pair can be done, for example, with a program called ssh-keygen (available on *Windows 10 and 11, Linux* and *Mac OS*):
 
 - Open a command prompt (for example, open start menu and type 'cmd' and hit enter)
 - Type in the command prompt `ssh-keygen -t ed25519` and press enter. This will generate a key pair (using ed25519 algorithm).
@@ -108,16 +108,19 @@ you have to provide to the database administrator, and the private key in file `
 ![screenshot of ssh key pair creation dialog](docs/img/ssh-keygen.png)
 
 
-### Opening a SSH tunnel to the server
+### Opening an SSH tunnel to the test server
 
 Once the administrator has added your public key to the server, you can connect to the database using ssh:
-- The easiest way to open the SSH tunnel to the server is by using a batch script named `create_tunnel.bat` found [here](docs/create_tunnel.bat) in this repository. Save the file to your computer in a convenient location. After this you can open the tunnel by executing this script by double clicking the file.
+- On *Windows*, the easiest way to open the SSH tunnel to the server is by using a batch script named `create_tunnel.bat` found [here](docs/create_tunnel.bat) in this repository. Save the file to your computer in a convenient location. After this you can open the tunnel by executing this script by double clicking the file. On *Linux/Mac OS* (or if you want to use a command prompt), just copy-paste the command
+```
+ssh -N -L 5433:hame-devdb.ctcspesmxrh1.eu-central-1.rds.amazonaws.com:5432 -i "~/.ssh/id_ed25519" ec2-tunnel@hame-dev.bastion.gispocoding.fi
+```
 - Enter the passphrase for the key (if set) and hit enter. If no error messages appear, the tunnel is connected. Do not close the command prompt window, otherwise the SSH tunnel is disconnected.
 - Now you can connect to the database using `localhost` as the host and `5433` as the port. The details how to do this with
 different software are given in the following sections.
 - Additional tips: the connection can automatically terminate, for example, due to server rebooting or network issues (this is usually accompanied by a message, such as `client_loop: send disconnect: Connection reset`). If this happens, simply double click the file again to reopen the tunnel. In case you want to close an open SSH tunnel, press `Ctrl+C` and answer the confirmation by pressing `Y`.
 
-### Connecting the database from QGIS
+### Connecting to the database from QGIS
 
 The data is read from a PostgreSQL service named `postgres` with a QGIS authentication which id is `ryhtirw`. Here is a way to set up database connection in QGIS:
 
