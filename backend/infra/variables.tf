@@ -51,9 +51,9 @@ variable "db_instance_type" {
 }
 
 variable "db_postgres_version" {
-  description = "Version number of the PostgreSQL DB. DEfault: 13.10"
+  description = "Version number of the PostgreSQL DB. Default: 13.13"
   type        = string
-  default     = "13.10"
+  default     = "13.13"
 }
 
 variable "hame_db_name" {
