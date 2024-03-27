@@ -13,9 +13,9 @@ Run these steps the first time.
 
 ### Multi-factor authentication (MFA)
 
-If you get a 403 error when running terraform despite having configured a valid AWS
-access key, you may need to set up MFA. Install both AWS CLI and jq, and make sure you have `aws` and `jq` in path. Execute the `[get-mfa-vars.sh](https://gist.github.com/mvaaltola/0abced5790401f2454444fb2ffd4acc0)` script with your AWS arn and your MFA access code,
-and finally run `. /tmp/aws-mfa-token` to temporarily set the correct MFA environment variables in your shell.
+For most AWS accounts, MFA is required. You will get 400 or 403 error when running terraform with
+just the right access key. To set up MFA, install both AWS CLI and jq, and make sure you have `aws` and `jq` in path. Execute the `[get-mfa-vars.sh](https://gist.github.com/mvaaltola/0abced5790401f2454444fb2ffd4acc0)` script with the *AWS arn of your MFA device and current MFA access code*,
+and finally run `. /tmp/aws-mfa-token` to temporarily set the correct MFA environment variables in your shell. By default, the MFA session token will last for 12 hours.
 
 ## Managing existing instances
 
