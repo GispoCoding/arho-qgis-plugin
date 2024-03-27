@@ -141,6 +141,7 @@ class PlanObjectBase(PlanBase):
 
     __abstract__ = True
 
+    description: Mapped[language_str]
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)
