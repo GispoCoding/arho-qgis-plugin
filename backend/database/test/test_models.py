@@ -28,6 +28,7 @@ def test_codes(
     assert code_instance.children == [another_code_instance]
     assert another_code_instance.parent is code_instance
     assert another_code_instance.children == []
+    session.rollback()
 
 
 def test_plan(

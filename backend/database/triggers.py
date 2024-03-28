@@ -1,31 +1,56 @@
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 
-trgfunc_update_plan_regulation_exported_at = PGFunction(
+trgfunc_plan_modified_at = PGFunction(
     schema="hame",
-    signature="trgfunc_update_plan_regulation_exported_at()",
+    signature="trgfunc_plan_modified_at()",
     definition="""
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO plan_regulation (
-        exported_at,
-    ) values (
-        NEW.exported_at,
-    )
-    WHERE plan_regulation.plan_id = NEW.id;
+
+    UPDATE plan
+    SET modified_at = CURRENT_TIMESTAMP
+    WHERE plan_id = NEW.plan_id;
 
     return NEW;
 END;
-$$ language 'plpgsql';
+$$ language 'plpgsql'
 """,
 )
 
-trg_update_exported_at = PGTrigger(
+# trgfunc_change_lifecycle_status = PGFunction(
+#     schema="hame",
+#     signature="trgfunc_change_lifecycle_status()",
+#     definition="""
+# RETURNS TRIGGER AS $$
+# BEGIN
+
+#     IF NEW.lifecycle_status = 'Valid' AND OLD.lifecycle_status != 'Valid' THEN
+#         SET NEW.valid_from = CURRENT_TIMESTAMP;
+#     END IF;
+
+#     RETURN NEW;
+# END;
+# $$ language 'plpgsql'
+# """,
+# )
+
+trg_plan_modified_at = PGTrigger(
     schema="hame",
-    signature="trg_update_exported_at",
-    on_entity="hame.plan_regulation",
+    signature="trg_plan_modified_at",
+    on_entity="hame.plan",
     is_constraint=False,
-    definition="""AFTER INSERT ON plan
+    definition="""AFTER UPDATE ON plan
         FOR EACH STATEMENT
-        EXECUTE FUNCTION trgfunc_update_plan_regulation_exported_at()""",
+        EXECUTE FUNCTION hame.trgfunc_plan_modified_at()""",
 )
+
+# trg_change_lifecycle_status = PGTrigger(
+#     schema="hame",
+#     signature="trg_change_lifecycle_status",
+#     on_entity="hame.plan",
+#     is_constraint=False,
+#     definition="""AFTER UPDATE ON plan
+#         FOR EACH STATEMENT
+#         EXECUTE FUNCTION hame.trgfunc_change_lifecycle_status()""",
+# )
