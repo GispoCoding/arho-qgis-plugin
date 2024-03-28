@@ -31,7 +31,6 @@ class Plan(PlanBase):
     )
     organisation = relationship("Organisation", backref="plans")
 
-    approved_at: Mapped[Optional[datetime]]
     geom: Mapped[MultiPolygon]
 
 
@@ -252,7 +251,6 @@ class PlanRegulation(PlanBase):
     text_value: Mapped[language_str]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
     ordering: Mapped[autoincrement_int]
-    # ElinkaaritilaX_pvm?
 
 
 class PlanProposition(PlanBase):
@@ -274,7 +272,6 @@ class PlanProposition(PlanBase):
     text_value: Mapped[language_str]
     ordering: Mapped[autoincrement_int]
     # plan_theme: kaavoitusteema-koodilista
-    # ElinkaaritilaX_pvm
 
 
 class SourceData(VersionedBase):
@@ -336,3 +333,36 @@ class Document(VersionedBase):
     decision: Mapped[bool]
     decision_date: Mapped[Optional[timestamp]]
     # file
+
+
+class LifeCycleDate(VersionedBase):
+    """
+    Elinkaaritilan päivämäärät
+    """
+
+    __tablename__ = "lifecycle_date"
+
+    lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
+        index=True,
+    )
+    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey")
+    )
+    plan_regulation_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.plan_regulation.id", name="plan_regulation_id_fkey")
+    )
+    plan_proposition_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.plan_proposition.id", name="plan_proposition_id_fkey")
+    )
+
+    plan: Mapped[Optional["Plan"]] = relationship(backref="lifecycle_dates")
+    plan_regulation: Mapped[Optional["PlanRegulation"]] = relationship(
+        backref="lifecycle_dates"
+    )
+    plan_proposition: Mapped[Optional["PlanProposition"]] = relationship(
+        backref="lifecycle_dates"
+    )
+    lifecycle_status = relationship("LifeCycleStatus", backref="lifecycle_dates")
+    starting_at: Mapped[Optional[datetime]]
+    ending_at: Mapped[Optional[datetime]]
