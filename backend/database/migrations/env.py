@@ -2,12 +2,29 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
+from alembic_utils.pg_function import PGFunction
+from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.replaceable_entity import register_entities
 from base import Base
 
 # *ALL* sqlalchemy models have to be imported so that alembic detects all tables
 from codes import *  # noqa
 from models import *  # noqa
 from sqlalchemy import create_engine
+from triggers import (  # trg_change_lifecycle_status,; trgfunc_change_lifecycle_status,
+    trg_plan_modified_at,
+    trgfunc_plan_modified_at,
+)
+
+# Register functions and triggers
+imported_functions = [
+    trg_plan_modified_at,
+    # trg_change_lifecycle_status,
+    trgfunc_plan_modified_at,
+    # trgfunc_change_lifecycle_status,
+]
+
+register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
