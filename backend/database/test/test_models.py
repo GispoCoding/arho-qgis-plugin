@@ -300,3 +300,34 @@ def test_document(
     assert document_instance.plan is plan_instance
     assert plan_instance.documents == [document_instance]
     session.flush()
+
+
+def test_lifecycle_date(
+    session: Session,
+    lifecycle_date_instance: models.LifeCycleDate,
+    code_instance: codes.LifeCycleStatus,
+    plan_instance: models.Plan,
+    plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+):
+    # non-nullable lifecycle date relations
+    assert lifecycle_date_instance.lifecycle_status is code_instance
+    assert code_instance.lifecycle_dates == [lifecycle_date_instance]
+    # nullable lifecycle date relations
+    assert lifecycle_date_instance.plan is None
+    assert plan_instance.lifecycle_dates == []
+    lifecycle_date_instance.plan = plan_instance
+    assert lifecycle_date_instance.plan_regulation is None
+    assert plan_regulation_instance.lifecycle_dates == []
+    lifecycle_date_instance.plan_regulation = plan_regulation_instance
+    assert lifecycle_date_instance.plan_proposition is None
+    assert plan_proposition_instance.lifecycle_dates == []
+    lifecycle_date_instance.plan_proposition = plan_proposition_instance
+    session.flush()
+
+    assert lifecycle_date_instance.plan is plan_instance
+    assert lifecycle_date_instance.plan_regulation is plan_regulation_instance
+    assert lifecycle_date_instance.plan_proposition is plan_proposition_instance
+    assert lifecycle_date_instance in plan_instance.lifecycle_dates
+    assert lifecycle_date_instance in plan_regulation_instance.lifecycle_dates
+    assert lifecycle_date_instance in plan_proposition_instance.lifecycle_dates

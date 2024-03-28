@@ -89,7 +89,7 @@ data "aws_subnets" "private"{
 
 # Give lambdas access to Internet
 resource "aws_eip" "eip" {
-  vpc        = true
+  domain        = "vpc"
   depends_on = [aws_internet_gateway.main]
 
   tags = merge(local.default_tags, {

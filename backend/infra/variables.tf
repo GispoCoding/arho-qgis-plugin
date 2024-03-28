@@ -13,6 +13,11 @@ variable "AWS_HOSTED_DOMAIN" {
   type        = string
 }
 
+variable "bastion_subdomain" {
+  description = "Subdomain for ssh tunneling server"
+  type        = string
+}
+
 variable "enable_route53_record" {
   type    = bool
   default = false
@@ -46,9 +51,9 @@ variable "db_instance_type" {
 }
 
 variable "db_postgres_version" {
-  description = "Version number of the PostgreSQL DB. DEfault: 13.10"
+  description = "Version number of the PostgreSQL DB. Default: 13.13"
   type        = string
-  default     = "13.10"
+  default     = "13.13"
 }
 
 variable "hame_db_name" {
@@ -58,31 +63,19 @@ variable "hame_db_name" {
 }
 
 variable "su_secrets" {
-  default = {
-    "username" = "postgres",
-    "password" = "postgres"
-  }
+  nullable = false
 }
 
 variable "hame_admin_secrets" {
-  default = {
-    "username" = "hame_admin",
-    "password" = "hame_admin"
-  }
+  nullable = false
 }
 
 variable "hame_r_secrets" {
-  default = {
-    "username" = "hame_read",
-    "password" = "hame_read"
-  }
+  nullable = false
 }
 
 variable "hame_rw_secrets" {
-  default = {
-    "username" = "hame_read_write",
-    "password" = "hame_read_write"
-  }
+  nullable = false
 }
 
 variable "public-subnet-count" {
@@ -109,6 +102,7 @@ variable "extra_tags" {
 }
 
 locals {
+  bastion_dns_alias   = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix

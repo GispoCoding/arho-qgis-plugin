@@ -120,9 +120,7 @@ class PlanBase(VersionedBase):
 
     name: Mapped[language_str]
     exported_at: Mapped[Optional[datetime]]
-    valid_from: Mapped[Optional[datetime]]
-    valid_to: Mapped[Optional[datetime]]
-    repealed_at: Mapped[Optional[datetime]]
+
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
         index=True,
