@@ -29,7 +29,23 @@ class Plan(PlanBase):
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
     organisation = relationship("Organisation", backref="plans")
+    plan_regulation_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+        )
+    )
+    plan_regulation_group = relationship("PlanRegulationGroup", backref="plans")
+    plan_type_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
+    )
+    plan_type = relationship("PlanType", backref="plans")
 
+    permanent_plan_identifier: Mapped[Optional[str]]
+    producers_plan_identifier: Mapped[Optional[str]]
+    description: Mapped[language_str]
+    scale: Mapped[Optional[int]]
+    matter_management_identifier: Mapped[Optional[str]]
+    record_number: Mapped[Optional[str]]
     geom: Mapped[MultiPolygon]
 
 
@@ -325,6 +341,7 @@ class Document(VersionedBase):
 
     type_of_document = relationship("TypeOfDocument", backref="documents")
     plan = relationship("Plan", backref="documents")
+    permanent_document_identifier: Mapped[Optional[uuid.UUID]]
     name: Mapped[str]
     personal_details: Mapped[str]
     publicity: Mapped[Literal["julkinen", "ei julkinen"]]  # Muita?

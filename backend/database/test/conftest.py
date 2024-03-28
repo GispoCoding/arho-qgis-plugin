@@ -475,6 +475,13 @@ def another_code_instance(session):
 
 
 @pytest.fixture(scope="module")
+def plan_type_instance(session):
+    instance = codes.PlanType(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
 def type_of_underground_instance(session):
     instance = codes.TypeOfUnderground(value="test", status="LOCAL")
     session.add(instance)
