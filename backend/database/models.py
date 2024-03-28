@@ -145,16 +145,19 @@ class PlanRegulation(PlanBase):
         ),
         nullable=True,
     )
+    plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("codes.plan_theme.id", name="plan_theme_id_fkey")
+    )
     plan_regulation_group = relationship(
         "PlanRegulationGroup", backref="plan_regulations"
     )
     type_of_plan_regulation = relationship(
         "TypeOfPlanRegulation", backref="plan_regulations"
     )
-    # plan_theme: kaavoitusteema-koodilista
     type_of_verbal_plan_regulation = relationship(
         "TypeOfVerbalPlanRegulation", backref="plan_regulations"
     )
+    plan_theme = relationship("PlanTheme", backref="plan_regulations")
 
     # Käyttötarkoitus
     intended_use_id: Mapped[uuid.UUID] = mapped_column(
@@ -280,13 +283,16 @@ class PlanProposition(PlanBase):
             "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
         )
     )
+    plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("codes.plan_theme.id", name="plan_theme_id_fkey")
+    )
 
     plan_regulation_group = relationship(
         "PlanRegulationGroup", backref="plan_propositions"
     )
+    plan_theme = relationship("PlanTheme", backref="plan_propositions")
     text_value: Mapped[language_str]
     ordering: Mapped[Optional[int]] = mapped_column(index=True)
-    # plan_theme: kaavoitusteema-koodilista
 
 
 class SourceData(VersionedBase):

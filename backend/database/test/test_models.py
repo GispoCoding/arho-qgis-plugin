@@ -107,6 +107,7 @@ def test_plan_regulation(
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+    plan_theme_instance: codes.PlanTheme,
 ):
     # non-nullable plan regulation relations
     assert plan_regulation_instance.lifecycle_status is code_instance
@@ -125,9 +126,12 @@ def test_plan_regulation(
     # nullable plan regulation relations
     assert plan_regulation_instance.type_of_verbal_plan_regulation is None
     assert type_of_verbal_plan_regulation_instance.plan_regulations == []
+    assert plan_regulation_instance.plan_theme is None
+    assert plan_theme_instance.plan_regulations == []
     plan_regulation_instance.type_of_verbal_plan_regulation = (
         type_of_verbal_plan_regulation_instance
     )
+    plan_regulation_instance.plan_theme = plan_theme_instance
     # All eight additional information regulations are nullable
     # Käyttötarkoitus
     assert plan_regulation_instance.intended_use is None
@@ -183,6 +187,8 @@ def test_plan_regulation(
     assert type_of_verbal_plan_regulation_instance.plan_regulations == [
         plan_regulation_instance
     ]
+    assert plan_regulation_instance.plan_theme is plan_theme_instance
+    assert plan_theme_instance.plan_regulations == [plan_regulation_instance]
     # Käyttötarkoitus
     assert (
         plan_regulation_instance.intended_use is type_of_additional_information_instance
@@ -249,6 +255,7 @@ def test_plan_proposition(
     plan_proposition_instance: models.PlanProposition,
     code_instance: codes.LifeCycleStatus,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    plan_theme_instance: codes.PlanTheme,
 ):
     # non-nullable plan proposition relations
     assert plan_proposition_instance.lifecycle_status is code_instance
@@ -260,7 +267,15 @@ def test_plan_proposition(
     assert plan_regulation_group_instance.plan_propositions == [
         plan_proposition_instance
     ]
+    # nullable plan proposition relations
+    assert plan_proposition_instance.plan_theme is None
+    assert plan_theme_instance.plan_propositions == []
+    plan_proposition_instance.plan_theme = plan_theme_instance
+
     session.flush()
+
+    assert plan_proposition_instance.plan_theme is plan_theme_instance
+    assert plan_theme_instance.plan_propositions == [plan_proposition_instance]
 
 
 def test_source_data(
