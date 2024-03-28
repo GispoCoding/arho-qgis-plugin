@@ -21,5 +21,5 @@ resource "aws_cloudwatch_event_target" "lambda_koodistot" {
   target_id = "${var.prefix}_load_koodistot"
   rule      = aws_cloudwatch_event_rule.lambda_koodistot.name
   arn       = aws_lambda_function.koodistot_loader.arn
-  input     = ""
+  input     = "{}"
 }
