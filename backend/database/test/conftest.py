@@ -21,7 +21,7 @@ from shapely.geometry import MultiPolygon
 from sqlalchemy.orm import sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
-codes_count: int = 10  # adjust me when adding tables
+codes_count: int = 11  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 USE_DOCKER = (
@@ -533,6 +533,13 @@ def type_of_document_instance(session):
 @pytest.fixture(scope="module")
 def administrative_region_instance(session):
     instance = codes.AdministrativeRegion(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_theme_instance(session):
+    instance = codes.PlanTheme(value="test", status="LOCAL")
     session.add(instance)
     return instance
 

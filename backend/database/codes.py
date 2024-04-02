@@ -145,3 +145,12 @@ class TypeOfPlanRegulationGroup(CodeBase):
         {"value": "lineRegulations", "name": {"fin": "Viiva"}},
         {"value": "otherPointRegulations", "name": {"fin": "Muu piste"}},
     ]
+
+
+class PlanTheme(CodeBase):
+    """
+    Kaavoitusteema
+    """
+
+    __tablename__ = "plan_theme"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavoitusteema"
