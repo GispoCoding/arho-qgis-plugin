@@ -28,7 +28,7 @@ class TypeOfPlanRegulation(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
 
 
-class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
+class TypeOfAdditionalInformation(CodeBase):
     """
     Kaavamääräyksen lisätiedon laji
 
@@ -46,6 +46,38 @@ class TypeOfAdditionalInformationForPlanRegulation(CodeBase):
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji"
     )
+    local_codes = [
+        {
+            "value": "kayttotarkoitus",
+            "name": {"fin": "Käyttötarkoitus"},
+            "child_values": [
+                "paakayttotarkoitus",
+                "osaAlue",
+                "poisluettavaKayttotarkoitus",
+                "yhteystarve",
+            ],
+        },
+        {
+            "value": "olemassaolo",
+            "name": {"fin": "Olemassaolo"},
+            "child_values": [
+                "olemassaOleva",
+                "sailytettava",
+                "uusi",
+                "olennaisestiMuuttuva",
+            ],
+        },
+        {
+            "value": "kehittaminen",
+            "name": {"fin": "Kehittäminen"},
+            "child_values": [
+                "reservialue",
+                "kehitettava",
+                "merkittavastiParannettava",
+                "eheytettavaTaiTiivistettava",
+            ],
+        },
+    ]
 
 
 class TypeOfVerbalPlanRegulation(CodeBase):
@@ -95,3 +127,21 @@ class AdministrativeRegion(CodeBase):
 
     __tablename__ = "administrative_region"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
+
+
+class TypeOfPlanRegulationGroup(CodeBase):
+    """
+    Kaavamääräysryhmän tyyppi
+
+    This is our own code list. It does not exist in koodistot.suomi.fi.
+    """
+
+    __tablename__ = "type_of_plan_regulation_group"
+    code_list_uri = ""
+    local_codes = [
+        {"value": "generalRegulations", "name": {"fin": "Yleismääräykset"}},
+        {"value": "landUseRegulations", "name": {"fin": "Aluevaraus"}},
+        {"value": "otherAreaRegulations", "name": {"fin": "Osa-alue"}},
+        {"value": "lineRegulations", "name": {"fin": "Viiva"}},
+        {"value": "otherPointRegulations", "name": {"fin": "Muu piste"}},
+    ]

@@ -1,8 +1,11 @@
 import os
 import time
 import timeit
+from datetime import datetime
 from pathlib import Path
 
+import codes
+import models
 import psycopg2
 import pytest
 import sqlalchemy
@@ -10,11 +13,15 @@ from alembic import command
 from alembic.config import Config
 from alembic.operations import ops
 from alembic.script import ScriptDirectory
+from db_helper import DatabaseHelper
 from db_manager import db_manager
 from dotenv import load_dotenv
+from geoalchemy2.shape import from_shape
+from shapely.geometry import MultiPolygon
+from sqlalchemy.orm import sessionmaker
 
-hame_count: int = 12  # adjust me when adding tables
-codes_count: int = 9  # adjust me when adding tables
+hame_count: int = 13  # adjust me when adding tables
+codes_count: int = 10  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 USE_DOCKER = (
@@ -29,10 +36,6 @@ def set_env():
     assert dotenv_file.exists()
     load_dotenv(str(dotenv_file))
     db_manager.SCHEMA_FILES_PATH = str(Path(__file__).parent.parent)
-
-
-def db_helper():
-    return db_manager.DatabaseHelper()
 
 
 @pytest.fixture(scope="session")
@@ -443,3 +446,202 @@ def assert_database_is_alright(
     #     assert f"{os.environ.get('R_USER')}=r/" in permission_string
     #     assert f"{os.environ.get('RW_USER')}=arwdDxt/" in permission_string
     #     assert f"{os.environ.get('ADMIN_USER')}=arwdDxt/" in permission_string
+
+
+@pytest.fixture(scope="module")
+def connection_string(hame_database_created) -> str:
+    return DatabaseHelper().get_connection_string()
+
+
+@pytest.fixture(scope="module")
+def session(connection_string):
+    engine = sqlalchemy.create_engine(connection_string)
+    session = sessionmaker(bind=engine)
+    yield session()
+
+
+@pytest.fixture(scope="module")
+def code_instance(session):
+    instance = codes.LifeCycleStatus(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def another_code_instance(session):
+    instance = codes.LifeCycleStatus(value="test2", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_type_instance(session):
+    instance = codes.PlanType(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_underground_instance(session):
+    instance = codes.TypeOfUnderground(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_plan_regulation_group_instance(session):
+    instance = codes.TypeOfPlanRegulationGroup(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_plan_regulation_instance(session):
+    instance = codes.TypeOfPlanRegulation(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_verbal_plan_regulation_instance(session):
+    instance = codes.TypeOfVerbalPlanRegulation(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_additional_information_instance(session):
+    instance = codes.TypeOfAdditionalInformation(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_source_data_instance(session):
+    instance = codes.TypeOfSourceData(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def type_of_document_instance(session):
+    instance = codes.TypeOfDocument(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def administrative_region_instance(session):
+    instance = codes.AdministrativeRegion(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_instance(session, code_instance, organisation_instance):
+    instance = models.Plan(
+        geom=from_shape(
+            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+        ),
+        lifecycle_status=code_instance,
+        organisation=organisation_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def organisation_instance(session, administrative_region_instance):
+    instance = models.Organisation(
+        business_id="test", administrative_region=administrative_region_instance
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def land_use_area_instance(
+    session,
+    code_instance,
+    type_of_underground_instance,
+    plan_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.LandUseArea(
+        geom=from_shape(
+            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+        ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_regulation_group_instance(session, type_of_plan_regulation_group_instance):
+    instance = models.PlanRegulationGroup(
+        short_name="K",
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_regulation_instance(
+    session,
+    code_instance,
+    type_of_plan_regulation_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_proposition_instance(session, code_instance, plan_regulation_group_instance):
+    instance = models.PlanProposition(
+        lifecycle_status=code_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def source_data_instance(session):
+    instance = models.SourceData(
+        additional_information_uri="http://test.fi", detachment_date=datetime.now()
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def document_instance(session, type_of_document_instance, plan_instance):
+    instance = models.Document(
+        name="Testidokumentti",
+        type_of_document=type_of_document_instance,
+        personal_details="Testihenkilö",
+        publicity="julkinen",
+        language="fin",
+        decision=False,
+        plan=plan_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def lifecycle_date_instance(session, code_instance):
+    instance = models.LifeCycleDate(lifecycle_status=code_instance)
+    session.add(instance)
+    return instance

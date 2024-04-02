@@ -42,6 +42,22 @@ def populate_koodistot(koodistot_loader_url, main_db_params, create_db):
     assert data["statusCode"] == 200, data["body"]
 
 
+@pytest.fixture()
+def populate_suomifi_koodistot(koodistot_loader_url, main_db_params, create_db):
+    payload = {"local_codes": False}
+    r = requests.post(koodistot_loader_url, data=json.dumps(payload))
+    data = r.json()
+    assert data["statusCode"] == 200, data["body"]
+
+
+@pytest.fixture()
+def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
+    payload = {"suomifi_codes": False}
+    r = requests.post(koodistot_loader_url, data=json.dumps(payload))
+    data = r.json()
+    assert data["statusCode"] == 200, data["body"]
+
+
 def test_create_db(create_db, main_db_params_with_root_user):
     """
     Test the whole lambda endpoint
@@ -62,9 +78,80 @@ def test_populate_koodistot(populate_koodistot, main_db_params):
     try:
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
-                # some code tables may not have external source
-                if issubclass(value, codes.CodeBase) and value.code_list_uri:
+                if issubclass(value, codes.CodeBase) and (
+                    # some code tables have external source, some have local source, some have both
+                    value.code_list_uri
+                    or value.local_codes
+                ):
                     print(value)
+                    cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
+                    code_count = cur.fetchone()[0]
+                    assert code_count > 0
+    finally:
+        conn.close()
+
+
+def test_populate_suomifi_koodistot(populate_suomifi_koodistot, main_db_params):
+    """
+    Test only suomi.fi codes
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            for name, value in inspect.getmembers(codes, inspect.isclass):
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        value.code_list_uri
+                    )
+                ):
+                    cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
+                    code_count = cur.fetchone()[0]
+                    assert code_count > 0
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        not value.code_list_uri
+                    )
+                ):
+                    cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
+                    code_count = cur.fetchone()[0]
+                    assert code_count == 0
+    finally:
+        conn.close()
+
+
+def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
+    """
+    Test only local codes
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            for name, value in inspect.getmembers(codes, inspect.isclass):
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        not value.local_codes
+                    )
+                ):
+                    cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
+                    code_count = cur.fetchone()[0]
+                    assert code_count == 0
+                if (
+                    value is not codes.CodeBase
+                    and issubclass(value, codes.CodeBase)
+                    and (
+                        # some code tables have external source, some have local source, some have both
+                        value.local_codes
+                    )
+                ):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
                     assert code_count > 0

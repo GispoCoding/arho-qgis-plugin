@@ -54,3 +54,11 @@ resource "aws_lambda_function" "koodistot_loader" {
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-koodistot_loader" })
 }
+
+
+resource "aws_lambda_permission" "cloudwatch_call_koodistot_loader" {
+    action = "lambda:InvokeFunction"
+    function_name = aws_lambda_function.koodistot_loader.function_name
+    principal = "events.amazonaws.com"
+    source_arn = aws_cloudwatch_event_rule.lambda_koodistot.arn
+}

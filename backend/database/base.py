@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
@@ -46,7 +46,6 @@ language_str = Annotated[
 ]
 numeric_range = Annotated[Tuple[float, float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
-autoincrement_int = Annotated[int, mapped_column(autoincrement=True, index=True)]
 
 metadata = Base.metadata
 
@@ -59,7 +58,11 @@ class VersionedBase(Base):
     __abstract__ = True
     __table_args__ = {"schema": "hame"}
 
-    id: Mapped[uuid_pk]
+    # Go figure. We have to *explicitly state* id is a mapped column, because id will
+    # have to be defined inside all the subclasses for relationship remote_side
+    # definition to work. So even if there is an id field in all the classes,
+    # self-relationships will later break if id is only defined by type annotation.
+    id: Mapped[uuid_pk] = mapped_column()
     created_at: Mapped[timestamp]
     # TODO: postgresql has no default onupdate. Must implement this with trigger.
     modified_at: Mapped[timestamp]
@@ -73,7 +76,8 @@ class CodeBase(VersionedBase):
 
     __abstract__ = True
     __table_args__ = {"schema": "codes"}
-    code_list_uri = ""
+    code_list_uri = ""  # the URI to use for looking for codes online
+    local_codes: List[Dict] = []  # local codes to add to the code list
 
     value: Mapped[unique_str]
     short_name: Mapped[str] = mapped_column(server_default="", index=True)
@@ -95,10 +99,12 @@ class CodeBase(VersionedBase):
             ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
         )
 
-    @classmethod
+    # Oh great. Unlike SQLAlchemy documentation states, @classmethod decorator should
+    # absolutely *not* be used. Declared relationships are not correctly set if the
+    # decorator is present.
     @declared_attr
-    def parent(cls) -> Mapped[VersionedBase]:
-        return relationship(cls, backref="children")
+    def parent(cls) -> Mapped[Optional[VersionedBase]]:  # noqa
+        return relationship(cls, remote_side=[cls.id], backref="children")
 
     @property
     def uri(self):
@@ -114,18 +120,15 @@ class PlanBase(VersionedBase):
 
     name: Mapped[language_str]
     exported_at: Mapped[Optional[datetime]]
-    valid_from: Mapped[Optional[datetime]]
-    valid_to: Mapped[Optional[datetime]]
-    repealed_at: Mapped[Optional[datetime]]
+
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
         index=True,
     )
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def lifecycle_status(cls) -> Mapped[VersionedBase]:
+    def lifecycle_status(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("LifeCycleStatus", backref=f"{cls.__tablename__}s")
 
 
@@ -136,10 +139,11 @@ class PlanObjectBase(PlanBase):
 
     __abstract__ = True
 
+    description: Mapped[language_str]
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)
-    ordering: Mapped[autoincrement_int]
+    ordering: Mapped[Optional[int]] = mapped_column(index=True)
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
         index=True,
@@ -155,19 +159,16 @@ class PlanObjectBase(PlanBase):
     )
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def type_of_underground(cls) -> Mapped[VersionedBase]:
+    def type_of_underground(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("TypeOfUnderground", backref=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def plan(cls) -> Mapped[VersionedBase]:
+    def plan(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("Plan", backref=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
-    @classmethod
     @declared_attr
-    def plan_regulation_group(cls) -> Mapped[VersionedBase]:
+    def plan_regulation_group(cls) -> Mapped[VersionedBase]:  # noqa
         return relationship("PlanRegulationGroup", backref=f"{cls.__tablename__}s")
