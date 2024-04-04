@@ -93,13 +93,13 @@ variable "private-subnet-count" {
 variable "x-road_securityserver_cpu" {
   description = "CPU for X-Road Security Server"
   type        = number
-  default     = 2
+  default     = 2048
 }
 
 variable "x-road_securityserver_memory" {
   description = "Memory for X-Road Security Server"
   type        = number
-  default     = 3072
+  default     = 4096
 }
 
 variable "x-road_securityserver_image" {

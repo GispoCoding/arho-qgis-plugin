@@ -2,9 +2,10 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Create common VPC for bastion, lambdas and rds
+# Create common VPC for bastion, lambdas, rds, efs and ecs
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
 
   tags = merge(local.default_tags, { "Name" : "${var.prefix}-vpc" })
 }
@@ -232,7 +233,7 @@ resource "aws_security_group_rule" "rds-bastion" {
   security_group_id = aws_security_group.rds.id
 }
 
-# Allow traffic from x-road server to internet
+# Allow traffic from x-road server to internet and file system
 resource "aws_security_group" "x-road" {
   name        = "${var.prefix} X-road security server"
   description = "${var.prefix} X-road security server security group"
@@ -275,6 +276,14 @@ resource "aws_security_group" "x-road" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+# To file system
+  egress {
+    from_port   = 0
+    to_port     = 2049
+    protocol    = "tcp"
+    self        = true
+  }
+
   tags = merge(local.default_tags, {
     Name = "${var.prefix}-x-road_securityserver-sg"
   })
@@ -306,7 +315,22 @@ resource "aws_security_group_rule" "x-road-bastion" {
   security_group_id = aws_security_group.x-road.id
 }
 
+# Allow traffic inside the x-road security group to EFS
+resource "aws_security_group_rule" "x-road-filesystem" {
+  description       = "X-road allow traffic to EFS file system"
+  type              = "ingress"
+  from_port         = 2049
+  to_port           = 2049
+  protocol          = "tcp"
+
+  self              = true
+  security_group_id = aws_security_group.x-road.id
+}
+
 # TODO: allow traffic from x-road to rds and file system if we need to persist some state.
 #
+# TODO: We need separate security group for file system. This allows us to specify incoming ports
+# to the file system without opening those ports to the x-road server itself.
+
 # Ideally, the configuration should come from terraform, so the x-road server would contain the
 # correct service ids etc. out of the box and no state needs to be stored.
