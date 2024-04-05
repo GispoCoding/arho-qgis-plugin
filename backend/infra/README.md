@@ -74,7 +74,7 @@ This is because you need to apply for a separate permit for your subsystem to be
 
 1. You must apply for permission to join the Palveluväylä test environment first: [Liittyminen kehitysympäristöön](https://palveluhallinta.suomi.fi/fi/sivut/palveluvayla/kayttoonotto/liittyminen-kehitysymparistoon). For the permission application, you will need
    - the public IP address in your AWS, which you will find as `hame-your-deployment-eip` under AWS EC2 Elastic IPs in the AWS EC2 console Network & Security settings.
-   - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case, e.g. `ryhti-vsl-client`.
+   - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`, e.g. `ryhti-vsl-client`.
 When your application is accepted, you are provided with the configuration anchor file needed later.
 2. Create an SSH key and add the public key to `bastion_ec2_tunnel_public_keys` in `hame-your-deployment.tfvars.json`.
 3. Fill in the desired admin username and password in `x-road_secrets` in `hame-your-deployment.tfvars.json`.
