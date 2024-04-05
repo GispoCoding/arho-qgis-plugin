@@ -38,35 +38,3 @@ resource "aws_secretsmanager_secret_version" "hame-db-r" {
   secret_id     = aws_secretsmanager_secret.hame-db-r.id
   secret_string = jsonencode(var.hame_r_secrets)
 }
-
-# To prevent users from having issues whenever ssh tunnel server host key changes,
-# we will specify a static private key for the EC2 server. This key must be saved
-# in AWS KMS manually; it is not created or changed by terraform.
-
-# resource "aws_secretsmanager_secret" "bastion-private-key" {
-#   name = "${var.prefix}-bastion-ec2-host-key"
-# }
-
-# resource "aws_secretsmanager_secret_version" "previous" {
-#   secret_id = aws_secretsmanager_secret.bastion-private-key.id
-#   secret_string = "use constant host key saved in AWS KMS"
-#   lifecycle {
-#     ignore_changes = [
-#       secret_string,
-#       version_stages
-#     ]
-#   }
-#   version_stages = ["AWSPREVIOUS", ]
-# }
-
-# resource "aws_secretsmanager_secret_version" "current" {
-#   secret_id = aws_secretsmanager_secret.bastion-private-key.id
-#   secret_string = "use constant host key saved in AWS KMS"
-#   version_stages = ["AWSCURRENT", ]
-#   lifecycle {
-#     ignore_changes = [
-#       secret_string,
-#       version_stages,
-#     ]
-#   }
-# }
