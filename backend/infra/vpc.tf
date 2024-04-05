@@ -326,11 +326,3 @@ resource "aws_security_group_rule" "x-road-filesystem" {
   self              = true
   security_group_id = aws_security_group.x-road.id
 }
-
-# TODO: allow traffic from x-road to rds and file system if we need to persist some state.
-#
-# TODO: We need separate security group for file system. This allows us to specify incoming ports
-# to the file system without opening those ports to the x-road server itself.
-
-# Ideally, the configuration should come from terraform, so the x-road server would contain the
-# correct service ids etc. out of the box and no state needs to be stored.
