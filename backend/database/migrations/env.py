@@ -11,17 +11,17 @@ from base import Base
 from codes import *  # noqa
 from models import *  # noqa
 from sqlalchemy import create_engine
-from triggers import (  # trg_change_lifecycle_status,; trgfunc_change_lifecycle_status,
+from triggers import (  # trgfunc_update_lifecycle_status,; trg_update_lifecycle_status,
     trg_plan_modified_at,
     trgfunc_plan_modified_at,
 )
 
 # Register functions and triggers
 imported_functions = [
-    trg_plan_modified_at,
-    # trg_change_lifecycle_status,
     trgfunc_plan_modified_at,
-    # trgfunc_change_lifecycle_status,
+    trg_plan_modified_at,
+    # trgfunc_update_lifecycle_status,
+    # trg_update_lifecycle_status,
 ]
 
 register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])
