@@ -371,6 +371,21 @@ class LifeCycleDate(VersionedBase):
     plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey")
     )
+    land_use_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.land_use_area.id", name="land_use_area_id_fkey")
+    )
+    other_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.other_area.id", name="other_area_id_fkey")
+    )
+    line_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.line.id", name="line_id_fkey")
+    )
+    land_use_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.land_use_point.id", name="land_use_point_id_fkey")
+    )
+    other_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.other_point.id", name="other_point_id_fkey")
+    )
     plan_regulation_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("hame.plan_regulation.id", name="plan_regulation_id_fkey")
     )
