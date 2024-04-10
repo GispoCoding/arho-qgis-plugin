@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID
+from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID, Range
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -30,7 +30,7 @@ class Base(DeclarativeBase):
         MultiLineString: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
         MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
         MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),
-        Tuple[float, float]: NUMRANGE,
+        Range[float]: NUMRANGE,
     }
 
 
@@ -44,7 +44,7 @@ unique_str = Annotated[str, mapped_column(unique=True, index=True)]
 language_str = Annotated[
     dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
 ]
-numeric_range = Annotated[Tuple[float, float], mapped_column(nullable=True)]
+numeric_range = Annotated[Range[float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 
 metadata = Base.metadata
@@ -129,7 +129,16 @@ class PlanBase(VersionedBase):
     # class reference in abstract base class, with backreference to class name:
     @declared_attr
     def lifecycle_status(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship("LifeCycleStatus", backref=f"{cls.__tablename__}s")
+        return relationship(
+            "LifeCycleStatus", backref=f"{cls.__tablename__}s", lazy="joined"
+        )
+
+    # Let's add backreference to allow lazy loading from this side.
+    @declared_attr
+    def lifecycle_dates(cls):  # noqa
+        return relationship(
+            "LifeCycleDate", back_populates=f"{cls.__tablename__}", lazy="joined"
+        )
 
 
 class PlanObjectBase(PlanBase):
@@ -158,10 +167,13 @@ class PlanObjectBase(PlanBase):
         index=True,
     )
 
-    # class reference in abstract base class, with backreference to class name:
+    # class reference in abstract base class, with backreference to class name
+    # Let's load all the codes for objects joined.
     @declared_attr
     def type_of_underground(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship("TypeOfUnderground", backref=f"{cls.__tablename__}s")
+        return relationship(
+            "TypeOfUnderground", backref=f"{cls.__tablename__}s", lazy="joined"
+        )
 
     # class reference in abstract base class, with backreference to class name:
     @declared_attr

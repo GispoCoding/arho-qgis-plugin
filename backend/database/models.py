@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 # we have to import CodeBase in codes.py from here to allow two-way relationships
 from base import (  # noqa
@@ -34,11 +34,15 @@ class Plan(PlanBase):
             "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
         )
     )
-    plan_regulation_group = relationship("PlanRegulationGroup", backref="plans")
+    # Let's do lazy loading for all general plan regulations.
+    plan_regulation_group = relationship(
+        "PlanRegulationGroup", backref="plans", lazy="joined"
+    )
     plan_type_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
     )
-    plan_type = relationship("PlanType", backref="plans")
+    # Let's load all the codes for objects joined.
+    plan_type = relationship("PlanType", backref="plans", lazy="joined")
 
     permanent_plan_identifier: Mapped[Optional[str]]
     producers_plan_identifier: Mapped[Optional[str]]
@@ -119,6 +123,11 @@ class PlanRegulationGroup(VersionedBase):
         "TypeOfPlanRegulationGroup", backref="plan_regulation_groups"
     )
 
+    # Let's add backreference to allow lazy loading from this side.
+    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+        "PlanRegulation", back_populates="plan_regulation_group", lazy="joined"
+    )
+
 
 class PlanRegulation(PlanBase):
     """
@@ -148,16 +157,19 @@ class PlanRegulation(PlanBase):
     plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("codes.plan_theme.id", name="plan_theme_id_fkey")
     )
-    plan_regulation_group = relationship(
-        "PlanRegulationGroup", backref="plan_regulations"
+    plan_regulation_group: Mapped[PlanRegulationGroup] = relationship(
+        "PlanRegulationGroup", back_populates="plan_regulations"
     )
+    # Let's load all the codes for objects joined.
     type_of_plan_regulation = relationship(
-        "TypeOfPlanRegulation", backref="plan_regulations"
+        "TypeOfPlanRegulation", backref="plan_regulations", lazy="joined"
     )
+    # Let's load all the codes for objects joined.
     type_of_verbal_plan_regulation = relationship(
-        "TypeOfVerbalPlanRegulation", backref="plan_regulations"
+        "TypeOfVerbalPlanRegulation", backref="plan_regulations", lazy="joined"
     )
-    plan_theme = relationship("PlanTheme", backref="plan_regulations")
+    # Let's load all the codes for objects joined.
+    plan_theme = relationship("PlanTheme", backref="plan_regulations", lazy="joined")
 
     # Käyttötarkoitus
     intended_use_id: Mapped[uuid.UUID] = mapped_column(
@@ -223,45 +235,54 @@ class PlanRegulation(PlanBase):
         ),
         nullable=True,
     )
+    # Let's load all the codes for objects joined.
     intended_use = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[intended_use_id],
         backref="intended_use_plan_regulations",
+        lazy="joined",
     )
     existence = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[existence_id],
         backref="existence_plan_regulations",
+        lazy="joined",
     )
     regulation_type_additional_information = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[regulation_type_additional_information_id],
         backref="type_plan_regulations",
+        lazy="joined",
     )
     significance = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[significance_id],
         backref="significance_plan_regulations",
+        lazy="joined",
     )
     reservation = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[reservation_id],
         backref="reservation_plan_regulations",
+        lazy="joined",
     )
     development = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[development_id],
         backref="development_plan_regulations",
+        lazy="joined",
     )
     disturbance_prevention = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[disturbance_prevention_id],
         backref="disturbance_prevention_plan_regulations",
+        lazy="joined",
     )
     construction_control = relationship(
         "TypeOfAdditionalInformation",
         foreign_keys=[construction_control_id],
         backref="construction_control_plan_regulations",
+        lazy="joined",
     )
 
     numeric_range: Mapped[numeric_range]
@@ -290,7 +311,8 @@ class PlanProposition(PlanBase):
     plan_regulation_group = relationship(
         "PlanRegulationGroup", backref="plan_propositions"
     )
-    plan_theme = relationship("PlanTheme", backref="plan_propositions")
+    # Let's load all the codes for objects joined.
+    plan_theme = relationship("PlanTheme", backref="plan_propositions", lazy="joined")
     text_value: Mapped[language_str]
     ordering: Mapped[Optional[int]] = mapped_column(index=True)
 
@@ -306,7 +328,10 @@ class SourceData(VersionedBase):
         ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
     )
 
-    type_of_source_data = relationship("TypeOfSourceData", backref="source_data")
+    # Let's load all the codes for objects joined.
+    type_of_source_data = relationship(
+        "TypeOfSourceData", backref="source_data", lazy="joined"
+    )
     name: Mapped[language_str]
     additional_information_uri: Mapped[str]
     detachment_date: Mapped[datetime]
@@ -326,8 +351,9 @@ class Organisation(VersionedBase):
             "codes.administrative_region.id", name="administrative_region_id_fkey"
         )
     )
+    # Let's load all the codes for objects joined.
     administrative_region = relationship(
-        "AdministrativeRegion", backref="organisations"
+        "AdministrativeRegion", backref="organisations", lazy="joined"
     )
 
 
@@ -345,7 +371,10 @@ class Document(VersionedBase):
         ForeignKey("hame.plan.id", name="plan_id_fkey")
     )
 
-    type_of_document = relationship("TypeOfDocument", backref="documents")
+    # Let's load all the codes for objects joined.
+    type_of_document = relationship(
+        "TypeOfDocument", backref="documents", lazy="joined"
+    )
     plan = relationship("Plan", backref="documents")
     permanent_document_identifier: Mapped[Optional[uuid.UUID]]
     name: Mapped[str]
@@ -393,13 +422,29 @@ class LifeCycleDate(VersionedBase):
         ForeignKey("hame.plan_proposition.id", name="plan_proposition_id_fkey")
     )
 
-    plan: Mapped[Optional["Plan"]] = relationship(backref="lifecycle_dates")
+    plan: Mapped[Optional["Plan"]] = relationship(back_populates="lifecycle_dates")
+    land_use_area: Mapped[Optional[LandUseArea]] = relationship(
+        back_populates="lifecycle_dates"
+    )
+    other_area: Mapped[Optional[OtherArea]] = relationship(
+        back_populates="lifecycle_dates"
+    )
+    line: Mapped[Optional[Line]] = relationship(back_populates="lifecycle_dates")
+    land_use_point: Mapped[Optional[LandUsePoint]] = relationship(
+        back_populates="lifecycle_dates"
+    )
+    other_point: Mapped[Optional[OtherPoint]] = relationship(
+        back_populates="lifecycle_dates"
+    )
     plan_regulation: Mapped[Optional["PlanRegulation"]] = relationship(
-        backref="lifecycle_dates"
+        back_populates="lifecycle_dates"
     )
     plan_proposition: Mapped[Optional["PlanProposition"]] = relationship(
-        backref="lifecycle_dates"
+        back_populates="lifecycle_dates"
     )
-    lifecycle_status = relationship("LifeCycleStatus", backref="lifecycle_dates")
+    # Let's load all the codes for objects joined.
+    lifecycle_status = relationship(
+        "LifeCycleStatus", backref="lifecycle_dates", lazy="joined"
+    )
     starting_at: Mapped[Optional[datetime]]
     ending_at: Mapped[Optional[datetime]]
