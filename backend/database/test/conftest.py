@@ -550,6 +550,8 @@ def plan_instance(session, code_instance, organisation_instance):
         geom=from_shape(
             MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
         ),
+        scale=1,
+        description={"fin": "test_plan"},
         lifecycle_status=code_instance,
         organisation=organisation_instance,
     )

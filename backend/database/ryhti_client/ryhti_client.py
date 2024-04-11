@@ -1,0 +1,420 @@
+import datetime
+import enum
+import json
+import logging
+from typing import Dict, List, Optional, TypedDict
+
+import base
+import models
+from codes import LifeCycleStatus
+from db_helper import DatabaseHelper, User
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Query, sessionmaker
+
+"""
+Client for validating and POSTing all Maakuntakaava data to Ryhti API
+at https://api-developer.ymparisto.fi/
+
+Validation API:
+https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
+
+X-Road POST API:
+https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Palveluväylä/Kaavoitus%20OpenApi.json
+"""
+
+LOGGER = logging.getLogger()
+LOGGER.setLevel(logging.INFO)
+
+
+class EventType(enum.IntEnum):
+    VALIDATE_PLANS = 1
+    POST_PLANS = 2
+
+
+class Response(TypedDict):
+    statusCode: int  # noqa N815
+    body: str
+
+
+class Event(TypedDict):
+    """
+    Support validating or POSTing a desired plan.
+
+    If plan_uuid is empty, all plans in database are processed. However, only
+    plans that have their to_be_exported field set to true are actually POSTed.
+    """
+
+    event_type: int  # EventType
+    plan_uuid: Optional[str]  # UUID for plan to be used
+
+
+# def get_code_list_url(api_base: str, code_registry: str, code_list: str) -> str:
+#     return f"{api_base}/{code_registry}/codeschemes/{code_list}/codes"
+
+
+class RyhtiClient:
+    HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
+    api_base = "https://api-developer.ymparisto.fi/"
+
+    def __init__(
+        self,
+        connection_string: str,
+        api_url: Optional[str] = None,
+        event_type: int = EventType.VALIDATE_PLANS,
+        plan_uuid: Optional[str] = None,
+    ) -> None:
+        self.event_type = event_type
+        if api_url:
+            self.api_base = api_url
+        engine = create_engine(connection_string)
+        self.Session = sessionmaker(bind=engine)
+        self.plans: List[models.Plan] = []
+        self.valid_status: Optional[LifeCycleStatus] = None
+        self.approved_status: Optional[LifeCycleStatus] = None
+
+        # do some prefetching before starting the run:
+        with self.Session() as session:
+            # Lifecycle status "valid" is used everywhere, so let's fetch it ready.
+            # TODO: check that valid status is "13" and approval status is "06" when
+            # the lifecycle status code list transitions from DRAFT to VALID.
+            #
+            # It is exceedingly weird that this, the most important of all statuses, is
+            # *not* a descriptive string, but a random number that may change, while all
+            # the other code lists have descriptive strings that will *not* change.
+            self.valid_status = (
+                session.query(LifeCycleStatus).filter_by(value="13").first()
+            )
+            self.approved_status = (
+                session.query(LifeCycleStatus).filter_by(value="06").first()
+            )
+            # Only process specified plans
+            plan_query: Query = session.query(models.Plan)
+            if plan_uuid:
+                plan_query = plan_query.filter_by(id=plan_uuid)
+            self.plans = plan_query.all()
+            print(plan_query.all())
+        if not self.plans:
+            print("no plans")
+            LOGGER.info("No plans found in database.")
+        else:
+            print("got plans")
+            LOGGER.info("Client initialized with plans to process:")
+            LOGGER.info(self.plans)
+
+    def get_approval_date(
+        self, plan_base: base.PlanBase
+    ) -> Optional[datetime.datetime]:
+        """
+        Returns the approval date for any object that has lifecycle dates.
+        They should be preloaded, so there's no need to fetch anything from db.
+        """
+        if self.approved_status:
+            # we have to loop over the list, but it won't have that many dates
+            # to begin with.
+            for lifecycle_date in plan_base.lifecycle_dates:
+                if lifecycle_date.lifecycle_status is self.approved_status:
+                    # This will return the first valid dates. Here we assume that
+                    # there cannot be several approved periods.
+                    return lifecycle_date.starting_at
+        return None
+
+    def get_period_of_validity(self, plan_base: base.PlanBase) -> Optional[dict]:
+        """
+        Returns the period of validity for any object that has lifecycle dates.
+        They should be preloaded, so there's no need to fetch anything from db.
+        """
+        if self.valid_status:
+            # we have to loop over the list, but it won't have that many dates
+            # to begin with.
+            for lifecycle_date in plan_base.lifecycle_dates:
+                if lifecycle_date.lifecycle_status is self.valid_status:
+                    # This will return the first valid dates. Here we assume that
+                    # there cannot be several valid periods.
+                    return {
+                        "begin": lifecycle_date.starting_at,
+                        "end": lifecycle_date.ending_at,
+                    }
+        return None
+
+    def get_plan_recommendation(
+        self, plan_recommendation: models.PlanProposition
+    ) -> Dict:
+        """
+        Construct a dict of Ryhti compatible plan recommendation.
+        """
+        recommendation_dict = dict()
+        recommendation_dict["PlanRecommendationKey"] = plan_recommendation.id
+        recommendation_dict[
+            "lifeCycleStatus"
+        ] = plan_recommendation.lifecycle_status.uri
+        if plan_recommendation.plan_theme:
+            recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
+        recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
+        recommendation_dict["periodOfValidity"] = self.get_period_of_validity(
+            plan_recommendation
+        )
+        recommendation_dict["value"] = plan_recommendation.text_value
+        return recommendation_dict
+
+    def get_plan_regulation(self, plan_regulation: models.PlanRegulation) -> Dict:
+        """
+        Construct a dict of Ryhti compatible plan regulation.
+        """
+        regulation_dict = dict()
+        regulation_dict["PlanRegulationKey"] = plan_regulation.id
+        regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
+        regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
+        if plan_regulation.plan_theme:
+            regulation_dict["planThemes"] = [plan_regulation.plan_theme.uri]
+        regulation_dict["regulationNumber"] = plan_regulation.ordering
+        regulation_dict["periodOfValidity"] = self.get_period_of_validity(
+            plan_regulation
+        )
+        if plan_regulation.type_of_verbal_plan_regulation:
+            regulation_dict["verbalRegulations"] = [
+                plan_regulation.type_of_verbal_plan_regulation.uri
+            ]
+        regulation_dict["additionalInformations"] = []
+        for code_value in [
+            plan_regulation.intended_use,
+            plan_regulation.existence,
+            plan_regulation.regulation_type_additional_information,
+            plan_regulation.significance,
+            plan_regulation.reservation,
+            plan_regulation.development,
+            plan_regulation.disturbance_prevention,
+            plan_regulation.construction_control,
+        ]:
+            if code_value:
+                regulation_dict["additionalInformations"].append(
+                    {"type": code_value.uri}
+                )
+        if plan_regulation.numeric_value:
+            regulation_dict["value"] = {
+                "dataType": "PositiveNumeric",
+                "number": plan_regulation.numeric_value,
+            }
+        elif plan_regulation.text_value:
+            regulation_dict["value"] = {
+                "dataType": "text",
+                **plan_regulation.text_value,
+            }
+        return regulation_dict
+
+    def get_plan_regulation_group(self, group: models.PlanRegulationGroup) -> Dict:
+        """
+        Construct a dict of Ryhti compatible plan regulation group.
+        """
+        group_dict = dict()
+        group_dict["PlanRegulationGroupKey"] = group.id
+        group_dict["titleOfPlanRegulation"] = group.name
+        group_dict["groupNumber"] = 1
+        group_dict["letterIdentifier"] = group.short_name
+        #  group_dict["localId"] = "blah"  # TODO: this is probably not needed?
+        group_dict["colorNumber"] = "#FFFFFF"
+        group_dict["PlanRecommendations"] = []
+        for recommendation in group.plan_propositions:
+            group_dict["PlanRecommendations"].append(
+                self.get_plan_recommendation(recommendation)
+            )
+        group_dict["PlanRegulations"] = []
+        for regulation in group.plan_regulations:
+            group_dict["PlanRegulations"].append(self.get_plan_regulation(regulation))
+        return group_dict
+
+    def get_plan_object(self, plan_object: base.PlanObjectBase) -> Dict:
+        """
+        Construct a dict of Ryhti compatible plan object.
+        """
+        plan_object_dict = dict()
+        plan_object_dict["PlanObjectKey"] = plan_object.id
+        plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
+        plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
+        plan_object_dict["Geometry"] = plan_object.geom.ST_AsGeoJson()
+        plan_object_dict["name"] = plan_object.name
+        plan_object_dict["objectNumber"] = plan_object.ordering
+        plan_object_dict["periodOfValidity"] = self.get_period_of_validity(plan_object)
+        return plan_object_dict
+
+    def get_plan_object_dicts(self, plan_objects: List[base.PlanObjectBase]) -> List:
+        """
+        Construct a list of Ryhti compatible plan object dicts from plan objects
+        in the local database.
+        """
+        plan_object_dicts = []
+        for plan_object in plan_objects:
+            plan_object_dicts.append(self.get_plan_object(plan_object))
+        return plan_object_dicts
+
+    def get_plan_regulation_groups(
+        self, plan_objects: List[base.PlanObjectBase]
+    ) -> List:
+        """
+        Construct a list of Ryhti compatible plan regulation groups from plan objects
+        in the local database.
+        """
+        group_dicts = []
+        group_ids = set(
+            [plan_object.plan_regulation_group_id for plan_object in plan_objects]
+        )
+        # Let's fetch all the plan regulation groups for all the objects with a single
+        # query. Hoping lazy loading does its trick with all the plan regulations.
+        with self.Session() as session:
+            plan_regulation_groups = (
+                session.query(models.PlanRegulationGroup)
+                .filter(models.PlanRegulationGroup.id.in_(group_ids))
+                .all()
+            )
+            for group in plan_regulation_groups:
+                group_dicts.append(self.get_plan_regulation_group(group))
+        return group_dicts
+
+    def get_plan_regulation_group_relations(
+        self, plan_objects: List[base.PlanObjectBase]
+    ) -> List:
+        """
+        Construct a list of Ryhti compatible plan regulation group relations from plan
+        objects in the local database.
+        """
+        relation_dicts = []
+        for plan_object in plan_objects:
+            relation_dicts.append(
+                {
+                    "PlanObjectKey": plan_object.id,
+                    "PlanRegulationGroupKey": plan_object.plan_regulation_group_id,
+                }
+            )
+        return relation_dicts
+
+    # TODO: plan documents not implemented yet!
+
+    def get_plan_dictionary(self, plan: models.Plan) -> Dict:
+        """
+        Construct a dict of single Ryhti compatible plan from plan in the
+        local database.
+        """
+        plan_dictionary = dict()
+
+        if plan.permanent_plan_identifier:
+            # When uploading plans, the plan key needs to be obtained from Ryhti
+            # and saved to the database. When we are only validating, it is OK to use
+            # our database uuid, in case the plan has no Ryhti identifier yet.
+            plan_dictionary["planKey"] = plan.permanent_plan_identifier
+        else:
+            plan_dictionary["planKey"] = plan.id
+        # Let's have all the code values preloaded joined from db.
+        # It makes this super easy:
+        plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
+        plan_dictionary["scale"] = plan.scale
+        plan_dictionary["geographicalArea"] = plan.geom.ST_AsGeoJson()
+        plan_dictionary["PlanDescription"] = plan.description
+
+        # Here come the dependent objects. They are related to the plan directly or
+        # via the plan objects, so we better fetch the objects first and then move on.
+        plan_objects: List[base.PlanObjectBase] = []
+        with self.Session() as session:
+            session.add(plan)
+            plan_objects += plan.land_use_areas
+            plan_objects += plan.other_areas
+            plan_objects += plan.lines
+            plan_objects += plan.land_use_points
+            plan_objects += plan.other_points
+        # Our plans may only have one general regulation group.
+        if plan.plan_regulation_group:
+            plan_dictionary["GeneralRegulationGroups"] = [
+                self.get_plan_regulation_group(plan.plan_regulation_group)
+            ]
+        # Our plans have lots of different plan objects, each of which has one plan
+        # regulation group.
+        plan_dictionary["PlanObjects"] = self.get_plan_object_dicts(plan_objects)
+        plan_dictionary["PlanRegulationGroups"] = self.get_plan_regulation_groups(
+            plan_objects
+        )
+        plan_dictionary[
+            "PlanRegulationGroupRelations"
+        ] = self.get_plan_regulation_group_relations(plan_objects)
+        # Dates come from plan lifecycle dates.
+        plan_dictionary["periodOfValidity"] = self.get_period_of_validity(plan)
+        plan_dictionary["approvalDate"] = self.get_approval_date(plan)
+
+        return plan_dictionary
+
+    def get_plan_dictionaries(self) -> Dict[str, Dict]:
+        """
+        Construct a dict of valid Ryhti compatible plan dictionaries from plans in the
+        local database.
+        """
+        plan_dictionaries = dict()
+        for plan in self.plans:
+            plan_dictionaries[plan.id] = self.get_plan_dictionary(plan)
+        return plan_dictionaries
+
+    def validate_plans(self, plan_objects: Dict[str, Dict]) -> Dict[str, Dict]:
+        """
+        Validates all specified plans in list.
+        """
+        responses: Dict[str, Dict] = dict()
+        for plan_id, plan in plan_objects.items():
+            LOGGER.info(f"Validating JSON for plan {plan_id}...")
+            print(plan)
+            # TODO: actually send the dict forward
+            LOGGER.info("Validation not implemented yet.")
+            responses[plan_id] = dict()
+        return responses
+
+    def save_responses(self, responses: Dict) -> str:
+        """
+        Save RYHTI API response data to the database.
+
+        If validation is successful, just update validated_at field.
+
+        If POST is successful, update exported_at, to_be_exported and
+        any ids received from the Ryhti API.
+
+        If validation/post is unsuccessful, save the error JSON in plan
+        validation_errors json field (in addition to saving it to AWS logs).
+        """
+        msg = ""
+        with self.Session() as session:
+            for _plan_id, _response in responses.items():
+                # TODO: save errors in database!
+                # TODO: update fields.
+                # msg += f"Validation successful for {plan_id}! Validated_at updated"
+                # else: msg += f"Validation FAILED for {plan_id}. Errors:"
+                #       msg += error_json
+                pass
+            session.commit()
+        LOGGER.info(msg)
+        return msg
+
+
+def handler(event: Event, _) -> Response:
+    """Handler which is called when accessing the endpoint."""
+    response: Response = {"statusCode": 200, "body": json.dumps("")}
+    # write access is required to update plan information after
+    # validating or POSTing data
+    db_helper = DatabaseHelper(user=User.READ_WRITE)
+    event_type = event.get("event_type", EventType.VALIDATE_PLANS)
+    plan_uuid = event.get("plan_uuid", None)
+
+    loader = RyhtiClient(
+        db_helper.get_connection_string(), event_type=event_type, plan_uuid=plan_uuid
+    )
+    if loader.plans:
+        LOGGER.info("Formatting plan data...")
+        plan_dictionaries = loader.get_plan_dictionaries()
+
+        # TODO: when we want to upload plans, we need to embed plan objects
+        # further, to create kaava-asiat etc. With uploading, therefore, the
+        # JSON to be POSTed is more complex, but it has plan_object embedded.
+        LOGGER.info("Validating plans...")
+        responses = loader.validate_plans(plan_dictionaries)
+
+        LOGGER.info("Saving response data...")
+        msg = loader.save_responses(responses)
+    else:
+        msg = "Plans not found in database, exiting."
+
+    LOGGER.info(msg)
+    response["body"] = json.dumps(msg)
+    return response

@@ -10,6 +10,10 @@ test-koodistot:
 	@echo "Loading Koodistot data..."
 	curl -XPOST "http://localhost:8082/2015-03-31/functions/function/invocations" -d '{}'
 
+test-ryhti-validate:
+	@echo "Validating database contents with Ryhti API..."
+	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"event_type": 1}'
+
 pytest:
 	docker-compose -f docker-compose.dev.yml down -v
 	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader
