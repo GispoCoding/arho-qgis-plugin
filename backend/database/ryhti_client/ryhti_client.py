@@ -143,7 +143,7 @@ class RyhtiClient:
         Construct a dict of Ryhti compatible plan recommendation.
         """
         recommendation_dict = dict()
-        recommendation_dict["PlanRecommendationKey"] = plan_recommendation.id
+        recommendation_dict["planRecommendationKey"] = plan_recommendation.id
         recommendation_dict[
             "lifeCycleStatus"
         ] = plan_recommendation.lifecycle_status.uri
@@ -161,7 +161,7 @@ class RyhtiClient:
         Construct a dict of Ryhti compatible plan regulation.
         """
         regulation_dict = dict()
-        regulation_dict["PlanRegulationKey"] = plan_regulation.id
+        regulation_dict["planRegulationKey"] = plan_regulation.id
         regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
         if plan_regulation.plan_theme:
@@ -191,7 +191,7 @@ class RyhtiClient:
                 )
         if plan_regulation.numeric_value:
             regulation_dict["value"] = {
-                "dataType": "PositiveNumeric",
+                "dataType": "positiveNumeric",
                 "number": plan_regulation.numeric_value,
             }
         elif plan_regulation.text_value:
@@ -206,20 +206,20 @@ class RyhtiClient:
         Construct a dict of Ryhti compatible plan regulation group.
         """
         group_dict = dict()
-        group_dict["PlanRegulationGroupKey"] = group.id
+        group_dict["planRegulationGroupKey"] = group.id
         group_dict["titleOfPlanRegulation"] = group.name
         group_dict["groupNumber"] = 1
         group_dict["letterIdentifier"] = group.short_name
         #  group_dict["localId"] = "blah"  # TODO: this is probably not needed?
         group_dict["colorNumber"] = "#FFFFFF"
-        group_dict["PlanRecommendations"] = []
+        group_dict["planRecommendations"] = []
         for recommendation in group.plan_propositions:
-            group_dict["PlanRecommendations"].append(
+            group_dict["planRecommendations"].append(
                 self.get_plan_recommendation(recommendation)
             )
-        group_dict["PlanRegulations"] = []
+        group_dict["planRegulations"] = []
         for regulation in group.plan_regulations:
-            group_dict["PlanRegulations"].append(self.get_plan_regulation(regulation))
+            group_dict["planRegulations"].append(self.get_plan_regulation(regulation))
         return group_dict
 
     def get_plan_object(self, plan_object: base.PlanObjectBase) -> Dict:
@@ -227,10 +227,10 @@ class RyhtiClient:
         Construct a dict of Ryhti compatible plan object.
         """
         plan_object_dict = dict()
-        plan_object_dict["PlanObjectKey"] = plan_object.id
+        plan_object_dict["planObjectKey"] = plan_object.id
         plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
         plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
-        plan_object_dict["Geometry"] = plan_object.geom.ST_AsGeoJson()
+        plan_object_dict["geometry"] = plan_object.geom.ST_AsGeoJson()
         plan_object_dict["name"] = plan_object.name
         plan_object_dict["objectNumber"] = plan_object.ordering
         plan_object_dict["periodOfValidity"] = self.get_period_of_validity(plan_object)
@@ -280,8 +280,8 @@ class RyhtiClient:
         for plan_object in plan_objects:
             relation_dicts.append(
                 {
-                    "PlanObjectKey": plan_object.id,
-                    "PlanRegulationGroupKey": plan_object.plan_regulation_group_id,
+                    "planObjectKey": plan_object.id,
+                    "planRegulationGroupKey": plan_object.plan_regulation_group_id,
                 }
             )
         return relation_dicts
@@ -307,7 +307,7 @@ class RyhtiClient:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = plan.geom.ST_AsGeoJson()
-        plan_dictionary["PlanDescription"] = plan.description
+        plan_dictionary["planDescription"] = plan.description
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
@@ -321,17 +321,17 @@ class RyhtiClient:
             plan_objects += plan.other_points
         # Our plans may only have one general regulation group.
         if plan.plan_regulation_group:
-            plan_dictionary["GeneralRegulationGroups"] = [
+            plan_dictionary["generalRegulationGroups"] = [
                 self.get_plan_regulation_group(plan.plan_regulation_group)
             ]
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.
-        plan_dictionary["PlanObjects"] = self.get_plan_object_dicts(plan_objects)
-        plan_dictionary["PlanRegulationGroups"] = self.get_plan_regulation_groups(
+        plan_dictionary["planObjects"] = self.get_plan_object_dicts(plan_objects)
+        plan_dictionary["planRegulationGroups"] = self.get_plan_regulation_groups(
             plan_objects
         )
         plan_dictionary[
-            "PlanRegulationGroupRelations"
+            "planRegulationGroupRelations"
         ] = self.get_plan_regulation_group_relations(plan_objects)
         # Dates come from plan lifecycle dates.
         plan_dictionary["periodOfValidity"] = self.get_period_of_validity(plan)

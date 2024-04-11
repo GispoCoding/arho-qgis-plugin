@@ -21,7 +21,7 @@ def desired_plan_dict(
     """
 
     return {
-        "PlanKey": plan_instance.id,
+        "planKey": plan_instance.id,
         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
         "scale": plan_instance.scale,
         "geographicalArea": {
@@ -35,13 +35,13 @@ def desired_plan_dict(
         # TODO: plan documents to be added.
         # TODO: dates of validity to be added. These need fixtures with specific codes.
         # TODO: general regulation group to be added. This needs fixture with specific code.
-        "PlanDescription": plan_instance.description,  # TODO: should this be a single language string? why?
+        "planDescription": plan_instance.description,  # TODO: should this be a single language string? why?
         "PlanObjects": [
             {
-                "PlanObjectKey": land_use_area_instance.id,
+                "planObjectKey": land_use_area_instance.id,
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
                 "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/test",
-                "Geometry": {
+                "geometry": {
                     "srid": "3067",
                     "geometry": {
                         "type": "Polygon",
@@ -62,13 +62,13 @@ def desired_plan_dict(
                 # TODO: dates of validity to be added. These need fixtures with specific codes.
             },
         ],
-        "PlanRegulationGroups": [
+        "planRegulationGroups": [
             {
-                "PlanRegulationGroupKey": plan_regulation_group_instance.id,
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
                 "titleOfPlanRegulation": plan_regulation_group_instance.name,
-                "PlanRegulations": [
+                "planRegulations": [
                     {
-                        "PlanRegulationKey": plan_regulation_instance.id,
+                        "planRegulationKey": plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
                         "value": {
@@ -103,9 +103,9 @@ def desired_plan_dict(
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
-                "PlanRecommendations": [
+                "planRecommendations": [
                     {
-                        "PlanRecommendationKey": plan_proposition_instance.id,
+                        "planRecommendationKey": plan_proposition_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
                         "value": plan_proposition_instance.text_value,
                         "planThemes": [
@@ -122,10 +122,10 @@ def desired_plan_dict(
                 "colorNumber": "#FFFFFF",
             },
         ],
-        "PlanRegulationGroupRelations": [
+        "planRegulationGroupRelations": [
             {
-                "PlanObjectKey": land_use_area_instance.id,
-                "PlanRegulationGroupKey": plan_regulation_group_instance.id,
+                "planObjectKey": land_use_area_instance.id,
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
             },
         ],
     }
