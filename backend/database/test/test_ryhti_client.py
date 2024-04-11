@@ -170,6 +170,7 @@ def test_get_plan_dictionaries(
     """
     result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
     result_plan_dict = result_plan_dicts[plan_instance.id]
+    print(result_plan_dict)
     for key, value in desired_plan_dict.items():
         print(f"checking {key}")
         print(value)

@@ -18,6 +18,7 @@ from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiPolygon
+from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
@@ -580,6 +581,8 @@ def land_use_area_instance(
         geom=from_shape(
             MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
         ),
+        height_range=Range(0.0, 1.0),
+        height_unit="m",
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
