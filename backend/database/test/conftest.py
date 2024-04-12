@@ -619,6 +619,9 @@ def plan_regulation_instance(
     plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        numeric_value=1.0,
+        unit="m",
         lifecycle_status=code_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,

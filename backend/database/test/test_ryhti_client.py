@@ -36,7 +36,8 @@ def desired_plan_dict(
         },
         # TODO: plan documents to be added.
         "periodOfValidity": None,
-        # TODO: dates of validity to be added. These need fixtures with specific codes.
+        "approvalDate": None,
+        # TODO: dates of validity and approval to be added. These need fixtures with specific codes.
         # TODO: general regulation group to be added. This needs fixture with specific code.
         "planDescription": plan_instance.description,  # TODO: should this be a single language string? why?
         "planObjects": [
@@ -89,11 +90,9 @@ def desired_plan_dict(
                             "unitOfMeasure": plan_regulation_instance.unit,
                         },
                         "subjectIdentifiers": [
-                            {
-                                plan_regulation_instance.name[
-                                    "fin"
-                                ]  # TODO: onko asiasana aina yksikielinen??
-                            }
+                            plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
                         ],
                         "verbalRegulations": [
                             {
@@ -126,7 +125,7 @@ def desired_plan_dict(
                                 "type": "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test"
                             }
                         ],
-                        "regulationNumber": plan_proposition_instance.ordering,
+                        "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
                         "periodOfValidity": None
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
@@ -155,6 +154,7 @@ def client_with_plan_data(
     plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     plan_theme_instance: codes.PlanTheme,
+    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
 ) -> RyhtiClient:
     """
@@ -165,7 +165,11 @@ def client_with_plan_data(
     """
     # Add the optional (nullable) relationships. We don't want them to be present in all fixtures.
     plan_regulation_instance.plan_theme = plan_theme_instance
-    plan_proposition_instance.intended_use = type_of_additional_information_instance
+    plan_regulation_instance.type_of_verbal_plan_regulation = (
+        type_of_verbal_plan_regulation_instance
+    )
+    plan_regulation_instance.intended_use = type_of_additional_information_instance
+    plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
 
     return RyhtiClient(

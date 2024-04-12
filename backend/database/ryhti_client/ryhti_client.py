@@ -169,7 +169,9 @@ class RyhtiClient:
             "lifeCycleStatus"
         ] = plan_recommendation.lifecycle_status.uri
         if plan_recommendation.plan_theme:
-            recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
+            recommendation_dict["planThemes"] = [
+                {"type": plan_recommendation.plan_theme.uri}
+            ]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
         recommendation_dict["periodOfValidity"] = self.get_period_of_validity(
             plan_recommendation
@@ -186,14 +188,16 @@ class RyhtiClient:
         regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
         if plan_regulation.plan_theme:
-            regulation_dict["planThemes"] = [plan_regulation.plan_theme.uri]
+            regulation_dict["planThemes"] = [{"type": plan_regulation.plan_theme.uri}]
+        if plan_regulation.name["fin"]:
+            regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
         regulation_dict["regulationNumber"] = plan_regulation.ordering
         regulation_dict["periodOfValidity"] = self.get_period_of_validity(
             plan_regulation
         )
         if plan_regulation.type_of_verbal_plan_regulation:
             regulation_dict["verbalRegulations"] = [
-                plan_regulation.type_of_verbal_plan_regulation.uri
+                {"type": plan_regulation.type_of_verbal_plan_regulation.uri}
             ]
         regulation_dict["additionalInformations"] = []
         for code_value in [
@@ -212,8 +216,9 @@ class RyhtiClient:
                 )
         if plan_regulation.numeric_value:
             regulation_dict["value"] = {
-                "dataType": "positiveNumeric",
+                "dataType": "decimal",
                 "number": plan_regulation.numeric_value,
+                "unitOfMeasure": plan_regulation.unit,
             }
         elif plan_regulation.text_value:
             regulation_dict["value"] = {
@@ -229,7 +234,7 @@ class RyhtiClient:
         group_dict = dict()
         group_dict["planRegulationGroupKey"] = group.id
         group_dict["titleOfPlanRegulation"] = group.name
-        group_dict["groupNumber"] = 1
+        #  group_dict["groupNumber"] = 1  # not needed if we only have one group
         group_dict["letterIdentifier"] = group.short_name
         #  group_dict["localId"] = "blah"  # TODO: this is probably not needed?
         group_dict["colorNumber"] = "#FFFFFF"
@@ -253,8 +258,16 @@ class RyhtiClient:
         plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
         plan_object_dict["geometry"] = self.get_geojson(plan_object.geom)
         plan_object_dict["name"] = plan_object.name
+        plan_object_dict["description"] = plan_object.description
         plan_object_dict["objectNumber"] = plan_object.ordering
         plan_object_dict["periodOfValidity"] = self.get_period_of_validity(plan_object)
+        if plan_object.height_range:
+            plan_object_dict["verticalLimit"] = {
+                "dataType": "decimalRange",
+                "minimumValue": plan_object.height_range.lower,
+                "maximumValue": plan_object.height_range.upper,
+                "unitOfMeasure": plan_object.height_unit,
+            }
         return plan_object_dict
 
     def get_plan_object_dicts(self, plan_objects: List[base.PlanObjectBase]) -> List:
