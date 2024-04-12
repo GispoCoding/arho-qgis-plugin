@@ -38,6 +38,20 @@ terraform apply --var-file hame-dev.tfvars.json
 
 Please verify that the reported changes are desired, and respond `yes` to apply the changes to infrastructure.
 
+### Adding ssh tunneling users
+
+The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. They are defined in the `hame-dev.tfvars.json` `bastion_ec2_tunnel_public_keys` field.
+
+Note that adding user data with terraform requires the EC2 server to be replaced for the changes to take effect. This also changes the IP, which is why the tunneling server has an address `hame-dev.bastion.gispocoding.fi`. The DNS record will be changed when you replace the server.
+
+Therefore, *after adding a new ssh key to `bastion_ec2_tunnel_public_keys`*, to get the new user data to server and get the address pointing to the correct (new) IP address, *you must run terraform with*
+
+```shell
+terraform apply --var-file hame-dev.tfvars.json -replace aws_instance.bastion-ec2-instance
+```
+
+This recreates the bastion server with new user data and new IP and updates the DNS record accordingly. Also, this means the server host key changes when you add new ssh keys.
+
 ## Configuring new instances
 
 1. To create a new instance of hame-ryhti, copy [hame.tfvars.sample.json](hame.tfvars.sample.json) to a new file called `hame-your-deployment.tfvars.json`.
