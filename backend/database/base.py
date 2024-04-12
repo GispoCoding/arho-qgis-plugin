@@ -25,7 +25,7 @@ class Base(DeclarativeBase):
     """
 
     type_annotation_map = {
-        uuid.UUID: UUID(as_uuid=True),
+        uuid.UUID: UUID(as_uuid=False),
         dict[str, str]: JSONB,
         MultiLineString: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
         MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
