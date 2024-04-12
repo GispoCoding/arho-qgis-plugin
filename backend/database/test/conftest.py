@@ -13,6 +13,7 @@ from alembic import command
 from alembic.config import Config
 from alembic.operations import ops
 from alembic.script import ScriptDirectory
+from base import PROJECT_SRID
 from db_helper import DatabaseHelper
 from db_manager import db_manager
 from dotenv import load_dotenv
@@ -549,7 +550,11 @@ def plan_theme_instance(session):
 def plan_instance(session, code_instance, organisation_instance):
     instance = models.Plan(
         geom=from_shape(
-            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+            MultiPolygon(
+                [(((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)]
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
         ),
         scale=1,
         description={"fin": "test_plan"},
@@ -579,7 +584,11 @@ def land_use_area_instance(
 ):
     instance = models.LandUseArea(
         geom=from_shape(
-            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+            MultiPolygon(
+                [(((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)]
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
         ),
         height_range=Range(0.0, 1.0),
         height_unit="m",

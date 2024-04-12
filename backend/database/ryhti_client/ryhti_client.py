@@ -8,6 +8,9 @@ import base
 import models
 from codes import LifeCycleStatus
 from db_helper import DatabaseHelper, User
+from geoalchemy2 import Geometry
+from geoalchemy2.shape import to_shape
+from shapely import to_geojson
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Query, sessionmaker
 
@@ -100,6 +103,24 @@ class RyhtiClient:
             print("got plans")
             LOGGER.info("Client initialized with plans to process:")
             LOGGER.info(self.plans)
+
+    def get_geojson(self, geometry: Geometry) -> dict:
+        """
+        Returns geojson format dict with the correct SRID set.
+        """
+        # We cannot use postgis geojson functions here, because the data has already
+        # been fetched from the database. So let's create geojson the python way, it's
+        # probably faster than doing extra database queries for the conversion.
+        # However, it seems that to_shape forgets to add the SRID information from the
+        # EWKB (https://github.com/geoalchemy/geoalchemy2/issues/235), so we have to
+        # paste the SRID back manually :/
+        # Also, we don't want to serialize the geojson quite yet. Looks like the only
+        # way to do get python dict to actually convert the json back to dict until we
+        # are ready to reserialize it :/
+        return {
+            "srid": str(base.PROJECT_SRID),
+            "geometry": json.loads(to_geojson(to_shape(geometry))),
+        }
 
     def get_approval_date(
         self, plan_base: base.PlanBase
@@ -230,7 +251,7 @@ class RyhtiClient:
         plan_object_dict["planObjectKey"] = plan_object.id
         plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
         plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
-        plan_object_dict["geometry"] = plan_object.geom.ST_AsGeoJson()
+        plan_object_dict["geometry"] = self.get_geojson(plan_object.geom)
         plan_object_dict["name"] = plan_object.name
         plan_object_dict["objectNumber"] = plan_object.ordering
         plan_object_dict["periodOfValidity"] = self.get_period_of_validity(plan_object)
@@ -306,7 +327,7 @@ class RyhtiClient:
         # It makes this super easy:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
         plan_dictionary["scale"] = plan.scale
-        plan_dictionary["geographicalArea"] = plan.geom.ST_AsGeoJson()
+        plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         plan_dictionary["planDescription"] = plan.description
 
         # Here come the dependent objects. They are related to the plan directly or

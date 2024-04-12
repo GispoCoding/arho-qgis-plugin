@@ -1,6 +1,7 @@
 import codes
 import models
 import pytest
+from base import PROJECT_SRID
 from ryhti_client.ryhti_client import RyhtiClient
 from sqlalchemy.orm import Session
 
@@ -14,7 +15,7 @@ def desired_plan_dict(
     plan_proposition_instance: models.PlanProposition,
 ) -> dict:
     """
-    Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/Esimerkki-sanomat/Esimerkki_json_kaavasuunnitelma_asemakaava.pdf
+    Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
 
     Let's 1) write explicitly the complex fields, and 2) just check that the simple fields have
     the same values as the original plan fixture in the database.
@@ -25,28 +26,38 @@ def desired_plan_dict(
         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
         "scale": plan_instance.scale,
         "geographicalArea": {
-            "srid": "3067",
+            "srid": str(PROJECT_SRID),
             "geometry": {
-                "type": "Polygon",
-                "coordinates": [[[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]],
+                "type": "MultiPolygon",
+                "coordinates": [
+                    [[[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]]
+                ],
             },
         },
-        # TODO: general regulation group to be added.
         # TODO: plan documents to be added.
+        "periodOfValidity": None,
         # TODO: dates of validity to be added. These need fixtures with specific codes.
         # TODO: general regulation group to be added. This needs fixture with specific code.
         "planDescription": plan_instance.description,  # TODO: should this be a single language string? why?
-        "PlanObjects": [
+        "planObjects": [
             {
                 "planObjectKey": land_use_area_instance.id,
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
                 "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/test",
                 "geometry": {
-                    "srid": "3067",
+                    "srid": str(PROJECT_SRID),
                     "geometry": {
-                        "type": "Polygon",
+                        "type": "MultiPolygon",
                         "coordinates": [
-                            [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]
+                            [
+                                [
+                                    [0.0, 0.0],
+                                    [0.0, 1.0],
+                                    [1.0, 1.0],
+                                    [1.0, 0.0],
+                                    [0.0, 0.0],
+                                ]
+                            ]
                         ],
                     },
                 },
@@ -58,7 +69,8 @@ def desired_plan_dict(
                     "minimumValue": land_use_area_instance.height_range.lower,
                     "maximumValue": land_use_area_instance.height_range.upper,
                     "unitOfMeasure": land_use_area_instance.height_unit,
-                }
+                },
+                "periodOfValidity": None
                 # TODO: dates of validity to be added. These need fixtures with specific codes.
             },
         ],
@@ -98,8 +110,9 @@ def desired_plan_dict(
                                 "type": "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test"
                             }
                         ],
-                        "regulationNumber": plan_regulation_instance.ordering
+                        "regulationNumber": plan_regulation_instance.ordering,
                         # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
@@ -113,8 +126,9 @@ def desired_plan_dict(
                                 "type": "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test"
                             }
                         ],
-                        "regulationNumber": plan_proposition_instance.ordering
+                        "regulationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
+                        "periodOfValidity": None
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
@@ -160,6 +174,37 @@ def client_with_plan_data(
     )
 
 
+def assert_lists_equal(list1: list, list2: list):
+    """
+    Recursively check that lists have the same items in the same order.
+    """
+    assert len(list1) == len(list2)
+    for item1, item2 in zip(list1, list2):
+        print(f"comparing values {item1} and {item2}")
+        if isinstance(item1, dict):
+            assert_dicts_equal(item1, item2)
+        elif isinstance(item1, list):
+            assert_lists_equal(item1, item2)
+        else:
+            assert item1 == item2
+
+
+def assert_dicts_equal(dict1: dict, dict2: dict):
+    """
+    Recursively check that dicts contain the same keys with same values.
+    """
+    for key in dict2.keys():
+        assert key in dict1
+    for key, value in dict1.items():
+        print(f"comparing {key} {value} to {dict2[key]}")
+        if isinstance(value, dict):
+            assert_dicts_equal(dict2[key], value)
+        elif isinstance(value, list):
+            assert_lists_equal(dict2[key], value)
+        else:
+            assert dict2[key] == value
+
+
 def test_get_plan_dictionaries(
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
@@ -171,7 +216,4 @@ def test_get_plan_dictionaries(
     result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
     result_plan_dict = result_plan_dicts[plan_instance.id]
     print(result_plan_dict)
-    for key, value in desired_plan_dict.items():
-        print(f"checking {key}")
-        print(value)
-        assert result_plan_dict[key] == value
+    assert_dicts_equal(result_plan_dict, desired_plan_dict)
