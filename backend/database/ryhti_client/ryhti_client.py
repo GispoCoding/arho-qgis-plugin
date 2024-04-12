@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, TypedDict
 
 import base
 import models
+import requests
 from codes import LifeCycleStatus
 from db_helper import DatabaseHelper, User
 from geoalchemy2 import Geometry
@@ -390,10 +391,10 @@ class RyhtiClient:
         responses: Dict[str, Dict] = dict()
         for plan_id, plan in plan_objects.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
-            print(plan)
-            # TODO: actually send the dict forward
-            LOGGER.info("Validation not implemented yet.")
-            responses[plan_id] = dict()
+            responses[plan_id] = requests.post(
+                f"{self.api_base}/api/Plan/validate", json=plan
+            ).json()
+            LOGGER.info(f"Got response {responses[plan_id]}")
         return responses
 
     def save_responses(self, responses: Dict) -> str:

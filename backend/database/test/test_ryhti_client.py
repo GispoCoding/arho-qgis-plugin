@@ -1,3 +1,6 @@
+import json
+from typing import Callable
+
 import codes
 import models
 import pytest
@@ -144,6 +147,18 @@ def desired_plan_dict(
     }
 
 
+mock_error_string = "There is something wrong with your plan! Good luck!"
+
+
+@pytest.fixture()
+def mock_ryhti(requests_mock) -> None:
+    requests_mock.post(
+        "http://mock.url/api/plan/validate",
+        text=json.dumps({"errors": mock_error_string}),
+        status_code=400,
+    )
+
+
 @pytest.fixture(scope="module")
 def client_with_plan_data(
     session: Session,
@@ -215,9 +230,17 @@ def test_get_plan_dictionaries(
     desired_plan_dict: dict,
 ):
     """
-    Check that correct json structure is generated
+    Check that correct JSON structure is generated
     """
     result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
     result_plan_dict = result_plan_dicts[plan_instance.id]
-    print(result_plan_dict)
     assert_dicts_equal(result_plan_dict, desired_plan_dict)
+
+
+def test_validate_plans(client_with_plan_data: RyhtiClient, mock_ryhti: Callable):
+    """
+    Check that JSON is posted
+    """
+    result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
+    response = client_with_plan_data.validate_plans(result_plan_dicts)
+    assert response["errors"] == mock_error_string
