@@ -17,7 +17,7 @@ from db_helper import DatabaseHelper
 from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiPolygon
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy.orm import sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
@@ -578,6 +578,84 @@ def land_use_area_instance(
         geom=from_shape(
             MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
         ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def other_area_instance(
+    session,
+    code_instance,
+    type_of_underground_instance,
+    plan_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.OtherArea(
+        geom=from_shape(
+            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+        ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def line_instance(
+    session,
+    code_instance,
+    type_of_underground_instance,
+    plan_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.Line(
+        geom=from_shape(MultiLineString([[[0, 0], [1, 2]], [[4, 4], [5, 6]]])),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def land_use_point_instance(
+    session,
+    code_instance,
+    type_of_underground_instance,
+    plan_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.LandUsePoint(
+        geom=from_shape(MultiPoint([[0.0, 0.0], [1.0, 2.0]])),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def other_point_instance(
+    session,
+    code_instance,
+    type_of_underground_instance,
+    plan_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.OtherPoint(
+        geom=from_shape(MultiPoint([[0.0, 0.0], [1.0, 2.0]])),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
