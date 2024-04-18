@@ -1,7 +1,6 @@
 import os
 from logging.config import fileConfig
 
-import triggers
 from alembic import context
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
@@ -12,38 +11,20 @@ from base import Base
 from codes import *  # noqa
 from models import *  # noqa
 from sqlalchemy import create_engine
+from triggers import generate_modified_at_triggers, generate_new_lifecycle_date_triggers
 
-# Register functions and triggers
-imported_functions = [
-    triggers.trg_plan_modified_at,
-    triggers.trg_land_use_area_modified_at,
-    triggers.trg_other_area_modified_at,
-    triggers.trg_line_modified_at,
-    triggers.trg_land_use_point_modified_at,
-    triggers.trg_other_point_modified_at,
-    triggers.trg_plan_regulation_group_modified_at,
-    triggers.trg_plan_regulation_modified_at,
-    triggers.trg_plan_proposition_modified_at,
-    triggers.trg_source_data_modified_at,
-    triggers.trg_organisation_modified_at,
-    triggers.trg_document_modified_at,
-    triggers.trg_lifecycle_date_modified_at,
-    triggers.trg_update_plan_lifecycle_status,
-    triggers.trgfunc_plan_modified_at,
-    triggers.trgfunc_land_use_area_modified_at,
-    triggers.trgfunc_other_area_modified_at,
-    triggers.trgfunc_line_modified_at,
-    triggers.trgfunc_land_use_point_modified_at,
-    triggers.trgfunc_other_point_modified_at,
-    triggers.trgfunc_plan_regulation_group_modified_at,
-    triggers.trgfunc_plan_regulation_modified_at,
-    triggers.trgfunc_plan_proposition_modified_at,
-    triggers.trgfunc_source_data_modified_at,
-    triggers.trgfunc_organisation_modified_at,
-    triggers.trgfunc_document_modified_at,
-    triggers.trgfunc_lifecycle_date_modified_at,
-    triggers.trgfunc_update_plan_lifecycle_status,
-]
+modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
+(
+    new_lifecycle_date_trgs,
+    new_lifecycle_date_trgfuncs,
+) = generate_new_lifecycle_date_triggers()
+
+imported_functions = (
+    modified_at_trgs
+    + modified_at_trgfuncs
+    + new_lifecycle_date_trgs
+    + new_lifecycle_date_trgfuncs
+)
 
 register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])
 

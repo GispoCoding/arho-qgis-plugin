@@ -17,6 +17,7 @@ def test_modified_at(
     plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     source_data_instance: models.SourceData,
+    type_of_source_data_instance: codes.TypeOfSourceData,
     organisation_instance: models.Organisation,
     document_instance: models.Document,
     lifecycle_date_instance: models.LifeCycleDate,
@@ -46,7 +47,7 @@ def test_modified_at(
     plan_regulation_group_instance.short_name = "foo"
     plan_regulation_instance.text_value = "foo"
     plan_proposition_instance.text_value = "foo"
-    source_data_instance.detachment_date = datetime.now()
+    source_data_instance.type_of_source_data = type_of_source_data_instance
     organisation_instance.business_id = "foo"
     document_instance.name = "foo"
     lifecycle_date_instance.ending_at = datetime.now()
@@ -80,6 +81,8 @@ def test_modified_at(
 def test_update_lifecycle_status(
     session: Session,
     plan_instance: models.Plan,
+    plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
 ):
@@ -87,7 +90,21 @@ def test_update_lifecycle_status(
     session.refresh(code_instance)
     session.refresh(another_code_instance)
     plan_instance.lifecycle_status = another_code_instance
-    new_lifecycle_date = plan_instance.lifecycle_dates[0]
+    plan_regulation_instance.lifecycle_status = another_code_instance
+    plan_proposition_instance.lifecycle_status = another_code_instance
+    plan_new_lifecycle_date = plan_instance.lifecycle_dates[0]
+    plan_regulation_new_lifecycle_date = plan_regulation_instance.lifecycle_dates[0]
+    plan_proposition_new_lifecycle_date = plan_proposition_instance.lifecycle_dates[0]
     session.flush()
-    assert new_lifecycle_date.lifecycle_status_id == another_code_instance.id
-    assert new_lifecycle_date.starting_at is not None
+    assert plan_new_lifecycle_date.lifecycle_status_id == another_code_instance.id
+    assert plan_new_lifecycle_date.starting_at is not None
+    assert (
+        plan_regulation_new_lifecycle_date.lifecycle_status_id
+        == another_code_instance.id
+    )
+    assert plan_regulation_new_lifecycle_date.starting_at is not None
+    assert (
+        plan_proposition_new_lifecycle_date.lifecycle_status_id
+        == another_code_instance.id
+    )
+    assert plan_proposition_new_lifecycle_date.starting_at is not None
