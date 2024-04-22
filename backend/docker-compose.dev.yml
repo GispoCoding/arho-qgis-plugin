@@ -43,3 +43,20 @@ services:
       - db
     volumes:
       - ./database/koodistot_loader/koodistot_loader.py:/var/task/app.py
+
+  ryhti_client:
+    build:
+      context: .
+      dockerfile: database/ryhti_client.Dockerfile
+    env_file:
+      - .env.dev
+    environment:
+      - DB_INSTANCE_ADDRESS=db
+      - DB_INSTANCE_PORT=5432
+      - READ_FROM_AWS=0
+    ports:
+      - "8083:8080"
+    depends_on:
+      - db
+    volumes:
+      - ./database/ryhti_client/ryhti_client.py:/var/task/app.py

@@ -22,6 +22,12 @@ def koodistot_loader_url(docker_ip, docker_services):
 
 
 @pytest.fixture()
+def ryhti_client_url(docker_ip, docker_services):
+    port = docker_services.port_for("ryhti_client", 8080)
+    return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
+
+
+@pytest.fixture()
 def create_db(db_manager_url, main_db_params, root_db_params):
     payload = {
         "event_type": 1,
@@ -54,6 +60,16 @@ def populate_suomifi_koodistot(koodistot_loader_url, main_db_params, create_db):
 def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
     payload = {"suomifi_codes": False}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
+    data = r.json()
+    assert data["statusCode"] == 200, data["body"]
+
+
+@pytest.fixture()
+def validate_plan(ryhti_client_url, populate_koodistot, complete_test_plan):
+    payload = {
+        "event_type": 1,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
 
@@ -155,5 +171,22 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
                     assert code_count > 0
+    finally:
+        conn.close()
+
+
+def test_validate_plan(validate_plan, main_db_params):
+    """
+    Test the whole lambda endpoint
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            validation_date, errors = cur.fetchone()
+            assert validation_date
+            print(errors)
+            assert False
+            assert errors
     finally:
         conn.close()

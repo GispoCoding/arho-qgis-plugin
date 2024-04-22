@@ -161,16 +161,7 @@ def mock_ryhti(requests_mock) -> None:
 
 @pytest.fixture(scope="module")
 def client_with_plan_data(
-    session: Session,
-    connection_string: str,
-    plan_instance: models.Plan,
-    land_use_area_instance: models.LandUseArea,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
-    plan_regulation_instance: models.PlanRegulation,
-    plan_proposition_instance: models.PlanProposition,
-    plan_theme_instance: codes.PlanTheme,
-    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
-    type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+    connection_string: str, complete_test_plan: models.Plan
 ) -> RyhtiClient:
     """
     Return RyhtiClient that has plan data read in.
@@ -178,15 +169,6 @@ def client_with_plan_data(
     We have to create the plan data in the database before returning the client, because the client
     reads plans from the database when initializing.
     """
-    # Add the optional (nullable) relationships. We don't want them to be present in all fixtures.
-    plan_regulation_instance.plan_theme = plan_theme_instance
-    plan_regulation_instance.type_of_verbal_plan_regulation = (
-        type_of_verbal_plan_regulation_instance
-    )
-    plan_regulation_instance.intended_use = type_of_additional_information_instance
-    plan_proposition_instance.plan_theme = plan_theme_instance
-    session.commit()
-
     return RyhtiClient(
         connection_string,
         api_url="http://mock.url",
@@ -237,10 +219,31 @@ def test_get_plan_dictionaries(
     assert_dicts_equal(result_plan_dict, desired_plan_dict)
 
 
-def test_validate_plans(client_with_plan_data: RyhtiClient, mock_ryhti: Callable):
+def test_validate_plans(
+    client_with_plan_data: RyhtiClient, plan_instance: models.Plan, mock_ryhti: Callable
+):
     """
-    Check that JSON is posted
+    Check that JSON is posted and response received
     """
     result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
-    response = client_with_plan_data.validate_plans(result_plan_dicts)
-    assert response["errors"] == mock_error_string
+    responses = client_with_plan_data.validate_plans(result_plan_dicts)
+    for plan_id, response in responses.items():
+        assert plan_id == plan_instance.id
+        assert response["errors"] == mock_error_string
+
+
+def test_save_responses(
+    session: Session,
+    client_with_plan_data: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_ryhti: Callable,
+):
+    """
+    Check that Ryhti response is saved to database
+    """
+    result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
+    responses = client_with_plan_data.validate_plans(result_plan_dicts)
+    message = client_with_plan_data.save_responses(responses)
+    session.refresh(plan_instance)
+    assert plan_instance.validated_at
+    assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]

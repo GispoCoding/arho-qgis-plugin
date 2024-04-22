@@ -391,13 +391,15 @@ class RyhtiClient:
         responses: Dict[str, Dict] = dict()
         for plan_id, plan in plan_objects.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
+            # requests apparently uses simplejson automatically if it is installed!
+            # A bit too much magic for my taste, but seems to work.
             responses[plan_id] = requests.post(
                 f"{self.api_base}/api/Plan/validate", json=plan
             ).json()
             LOGGER.info(f"Got response {responses[plan_id]}")
         return responses
 
-    def save_responses(self, responses: Dict) -> str:
+    def save_responses(self, responses: Dict[str, Dict]) -> str:
         """
         Save RYHTI API response data to the database.
 
@@ -411,13 +413,16 @@ class RyhtiClient:
         """
         msg = ""
         with self.Session() as session:
-            for _plan_id, _response in responses.items():
-                # TODO: save errors in database!
-                # TODO: update fields.
-                # msg += f"Validation successful for {plan_id}! Validated_at updated"
-                # else: msg += f"Validation FAILED for {plan_id}. Errors:"
-                #       msg += error_json
-                pass
+            for plan_id, response in responses.items():
+                plan: models.Plan = session.get(models.Plan, plan_id)
+                if "errors" in response.keys():
+                    msg += f"Validation FAILED for {plan_id}. Errors:"
+                    msg += response["errors"]
+                    plan.validation_errors = response["errors"]
+                else:
+                    msg += f"Validation successful for {plan_id}!"
+                    plan.validation_errors = None
+                plan.validated_at = datetime.datetime.now()
             session.commit()
         LOGGER.info(msg)
         return msg
@@ -432,21 +437,21 @@ def handler(event: Event, _) -> Response:
     event_type = event.get("event_type", EventType.VALIDATE_PLANS)
     plan_uuid = event.get("plan_uuid", None)
 
-    loader = RyhtiClient(
+    client = RyhtiClient(
         db_helper.get_connection_string(), event_type=event_type, plan_uuid=plan_uuid
     )
-    if loader.plans:
+    if client.plans:
         LOGGER.info("Formatting plan data...")
-        plan_dictionaries = loader.get_plan_dictionaries()
+        plan_dictionaries = client.get_plan_dictionaries()
 
         # TODO: when we want to upload plans, we need to embed plan objects
         # further, to create kaava-asiat etc. With uploading, therefore, the
         # JSON to be POSTed is more complex, but it has plan_object embedded.
         LOGGER.info("Validating plans...")
-        responses = loader.validate_plans(plan_dictionaries)
+        responses = client.validate_plans(plan_dictionaries)
 
         LOGGER.info("Saving response data...")
-        msg = loader.save_responses(responses)
+        msg = client.save_responses(responses)
     else:
         msg = "Plans not found in database, exiting."
 

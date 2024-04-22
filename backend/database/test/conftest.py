@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiPolygon
 from sqlalchemy.dialects.postgresql import Range
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
 codes_count: int = 11  # adjust me when adding tables
@@ -669,3 +669,31 @@ def lifecycle_date_instance(session, code_instance):
     instance = models.LifeCycleDate(lifecycle_status=code_instance)
     session.add(instance)
     return instance
+
+
+@pytest.fixture(scope="module")
+def complete_test_plan(
+    session: Session,
+    plan_instance: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    plan_theme_instance: codes.PlanTheme,
+    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
+    type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+) -> models.Plan:
+    """
+    Plan data that might be more or less valid to be tested and validated with the
+    Ryhti API.
+    """
+    # Add the optional (nullable) relationships. We don't want them to be present in
+    # all fixtures.
+    plan_regulation_instance.plan_theme = plan_theme_instance
+    plan_regulation_instance.type_of_verbal_plan_regulation = (
+        type_of_verbal_plan_regulation_instance
+    )
+    plan_regulation_instance.intended_use = type_of_additional_information_instance
+    plan_proposition_instance.plan_theme = plan_theme_instance
+    session.commit()
+    return plan_instance

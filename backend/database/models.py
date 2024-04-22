@@ -51,6 +51,11 @@ class Plan(PlanBase):
     matter_management_identifier: Mapped[Optional[str]]
     record_number: Mapped[Optional[str]]
     geom: Mapped[MultiPolygon]
+    # Only plan should have validated_at field, since validation is only done
+    # for complete plan objects. Also validation errors might concern multiple
+    # models, not just one field or one table in database.
+    validated_at: Mapped[Optional[datetime]]
+    validation_errors: Mapped[Optional[dict[str, str]]]
 
 
 class LandUseArea(PlanObjectBase):

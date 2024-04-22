@@ -119,6 +119,10 @@ class PlanBase(VersionedBase):
     __abstract__ = True
 
     name: Mapped[language_str]
+    # Let's have exported at field for all plan data, because some of them may be
+    # exported and others added after the plan has last been exported? This will
+    # require finding all the exported objects in the database after export is done,
+    # is it worth the trouble?
     exported_at: Mapped[Optional[datetime]]
 
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
