@@ -4,4 +4,5 @@ geoalchemy2
 psycopg2-binary
 requests
 shapely
+simplejson
 sqlalchemy

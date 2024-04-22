@@ -1,12 +1,12 @@
 import datetime
 import enum
-import json
 import logging
 from typing import Dict, List, Optional, TypedDict
 
 import base
 import models
 import requests
+import simplejson as json  # type: ignore
 from codes import LifeCycleStatus
 from db_helper import DatabaseHelper, User
 from geoalchemy2 import Geometry
@@ -218,6 +218,7 @@ class RyhtiClient:
         if plan_regulation.numeric_value:
             regulation_dict["value"] = {
                 "dataType": "decimal",
+                # we have to use simplejson because numbers are Decimal
                 "number": plan_regulation.numeric_value,
                 "unitOfMeasure": plan_regulation.unit,
             }
@@ -265,6 +266,7 @@ class RyhtiClient:
         if plan_object.height_range:
             plan_object_dict["verticalLimit"] = {
                 "dataType": "decimalRange",
+                # we have to use simplejson because numbers are Decimal
                 "minimumValue": plan_object.height_range.lower,
                 "maximumValue": plan_object.height_range.upper,
                 "unitOfMeasure": plan_object.height_unit,
