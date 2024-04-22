@@ -90,6 +90,26 @@ variable "private-subnet-count" {
   default     = 2
 }
 
+variable "x-road_securityserver_cpu" {
+  description = "CPU for X-Road Security Server"
+  type        = number
+  default     = 2048
+}
+
+variable "x-road_securityserver_memory" {
+  description = "Memory for X-Road Security Server"
+  type        = number
+  default     = 4096
+}
+
+variable "x-road_securityserver_image" {
+  description = "Image for X-Road Security Server"
+  default     = "docker.io/niis/xroad-security-server-sidecar:7.3.2-slim-fi"
+}
+
+variable "x-road_secrets" {
+}
+
 variable "prefix" {
   description = "Prefix to be used in resource names"
   type        = string

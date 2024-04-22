@@ -24,8 +24,9 @@ The database and functions can be run on AWS (Amazon Web Services) cloud platfor
 
 HAME-Ryhti consists of
 1. a PostGIS database,
-2. various AWS Lambda functions to manage the database and import or export planning data, and
-3. QGIS project to connect to the database and create regional land use plans.
+2. various AWS Lambda functions to manage the database and import or export planning data,
+3. [X-Road security server sidecar container](https://gofore.com/en/benefits-of-the-x-road-security-server-sidecar/) to connect to Ryhti through Finnish X-Road, and
+4. QGIS project to connect to the database and create regional land use plans.
 
 To manage Hame-Ryhti AWS resources, check the [infra](./infra) directory.
 
