@@ -1,5 +1,15 @@
 # Hame infra
 
+- [Setup](#setup)
+   - [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
+- [Managing existing instances](#managing-existing-instances)
+   - [Adding ssh tunneling users](#adding-ssh-tunneling-users)
+- [Configuring new instances](#configuring-new-instances)
+- [Deploying instances](#deploying-instances)
+   - [Configuring X-Road (Suomi.fi Palvelyväylä) access](#configuring-x-road-suomifi-palveluväylä-access)
+- [Teardown of instances](#teardown-of-instances)
+- [Manual interactions](#manual-interactions)
+
 ## Setup
 
 Run these steps the first time.
@@ -38,6 +48,20 @@ terraform apply --var-file hame-dev.tfvars.json
 
 Please verify that the reported changes are desired, and respond `yes` to apply the changes to infrastructure.
 
+### Adding ssh tunneling users
+
+The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. They are defined in the `hame-dev.tfvars.json` `bastion_ec2_tunnel_public_keys` field.
+
+Note that adding user data with terraform requires the EC2 server to be replaced for the changes to take effect. This also changes the IP, which is why the tunneling server has an address `hame-dev.bastion.gispocoding.fi`. The DNS record will be changed when you replace the server.
+
+Therefore, *after adding a new ssh key to `bastion_ec2_tunnel_public_keys`*, to get the new user data to server and get the address pointing to the correct (new) IP address, *you must run terraform with*
+
+```shell
+terraform apply --var-file hame-dev.tfvars.json -replace aws_instance.bastion-ec2-instance
+```
+
+This recreates the bastion server with new user data and new IP and updates the DNS record accordingly. Also, this means the server host key changes when you add new ssh keys.
+
 ## Configuring new instances
 
 1. To create a new instance of hame-ryhti, copy [hame.tfvars.sample.json](hame.tfvars.sample.json) to a new file called `hame-your-deployment.tfvars.json`.
@@ -56,6 +80,30 @@ terraform apply --var-file hame-your-deployment.tfvars.json
 ```
 
 Note: Setting up the instances takes a couple of minutes.
+
+### Configuring X-Road (Suomi.fi Palveluväylä) access
+
+A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your Hame-Ryhti instance to Suomi.fi Palveluväylä to transfer official Maakuntakaava data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS Elastic File System, and it is reused when you boot or update the X-Road security server container.
+
+This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä. Follow the steps below:
+
+1. You must apply for permission to join the Palveluväylä test environment first: [Liittyminen kehitysympäristöön](https://palveluhallinta.suomi.fi/fi/sivut/palveluvayla/kayttoonotto/liittyminen-kehitysymparistoon). For the permission application, you will need
+   - the public IP address in your AWS, which you will find as `hame-your-deployment-eip` under AWS EC2 Elastic IPs in the AWS EC2 console Network & Security settings.
+   - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`, e.g. `ryhti-vsl-client`.
+When your application is accepted, you are provided with the configuration anchor file needed later.
+2. Create an SSH key and add the public key to `bastion_ec2_tunnel_public_keys` in `hame-your-deployment.tfvars.json`.
+3. Fill in the desired admin username and password in `x-road_secrets` in `hame-your-deployment.tfvars.json`.
+4. Apply the variables to AWS with `terraform apply --var-file hame-your-deployment.tfvars.json`.
+5. Check the private IP address of your `hame-your-deployment-x-road_securityserver` service task under your AWS Elastic Container Service `hame-your-deployment-x-road_securityserver` cluster in your AWS web console.
+6. Open an SSH tunnel to the X-Road server admin interface (e.g. `ssh -N -L4001:<private-ip>:4000 -i "~/.ssh/hame-ec2-tunnel.pem" ec2-user@hame-your-deployment.<bastion_subdomain>.<aws_hosted_domain>`, where `hame-ec2-tunnel.pem` contains your SSH key created in step 2, and `bastion_subdomain` and `aws_hosted_domain` are the settings in your `hame-your-deployment.tfvars.json`).
+7. Point your web browser to [https://localhost:4001](https://localhost:4001). The connection
+must be HTTPS, and you must ignore the warning about invalid SSL certificate: the hostname is localhost instead of the server IP because of the SSH tunneling, and the certificate does not know that.
+8. Log in to the [https://localhost:4001](https://localhost:4001) admin interface with your x-road secrets that you selected in step 3.
+9. Configure your X-Road server following the general [X-Road security server installation guide](https://github.com/nordic-institute/X-Road/blob/master/doc/Manuals/ig-ss_x-road_v6_security_server_installation_guide.md#33-configuration) Chapter 3.3 (Configuration). Here, you will need the configuration anchor file provided when registering in step 1.
+
+...
+10. Apply for permission for your new client to connect to Ryhti following the instructions at
+[Uuden alijärjestelmän liittäminen liityntäpalvelimeen ja sen poistaminen](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/591ac1e314bbb10001966f9c), and follow the instructions for adding the client in your admin interface.
 
 ## Teardown of instances
 

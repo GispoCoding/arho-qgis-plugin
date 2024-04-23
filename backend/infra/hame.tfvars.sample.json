@@ -21,6 +21,10 @@
         "username": "<Read & write user name>",
         "password": "<Read & write user password>"
     },
+	"x-road_secrets": {
+		"admin_user": "<Admin user for x-road sidecar",
+		"admin_password": "<Admin password for x-road sidecar>"
+	},
     "prefix": "<Name of the deployment in case of multiple parallel deploys>",
     "extra_tags": {
         "Customer": "<AWS customer tag>",
