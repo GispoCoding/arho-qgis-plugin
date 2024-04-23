@@ -1,8 +1,9 @@
 # Hame infra
 
 - [Setup](#setup)
-- [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
+   - [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
 - [Managing existing instances](#managing-existing-instances)
+   - [Adding ssh tunneling users](#adding-ssh-tunneling-users)
 - [Configuring new instances](#configuring-new-instances)
 - [Deploying instances](#deploying-instances)
    - [Configuring X-Road (Suomi.fi Palvelyväylä) access](#configuring-x-road-suomifi-palveluväylä-access)
