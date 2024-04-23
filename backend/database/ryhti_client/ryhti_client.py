@@ -1,6 +1,7 @@
 import datetime
 import enum
 import logging
+import os
 from typing import Dict, List, Optional, TypedDict
 
 import base
@@ -17,7 +18,7 @@ from sqlalchemy.orm import Query, sessionmaker
 
 """
 Client for validating and POSTing all Maakuntakaava data to Ryhti API
-at https://api-developer.ymparisto.fi/
+at https://api.ymparisto.fi/ryhti/plan-public/api/
 
 Validation API:
 https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
@@ -58,7 +59,7 @@ class Event(TypedDict):
 
 class RyhtiClient:
     HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
-    api_base = "https://api-developer.ymparisto.fi/"
+    api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
 
     def __init__(
         self,
@@ -68,8 +69,16 @@ class RyhtiClient:
         plan_uuid: Optional[str] = None,
     ) -> None:
         self.event_type = event_type
+
         if api_url:
             self.api_base = api_url
+        api_key = os.environ.get("SYKE_APIKEY")
+        if not api_key:
+            raise ValueError(
+                "Please set SYKE_APIKEY environment variable to run Ryhti client."
+            )
+        self.api_key = api_key
+
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         self.plans: List[models.Plan] = []
@@ -341,10 +350,16 @@ class RyhtiClient:
             plan_dictionary["planKey"] = plan.id
         # Let's have all the code values preloaded joined from db.
         # It makes this super easy:
+        plan_dictionary["planType"] = plan.plan_type.uri
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         plan_dictionary["planDescription"] = plan.description
+        # Apparently Ryhti plans may cover multiple administrative areas, so the region
+        # identifier has to be embedded in a list.
+        plan_dictionary["administrativeAreaIdentifiers"] = [
+            plan.organisation.administrative_region.value
+        ]
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
@@ -396,7 +411,22 @@ class RyhtiClient:
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             responses[plan_id] = requests.post(
-                f"{self.api_base}/api/Plan/validate", json=plan
+                f"{self.api_base}/Plan/validate",
+                json=plan,
+                headers={
+                    **self.HEADERS,
+                    "Content-Type": "application/json",
+                    "Ocp-Apim-Subscription-Key": self.api_key,
+                },
+                # For some reason (no idea why) some plan data has to be provided
+                # as query params, not as inline json. Shrug.
+                params={
+                    "planType": plan["planType"],
+                    # we only support one area id, no need for commas and concat:
+                    "administrativeAreaIdentifiers": plan[
+                        "administrativeAreaIdentifiers"
+                    ][0],
+                },
             ).json()
             LOGGER.info(f"Got response {responses[plan_id]}")
         return responses

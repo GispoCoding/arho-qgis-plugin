@@ -28,7 +28,9 @@ class Plan(PlanBase):
     organisation_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
-    organisation = relationship("Organisation", backref="plans")
+    organisation: Mapped["Organisation"] = relationship(
+        "Organisation", backref="plans", lazy="joined"
+    )
     plan_regulation_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey(
             "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"

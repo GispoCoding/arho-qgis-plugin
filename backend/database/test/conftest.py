@@ -34,7 +34,7 @@ SCHEMA_FILES_PATH = Path(".")
 
 @pytest.fixture(scope="session", autouse=True)
 def set_env():
-    dotenv_file = Path(__file__).parent.parent.parent / ".env.dev"
+    dotenv_file = Path(__file__).parent.parent.parent / ".env"
     assert dotenv_file.exists()
     load_dotenv(str(dotenv_file))
     db_manager.SCHEMA_FILES_PATH = str(Path(__file__).parent.parent)

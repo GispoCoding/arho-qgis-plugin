@@ -54,6 +54,7 @@ services:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
       - READ_FROM_AWS=0
+      - SYKE_APIKEY=
     ports:
       - "8083:8080"
     depends_on:
