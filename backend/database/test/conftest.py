@@ -547,7 +547,7 @@ def plan_theme_instance(session):
 
 
 @pytest.fixture(scope="module")
-def plan_instance(session, code_instance, organisation_instance):
+def plan_instance(session, code_instance, organisation_instance, plan_type_instance):
     instance = models.Plan(
         geom=from_shape(
             MultiPolygon(
@@ -560,6 +560,7 @@ def plan_instance(session, code_instance, organisation_instance):
         description={"fin": "test_plan"},
         lifecycle_status=code_instance,
         organisation=organisation_instance,
+        plan_type=plan_type_instance,
     )
     session.add(instance)
     return instance

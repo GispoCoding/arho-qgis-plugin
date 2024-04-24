@@ -44,12 +44,13 @@ def test_plan(
     assert code_instance.plans == [plan_instance]
     assert plan_instance.organisation is organisation_instance
     assert organisation_instance.plans == [plan_instance]
+    assert plan_instance.plan_type is plan_type_instance
+    assert plan_type_instance.plans == [plan_instance]
+
     plan_instance.lifecycle_status = another_code_instance
     # nullable plan relations
     assert plan_instance.plan_regulation_group is None
     assert plan_regulation_group_instance.plans == []
-    assert plan_instance.plan_type is None
-    assert plan_type_instance.plans == []
     plan_instance.plan_regulation_group = plan_regulation_group_instance
     plan_instance.plan_type = plan_type_instance
     session.flush()
@@ -57,8 +58,6 @@ def test_plan(
     assert another_code_instance.plans == [plan_instance]
     assert plan_instance.plan_regulation_group is plan_regulation_group_instance
     assert plan_regulation_group_instance.plans == [plan_instance]
-    assert plan_instance.plan_type is plan_type_instance
-    assert plan_type_instance.plans == [plan_instance]
 
 
 def test_plan_object(

@@ -40,7 +40,7 @@ class Plan(PlanBase):
     plan_regulation_group = relationship(
         "PlanRegulationGroup", backref="plans", lazy="joined"
     )
-    plan_type_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    plan_type_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
     )
     # Let's load all the codes for objects joined.
