@@ -153,7 +153,7 @@ mock_error_string = "There is something wrong with your plan! Good luck!"
 @pytest.fixture()
 def mock_ryhti(requests_mock) -> None:
     requests_mock.post(
-        "http://mock.url/api/plan/validate",
+        "http://mock.url/Plan/validate",
         text=json.dumps({"errors": mock_error_string}),
         status_code=400,
     )
