@@ -27,6 +27,8 @@ def desired_plan_dict(
     return {
         "planKey": plan_instance.id,
         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+        "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/test",
+        "administrativeAreaIdentifiers": ["test"],
         "scale": plan_instance.scale,
         "geographicalArea": {
             "srid": str(PROJECT_SRID),
