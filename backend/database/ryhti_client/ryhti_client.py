@@ -414,9 +414,19 @@ class RyhtiClient:
         responses: Dict[str, Dict] = dict()
         for plan_id, plan in plan_objects.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
+
+            # For some reason (no idea why) some plan fields have to be provided
+            # as query parameters, not as inline json. Shrug.
+            #
+            # Also, the data is *not* allowed to be in the actual plan, se we must
+            # pop them out, go figure.
+            plan_type_parameter = plan.pop("planType")
+            # we only support one area id, no need for commas and concat:
+            admin_area_id_parameter = plan.pop("administrativeAreaIdentifiers")[0]
             if self.debug_json:
                 with open(f"ryhti_debug/{plan_id}.json", "w") as plan_file:
                     json.dump(plan, plan_file)
+
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             responses[plan_id] = requests.post(
@@ -427,14 +437,9 @@ class RyhtiClient:
                     "Content-Type": "application/json",
                     "Ocp-Apim-Subscription-Key": self.api_key,
                 },
-                # For some reason (no idea why) some plan data has to be provided
-                # as query params, not as inline json. Shrug.
                 params={
-                    "planType": plan["planType"],
-                    # we only support one area id, no need for commas and concat:
-                    "administrativeAreaIdentifiers": plan[
-                        "administrativeAreaIdentifiers"
-                    ][0],
+                    "planType": plan_type_parameter,
+                    "administrativeAreaIdentifiers": admin_area_id_parameter,
                 },
             ).json()
             LOGGER.info(f"Got response {responses[plan_id]}")
@@ -460,11 +465,11 @@ class RyhtiClient:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
                 if "errors" in response.keys():
-                    msg += f"Validation FAILED for {plan_id}. Errors:"
-                    msg += response["errors"]
+                    msg += f"Validation FAILED for {plan_id}. Errors:\n"
+                    msg += json.dump(response["errors"])
                     plan.validation_errors = response["errors"]
                 else:
-                    msg += f"Validation successful for {plan_id}!"
+                    msg += f"Validation successful for {plan_id}!\n"
                     plan.validation_errors = None
                 plan.validated_at = datetime.datetime.now()
             session.commit()
