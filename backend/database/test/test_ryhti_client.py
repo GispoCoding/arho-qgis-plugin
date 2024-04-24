@@ -149,14 +149,26 @@ def desired_plan_dict(
     }
 
 
+mock_rule = "random_rule"
 mock_error_string = "There is something wrong with your plan! Good luck!"
+mock_instance = "some field in your plan"
 
 
 @pytest.fixture()
 def mock_ryhti(requests_mock) -> None:
     requests_mock.post(
         "http://mock.url/Plan/validate",
-        text=json.dumps({"errors": mock_error_string}),
+        text=json.dumps(
+            {
+                "errors": [
+                    {
+                        "ruleId": mock_rule,
+                        "message": mock_error_string,
+                        "instance": mock_instance,
+                    }
+                ]
+            }
+        ),
         status_code=400,
     )
 
@@ -231,7 +243,13 @@ def test_validate_plans(
     responses = client_with_plan_data.validate_plans(result_plan_dicts)
     for plan_id, response in responses.items():
         assert plan_id == plan_instance.id
-        assert response["errors"] == mock_error_string
+        assert response["errors"] == [
+            {
+                "ruleId": mock_rule,
+                "message": mock_error_string,
+                "instance": mock_instance,
+            }
+        ]
 
 
 def test_save_responses(
