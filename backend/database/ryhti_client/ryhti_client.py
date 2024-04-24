@@ -47,10 +47,14 @@ class Event(TypedDict):
 
     If plan_uuid is empty, all plans in database are processed. However, only
     plans that have their to_be_exported field set to true are actually POSTed.
+
+    If save_json is true, generated JSON as well as Ryhti API response are saved
+    as {plan_id}.json and {plan_id}.response.json in the ryhti_debug directory.
     """
 
     event_type: int  # EventType
     plan_uuid: Optional[str]  # UUID for plan to be used
+    save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
 
 
 # def get_code_list_url(api_base: str, code_registry: str, code_list: str) -> str:
@@ -67,8 +71,10 @@ class RyhtiClient:
         api_url: Optional[str] = None,
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
+        debug_json: Optional[bool] = False,  # save JSON files for debugging
     ) -> None:
         self.event_type = event_type
+        self.debug_json = debug_json
 
         if api_url:
             self.api_base = api_url
@@ -408,6 +414,9 @@ class RyhtiClient:
         responses: Dict[str, Dict] = dict()
         for plan_id, plan in plan_objects.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
+            if self.debug_json:
+                with open(f"ryhti_debug/{plan_id}.json", "w") as plan_file:
+                    json.dump(plan, plan_file)
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             responses[plan_id] = requests.post(
@@ -429,6 +438,9 @@ class RyhtiClient:
                 },
             ).json()
             LOGGER.info(f"Got response {responses[plan_id]}")
+            if self.debug_json:
+                with open(f"ryhti_debug/{plan_id}.response.json", "w") as response_file:
+                    json.dump(responses[plan_id], response_file)
         return responses
 
     def save_responses(self, responses: Dict[str, Dict]) -> str:
@@ -467,10 +479,14 @@ def handler(event: Event, _) -> Response:
     # validating or POSTing data
     db_helper = DatabaseHelper(user=User.READ_WRITE)
     event_type = event.get("event_type", EventType.VALIDATE_PLANS)
+    debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
 
     client = RyhtiClient(
-        db_helper.get_connection_string(), event_type=event_type, plan_uuid=plan_uuid
+        db_helper.get_connection_string(),
+        event_type=event_type,
+        plan_uuid=plan_uuid,
+        debug_json=debug_json,
     )
     if client.plans:
         LOGGER.info("Formatting plan data...")

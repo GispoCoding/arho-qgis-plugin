@@ -66,11 +66,10 @@ def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
 
 @pytest.fixture()
 def validate_plan(ryhti_client_url, populate_koodistot, complete_test_plan):
-    payload = {
-        "event_type": 1,
-    }
+    payload = {"event_type": 1, "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
     data = r.json()
+    print(data)
     assert data["statusCode"] == 200, data["body"]
 
 
