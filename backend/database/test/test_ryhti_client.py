@@ -44,7 +44,9 @@ def desired_plan_dict(
         "approvalDate": None,
         # TODO: dates of validity and approval to be added. These need fixtures with specific codes.
         # TODO: general regulation group to be added. This needs fixture with specific code.
-        "planDescription": plan_instance.description,  # TODO: should this be a single language string? why?
+        "planDescription": plan_instance.description[
+            "fin"
+        ],  # TODO: should this be a single language string? why?
         "planObjects": [
             {
                 "planObjectKey": land_use_area_instance.id,
@@ -160,16 +162,22 @@ def mock_ryhti(requests_mock) -> None:
         "http://mock.url/Plan/validate",
         text=json.dumps(
             {
+                "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422",
+                "title": "One or more validation errors occurred.",
+                "status": 422,
+                "detail": "Validation failed: \r\n -- Type: Geometry coordinates do not match with geometry type. Severity: Error",
                 "errors": [
                     {
                         "ruleId": mock_rule,
                         "message": mock_error_string,
                         "instance": mock_instance,
                     }
-                ]
+                ],
+                "warnings": [],
+                "traceId": "00-f5288710d1eb2265175052028d4b77c4-6ed94a9caece4333-00",
             }
         ),
-        status_code=400,
+        status_code=422,
     )
 
 

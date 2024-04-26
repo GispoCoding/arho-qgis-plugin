@@ -38,7 +38,9 @@ class EventType(enum.IntEnum):
 
 class Response(TypedDict):
     statusCode: int  # noqa N815
-    body: str
+    title: str
+    details: Dict[str, str]
+    ryhti_responses: Dict[str, Dict]
 
 
 class Event(TypedDict):
@@ -360,7 +362,8 @@ class RyhtiClient:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
-        plan_dictionary["planDescription"] = plan.description
+        # For reasons unknown, Ryhti does not allow multilanguage description.
+        plan_dictionary["planDescription"] = plan.description["fin"]
         # Apparently Ryhti plans may cover multiple administrative areas, so the region
         # identifier has to be embedded in a list.
         plan_dictionary["administrativeAreaIdentifiers"] = [
@@ -448,9 +451,9 @@ class RyhtiClient:
                     json.dump(responses[plan_id], response_file)
         return responses
 
-    def save_responses(self, responses: Dict[str, Dict]) -> str:
+    def save_responses(self, responses: Dict[str, Dict]) -> Response:
         """
-        Save RYHTI API response data to the database.
+        Save RYHTI API response data to the database and return lambda response.
 
         If validation is successful, just update validated_at field.
 
@@ -458,28 +461,44 @@ class RyhtiClient:
         any ids received from the Ryhti API.
 
         If validation/post is unsuccessful, save the error JSON in plan
-        validation_errors json field (in addition to saving it to AWS logs).
+        validation_errors json field (in addition to saving it to AWS logs and
+        returning them in lambda return value).
         """
-        msg = ""
+        details: Dict[str, str] = {}
+        ryhti_responses: Dict[str, Dict] = {}
         with self.Session() as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
-                if "errors" in response.keys():
-                    msg += f"Validation FAILED for {plan_id}. Errors:\n"
-                    msg += json.dump(response["errors"])
-                    plan.validation_errors = response["errors"]
-                else:
-                    msg += f"Validation successful for {plan_id}!\n"
+                print(response)
+                if response["status"] == 200:
+                    details[plan_id] = f"Validation successful for {plan_id}!\n"
                     plan.validation_errors = None
+                else:
+                    details[plan_id] = f"Validation FAILED for {plan_id}."
+                    plan.validation_errors = response["errors"]
+
+                ryhti_responses[plan_id] = response
+                LOGGER.info(details[plan_id])
+                LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                 plan.validated_at = datetime.datetime.now()
             session.commit()
-        LOGGER.info(msg)
-        return msg
+        return {
+            "statusCode": 200,
+            "title": "Plan validations run.",
+            "details": details,
+            "ryhti_responses": ryhti_responses,
+        }
 
 
 def handler(event: Event, _) -> Response:
-    """Handler which is called when accessing the endpoint."""
-    response: Response = {"statusCode": 200, "body": json.dumps("")}
+    """Handler which is called when accessing the endpoint.
+
+    If lambda runs successfully, we always return 200 OK. In case a python
+    exception occurs, AWS lambda will return the exception.
+
+    We want to return general result message of the lambda run, as well as all the
+    Ryhti API results and errors, separated by plan id.
+    """
     # write access is required to update plan information after
     # validating or POSTing data
     db_helper = DatabaseHelper(user=User.READ_WRITE)
@@ -504,10 +523,14 @@ def handler(event: Event, _) -> Response:
         responses = client.validate_plans(plan_dictionaries)
 
         LOGGER.info("Saving response data...")
-        msg = client.save_responses(responses)
+        lambda_response = client.save_responses(responses)
     else:
-        msg = "Plans not found in database, exiting."
+        lambda_response = {
+            "statusCode": 200,
+            "title": "Plans not found in database, exiting.",
+            "details": {},
+            "ryhti_responses": {},
+        }
 
-    LOGGER.info(msg)
-    response["body"] = json.dumps(msg)
-    return response
+    LOGGER.info(lambda_response["title"])
+    return lambda_response

@@ -685,7 +685,7 @@ def complete_test_plan(
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
 ) -> models.Plan:
     """
-    Plan data that might be more or less valid to be tested and validated with the
+    Plan data that might be more or less complete, to be tested and validated with the
     Ryhti API.
     """
     # Add the optional (nullable) relationships. We don't want them to be present in
