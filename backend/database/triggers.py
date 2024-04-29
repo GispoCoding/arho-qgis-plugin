@@ -118,3 +118,45 @@ def generate_new_lifecycle_date_triggers():
         new_lifecycle_date_trgs.append(trg)
 
     return new_lifecycle_date_trgs, new_lifecycle_date_trgfuncs
+
+
+def generate_update_lifecycle_status_triggers():
+    update_lifecycle_status_trgs = []
+    update_lifecycle_status_trgfuncs = []
+
+    for table in tables_with_lifecycle_status:
+        trgfunc_signature = f"trgfunc_{table}_update_lifecycle_status()"
+        trgfunc_definition = f"""
+        RETURNS TRIGGER AS $$
+        BEGIN
+            UPDATE hame.{table}
+            SET lifecycle_status_id = NEW.lifecycle_status_id
+            WHERE plan_regulation_group_id = NEW.plan_regulation_group_id;
+            RETURN NEW;
+        END;
+        $$ language 'plpgsql'
+        """
+
+        trg_signature = f"trg_{table}_update_lifecycle_status"
+        trg_definition = f"""
+        BEFORE UPDATE ON plan
+        FOR EACH ROW
+        WHEN (NEW.lifecycle_status_id <> OLD.lifecycle_status_id)
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+
+        trgfunc = PGFunction(
+            schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+        )
+        update_lifecycle_status_trgfuncs.append(trgfunc)
+
+        trg = PGTrigger(
+            schema="hame",
+            signature=trg_signature,
+            on_entity="hame.plan",
+            is_constraint=False,
+            definition=trg_definition,
+        )
+        update_lifecycle_status_trgs.append(trg)
+
+    return update_lifecycle_status_trgs, update_lifecycle_status_trgfuncs

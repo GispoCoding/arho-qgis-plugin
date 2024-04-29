@@ -11,7 +11,11 @@ from base import Base
 from codes import *  # noqa
 from models import *  # noqa
 from sqlalchemy import create_engine
-from triggers import generate_modified_at_triggers, generate_new_lifecycle_date_triggers
+from triggers import (
+    generate_modified_at_triggers,
+    generate_new_lifecycle_date_triggers,
+    generate_update_lifecycle_status_triggers,
+)
 
 modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
 (
@@ -19,11 +23,18 @@ modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
     new_lifecycle_date_trgfuncs,
 ) = generate_new_lifecycle_date_triggers()
 
+(
+    update_lifecycle_status_trgs,
+    update_lifecycle_status_trgfuncs,
+) = generate_update_lifecycle_status_triggers()
+
 imported_functions = (
     modified_at_trgs
     + modified_at_trgfuncs
     + new_lifecycle_date_trgs
     + new_lifecycle_date_trgfuncs
+    + update_lifecycle_status_trgs
+    + update_lifecycle_status_trgfuncs
 )
 
 register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])

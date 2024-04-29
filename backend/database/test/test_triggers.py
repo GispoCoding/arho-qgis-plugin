@@ -5,7 +5,7 @@ import models
 from sqlalchemy.orm import Session
 
 
-def test_modified_at(
+def test_modified_at_triggers(
     session: Session,
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
@@ -22,6 +22,7 @@ def test_modified_at(
     document_instance: models.Document,
     lifecycle_date_instance: models.LifeCycleDate,
 ):
+    # Save old modified_at timestamps
     plan_old_modified_at = plan_instance.modified_at
     land_use_area_instance_old_modified_at = land_use_area_instance.modified_at
     other_area_instance_old_modified_at = other_area_instance.modified_at
@@ -38,6 +39,7 @@ def test_modified_at(
     document_instance_old_modified_at = document_instance.modified_at
     lifecycle_date_instance_old_modified_at = lifecycle_date_instance.modified_at
 
+    # Edit tables to fire the triggers
     plan_instance.exported_at = datetime.now()
     land_use_area_instance.ordering = 1
     other_area_instance.ordering = 1
@@ -78,7 +80,7 @@ def test_modified_at(
     )
 
 
-def test_update_lifecycle_status(
+def test_new_lifecycle_date_triggers(
     session: Session,
     plan_instance: models.Plan,
     plan_regulation_instance: models.PlanRegulation,
@@ -89,13 +91,21 @@ def test_update_lifecycle_status(
     session.flush()
     session.refresh(code_instance)
     session.refresh(another_code_instance)
+    assert plan_instance.lifecycle_status_id != another_code_instance.id
+    assert plan_regulation_instance.lifecycle_status_id != another_code_instance.id
+    assert plan_proposition_instance.lifecycle_status_id != another_code_instance.id
+
+    # Update lifecycle_statuses to fire the triggers
     plan_instance.lifecycle_status = another_code_instance
     plan_regulation_instance.lifecycle_status = another_code_instance
     plan_proposition_instance.lifecycle_status = another_code_instance
+
+    # Get new entries in lifecycle_date table
     plan_new_lifecycle_date = plan_instance.lifecycle_dates[0]
     plan_regulation_new_lifecycle_date = plan_regulation_instance.lifecycle_dates[0]
     plan_proposition_new_lifecycle_date = plan_proposition_instance.lifecycle_dates[0]
     session.flush()
+
     assert plan_new_lifecycle_date.lifecycle_status_id == another_code_instance.id
     assert plan_new_lifecycle_date.starting_at is not None
     assert (
@@ -108,3 +118,54 @@ def test_update_lifecycle_status(
         == another_code_instance.id
     )
     assert plan_proposition_new_lifecycle_date.starting_at is not None
+
+
+def test_update_lifecycle_status_triggers(
+    session: Session,
+    plan_instance: models.Plan,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    line_instance: models.Line,
+    land_use_point_instance: models.LandUsePoint,
+    other_point_instance: models.OtherPoint,
+    plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+):
+    # Set common plan_regulation_group
+    plan_instance.plan_regulation_group = plan_regulation_group_instance
+    land_use_area_instance.plan_regulation_group = plan_regulation_group_instance
+    other_area_instance.plan_regulation_group = plan_regulation_group_instance
+    line_instance.plan_regulation_group = plan_regulation_group_instance
+    land_use_point_instance.plan_regulation_group = plan_regulation_group_instance
+    other_point_instance.plan_regulation_group = plan_regulation_group_instance
+    plan_regulation_instance.plan_regulation_group = plan_regulation_group_instance
+    plan_proposition_instance.plan_regulation_group = plan_regulation_group_instance
+    session.flush()
+
+    # Set common lifecycle_status
+    land_use_area_instance.lifecycle_status = code_instance
+    other_area_instance.lifecycle_status = code_instance
+    line_instance.lifecycle_status = code_instance
+    land_use_point_instance.lifecycle_status = code_instance
+    other_point_instance.lifecycle_status = code_instance
+    plan_regulation_instance.lifecycle_status = code_instance
+    plan_proposition_instance.lifecycle_status = code_instance
+    plan_instance.lifecycle_status = code_instance
+    session.flush()
+    assert plan_instance.lifecycle_status is code_instance
+
+    # Change lifecycle status
+    plan_instance.lifecycle_status = another_code_instance
+    session.commit()
+
+    assert plan_instance.lifecycle_status_id == another_code_instance.id
+    assert land_use_area_instance.lifecycle_status_id == another_code_instance.id
+    assert other_area_instance.lifecycle_status_id == another_code_instance.id
+    assert line_instance.lifecycle_status_id == another_code_instance.id
+    assert land_use_point_instance.lifecycle_status_id == another_code_instance.id
+    assert other_point_instance.lifecycle_status_id == another_code_instance.id
+    assert plan_regulation_instance.lifecycle_status_id == another_code_instance.id
+    assert plan_proposition_instance.lifecycle_status_id == another_code_instance.id
