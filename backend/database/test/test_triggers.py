@@ -2,6 +2,8 @@ from datetime import datetime
 
 import codes
 import models
+from geoalchemy2.shape import from_shape
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy.orm import Session
 
 
@@ -169,3 +171,63 @@ def test_update_lifecycle_status_triggers(
     assert other_point_instance.lifecycle_status_id == another_code_instance.id
     assert plan_regulation_instance.lifecycle_status_id == another_code_instance.id
     assert plan_proposition_instance.lifecycle_status_id == another_code_instance.id
+
+
+def test_add_plan_id_fkey_triggers(
+    session: Session,
+    plan_instance: models.Plan,
+    code_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+):
+    # Create new plan objects without plan_id
+    another_land_use_area_instance = models.LandUseArea(
+        geom=from_shape(
+            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+        ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(another_land_use_area_instance)
+
+    another_area_instance = models.OtherArea(
+        geom=from_shape(
+            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+        ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(another_area_instance)
+
+    another_line_instance = models.Line(
+        geom=from_shape(MultiLineString([[[0, 0], [1, 2]], [[4, 4], [5, 6]]])),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(another_line_instance)
+
+    another_land_use_point_instance = models.LandUsePoint(
+        geom=from_shape(MultiPoint([[0.0, 0.0], [1.0, 2.0]])),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(another_land_use_point_instance)
+
+    another_point_instance = models.OtherPoint(
+        geom=from_shape(MultiPoint([[0.0, 0.0], [1.0, 2.0]])),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(another_point_instance)
+    session.commit()
+
+    assert another_land_use_area_instance.plan_id == plan_instance.id
+    assert another_area_instance.plan_id == plan_instance.id
+    assert another_line_instance.plan_id == plan_instance.id
+    assert another_land_use_point_instance.plan_id == plan_instance.id
+    assert another_point_instance.plan_id == plan_instance.id

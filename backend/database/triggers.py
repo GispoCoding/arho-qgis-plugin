@@ -34,6 +34,14 @@ tables_with_lifecycle_status = [
     "plan_proposition",
 ]
 
+plan_object_tables = [
+    "land_use_area",
+    "other_area",
+    "line",
+    "land_use_point",
+    "other_point",
+]
+
 
 def generate_modified_at_triggers():
     modified_at_trgs = []
@@ -160,3 +168,46 @@ def generate_update_lifecycle_status_triggers():
         update_lifecycle_status_trgs.append(trg)
 
     return update_lifecycle_status_trgs, update_lifecycle_status_trgfuncs
+
+
+def generate_add_plan_id_fkey_triggers():
+    add_plan_id_fkey_trgs = []
+    add_plan_id_fkey_trgfuncs = []
+
+    for table in plan_object_tables:
+        trgfunc_signature = f"trgfunc_{table}_add_plan_id_fkey()"
+        trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        BEGIN
+            -- Get the row with most recent created_at timestamp in plan table
+            SELECT id INTO NEW.plan_id
+            FROM hame.plan
+            ORDER BY created_at DESC
+            LIMIT 1;
+            RETURN NEW;
+        END;
+        $$ language 'plpgsql'
+        """
+
+        trg_signature = f"trg_{table}_add_plan_id_fkey"
+        trg_definition = f"""
+        BEFORE INSERT ON {table}
+        FOR EACH ROW
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+
+        trgfunc = PGFunction(
+            schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+        )
+        add_plan_id_fkey_trgfuncs.append(trgfunc)
+
+        trg = PGTrigger(
+            schema="hame",
+            signature=trg_signature,
+            on_entity=f"hame.{table}",
+            is_constraint=False,
+            definition=trg_definition,
+        )
+        add_plan_id_fkey_trgs.append(trg)
+
+    return add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs
