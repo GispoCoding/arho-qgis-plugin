@@ -283,12 +283,11 @@ def test_source_data(
     session: Session,
     source_data_instance: models.SourceData,
     type_of_source_data_instance: codes.TypeOfSourceData,
+    plan_instance: models.Plan,
 ):
-    # nullable source data relations
-    assert source_data_instance.type_of_source_data is None
-    assert type_of_source_data_instance.source_data == []
-    source_data_instance.type_of_source_data = type_of_source_data_instance
-    session.flush()
+    # non-nullable source data relations
+    assert source_data_instance.plan is plan_instance
+    assert plan_instance.source_data == [source_data_instance]
     assert source_data_instance.type_of_source_data is type_of_source_data_instance
     assert type_of_source_data_instance.source_data == [source_data_instance]
 
