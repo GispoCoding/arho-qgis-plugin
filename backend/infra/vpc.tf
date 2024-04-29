@@ -2,9 +2,10 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# Create common VPC for bastion, lambdas and rds
+# Create common VPC for bastion, lambdas, rds, efs and ecs
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
+  enable_dns_hostnames = true
 
   tags = merge(local.default_tags, { "Name" : "${var.prefix}-vpc" })
 }
@@ -87,7 +88,7 @@ data "aws_subnets" "private"{
     }
 }
 
-# Give lambdas access to Internet
+# Give lambdas and X-road security server access to Internet
 resource "aws_eip" "eip" {
   domain        = "vpc"
   depends_on = [aws_internet_gateway.main]
@@ -230,4 +231,98 @@ resource "aws_security_group_rule" "rds-bastion" {
   # cidr_blocks       = ["10.0.0.0/16"]
   source_security_group_id = aws_security_group.bastion.id
   security_group_id = aws_security_group.rds.id
+}
+
+# Allow traffic from x-road server to internet and file system
+resource "aws_security_group" "x-road" {
+  name        = "${var.prefix} X-road security server"
+  description = "${var.prefix} X-road security server security group"
+  vpc_id      = aws_vpc.main.id
+
+# To X-road central server and OCSP service
+  egress {
+    from_port   = 0
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 4001
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+# To remote X-road security server
+  egress {
+    from_port   = 0
+    to_port     = 5500
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 5577
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+# To file system
+  egress {
+    from_port   = 0
+    to_port     = 2049
+    protocol    = "tcp"
+    self        = true
+  }
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-x-road_securityserver-sg"
+  })
+}
+
+# Allow traffic from lambda to x-road server consumer port
+resource "aws_security_group_rule" "lambda-x-road" {
+  description       = "X-road allow traffic from lambda"
+  type              = "ingress"
+
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+
+  source_security_group_id = aws_security_group.lambda.id
+  security_group_id = aws_security_group.x-road.id
+}
+
+# Allow traffic from bastion to x-road server admin port
+resource "aws_security_group_rule" "x-road-bastion" {
+  description       = "X-road allow traffic from bastion"
+  type              = "ingress"
+
+  from_port         = 4000
+  to_port           = 4000
+  protocol          = "tcp"
+
+  source_security_group_id = aws_security_group.bastion.id
+  security_group_id = aws_security_group.x-road.id
+}
+
+# Allow traffic inside the x-road security group to EFS
+resource "aws_security_group_rule" "x-road-filesystem" {
+  description       = "X-road allow traffic to EFS file system"
+  type              = "ingress"
+  from_port         = 2049
+  to_port           = 2049
+  protocol          = "tcp"
+
+  self              = true
+  security_group_id = aws_security_group.x-road.id
 }
