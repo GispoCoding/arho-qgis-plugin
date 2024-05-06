@@ -1,45 +1,36 @@
+import inspect
+
+import models
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 
+# All hame tables
 hame_tables = [
-    "plan",
-    "land_use_area",
-    "other_area",
-    "line",
-    "land_use_point",
-    "other_point",
-    "plan_regulation_group",
-    "plan_regulation",
-    "plan_proposition",
-    "source_data",
-    "organisation",
-    "document",
-    "lifecycle_date",
+    klass.__tablename__
+    for _, klass in inspect.getmembers(models, inspect.isclass)
+    if inspect.getmodule(klass) == models  # Ignore imported classes
 ]
 
+# All tables that inherit PlanBase
 tables_with_lifecycle_date = [
-    "plan",
-    "plan_regulation",
-    "plan_proposition",
+    klass.__tablename__
+    for _, klass in inspect.getmembers(models, inspect.isclass)
+    if inspect.getmodule(klass) == models and issubclass(klass, models.PlanBase)
 ]
 
-tables_with_lifecycle_status = [
-    # plan and lifecycle_date do not belong here
-    "land_use_area",
-    "other_area",
-    "line",
-    "land_use_point",
-    "other_point",
-    "plan_regulation",
-    "plan_proposition",
+# All tables that inherit PlanBase, excluding plan
+tables_with_dependent_lifecycle_status = [
+    klass.__tablename__
+    for _, klass in inspect.getmembers(models, inspect.isclass)
+    if inspect.getmodule(klass) == models
+    and issubclass(klass, models.PlanBase)
+    and klass is not models.Plan
 ]
 
 plan_object_tables = [
-    "land_use_area",
-    "other_area",
-    "line",
-    "land_use_point",
-    "other_point",
+    klass.__tablename__
+    for _, klass in inspect.getmembers(models, inspect.isclass)
+    if inspect.getmodule(klass) == models and issubclass(klass, models.PlanObjectBase)
 ]
 
 
@@ -133,7 +124,7 @@ def generate_update_lifecycle_status_triggers():
     update_lifecycle_status_trgs = []
     update_lifecycle_status_trgfuncs = []
 
-    for table in tables_with_lifecycle_status:
+    for table in tables_with_dependent_lifecycle_status:
         trgfunc_signature = f"trgfunc_{table}_update_lifecycle_status()"
         trgfunc_definition = f"""
         RETURNS TRIGGER AS $$
