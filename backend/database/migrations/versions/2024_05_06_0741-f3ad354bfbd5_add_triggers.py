@@ -1,25 +1,21 @@
 """add_triggers
 
-Revision ID: e4fb09c07247
+Revision ID: f3ad354bfbd5
 Revises: fa20a2e8d45e
-Create Date: 2024-04-29 15:20:16.071766
+Create Date: 2024-05-06 07:41:38.380667
 
 """
 from typing import Sequence, Union
 
+import geoalchemy2
+import sqlalchemy as sa
 from alembic import op
-
-# import sqlalchemy as sa
-# import geoalchemy2
 from alembic_utils.pg_function import PGFunction
-
-# from sqlalchemy import text as sql_text
 from alembic_utils.pg_trigger import PGTrigger
-
-# from sqlalchemy import text as sql_text
+from sqlalchemy import text as sql_text
 
 # revision identifiers, used by Alembic.
-revision: str = "e4fb09c07247"
+revision: str = "f3ad354bfbd5"
 down_revision: Union[str, None] = "fa20a2e8d45e"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -121,21 +117,21 @@ def upgrade() -> None:
     hame_trgfunc_plan_new_lifecycle_date = PGFunction(
         schema="hame",
         signature="trgfunc_plan_new_lifecycle_date()",
-        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_id, starting_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
+        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_id, starting_at, ending_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
     )
     op.create_entity(hame_trgfunc_plan_new_lifecycle_date)
 
     hame_trgfunc_plan_regulation_new_lifecycle_date = PGFunction(
         schema="hame",
         signature="trgfunc_plan_regulation_new_lifecycle_date()",
-        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_regulation_id, starting_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
+        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_regulation_id, starting_at, ending_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
     )
     op.create_entity(hame_trgfunc_plan_regulation_new_lifecycle_date)
 
     hame_trgfunc_plan_proposition_new_lifecycle_date = PGFunction(
         schema="hame",
         signature="trgfunc_plan_proposition_new_lifecycle_date()",
-        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_proposition_id, starting_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
+        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_proposition_id, starting_at, ending_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
     )
     op.create_entity(hame_trgfunc_plan_proposition_new_lifecycle_date)
 
@@ -819,21 +815,21 @@ def downgrade() -> None:
     hame_trgfunc_plan_proposition_new_lifecycle_date = PGFunction(
         schema="hame",
         signature="trgfunc_plan_proposition_new_lifecycle_date()",
-        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_proposition_id, starting_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
+        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_proposition_id, starting_at, ending_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
     )
     op.drop_entity(hame_trgfunc_plan_proposition_new_lifecycle_date)
 
     hame_trgfunc_plan_regulation_new_lifecycle_date = PGFunction(
         schema="hame",
         signature="trgfunc_plan_regulation_new_lifecycle_date()",
-        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_regulation_id, starting_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
+        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_regulation_id, starting_at, ending_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
     )
     op.drop_entity(hame_trgfunc_plan_regulation_new_lifecycle_date)
 
     hame_trgfunc_plan_new_lifecycle_date = PGFunction(
         schema="hame",
         signature="trgfunc_plan_new_lifecycle_date()",
-        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_id, starting_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
+        definition="RETURNS TRIGGER AS $$\n        BEGIN\n            INSERT INTO hame.lifecycle_date\n                (lifecycle_status_id, plan_id, starting_at, ending_at)\n            VALUES (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);\n            RETURN NEW;\n        END;\n        $$ language 'plpgsql'",
     )
     op.drop_entity(hame_trgfunc_plan_new_lifecycle_date)
 

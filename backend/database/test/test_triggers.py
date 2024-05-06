@@ -110,16 +110,19 @@ def test_new_lifecycle_date_triggers(
 
     assert plan_new_lifecycle_date.lifecycle_status_id == another_code_instance.id
     assert plan_new_lifecycle_date.starting_at is not None
+    assert plan_new_lifecycle_date.ending_at is not None
     assert (
         plan_regulation_new_lifecycle_date.lifecycle_status_id
         == another_code_instance.id
     )
     assert plan_regulation_new_lifecycle_date.starting_at is not None
+    assert plan_regulation_new_lifecycle_date.ending_at is not None
     assert (
         plan_proposition_new_lifecycle_date.lifecycle_status_id
         == another_code_instance.id
     )
     assert plan_proposition_new_lifecycle_date.starting_at is not None
+    assert plan_proposition_new_lifecycle_date.ending_at is not None
 
 
 def test_update_lifecycle_status_triggers(
