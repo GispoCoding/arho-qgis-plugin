@@ -87,6 +87,11 @@ def test_new_lifecycle_date_triggers(
     plan_instance: models.Plan,
     plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    line_instance: models.Line,
+    land_use_point_instance: models.LandUsePoint,
+    other_point_instance: models.OtherPoint,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
 ):
@@ -96,33 +101,70 @@ def test_new_lifecycle_date_triggers(
     assert plan_instance.lifecycle_status_id != another_code_instance.id
     assert plan_regulation_instance.lifecycle_status_id != another_code_instance.id
     assert plan_proposition_instance.lifecycle_status_id != another_code_instance.id
+    assert land_use_area_instance.lifecycle_status_id != another_code_instance.id
+    assert other_area_instance.lifecycle_status_id != another_code_instance.id
+    assert line_instance.lifecycle_status_id != another_code_instance.id
+    assert land_use_point_instance.lifecycle_status_id != another_code_instance.id
+    assert other_point_instance.lifecycle_status_id != another_code_instance.id
 
     # Update lifecycle_statuses to fire the triggers
     plan_instance.lifecycle_status = another_code_instance
     plan_regulation_instance.lifecycle_status = another_code_instance
     plan_proposition_instance.lifecycle_status = another_code_instance
+    land_use_area_instance.lifecycle_status = another_code_instance
+    other_area_instance.lifecycle_status = another_code_instance
+    line_instance.lifecycle_status = another_code_instance
+    land_use_point_instance.lifecycle_status = another_code_instance
+    other_point_instance.lifecycle_status = another_code_instance
 
     # Get new entries in lifecycle_date table
     plan_new_lifecycle_date = plan_instance.lifecycle_dates[0]
     plan_regulation_new_lifecycle_date = plan_regulation_instance.lifecycle_dates[0]
     plan_proposition_new_lifecycle_date = plan_proposition_instance.lifecycle_dates[0]
+    land_use_area_new_lifecycle_date = land_use_area_instance.lifecycle_dates[0]
+    other_area_new_lifecycle_date = other_area_instance.lifecycle_dates[0]
+    line_new_lifecycle_date = line_instance.lifecycle_dates[0]
+    land_use_point_new_lifecycle_date = land_use_point_instance.lifecycle_dates[0]
+    other_point_new_lifecycle_date = other_point_instance.lifecycle_dates[0]
     session.flush()
 
     assert plan_new_lifecycle_date.lifecycle_status_id == another_code_instance.id
     assert plan_new_lifecycle_date.starting_at is not None
     assert plan_new_lifecycle_date.ending_at is not None
+
     assert (
         plan_regulation_new_lifecycle_date.lifecycle_status_id
         == another_code_instance.id
     )
     assert plan_regulation_new_lifecycle_date.starting_at is not None
     assert plan_regulation_new_lifecycle_date.ending_at is not None
+
     assert (
         plan_proposition_new_lifecycle_date.lifecycle_status_id
         == another_code_instance.id
     )
     assert plan_proposition_new_lifecycle_date.starting_at is not None
     assert plan_proposition_new_lifecycle_date.ending_at is not None
+
+    assert land_use_area_instance.lifecycle_status_id == another_code_instance.id
+    assert land_use_area_new_lifecycle_date.starting_at is not None
+    assert land_use_area_new_lifecycle_date.ending_at is not None
+
+    assert other_area_instance.lifecycle_status_id == another_code_instance.id
+    assert other_area_new_lifecycle_date.starting_at is not None
+    assert other_area_new_lifecycle_date.ending_at is not None
+
+    assert line_instance.lifecycle_status_id == another_code_instance.id
+    assert line_new_lifecycle_date.starting_at is not None
+    assert line_new_lifecycle_date.ending_at is not None
+
+    assert land_use_point_instance.lifecycle_status_id == another_code_instance.id
+    assert land_use_point_new_lifecycle_date.starting_at is not None
+    assert land_use_point_new_lifecycle_date.ending_at is not None
+
+    assert other_point_instance.lifecycle_status_id == another_code_instance.id
+    assert other_point_new_lifecycle_date.starting_at is not None
+    assert other_point_new_lifecycle_date.ending_at is not None
 
 
 def test_update_lifecycle_status_triggers(
