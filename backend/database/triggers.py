@@ -35,12 +35,8 @@ plan_object_tables = [
 
 
 def generate_modified_at_triggers():
-    modified_at_trgs = []
-    modified_at_trgfuncs = []
-
-    for table in hame_tables:
-        trgfunc_signature = f"trgfunc_{table}_modified_at()"
-        trgfunc_definition = """
+    trgfunc_signature = "trgfunc_modified_at()"
+    trgfunc_definition = """
         RETURNS TRIGGER AS $$
         BEGIN
             NEW.modified_at = CURRENT_TIMESTAMP;
@@ -49,19 +45,20 @@ def generate_modified_at_triggers():
         $$ language 'plpgsql'
         """
 
+    trgfunc = PGFunction(
+        schema="hame",
+        signature=trgfunc_signature,
+        definition=trgfunc_definition,
+    )
+
+    trgs = []
+    for table in hame_tables:
         trg_signature = f"trg_{table}_modified_at"
         trg_definition = f"""
         BEFORE INSERT OR UPDATE ON {table}
         FOR EACH ROW
         EXECUTE FUNCTION hame.{trgfunc_signature}
         """
-
-        trgfunc = PGFunction(
-            schema="hame",
-            signature=trgfunc_signature,
-            definition=trgfunc_definition,
-        )
-        modified_at_trgfuncs.append(trgfunc)
 
         trg = PGTrigger(
             schema="hame",
@@ -70,15 +67,14 @@ def generate_modified_at_triggers():
             is_constraint=False,
             definition=trg_definition,
         )
-        modified_at_trgs.append(trg)
+        trgs.append(trg)
 
-    return modified_at_trgs, modified_at_trgfuncs
+    return trgs, [trgfunc]
 
 
 def generate_new_lifecycle_date_triggers():
-    new_lifecycle_date_trgs = []
-    new_lifecycle_date_trgfuncs = []
-
+    trgs = []
+    trgfuncs = []
     for table in tables_with_lifecycle_date:
         trgfunc_signature = f"trgfunc_{table}_new_lifecycle_date()"
         trgfunc_definition = f"""
@@ -106,7 +102,7 @@ def generate_new_lifecycle_date_triggers():
             signature=trgfunc_signature,
             definition=trgfunc_definition,
         )
-        new_lifecycle_date_trgfuncs.append(trgfunc)
+        trgfuncs.append(trgfunc)
 
         trg = PGTrigger(
             schema="hame",
@@ -115,15 +111,14 @@ def generate_new_lifecycle_date_triggers():
             is_constraint=False,
             definition=trg_definition,
         )
-        new_lifecycle_date_trgs.append(trg)
+        trgs.append(trg)
 
-    return new_lifecycle_date_trgs, new_lifecycle_date_trgfuncs
+    return trgs, trgfuncs
 
 
 def generate_update_lifecycle_status_triggers():
-    update_lifecycle_status_trgs = []
-    update_lifecycle_status_trgfuncs = []
-
+    trgs = []
+    trgfuncs = []
     for table in tables_with_dependent_lifecycle_status:
         trgfunc_signature = f"trgfunc_{table}_update_lifecycle_status()"
         trgfunc_definition = f"""
@@ -148,7 +143,7 @@ def generate_update_lifecycle_status_triggers():
         trgfunc = PGFunction(
             schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
         )
-        update_lifecycle_status_trgfuncs.append(trgfunc)
+        trgfuncs.append(trgfunc)
 
         trg = PGTrigger(
             schema="hame",
@@ -157,9 +152,9 @@ def generate_update_lifecycle_status_triggers():
             is_constraint=False,
             definition=trg_definition,
         )
-        update_lifecycle_status_trgs.append(trg)
+        trgs.append(trg)
 
-    return update_lifecycle_status_trgs, update_lifecycle_status_trgfuncs
+    return trgs, trgfuncs
 
 
 def generate_add_plan_id_fkey_triggers():
