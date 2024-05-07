@@ -81,9 +81,15 @@ def generate_new_lifecycle_date_triggers():
         RETURNS TRIGGER AS $$
         BEGIN
             INSERT INTO hame.lifecycle_date
-                (lifecycle_status_id, {table}_id, starting_at, ending_at)
+                (lifecycle_status_id, {table}_id, starting_at)
             VALUES
-                (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);
+
+            UPDATE hame.lifecycle_date
+            SET ending_at=CURRENT_TIMESTAMP
+            WHERE {table}_id=NEW.id
+                AND ending_at IS NULL
+                AND lifecycle_status_id=OLD.lifecycle_status_id;
             RETURN NEW;
         END;
         $$ language 'plpgsql'
