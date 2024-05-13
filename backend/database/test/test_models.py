@@ -100,7 +100,7 @@ def test_plan_regulation_group(
 
 def test_plan_regulation(
     session: Session,
-    plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
     code_instance: codes.LifeCycleStatus,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
@@ -109,143 +109,153 @@ def test_plan_regulation(
     plan_theme_instance: codes.PlanTheme,
 ):
     # non-nullable plan regulation relations
-    assert plan_regulation_instance.lifecycle_status is code_instance
-    assert code_instance.plan_regulations == [plan_regulation_instance]
+    assert text_plan_regulation_instance.lifecycle_status is code_instance
+    assert code_instance.plan_regulations == [text_plan_regulation_instance]
     assert (
-        plan_regulation_instance.plan_regulation_group is plan_regulation_group_instance
+        text_plan_regulation_instance.plan_regulation_group
+        is plan_regulation_group_instance
     )
-    assert plan_regulation_group_instance.plan_regulations == [plan_regulation_instance]
+    assert plan_regulation_group_instance.plan_regulations == [
+        text_plan_regulation_instance
+    ]
     assert (
-        plan_regulation_instance.type_of_plan_regulation
+        text_plan_regulation_instance.type_of_plan_regulation
         is type_of_plan_regulation_instance
     )
     assert type_of_plan_regulation_instance.plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # nullable plan regulation relations
-    assert plan_regulation_instance.type_of_verbal_plan_regulation is None
+    assert text_plan_regulation_instance.type_of_verbal_plan_regulation is None
     assert type_of_verbal_plan_regulation_instance.plan_regulations == []
-    assert plan_regulation_instance.plan_theme is None
+    assert text_plan_regulation_instance.plan_theme is None
     assert plan_theme_instance.plan_regulations == []
-    plan_regulation_instance.type_of_verbal_plan_regulation = (
+    text_plan_regulation_instance.type_of_verbal_plan_regulation = (
         type_of_verbal_plan_regulation_instance
     )
-    plan_regulation_instance.plan_theme = plan_theme_instance
+    text_plan_regulation_instance.plan_theme = plan_theme_instance
     # All eight additional information regulations are nullable
     # Käyttötarkoitus
-    assert plan_regulation_instance.intended_use is None
+    assert text_plan_regulation_instance.intended_use is None
     assert type_of_additional_information_instance.intended_use_plan_regulations == []
-    plan_regulation_instance.intended_use = type_of_additional_information_instance
+    text_plan_regulation_instance.intended_use = type_of_additional_information_instance
     # Olemassaolo
-    assert plan_regulation_instance.existence is None
+    assert text_plan_regulation_instance.existence is None
     assert type_of_additional_information_instance.existence_plan_regulations == []
-    plan_regulation_instance.existence = type_of_additional_information_instance
+    text_plan_regulation_instance.existence = type_of_additional_information_instance
     # Tyyppi (lisätiedon laji)
-    assert plan_regulation_instance.regulation_type_additional_information is None
+    assert text_plan_regulation_instance.regulation_type_additional_information is None
     assert type_of_additional_information_instance.type_plan_regulations == []
-    plan_regulation_instance.regulation_type_additional_information = (
+    text_plan_regulation_instance.regulation_type_additional_information = (
         type_of_additional_information_instance
     )
     # Merkittävyys
-    assert plan_regulation_instance.significance is None
+    assert text_plan_regulation_instance.significance is None
     assert type_of_additional_information_instance.significance_plan_regulations == []
-    plan_regulation_instance.significance = type_of_additional_information_instance
+    text_plan_regulation_instance.significance = type_of_additional_information_instance
     # Eri tahojen tarpeisiin varaus
-    assert plan_regulation_instance.reservation is None
+    assert text_plan_regulation_instance.reservation is None
     assert type_of_additional_information_instance.reservation_plan_regulations == []
-    plan_regulation_instance.reservation = type_of_additional_information_instance
+    text_plan_regulation_instance.reservation = type_of_additional_information_instance
     # Kehittäminen
-    assert plan_regulation_instance.development is None
+    assert text_plan_regulation_instance.development is None
     assert type_of_additional_information_instance.development_plan_regulations == []
-    plan_regulation_instance.development = type_of_additional_information_instance
+    text_plan_regulation_instance.development = type_of_additional_information_instance
     # Häiriön torjuntatarve
-    assert plan_regulation_instance.disturbance_prevention is None
+    assert text_plan_regulation_instance.disturbance_prevention is None
     assert (
         type_of_additional_information_instance.disturbance_prevention_plan_regulations
         == []
     )
-    plan_regulation_instance.disturbance_prevention = (
+    text_plan_regulation_instance.disturbance_prevention = (
         type_of_additional_information_instance
     )
     # Rakentamisen ohjaus
-    assert plan_regulation_instance.construction_control is None
+    assert text_plan_regulation_instance.construction_control is None
     assert (
         type_of_additional_information_instance.construction_control_plan_regulations
         == []
     )
-    plan_regulation_instance.construction_control = (
+    text_plan_regulation_instance.construction_control = (
         type_of_additional_information_instance
     )
 
     session.flush()
 
     assert (
-        plan_regulation_instance.type_of_verbal_plan_regulation
+        text_plan_regulation_instance.type_of_verbal_plan_regulation
         is type_of_verbal_plan_regulation_instance
     )
     assert type_of_verbal_plan_regulation_instance.plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
-    assert plan_regulation_instance.plan_theme is plan_theme_instance
-    assert plan_theme_instance.plan_regulations == [plan_regulation_instance]
+    assert text_plan_regulation_instance.plan_theme is plan_theme_instance
+    assert plan_theme_instance.plan_regulations == [text_plan_regulation_instance]
     # Käyttötarkoitus
     assert (
-        plan_regulation_instance.intended_use is type_of_additional_information_instance
+        text_plan_regulation_instance.intended_use
+        is type_of_additional_information_instance
     )
     assert type_of_additional_information_instance.intended_use_plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # Olemassaolo
-    assert plan_regulation_instance.existence is type_of_additional_information_instance
+    assert (
+        text_plan_regulation_instance.existence
+        is type_of_additional_information_instance
+    )
     assert type_of_additional_information_instance.existence_plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # Tyyppi (lisätiedon laji)
     assert (
-        plan_regulation_instance.regulation_type_additional_information
+        text_plan_regulation_instance.regulation_type_additional_information
         is type_of_additional_information_instance
     )
     assert type_of_additional_information_instance.type_plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # Merkittävyys
     assert (
-        plan_regulation_instance.significance is type_of_additional_information_instance
+        text_plan_regulation_instance.significance
+        is type_of_additional_information_instance
     )
     assert type_of_additional_information_instance.significance_plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # Eri tahojen tarpeisiin varaus
     assert (
-        plan_regulation_instance.reservation is type_of_additional_information_instance
+        text_plan_regulation_instance.reservation
+        is type_of_additional_information_instance
     )
     assert type_of_additional_information_instance.reservation_plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # Kehittäminen
     assert (
-        plan_regulation_instance.development is type_of_additional_information_instance
+        text_plan_regulation_instance.development
+        is type_of_additional_information_instance
     )
     assert type_of_additional_information_instance.development_plan_regulations == [
-        plan_regulation_instance
+        text_plan_regulation_instance
     ]
     # Häiriön torjuntatarve
     assert (
-        plan_regulation_instance.disturbance_prevention
+        text_plan_regulation_instance.disturbance_prevention
         is type_of_additional_information_instance
     )
     assert (
         type_of_additional_information_instance.disturbance_prevention_plan_regulations
-        == [plan_regulation_instance]
+        == [text_plan_regulation_instance]
     )
     # Rakentamisen ohjaus
     assert (
-        plan_regulation_instance.construction_control
+        text_plan_regulation_instance.construction_control
         is type_of_additional_information_instance
     )
     assert (
         type_of_additional_information_instance.disturbance_prevention_plan_regulations
-        == [plan_regulation_instance]
+        == [text_plan_regulation_instance]
     )
 
 
@@ -321,7 +331,7 @@ def test_lifecycle_date(
     lifecycle_date_instance: models.LifeCycleDate,
     code_instance: codes.LifeCycleStatus,
     plan_instance: models.Plan,
-    plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
 ):
     # non-nullable lifecycle date relations
@@ -332,16 +342,16 @@ def test_lifecycle_date(
     assert plan_instance.lifecycle_dates == []
     lifecycle_date_instance.plan = plan_instance
     assert lifecycle_date_instance.plan_regulation is None
-    assert plan_regulation_instance.lifecycle_dates == []
-    lifecycle_date_instance.plan_regulation = plan_regulation_instance
+    assert text_plan_regulation_instance.lifecycle_dates == []
+    lifecycle_date_instance.plan_regulation = text_plan_regulation_instance
     assert lifecycle_date_instance.plan_proposition is None
     assert plan_proposition_instance.lifecycle_dates == []
     lifecycle_date_instance.plan_proposition = plan_proposition_instance
     session.flush()
 
     assert lifecycle_date_instance.plan is plan_instance
-    assert lifecycle_date_instance.plan_regulation is plan_regulation_instance
+    assert lifecycle_date_instance.plan_regulation is text_plan_regulation_instance
     assert lifecycle_date_instance.plan_proposition is plan_proposition_instance
     assert lifecycle_date_instance in plan_instance.lifecycle_dates
-    assert lifecycle_date_instance in plan_regulation_instance.lifecycle_dates
+    assert lifecycle_date_instance in text_plan_regulation_instance.lifecycle_dates
     assert lifecycle_date_instance in plan_proposition_instance.lifecycle_dates

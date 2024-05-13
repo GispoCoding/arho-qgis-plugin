@@ -18,7 +18,7 @@ from db_helper import DatabaseHelper
 from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiPolygon
+from shapely.geometry import shape
 from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -550,8 +550,21 @@ def plan_theme_instance(session):
 def plan_instance(session, code_instance, organisation_instance, plan_type_instance):
     instance = models.Plan(
         geom=from_shape(
-            MultiPolygon(
-                [(((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)]
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
             ),
             srid=PROJECT_SRID,
             extended=True,
@@ -585,12 +598,27 @@ def land_use_area_instance(
 ):
     instance = models.LandUseArea(
         geom=from_shape(
-            MultiPolygon(
-                [(((0.0, 0.0), (0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)]
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
             ),
             srid=PROJECT_SRID,
             extended=True,
         ),
+        name={"fin": "test_land_use_area"},
+        description={"fin": "test_land_use_area"},
         height_range=Range(0.0, 1.0),
         height_unit="m",
         lifecycle_status=code_instance,
@@ -607,13 +635,14 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
     instance = models.PlanRegulationGroup(
         short_name="K",
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_plan_regulation_group"},
     )
     session.add(instance)
     return instance
 
 
 @pytest.fixture(scope="module")
-def plan_regulation_instance(
+def numeric_plan_regulation_instance(
     session,
     code_instance,
     type_of_plan_regulation_instance,
@@ -626,6 +655,52 @@ def plan_regulation_instance(
         lifecycle_status=code_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
+        ordering=1,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def text_plan_regulation_instance(
+    session,
+    code_instance,
+    type_of_plan_regulation_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        text_value={"fin": "test_value"},
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=2,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def verbal_plan_regulation_instance(
+    session,
+    code_instance,
+    type_of_plan_regulation_instance,
+    type_of_verbal_plan_regulation_instance,
+    plan_regulation_group_instance,
+):
+    """
+    Looks like verbal plan regulations have to be serialized differently, type of
+    verbal plan regulation is not allowed in other plan regulations. No idea how
+    they differ from text regulations otherwise, though.
+    """
+    instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        text_value={"fin": "test_value"},
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=3,
     )
     session.add(instance)
     return instance
@@ -636,6 +711,7 @@ def plan_proposition_instance(session, code_instance, plan_regulation_group_inst
     instance = models.PlanProposition(
         lifecycle_status=code_instance,
         plan_regulation_group=plan_regulation_group_instance,
+        text_value={"fin": "test_recommendation"},
     )
     session.add(instance)
     return instance
@@ -678,10 +754,11 @@ def complete_test_plan(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
     plan_regulation_group_instance: models.PlanRegulationGroup,
-    plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
+    numeric_plan_regulation_instance: models.PlanRegulation,
+    verbal_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     plan_theme_instance: codes.PlanTheme,
-    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
 ) -> models.Plan:
     """
@@ -690,11 +767,16 @@ def complete_test_plan(
     """
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
-    plan_regulation_instance.plan_theme = plan_theme_instance
-    plan_regulation_instance.type_of_verbal_plan_regulation = (
-        type_of_verbal_plan_regulation_instance
+    text_plan_regulation_instance.plan_theme = plan_theme_instance
+    text_plan_regulation_instance.intended_use = type_of_additional_information_instance
+    numeric_plan_regulation_instance.plan_theme = plan_theme_instance
+    numeric_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance
     )
-    plan_regulation_instance.intended_use = type_of_additional_information_instance
+    verbal_plan_regulation_instance.plan_theme = plan_theme_instance
+    verbal_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance
+    )
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
     return plan_instance

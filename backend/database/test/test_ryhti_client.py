@@ -14,7 +14,9 @@ def desired_plan_dict(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
     plan_regulation_group_instance: models.PlanRegulationGroup,
-    plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
+    numeric_plan_regulation_instance: models.PlanRegulation,
+    verbal_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
 ) -> dict:
     """
@@ -35,7 +37,15 @@ def desired_plan_dict(
             "geometry": {
                 "type": "MultiPolygon",
                 "coordinates": [
-                    [[[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]]]
+                    [
+                        [
+                            [381849.834412134019658, 6677967.973336197435856],
+                            [381849.834412134019658, 6680613.389312859624624],
+                            [386378.427863708813675, 6680613.389312859624624],
+                            [386378.427863708813675, 6677967.973336197435856],
+                            [381849.834412134019658, 6677967.973336197435856],
+                        ]
+                    ]
                 ],
             },
         },
@@ -59,11 +69,11 @@ def desired_plan_dict(
                         "coordinates": [
                             [
                                 [
-                                    [0.0, 0.0],
-                                    [0.0, 1.0],
-                                    [1.0, 1.0],
-                                    [1.0, 0.0],
-                                    [0.0, 0.0],
+                                    [381849.834412134019658, 6677967.973336197435856],
+                                    [381849.834412134019658, 6680613.389312859624624],
+                                    [386378.427863708813675, 6680613.389312859624624],
+                                    [386378.427863708813675, 6677967.973336197435856],
+                                    [381849.834412134019658, 6677967.973336197435856],
                                 ]
                             ]
                         ],
@@ -88,23 +98,18 @@ def desired_plan_dict(
                 "titleOfPlanRegulation": plan_regulation_group_instance.name,
                 "planRegulations": [
                     {
-                        "planRegulationKey": plan_regulation_instance.id,
+                        "planRegulationKey": numeric_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
                         "value": {
                             "dataType": "decimal",
-                            "number": plan_regulation_instance.numeric_value,
-                            "unitOfMeasure": plan_regulation_instance.unit,
+                            "number": numeric_plan_regulation_instance.numeric_value,
+                            "unitOfMeasure": numeric_plan_regulation_instance.unit,
                         },
                         "subjectIdentifiers": [
-                            plan_regulation_instance.name[
+                            numeric_plan_regulation_instance.name[
                                 "fin"
                             ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
-                        "verbalRegulations": [
-                            {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/test"
-                            }
                         ],
                         "additionalInformations": [
                             {
@@ -112,11 +117,71 @@ def desired_plan_dict(
                             }
                         ],
                         "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            numeric_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None
+                        # TODO: dates of validity to be added. These need fixtures with specific codes.
+                    },
+                    {
+                        "planRegulationKey": text_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": text_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            text_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
                             }
                         ],
-                        "regulationNumber": plan_regulation_instance.ordering,
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(text_plan_regulation_instance.ordering),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None
+                        # TODO: dates of validity to be added. These need fixtures with specific codes.
+                    },
+                    {
+                        "planRegulationKey": verbal_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": verbal_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            verbal_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "verbalRegulations": [
+                            "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/test"
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            verbal_plan_regulation_instance.ordering
+                        ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
