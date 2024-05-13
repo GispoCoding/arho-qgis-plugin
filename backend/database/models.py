@@ -337,11 +337,15 @@ class SourceData(VersionedBase):
     type_of_source_data_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
     )
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey")
+    )
 
     # Let's load all the codes for objects joined.
     type_of_source_data = relationship(
         "TypeOfSourceData", backref="source_data", lazy="joined"
     )
+    plan = relationship("Plan", backref="source_data")
     name: Mapped[language_str]
     additional_information_uri: Mapped[str]
     detachment_date: Mapped[datetime]

@@ -718,9 +718,12 @@ def plan_proposition_instance(session, code_instance, plan_regulation_group_inst
 
 
 @pytest.fixture(scope="module")
-def source_data_instance(session):
+def source_data_instance(session, plan_instance, type_of_source_data_instance):
     instance = models.SourceData(
-        additional_information_uri="http://test.fi", detachment_date=datetime.now()
+        additional_information_uri="http://test.fi",
+        detachment_date=datetime.now(),
+        plan=plan_instance,
+        type_of_source_data=type_of_source_data_instance,
     )
     session.add(instance)
     return instance
