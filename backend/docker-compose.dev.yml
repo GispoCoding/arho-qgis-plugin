@@ -15,7 +15,10 @@ services:
       context: .
       dockerfile: database/db_manager.Dockerfile
     env_file:
-      - .env
+      - path: .env.dev
+        required: true
+      - path: .env
+        required: false
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
@@ -32,7 +35,10 @@ services:
       context: .
       dockerfile: database/koodistot_loader.Dockerfile
     env_file:
-      - .env
+      - path: .env.dev
+        required: true
+      - path: .env
+        required: false
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
@@ -49,7 +55,10 @@ services:
       context: .
       dockerfile: database/ryhti_client.Dockerfile
     env_file:
-      - .env
+      - path: .env.dev
+        required: true
+      - path: .env
+        required: false
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
