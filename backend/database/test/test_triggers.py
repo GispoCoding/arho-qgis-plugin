@@ -107,7 +107,7 @@ def test_new_lifecycle_date_triggers(
     assert land_use_point_instance.lifecycle_status_id != another_code_instance.id
     assert other_point_instance.lifecycle_status_id != another_code_instance.id
 
-    # Update lifecycle_statuses to fire the triggers
+    # Update lifecycle_statuses to populate starting_at fields
     plan_instance.lifecycle_status = another_code_instance
     plan_regulation_instance.lifecycle_status = another_code_instance
     plan_proposition_instance.lifecycle_status = another_code_instance
@@ -118,7 +118,7 @@ def test_new_lifecycle_date_triggers(
     other_point_instance.lifecycle_status = another_code_instance
     session.flush()
 
-    # Update to fire triggers again
+    # Update again to populate ending_at fields
     plan_instance.lifecycle_status = code_instance
     plan_regulation_instance.lifecycle_status = code_instance
     plan_proposition_instance.lifecycle_status = code_instance
@@ -129,7 +129,7 @@ def test_new_lifecycle_date_triggers(
     other_point_instance.lifecycle_status = code_instance
     session.flush()
 
-    # Get new entries in lifecycle_date table
+    # Get old and new entries in lifecycle_date table
     plan_new_lifecycle_date = plan_instance.lifecycle_dates[0]
     plan_regulation_new_lifecycle_date = plan_regulation_instance.lifecycle_dates[0]
     plan_proposition_new_lifecycle_date = plan_proposition_instance.lifecycle_dates[0]
@@ -219,7 +219,7 @@ def test_update_lifecycle_status_triggers(
     session.flush()
     assert plan_instance.lifecycle_status is code_instance
 
-    # Change lifecycle status
+    # Change lifecycle status to fire the triggers
     plan_instance.lifecycle_status = another_code_instance
     session.commit()
 
@@ -251,11 +251,13 @@ def test_add_plan_id_fkey_triggers(
     )
     session.add(another_plan_instance)
 
+    # Geometries inside either plan instance
     polygon_1 = MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
     point_1 = MultiPoint([[0.25, 0.25], [0.75, 0.75]])
     polygon_2 = MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
     point_2 = MultiPoint([[1.25, 1.25], [1.75, 1.75]])
 
+    # Add new plan object instances to fire the triggers
     another_land_use_area_instance = models.LandUseArea(
         geom=from_shape(polygon_1),
         lifecycle_status=code_instance,
