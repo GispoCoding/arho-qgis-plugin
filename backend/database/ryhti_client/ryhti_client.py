@@ -517,11 +517,15 @@ def handler(event: Event, _) -> Response:
         LOGGER.info("Formatting plan data...")
         plan_dictionaries = client.get_plan_dictionaries()
 
-        # TODO: when we want to upload plans, we need to embed plan objects
-        # further, to create kaava-asiat etc. With uploading, therefore, the
-        # JSON to be POSTed is more complex, but it has plan_object embedded.
         LOGGER.info("Validating plans...")
         responses = client.validate_plans(plan_dictionaries)
+
+        if event_type is EventType.POST_PLANS:
+            # TODO: when we want to upload plans, we need to embed plan objects
+            # further, to create kaava-asiat etc. With uploading, therefore, the
+            # JSON to be POSTed is more complex, but it has plan_object embedded.
+            # TODO: POSTing plans with x-road not implemented yet
+            raise NotImplementedError()
 
         LOGGER.info("Saving response data...")
         lambda_response = client.save_responses(responses)
