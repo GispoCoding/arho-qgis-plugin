@@ -59,10 +59,6 @@ class Event(TypedDict):
     save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
 
 
-# def get_code_list_url(api_base: str, code_registry: str, code_list: str) -> str:
-#     return f"{api_base}/{code_registry}/codeschemes/{code_list}/codes"
-
-
 class RyhtiClient:
     HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
     api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
