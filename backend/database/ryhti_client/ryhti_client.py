@@ -432,7 +432,7 @@ class RyhtiClient:
 
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
-            responses[plan_id] = requests.post(
+            response = requests.post(
                 f"{self.api_base}/Plan/validate",
                 json=plan,
                 headers={
@@ -444,8 +444,13 @@ class RyhtiClient:
                     "planType": plan_type_parameter,
                     "administrativeAreaIdentifiers": admin_area_id_parameter,
                 },
-            ).json()
-            LOGGER.info(f"Got response {responses[plan_id]}")
+            )
+            LOGGER.info(f"Got response {response}")
+            if response.status_code == 200:
+                # Successful validation does not return any json!
+                responses[plan_id] = {"status": 200, "errors": None}
+            else:
+                responses[plan_id] = response.json()
             if self.debug_json:
                 with open(f"ryhti_debug/{plan_id}.response.json", "w") as response_file:
                     json.dump(responses[plan_id], response_file)
@@ -471,7 +476,7 @@ class RyhtiClient:
                 plan: models.Plan = session.get(models.Plan, plan_id)
                 print(response)
                 if response["status"] == 200:
-                    details[plan_id] = f"Validation successful for {plan_id}!\n"
+                    details[plan_id] = f"Validation successful for {plan_id}!"
                     plan.validation_errors = None
                 else:
                     details[plan_id] = f"Validation FAILED for {plan_id}."
