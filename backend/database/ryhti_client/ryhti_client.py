@@ -187,9 +187,7 @@ class RyhtiClient:
             "lifeCycleStatus"
         ] = plan_recommendation.lifecycle_status.uri
         if plan_recommendation.plan_theme:
-            recommendation_dict["planThemes"] = [
-                {"type": plan_recommendation.plan_theme.uri}
-            ]
+            recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
         recommendation_dict["periodOfValidity"] = self.get_period_of_validity(
             plan_recommendation
@@ -206,16 +204,16 @@ class RyhtiClient:
         regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
         if plan_regulation.plan_theme:
-            regulation_dict["planThemes"] = [{"type": plan_regulation.plan_theme.uri}]
+            regulation_dict["planThemes"] = [plan_regulation.plan_theme.uri]
         if plan_regulation.name["fin"]:
             regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
-        regulation_dict["regulationNumber"] = plan_regulation.ordering
+        regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
         regulation_dict["periodOfValidity"] = self.get_period_of_validity(
             plan_regulation
         )
         if plan_regulation.type_of_verbal_plan_regulation:
             regulation_dict["verbalRegulations"] = [
-                {"type": plan_regulation.type_of_verbal_plan_regulation.uri}
+                plan_regulation.type_of_verbal_plan_regulation.uri
             ]
         regulation_dict["additionalInformations"] = []
         for code_value in [
@@ -241,8 +239,8 @@ class RyhtiClient:
             }
         elif plan_regulation.text_value:
             regulation_dict["value"] = {
-                "dataType": "text",
-                **plan_regulation.text_value,
+                "dataType": "LocalizedText",
+                "text": plan_regulation.text_value,
             }
         return regulation_dict
 
@@ -358,8 +356,10 @@ class RyhtiClient:
             plan_dictionary["planKey"] = plan.id
         # Let's have all the code values preloaded joined from db.
         # It makes this super easy:
-        plan_dictionary["planType"] = plan.plan_type.uri
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
+        # For some reason, plan type should *not* be the full URI, but just the plan
+        # type code value. It is inserted in querystring, for reasons unknown.
+        plan_dictionary["planType"] = plan.plan_type.value
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         # For reasons unknown, Ryhti does not allow multilanguage description.

@@ -132,7 +132,10 @@ class PlanRegulationGroup(VersionedBase):
 
     # Let's add backreference to allow lazy loading from this side.
     plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
-        "PlanRegulation", back_populates="plan_regulation_group", lazy="joined"
+        "PlanRegulation",
+        back_populates="plan_regulation_group",
+        lazy="joined",
+        order_by="PlanRegulation.ordering",  # list regulations in right order
     )
 
 

@@ -27,7 +27,7 @@ def desired_plan_dict(
     return {
         "planKey": plan_instance.id,
         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
-        "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/test",
+        "planType": "test",
         "administrativeAreaIdentifiers": ["test"],
         "scale": plan_instance.scale,
         "geographicalArea": {
@@ -128,9 +128,7 @@ def desired_plan_dict(
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
                         "value": plan_proposition_instance.text_value,
                         "planThemes": [
-                            {
-                                "type": "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test"
-                            }
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
                         ],
                         "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
