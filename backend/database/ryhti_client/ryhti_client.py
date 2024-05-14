@@ -476,7 +476,7 @@ class RyhtiClient:
                         plan_id
                     ] = f"RYHTI API returned unexpected response: {response}"
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
-                if response["status"] == 200:
+                elif response["status"] == 200:
                     details[plan_id] = f"Validation successful for {plan_id}!"
                     plan.validation_errors = None
                 else:
