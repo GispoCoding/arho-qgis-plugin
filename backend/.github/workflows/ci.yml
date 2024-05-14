@@ -24,7 +24,7 @@ jobs:
       - name: Copy .env file
         run: cp .env.dev .env
       - name: Create debug directory
-        run: mkdir ryhti_debug
+        run: mkdir database/ryhti_debug
       - name: Test
         run: python -m pytest
         working-directory: database
