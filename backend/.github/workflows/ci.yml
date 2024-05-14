@@ -21,9 +21,13 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Copy .env file
+        run: cp .env.dev .env
       - name: Test
         run: python -m pytest
         working-directory: database
+        env:
+          SYKE_APIKEY: ${{ secrets.SYKE_APIKEY }}
       - uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
