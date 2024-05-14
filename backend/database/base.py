@@ -161,7 +161,7 @@ class PlanObjectBase(PlanBase):
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
         index=True,
     )
-    plan_id: Mapped[uuid.UUID] = mapped_column(
+    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
     )
     plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
