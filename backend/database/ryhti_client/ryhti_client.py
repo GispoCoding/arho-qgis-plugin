@@ -67,6 +67,7 @@ class RyhtiClient:
         self,
         connection_string: str,
         api_url: Optional[str] = None,
+        api_key: str = "",
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
@@ -76,11 +77,6 @@ class RyhtiClient:
 
         if api_url:
             self.api_base = api_url
-        api_key = os.environ.get("SYKE_APIKEY")
-        if not api_key:
-            raise ValueError(
-                "Please set SYKE_APIKEY environment variable to run Ryhti client."
-            )
         self.api_key = api_key
 
         engine = create_engine(connection_string)
@@ -506,12 +502,18 @@ def handler(event: Event, _) -> Response:
     event_type = event.get("event_type", EventType.VALIDATE_PLANS)
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
+    api_key = os.environ.get("SYKE_APIKEY")
+    if not api_key:
+        raise ValueError(
+            "Please set SYKE_APIKEY environment variable to run Ryhti client."
+        )
 
     client = RyhtiClient(
         db_helper.get_connection_string(),
         event_type=event_type,
         plan_uuid=plan_uuid,
         debug_json=debug_json,
+        api_key=api_key,
     )
     if client.plans:
         LOGGER.info("Formatting plan data...")
