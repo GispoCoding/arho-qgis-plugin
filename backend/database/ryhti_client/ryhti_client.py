@@ -460,6 +460,8 @@ class RyhtiClient:
         If validation/post is unsuccessful, save the error JSON in plan
         validation_errors json field (in addition to saving it to AWS logs and
         returning them in lambda return value).
+
+        If Ryhti request fails unexpectedly, save the returned error.
         """
         details: Dict[str, str] = {}
         ryhti_responses: Dict[str, Dict] = {}
@@ -467,6 +469,13 @@ class RyhtiClient:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
                 print(response)
+                # In case Ryhti API does not respond in the expected manner,
+                # save the response for debugging.
+                if "status" not in response:
+                    details[
+                        plan_id
+                    ] = f"RYHTI API returned unexpected response: {response}"
+                    plan.validation_errors = f"RYHTI API ERROR: {response}"
                 if response["status"] == 200:
                     details[plan_id] = f"Validation successful for {plan_id}!"
                     plan.validation_errors = None
