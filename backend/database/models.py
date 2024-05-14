@@ -381,12 +381,38 @@ class LifeCycleDate(VersionedBase):
     plan_proposition_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("hame.plan_proposition.id", name="plan_proposition_id_fkey")
     )
+    land_use_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.land_use_area.id", name="land_use_area_id_fkey")
+    )
+    other_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.other_area.id", name="other_area_id_fkey")
+    )
+    line_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.line.id", name="line_id_fkey")
+    )
+    land_use_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.land_use_point.id", name="land_use_point_id_fkey")
+    )
+    other_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.other_point.id", name="other_point_id_fkey")
+    )
 
     plan: Mapped[Optional["Plan"]] = relationship(backref="lifecycle_dates")
     plan_regulation: Mapped[Optional["PlanRegulation"]] = relationship(
         backref="lifecycle_dates"
     )
     plan_proposition: Mapped[Optional["PlanProposition"]] = relationship(
+        backref="lifecycle_dates"
+    )
+    land_use_area: Mapped[Optional["LandUseArea"]] = relationship(
+        backref="lifecycle_dates"
+    )
+    other_area: Mapped[Optional["OtherArea"]] = relationship(backref="lifecycle_dates")
+    line: Mapped[Optional["Line"]] = relationship(backref="lifecycle_dates")
+    land_use_point: Mapped[Optional["LandUsePoint"]] = relationship(
+        backref="lifecycle_dates"
+    )
+    other_point: Mapped[Optional["OtherPoint"]] = relationship(
         backref="lifecycle_dates"
     )
     lifecycle_status = relationship("LifeCycleStatus", backref="lifecycle_dates")
