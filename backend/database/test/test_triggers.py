@@ -258,8 +258,19 @@ def test_add_plan_id_fkey_triggers(
     session.add(another_plan_instance)
 
     # Geometries inside either plan instance
-    polygon_1 = MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
-    point_1 = MultiPoint([[0.25, 0.25], [0.75, 0.75]])
+    polygon_1 = MultiPolygon(
+        [
+            (
+                (
+                    (382000.0, 6678000.0),
+                    (386000.0, 6678000.0),
+                    (386000.0, 6680000.0),
+                    (382000.0, 6680000.0),
+                ),
+            )
+        ]
+    )
+    point_1 = MultiPoint([[(383000.0, 6678500.0)], [384000.0, 6679500.0]])
     polygon_2 = MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
     point_2 = MultiPoint([[1.25, 1.25], [1.75, 1.75]])
 
@@ -283,7 +294,10 @@ def test_add_plan_id_fkey_triggers(
     another_line_instance = models.Line(
         geom=from_shape(
             MultiLineString(
-                [[[0.25, 0.50], [0.75, 0.50]], [[0.30, 0.60], [0.85, 0.45]]]
+                [
+                    [[383000.0, 6678500.0], [384000.0, 6679500.0]],
+                    [[385000.0, 6678500.0], [385000.0, 6679500.0]],
+                ]
             )
         ),
         lifecycle_status=code_instance,
