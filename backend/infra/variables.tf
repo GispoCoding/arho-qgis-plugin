@@ -78,6 +78,9 @@ variable "hame_rw_secrets" {
   nullable = false
 }
 
+variable "x-road_db_password" {
+}
+
 variable "public-subnet-count" {
   description = "TODO"
   type        = number

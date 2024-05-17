@@ -54,7 +54,7 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_subnet" "private" {
-  # private subnet for the database instance and lambdas
+  # private subnet for the database instance, lambdas and ecs
   count                   = var.private-subnet-count
   availability_zone       = data.aws_availability_zones.available.names[count.index]
   # what block should we use for the private subnets? is this alright?
@@ -189,6 +189,19 @@ resource "aws_security_group_rule" "rds-lambda" {
   security_group_id = aws_security_group.rds.id
 }
 
+resource "aws_security_group_rule" "rds-x-road" {
+  description       = "Rds allow traffic from vpc"
+  type              = "ingress"
+
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  # Cannot specify both cidr block and source security group
+  #cidr_blocks       = ["10.0.0.0/16"]
+  source_security_group_id = aws_security_group.x-road.id
+  security_group_id = aws_security_group.rds.id
+}
+
 # Allow traffic to bastion from the Internet
 resource "aws_security_group" "bastion" {
   name   = "${var.prefix} bastion"
@@ -233,7 +246,7 @@ resource "aws_security_group_rule" "rds-bastion" {
   security_group_id = aws_security_group.rds.id
 }
 
-# Allow traffic from x-road server to internet and file system
+# Allow traffic from x-road server to internet, file system and database
 resource "aws_security_group" "x-road" {
   name        = "${var.prefix} X-road security server"
   description = "${var.prefix} X-road security server security group"
@@ -282,6 +295,14 @@ resource "aws_security_group" "x-road" {
     to_port     = 2049
     protocol    = "tcp"
     self        = true
+  }
+
+# To database
+  egress {
+    from_port   = 0
+    to_port     = 5432
+    protocol    = "tcp"
+    security_groups = [aws_security_group.rds.id]
   }
 
   tags = merge(local.default_tags, {

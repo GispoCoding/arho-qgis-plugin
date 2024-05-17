@@ -38,3 +38,13 @@ resource "aws_secretsmanager_secret_version" "hame-db-r" {
   secret_id     = aws_secretsmanager_secret.hame-db-r.id
   secret_string = jsonencode(var.hame_r_secrets)
 }
+
+resource "aws_secretsmanager_secret" "xroad-db-pwd" {
+  name = "${var.prefix}-xroad-postgres-database-su"
+  tags = merge(local.default_tags, {Name = "${var.prefix}-xroad-postgres-database-su"})
+}
+
+resource "aws_secretsmanager_secret_version" "xroad-db-pwd" {
+  secret_id     = aws_secretsmanager_secret.xroad-db-pwd.id
+  secret_string = jsonencode(var.x-road_db_password)
+}
