@@ -81,7 +81,6 @@ variable "hame_rw_secrets" {
 variable "syke_apikey" {
   description = "Syke API key for Ryhti client"
   type        = string
-}
 
 variable "public-subnet-count" {
   description = "TODO"
@@ -113,6 +112,9 @@ variable "x-road_securityserver_image" {
 }
 
 variable "x-road_secrets" {
+}
+
+variable "x-road_db_password" {
 }
 
 variable "prefix" {

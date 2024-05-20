@@ -33,6 +33,10 @@ resource "aws_ecs_task_definition" "x-road_securityserver" {
         {
           "sourceVolume": "configuration-volume",
           "containerPath": "/etc/xroad"
+        },
+        {
+          "sourceVolume": "archive-volume",
+          "containerPath": "/var/lib/xroad"
         }
       ]
       volumesFrom  = []
@@ -90,6 +94,18 @@ resource "aws_ecs_task_definition" "x-road_securityserver" {
           name = "XROAD_ADMIN_PASSWORD"
           value = var.x-road_secrets.admin_password
         },
+        {
+          name = "XROAD_DB_HOST"
+          value = aws_db_instance.xroad_db.address
+        },
+        {
+          name = "XROAD_DB_PORT"
+          value = "5432"
+        },
+        {
+          name = "XROAD_DB_PWD"
+          value = var.x-road_db_password
+        }
       ]
     }
   ])
@@ -98,6 +114,18 @@ resource "aws_ecs_task_definition" "x-road_securityserver" {
   name = "configuration-volume"
     efs_volume_configuration {
       file_system_id          = aws_efs_file_system.x-road_configuration_volume.id
+      transit_encryption      = "ENABLED"
+      # authorization_config {
+      #   access_point_id = aws_efs_access_point.test.id
+      #   iam             = "ENABLED"
+      # }
+    }
+  }
+
+  volume {
+  name = "archive-volume"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.x-road_archive_volume.id
       transit_encryption      = "ENABLED"
       # authorization_config {
       #   access_point_id = aws_efs_access_point.test.id
