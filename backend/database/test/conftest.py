@@ -574,6 +574,7 @@ def plan_instance(session, code_instance, organisation_instance, plan_type_insta
         lifecycle_status=code_instance,
         organisation=organisation_instance,
         plan_type=plan_type_instance,
+        to_be_exported=True,
     )
     session.add(instance)
     return instance

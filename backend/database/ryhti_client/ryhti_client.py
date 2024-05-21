@@ -61,13 +61,19 @@ class Event(TypedDict):
 
 class RyhtiClient:
     HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
-    api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
+    public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
+    xroad_api_path = "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/"
+    xroad_server_address = ""
+    xroad_client_id_base = "FI/MUN/"
+    xroad_member_code = ""
 
     def __init__(
         self,
         connection_string: str,
-        api_url: Optional[str] = None,
-        api_key: str = "",
+        public_api_url: Optional[str] = None,
+        public_api_key: str = "",
+        xroad_server_address: Optional[str] = None,
+        xroad_member_code: Optional[str] = None,
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
@@ -75,9 +81,27 @@ class RyhtiClient:
         self.event_type = event_type
         self.debug_json = debug_json
 
-        if api_url:
-            self.api_base = api_url
-        self.api_key = api_key
+        # Public API only needs an API key
+        if public_api_url:
+            self.public_api_base = public_api_url
+        self.public_api_key = public_api_key
+        self.public_headers = {
+            **self.HEADERS,
+            "Content-Type": "application/json",
+            "Ocp-Apim-Subscription-Key": self.public_api_key,
+        }
+
+        # X-Road API requires headers according to the X-Road REST API spec
+        # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
+        if xroad_server_address:
+            self.xroad_server_address = xroad_server_address
+        if xroad_member_code:
+            self.xroad_member_code = xroad_member_code
+        self.xroad_headers = {
+            **self.HEADERS,
+            "Content-Type": "application/json",
+            "X-Road-Client": self.xroad_client_id_base + self.xroad_member_code,
+        }
 
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
@@ -406,6 +430,7 @@ class RyhtiClient:
         """
         Validates all specified plans in list.
         """
+        plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
         responses: Dict[str, Dict] = dict()
         for plan_id, plan in plan_objects.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
@@ -425,13 +450,9 @@ class RyhtiClient:
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             response = requests.post(
-                f"{self.api_base}/Plan/validate",
+                plan_validation_endpoint,
                 json=plan,
-                headers={
-                    **self.HEADERS,
-                    "Content-Type": "application/json",
-                    "Ocp-Apim-Subscription-Key": self.api_key,
-                },
+                headers=self.public_headers,
                 params={
                     "planType": plan_type_parameter,
                     "administrativeAreaIdentifiers": admin_area_id_parameter,
@@ -447,6 +468,59 @@ class RyhtiClient:
                 with open(f"ryhti_debug/{plan_id}.response.json", "w") as response_file:
                     json.dump(responses[plan_id], response_file)
         return responses
+
+    def get_permanent_plan_identifiers(self) -> Dict[str, str | Dict]:
+        """
+        Get permanent plan identifiers for all plans that are marked
+        ready to be exported to Ryhti but do not have identifiers set yet.
+        """
+        plan_identifier_endpoint = (
+            self.xroad_server_address
+            + self.xroad_api_path
+            + "RegionalPlanMatter/permanentPlanIdentifier"
+        )
+        responses: Dict[str, str | Dict] = dict()
+        print(self.plans)
+        for plan in self.plans:
+            print(plan)
+            if plan.to_be_exported and not plan.permanent_plan_identifier:
+                LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
+                data = {
+                    "administrativeAreaIdentifier": plan.organisation.administrative_region.value,  # noqa
+                    "projectName": plan.producers_plan_identifier,
+                }
+                response = requests.post(
+                    plan_identifier_endpoint, json=data, headers=self.xroad_headers
+                )
+                LOGGER.info(f"Got response {response}")
+                if response.status_code == 200:
+                    responses[plan.id] = response.text
+                else:
+                    responses[plan.id] = response.json()
+                if self.debug_json:
+                    with open(
+                        f"ryhti_debug/{plan.id}.identifier.response.json", "w"
+                    ) as response_file:
+                        json.dump(responses[plan.id], response_file)
+        return responses
+
+    def set_permanent_plan_identifiers(self, responses: Dict[str, str | Dict]):
+        """
+        Save permanent plan identifiers returned by RYHTI API to the database.
+        """
+        with self.Session() as session:
+            for plan_id, response in responses.items():
+                if type(response) is str:
+                    plan: models.Plan = session.get(models.Plan, plan_id)
+                    plan.permanent_plan_identifier = response
+                else:
+                    raise ValueError(
+                        (
+                            "Ryhti API returned error when asking for plan identifier: "
+                            "{response}"
+                        )
+                    )
+            session.commit()
 
     def save_responses(self, responses: Dict[str, Dict]) -> Response:
         """
@@ -511,10 +585,21 @@ def handler(event: Event, _) -> Response:
     event_type = event.get("event_type", EventType.VALIDATE_PLANS)
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
-    api_key = os.environ.get("SYKE_APIKEY")
-    if not api_key:
+    public_api_key = os.environ.get("SYKE_APIKEY")
+    if not public_api_key:
         raise ValueError(
             "Please set SYKE_APIKEY environment variable to run Ryhti client."
+        )
+    xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS")
+    xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
+    if event_type is EventType.POST_PLANS and (
+        not xroad_server_address or not xroad_member_code
+    ):
+        raise ValueError(
+            (
+                "Please set your local XROAD_SERVER_ADDRESS and your organization"
+                "XROAD_MEMBER_CODE to make API requests to X-Road endpoints."
+            )
         )
 
     client = RyhtiClient(
@@ -522,7 +607,9 @@ def handler(event: Event, _) -> Response:
         event_type=event_type,
         plan_uuid=plan_uuid,
         debug_json=debug_json,
-        api_key=api_key,
+        public_api_key=public_api_key,
+        xroad_server_address=xroad_server_address,
+        xroad_member_code=xroad_member_code,
     )
     if client.plans:
         LOGGER.info("Formatting plan data...")
@@ -531,15 +618,35 @@ def handler(event: Event, _) -> Response:
         LOGGER.info("Validating plans...")
         responses = client.validate_plans(plan_dictionaries)
 
+        LOGGER.info("Saving validation data...")
+        lambda_response = client.save_responses(responses)
+
         if event_type is EventType.POST_PLANS:
-            # TODO: when we want to upload plans, we need to embed plan objects
+            # When we want to upload plans, we need to embed plan objects
             # further, to create kaava-asiat etc. With uploading, therefore, the
             # JSON to be POSTed is more complex, but it has plan_object embedded.
-            # TODO: POSTing plans with x-road not implemented yet
-            raise NotImplementedError()
 
-        LOGGER.info("Saving response data...")
-        lambda_response = client.save_responses(responses)
+            # 1) Check or create permanent plan identifier
+            LOGGER.info("Getting permanent plan identifiers...")
+            plan_identifiers = client.get_permanent_plan_identifiers()
+
+            LOGGER.info("Setting permanent plan identifiers...")
+            client.set_permanent_plan_identifiers(plan_identifiers)
+
+            # 2) TODO: Validate plan matter with the identifier
+            # LOGGER.info("Formatting plan matter data...")
+            # plan_matter_dictionaries = client.get_plan_matter(plan_dictionaries)
+
+            # LOGGER.info("Validating plan matters...")
+            # responses = client.validate_plan_matters(plan_matter_dictionaries)
+            #
+            # 3) TODO: Check or create plan matter with the identifier
+            #
+            # 4) TODO: If plan matter existed, check or create plan phase instead
+            #
+            # 5) TODO: If plan phase existed, update plan phase instead
+            #
+            # 6) TODO: If documents exist, upload documents
     else:
         lambda_response = {
             "statusCode": 200,
