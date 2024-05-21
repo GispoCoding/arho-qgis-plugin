@@ -220,7 +220,7 @@ mock_instance = "some field in your plan"
 
 
 @pytest.fixture()
-def mock_ryhti(requests_mock) -> None:
+def mock_public_ryhti_validate(requests_mock) -> None:
     requests_mock.post(
         "http://mock.url/Plan/validate",
         text=json.dumps(
@@ -244,6 +244,16 @@ def mock_ryhti(requests_mock) -> None:
     )
 
 
+@pytest.fixture()
+def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
+    requests_mock.post(
+        "http://mock2.url/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
+        text="MK-123456",
+        request_headers={"X-Road-Client": "FI/MUN/2455538-5"},
+        status_code=200,
+    )
+
+
 @pytest.fixture(scope="module")
 def client_with_plan_data(
     connection_string: str, complete_test_plan: models.Plan
@@ -256,7 +266,9 @@ def client_with_plan_data(
     """
     return RyhtiClient(
         connection_string,
-        api_url="http://mock.url",
+        public_api_url="http://mock.url",
+        xroad_server_address="http://mock2.url",
+        xroad_member_code="2455538-5",
     )
 
 
@@ -305,7 +317,9 @@ def test_get_plan_dictionaries(
 
 
 def test_validate_plans(
-    client_with_plan_data: RyhtiClient, plan_instance: models.Plan, mock_ryhti: Callable
+    client_with_plan_data: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_ryhti_validate: Callable,
 ):
     """
     Check that JSON is posted and response received
@@ -327,7 +341,7 @@ def test_save_responses(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
-    mock_ryhti: Callable,
+    mock_public_ryhti_validate: Callable,
 ):
     """
     Check that Ryhti response is saved to database
@@ -338,3 +352,19 @@ def test_save_responses(
     session.refresh(plan_instance)
     assert plan_instance.validated_at
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]
+
+
+def test_set_permanent_plan_identifiers(
+    session: Session,
+    client_with_plan_data: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_permanentidentifier: Callable,
+):
+    """
+    Check that Ryhti permanent plan identifier is received and saved to the database
+    """
+    responses = client_with_plan_data.get_permanent_plan_identifiers()
+    client_with_plan_data.set_permanent_plan_identifiers(responses)
+    session.refresh(plan_instance)
+    assert plan_instance.permanent_plan_identifier
+    assert plan_instance.permanent_plan_identifier == next(iter(responses.values()))
