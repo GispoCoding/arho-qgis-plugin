@@ -153,7 +153,7 @@ resource "aws_ecs_service" "x-road_securityserver" {
     subnets          = aws_subnet.private.*.id
     # Ditto for security groups
     security_groups  = [aws_security_group.x-road.id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   tags = merge(local.default_tags, {Name = "${var.prefix}_-x-road_securityserver"})
