@@ -97,5 +97,5 @@ resource "aws_lambda_permission" "cloudwatch_call_ryhti_client" {
     action = "lambda:InvokeFunction"
     function_name = aws_lambda_function.ryhti_client.function_name
     principal = "events.amazonaws.com"
-    source_arn = aws_cloudwatch_event_rule.ryhti_client.arn
+    source_arn = aws_cloudwatch_event_rule.lambda_ryhti_client.arn
 }

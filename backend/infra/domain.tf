@@ -14,3 +14,15 @@ resource "aws_route53_record" "bastion" {
   ]
   ttl     = "60"
 }
+
+resource "aws_route53_record" "xroad-client" {
+  count = var.enable_route53_record ? 1 : 0
+
+  zone_id = data.aws_route53_zone.zone[0].id
+  name    = local.xroad_dns_record
+  type    = "TXT"
+  records = [
+      var.x-road_verification_record
+  ]
+  ttl     = "60"
+}

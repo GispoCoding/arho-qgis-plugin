@@ -18,6 +18,16 @@ variable "bastion_subdomain" {
   type        = string
 }
 
+variable "x-road_subdomain" {
+  description = "Subdomain for X-road security server"
+  type     = string
+}
+
+variable "x-road_verification_record" {
+  description = "Domain verification string to set for x-road DNS record"
+  type     = string
+}
+
 variable "enable_route53_record" {
   type    = bool
   default = false
@@ -81,6 +91,7 @@ variable "hame_rw_secrets" {
 variable "syke_apikey" {
   description = "Syke API key for Ryhti client"
   type        = string
+}
 
 variable "public-subnet-count" {
   description = "TODO"
@@ -130,6 +141,7 @@ variable "extra_tags" {
 
 locals {
   bastion_dns_alias   = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  xroad_dns_record    = "${var.prefix}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix
