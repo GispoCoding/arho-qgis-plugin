@@ -81,6 +81,7 @@ variable "hame_rw_secrets" {
 variable "syke_apikey" {
   description = "Syke API key for Ryhti client"
   type        = string
+}
 
 variable "public-subnet-count" {
   description = "TODO"
