@@ -99,12 +99,14 @@ class KoodistotLoader:
 
     def get_objects(self) -> Dict[Type[codes.CodeBase], List[Dict]]:
         """
-        Gets all koodistot data, divided by table.
+        Gets all koodistot data, divided by table and ordered by code level.
         """
         data = dict()
         for koodisto in self.koodistot:
             # Fetch external codes
             data[koodisto] = self.get_code_registry_data(koodisto)
+            # Order external codes by hierarchyLevel
+            data[koodisto].sort(key=lambda element: element["hierarchyLevel"])
             # Add local codes with status to distinguish them from other codes
             local_codes = [dict(code, status="LOCAL") for code in koodisto.local_codes]
             data[koodisto] += local_codes
@@ -134,13 +136,8 @@ class KoodistotLoader:
         code_dict["status"] = element["status"]
         code_dict["level"] = element["hierarchyLevel"]
 
-        # TODO: At the moment, koodisto API seems to always provide the objects in the
-        # right order so that parents exist before children. We can just save the
-        # parent id as is.
-        #
-        # We don't know if this is a general feature of koodistot.fi API data, so
-        # parents will have to be saved one level at a time, refactoring here, if
-        # koodistot.fi API data ordering changes.
+        # Elements have already been ordered by hierarchyLeve, so parent already
+        # exists whenever we are adding a lower level code!
         parent = element.get("broaderCode", None)
         if parent:
             code_dict["parent_id"] = parent["id"]

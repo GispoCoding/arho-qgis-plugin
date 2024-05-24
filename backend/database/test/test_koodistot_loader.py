@@ -103,32 +103,6 @@ type_of_plan_regulation_response = {
     "meta": {"code": 200, "from": 0, "resultCount": 4, "totalResults": 4},
     "results": [
         {
-            "id": "15934bd8-419b-420b-9b1d-b12608bdf27a",
-            "codeValue": "asumisenAlue",
-            "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
-            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji/codes/asumisenAlue",
-            "status": "DRAFT",
-            "order": 298,
-            "hierarchyLevel": 1,
-            "created": "2023-04-12T07:41:52.721Z",
-            "modified": "2023-12-18T10:16:39.309Z",
-            "statusModified": "2023-04-12T07:41:52.721Z",
-            "prefLabel": {
-                "en": "Housing area",
-                "fi": "Asumisen alue",
-                "sv": "Område för boende",
-            },
-            "description": {
-                "fi": "Ilmaisee, että kaavakohde kuvaa asumisen rakennuksille tai asunnoille tarkoitetun alueen. Käytetään asemakaavoissa ilmaisemaan asuinrakennusten alueita, joille voidaan rakentaa eri tyyppisiä asuinrakennuksia. Maakunta- ja yleiskaavoissa käytetään ilmaisemaan asuntoalueita, jolla kerrosalasta pääosa on tarkoitettu asumiseen. Koodi liittyy lähtökohtaisesti kaavakohteeseen, joka on geometrialtaan alue."
-            },
-            "codeScheme": {
-                "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
-                "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji",
-            },
-            "shortName": "A",
-            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji/codes/asumisenAlue/members/",
-        },
-        {
             "id": "e6f03e18-f292-4068-b6a6-b9e52206accc",
             "codeValue": "asuinpientaloalue",
             "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asuinpientaloalue",
@@ -175,6 +149,32 @@ type_of_plan_regulation_response = {
                 "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji/codes/asumisenAlue/members/",
             },
             "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji/codes/asuinpientaloalue/members/",
+        },
+        {
+            "id": "15934bd8-419b-420b-9b1d-b12608bdf27a",
+            "codeValue": "asumisenAlue",
+            "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji/codes/asumisenAlue",
+            "status": "DRAFT",
+            "order": 298,
+            "hierarchyLevel": 1,
+            "created": "2023-04-12T07:41:52.721Z",
+            "modified": "2023-12-18T10:16:39.309Z",
+            "statusModified": "2023-04-12T07:41:52.721Z",
+            "prefLabel": {
+                "en": "Housing area",
+                "fi": "Asumisen alue",
+                "sv": "Område för boende",
+            },
+            "description": {
+                "fi": "Ilmaisee, että kaavakohde kuvaa asumisen rakennuksille tai asunnoille tarkoitetun alueen. Käytetään asemakaavoissa ilmaisemaan asuinrakennusten alueita, joille voidaan rakentaa eri tyyppisiä asuinrakennuksia. Maakunta- ja yleiskaavoissa käytetään ilmaisemaan asuntoalueita, jolla kerrosalasta pääosa on tarkoitettu asumiseen. Koodi liittyy lähtökohtaisesti kaavakohteeseen, joka on geometrialtaan alue."
+            },
+            "codeScheme": {
+                "uri": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji",
+            },
+            "shortName": "A",
+            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/RY_Kaavamaarayslaji/codes/asumisenAlue/members/",
         },
         {
             "id": "ba9a86d5-6944-4bc4-a86c-87a78c0cdc2a",
