@@ -67,6 +67,8 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.12"
+      - name: Copy .env file
+        run: cp .env.dev .env
       - name: Build zip files for lambda
         run: make build-lambda
       - name: Configure AWS Credentials
