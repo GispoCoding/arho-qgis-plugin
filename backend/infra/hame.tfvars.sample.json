@@ -32,6 +32,7 @@
         "wrike_task_id": "<AWS task id tag>"
     },
     "SLACK_HOOK_URL": "<URL to slack hook for event reporting>",
+    "syke_apikey": "<Your Syke subscription api key for Ryhti client>",
     "bastion_ec2_user_public_key": "<Public key for ssh tunnel server superuser>",
     "bastion_ec2_tunnel_public_keys": [
         "<Public key to access ssh tunnel to database>",

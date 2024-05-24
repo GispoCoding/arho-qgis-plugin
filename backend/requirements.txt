@@ -52,6 +52,8 @@ s3transfer==0.10.0
     # via boto3
 shapely==2.0.2
     # via -r requirements.in
+simplejson==3.19.2
+    # via -r requirements.in
 six==1.16.0
     # via python-dateutil
 sqlalchemy==2.0.25

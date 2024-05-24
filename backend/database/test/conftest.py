@@ -13,12 +13,14 @@ from alembic import command
 from alembic.config import Config
 from alembic.operations import ops
 from alembic.script import ScriptDirectory
+from base import PROJECT_SRID
 from db_helper import DatabaseHelper
 from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
-from sqlalchemy.orm import sessionmaker
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, shape
+from sqlalchemy.dialects.postgresql import Range
+from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
 codes_count: int = 11  # adjust me when adding tables
@@ -32,7 +34,7 @@ SCHEMA_FILES_PATH = Path(".")
 
 @pytest.fixture(scope="session", autouse=True)
 def set_env():
-    dotenv_file = Path(__file__).parent.parent.parent / ".env.dev"
+    dotenv_file = Path(__file__).parent.parent.parent / ".env"
     assert dotenv_file.exists()
     load_dotenv(str(dotenv_file))
     db_manager.SCHEMA_FILES_PATH = str(Path(__file__).parent.parent)
@@ -545,13 +547,33 @@ def plan_theme_instance(session):
 
 
 @pytest.fixture(scope="module")
-def plan_instance(session, code_instance, organisation_instance):
+def plan_instance(session, code_instance, organisation_instance, plan_type_instance):
     instance = models.Plan(
         geom=from_shape(
-            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
         ),
+        scale=1,
+        description={"fin": "test_plan"},
         lifecycle_status=code_instance,
         organisation=organisation_instance,
+        plan_type=plan_type_instance,
     )
     session.add(instance)
     return instance
@@ -576,8 +598,29 @@ def land_use_area_instance(
 ):
     instance = models.LandUseArea(
         geom=from_shape(
-            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
         ),
+        name={"fin": "test_land_use_area"},
+        description={"fin": "test_land_use_area"},
+        height_range=Range(0.0, 1.0),
+        height_unit="m",
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
@@ -670,22 +713,72 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
     instance = models.PlanRegulationGroup(
         short_name="K",
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_plan_regulation_group"},
     )
     session.add(instance)
     return instance
 
 
 @pytest.fixture(scope="module")
-def plan_regulation_instance(
+def numeric_plan_regulation_instance(
     session,
     code_instance,
     type_of_plan_regulation_instance,
     plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        numeric_value=1.0,
+        unit="m",
         lifecycle_status=code_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
+        ordering=1,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def text_plan_regulation_instance(
+    session,
+    code_instance,
+    type_of_plan_regulation_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        text_value={"fin": "test_value"},
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=2,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def verbal_plan_regulation_instance(
+    session,
+    code_instance,
+    type_of_plan_regulation_instance,
+    type_of_verbal_plan_regulation_instance,
+    plan_regulation_group_instance,
+):
+    """
+    Looks like verbal plan regulations have to be serialized differently, type of
+    verbal plan regulation is not allowed in other plan regulations. No idea how
+    they differ from text regulations otherwise, though.
+    """
+    instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        text_value={"fin": "test_value"},
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=3,
     )
     session.add(instance)
     return instance
@@ -696,6 +789,7 @@ def plan_proposition_instance(session, code_instance, plan_regulation_group_inst
     instance = models.PlanProposition(
         lifecycle_status=code_instance,
         plan_regulation_group=plan_regulation_group_instance,
+        text_value={"fin": "test_recommendation"},
     )
     session.add(instance)
     return instance
@@ -733,3 +827,37 @@ def lifecycle_date_instance(session, code_instance):
     instance = models.LifeCycleDate(lifecycle_status=code_instance)
     session.add(instance)
     return instance
+
+
+@pytest.fixture(scope="module")
+def complete_test_plan(
+    session: Session,
+    plan_instance: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    text_plan_regulation_instance: models.PlanRegulation,
+    numeric_plan_regulation_instance: models.PlanRegulation,
+    verbal_plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    plan_theme_instance: codes.PlanTheme,
+    type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+) -> models.Plan:
+    """
+    Plan data that might be more or less complete, to be tested and validated with the
+    Ryhti API.
+    """
+    # Add the optional (nullable) relationships. We don't want them to be present in
+    # all fixtures.
+    text_plan_regulation_instance.plan_theme = plan_theme_instance
+    text_plan_regulation_instance.intended_use = type_of_additional_information_instance
+    numeric_plan_regulation_instance.plan_theme = plan_theme_instance
+    numeric_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance
+    )
+    verbal_plan_regulation_instance.plan_theme = plan_theme_instance
+    verbal_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance
+    )
+    plan_proposition_instance.plan_theme = plan_theme_instance
+    session.commit()
+    return plan_instance

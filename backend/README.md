@@ -41,10 +41,15 @@ To manage Hame-Ryhti AWS resources, check the [infra README](https://github.com/
 2. `pip install pip-tools`
 3. `pip-sync requirements.txt requirements-dev.txt`
 4. `pre-commit install`
+5. Copy `.env.dev` to `.env`. This file contains example environment variables used in development.
+
+If you also want to test Ryhti API client, you have to
+6. Register to [SYKE API portal](https://api-developer.ymparisto.fi) and subscribe to their Ryhti product. Your subscription details will contain your Ryhti API key.
+7. Insert your Ryhti API key at SYKE_APIKEY line in `.env` file. Do *not* modify `.env.dev`, it is committed in github and should only contain public example data, not your actual api key.
 
 ### Database and functions
 
-1. Run tests with `make pytest`
+1. Run tests with `make pytest`. (If you have not specified a Ryhti API key, some `test_services` will fail, because some Ryhti client tests try out calling the SYKE Ryhti API.)
 2. Build and start the development containers with `docker-compose -f docker-compose.dev.yml up -d` (or `make rebuild`).
 3. Fill the database with current data model by `make test-create-db`.
 4. Populate national code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi) by `make test-koodistot`.
