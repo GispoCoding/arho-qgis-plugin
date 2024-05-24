@@ -87,7 +87,8 @@ resource "aws_lambda_function" "ryhti_client" {
       READ_FROM_AWS       = 1
       DB_SECRET_ADMIN_ARN = aws_secretsmanager_secret.hame-db-admin.arn
       SYKE_APIKEY         = var.syke_apikey
-      XROAD_SERVER_ADDRESS = module.ecs.x-road_securityserver_private_ip
+      XROAD_SERVER_ADDRESS = data.aws_network_interface.interface_tags.private_ip
+      XROAD_MEMBER_CODE   = var.x-road_member_code
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })

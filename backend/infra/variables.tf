@@ -28,6 +28,11 @@ variable "x-road_verification_record" {
   type     = string
 }
 
+variable "x-road_member_code" {
+  description = "Member code to set for x-road client instance. Usually this is Y-tunnus of your organization."
+  type     = string
+}
+
 variable "enable_route53_record" {
   type    = bool
   default = false

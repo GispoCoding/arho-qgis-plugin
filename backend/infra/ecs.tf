@@ -175,7 +175,3 @@ data "aws_network_interface" "interface_tags" {
     values = ["${var.prefix}-x-road_securityserver"]
   }
 }
-
-output "x-road_securityserver_private_ip" {
-    value = data.aws_network_interface.interface_tags.private_ip
-}
