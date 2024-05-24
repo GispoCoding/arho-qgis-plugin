@@ -21,7 +21,7 @@ log-koodistot-loader:
 	aws logs tail "/aws/lambda/$(prefix)-koodistot_loader"
 
 log-ryhti-client:
-    aws logs tail "/aws/lambda/$(prefix)-ryhti_client"
+	aws logs tail "/aws/lambda/$(prefix)-ryhti_client"
 
 ## Commands to invoke lambda functions
 create-db:
