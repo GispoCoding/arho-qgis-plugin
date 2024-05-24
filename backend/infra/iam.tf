@@ -85,7 +85,8 @@ resource "aws_iam_policy" "lambda_update_policy" {
         ],
         "Resource" : [
           aws_lambda_function.db_manager.arn,
-          aws_lambda_function.koodistot_loader.arn
+          aws_lambda_function.koodistot_loader.arn,
+          aws_lambda_function.ryhti_client.arn
           ]
       }
     ]
