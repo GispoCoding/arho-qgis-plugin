@@ -15,7 +15,7 @@ resource "aws_route53_record" "bastion" {
   ttl     = "60"
 }
 
-resource "aws_route53_record" "xroad-client" {
+resource "aws_route53_record" "xroad-verification" {
   count = var.enable_route53_record ? 1 : 0
 
   zone_id = data.aws_route53_zone.zone[0].id
