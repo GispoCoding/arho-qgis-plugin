@@ -163,3 +163,14 @@ class CategoryOfPublicity(CodeBase):
 
     __tablename__ = "category_of_publicity"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/julkisuus"
+
+
+class TypeOfInteractionEvent(CodeBase):
+    """
+    Vuorovaikutustapahtuman laji (kaava)
+    """
+
+    __tablename__ = "type_of_interaction_event"
+    code_list_uri = (
+        "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji"
+    )
