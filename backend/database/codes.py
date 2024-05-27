@@ -154,3 +154,12 @@ class PlanTheme(CodeBase):
 
     __tablename__ = "plan_theme"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavoitusteema"
+
+
+class CategoryOfPublicity(CodeBase):
+    """
+    Asiakirjan julkisuusluokka
+    """
+
+    __tablename__ = "category_of_publicity"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/julkisuus"
