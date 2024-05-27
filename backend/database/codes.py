@@ -183,3 +183,12 @@ class NameOfPlanCaseDecision(CodeBase):
 
     __tablename__ = "name_of_plan_case_decision"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi"
+
+
+class TypeOfProcessingEvent(CodeBase):
+    """
+    Käsittelytapahtuman laji
+    """
+
+    __tablename__ = "type_of_processing_event"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
