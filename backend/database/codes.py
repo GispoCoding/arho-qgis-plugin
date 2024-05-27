@@ -154,3 +154,41 @@ class PlanTheme(CodeBase):
 
     __tablename__ = "plan_theme"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavoitusteema"
+
+
+class CategoryOfPublicity(CodeBase):
+    """
+    Asiakirjan julkisuusluokka
+    """
+
+    __tablename__ = "category_of_publicity"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/julkisuus"
+
+
+class TypeOfInteractionEvent(CodeBase):
+    """
+    Vuorovaikutustapahtuman laji (kaava)
+    """
+
+    __tablename__ = "type_of_interaction_event"
+    code_list_uri = (
+        "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji"
+    )
+
+
+class NameOfPlanCaseDecision(CodeBase):
+    """
+    Kaava-asian päätöksen nimi
+    """
+
+    __tablename__ = "name_of_plan_case_decision"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi"
+
+
+class TypeOfProcessingEvent(CodeBase):
+    """
+    Käsittelytapahtuman laji
+    """
+
+    __tablename__ = "type_of_processing_event"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
