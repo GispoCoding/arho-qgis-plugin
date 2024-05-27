@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
-codes_count: int = 12  # adjust me when adding tables
+codes_count: int = 13  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 USE_DOCKER = (
