@@ -2,8 +2,10 @@ from datetime import datetime
 
 import codes
 import models
+import pytest
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
+from sqlalchemy.exc import InternalError
 from sqlalchemy.orm import Session
 
 
@@ -328,3 +330,102 @@ def test_add_plan_id_fkey_triggers(
     assert another_line_instance.plan_id == plan_instance.id
     assert another_land_use_point_instance.plan_id == plan_instance.id
     assert another_point_instance.plan_id == another_plan_instance.id
+
+
+def test_validate_polygon_geometry_triggers(
+    session: Session,
+    code_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    organisation_instance: models.Organisation,
+):
+    invalid_polygon = MultiPolygon(
+        [(((0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0)),)]
+    )
+
+    invalid_plan_instance = models.Plan(
+        geom=from_shape(invalid_polygon),
+        lifecycle_status=code_instance,
+        organisation=organisation_instance,
+    )
+    session.add(invalid_plan_instance)
+    with pytest.raises(InternalError):
+        session.commit()
+
+    session.rollback()
+    invalid_land_use_area_instance = models.LandUseArea(
+        geom=from_shape(invalid_polygon),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(invalid_land_use_area_instance)
+    with pytest.raises(InternalError):
+        session.commit()
+
+    session.rollback()
+    invalid_other_area_instance = models.OtherArea(
+        geom=from_shape(invalid_polygon),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(invalid_other_area_instance)
+    with pytest.raises(InternalError):
+        session.commit()
+    session.rollback()
+
+
+def test_validate_line_geometry(
+    session: Session,
+    code_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+):
+    # Create line_instance that intersects itself
+    another_line_instance = models.Line(
+        geom=from_shape(
+            MultiLineString(
+                [[[0.25, 0.25], [0.75, 0.75]], [[0.25, 0.75], [0.75, 0.25]]]
+            )
+        ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    with pytest.raises(InternalError):
+        session.add(another_line_instance)
+        session.commit()
+    session.rollback()
+
+
+def test_intersecting_other_area_geometries_trigger(
+    session: Session,
+    text_plan_regulation_instance: models.PlanRegulation,
+    code_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+):
+    another_type_of_additional_information_instance = codes.TypeOfAdditionalInformation(
+        value="paakayttotarkoitus", status="LOCAL"
+    )
+    session.add(another_type_of_additional_information_instance)
+    text_plan_regulation_instance.intended_use = (
+        another_type_of_additional_information_instance
+    )
+    session.flush()
+
+    # Create a new other_area_instance that intersects another_area_instance created in the previous test
+    new_other_area_instance = models.OtherArea(
+        geom=from_shape(
+            MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
+        ),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+
+    with pytest.raises(InternalError):
+        session.add(new_other_area_instance)
+        session.commit()
+    session.rollback()
