@@ -85,7 +85,7 @@ resource "aws_lambda_function" "ryhti_client" {
       DB_MAIN_NAME        = var.hame_db_name
       DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
-      DB_SECRET_ADMIN_ARN = aws_secretsmanager_secret.hame-db-admin.arn
+      DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
       SYKE_APIKEY         = var.syke_apikey
       XROAD_SERVER_ADDRESS = data.aws_network_interface.interface_tags.private_ip
       XROAD_MEMBER_CODE   = var.x-road_member_code
