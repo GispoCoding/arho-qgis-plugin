@@ -174,3 +174,12 @@ class TypeOfInteractionEvent(CodeBase):
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji"
     )
+
+
+class NameOfPlanCaseDecision(CodeBase):
+    """
+    Kaava-asian päätöksen nimi
+    """
+
+    __tablename__ = "name_of_plan_case_decision"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi"
