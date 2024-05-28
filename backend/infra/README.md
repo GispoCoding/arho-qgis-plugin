@@ -1,6 +1,6 @@
 # Hame infra
 
-![diagram of AWS resources and their connections to software and APIs](infra/architecture.svg)
+![diagram of AWS resources and their connections to software and APIs](architecture.svg)
 
 - [Setup](#setup)
    - [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
