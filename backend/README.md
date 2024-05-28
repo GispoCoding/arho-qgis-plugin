@@ -28,6 +28,8 @@ HAME-Ryhti consists of
 3. [X-Road security server sidecar container](https://gofore.com/en/benefits-of-the-x-road-security-server-sidecar/) to connect to Ryhti through Finnish X-Road, and
 4. QGIS project to connect to the database and create regional land use plans.
 
+![diagram of AWS resources and their connections to software and APIs](infra/architecture.svg)
+
 To manage Hame-Ryhti AWS resources, check the [infra README](https://github.com/GispoCoding/hame-ryhti/blob/main/infra/README.md#hame-infra) in the infra directory.
 
 ## Development requirements

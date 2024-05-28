@@ -1,5 +1,7 @@
 # Hame infra
 
+![diagram of AWS resources and their connections to software and APIs](infra/architecture.svg)
+
 - [Setup](#setup)
    - [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
 - [Managing existing instances](#managing-existing-instances)
