@@ -1,0 +1,74 @@
+include:
+  - hame.*
+  - codes.*
+
+viewpoints:
+  -
+    name: All tables
+    desc: All tables that make up maakuntakaava plan data.
+    tables:
+      - hame.plan
+      - hame.land_use_area
+      - hame.other_area
+      - hame.line
+      - hame.land_use_point
+      - hame.other_point
+      - hame.plan_regulation_group
+      - hame.plan_regulation
+      - hame.plan_proposition
+      - hame.document
+      - hame.source_data
+      - hame.organisation
+      - hame.lifecycle_date
+      - codes.administrative_region
+      - codes.lifecycle_status
+      - codes.plan_theme
+      - codes.plan_type
+      - codes.type_of_additional_information
+      - codes.type_of_document
+      - codes.type_of_plan_regulation_group
+      - codes.type_of_plan_regulation
+      - codes.type_of_source_data
+      - codes.type_of_underground
+      - codes.type_of_verbal_plan_regulation
+    groups:
+      -
+        name: Plan geometry tables
+        desc: These tables represent all geometries in the plan.
+        tables:
+          - hame.plan
+          - hame.land_use_area
+          - hame.other_area
+          - hame.line
+          - hame.land_use_point
+          - hame.other_point
+      -
+        name: Plan regulation tables
+        desc: These tables represent all regulations in the plan.
+        tables:
+          - hame.plan_regulation_group
+          - hame.plan_regulation
+          - hame.plan_proposition
+      -
+        name: Plan metadata tables
+        desc: These tables contain all metadata, documents and other linked information.
+        tables:
+          - hame.document
+          - hame.source_data
+          - hame.organisation
+          - hame.lifecycle_date
+      -
+        name: Code tables
+        desc: These tables contain all national (koodistot.suomi.fi) and local codes used for classifying plan data.
+        tables:
+          - codes.administrative_region
+          - codes.lifecycle_status
+          - codes.plan_theme
+          - codes.plan_type
+          - codes.type_of_additional_information
+          - codes.type_of_document
+          - codes.type_of_plan_regulation_group
+          - codes.type_of_plan_regulation
+          - codes.type_of_source_data
+          - codes.type_of_underground
+          - codes.type_of_verbal_plan_regulation
