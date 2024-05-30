@@ -236,17 +236,26 @@ class RyhtiClient:
             }
         return regulation_dict
 
-    def get_plan_regulation_group(self, group: models.PlanRegulationGroup) -> Dict:
+    def get_plan_regulation_group(
+        self, group: models.PlanRegulationGroup, general: bool = False
+    ) -> Dict:
         """
         Construct a dict of Ryhti compatible plan regulation group.
+
+        Plan regulation groups and general regulation groups have some minor
+        differences, so you can specify if you want to create a general
+        regulation group.
         """
         group_dict = dict()
-        group_dict["planRegulationGroupKey"] = group.id
+        if general:
+            group_dict["generalRegulationGroupKey"] = group.id
+        else:
+            group_dict["planRegulationGroupKey"] = group.id
         group_dict["titleOfPlanRegulation"] = group.name
         #  group_dict["groupNumber"] = 1  # not needed if we only have one group
-        group_dict["letterIdentifier"] = group.short_name
-        #  group_dict["localId"] = "blah"  # TODO: this is probably not needed?
-        group_dict["colorNumber"] = "#FFFFFF"
+        if not general:
+            group_dict["letterIdentifier"] = group.short_name
+            group_dict["colorNumber"] = "#FFFFFF"
         group_dict["planRecommendations"] = []
         for recommendation in group.plan_propositions:
             group_dict["planRecommendations"].append(
@@ -375,7 +384,7 @@ class RyhtiClient:
         # Our plans may only have one general regulation group.
         if plan.plan_regulation_group:
             plan_dictionary["generalRegulationGroups"] = [
-                self.get_plan_regulation_group(plan.plan_regulation_group)
+                self.get_plan_regulation_group(plan.plan_regulation_group, general=True)
             ]
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.

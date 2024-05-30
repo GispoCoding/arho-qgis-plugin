@@ -37,7 +37,7 @@ def test_plan(
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
     organisation_instance: models.Organisation,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
     plan_type_instance: codes.PlanType,
 ):
     # non-nullable plan relations
@@ -50,15 +50,11 @@ def test_plan(
 
     plan_instance.lifecycle_status = another_code_instance
     # nullable plan relations
-    assert plan_instance.plan_regulation_group is None
-    assert plan_regulation_group_instance.plans == []
-    plan_instance.plan_regulation_group = plan_regulation_group_instance
-    plan_instance.plan_type = plan_type_instance
     session.flush()
     assert plan_instance.lifecycle_status is another_code_instance
     assert another_code_instance.plans == [plan_instance]
-    assert plan_instance.plan_regulation_group is plan_regulation_group_instance
-    assert plan_regulation_group_instance.plans == [plan_instance]
+    assert plan_instance.plan_regulation_group is general_regulation_group_instance
+    assert general_regulation_group_instance.plans == [plan_instance]
 
 
 def test_plan_object(
@@ -93,9 +89,10 @@ def test_plan_regulation_group(
         plan_regulation_group_instance.type_of_plan_regulation_group
         is type_of_plan_regulation_group_instance
     )
-    assert type_of_plan_regulation_group_instance.plan_regulation_groups == [
+    assert (
         plan_regulation_group_instance
-    ]
+        in type_of_plan_regulation_group_instance.plan_regulation_groups
+    )
     session.flush()
 
 

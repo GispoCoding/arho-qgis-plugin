@@ -547,7 +547,13 @@ def plan_theme_instance(session):
 
 
 @pytest.fixture(scope="module")
-def plan_instance(session, code_instance, organisation_instance, plan_type_instance):
+def plan_instance(
+    session,
+    code_instance,
+    organisation_instance,
+    plan_type_instance,
+    general_regulation_group_instance,
+):
     instance = models.Plan(
         geom=from_shape(
             shape(
@@ -574,6 +580,7 @@ def plan_instance(session, code_instance, organisation_instance, plan_type_insta
         lifecycle_status=code_instance,
         organisation=organisation_instance,
         plan_type=plan_type_instance,
+        plan_regulation_group=general_regulation_group_instance,
     )
     session.add(instance)
     return instance
@@ -720,6 +727,17 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
 
 
 @pytest.fixture(scope="module")
+def general_regulation_group_instance(session, type_of_plan_regulation_group_instance):
+    instance = models.PlanRegulationGroup(
+        short_name="Y",
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_general_regulation_group"},
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
 def numeric_plan_regulation_instance(
     session,
     code_instance,
@@ -785,6 +803,25 @@ def verbal_plan_regulation_instance(
 
 
 @pytest.fixture(scope="module")
+def general_plan_regulation_instance(
+    session,
+    code_instance,
+    type_of_plan_regulation_instance,
+    general_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        name={"fin": "general_regulation"},
+        text_value={"fin": "test_value"},
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=general_regulation_group_instance,
+        ordering=1,
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
 def plan_proposition_instance(session, code_instance, plan_regulation_group_instance):
     instance = models.PlanProposition(
         lifecycle_status=code_instance,
@@ -835,9 +872,11 @@ def complete_test_plan(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
     text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     plan_theme_instance: codes.PlanTheme,
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
@@ -857,6 +896,10 @@ def complete_test_plan(
     verbal_plan_regulation_instance.plan_theme = plan_theme_instance
     verbal_plan_regulation_instance.intended_use = (
         type_of_additional_information_instance
+    )
+    general_plan_regulation_instance.plan_theme = plan_theme_instance
+    general_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance  # noqa
     )
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()

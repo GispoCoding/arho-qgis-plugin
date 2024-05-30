@@ -217,6 +217,7 @@ def valid_plan_in_preparation(
     text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
 ):
     """
@@ -231,6 +232,7 @@ def valid_plan_in_preparation(
     session.add(numeric_plan_regulation_instance)
     session.add(verbal_plan_regulation_instance)
     session.add(plan_proposition_instance)
+    session.add(general_plan_regulation_instance)
 
     # Elinkaaren vaihe
     preparation_lifecycle_status = (
@@ -241,6 +243,7 @@ def valid_plan_in_preparation(
     text_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
     numeric_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
     verbal_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
+    general_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
     plan_proposition_instance.lifecycle_status = preparation_lifecycle_status
 
     # Kaavoitusteema
@@ -251,6 +254,7 @@ def valid_plan_in_preparation(
     text_plan_regulation_instance.plan_theme = community_structure_theme
     numeric_plan_regulation_instance.plan_theme = community_structure_theme
     verbal_plan_regulation_instance.plan_theme = community_structure_theme
+    general_plan_regulation_instance.plan_theme = community_structure_theme
 
     # Kaavamääräyksen tyyppi
     detached_houses_type = (
@@ -260,6 +264,7 @@ def valid_plan_in_preparation(
     )
     text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     numeric_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
+    general_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     verbal_type = (
         session.query(codes.TypeOfPlanRegulation)
         .filter_by(value="sanallinenMaarays")
@@ -289,8 +294,9 @@ def valid_plan_in_preparation(
     numeric_plan_regulation_instance.intended_use = (
         principal_intended_use_type_of_additional_information
     )
-    # Verbal regulation type may *not* be intended use regulation!
+    # General and verbal regulation type may *not* be intended use regulation!
     verbal_plan_regulation_instance.intended_use = None
+    general_plan_regulation_instance.intended_use = None
 
     # Kaavan tyyppi
     overall_regional_plan_plan_type = (
