@@ -139,6 +139,20 @@ class PlanRegulationGroup(VersionedBase):
         order_by="PlanRegulation.ordering",  # list regulations in right order
     )
 
+    # Let's add backreference to allow lazy loading from this side. Unit tests
+    # will not detect missing joined loads, because currently fixtures are created
+    # and added in the same database session that is passed on to the unit tests
+    # for running. Therefore, any related objects returned by the session may be
+    # lazy loaded, because they are already added to the existing session.
+    # But why don't integration tests catch this missing, they contain propositions too?
+    # Maybe has something to do with the lifecycle of pytest session fixture?
+    plan_propositions: Mapped[List["PlanProposition"]] = relationship(
+        "PlanProposition",
+        back_populates="plan_regulation_group",
+        lazy="joined",
+        order_by="PlanProposition.ordering",  # list propositions in right order
+    )
+
 
 class PlanRegulation(PlanBase):
     """
@@ -320,7 +334,7 @@ class PlanProposition(PlanBase):
     )
 
     plan_regulation_group = relationship(
-        "PlanRegulationGroup", backref="plan_propositions"
+        "PlanRegulationGroup", back_populates="plan_propositions"
     )
     # Let's load all the codes for objects joined.
     plan_theme = relationship("PlanTheme", backref="plan_propositions", lazy="joined")

@@ -14,9 +14,11 @@ def desired_plan_dict(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
     text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
 ) -> dict:
     """
@@ -54,6 +56,44 @@ def desired_plan_dict(
         "approvalDate": None,
         # TODO: dates of validity and approval to be added. These need fixtures with specific codes.
         # TODO: general regulation group to be added. This needs fixture with specific code.
+        "generalRegulationGroups": [
+            {
+                "generalRegulationGroupKey": general_regulation_group_instance.id,
+                "titleOfPlanRegulation": general_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": general_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": general_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            general_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            general_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None
+                        # TODO: dates of validity to be added. These need fixtures with specific codes.
+                    },
+                ],
+                "planRecommendations": [],
+            }
+        ],
         "planDescription": plan_instance.description[
             "fin"
         ],  # TODO: should this be a single language string? why?

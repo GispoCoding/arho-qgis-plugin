@@ -9,6 +9,7 @@ resource "aws_instance" "bastion-ec2-instance" {
   vpc_security_group_ids = [aws_security_group.bastion.id]
   iam_instance_profile = aws_iam_instance_profile.ec2-iam-profile.name
   tenancy              = "default"
+  user_data_replace_on_change = true  # This is needed to update user data *and* ip address
   user_data     = templatefile(
     "bastion_user_data.tpl",
     {ec2_user_public_key = "${var.bastion_ec2_user_public_key}",
