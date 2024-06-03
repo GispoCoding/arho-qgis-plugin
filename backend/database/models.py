@@ -418,7 +418,7 @@ class Document(VersionedBase):
     language: Mapped[str]
     decision: Mapped[bool]
     decision_date: Mapped[Optional[timestamp]]
-    # file
+    url: Mapped[Optional[str]]
 
 
 class LifeCycleDate(VersionedBase):
