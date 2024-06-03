@@ -7,3 +7,4 @@ shapely
 simplejson
 sqlalchemy
 alembic_utils
+pygml
