@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 # we have to import CodeBase in codes.py from here to allow two-way relationships
 from base import (  # noqa
@@ -398,6 +398,11 @@ class Document(VersionedBase):
     plan_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey")
     )
+    category_of_publicity_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.category_of_publicity.id", name="category_of_publicity_id_fkey"
+        )
+    )
 
     # Let's load all the codes for objects joined.
     type_of_document = relationship(
@@ -407,7 +412,9 @@ class Document(VersionedBase):
     permanent_document_identifier: Mapped[Optional[uuid.UUID]]
     name: Mapped[str]
     personal_details: Mapped[str]
-    publicity: Mapped[Literal["julkinen", "ei julkinen"]]  # Muita?
+    publicity = relationship(
+        "CategoryOfPublicity", backref="categories_of_publicity", lazy="joined"
+    )
     language: Mapped[str]
     decision: Mapped[bool]
     decision_date: Mapped[Optional[timestamp]]
