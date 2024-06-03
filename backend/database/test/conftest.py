@@ -533,6 +533,13 @@ def type_of_document_instance(session):
 
 
 @pytest.fixture(scope="module")
+def category_of_publicity_instance(session):
+    instance = codes.CategoryOfPublicity(value="test", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
 def administrative_region_instance(session):
     instance = codes.AdministrativeRegion(value="test", status="LOCAL")
     session.add(instance)
@@ -845,12 +852,14 @@ def source_data_instance(session, plan_instance, type_of_source_data_instance):
 
 
 @pytest.fixture(scope="module")
-def document_instance(session, type_of_document_instance, plan_instance):
+def document_instance(
+    session, type_of_document_instance, category_of_publicity_instance, plan_instance
+):
     instance = models.Document(
         name="Testidokumentti",
         type_of_document=type_of_document_instance,
         personal_details="Testihenkilö",
-        publicity="julkinen",
+        publicity=category_of_publicity_instance,
         language="fin",
         decision=False,
         plan=plan_instance,
