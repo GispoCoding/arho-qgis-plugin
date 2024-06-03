@@ -302,14 +302,18 @@ def client_with_plan_data(
     Return RyhtiClient that has plan data read in.
 
     We have to create the plan data in the database before returning the client, because the client
-    reads plans from the database when initializing.
+    reads plans from the database when initializing. Also, let's cache plan dictionaries in the
+    client like done in handler method, so all methods depending on data being serialized already
+    will work as expected.
     """
-    return RyhtiClient(
+    client = RyhtiClient(
         connection_string,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_member_code="2455538-5",
     )
+    client.plan_dictionaries = client.get_plan_dictionaries()
+    return client
 
 
 def assert_lists_equal(list1: list, list2: list):
@@ -351,8 +355,7 @@ def test_get_plan_dictionaries(
     """
     Check that correct JSON structure is generated
     """
-    result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
-    result_plan_dict = result_plan_dicts[plan_instance.id]
+    result_plan_dict = client_with_plan_data.plan_dictionaries[plan_instance.id]
     assert_dicts_equal(result_plan_dict, desired_plan_dict)
 
 
@@ -364,8 +367,7 @@ def test_validate_plans(
     """
     Check that JSON is posted and response received
     """
-    result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
-    responses = client_with_plan_data.validate_plans(result_plan_dicts)
+    responses = client_with_plan_data.validate_plans()
     for plan_id, response in responses.items():
         assert plan_id == plan_instance.id
         assert response["errors"] == [
@@ -386,8 +388,7 @@ def test_save_responses(
     """
     Check that Ryhti response is saved to database
     """
-    result_plan_dicts = client_with_plan_data.get_plan_dictionaries()
-    responses = client_with_plan_data.validate_plans(result_plan_dicts)
+    responses = client_with_plan_data.validate_plans()
     message = client_with_plan_data.save_responses(responses)
     session.refresh(plan_instance)
     assert plan_instance.validated_at
@@ -406,5 +407,10 @@ def test_set_permanent_plan_identifiers(
     responses = client_with_plan_data.get_permanent_plan_identifiers()
     client_with_plan_data.set_permanent_plan_identifiers(responses)
     session.refresh(plan_instance)
+    received_plan_identifier = next(iter(responses.values()))
     assert plan_instance.permanent_plan_identifier
-    assert plan_instance.permanent_plan_identifier == next(iter(responses.values()))
+    assert plan_instance.permanent_plan_identifier == received_plan_identifier
+    assert (
+        client_with_plan_data.plan_dictionaries[plan_instance.id]["planKey"]
+        == received_plan_identifier
+    )

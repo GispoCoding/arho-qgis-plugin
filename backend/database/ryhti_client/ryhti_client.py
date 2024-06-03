@@ -2,13 +2,23 @@ import datetime
 import enum
 import logging
 import os
-from typing import Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
+from uuid import uuid4
 
 import base
 import models
 import requests
 import simplejson as json  # type: ignore
-from codes import LifeCycleStatus
+from codes import (
+    LifeCycleStatus,
+    NameOfPlanCaseDecision,
+    TypeOfInteractionEvent,
+    TypeOfProcessingEvent,
+    decisions_by_status,
+    get_code,
+    interaction_events_by_status,
+    processing_events_by_status,
+)
 from db_helper import DatabaseHelper, User
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
@@ -106,8 +116,11 @@ class RyhtiClient:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         self.plans: List[models.Plan] = []
-        self.valid_status: Optional[LifeCycleStatus] = None
+        # Cache plan dictionaries in case we want to POST them after validation
+        self.plan_dictionaries: Dict[str, Dict] = dict()
+        self.initiated_status: Optional[LifeCycleStatus] = None
         self.approved_status: Optional[LifeCycleStatus] = None
+        self.valid_status: Optional[LifeCycleStatus] = None
 
         # do some prefetching before starting the run:
         with self.Session() as session:
@@ -118,12 +131,39 @@ class RyhtiClient:
             # It is exceedingly weird that this, the most important of all statuses, is
             # *not* a descriptive string, but a random number that may change, while all
             # the other code lists have descriptive strings that will *not* change.
-            self.valid_status = (
-                session.query(LifeCycleStatus).filter_by(value="13").first()
-            )
-            self.approved_status = (
-                session.query(LifeCycleStatus).filter_by(value="06").first()
-            )
+            self.initiated_status = get_code(session, LifeCycleStatus, "01")
+            self.approved_status = get_code(session, LifeCycleStatus, "06")
+            self.valid_status = get_code(session, LifeCycleStatus, "13")
+            # Plan decisions, processing events and interaction events are best
+            # prefetched, they will depend on the status of each plan:
+            self.decisions_by_status = {
+                status_code: [
+                    get_code(session, NameOfPlanCaseDecision, decision_code)
+                    for decision_code in decisions
+                ]
+                if decisions
+                else []
+                for status_code, decisions in decisions_by_status.items()
+            }
+            self.processing_events_by_status = {
+                status_code: [
+                    get_code(session, TypeOfProcessingEvent, processing_code)
+                    for processing_code in processing_events
+                ]
+                if processing_events
+                else []
+                for status_code, processing_events in processing_events_by_status.items()  # noqa
+            }
+            self.interaction_events_by_status = {
+                status_code: [
+                    get_code(session, TypeOfInteractionEvent, interaction_code)
+                    for interaction_code in interactions
+                ]
+                if interactions
+                else []
+                for status_code, interactions in interaction_events_by_status.items()
+            }
+
             # Only process specified plans
             plan_query: Query = session.query(models.Plan)
             if plan_uuid:
@@ -156,6 +196,23 @@ class RyhtiClient:
             "geometry": json.loads(to_geojson(to_shape(geometry))),
         }
 
+    def get_time_of_initiation(
+        self, plan_base: base.PlanBase
+    ) -> Optional[datetime.datetime]:
+        """
+        Returns the initiation date for any object that has lifecycle dates.
+        They should be preloaded, so there's no need to fetch anything from db.
+        """
+        if self.initiated_status:
+            # we have to loop over the list, but it won't have that many dates
+            # to begin with.
+            for lifecycle_date in plan_base.lifecycle_dates:
+                if lifecycle_date.lifecycle_status is self.initiated_status:
+                    # This will return the first valid dates. Here we assume that
+                    # there cannot be several initiated periods.
+                    return lifecycle_date.starting_at  # TODO: only return date
+        return None
+
     def get_approval_date(
         self, plan_base: base.PlanBase
     ) -> Optional[datetime.datetime]:
@@ -170,7 +227,7 @@ class RyhtiClient:
                 if lifecycle_date.lifecycle_status is self.approved_status:
                     # This will return the first valid dates. Here we assume that
                     # there cannot be several approved periods.
-                    return lifecycle_date.starting_at
+                    return lifecycle_date.starting_at  # TODO: only return date
         return None
 
     def get_period_of_validity(self, plan_base: base.PlanBase) -> Optional[dict]:
@@ -185,7 +242,7 @@ class RyhtiClient:
                 if lifecycle_date.lifecycle_status is self.valid_status:
                     # This will return the first valid dates. Here we assume that
                     # there cannot be several valid periods.
-                    return {
+                    return {  # TODO: only return dates
                         "begin": lifecycle_date.starting_at,
                         "end": lifecycle_date.ending_at,
                     }
@@ -435,13 +492,162 @@ class RyhtiClient:
             plan_dictionaries[plan.id] = self.get_plan_dictionary(plan)
         return plan_dictionaries
 
-    def validate_plans(self, plan_objects: Dict[str, Dict]) -> Dict[str, Dict]:
+    def get_plan_decisions(self, plan: models.Plan) -> List[Dict]:
         """
-        Validates all specified plans in list.
+        Construct a list of Ryhti compatible plan decisions from plan in the local
+        database.
+        """
+        decisions: List[Dict] = []
+        # Decision name must correspond to the phase the plan is in. This requires
+        # mapping from lifecycle statuses to decision names.
+        for decision in self.decisions_by_status.get(plan.lifecycle_status.value, []):
+            entry = dict()
+            # TODO: Let's just have random uuid for now, on the assumption that each
+            # phase is only POSTed to ryhti once. If planners need to post and repost
+            # the same phase, script needs logic to check if the phase exists in Ryhti
+            # already before reposting.
+            entry["planDecisionKey"] = uuid4()
+            entry["name"] = decision.url
+            decisions.append(entry)
+        return decisions
+
+    def get_plan_handling_events(self, plan: models.Plan) -> List[Dict]:
+        """
+        Construct a list of Ryhti compatible plan handling events from plan in the local
+        database.
+        """
+        events: List[Dict] = []
+        # Decision name must correspond to the phase the plan is in. This requires
+        # mapping from lifecycle statuses to decision names.
+        for event in self.processing_events_by_status.get(
+            plan.lifecycle_status.value, []
+        ):
+            entry = dict()
+            # TODO: Let's just have random uuid for now, on the assumption that each
+            # phase is only POSTed to ryhti once. If planners need to post and repost
+            # the same phase, script needs logic to check if the phase exists in Ryhti
+            # already before reposting.
+            entry["handlingEventKey"] = uuid4()
+            entry["handlingEventType"] = event.url
+            events.append(entry)
+        return events
+
+    def get_interaction_events(self, plan: models.Plan) -> List[Dict]:
+        """
+        Construct a list of Ryhti compatible interaction events from plan in the local
+        database.
+        """
+        events: List[Dict] = []
+        # Decision name must correspond to the phase the plan is in. This requires
+        # mapping from lifecycle statuses to decision names.
+        for event in self.interaction_events_by_status.get(
+            plan.lifecycle_status.value, []
+        ):
+            entry = dict()
+            # TODO: Let's just have random uuid for now, on the assumption that each
+            # phase is only POSTed to ryhti once. If planners need to post and repost
+            # the same phase, script needs logic to check if the phase exists in Ryhti
+            # already before reposting.
+            entry["interactionEventKey"] = uuid4()
+            entry["interactionEventType"] = event.url
+            events.append(entry)
+        return events
+
+    def get_plan_matter_phases(self, plan: models.Plan) -> List[Dict]:
+        """
+        Construct a list of Ryhti compatible plan matter phases from plan in the local
+        database.
+
+        Currently, we only return the *current* phase, because our database does *not*
+        save plan history between phases. However, we could return multiple phases or
+        multiple decisions in the future, if there is a need to POST all the dates
+        saved in the lifecycle_dates table.
+
+        TODO: perhaps we will have to return multiple phases, if there may be multiple
+        decision or multiple processing events in this phase. However, if we are only
+        returning one phase per phase, then let's just return one phase. Simple, isn't
+        it?
+        """
+        phase: Dict[str, Any] = dict()
+        # TODO: Let's just have random uuid for now, on the assumption that each phase
+        # is only POSTed to ryhti once. If planners need to post and repost the same
+        # phase, script needs logic to check if the phase exists in Ryhti already before
+        # reposting.
+        #
+        # However, such logic may not be forthcoming, if multiple phases with
+        # the same lifecycle status are allowed??
+        phase["planMatterPhaseKey"] = uuid4()
+        # Always post phase and plan with the same status.
+        phase["lifeCycleStatus"] = self.plan_dictionaries["lifeCycleStatus"]
+        # TODO: currently, the API spec only allows for one plan decision per phase,
+        # for reasons unknown. Therefore, let's pick the first possible decision in
+        # each phase.
+        plan_decisions = self.get_plan_decisions(plan)
+        phase["planDecision"] = plan_decisions[0] if plan_decisions else None
+        # TODO: currently, the API spec only allows for one plan handling event per
+        # phase, for reasons unknown. Therefore, let's pick the first possible event in
+        # each phase.
+        handling_events = self.get_plan_handling_events(plan)
+        phase["planHandlingEvent"] = handling_events[0] if handling_events else None
+        interaction_events = self.get_interaction_events(plan)
+        phase["interactionEvents"] = interaction_events if interaction_events else None
+        return [phase]
+
+    def get_source_datas(self, plan: models.Plan) -> List[Dict]:
+        """
+        Construct a list of Ryhti compatible source datas from plan in the local
+        database.
+        """
+        # TODO
+        return []
+
+    def get_plan_matter(self, plan: models.Plan) -> Dict:
+        """
+        Construct a dict of single Ryhti compatible plan matter from plan in the local
+        database.
+        """
+        plan_dictionary = self.plan_dictionaries[plan.id]
+        plan_matter = dict()
+        plan_matter["permanentPlanIdentifier"] = plan_dictionary["planKey"]
+        plan_matter["planType"] = plan_dictionary["planType"]
+        plan_matter["timeOfInitiation"] = self.get_time_of_initiation(plan)
+        # Hooray, unlike plan, the plan *matter* description allows multilanguage data!
+        plan_matter["description"] = plan.description
+        plan_matter["producerPlanIdentifier"] = plan.producers_plan_identifier
+        plan_matter["caseIdentifiers"] = [plan.matter_management_identifier]
+        plan_matter["recordNumbers"] = [plan.record_number]
+        # Oh great, now plan matter *needs* the administrative area identifiers that
+        # are *forbidden* to be present in plan dictionary and had to be removed
+        plan_matter["administrativeAreaIdentifiers"] = [
+            plan.organisation.administrative_region.value
+        ]
+        plan_matter[
+            "digitalOrigin"
+        ] = "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01"
+        # TODO: kaava-asian liitteet
+        # plan_matter["matterAnnexes"] = self.get_plan_matter_annexes(plan)
+        # TODO: lähdeaineistot
+        # plan_matter["sourceDatas"] = self.get_source_datas(plan)
+        plan_matter["planMatterPhases"] = self.get_plan_matter_phases(plan)
+        return plan_matter
+
+    def get_plan_matters(self) -> Dict[str, Dict]:
+        """
+        Construct a dict of valid Ryhti compatible plan matters from plans in the local
+        database.
+        """
+        plan_matters = dict()
+        for plan in self.plans:
+            plan_matters[plan.id] = self.get_plan_matter(plan)
+        return plan_matters
+
+    def validate_plans(self) -> Dict[str, Dict]:
+        """
+        Validates all plans serialized in client plan dictionaries.
         """
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
         responses: Dict[str, Dict] = dict()
-        for plan_id, plan in plan_objects.items():
+        for plan_id, plan in self.plan_dictionaries.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
 
             # For some reason (no idea why) some plan fields have to be provided
@@ -517,13 +723,16 @@ class RyhtiClient:
 
     def set_permanent_plan_identifiers(self, responses: Dict[str, str | Dict]):
         """
-        Save permanent plan identifiers returned by RYHTI API to the database.
+        Save permanent plan identifiers returned by RYHTI API to the database and the
+        serialized plan dictionaries.
         """
         with self.Session() as session:
             for plan_id, response in responses.items():
                 if type(response) is str:
                     plan: models.Plan = session.get(models.Plan, plan_id)
                     plan.permanent_plan_identifier = response
+                    # also update the identifier in the serialized plan!
+                    self.plan_dictionaries[plan_id]["planKey"] = response
                 else:
                     raise ValueError(
                         (
@@ -624,18 +833,23 @@ def handler(event: Event, _) -> Response:
     )
     if client.plans:
         LOGGER.info("Formatting plan data...")
-        plan_dictionaries = client.get_plan_dictionaries()
+        client.plan_dictionaries = client.get_plan_dictionaries()
 
         LOGGER.info("Validating plans...")
-        responses = client.validate_plans(plan_dictionaries)
+        responses = client.validate_plans()
 
         LOGGER.info("Saving validation data...")
         lambda_response = client.save_responses(responses)
 
+        # TODO: Add logic to *also* validate plan matter if plans are already valid.
+        #
+        # This can be done *without* POSTing plans, but it *will* give the plan a
+        # permanent plan identifier the moment the plan itself is valid. Does this make
+        # sense?
         if event_type is EventType.POST_PLANS:
             # When we want to upload plans, we need to embed plan objects
             # further, to create kaava-asiat etc. With uploading, therefore, the
-            # JSON to be POSTed is more complex, but it has plan_object embedded.
+            # JSON to be POSTed is more complex, but it has plan_dictionary embedded.
 
             # 1) Check or create permanent plan identifier
             LOGGER.info("Getting permanent plan identifiers...")
@@ -645,8 +859,8 @@ def handler(event: Event, _) -> Response:
             client.set_permanent_plan_identifiers(plan_identifiers)
 
             # 2) TODO: Validate plan matter with the identifier
-            # LOGGER.info("Formatting plan matter data...")
-            # plan_matter_dictionaries = client.get_plan_matter(plan_dictionaries)
+            LOGGER.info("Formatting plan matter data...")
+            client.get_plan_matters()
 
             # LOGGER.info("Validating plan matters...")
             # responses = client.validate_plan_matters(plan_matter_dictionaries)
