@@ -55,7 +55,6 @@ def desired_plan_dict(
         "periodOfValidity": None,
         "approvalDate": None,
         # TODO: dates of validity and approval to be added. These need fixtures with specific codes.
-        # TODO: general regulation group to be added. This needs fixture with specific code.
         "generalRegulationGroups": [
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
