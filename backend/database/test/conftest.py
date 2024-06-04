@@ -23,7 +23,7 @@ from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
-codes_count: int = 15  # adjust me when adding tables
+codes_count: int = 16  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 USE_DOCKER = (
@@ -914,3 +914,132 @@ def complete_test_plan(
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
     return plan_instance
+
+
+@pytest.fixture(scope="module")
+def initiation_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="01", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def initiation_date_instance(
+    session, initiation_status_instance
+) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        lifecycle_status=code_instance, starting_at=datetime(2025, 1, 1)
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def preparation_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="03", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def preparation_date_instance(
+    session, preparation_status_instance
+) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        lifecycle_status=code_instance, starting_at=datetime(2025, 2, 1)
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def approved_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="06", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def approved_date_instance(session, approved_status_instance) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        lifecycle_status=code_instance, starting_at=datetime(2025, 3, 1)
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def valid_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="13", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def valid_date_instance(session, valid_status_instance) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        lifecycle_status=code_instance, starting_at=datetime(2025, 4, 1)
+    )
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def participation_plan_presenting_for_public_decision(
+    session,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(value="04", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_material_presenting_for_public_decision(
+    session,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(value="05", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def draft_plan_presenting_for_public_decision(
+    session,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(value="06", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def participation_plan_presenting_for_public_event(
+    session,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(value="05", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_material_presenting_for_public_event(
+    session,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(value="06", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def presentation_to_the_public_interaction(
+    session,
+) -> codes.TypeOfInteractionEvent:
+    instance = codes.TypeOfInteractionEvent(value="01", status="LOCAL")
+    session.add(instance)
+    return instance
+
+
+@pytest.fixture(scope="module")
+def decisionmaker_type(session) -> codes.TypeOfDecisionMaker:
+    instance = codes.TypeOfDecisionMaker(value="01", status="LOCAL")
+    session.add(instance)
+    return instance

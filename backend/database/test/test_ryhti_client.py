@@ -253,13 +253,79 @@ def desired_plan_dict(
     }
 
 
+@pytest.fixture(scope="module")
+def desired_plan_matter_dict(
+    session: Session,
+    desired_plan_dict: dict,
+    plan_instance: models.Plan,
+    preparation_status_instance: codes.LifeCycleStatus,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+    decisionmaker_type: codes.TypeOfDecisionMaker,
+) -> dict:
+    """
+    Plan matter dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Palveluväylä/Kaavoitus%20OpenApi.json
+
+    Constructing the plan matter requires certain additional codes to be present in the database and set in the plan instance.
+
+    Let's 1) write explicitly the complex fields, and 2) just check that the simple fields have
+    the same values as the original plan fixture in the database.
+    """
+    plan_instance.lifecycle_status = preparation_status_instance
+    session.commit()
+
+    return {
+        "permanentPlanIdentifier": "MK-123456",
+        "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/test",
+        "name": plan_instance.name,
+        "timeOfInitiation": "2025-01-01T00:00Z",
+        "description": plan_instance.description,
+        "producerPlanIdentifier": plan_instance.producers_plan_identifier,
+        "caseIdentifiers": [plan_instance.matter_management_identifier],
+        "recordNumbers": [plan_instance.record_number],
+        "administrativeAreaIdentifiers": ["test"],
+        "digitalOrigin": "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/test",
+        "planMatterPhases": [
+            {
+                "planMatterPhaseKey": "whatever",
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "geographicalArea": desired_plan_dict["geographicalArea"],
+                "planHandlingEvent": {
+                    "handlingEventKey": "whatever",
+                    "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
+                    "eventTime": "2025-02-01T00:00Z",
+                },
+                "interactionEvents": [
+                    {
+                        "interactionEventKey": "whatever",
+                        "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
+                        "eventTime": "2025-02-01T00:00Z",
+                    },
+                ],
+                "planDecision": {
+                    "planDecisionKey": "whatever",
+                    "name": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi/code/04",
+                    "decisionDate": "2025-02-01T00:00Z",
+                    "dateOfDecision": "2025-02-01T00:00Z",
+                    "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
+                    "plans": [desired_plan_dict],
+                },
+            },
+        ],
+    }
+
+
 mock_rule = "random_rule"
 mock_error_string = "There is something wrong with your plan! Good luck!"
 mock_instance = "some field in your plan"
 
 
 @pytest.fixture()
-def mock_public_ryhti_validate(requests_mock) -> None:
+def mock_public_ryhti_validate_invalid(requests_mock) -> None:
     requests_mock.post(
         "http://mock.url/Plan/validate",
         text=json.dumps(
@@ -280,6 +346,14 @@ def mock_public_ryhti_validate(requests_mock) -> None:
             }
         ),
         status_code=422,
+    )
+
+
+@pytest.fixture()
+def mock_public_ryhti_validate_valid(requests_mock) -> None:
+    requests_mock.post(
+        "http://mock.url/Plan/validate",
+        status_code=200,
     )
 
 
@@ -361,7 +435,7 @@ def test_get_plan_dictionaries(
 def test_validate_plans(
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
-    mock_public_ryhti_validate: Callable,
+    mock_public_ryhti_validate_invalid: Callable,
 ):
     """
     Check that JSON is posted and response received
@@ -382,10 +456,10 @@ def test_save_responses(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
-    mock_public_ryhti_validate: Callable,
+    mock_public_ryhti_validate_invalid: Callable,
 ):
     """
-    Check that Ryhti response is saved to database
+    Check that Ryhti validation error is saved to database.
     """
     responses = client_with_plan_data.validate_plans()
     message = client_with_plan_data.save_responses(responses)
@@ -398,18 +472,39 @@ def test_set_permanent_plan_identifiers(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
+    mock_public_ryhti_validate_valid: Callable,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ):
     """
-    Check that Ryhti permanent plan identifier is received and saved to the database
+    Check that Ryhti permanent plan identifier is received and saved to the database.
+
+    This requires that client marks the plan as valid before fetching the identifier.
     """
-    responses = client_with_plan_data.get_permanent_plan_identifiers()
-    client_with_plan_data.set_permanent_plan_identifiers(responses)
+    responses = client_with_plan_data.validate_plans()
+    client_with_plan_data.save_responses(responses)
     session.refresh(plan_instance)
-    received_plan_identifier = next(iter(responses.values()))
+    assert plan_instance.validated_at
+    assert plan_instance.validation_errors is None
+
+    id_responses = client_with_plan_data.get_permanent_plan_identifiers()
+    client_with_plan_data.set_permanent_plan_identifiers(id_responses)
+    session.refresh(plan_instance)
+    received_plan_identifier = next(iter(id_responses.values()))
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (
         client_with_plan_data.plan_dictionaries[plan_instance.id]["planKey"]
         == received_plan_identifier
     )
+
+
+def test_get_plan_matters(
+    client_with_plan_data: RyhtiClient,
+    plan_instance: models.Plan,
+    desired_plan_matter_dict: dict,
+):
+    """
+    Check that correct JSON structure is generated for plan matter.
+    """
+    plan_matter = client_with_plan_data.get_plan_matters()[plan_instance.id]
+    assert_dicts_equal(plan_matter, desired_plan_matter_dict)

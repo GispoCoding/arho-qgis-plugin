@@ -2,6 +2,7 @@ import datetime
 import enum
 import logging
 import os
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
@@ -12,8 +13,10 @@ import simplejson as json  # type: ignore
 from codes import (
     LifeCycleStatus,
     NameOfPlanCaseDecision,
+    TypeOfDecisionMaker,
     TypeOfInteractionEvent,
     TypeOfProcessingEvent,
+    decisionmaker_by_status,
     decisions_by_status,
     get_code,
     interaction_events_by_status,
@@ -121,6 +124,8 @@ class RyhtiClient:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         self.plans: List[models.Plan] = []
+        # Save valid plans after validation, so they can be processed further.
+        self.valid_plans: List[models.Plan] = []
         # Cache plan dictionaries in case we want to POST them after validation
         self.plan_dictionaries: Dict[str, Dict] = dict()
         self.initiated_status: LifeCycleStatus
@@ -167,6 +172,10 @@ class RyhtiClient:
                 if interactions
                 else []
                 for status_code, interactions in interaction_events_by_status.items()
+            }
+            self.decisionmaker_by_status = {
+                status_code: get_code(session, TypeOfDecisionMaker, decisionmaker)
+                for status_code, decisionmaker in decisionmaker_by_status.items()
             }
 
             # Only process specified plans
@@ -488,6 +497,11 @@ class RyhtiClient:
             # already before reposting.
             entry["planDecisionKey"] = uuid4()
             entry["name"] = decision.url
+            entry["typeOfDecisionMaker"] = self.decisionmaker_by_status[
+                plan.lifecycle_status.value
+            ]
+            # Plan must be embedded in decision when POSTing!
+            entry["plans"] = [self.plan_dictionaries[plan.id]]
 
             period_of_current_status = self.get_lifecycle_dates(
                 plan, plan.lifecycle_status.value
@@ -644,11 +658,11 @@ class RyhtiClient:
 
     def get_plan_matters(self) -> Dict[str, Dict]:
         """
-        Construct a dict of valid Ryhti compatible plan matters from plans in the local
-        database.
+        Construct a dict of valid Ryhti compatible plan matters from valid plans in the
+        local database.
         """
         plan_matters = dict()
-        for plan in self.plans:
+        for plan in self.valid_plans:
             plan_matters[plan.id] = self.get_plan_matter(plan)
         return plan_matters
 
@@ -664,21 +678,24 @@ class RyhtiClient:
             # For some reason (no idea why) some plan fields have to be provided
             # as query parameters, not as inline json. Shrug.
             #
-            # Also, the data is *not* allowed to be in the actual plan, se we must
+            # Also, the data is *not* allowed to be in the posted plan, se we must
             # pop them out, go figure.
-            plan_type_parameter = plan.pop("planType")
+            plan_to_be_posted = deepcopy(plan)
+            plan_type_parameter = plan_to_be_posted.pop("planType")
             # we only support one area id, no need for commas and concat:
-            admin_area_id_parameter = plan.pop("administrativeAreaIdentifiers")[0]
+            admin_area_id_parameter = plan_to_be_posted.pop(
+                "administrativeAreaIdentifiers"
+            )[0]
             if self.debug_json:
                 with open(f"ryhti_debug/{plan_id}.json", "w") as plan_file:
-                    json.dump(plan, plan_file)
+                    json.dump(plan_to_be_posted, plan_file)
             LOGGER.info(f"POSTing JSON: {json.dumps(plan)}")
 
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             response = requests.post(
                 plan_validation_endpoint,
-                json=plan,
+                json=plan_to_be_posted,
                 headers=self.public_headers,
                 params={
                     "planType": plan_type_parameter,
@@ -700,7 +717,7 @@ class RyhtiClient:
     def get_permanent_plan_identifiers(self) -> Dict[str, str | Dict]:
         """
         Get permanent plan identifiers for all plans that are marked
-        ready to be exported to Ryhti but do not have identifiers set yet.
+        valid but do not have identifiers set yet.
         """
         plan_identifier_endpoint = (
             self.xroad_server_address
@@ -708,8 +725,8 @@ class RyhtiClient:
             + "RegionalPlanMatter/permanentPlanIdentifier"
         )
         responses: Dict[str, str | Dict] = dict()
-        print(self.plans)
-        for plan in self.plans:
+        print(self.valid_plans)
+        for plan in self.valid_plans:
             print(plan)
             if plan.to_be_exported and not plan.permanent_plan_identifier:
                 LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
@@ -757,10 +774,8 @@ class RyhtiClient:
         """
         Save RYHTI API response data to the database and return lambda response.
 
-        If validation is successful, just update validated_at field.
-
-        If POST is successful, update exported_at, to_be_exported and
-        any ids received from the Ryhti API.
+        If validation is successful, just update validated_at field. Also add all
+        valid plans to client valid_plans, to be processed further.
 
         If validation/post is unsuccessful, save the error JSON in plan
         validation_errors json field (in addition to saving it to AWS logs and
@@ -784,6 +799,7 @@ class RyhtiClient:
                 elif response["status"] == 200:
                     details[plan_id] = f"Validation successful for {plan_id}!"
                     plan.validation_errors = None
+                    self.valid_plans.append(plan)
                 else:
                     details[plan_id] = f"Validation FAILED for {plan_id}."
                     plan.validation_errors = response["errors"]
@@ -843,39 +859,43 @@ def handler(event: Event, _) -> Response:
         xroad_member_code=xroad_member_code,
     )
     if client.plans:
+        # 1) Serialize plans in database
         LOGGER.info("Formatting plan data...")
         client.plan_dictionaries = client.get_plan_dictionaries()
 
+        # 2) Validate plans in database with public API
         LOGGER.info("Validating plans...")
         responses = client.validate_plans()
 
+        # 3) Save plan validation data
         LOGGER.info("Saving validation data...")
         lambda_response = client.save_responses(responses)
 
-        # TODO: Add logic to *also* validate plan matter if plans are already valid.
+        # *Also* validate plan matter if plans are already valid.
         #
         # This can be done *without* POSTing plans, but it *will* give the plan a
         # permanent plan identifier the moment the plan itself is valid. Does this make
         # sense?
+        # When we want to upload plans, we need to embed plan objects
+        # further, to create kaava-asiat etc. With uploading, therefore, the
+        # JSON to be POSTed is more complex, but it has plan_dictionary embedded.
+
+        # Only get identifiers for those plans that are valid.
+        # 4) Check or create permanent plan identifier for valid plans, from X-Road API
+        LOGGER.info("Getting permanent plan identifiers for valid plans...")
+        plan_identifiers = client.get_permanent_plan_identifiers()
+
+        LOGGER.info("Setting permanent plan identifiers for valid plans...")
+        client.set_permanent_plan_identifiers(plan_identifiers)
+
+        # 5) Validate plan matters with the identifiers with X-Road API
+        LOGGER.info("Formatting plan matter data for valid plans...")
+        client.get_plan_matters()
+
+        # LOGGER.info("Validating plan matters...")
+        # responses = client.validate_plan_matters(plan_matter_dictionaries)
         if event_type is EventType.POST_PLANS:
-            # When we want to upload plans, we need to embed plan objects
-            # further, to create kaava-asiat etc. With uploading, therefore, the
-            # JSON to be POSTed is more complex, but it has plan_dictionary embedded.
-
-            # 1) Check or create permanent plan identifier
-            LOGGER.info("Getting permanent plan identifiers...")
-            plan_identifiers = client.get_permanent_plan_identifiers()
-
-            LOGGER.info("Setting permanent plan identifiers...")
-            client.set_permanent_plan_identifiers(plan_identifiers)
-
-            # 2) TODO: Validate plan matter with the identifier
-            LOGGER.info("Formatting plan matter data...")
-            client.get_plan_matters()
-
-            # LOGGER.info("Validating plan matters...")
-            # responses = client.validate_plan_matters(plan_matter_dictionaries)
-            #
+            pass
             # 3) TODO: Check or create plan matter with the identifier
             #
             # 4) TODO: If plan matter existed, check or create plan phase instead

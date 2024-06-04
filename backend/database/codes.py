@@ -1,7 +1,7 @@
 from typing import Type
 
 from models import CodeBase
-from sqlalchemy import Session
+from sqlalchemy.orm import Session
 
 
 class LifeCycleStatus(CodeBase):
@@ -197,8 +197,17 @@ class TypeOfProcessingEvent(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
 
 
+class TypeOfDecisionMaker(CodeBase):
+    """
+    Päätöksentekijän laji
+    """
+
+    __tablename__ = "type_of_decision_maker"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija"
+
+
 def get_code(session: Session, code_class: Type[CodeBase], value: str) -> CodeBase:
-    return session.query(code_class).filter_by(value).first()
+    return session.query(code_class).filter_by(value=value).first()
 
 
 decisions_by_status = {
@@ -260,4 +269,11 @@ interaction_events_by_status = {
         "01",
         "02",
     ],  # lifecycle/req-codelist-regionalplan-iteractioneventtype-lifecycle-05
+}
+
+
+decisionmaker_by_status = {
+    # Decisionmaker may depend on lifecycle status.
+    str(i).zfill(2): "01"
+    for i in range(1, 16)
 }

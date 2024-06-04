@@ -366,3 +366,25 @@ def test_validate_valid_plan_in_preparation(
             assert not errors
     finally:
         conn.close()
+
+
+def test_validate_valid_plan_matter_in_preparation(
+    validate_valid_plan_matter_in_preparation, main_db_params
+):
+    """
+    Test the whole lambda endpoint with a valid plan matter in preparation stage.
+
+    Since local tests or CI/CD cannot connect to X-Road servers, we will have to
+    mock the X-Road response here.
+    """
+    assert False
+    # TODO
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            validation_date, errors = cur.fetchone()
+            assert validation_date
+            assert not errors
+    finally:
+        conn.close()
