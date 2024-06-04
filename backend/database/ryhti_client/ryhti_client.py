@@ -69,6 +69,11 @@ class Event(TypedDict):
     save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
 
 
+class Period(TypedDict):
+    begin: datetime.date
+    end: datetime.date
+
+
 class RyhtiClient:
     HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
@@ -118,9 +123,9 @@ class RyhtiClient:
         self.plans: List[models.Plan] = []
         # Cache plan dictionaries in case we want to POST them after validation
         self.plan_dictionaries: Dict[str, Dict] = dict()
-        self.initiated_status: Optional[LifeCycleStatus] = None
-        self.approved_status: Optional[LifeCycleStatus] = None
-        self.valid_status: Optional[LifeCycleStatus] = None
+        self.initiated_status: LifeCycleStatus
+        self.approved_status: LifeCycleStatus
+        self.valid_status: LifeCycleStatus
 
         # do some prefetching before starting the run:
         with self.Session() as session:
@@ -196,56 +201,23 @@ class RyhtiClient:
             "geometry": json.loads(to_geojson(to_shape(geometry))),
         }
 
-    def get_time_of_initiation(
-        self, plan_base: base.PlanBase
-    ) -> Optional[datetime.datetime]:
+    def get_lifecycle_dates(
+        self, plan_base: base.PlanBase, status: LifeCycleStatus
+    ) -> Optional[Period]:
         """
-        Returns the initiation date for any object that has lifecycle dates.
-        They should be preloaded, so there's no need to fetch anything from db.
+        Returns the start and end dates of a lifecycle status for object, or
+        None if no dates are found.
         """
-        if self.initiated_status:
-            # we have to loop over the list, but it won't have that many dates
-            # to begin with.
-            for lifecycle_date in plan_base.lifecycle_dates:
-                if lifecycle_date.lifecycle_status is self.initiated_status:
-                    # This will return the first valid dates. Here we assume that
-                    # there cannot be several initiated periods.
-                    return lifecycle_date.starting_at  # TODO: only return date
-        return None
-
-    def get_approval_date(
-        self, plan_base: base.PlanBase
-    ) -> Optional[datetime.datetime]:
-        """
-        Returns the approval date for any object that has lifecycle dates.
-        They should be preloaded, so there's no need to fetch anything from db.
-        """
-        if self.approved_status:
-            # we have to loop over the list, but it won't have that many dates
-            # to begin with.
-            for lifecycle_date in plan_base.lifecycle_dates:
-                if lifecycle_date.lifecycle_status is self.approved_status:
-                    # This will return the first valid dates. Here we assume that
-                    # there cannot be several approved periods.
-                    return lifecycle_date.starting_at  # TODO: only return date
-        return None
-
-    def get_period_of_validity(self, plan_base: base.PlanBase) -> Optional[dict]:
-        """
-        Returns the period of validity for any object that has lifecycle dates.
-        They should be preloaded, so there's no need to fetch anything from db.
-        """
-        if self.valid_status:
-            # we have to loop over the list, but it won't have that many dates
-            # to begin with.
-            for lifecycle_date in plan_base.lifecycle_dates:
-                if lifecycle_date.lifecycle_status is self.valid_status:
-                    # This will return the first valid dates. Here we assume that
-                    # there cannot be several valid periods.
-                    return {  # TODO: only return dates
-                        "begin": lifecycle_date.starting_at,
-                        "end": lifecycle_date.ending_at,
-                    }
+        for lifecycle_date in plan_base.lifecycle_dates:
+            if lifecycle_date.lifecycle_status is status:
+                return {
+                    "begin": lifecycle_date.starting_at.date()
+                    if lifecycle_date.starting_at
+                    else None,
+                    "end": lifecycle_date.ending_at.date()
+                    if lifecycle_date.ending_at
+                    else None,
+                }
         return None
 
     def get_plan_recommendation(
@@ -262,8 +234,8 @@ class RyhtiClient:
         if plan_recommendation.plan_theme:
             recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
-        recommendation_dict["periodOfValidity"] = self.get_period_of_validity(
-            plan_recommendation
+        recommendation_dict["periodOfValidity"] = self.get_lifecycle_dates(
+            plan_recommendation, self.valid_status
         )
         recommendation_dict["value"] = plan_recommendation.text_value
         return recommendation_dict
@@ -281,8 +253,8 @@ class RyhtiClient:
         if plan_regulation.name["fin"]:
             regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
-        regulation_dict["periodOfValidity"] = self.get_period_of_validity(
-            plan_regulation
+        regulation_dict["periodOfValidity"] = self.get_lifecycle_dates(
+            plan_regulation, self.valid_status
         )
         if plan_regulation.type_of_verbal_plan_regulation:
             regulation_dict["verbalRegulations"] = [
@@ -359,7 +331,9 @@ class RyhtiClient:
         plan_object_dict["name"] = plan_object.name
         plan_object_dict["description"] = plan_object.description
         plan_object_dict["objectNumber"] = plan_object.ordering
-        plan_object_dict["periodOfValidity"] = self.get_period_of_validity(plan_object)
+        plan_object_dict["periodOfValidity"] = self.get_lifecycle_dates(
+            plan_object, self.valid_status
+        )
         if plan_object.height_range:
             plan_object_dict["verticalLimit"] = {
                 "dataType": "decimalRange",
@@ -476,9 +450,15 @@ class RyhtiClient:
         plan_dictionary[
             "planRegulationGroupRelations"
         ] = self.get_plan_regulation_group_relations(plan_objects)
+
         # Dates come from plan lifecycle dates.
-        plan_dictionary["periodOfValidity"] = self.get_period_of_validity(plan)
-        plan_dictionary["approvalDate"] = self.get_approval_date(plan)
+        plan_dictionary["periodOfValidity"] = self.get_lifecycle_dates(
+            plan, self.valid_status
+        )
+        period_of_approval = self.get_lifecycle_dates(plan, self.approved_status)
+        plan_dictionary["approvalDate"] = (
+            period_of_approval["begin"] if period_of_approval else None
+        )
 
         return plan_dictionary
 
@@ -501,13 +481,22 @@ class RyhtiClient:
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
         for decision in self.decisions_by_status.get(plan.lifecycle_status.value, []):
-            entry = dict()
+            entry: Dict[str, Any] = dict()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["planDecisionKey"] = uuid4()
             entry["name"] = decision.url
+
+            period_of_current_status = self.get_lifecycle_dates(
+                plan, plan.lifecycle_status.value
+            )
+            entry["decisionDate"] = (
+                period_of_current_status["begin"] if period_of_current_status else None
+            )
+            entry["dateOfDecision"] = entry["decisionDate"]
+
             decisions.append(entry)
         return decisions
 
@@ -522,13 +511,21 @@ class RyhtiClient:
         for event in self.processing_events_by_status.get(
             plan.lifecycle_status.value, []
         ):
-            entry = dict()
+            entry: Dict[str, Any] = dict()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["handlingEventKey"] = uuid4()
             entry["handlingEventType"] = event.url
+
+            period_of_current_status = self.get_lifecycle_dates(
+                plan, plan.lifecycle_status.value
+            )
+            entry["eventTime"] = (
+                period_of_current_status["begin"] if period_of_current_status else None
+            )
+
             events.append(entry)
         return events
 
@@ -543,13 +540,21 @@ class RyhtiClient:
         for event in self.interaction_events_by_status.get(
             plan.lifecycle_status.value, []
         ):
-            entry = dict()
+            entry: Dict[str, Any] = dict()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["interactionEventKey"] = uuid4()
             entry["interactionEventType"] = event.url
+
+            period_of_current_status = self.get_lifecycle_dates(
+                plan, plan.lifecycle_status.value
+            )
+            entry["eventTime"] = (
+                period_of_current_status["begin"] if period_of_current_status else None
+            )
+
             events.append(entry)
         return events
 
@@ -584,6 +589,7 @@ class RyhtiClient:
         # each phase.
         plan_decisions = self.get_plan_decisions(plan)
         phase["planDecision"] = plan_decisions[0] if plan_decisions else None
+
         # TODO: currently, the API spec only allows for one plan handling event per
         # phase, for reasons unknown. Therefore, let's pick the first possible event in
         # each phase.
@@ -591,6 +597,7 @@ class RyhtiClient:
         phase["planHandlingEvent"] = handling_events[0] if handling_events else None
         interaction_events = self.get_interaction_events(plan)
         phase["interactionEvents"] = interaction_events if interaction_events else None
+
         return [phase]
 
     def get_source_datas(self, plan: models.Plan) -> List[Dict]:
@@ -610,7 +617,11 @@ class RyhtiClient:
         plan_matter = dict()
         plan_matter["permanentPlanIdentifier"] = plan_dictionary["planKey"]
         plan_matter["planType"] = plan_dictionary["planType"]
-        plan_matter["timeOfInitiation"] = self.get_time_of_initiation(plan)
+
+        period_of_initiation = self.get_lifecycle_dates(plan, self.initiated_status)
+        plan_matter["timeOfInitiation"] = (
+            period_of_initiation["begin"] if period_of_initiation else None
+        )
         # Hooray, unlike plan, the plan *matter* description allows multilanguage data!
         plan_matter["description"] = plan.description
         plan_matter["producerPlanIdentifier"] = plan.producers_plan_identifier
