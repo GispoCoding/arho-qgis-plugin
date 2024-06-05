@@ -18,6 +18,11 @@ variable "bastion_subdomain" {
   type        = string
 }
 
+variable "x-road_host" {
+  description = "Host name for X-Road security server"
+  type        = string
+}
+
 variable "x-road_subdomain" {
   description = "Subdomain for X-road security server"
   type     = string
@@ -146,7 +151,7 @@ variable "extra_tags" {
 
 locals {
   bastion_dns_alias   = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
-  xroad_dns_record    = "${var.prefix}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  xroad_dns_record    = "${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix
