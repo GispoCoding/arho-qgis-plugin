@@ -478,11 +478,12 @@ class RyhtiClient:
         ryhti_responses: Dict[str, Dict] = {}
         with self.Session() as session:
             for plan_id, response in responses.items():
+                LOGGER.info(f"Saving response for plan {plan_id}...")
                 plan: models.Plan = session.get(models.Plan, plan_id)
-                print(response)
+                LOGGER.info(response)
                 # In case Ryhti API does not respond in the expected manner,
                 # save the response for debugging.
-                if "status" not in response:
+                if "status" not in response or "errors" not in response:
                     details[
                         plan_id
                     ] = f"RYHTI API returned unexpected response: {response}"
