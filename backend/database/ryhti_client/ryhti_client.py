@@ -478,8 +478,15 @@ class RyhtiClient:
         ryhti_responses: Dict[str, Dict] = {}
         with self.Session() as session:
             for plan_id, response in responses.items():
-                LOGGER.info(f"Saving response for plan {plan_id}...")
                 plan: models.Plan = session.get(models.Plan, plan_id)
+                if not plan:
+                    # Plan has been deleted in the middle of validation. Nothing
+                    # to see here, move on
+                    LOGGER.info(
+                        f"Plan {plan_id} no longer found in database! Moving on"
+                    )
+                    continue
+                LOGGER.info(f"Saving response for plan {plan_id}...")
                 LOGGER.info(response)
                 # In case Ryhti API does not respond in the expected manner,
                 # save the response for debugging.
