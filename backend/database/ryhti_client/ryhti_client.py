@@ -788,10 +788,18 @@ class RyhtiClient:
         with self.Session() as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
-                print(response)
+                if not plan:
+                    # Plan has been deleted in the middle of validation. Nothing
+                    # to see here, move on
+                    LOGGER.info(
+                        f"Plan {plan_id} no longer found in database! Moving on"
+                    )
+                    continue
+                LOGGER.info(f"Saving response for plan {plan_id}...")
+                LOGGER.info(response)
                 # In case Ryhti API does not respond in the expected manner,
                 # save the response for debugging.
-                if "status" not in response:
+                if "status" not in response or "errors" not in response:
                     details[
                         plan_id
                     ] = f"RYHTI API returned unexpected response: {response}"
