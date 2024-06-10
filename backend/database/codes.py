@@ -1,4 +1,8 @@
+from typing import Optional
+
 from models import CodeBase
+from shapely.geometry import MultiPolygon
+from sqlalchemy.orm import Mapped
 
 
 class LifeCycleStatus(CodeBase):
@@ -127,6 +131,7 @@ class AdministrativeRegion(CodeBase):
 
     __tablename__ = "administrative_region"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
+    geom: Mapped[Optional[MultiPolygon]]
 
 
 class TypeOfPlanRegulationGroup(CodeBase):
