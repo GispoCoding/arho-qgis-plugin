@@ -16,18 +16,18 @@ test-ryhti-validate:
 
 pytest:
 	docker-compose -f docker-compose.dev.yml down -v
-	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
+	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
 	cd database; pytest
 
 rebuild:
 	docker-compose -f docker-compose.dev.yml down -v
-	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
+	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
 	docker-compose -f docker-compose.dev.yml up -d
 
 build-lambda:
-	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
-	docker-compose -f docker-compose.dev.yml up -d --no-deps db_manager koodistot_loader ryhti_client
-	for func in db_manager koodistot_loader ryhti_client ; do \
+	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
+	docker-compose -f docker-compose.dev.yml up -d --no-deps db_manager koodistot_loader ryhti_client mml_loader
+	for func in db_manager koodistot_loader ryhti_client mml_loader ; do \
   	  rm -rf tmp_lambda; \
   	  echo $$func; \
 	  docker cp hame-ryhti_$${func}_1:/var/task tmp_lambda; \
