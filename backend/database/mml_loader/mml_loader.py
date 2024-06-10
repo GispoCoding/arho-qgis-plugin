@@ -8,14 +8,15 @@ from xml.etree import ElementTree
 
 import pygml
 import requests
+from codes import AdministrativeRegion
 from db_helper import DatabaseHelper, User
-from models import Organisation
 from shapely.geometry import shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 """
-For populating administrative region geometries, adapted from Tarmo lambda functions
+For populating administrative regions (Maakunta) with geometries,
+adapted from Tarmo lambda functions
 """
 
 LOGGER = logging.getLogger()
@@ -158,16 +159,16 @@ class MMLLoader:
         """
         successful_actions = 0
         with self.Session() as session:
-            admin_regions = session.query(Organisation).all()
+            admin_regions = session.query(AdministrativeRegion).all()
             for admin_region in admin_regions:
                 LOGGER.info(
-                    f"Adding geometry to administrative region {admin_region.administrative_region}..."  # noqa
+                    f"Adding geometry to administrative region {admin_region.value}..."
                 )
                 for admin_region_id, geom in geoms.items():
-                    if admin_region_id == admin_region.administrative_region_id:
+                    if admin_region_id == admin_region.value:
                         admin_region.geom = geom
                         LOGGER.info(
-                            f"Geometry added to administrative region {admin_region.administrative_region}"  # noqa
+                            f"Geometry added to administrative region {admin_region.value}"  # noqa
                         )
                         successful_actions += 1
             session.commit()
