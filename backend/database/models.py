@@ -383,7 +383,6 @@ class Organisation(VersionedBase):
     administrative_region = relationship(
         "AdministrativeRegion", backref="organisations", lazy="joined"
     )
-    geom: Optional[Mapped[MultiPolygon]]
 
 
 class Document(VersionedBase):
