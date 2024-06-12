@@ -22,14 +22,27 @@ tables_with_lifecycle_date = [
 ]
 
 # All tables that inherit PlanBase, excluding plan
-tables_with_dependent_lifecycle_status = [
-    klass.__tablename__
-    for _, klass in inspect.getmembers(models, inspect.isclass)
-    if inspect.getmodule(klass) == models
-    and issubclass(klass, models.PlanBase)
-    and klass is not models.Plan
-]
+# tables_with_dependent_lifecycle_status = [
+#     klass.__tablename__
+#     for _, klass in inspect.getmembers(models, inspect.isclass)
+#     if inspect.getmodule(klass) == models
+#     and issubclass(klass, models.PlanBase)
+#     and klass is not models.Plan
+# ]
 
+# Regulations and propositions link to plan via plan regulation group
+# or via plan regulation group *and* plan object:
+# tables_with_indirect_dependent_lifecycle_status
+# regulation_fk_tables_with_dependent_lifecycle_status = [
+#     klass.__tablename__
+#     for _, klass in inspect.getmembers(models, inspect.isclass)
+#     if inspect.getmodule(klass) == models
+#     and issubclass(klass, models.PlanBase)
+#     and klass is not models.Plan
+#     and not hasattr(klass, "plan_id")
+# ]
+
+# All plan objects also have lifecycle status and link directly to plan
 plan_object_tables = [
     klass.__tablename__
     for _, klass in inspect.getmembers(models, inspect.isclass)
@@ -136,14 +149,14 @@ def generate_new_lifecycle_date_triggers():
 def generate_update_lifecycle_status_triggers():
     trgs = []
     trgfuncs = []
-    for table in tables_with_dependent_lifecycle_status:
+    for table in plan_object_tables:
         trgfunc_signature = f"trgfunc_{table}_update_lifecycle_status()"
         trgfunc_definition = f"""
         RETURNS TRIGGER AS $$
         BEGIN
             UPDATE hame.{table}
             SET lifecycle_status_id = NEW.lifecycle_status_id
-            WHERE plan_regulation_group_id = NEW.plan_regulation_group_id;
+            WHERE plan_id = NEW.id;
             RETURN NEW;
         END;
         $$ language 'plpgsql'
@@ -170,6 +183,50 @@ def generate_update_lifecycle_status_triggers():
             definition=trg_definition,
         )
         trgs.append(trg)
+    # TODO: Regulations and propositions link to plan via plan regulation group
+    # or via plan regulation group *and* plan object:
+
+    return trgs, trgfuncs
+
+
+def generate_new_lifecycle_status_triggers():
+    trgs = []
+    trgfuncs = []
+    for table in plan_object_tables:
+        trgfunc_signature = f"trgfunc_{table}_new_lifecycle_status()"
+        trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.lifecycle_status_id = (
+                SELECT lifecycle_status_id FROM hame.plan WHERE plan.id = NEW.plan_id
+            );
+            RETURN NEW;
+        END;
+        $$ language 'plpgsql'
+        """
+
+        trg_signature = f"trg_{table}_update_lifecycle_status"
+        trg_definition = f"""
+        BEFORE INSERT ON {table}
+        FOR EACH ROW
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+
+        trgfunc = PGFunction(
+            schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+        )
+        trgfuncs.append(trgfunc)
+
+        trg = PGTrigger(
+            schema="hame",
+            signature=trg_signature,
+            on_entity=f"hame.{table}",
+            is_constraint=False,
+            definition=trg_definition,
+        )
+        trgs.append(trg)
+    # TODO: Regulations and propositions link to plan via plan regulation group
+    # or via plan regulation group *and* plan object:
 
     return trgs, trgfuncs
 

@@ -15,6 +15,7 @@ from triggers import (
     generate_add_plan_id_fkey_triggers,
     generate_modified_at_triggers,
     generate_new_lifecycle_date_triggers,
+    generate_new_lifecycle_status_triggers,
     generate_update_lifecycle_status_triggers,
     generate_validate_polygon_geometry_triggers,
     trg_add_intersecting_other_area_geometries,
@@ -34,6 +35,12 @@ modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
     update_lifecycle_status_trgfuncs,
 ) = generate_update_lifecycle_status_triggers()
 
+(
+    new_lifecycle_status_trgs,
+    new_lifecycle_status_trgfuncs,
+) = generate_new_lifecycle_status_triggers()
+
+
 add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_triggers()
 (
     validate_polygon_geometry_trgs,
@@ -47,6 +54,8 @@ imported_functions = (
     + new_lifecycle_date_trgfuncs
     + update_lifecycle_status_trgs
     + update_lifecycle_status_trgfuncs
+    + new_lifecycle_status_trgs
+    + new_lifecycle_status_trgfuncs
     + add_plan_id_fkey_trgs
     + add_plan_id_fkey_trgfuncs
     + validate_polygon_geometry_trgs
