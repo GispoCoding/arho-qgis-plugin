@@ -234,18 +234,7 @@ def valid_plan_in_preparation(
     session.add(plan_proposition_instance)
     session.add(general_plan_regulation_instance)
 
-    # Elinkaaren vaihe
-    preparation_lifecycle_status = (
-        session.query(codes.LifeCycleStatus).filter_by(value="03").first()
-    )
-    complete_test_plan.lifecycle_status = preparation_lifecycle_status
-    land_use_area_instance.lifecycle_status = preparation_lifecycle_status
-    text_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    numeric_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    verbal_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    general_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    plan_proposition_instance.lifecycle_status = preparation_lifecycle_status
-
+    # Elinkaaren vaihe already has a valid value!
     # Kaavoitusteema
     community_structure_theme = (
         session.query(codes.PlanTheme).filter_by(value="01").first()

@@ -1,5 +1,6 @@
 import json
-from typing import Callable
+from copy import deepcopy
+from typing import Callable, List, Optional
 
 import codes
 import models
@@ -20,6 +21,9 @@ def desired_plan_dict(
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
+    pending_date_instance: models.LifeCycleDate,
+    approved_date_instance: models.LifeCycleDate,
+    valid_date_instance: models.LifeCycleDate,
 ) -> dict:
     """
     Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
@@ -30,7 +34,7 @@ def desired_plan_dict(
 
     return {
         "planKey": plan_instance.id,
-        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
         "planType": "test",
         "administrativeAreaIdentifiers": ["test"],
         "scale": plan_instance.scale,
@@ -52,9 +56,8 @@ def desired_plan_dict(
             },
         },
         # TODO: plan documents to be added.
-        "periodOfValidity": None,
-        "approvalDate": None,
-        # TODO: dates of validity and approval to be added. These need fixtures with specific codes.
+        "periodOfValidity": {"begin": "2025-04-01", "end": None},
+        "approvalDate": "2025-03-01",
         "generalRegulationGroups": [
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
@@ -62,7 +65,7 @@ def desired_plan_dict(
                 "planRegulations": [
                     {
                         "planRegulationKey": general_plan_regulation_instance.id,
-                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
                         "value": {
                             "dataType": "LocalizedText",
@@ -86,7 +89,7 @@ def desired_plan_dict(
                             general_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None
+                        "periodOfValidity": None,
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
@@ -99,7 +102,7 @@ def desired_plan_dict(
         "planObjects": [
             {
                 "planObjectKey": land_use_area_instance.id,
-                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                 "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/test",
                 "geometry": {
                     "srid": str(PROJECT_SRID),
@@ -127,7 +130,7 @@ def desired_plan_dict(
                     "maximumValue": land_use_area_instance.height_range.upper,
                     "unitOfMeasure": land_use_area_instance.height_unit,
                 },
-                "periodOfValidity": None
+                "periodOfValidity": None,
                 # TODO: dates of validity to be added. These need fixtures with specific codes.
             },
         ],
@@ -138,7 +141,7 @@ def desired_plan_dict(
                 "planRegulations": [
                     {
                         "planRegulationKey": numeric_plan_regulation_instance.id,
-                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
                         "value": {
                             "dataType": "decimal",
@@ -163,12 +166,12 @@ def desired_plan_dict(
                             numeric_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None
+                        "periodOfValidity": None,
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                     {
                         "planRegulationKey": text_plan_regulation_instance.id,
-                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
                         "value": {
                             "dataType": "LocalizedText",
@@ -190,12 +193,12 @@ def desired_plan_dict(
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(text_plan_regulation_instance.ordering),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None
+                        "periodOfValidity": None,
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                     {
                         "planRegulationKey": verbal_plan_regulation_instance.id,
-                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
                         "value": {
                             "dataType": "LocalizedText",
@@ -222,21 +225,21 @@ def desired_plan_dict(
                             verbal_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None
+                        "periodOfValidity": None,
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
                 "planRecommendations": [
                     {
                         "planRecommendationKey": plan_proposition_instance.id,
-                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/test",
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "value": plan_proposition_instance.text_value,
                         "planThemes": [
                             "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
                         ],
                         "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
-                        "periodOfValidity": None
+                        "periodOfValidity": None,
                         # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
@@ -282,13 +285,13 @@ def desired_plan_matter_dict(
         "permanentPlanIdentifier": "MK-123456",
         "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/test",
         "name": plan_instance.name,
-        "timeOfInitiation": "2025-01-01T00:00Z",
+        "timeOfInitiation": "2025-01-01",
         "description": plan_instance.description,
         "producerPlanIdentifier": plan_instance.producers_plan_identifier,
         "caseIdentifiers": [plan_instance.matter_management_identifier],
         "recordNumbers": [plan_instance.record_number],
         "administrativeAreaIdentifiers": ["test"],
-        "digitalOrigin": "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/test",
+        "digitalOrigin": "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01",
         "planMatterPhases": [
             {
                 "planMatterPhaseKey": "whatever",
@@ -297,25 +300,26 @@ def desired_plan_matter_dict(
                 "planHandlingEvent": {
                     "handlingEventKey": "whatever",
                     "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
-                    "eventTime": "2025-02-01T00:00Z",
+                    "eventTime": "2025-02-01",
                 },
                 "interactionEvents": [
                     {
                         "interactionEventKey": "whatever",
                         "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
-                        "eventTime": "2025-02-01T00:00Z",
+                        "eventTime": "2025-02-01",
                     },
                 ],
                 "planDecision": {
                     "planDecisionKey": "whatever",
                     "name": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi/code/04",
-                    "decisionDate": "2025-02-01T00:00Z",
-                    "dateOfDecision": "2025-02-01T00:00Z",
+                    "decisionDate": "2025-02-01",
+                    "dateOfDecision": "2025-02-01",
                     "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
-                    "plans": [desired_plan_dict],
+                    "plans": [{**desired_plan_dict, "planKey": "MK-123456"}],
                 },
             },
         ],
+        # TODO: plan documents, source data etc. non-mandatory fields to be added
     }
 
 
@@ -360,9 +364,9 @@ def mock_public_ryhti_validate_valid(requests_mock) -> None:
 @pytest.fixture()
 def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
     requests_mock.post(
-        "http://mock2.url/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
+        "http://mock2.url:443/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
         text="MK-123456",
-        request_headers={"X-Road-Client": "FI/MUN/2455538-5"},
+        request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
         status_code=200,
     )
 
@@ -389,35 +393,45 @@ def client_with_plan_data(
     return client
 
 
-def assert_lists_equal(list1: list, list2: list):
+def assert_lists_equal(list1: list, list2: list, ignore_keys: Optional[List] = []):
     """
     Recursively check that lists have the same items in the same order.
+
+    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
+    the remote Ryhti API) can be ignored when comparing dicts in the lists, because
+    they are not provided in the incoming data.
     """
     assert len(list1) == len(list2)
     for item1, item2 in zip(list1, list2):
         print(f"comparing values {item1} and {item2}")
         if isinstance(item1, dict):
-            assert_dicts_equal(item1, item2)
+            assert_dicts_equal(item1, item2, ignore_keys=ignore_keys)
         elif isinstance(item1, list):
-            assert_lists_equal(item1, item2)
+            assert_lists_equal(item1, item2, ignore_keys=ignore_keys)
         else:
             assert item1 == item2
 
 
-def assert_dicts_equal(dict1: dict, dict2: dict):
+def assert_dicts_equal(dict1: dict, dict2: dict, ignore_keys: Optional[List] = []):
     """
     Recursively check that dicts contain the same keys with same values.
+
+    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
+    the remote Ryhti API) can be ignored when comparing, because they are not
+    provided in the incoming data.
     """
     for key in dict2.keys():
-        assert key in dict1
+        if not ignore_keys or not key in ignore_keys:
+            assert key in dict1
     for key, value in dict1.items():
-        print(f"comparing {key} {value} to {dict2[key]}")
-        if isinstance(value, dict):
-            assert_dicts_equal(dict2[key], value)
-        elif isinstance(value, list):
-            assert_lists_equal(dict2[key], value)
-        else:
-            assert dict2[key] == value
+        if not ignore_keys or not key in ignore_keys:
+            print(f"comparing {key} {value} to {dict2[key]}")
+            if isinstance(value, dict):
+                assert_dicts_equal(dict2[key], value, ignore_keys=ignore_keys)
+            elif isinstance(value, list):
+                assert_lists_equal(dict2[key], value, ignore_keys=ignore_keys)
+            else:
+                assert dict2[key] == value
 
 
 def test_get_plan_dictionaries(
@@ -468,43 +482,91 @@ def test_save_responses(
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]
 
 
-def test_set_permanent_plan_identifiers(
+@pytest.fixture()
+def client_with_valid_plan(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
     mock_public_ryhti_validate_valid: Callable,
-    mock_xroad_ryhti_permanentidentifier: Callable,
-):
+) -> RyhtiClient:
     """
-    Check that Ryhti permanent plan identifier is received and saved to the database.
-
-    This requires that client marks the plan as valid before fetching the identifier.
+    Return RyhtiClient that has plan data read in and validated without errors.
     """
     responses = client_with_plan_data.validate_plans()
     client_with_plan_data.save_responses(responses)
     session.refresh(plan_instance)
     assert plan_instance.validated_at
     assert plan_instance.validation_errors is None
+    return client_with_plan_data
 
-    id_responses = client_with_plan_data.get_permanent_plan_identifiers()
-    client_with_plan_data.set_permanent_plan_identifiers(id_responses)
+
+def test_set_permanent_plan_identifiers(
+    session: Session,
+    client_with_valid_plan: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_permanentidentifier: Callable,
+):
+    """
+    Check that Ryhti permanent plan identifier is received and saved to the database.
+    This requires that the client has already marked the plan as valid.
+    """
+
+    id_responses = client_with_valid_plan.get_permanent_plan_identifiers()
+    client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (
-        client_with_plan_data.plan_dictionaries[plan_instance.id]["planKey"]
+        client_with_valid_plan.plan_dictionaries[plan_instance.id]["planKey"]
         == received_plan_identifier
     )
 
 
+@pytest.fixture()
+def client_with_plan_with_permanent_identifier(
+    session: Session,
+    client_with_valid_plan: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_permanentidentifier: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data read in, validated and its permanent
+    identifier set.
+    """
+    id_responses = client_with_valid_plan.get_permanent_plan_identifiers()
+    client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
+    session.refresh(plan_instance)
+    received_plan_identifier = next(iter(id_responses.values()))
+    assert plan_instance.permanent_plan_identifier
+    assert plan_instance.permanent_plan_identifier == received_plan_identifier
+    assert (
+        client_with_valid_plan.plan_dictionaries[plan_instance.id]["planKey"]
+        == received_plan_identifier
+    )
+    return client_with_valid_plan
+
+
 def test_get_plan_matters(
-    client_with_plan_data: RyhtiClient,
+    client_with_plan_with_permanent_identifier: RyhtiClient,
     plan_instance: models.Plan,
     desired_plan_matter_dict: dict,
 ):
     """
-    Check that correct JSON structure is generated for plan matter.
+    Check that correct JSON structure is generated for plan matter. This requires that
+    the client has already marked the plan as valid and fetched a permanent identifer
+    for the plan.
     """
-    plan_matter = client_with_plan_data.get_plan_matters()[plan_instance.id]
-    assert_dicts_equal(plan_matter, desired_plan_matter_dict)
+    plan_matter = client_with_plan_with_permanent_identifier.get_plan_matters()[
+        plan_instance.id
+    ]
+    assert_dicts_equal(
+        plan_matter,
+        desired_plan_matter_dict,
+        ignore_keys=[
+            "planMatterPhaseKey",
+            "handlingEventKey",
+            "interactionEventKey",
+            "planDecisionKey",
+        ],
+    )

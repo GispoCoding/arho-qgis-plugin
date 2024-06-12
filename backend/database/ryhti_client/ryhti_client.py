@@ -73,8 +73,8 @@ class Event(TypedDict):
 
 
 class Period(TypedDict):
-    begin: datetime.date
-    end: datetime.date
+    begin: str
+    end: str
 
 
 class RyhtiClient:
@@ -82,7 +82,7 @@ class RyhtiClient:
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
     xroad_api_path = "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/"
     xroad_server_address = ""
-    xroad_client_id_base = "FI/MUN/"
+    xroad_client_id_base = "FI-TEST/MUN/"
     xroad_member_code = ""
 
     def __init__(
@@ -92,6 +92,8 @@ class RyhtiClient:
         public_api_key: str = "",
         xroad_server_address: Optional[str] = None,
         xroad_member_code: Optional[str] = None,
+        xroad_client_id_base: Optional[str] = "FI-TEST/MUN/",
+        xroad_port: Optional[int] = 443,
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
@@ -113,8 +115,12 @@ class RyhtiClient:
         # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
         if xroad_server_address:
             self.xroad_server_address = xroad_server_address
+        if xroad_port:
+            self.xroad_server_address += ":" + str(xroad_port)
         if xroad_member_code:
             self.xroad_member_code = xroad_member_code
+        if xroad_client_id_base:
+            self.xroad_client_id_base = xroad_client_id_base
         self.xroad_headers = {
             **self.HEADERS,
             "Content-Type": "application/json",
@@ -132,8 +138,15 @@ class RyhtiClient:
         self.approved_status: LifeCycleStatus
         self.valid_status: LifeCycleStatus
 
-        # do some prefetching before starting the run:
-        with self.Session() as session:
+        # Do some prefetching before starting the run.
+        #
+        # Do *not* expire on commit, because we want to cache the old data in plan
+        # objects throughout the session. If we want up-to date plan data, we will
+        # know to explicitly refresh the object from a new session.
+        #
+        # Otherwise, we may access old plan data without having to create a session
+        # and query.
+        with self.Session(expire_on_commit=False) as session:
             # Lifecycle status "valid" is used everywhere, so let's fetch it ready.
             # TODO: check that valid status is "13" and approval status is "06" when
             # the lifecycle status code list transitions from DRAFT to VALID.
@@ -141,7 +154,7 @@ class RyhtiClient:
             # It is exceedingly weird that this, the most important of all statuses, is
             # *not* a descriptive string, but a random number that may change, while all
             # the other code lists have descriptive strings that will *not* change.
-            self.initiated_status = get_code(session, LifeCycleStatus, "01")
+            self.pending_status = get_code(session, LifeCycleStatus, "02")
             self.approved_status = get_code(session, LifeCycleStatus, "06")
             self.valid_status = get_code(session, LifeCycleStatus, "13")
             # Plan decisions, processing events and interaction events are best
@@ -218,12 +231,15 @@ class RyhtiClient:
         None if no dates are found.
         """
         for lifecycle_date in plan_base.lifecycle_dates:
-            if lifecycle_date.lifecycle_status is status:
+            # Note that the lifecycle status fetched from database
+            # and the one in the plan are not the same sqlalchemy object,
+            # because they are fetched in different sessions!
+            if lifecycle_date.lifecycle_status.value == status.value:
                 return {
-                    "begin": lifecycle_date.starting_at.date()
+                    "begin": lifecycle_date.starting_at.date().isoformat()
                     if lifecycle_date.starting_at
                     else None,
-                    "end": lifecycle_date.ending_at.date()
+                    "end": lifecycle_date.ending_at.date().isoformat()
                     if lifecycle_date.ending_at
                     else None,
                 }
@@ -376,7 +392,7 @@ class RyhtiClient:
         )
         # Let's fetch all the plan regulation groups for all the objects with a single
         # query. Hoping lazy loading does its trick with all the plan regulations.
-        with self.Session() as session:
+        with self.Session(expire_on_commit=False) as session:
             plan_regulation_groups = (
                 session.query(models.PlanRegulationGroup)
                 .filter(models.PlanRegulationGroup.id.in_(group_ids))
@@ -438,7 +454,7 @@ class RyhtiClient:
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
         plan_objects: List[base.PlanObjectBase] = []
-        with self.Session() as session:
+        with self.Session(expire_on_commit=False) as session:
             session.add(plan)
             plan_objects += plan.land_use_areas
             plan_objects += plan.other_areas
@@ -496,15 +512,15 @@ class RyhtiClient:
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["planDecisionKey"] = uuid4()
-            entry["name"] = decision.url
+            entry["name"] = decision.uri
             entry["typeOfDecisionMaker"] = self.decisionmaker_by_status[
                 plan.lifecycle_status.value
-            ]
+            ].uri
             # Plan must be embedded in decision when POSTing!
             entry["plans"] = [self.plan_dictionaries[plan.id]]
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value
+                plan, plan.lifecycle_status
             )
             entry["decisionDate"] = (
                 period_of_current_status["begin"] if period_of_current_status else None
@@ -531,10 +547,10 @@ class RyhtiClient:
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["handlingEventKey"] = uuid4()
-            entry["handlingEventType"] = event.url
+            entry["handlingEventType"] = event.uri
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value
+                plan, plan.lifecycle_status
             )
             entry["eventTime"] = (
                 period_of_current_status["begin"] if period_of_current_status else None
@@ -560,10 +576,10 @@ class RyhtiClient:
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["interactionEventKey"] = uuid4()
-            entry["interactionEventType"] = event.url
+            entry["interactionEventType"] = event.uri
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value
+                plan, plan.lifecycle_status
             )
             entry["eventTime"] = (
                 period_of_current_status["begin"] if period_of_current_status else None
@@ -597,13 +613,14 @@ class RyhtiClient:
         # the same lifecycle status are allowed??
         phase["planMatterPhaseKey"] = uuid4()
         # Always post phase and plan with the same status.
-        phase["lifeCycleStatus"] = self.plan_dictionaries["lifeCycleStatus"]
+        phase["lifeCycleStatus"] = self.plan_dictionaries[plan.id]["lifeCycleStatus"]
+        phase["geographicalArea"] = self.plan_dictionaries[plan.id]["geographicalArea"]
+
         # TODO: currently, the API spec only allows for one plan decision per phase,
         # for reasons unknown. Therefore, let's pick the first possible decision in
         # each phase.
         plan_decisions = self.get_plan_decisions(plan)
         phase["planDecision"] = plan_decisions[0] if plan_decisions else None
-
         # TODO: currently, the API spec only allows for one plan handling event per
         # phase, for reasons unknown. Therefore, let's pick the first possible event in
         # each phase.
@@ -630,9 +647,14 @@ class RyhtiClient:
         plan_dictionary = self.plan_dictionaries[plan.id]
         plan_matter = dict()
         plan_matter["permanentPlanIdentifier"] = plan_dictionary["planKey"]
-        plan_matter["planType"] = plan_dictionary["planType"]
+        # Plan type has to be proper URI (not just value) here, *unlike* when only
+        # validating plan. Go figure.
+        plan_matter["planType"] = plan.plan_type.uri
+        # For reasons unknown, name is needed for plan matter but not for plan. Plan
+        # only contains description, and only in one language.
+        plan_matter["name"] = plan.name
 
-        period_of_initiation = self.get_lifecycle_dates(plan, self.initiated_status)
+        period_of_initiation = self.get_lifecycle_dates(plan, self.pending_status)
         plan_matter["timeOfInitiation"] = (
             period_of_initiation["begin"] if period_of_initiation else None
         )
@@ -641,11 +663,11 @@ class RyhtiClient:
         plan_matter["producerPlanIdentifier"] = plan.producers_plan_identifier
         plan_matter["caseIdentifiers"] = [plan.matter_management_identifier]
         plan_matter["recordNumbers"] = [plan.record_number]
-        # Oh great, now plan matter *needs* the administrative area identifiers that
-        # are *forbidden* to be present in plan dictionary and had to be removed
-        plan_matter["administrativeAreaIdentifiers"] = [
-            plan.organisation.administrative_region.value
+        plan_matter["administrativeAreaIdentifiers"] = plan_dictionary[
+            "administrativeAreaIdentifiers"
         ]
+        # We have no need of importing the digital origin code list as long as we are
+        # not digitizing old plans:
         plan_matter[
             "digitalOrigin"
         ] = "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01"
@@ -725,9 +747,7 @@ class RyhtiClient:
             + "RegionalPlanMatter/permanentPlanIdentifier"
         )
         responses: Dict[str, str | Dict] = dict()
-        print(self.valid_plans)
         for plan in self.valid_plans:
-            print(plan)
             if plan.to_be_exported and not plan.permanent_plan_identifier:
                 LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
                 data = {
@@ -741,12 +761,15 @@ class RyhtiClient:
                 if response.status_code == 200:
                     responses[plan.id] = response.text
                 else:
-                    responses[plan.id] = response.json()
+                    responses[plan.id] = str(response)
                 if self.debug_json:
                     with open(
                         f"ryhti_debug/{plan.id}.identifier.response.json", "w"
                     ) as response_file:
-                        json.dump(responses[plan.id], response_file)
+                        response_file.write(str(plan_identifier_endpoint))
+                        response_file.write(str(self.xroad_headers))
+                        response_file.write(str(data))
+                        json.dump(dir(responses[plan.id]), response_file)
         return responses
 
     def set_permanent_plan_identifiers(self, responses: Dict[str, str | Dict]):
@@ -754,7 +777,7 @@ class RyhtiClient:
         Save permanent plan identifiers returned by RYHTI API to the database and the
         serialized plan dictionaries.
         """
-        with self.Session() as session:
+        with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 if type(response) is str:
                     plan: models.Plan = session.get(models.Plan, plan_id)
@@ -785,7 +808,7 @@ class RyhtiClient:
         """
         details: Dict[str, str] = {}
         ryhti_responses: Dict[str, Dict] = {}
-        with self.Session() as session:
+        with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
                 if not plan:
@@ -847,13 +870,17 @@ def handler(event: Event, _) -> Response:
         )
     xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS")
     xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
+    xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 443))
+    xroad_client_id_base = os.environ.get("XROAD_CLIENTID_BASE", "FI-TEST/MUN/")
     if event_type is EventType.POST_PLANS and (
         not xroad_server_address or not xroad_member_code
     ):
         raise ValueError(
             (
-                "Please set your local XROAD_SERVER_ADDRESS and your organization"
-                "XROAD_MEMBER_CODE to make API requests to X-Road endpoints."
+                "Please set your local XROAD_SERVER_ADDRESS and your organization "
+                "XROAD_MEMBER_CODE to make API requests to X-Road endpoints. To use "
+                "production X-Road instead of test X-road, you must also set "
+                'XROAD_CLIENTID_BASE to "FI". By default, it is set to "FI-TEST".'
             )
         )
 
@@ -865,6 +892,8 @@ def handler(event: Event, _) -> Response:
         public_api_key=public_api_key,
         xroad_server_address=xroad_server_address,
         xroad_member_code=xroad_member_code,
+        xroad_port=xroad_port,
+        xroad_client_id_base=xroad_client_id_base,
     )
     if client.plans:
         # 1) Serialize plans in database
@@ -888,29 +917,36 @@ def handler(event: Event, _) -> Response:
         # further, to create kaava-asiat etc. With uploading, therefore, the
         # JSON to be POSTed is more complex, but it has plan_dictionary embedded.
 
-        # Only get identifiers for those plans that are valid.
-        # 4) Check or create permanent plan identifier for valid plans, from X-Road API
-        LOGGER.info("Getting permanent plan identifiers for valid plans...")
-        plan_identifiers = client.get_permanent_plan_identifiers()
+        if xroad_server_address and xroad_member_code:
+            # Only get identifiers for those plans that are valid.
+            # 4) Check or create permanent plan identifier for valid plans, from X-Road
+            # API
+            LOGGER.info("Getting permanent plan identifiers for valid plans...")
+            plan_identifiers = client.get_permanent_plan_identifiers()
 
-        LOGGER.info("Setting permanent plan identifiers for valid plans...")
-        client.set_permanent_plan_identifiers(plan_identifiers)
+            LOGGER.info("Setting permanent plan identifiers for valid plans...")
+            client.set_permanent_plan_identifiers(plan_identifiers)
 
-        # 5) Validate plan matters with the identifiers with X-Road API
-        LOGGER.info("Formatting plan matter data for valid plans...")
-        client.get_plan_matters()
+            # 5) Validate plan matters with the identifiers with X-Road API
+            LOGGER.info("Formatting plan matter data for valid plans...")
+            client.get_plan_matters()
 
-        # LOGGER.info("Validating plan matters...")
-        # responses = client.validate_plan_matters(plan_matter_dictionaries)
-        if event_type is EventType.POST_PLANS:
-            pass
-            # 3) TODO: Check or create plan matter with the identifier
-            #
-            # 4) TODO: If plan matter existed, check or create plan phase instead
-            #
-            # 5) TODO: If plan phase existed, update plan phase instead
-            #
-            # 6) TODO: If documents exist, upload documents
+            # LOGGER.info("Validating plan matters...")
+            # responses = client.validate_plan_matters(plan_matter_dictionaries)
+            if event_type is EventType.POST_PLANS:
+                pass
+                # 3) TODO: Check or create plan matter with the identifier
+                #
+                # 4) TODO: If plan matter existed, check or create plan phase instead
+                #
+                # 5) TODO: If plan phase existed, update plan phase instead
+                #
+                # 6) TODO: If documents exist, upload documents
+        else:
+            LOGGER.info(
+                "XROAD_SERVER_ADDRESS or your organization XROAD_MEMBER_CODE"
+                "not set. Cannot fetch permanent id or validate plan matters."
+            )
     else:
         lambda_response = {
             "statusCode": 200,

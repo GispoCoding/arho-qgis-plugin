@@ -953,10 +953,25 @@ def complete_test_plan(
     plan_proposition_instance: models.PlanProposition,
     plan_theme_instance: codes.PlanTheme,
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+    decisionmaker_type: codes.TypeOfDecisionMaker,
+    pending_date_instance: models.LifeCycleDate,
+    preparation_date_instance: models.LifeCycleDate,
+    approved_date_instance: models.LifeCycleDate,
+    valid_date_instance: models.LifeCycleDate,
 ) -> models.Plan:
     """
     Plan data that might be more or less complete, to be tested and validated with the
     Ryhti API.
+
+    For the plan *matter* to be validated, we also need extra code objects (that are not
+    linked to the plan in the database) to be committed to the database, and some
+    dates for the plan lifecycle statuses to be set.
     """
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
