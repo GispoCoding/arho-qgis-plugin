@@ -90,7 +90,7 @@ A simple X-Road security server sidecar container is included in the Terraform c
 This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä. Follow the steps below:
 
 1. You must apply for permission to join the Palveluväylä test environment first: [Liittyminen kehitysympäristöön](https://palveluhallinta.suomi.fi/fi/sivut/palveluvayla/kayttoonotto/liittyminen-kehitysymparistoon). For the permission application, you will need
-   - the public IP address in your AWS, which you will find as `hame-your-deployment-eip` under AWS EC2 Elastic IPs in the AWS EC2 console Network & Security settings.
+   - a proper domain name for your client. This can be set using the terraform variables `AWS_HOSTED_DOMAIN`, `x-road_subdomain` and `x-road_host`. The resulting domain name for your X-road client will be `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`.
    - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`, e.g. `ryhti-vsl-client`.
 When your application is accepted, you are provided with the configuration anchor file needed later.
 2. Create an SSH key and add the public key to `bastion_ec2_tunnel_public_keys` in `hame-your-deployment.tfvars.json`.
