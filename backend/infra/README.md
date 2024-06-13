@@ -85,7 +85,7 @@ Note: Setting up the instances takes a couple of minutes.
 
 ### Configuring X-Road (Suomi.fi Palveluväylä) access
 
-A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your Hame-Ryhti instance to Suomi.fi Palveluväylä to transfer official Maakuntakaava data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS Elastic File System, and it is reused when you boot or update the X-Road security server container.
+A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your Hame-Ryhti instance to Suomi.fi Palveluväylä to transfer official Maakuntakaava data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
 
 This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä. Follow the steps below:
 
