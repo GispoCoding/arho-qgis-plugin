@@ -1,8 +1,8 @@
-"""add_geom_field_into_administrative_region_code_table
+"""add_geom_column_into_admin_regions
 
-Revision ID: f50406000d21
+Revision ID: f452e92c7c5f
 Revises: feb5395835bb
-Create Date: 2024-06-10 14:02:52.547987
+Create Date: 2024-06-17 10:06:12.952196
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "f50406000d21"
+revision: str = "f452e92c7c5f"
 down_revision: Union[str, None] = "feb5395835bb"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -29,9 +29,9 @@ def upgrade() -> None:
                 srid=3067,
                 from_text="ST_GeomFromEWKT",
                 name="geometry",
-                nullable=False,
+                nullable=True,
             ),
-            nullable=False,
+            nullable=True,
         ),
         schema="codes",
     )
