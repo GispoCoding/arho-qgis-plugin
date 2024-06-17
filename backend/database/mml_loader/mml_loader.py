@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import os
+import shutil
 import zipfile
 from typing import Dict, Optional, TypedDict
 from xml.etree import ElementTree
@@ -10,9 +11,11 @@ import pygml
 import requests
 from codes import AdministrativeRegion
 from db_helper import DatabaseHelper, User
+from requests.adapters import HTTPAdapter
 from shapely.geometry import shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from urllib3.util.retry import Retry
 
 """
 For populating administrative regions (Maakunta) with geometries,
@@ -32,6 +35,7 @@ class MMLLoader:
     HEADERS = {
         "Accept": "application/json",
         "Content-Type": "application/zip",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",  # noqa
     }
     api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"  # noqa
     job_api_base = (
@@ -61,6 +65,18 @@ class MMLLoader:
         """
         Gets administrative region geometries from from MML OGC API Process.
         """
+        retry_strategy = Retry(
+            total=100,
+            status_forcelist=[500],
+            backoff_factor=2,
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session = requests.Session()
+        session.mount("https://", adapter)
+
+        output_dir = "admin_region_geom_data"
+        os.makedirs(output_dir, exist_ok=True)
+
         year = str(self.payload["yearInput"])
         size = str(self.payload["dataSetInput"]).split("_")[-1]
 
@@ -72,34 +88,26 @@ class MMLLoader:
         url_results = (
             f"{self.job_api_base}/{id_job}/TietoaKuntajaosta_{year}_{size}.zip"
         )
-        r = requests.get(url_results)
+        r = requests.get(url_results, headers=self.HEADERS)
         r.raise_for_status()
 
         zip_data = io.BytesIO(r.content)
 
         with zipfile.ZipFile(zip_data, "r") as zip_ref:
-            zip_ref.extractall()
+            zip_ref.extractall(output_dir)
 
-        geoms = self.parse_gml(year, size)
-
-        # Delete the contents of the zip file from CWD
-        all_files = os.listdir()
-        files_to_del = [
-            file for file in all_files if file not in ["__init__.py", "mml_loader.py"]
-        ]
-        for file in files_to_del:
-            try:
-                os.remove(file)
-            except OSError:
-                print(f"Error deleting file {file}")
+        geoms = self.parse_gml(output_dir, year, size)
+        shutil.rmtree(output_dir)
 
         return geoms
 
-    def parse_gml(self, year: str, size: str) -> Dict:
+    def parse_gml(self, output_dir: str, year: str, size: str) -> Dict:
         """
         Parses a GML file to extract geometry data
         """
-        tree = ElementTree.parse(f"SuomenHallinnollisetYksikot_{year}_{size}.xml")
+        tree = ElementTree.parse(
+            f"{output_dir}/SuomenHallinnollisetYksikot_{year}_{size}.xml"
+        )
         root = tree.getroot()
         namespaces = {
             "gml": "http://www.opengis.net/gml/3.2",
@@ -171,6 +179,7 @@ class MMLLoader:
                             f"Geometry added to administrative region {admin_region.value}"  # noqa
                         )
                         successful_actions += 1
+                        break
             session.commit()
         msg = f"{successful_actions} inserted or updated. 0 deleted."
         LOGGER.info(msg)
