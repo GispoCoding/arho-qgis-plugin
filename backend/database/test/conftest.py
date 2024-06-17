@@ -541,7 +541,29 @@ def category_of_publicity_instance(session):
 
 @pytest.fixture(scope="module")
 def administrative_region_instance(session):
-    instance = codes.AdministrativeRegion(value="test", status="LOCAL")
+    instance = codes.AdministrativeRegion(
+        value="test",
+        status="LOCAL",
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [223598, 6805907],
+                                [311102, 6803368],
+                                [309539, 6722896],
+                                [200551, 6727975],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+    )
     session.add(instance)
     return instance
 
