@@ -11,8 +11,9 @@ import pygml
 import requests
 from codes import AdministrativeRegion
 from db_helper import DatabaseHelper, User
+from geoalchemy2.shape import from_shape
 from requests.adapters import HTTPAdapter
-from shapely.geometry import shape
+from shapely.geometry import MultiPolygon, shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from urllib3.util.retry import Retry
@@ -77,18 +78,16 @@ class MMLLoader:
         output_dir = "admin_region_geom_data"
         os.makedirs(output_dir, exist_ok=True)
 
-        year = str(self.payload["yearInput"])
-        size = str(self.payload["dataSetInput"]).split("_")[-1]
+        year = str(self.payload["inputs"]["yearInput"])  # type: ignore
+        size = str(self.payload["inputs"]["dataSetInput"]).split("_")[-1]  # type: ignore # noqa
 
-        url = f"{self.api_base}/execution?{self.api_key}"
+        url = f"{self.api_base}/execution?api-key={self.api_key}"
         LOGGER.info(f"Starting OGC API process on {self.api_base}/execution")
-        r = requests.post(url, headers=self.HEADERS, json=self.payload)
+        r = session.post(url, headers=self.HEADERS, json=self.payload)
         r.raise_for_status()
         id_job = r.json()["jobID"]
-        url_results = (
-            f"{self.job_api_base}/{id_job}/TietoaKuntajaosta_{year}_{size}.zip"
-        )
-        r = requests.get(url_results, headers=self.HEADERS)
+        url_results = f"{self.job_api_base}{id_job}/TietoaKuntajaosta_{year}_{size}.zip"
+        r = session.get(url_results, headers=self.HEADERS)
         r.raise_for_status()
 
         zip_data = io.BytesIO(r.content)
@@ -157,7 +156,7 @@ class MMLLoader:
         # Parse GML elements into shapely geometries
         for au_code, polygon in zip(au_codes, polygons):
             geom = pygml.parse(polygon)
-            geoms[au_code] = shape(geom.__geo_interface__)
+            geoms[au_code] = from_shape(MultiPolygon([(shape(geom.__geo_interface__))]))
 
         return geoms
 
@@ -186,7 +185,7 @@ class MMLLoader:
         return msg
 
 
-def handler() -> Response:
+def handler(event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
     db_helper = DatabaseHelper(user=User.READ_WRITE)
