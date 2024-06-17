@@ -92,7 +92,9 @@ def test_create_db(create_db, main_db_params_with_root_user):
         conn.close()
 
 
-def test_populate_koodistot(populate_koodistot, main_db_params):
+def test_populate_koodistot(
+    populate_koodistot, populate_admin_region_geometries, main_db_params
+):
     """
     Test the whole lambda endpoint
     """
