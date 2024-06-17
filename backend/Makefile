@@ -9,6 +9,7 @@ test-migrate-db:
 test-koodistot:
 	@echo "Loading Koodistot data..."
 	curl -XPOST "http://localhost:8082/2015-03-31/functions/function/invocations" -d '{}'
+	curl -XPOST "http://localhost:8084/2015-03-31/functions/function/invocations" -d '{}'
 
 test-ryhti-validate:
 	@echo "Validating database contents with Ryhti API..."
