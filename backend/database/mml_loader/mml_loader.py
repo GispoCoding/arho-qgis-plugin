@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import shutil
+import time
 import zipfile
 from typing import Dict, Optional, TypedDict
 from xml.etree import ElementTree
@@ -12,11 +13,9 @@ import requests
 from codes import AdministrativeRegion
 from db_helper import DatabaseHelper, User
 from geoalchemy2.shape import from_shape
-from requests.adapters import HTTPAdapter
 from shapely.geometry import MultiPolygon, shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from urllib3.util.retry import Retry
 
 """
 For populating administrative regions (Maakunta) with geometries,
@@ -36,7 +35,6 @@ class MMLLoader:
     HEADERS = {
         "Accept": "application/json",
         "Content-Type": "application/zip",
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",  # noqa
     }
     api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"  # noqa
     job_api_base = (
@@ -66,14 +64,7 @@ class MMLLoader:
         """
         Gets administrative region geometries from from MML OGC API Process.
         """
-        retry_strategy = Retry(
-            total=100,
-            status_forcelist=[500],
-            backoff_factor=2,
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
         session = requests.Session()
-        session.mount("https://", adapter)
 
         output_dir = "admin_region_geom_data"
         os.makedirs(output_dir, exist_ok=True)
@@ -87,8 +78,21 @@ class MMLLoader:
         r.raise_for_status()
         id_job = r.json()["jobID"]
         url_results = f"{self.job_api_base}{id_job}/TietoaKuntajaosta_{year}_{size}.zip"
-        r = session.get(url_results, headers=self.HEADERS)
-        r.raise_for_status()
+
+        max_retries = 100
+        attempts = 0
+        while attempts < max_retries:
+            try:
+                r = session.get(url_results)
+                r.raise_for_status()
+                break
+            except requests.exceptions.HTTPError:
+                time.sleep(3)
+            attempts += 1
+            if attempts == max_retries:
+                raise requests.exceptions.RetryError(
+                    f"Maximum retry limit of {max_retries} reached."
+                )
 
         zip_data = io.BytesIO(r.content)
 
