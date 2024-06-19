@@ -160,30 +160,36 @@ class RyhtiClient:
             # Plan decisions, processing events and interaction events are best
             # prefetched, they will depend on the status of each plan:
             self.decisions_by_status = {
-                status_code: [
-                    get_code(session, NameOfPlanCaseDecision, decision_code)
-                    for decision_code in decisions
-                ]
-                if decisions
-                else []
+                status_code: (
+                    [
+                        get_code(session, NameOfPlanCaseDecision, decision_code)
+                        for decision_code in decisions
+                    ]
+                    if decisions
+                    else []
+                )
                 for status_code, decisions in decisions_by_status.items()
             }
             self.processing_events_by_status = {
-                status_code: [
-                    get_code(session, TypeOfProcessingEvent, processing_code)
-                    for processing_code in processing_events
-                ]
-                if processing_events
-                else []
+                status_code: (
+                    [
+                        get_code(session, TypeOfProcessingEvent, processing_code)
+                        for processing_code in processing_events
+                    ]
+                    if processing_events
+                    else []
+                )
                 for status_code, processing_events in processing_events_by_status.items()  # noqa
             }
             self.interaction_events_by_status = {
-                status_code: [
-                    get_code(session, TypeOfInteractionEvent, interaction_code)
-                    for interaction_code in interactions
-                ]
-                if interactions
-                else []
+                status_code: (
+                    [
+                        get_code(session, TypeOfInteractionEvent, interaction_code)
+                        for interaction_code in interactions
+                    ]
+                    if interactions
+                    else []
+                )
                 for status_code, interactions in interaction_events_by_status.items()
             }
             self.decisionmaker_by_status = {
@@ -240,12 +246,16 @@ class RyhtiClient:
             # because they are fetched in different sessions!
             if lifecycle_date.lifecycle_status.value == status.value:
                 return {
-                    "begin": lifecycle_date.starting_at.date().isoformat()
-                    if lifecycle_date.starting_at
-                    else None,
-                    "end": lifecycle_date.ending_at.date().isoformat()
-                    if lifecycle_date.ending_at
-                    else None,
+                    "begin": (
+                        lifecycle_date.starting_at.date().isoformat()
+                        if lifecycle_date.starting_at
+                        else None
+                    ),
+                    "end": (
+                        lifecycle_date.ending_at.date().isoformat()
+                        if lifecycle_date.ending_at
+                        else None
+                    ),
                 }
         return None
 
@@ -770,10 +780,10 @@ class RyhtiClient:
                     with open(
                         f"ryhti_debug/{plan.id}.identifier.response.json", "w"
                     ) as response_file:
-                        response_file.write(str(plan_identifier_endpoint))
-                        response_file.write(str(self.xroad_headers))
-                        response_file.write(str(data))
-                        json.dump(dir(responses[plan.id]), response_file)
+                        response_file.write(str(plan_identifier_endpoint) + "\n")
+                        response_file.write(str(self.xroad_headers) + "\n")
+                        response_file.write(str(data) + "\n")
+                        json.dump(str(responses[plan.id]), response_file)
         return responses
 
     def set_permanent_plan_identifiers(self, responses: Dict[str, str | Dict]):
@@ -783,26 +793,26 @@ class RyhtiClient:
         """
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
-                if type(response) is str:
-                    plan: models.Plan = session.get(models.Plan, plan_id)
+                plan: models.Plan = session.get(models.Plan, plan_id)
+                if isinstance(response, str):
                     plan.permanent_plan_identifier = response
                     # also update the identifier in the serialized plan!
                     self.plan_dictionaries[plan_id]["planKey"] = response
                 else:
-                    raise ValueError(
-                        (
-                            "Ryhti API returned error when asking for plan identifier: "
-                            "{response}"
-                        )
+                    plan.validation_errors = (
+                        "Kaava on validi. Ei saatu yhteyttä Palveluväylään "
+                        "pysyvän kaavatunnuksen luomiseksi, joten kaava-asiaa "
+                        "ei voida validoida."
                     )
             session.commit()
 
-    def save_responses(self, responses: Dict[str, Dict]) -> Response:
+    def save_plan_validation_responses(self, responses: Dict[str, Dict]) -> Response:
         """
-        Save RYHTI API response data to the database and return lambda response.
+        Save open validation API response data to the database and return lambda
+        response.
 
-        If validation is successful, just update validated_at field. Also add all
-        valid plans to client valid_plans, to be processed further.
+        If validation is successful, update validated_at field and validation_errors
+        field. Also add all valid plans to client valid_plans, to be processed further.
 
         If validation/post is unsuccessful, save the error JSON in plan
         validation_errors json field (in addition to saving it to AWS logs and
@@ -833,7 +843,9 @@ class RyhtiClient:
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
                 elif response["status"] == 200:
                     details[plan_id] = f"Validation successful for {plan_id}!"
-                    plan.validation_errors = None
+                    plan.validation_errors = (
+                        "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
+                    )
                     self.valid_plans.append(plan)
                 else:
                     details[plan_id] = f"Validation FAILED for {plan_id}."
@@ -910,7 +922,7 @@ def handler(event: Event, _) -> Response:
 
         # 3) Save plan validation data
         LOGGER.info("Saving validation data...")
-        lambda_response = client.save_responses(responses)
+        lambda_response = client.save_plan_validation_responses(responses)
 
         # *Also* validate plan matter if plans are already valid.
         #
@@ -930,6 +942,7 @@ def handler(event: Event, _) -> Response:
 
             LOGGER.info("Setting permanent plan identifiers for valid plans...")
             client.set_permanent_plan_identifiers(plan_identifiers)
+            # TODO: save further details in lambda responses
 
             # 5) Validate plan matters with the identifiers with X-Road API
             LOGGER.info("Formatting plan matter data for valid plans...")

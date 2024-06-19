@@ -464,7 +464,7 @@ def test_validate_plans(
         ]
 
 
-def test_save_responses(
+def test_save_plan_validation_responses(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
@@ -474,7 +474,7 @@ def test_save_responses(
     Check that Ryhti validation error is saved to database.
     """
     responses = client_with_plan_data.validate_plans()
-    message = client_with_plan_data.save_responses(responses)
+    message = client_with_plan_data.save_plan_validation_responses(responses)
     session.refresh(plan_instance)
     assert plan_instance.validated_at
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]
@@ -491,10 +491,13 @@ def client_with_valid_plan(
     Return RyhtiClient that has plan data read in and validated without errors.
     """
     responses = client_with_plan_data.validate_plans()
-    client_with_plan_data.save_responses(responses)
+    client_with_plan_data.save_plan_validation_responses(responses)
     session.refresh(plan_instance)
     assert plan_instance.validated_at
-    assert plan_instance.validation_errors is None
+    assert (
+        plan_instance.validation_errors
+        == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
+    )
     return client_with_plan_data
 
 

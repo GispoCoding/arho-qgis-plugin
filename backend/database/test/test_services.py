@@ -349,13 +349,15 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
 
 
-def test_validate_valid_plan_in_preparation(
+def test_validate_valid_plan_matter_in_preparation(
     validate_valid_plan_in_preparation, main_db_params
 ):
     """
-    Test the whole lambda endpoint with a valid plan in preparation stage.
+    Test the whole lambda endpoint with a valid plan and plan matter in preparation
+    stage. Plan is validated with Ryhti API. TODO: validate plan matter with mock
+    X-Road.
 
-    The mock X-Road should return a permanent identifier if the plan is valid.
+    The mock X-Road should return a permanent identifier.
     """
     conn = psycopg2.connect(**main_db_params)
     try:
@@ -365,7 +367,7 @@ def test_validate_valid_plan_in_preparation(
             )
             validation_date, errors, permanent_plan_identifier = cur.fetchone()
             assert validation_date
-            assert not errors
+            assert errors == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
             assert permanent_plan_identifier == "MK-123456"
     finally:
         conn.close()
