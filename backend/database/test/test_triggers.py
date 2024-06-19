@@ -335,7 +335,7 @@ def test_new_lifecycle_status_triggers(
     session.refresh(other_point_instance)
 
     # Check that new features and regulations have same status as plan
-    assert plan_regulation_instance.lifecycle_status.value == another_code_instance
+    assert plan_regulation_instance.lifecycle_status == another_code_instance
     assert general_regulation_instance.lifecycle_status == another_code_instance
     assert plan_proposition_instance.lifecycle_status == another_code_instance
     assert land_use_area_instance.lifecycle_status == another_code_instance

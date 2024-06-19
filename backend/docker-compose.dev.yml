@@ -55,10 +55,25 @@ services:
       - DB_INSTANCE_PORT=5432
       - READ_FROM_AWS=0
       - SYKE_APIKEY
+      - XROAD_HTTP_PORT=1080
+      - XROAD_SERVER_ADDRESS=http://mock_xroad
+      - XROAD_MEMBER_CODE=2455538-5
     ports:
       - "8083:8080"
     depends_on:
       - db
+      - mock_xroad
     volumes:
       - ./database/ryhti_client/ryhti_client.py:/var/task/app.py
       - ./database/ryhti_debug:/var/task/ryhti_debug
+
+  mock_xroad:
+      image: mockserver/mockserver:latest
+      ports:
+        - 8443:1080
+      environment:
+        - MOCKSERVER_WATCH_INITIALIZATION_JSON="true"
+        - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
+        - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/initializerJson.json
+      volumes:
+        - ./database/test/test_services_mock_xroad.json:/config/initializerJson.json:Z

@@ -321,7 +321,16 @@ def valid_plan_in_preparation(
 @pytest.fixture()
 def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
     """
-    Validate a valid Ryhti plan against the Ryhti API.
+    Validate a valid Ryhti plan against the Ryhti API. This guarantees that the Ryhti
+    plan is formed according to spec and passes open Ryhti API validation.
+
+    After Ryhti reports the plan as valid, the client proceeds to validate the plan
+    matter.
+
+    Since local tests or CI/CD cannot connect to X-Road servers, we validate the plan
+    *matter* against a Mock X-Road API that returns a permanent plan identifier and
+    responds with 200 OK. Therefore, for the X-Road APIs, this only guarantees that
+    the lambda runs correctly, not that the plan *matter* is formed according to spec.
 
     A valid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors list empty.
@@ -344,36 +353,19 @@ def test_validate_valid_plan_in_preparation(
     validate_valid_plan_in_preparation, main_db_params
 ):
     """
-    Test the whole lambda endpoint with a valid plan in preparation stage
+    Test the whole lambda endpoint with a valid plan in preparation stage.
+
+    The mock X-Road should return a permanent identifier if the plan is valid.
     """
     conn = psycopg2.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
-            validation_date, errors = cur.fetchone()
+            cur.execute(
+                f"SELECT validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
+            )
+            validation_date, errors, permanent_plan_identifier = cur.fetchone()
             assert validation_date
             assert not errors
-    finally:
-        conn.close()
-
-
-def test_validate_valid_plan_matter_in_preparation(
-    validate_valid_plan_matter_in_preparation, main_db_params
-):
-    """
-    Test the whole lambda endpoint with a valid plan matter in preparation stage.
-
-    Since local tests or CI/CD cannot connect to X-Road servers, we will have to
-    mock the X-Road response here.
-    """
-    assert False
-    # TODO
-    conn = psycopg2.connect(**main_db_params)
-    try:
-        with conn.cursor() as cur:
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
-            validation_date, errors = cur.fetchone()
-            assert validation_date
-            assert not errors
+            assert permanent_plan_identifier == "MK-123456"
     finally:
         conn.close()
