@@ -62,7 +62,7 @@ class Plan(PlanBase):
 
 class LandUseArea(PlanObjectBase):
     """
-    Osa-alue
+    Aluevaraus
     """
 
     __tablename__ = "land_use_area"
@@ -72,7 +72,7 @@ class LandUseArea(PlanObjectBase):
 
 class OtherArea(PlanObjectBase):
     """
-    Aluevaraus
+    Osa-alue
     """
 
     __tablename__ = "other_area"
