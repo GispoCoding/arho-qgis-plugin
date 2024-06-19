@@ -335,9 +335,9 @@ def test_new_lifecycle_status_triggers(
     session.refresh(other_point_instance)
 
     # Check that new features and regulations have same status as plan
-    # assert plan_regulation_instance.lifecycle_status.value == another_code_instance.value
-    # assert general_regulation_instance.lifecycle_status == another_code_instance
-    # assert plan_proposition_instance.lifecycle_status == another_code_instance
+    assert plan_regulation_instance.lifecycle_status.value == another_code_instance
+    assert general_regulation_instance.lifecycle_status == another_code_instance
+    assert plan_proposition_instance.lifecycle_status == another_code_instance
     assert land_use_area_instance.lifecycle_status == another_code_instance
     assert other_area_instance.lifecycle_status == another_code_instance
     assert line_instance.lifecycle_status == another_code_instance
@@ -420,9 +420,9 @@ def test_update_lifecycle_status_triggers(
     assert line_instance.lifecycle_status == another_code_instance
     assert land_use_point_instance.lifecycle_status == another_code_instance
     assert other_point_instance.lifecycle_status == another_code_instance
-    # assert text_plan_regulation_instance.lifecycle_status == another_code_instance
-    # assert general_plan_regulation_instance.lifecycle_status == another_code_instance
-    # assert plan_proposition_instance.lifecycle_status == another_code_instance
+    assert text_plan_regulation_instance.lifecycle_status == another_code_instance
+    assert general_plan_regulation_instance.lifecycle_status == another_code_instance
+    assert plan_proposition_instance.lifecycle_status == another_code_instance
     session.rollback()
 
 
