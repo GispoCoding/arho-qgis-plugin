@@ -960,6 +960,7 @@ def complete_test_plan(
     plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
     decisionmaker_type: codes.TypeOfDecisionMaker,
+    pending_date_instance: models.LifeCycleDate,
     preparation_date_instance: models.LifeCycleDate,
 ) -> models.Plan:
     """
