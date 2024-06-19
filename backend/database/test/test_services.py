@@ -367,7 +367,10 @@ def test_validate_valid_plan_matter_in_preparation(
             )
             validation_date, errors, permanent_plan_identifier = cur.fetchone()
             assert validation_date
-            assert errors == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
+            assert (
+                errors
+                == "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-asiaa ei ole vielä validoitu."
+            )
             assert permanent_plan_identifier == "MK-123456"
     finally:
         conn.close()

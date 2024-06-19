@@ -798,6 +798,10 @@ class RyhtiClient:
                     plan.permanent_plan_identifier = response
                     # also update the identifier in the serialized plan!
                     self.plan_dictionaries[plan_id]["planKey"] = response
+                    plan.validation_errors = (
+                        "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-"
+                        "asiaa ei ole vielä validoitu."
+                    )
                 else:
                     plan.validation_errors = (
                         "Kaava on validi. Ei saatu yhteyttä Palveluväylään "
