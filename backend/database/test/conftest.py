@@ -960,10 +960,7 @@ def complete_test_plan(
     plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
     decisionmaker_type: codes.TypeOfDecisionMaker,
-    pending_date_instance: models.LifeCycleDate,
     preparation_date_instance: models.LifeCycleDate,
-    approved_date_instance: models.LifeCycleDate,
-    valid_date_instance: models.LifeCycleDate,
 ) -> models.Plan:
     """
     Plan data that might be more or less complete, to be tested and validated with the
@@ -1009,7 +1006,7 @@ def pending_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=pending_status_instance,
-        starting_at=datetime(2025, 1, 1),
+        starting_at=datetime(2024, 1, 1),
     )
     session.add(instance)
     session.commit()
@@ -1023,7 +1020,7 @@ def preparation_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=preparation_status_instance,
-        starting_at=datetime(2025, 2, 1),
+        starting_at=datetime(2024, 2, 1),
     )
     session.add(instance)
     session.commit()
@@ -1045,7 +1042,7 @@ def approved_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=approved_status_instance,
-        starting_at=datetime(2025, 3, 1),
+        starting_at=datetime(2024, 3, 1),
     )
     session.add(instance)
     session.commit()
@@ -1067,7 +1064,7 @@ def valid_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=valid_status_instance,
-        starting_at=datetime(2025, 4, 1),
+        starting_at=datetime(2024, 4, 1),
     )
     session.add(instance)
     session.commit()

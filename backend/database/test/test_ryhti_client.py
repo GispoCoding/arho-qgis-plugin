@@ -21,9 +21,6 @@ def desired_plan_dict(
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
-    pending_date_instance: models.LifeCycleDate,
-    approved_date_instance: models.LifeCycleDate,
-    valid_date_instance: models.LifeCycleDate,
 ) -> dict:
     """
     Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
@@ -56,8 +53,8 @@ def desired_plan_dict(
             },
         },
         # TODO: plan documents to be added.
-        "periodOfValidity": {"begin": "2025-04-01", "end": None},
-        "approvalDate": "2025-03-01",
+        "periodOfValidity": None,
+        "approvalDate": None,
         "generalRegulationGroups": [
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
@@ -285,7 +282,7 @@ def desired_plan_matter_dict(
         "permanentPlanIdentifier": "MK-123456",
         "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/test",
         "name": plan_instance.name,
-        "timeOfInitiation": "2025-01-01",
+        "timeOfInitiation": "2024-01-01",
         "description": plan_instance.description,
         "producerPlanIdentifier": plan_instance.producers_plan_identifier,
         "caseIdentifiers": [plan_instance.matter_management_identifier],
@@ -300,20 +297,20 @@ def desired_plan_matter_dict(
                 "planHandlingEvent": {
                     "handlingEventKey": "whatever",
                     "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
-                    "eventTime": "2025-02-01",
+                    "eventTime": "2024-02-01",
                 },
                 "interactionEvents": [
                     {
                         "interactionEventKey": "whatever",
                         "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
-                        "eventTime": "2025-02-01",
+                        "eventTime": "2024-02-01",
                     },
                 ],
                 "planDecision": {
                     "planDecisionKey": "whatever",
                     "name": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi/code/04",
-                    "decisionDate": "2025-02-01",
-                    "dateOfDecision": "2025-02-01",
+                    "decisionDate": "2024-02-01",
+                    "dateOfDecision": "2024-02-01",
                     "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
                     "plans": [{**desired_plan_dict, "planKey": "MK-123456"}],
                 },

@@ -224,12 +224,16 @@ class RyhtiClient:
         }
 
     def get_lifecycle_dates(
-        self, plan_base: base.PlanBase, status: LifeCycleStatus
+        self, plan_base: base.PlanBase, status: Optional[LifeCycleStatus]
     ) -> Optional[Period]:
         """
         Returns the start and end dates of a lifecycle status for object, or
         None if no dates are found.
         """
+        if not status:
+            # it is possible for tests etc. to look for a status that
+            # is actually not present in the database at all.
+            return None
         for lifecycle_date in plan_base.lifecycle_dates:
             # Note that the lifecycle status fetched from database
             # and the one in the plan are not the same sqlalchemy object,
