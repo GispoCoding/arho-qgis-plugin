@@ -240,6 +240,11 @@ def test_new_lifecycle_status_triggers(
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=general_regulation_group_instance,
     )
+    general_proposition_instance = models.PlanProposition(
+        lifecycle_status=code_instance,
+        plan_regulation_group=general_regulation_group_instance,
+    )
+
     # Create new objects in the plan area (geometry creates link to plan instance)
     land_use_area_instance = models.LandUseArea(
         lifecycle_status=code_instance,
@@ -319,6 +324,7 @@ def test_new_lifecycle_status_triggers(
     session.add(plan_regulation_instance)
     session.add(general_regulation_instance)
     session.add(plan_proposition_instance)
+    session.add(general_proposition_instance)
     session.add(land_use_area_instance)
     session.add(other_area_instance)
     session.add(line_instance)
@@ -328,6 +334,7 @@ def test_new_lifecycle_status_triggers(
     session.refresh(plan_regulation_instance)
     session.refresh(general_regulation_instance)
     session.refresh(plan_proposition_instance)
+    session.refresh(general_proposition_instance)
     session.refresh(land_use_area_instance)
     session.refresh(other_area_instance)
     session.refresh(line_instance)
@@ -338,6 +345,7 @@ def test_new_lifecycle_status_triggers(
     assert plan_regulation_instance.lifecycle_status == another_code_instance
     assert general_regulation_instance.lifecycle_status == another_code_instance
     assert plan_proposition_instance.lifecycle_status == another_code_instance
+    assert general_proposition_instance.lifecycle_status == another_code_instance
     assert land_use_area_instance.lifecycle_status == another_code_instance
     assert other_area_instance.lifecycle_status == another_code_instance
     assert line_instance.lifecycle_status == another_code_instance

@@ -350,7 +350,7 @@ def generate_new_lifecycle_status_triggers():
             trgs.append(trg)
 
     # Finally, we want to update general regulations as well:
-    for regulation_table in ["plan_regulation"]:
+    for regulation_table in plan_regulation_tables:
         trgfunc_signature = f"trgfunc_{regulation_table}_plan_new_lifecycle_status()"
         # We must *only* update the lifecycle status *if* the plan regulation
         # group is linked to plan. If SELECT returns NONE, the lifecycle
