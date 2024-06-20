@@ -253,7 +253,6 @@ def desired_plan_matter_dict(
     session: Session,
     desired_plan_dict: dict,
     plan_instance: models.Plan,
-    preparation_status_instance: codes.LifeCycleStatus,
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
@@ -270,8 +269,6 @@ def desired_plan_matter_dict(
     Let's 1) write explicitly the complex fields, and 2) just check that the simple fields have
     the same values as the original plan fixture in the database.
     """
-    plan_instance.lifecycle_status = preparation_status_instance
-    session.commit()
 
     return {
         "permanentPlanIdentifier": "MK-123456",
