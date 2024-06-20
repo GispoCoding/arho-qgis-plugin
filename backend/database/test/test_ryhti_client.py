@@ -88,7 +88,6 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                        # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
                 "planRecommendations": [],
@@ -129,7 +128,6 @@ def desired_plan_dict(
                     "unitOfMeasure": land_use_area_instance.height_unit,
                 },
                 "periodOfValidity": None,
-                # TODO: dates of validity to be added. These need fixtures with specific codes.
             },
         ],
         "planRegulationGroups": [
@@ -165,7 +163,6 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                        # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                     {
                         "planRegulationKey": text_plan_regulation_instance.id,
@@ -192,7 +189,6 @@ def desired_plan_dict(
                         "regulationNumber": str(text_plan_regulation_instance.ordering),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                        # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                     {
                         "planRegulationKey": verbal_plan_regulation_instance.id,
@@ -224,7 +220,6 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                        # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
                 "planRecommendations": [
@@ -238,7 +233,6 @@ def desired_plan_dict(
                         "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
                         "periodOfValidity": None,
-                        # TODO: dates of validity to be added. These need fixtures with specific codes.
                     },
                 ],
                 "letterIdentifier": plan_regulation_group_instance.short_name,
