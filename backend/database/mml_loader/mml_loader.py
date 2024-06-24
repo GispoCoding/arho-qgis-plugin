@@ -116,30 +116,12 @@ class MMLLoader:
             "gml": "http://www.opengis.net/gml/3.2",
             f"au{size}": f"http://xml.nls.fi/inspire/au/4.0/{size}",
         }
-        au_codes = [
-            "01",
-            "02",
-            "04",
-            "05",
-            "06",
-            "07",
-            "08",
-            "09",
-            "10",
-            "11",
-            "12",
-            "13",
-            "14",
-            "15",
-            "16",
-            "17",
-            "18",
-            "19",
-            "21",
-        ]
 
-        polygons = []
-        geoms = {}
+        with self.Session() as session:
+            admin_regions = session.query(AdministrativeRegion).all()
+            au_codes = sorted([admin_region.value for admin_region in admin_regions])
+
+        polygons = {}
 
         au_elements = root.findall(f".//au{size}:AdministrativeUnit_{size}", namespaces)
         prefix = "{" + namespaces["gml"] + "}"
@@ -155,12 +137,17 @@ class MMLLoader:
                     )
                     # Extract polygons
                     if gml_string.startswith("<ns0:Polygon"):
-                        polygons.append(gml_string)
+                        id = au_id.split("_")[-1]
+                        polygons[id] = gml_string
 
         # Parse GML elements into shapely geometries
-        for au_code, polygon in zip(au_codes, polygons):
-            geom = pygml.parse(polygon)
-            geoms[au_code] = from_shape(MultiPolygon([(shape(geom.__geo_interface__))]))
+        geoms = {}
+        for au_code in au_codes:
+            if au_code in polygons:
+                geom = pygml.parse(polygons[au_code])
+                geoms[au_code] = from_shape(
+                    MultiPolygon([(shape(geom.__geo_interface__))])
+                )
 
         return geoms
 
