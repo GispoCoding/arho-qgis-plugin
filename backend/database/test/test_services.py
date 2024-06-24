@@ -183,6 +183,22 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
         conn.close()
 
 
+def test_populate_admin_region_geometries(populate_koodistot, main_db_params):
+    """
+    Test that maakunta geometries are populated
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM codes.administrative_region WHERE geom IS NULL"
+            )
+            geom_count = cur.fetchone()[0]
+            assert geom_count == 19
+    finally:
+        conn.close()
+
+
 @pytest.fixture()
 def validate_invalid_plan(ryhti_client_url, complete_test_plan):
     """
