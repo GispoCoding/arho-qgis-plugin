@@ -157,7 +157,6 @@ class PlanObjectBase(PlanBase):
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)
     ordering: Mapped[Optional[int]] = mapped_column(index=True)
-    plan_identifier: Mapped[Optional[str]]  # Kaavatunnus
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
         index=True,
