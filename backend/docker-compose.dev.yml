@@ -75,7 +75,7 @@ services:
       - READ_FROM_AWS=0
       - MML_APIKEY
     ports:
-      - "8084:8080"
+      - "8085:8080"
     depends_on:
       - db
     volumes:
