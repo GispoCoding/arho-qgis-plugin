@@ -18,12 +18,12 @@ from db_helper import DatabaseHelper
 from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, shape
+from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 13  # adjust me when adding tables
-codes_count: int = 15  # adjust me when adding tables
+codes_count: int = 16  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 USE_DOCKER = (
@@ -466,6 +466,7 @@ def session(connection_string):
 def code_instance(session):
     instance = codes.LifeCycleStatus(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -473,6 +474,15 @@ def code_instance(session):
 def another_code_instance(session):
     instance = codes.LifeCycleStatus(value="test2", status="LOCAL")
     session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def preparation_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="03", status="LOCAL")
+    session.add(instance)
+    session.commit()
     return instance
 
 
@@ -480,6 +490,7 @@ def another_code_instance(session):
 def plan_type_instance(session):
     instance = codes.PlanType(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -487,6 +498,7 @@ def plan_type_instance(session):
 def type_of_underground_instance(session):
     instance = codes.TypeOfUnderground(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -494,6 +506,7 @@ def type_of_underground_instance(session):
 def type_of_plan_regulation_group_instance(session):
     instance = codes.TypeOfPlanRegulationGroup(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -501,6 +514,7 @@ def type_of_plan_regulation_group_instance(session):
 def type_of_plan_regulation_instance(session):
     instance = codes.TypeOfPlanRegulation(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -508,6 +522,7 @@ def type_of_plan_regulation_instance(session):
 def type_of_verbal_plan_regulation_instance(session):
     instance = codes.TypeOfVerbalPlanRegulation(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -515,6 +530,7 @@ def type_of_verbal_plan_regulation_instance(session):
 def type_of_additional_information_instance(session):
     instance = codes.TypeOfAdditionalInformation(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -522,6 +538,7 @@ def type_of_additional_information_instance(session):
 def type_of_source_data_instance(session):
     instance = codes.TypeOfSourceData(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -529,6 +546,7 @@ def type_of_source_data_instance(session):
 def type_of_document_instance(session):
     instance = codes.TypeOfDocument(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -536,6 +554,7 @@ def type_of_document_instance(session):
 def category_of_publicity_instance(session):
     instance = codes.CategoryOfPublicity(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -543,6 +562,7 @@ def category_of_publicity_instance(session):
 def administrative_region_instance(session):
     instance = codes.AdministrativeRegion(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -550,13 +570,14 @@ def administrative_region_instance(session):
 def plan_theme_instance(session):
     instance = codes.PlanTheme(value="test", status="LOCAL")
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def plan_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     organisation_instance,
     plan_type_instance,
     general_regulation_group_instance,
@@ -584,12 +605,14 @@ def plan_instance(
         ),
         scale=1,
         description={"fin": "test_plan"},
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         organisation=organisation_instance,
         plan_type=plan_type_instance,
         plan_regulation_group=general_regulation_group_instance,
+        to_be_exported=True,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -599,13 +622,14 @@ def organisation_instance(session, administrative_region_instance):
         business_id="test", administrative_region=administrative_region_instance
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def land_use_area_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
     plan_regulation_group_instance,
@@ -635,90 +659,118 @@ def land_use_area_instance(
         description={"fin": "test_land_use_area"},
         height_range=Range(0.0, 1.0),
         height_unit="m",
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
         plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def other_area_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
     plan_regulation_group_instance,
 ):
     instance = models.OtherArea(
         geom=from_shape(
-            MultiPolygon([(((0.0, 1.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)),)])
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
         ),
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
         plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def line_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
     plan_regulation_group_instance,
 ):
     instance = models.Line(
-        geom=from_shape(MultiLineString([[[0, 0], [1, 2]], [[4, 4], [5, 6]]])),
-        lifecycle_status=code_instance,
+        geom=from_shape(
+            MultiLineString(
+                [
+                    [[382000, 6678000], [383000, 6678000]],
+                ]
+            )
+        ),
+        lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
         plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def land_use_point_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
     plan_regulation_group_instance,
 ):
     instance = models.LandUsePoint(
-        geom=from_shape(MultiPoint([[0.0, 0.0], [1.0, 2.0]])),
-        lifecycle_status=code_instance,
+        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
         plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def other_point_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
     plan_regulation_group_instance,
 ):
     instance = models.OtherPoint(
-        geom=from_shape(MultiPoint([[0.0, 0.0], [1.0, 2.0]])),
-        lifecycle_status=code_instance,
+        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
         plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -730,6 +782,7 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
         name={"fin": "test_plan_regulation_group"},
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -741,13 +794,14 @@ def general_regulation_group_instance(session, type_of_plan_regulation_group_ins
         name={"fin": "test_general_regulation_group"},
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def numeric_plan_regulation_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_plan_regulation_instance,
     plan_regulation_group_instance,
 ):
@@ -755,38 +809,40 @@ def numeric_plan_regulation_instance(
         name={"fin": "test_regulation"},
         numeric_value=1.0,
         unit="m",
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
         ordering=1,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def text_plan_regulation_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_plan_regulation_instance,
     plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
         name={"fin": "test_regulation"},
         text_value={"fin": "test_value"},
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
         ordering=2,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def verbal_plan_regulation_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_plan_regulation_instance,
     type_of_verbal_plan_regulation_instance,
     plan_regulation_group_instance,
@@ -799,43 +855,48 @@ def verbal_plan_regulation_instance(
     instance = models.PlanRegulation(
         name={"fin": "test_regulation"},
         text_value={"fin": "test_value"},
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
         ordering=3,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
 def general_plan_regulation_instance(
     session,
-    code_instance,
+    preparation_status_instance,
     type_of_plan_regulation_instance,
     general_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
         name={"fin": "general_regulation"},
         text_value={"fin": "test_value"},
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=general_regulation_group_instance,
         ordering=1,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
 @pytest.fixture(scope="module")
-def plan_proposition_instance(session, code_instance, plan_regulation_group_instance):
+def plan_proposition_instance(
+    session, preparation_status_instance, plan_regulation_group_instance
+):
     instance = models.PlanProposition(
-        lifecycle_status=code_instance,
+        lifecycle_status=preparation_status_instance,
         plan_regulation_group=plan_regulation_group_instance,
         text_value={"fin": "test_recommendation"},
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -848,6 +909,7 @@ def source_data_instance(session, plan_instance, type_of_source_data_instance):
         type_of_source_data=type_of_source_data_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -865,6 +927,7 @@ def document_instance(
         plan=plan_instance,
     )
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -872,6 +935,7 @@ def document_instance(
 def lifecycle_date_instance(session, code_instance):
     instance = models.LifeCycleDate(lifecycle_status=code_instance)
     session.add(instance)
+    session.commit()
     return instance
 
 
@@ -889,10 +953,23 @@ def complete_test_plan(
     plan_proposition_instance: models.PlanProposition,
     plan_theme_instance: codes.PlanTheme,
     type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+    decisionmaker_type: codes.TypeOfDecisionMaker,
+    pending_date_instance: models.LifeCycleDate,
+    preparation_date_instance: models.LifeCycleDate,
 ) -> models.Plan:
     """
     Plan data that might be more or less complete, to be tested and validated with the
     Ryhti API.
+
+    For the plan *matter* to be validated, we also need extra code objects (that are not
+    linked to the plan in the database) to be committed to the database, and some
+    dates for the plan lifecycle statuses to be set.
     """
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
@@ -913,3 +990,151 @@ def complete_test_plan(
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
     return plan_instance
+
+
+@pytest.fixture(scope="module")
+def pending_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="02", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def pending_date_instance(
+    session, plan_instance, pending_status_instance
+) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=pending_status_instance,
+        starting_at=datetime(2024, 1, 1),
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def preparation_date_instance(
+    session, plan_instance, preparation_status_instance
+) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=preparation_status_instance,
+        starting_at=datetime(2024, 2, 1),
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def approved_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="06", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def approved_date_instance(
+    session, plan_instance, approved_status_instance
+) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=approved_status_instance,
+        starting_at=datetime(2024, 3, 1),
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def valid_status_instance(session) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="13", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def valid_date_instance(
+    session, plan_instance, valid_status_instance
+) -> models.LifeCycleDate:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=valid_status_instance,
+        starting_at=datetime(2024, 4, 1),
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def participation_plan_presenting_for_public_decision(
+    session,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(value="04", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_material_presenting_for_public_decision(
+    session,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(value="05", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def draft_plan_presenting_for_public_decision(
+    session,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(value="06", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def participation_plan_presenting_for_public_event(
+    session,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(value="05", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def plan_material_presenting_for_public_event(
+    session,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(value="06", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def presentation_to_the_public_interaction(
+    session,
+) -> codes.TypeOfInteractionEvent:
+    instance = codes.TypeOfInteractionEvent(value="01", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def decisionmaker_type(session) -> codes.TypeOfDecisionMaker:
+    instance = codes.TypeOfDecisionMaker(value="01", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance

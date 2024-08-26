@@ -1,4 +1,7 @@
+from typing import Type
+
 from models import CodeBase
+from sqlalchemy.orm import Session
 
 
 class LifeCycleStatus(CodeBase):
@@ -192,3 +195,85 @@ class TypeOfProcessingEvent(CodeBase):
 
     __tablename__ = "type_of_processing_event"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
+
+
+class TypeOfDecisionMaker(CodeBase):
+    """
+    Päätöksentekijän laji
+    """
+
+    __tablename__ = "type_of_decision_maker"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija"
+
+
+def get_code(session: Session, code_class: Type[CodeBase], value: str) -> CodeBase:
+    return session.query(code_class).filter_by(value=value).first()
+
+
+decisions_by_status = {
+    # Some lifecycle statuses require decisions, some don't.
+    # Plan decision code depends on lifecycle status:
+    # https://ryhti.syke.fi/wp-content/uploads/sites/2/2023/11/Kaavatiedon-validointisaannot-ja-paluuarvot.pdf
+    "02": [
+        "01",
+        "02",
+        "03",
+    ],  # lifecycle/req-codelist-plandecision-name-codevalue-pending
+    "03": [
+        "04",
+        "05",
+        "06",
+    ],  # lifecycle/req-codelist-plandecision-name-codevalue-preparation
+    "04": ["07", "08"],  # lifecycle/req-codelist-plandecision-name-codevalue-proposal
+    "05": ["07", "09"],  # lifecycle/req-codelist-regionalplan-decisionname-lifecycle-05
+    "06": [
+        "11A"
+    ],  # lifecycle/req-codelist-plandecision-name-alternative-codevalues-approved-spatialplan  # noqa
+    "07": None,  # lifecycle/req-planmatterdecision-not-allowed-07-09-lifecycles
+    "08": [
+        "12",
+        "13",
+        "15",
+    ],  # lifecycle/req-planmatterdecision-name-subject-appeal-lifecycle
+    "09": None,  # lifecycle/req-planmatterdecision-not-allowed-07-09-lifecycles
+}
+
+processing_events_by_status = {
+    # Some lifecycle statuses require processing events, some don't.
+    # Processing event code depends on lifecycle status:
+    # https://ryhti.syke.fi/wp-content/uploads/sites/2/2023/11/Kaavatiedon-validointisaannot-ja-paluuarvot.pdf
+    "02": ["04"],  # lifecycle/req-codelist-handlingeventtype-codevalue-lifecycle
+    "03": ["05", "06"],  # lifecycle/req-codelist-handlingeventtype-codevalue-lifecycle
+    "04": ["07", "08"],  # lifecycle/req-codelist-plandecision-name-codevalue-proposal
+    "05": [
+        "08",
+        "09",
+    ],  # lifecycle/req-codelist-regionalplan-handlingeventtype-lifecycle-05
+    "06": [
+        "11"
+    ],  # lifecycle/req-codelist-regionalplan-handlingevent-approved-spatialplan
+    "11": ["13"],  # not allowed in regional plan!
+    "13": ["16"],  # lifecycle/req-codelist-handlingeventtype-codevalue-lifecycle
+}
+
+
+interaction_events_by_status = {
+    # Some lifecycle statuses require interaction events, some don't
+    # Interaction event code depends on lifecycle status:
+    # https://ryhti.syke.fi/wp-content/uploads/sites/2/2023/11/Kaavatiedon-validointisaannot-ja-paluuarvot.pdf
+    "03": ["01"],  # lifecycle/req-codelist-interactionevent-codevalue-lifecycle
+    "04": [
+        "01"
+    ],  # lifecycle/req-codelist-regionalplan-interactionevent-display-proposal
+    "05": [
+        "01",
+        "02",
+    ],  # lifecycle/req-codelist-regionalplan-iteractioneventtype-lifecycle-05
+}
+
+
+decisionmaker_by_status = {
+    # TODO: Decisionmaker may depend on lifecycle status.
+    str(i).zfill(2): "01"
+    for i in range(1, 16)
+}

@@ -33,7 +33,7 @@ resource "aws_cloudwatch_event_rule" "lambda_koodistot" {
 resource "aws_cloudwatch_event_rule" "lambda_ryhti_client" {
   name        = "${var.prefix}-lambda-ryhti-client-run"
   description = "Run Ryhti client (validate and POST) every 15 minutes"
-  schedule_expression = "cron(0 4 * * ? *)"  # TODO
+  schedule_expression = "cron(*/15 * * * ? *)"
   tags              = local.default_tags
 }
 

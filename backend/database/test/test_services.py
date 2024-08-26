@@ -234,18 +234,7 @@ def valid_plan_in_preparation(
     session.add(plan_proposition_instance)
     session.add(general_plan_regulation_instance)
 
-    # Elinkaaren vaihe
-    preparation_lifecycle_status = (
-        session.query(codes.LifeCycleStatus).filter_by(value="03").first()
-    )
-    complete_test_plan.lifecycle_status = preparation_lifecycle_status
-    land_use_area_instance.lifecycle_status = preparation_lifecycle_status
-    text_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    numeric_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    verbal_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    general_plan_regulation_instance.lifecycle_status = preparation_lifecycle_status
-    plan_proposition_instance.lifecycle_status = preparation_lifecycle_status
-
+    # Elinkaaren vaihe already has a valid value!
     # Kaavoitusteema
     community_structure_theme = (
         session.query(codes.PlanTheme).filter_by(value="01").first()
@@ -332,7 +321,16 @@ def valid_plan_in_preparation(
 @pytest.fixture()
 def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
     """
-    Validate a valid Ryhti plan against the Ryhti API.
+    Validate a valid Ryhti plan against the Ryhti API. This guarantees that the Ryhti
+    plan is formed according to spec and passes open Ryhti API validation.
+
+    After Ryhti reports the plan as valid, the client proceeds to validate the plan
+    matter.
+
+    Since local tests or CI/CD cannot connect to X-Road servers, we validate the plan
+    *matter* against a Mock X-Road API that returns a permanent plan identifier and
+    responds with 200 OK. Therefore, for the X-Road APIs, this only guarantees that
+    the lambda runs correctly, not that the plan *matter* is formed according to spec.
 
     A valid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors list empty.
@@ -351,18 +349,28 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
 
 
-def test_validate_valid_plan_in_preparation(
+def test_validate_valid_plan_matter_in_preparation(
     validate_valid_plan_in_preparation, main_db_params
 ):
     """
-    Test the whole lambda endpoint with a valid plan in preparation stage
+    Test the whole lambda endpoint with a valid plan and plan matter in preparation
+    stage. Plan is validated with Ryhti API. TODO: validate plan matter with mock
+    X-Road.
+
+    The mock X-Road should return a permanent identifier.
     """
     conn = psycopg2.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
-            validation_date, errors = cur.fetchone()
+            cur.execute(
+                f"SELECT validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
+            )
+            validation_date, errors, permanent_plan_identifier = cur.fetchone()
             assert validation_date
-            assert not errors
+            assert (
+                errors
+                == "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-asiaa ei ole vielä validoitu."
+            )
+            assert permanent_plan_identifier == "MK-123456"
     finally:
         conn.close()

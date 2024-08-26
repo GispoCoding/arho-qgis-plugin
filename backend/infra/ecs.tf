@@ -147,14 +147,31 @@ resource "aws_ecs_service" "x-road_securityserver" {
   # instances and attach them to the cluster.
   launch_type = "FARGATE"
 
+  # We need to get the private ip of the container somehow out of terraform, so we cannot
+  # quit terraform until the container has reached steady state:
+  # https://stackoverflow.com/questions/75856201/how-to-retrieve-the-public-ip-address-of-an-aws-ecs-contrainer-using-terraform
+  enable_ecs_managed_tags = true
+  wait_for_steady_state = true
+
   network_configuration {
     # Fargate uses awspvc networking, we tell here into what subnets to attach the service
     # Security server does not need to be publicly accessible if it's only client
     subnets          = aws_subnet.private.*.id
     # Ditto for security groups
     security_groups  = [aws_security_group.x-road.id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
 
   tags = merge(local.default_tags, {Name = "${var.prefix}_-x-road_securityserver"})
+}
+
+# Use tag filter to identify network interface to ECS task:
+# https://stackoverflow.com/questions/75856201/how-to-retrieve-the-public-ip-address-of-an-aws-ecs-contrainer-using-terraform
+data "aws_network_interface" "interface_tags" {
+  depends_on = [ aws_ecs_service.x-road_securityserver ]
+
+  filter {
+    name   = "tag:aws:ecs:serviceName"
+    values = ["${var.prefix}-x-road_securityserver"]
+  }
 }

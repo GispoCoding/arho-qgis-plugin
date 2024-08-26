@@ -87,6 +87,8 @@ resource "aws_lambda_function" "ryhti_client" {
       READ_FROM_AWS       = 1
       DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
       SYKE_APIKEY         = var.syke_apikey
+      XROAD_SERVER_ADDRESS = data.aws_network_interface.interface_tags.private_ip
+      XROAD_MEMBER_CODE   = var.x-road_member_code
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })
@@ -97,5 +99,5 @@ resource "aws_lambda_permission" "cloudwatch_call_ryhti_client" {
     action = "lambda:InvokeFunction"
     function_name = aws_lambda_function.ryhti_client.function_name
     principal = "events.amazonaws.com"
-    source_arn = aws_cloudwatch_event_rule.ryhti_client.arn
+    source_arn = aws_cloudwatch_event_rule.lambda_ryhti_client.arn
 }

@@ -4,7 +4,7 @@ import codes
 import models
 import pytest
 from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, shape
 from sqlalchemy.exc import InternalError
 from sqlalchemy.orm import Session
 
@@ -21,7 +21,6 @@ def test_modified_at_triggers(
     text_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     source_data_instance: models.SourceData,
-    type_of_source_data_instance: codes.TypeOfSourceData,
     organisation_instance: models.Organisation,
     document_instance: models.Document,
     lifecycle_date_instance: models.LifeCycleDate,
@@ -53,11 +52,24 @@ def test_modified_at_triggers(
     plan_regulation_group_instance.short_name = "foo"
     text_plan_regulation_instance.text_value = "foo"
     plan_proposition_instance.text_value = "foo"
-    source_data_instance.type_of_source_data = type_of_source_data_instance
+    source_data_instance.additional_information_uri = "http://test2.fi"
     organisation_instance.business_id = "foo"
     document_instance.name = "foo"
     lifecycle_date_instance.ending_at = datetime.now()
     session.flush()
+    session.refresh(plan_instance)
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(land_use_point_instance)
+    session.refresh(other_point_instance)
+    session.refresh(plan_regulation_group_instance)
+    session.refresh(text_plan_regulation_instance)
+    session.refresh(plan_proposition_instance)
+    session.refresh(source_data_instance)
+    session.refresh(organisation_instance)
+    session.refresh(document_instance)
+    session.refresh(lifecycle_date_instance)
 
     assert plan_instance.modified_at != plan_old_modified_at
     assert land_use_area_instance.modified_at != land_use_area_instance_old_modified_at
@@ -82,6 +94,7 @@ def test_modified_at_triggers(
     assert (
         lifecycle_date_instance.modified_at != lifecycle_date_instance_old_modified_at
     )
+    session.rollback()
 
 
 def test_new_lifecycle_date_triggers(
@@ -130,6 +143,14 @@ def test_new_lifecycle_date_triggers(
     land_use_point_instance.lifecycle_status = code_instance
     other_point_instance.lifecycle_status = code_instance
     session.flush()
+    session.refresh(plan_instance)
+    session.refresh(text_plan_regulation_instance)
+    session.refresh(plan_proposition_instance)
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(land_use_point_instance)
+    session.refresh(other_point_instance)
 
     # Get old and new entries in lifecycle_date table
     plan_new_lifecycle_date = plan_instance.lifecycle_dates[0]
@@ -186,57 +207,231 @@ def test_new_lifecycle_date_triggers(
     assert other_point_instance.lifecycle_status_id == code_instance.id
     assert other_point_new_lifecycle_date.starting_at is not None
     assert other_point_old_lifecycle_date.ending_at is not None
+    session.rollback()
+
+
+def test_new_lifecycle_status_triggers(
+    session: Session,
+    plan_instance: models.Plan,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    type_of_underground_instance: codes.TypeOfUnderground,
+):
+    assert plan_instance.plan_regulation_group == general_regulation_group_instance
+
+    plan_instance.lifecycle_status = another_code_instance
+    session.flush()
+
+    # Create new regulations in existing plan objects and plan
+    plan_regulation_instance = models.PlanRegulation(
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    plan_proposition_instance = models.PlanProposition(
+        lifecycle_status=code_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    general_regulation_instance = models.PlanRegulation(
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=general_regulation_group_instance,
+    )
+    general_proposition_instance = models.PlanProposition(
+        lifecycle_status=code_instance,
+        plan_regulation_group=general_regulation_group_instance,
+    )
+
+    # Create new objects in the plan area (geometry creates link to plan instance)
+    land_use_area_instance = models.LandUseArea(
+        lifecycle_status=code_instance,
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    other_area_instance = models.OtherArea(
+        lifecycle_status=code_instance,
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    line_instance = models.Line(
+        lifecycle_status=code_instance,
+        geom=from_shape(
+            MultiLineString(
+                [
+                    [[382000, 6678000], [383000, 6678000]],
+                ]
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    land_use_point_instance = models.LandUsePoint(
+        lifecycle_status=code_instance,
+        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    other_point_instance = models.OtherPoint(
+        lifecycle_status=code_instance,
+        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(plan_regulation_instance)
+    session.add(general_regulation_instance)
+    session.add(plan_proposition_instance)
+    session.add(general_proposition_instance)
+    session.add(land_use_area_instance)
+    session.add(other_area_instance)
+    session.add(line_instance)
+    session.add(land_use_point_instance)
+    session.add(other_point_instance)
+    session.flush()
+    session.refresh(plan_regulation_instance)
+    session.refresh(general_regulation_instance)
+    session.refresh(plan_proposition_instance)
+    session.refresh(general_proposition_instance)
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(land_use_point_instance)
+    session.refresh(other_point_instance)
+
+    # Check that new features and regulations have same status as plan
+    assert plan_regulation_instance.lifecycle_status == another_code_instance
+    assert general_regulation_instance.lifecycle_status == another_code_instance
+    assert plan_proposition_instance.lifecycle_status == another_code_instance
+    assert general_proposition_instance.lifecycle_status == another_code_instance
+    assert land_use_area_instance.lifecycle_status == another_code_instance
+    assert other_area_instance.lifecycle_status == another_code_instance
+    assert line_instance.lifecycle_status == another_code_instance
+    assert land_use_point_instance.lifecycle_status == another_code_instance
+    assert other_point_instance.lifecycle_status == another_code_instance
+    session.rollback()
 
 
 def test_update_lifecycle_status_triggers(
     session: Session,
     plan_instance: models.Plan,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
     line_instance: models.Line,
     land_use_point_instance: models.LandUsePoint,
     other_point_instance: models.OtherPoint,
     text_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
 ):
-    # Set common plan_regulation_group
-    plan_instance.plan_regulation_group = plan_regulation_group_instance
-    land_use_area_instance.plan_regulation_group = plan_regulation_group_instance
-    other_area_instance.plan_regulation_group = plan_regulation_group_instance
-    line_instance.plan_regulation_group = plan_regulation_group_instance
-    land_use_point_instance.plan_regulation_group = plan_regulation_group_instance
-    other_point_instance.plan_regulation_group = plan_regulation_group_instance
-    text_plan_regulation_instance.plan_regulation_group = plan_regulation_group_instance
-    plan_proposition_instance.plan_regulation_group = plan_regulation_group_instance
-    session.flush()
-
-    # Set common lifecycle_status
-    land_use_area_instance.lifecycle_status = code_instance
-    other_area_instance.lifecycle_status = code_instance
-    line_instance.lifecycle_status = code_instance
-    land_use_point_instance.lifecycle_status = code_instance
-    other_point_instance.lifecycle_status = code_instance
-    text_plan_regulation_instance.lifecycle_status = code_instance
-    plan_proposition_instance.lifecycle_status = code_instance
+    """
+    We must test that the trigger also updates everything in plan objects and plan regulations
+    on the plan that *do not* have the same plan regulation group as the plan.
+    """
     plan_instance.lifecycle_status = code_instance
     session.flush()
-    assert plan_instance.lifecycle_status is code_instance
+    assert plan_instance.lifecycle_status != another_code_instance
+    assert text_plan_regulation_instance.lifecycle_status != another_code_instance
+    assert (
+        text_plan_regulation_instance.plan_regulation_group
+        == plan_regulation_group_instance
+    )
+    assert general_plan_regulation_instance.lifecycle_status != another_code_instance
+    assert (
+        general_plan_regulation_instance.plan_regulation_group
+        == general_regulation_group_instance
+    )
+    assert plan_proposition_instance.lifecycle_status != another_code_instance
+    assert (
+        plan_proposition_instance.plan_regulation_group
+        == plan_regulation_group_instance
+    )
+
+    assert land_use_area_instance.lifecycle_status != another_code_instance
+    assert other_area_instance.lifecycle_status != another_code_instance
+    assert line_instance.lifecycle_status != another_code_instance
+    assert land_use_point_instance.lifecycle_status != another_code_instance
+    assert other_point_instance.lifecycle_status != another_code_instance
+    assert plan_instance.plan_regulation_group == general_regulation_group_instance
+    assert (
+        land_use_area_instance.plan_regulation_group == plan_regulation_group_instance
+    )
+    assert other_area_instance.plan_regulation_group == plan_regulation_group_instance
+    assert line_instance.plan_regulation_group == plan_regulation_group_instance
+    assert (
+        land_use_point_instance.plan_regulation_group == plan_regulation_group_instance
+    )
+    assert other_point_instance.plan_regulation_group == plan_regulation_group_instance
 
     # Change lifecycle status to fire the triggers
     plan_instance.lifecycle_status = another_code_instance
-    session.commit()
+    session.flush()
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(land_use_point_instance)
+    session.refresh(other_point_instance)
+    session.refresh(text_plan_regulation_instance)
+    session.refresh(general_plan_regulation_instance)
+    session.refresh(plan_proposition_instance)
 
-    assert plan_instance.lifecycle_status_id == another_code_instance.id
-    assert land_use_area_instance.lifecycle_status_id == another_code_instance.id
-    assert other_area_instance.lifecycle_status_id == another_code_instance.id
-    assert line_instance.lifecycle_status_id == another_code_instance.id
-    assert land_use_point_instance.lifecycle_status_id == another_code_instance.id
-    assert other_point_instance.lifecycle_status_id == another_code_instance.id
-    assert text_plan_regulation_instance.lifecycle_status_id == another_code_instance.id
-    assert plan_proposition_instance.lifecycle_status_id == another_code_instance.id
+    # Check that features and regulations have same status as plan
+    assert plan_instance.lifecycle_status == another_code_instance
+    assert land_use_area_instance.lifecycle_status == another_code_instance
+    assert other_area_instance.lifecycle_status == another_code_instance
+    assert line_instance.lifecycle_status == another_code_instance
+    assert land_use_point_instance.lifecycle_status == another_code_instance
+    assert other_point_instance.lifecycle_status == another_code_instance
+    assert text_plan_regulation_instance.lifecycle_status == another_code_instance
+    assert general_plan_regulation_instance.lifecycle_status == another_code_instance
+    assert plan_proposition_instance.lifecycle_status == another_code_instance
+    session.rollback()
 
 
 def test_add_plan_id_fkey_triggers(
