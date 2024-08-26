@@ -30,6 +30,7 @@ jobs:
         working-directory: database
         env:
           SYKE_APIKEY: ${{ secrets.SYKE_APIKEY }}
+          MML_APIKEY: ${{ secrets.MML_APIKEY }}
       - uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
