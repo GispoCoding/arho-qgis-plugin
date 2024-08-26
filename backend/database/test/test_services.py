@@ -77,6 +77,7 @@ def populate_admin_region_geometries(mml_loader_url, main_db_params, create_db):
     payload = {}
     r = requests.post(mml_loader_url, data=json.dumps(payload))
     data = r.json()
+    print(data)
     assert data["statusCode"] == 200, data["body"]
 
 
