@@ -740,14 +740,16 @@ def land_use_point_instance(
     preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
-    plan_regulation_group_instance,
+    point_plan_regulation_group_instance,
 ):
     instance = models.LandUsePoint(
-        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        geom=from_shape(MultiPoint([[382000, 6678000]])),
+        name={"fin": "test_land_use_point"},
+        description={"fin": "test_land_use_point"},
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_group=point_plan_regulation_group_instance,
     )
     session.add(instance)
     session.commit()
@@ -760,14 +762,14 @@ def other_point_instance(
     preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
-    plan_regulation_group_instance,
+    point_plan_regulation_group_instance,
 ):
     instance = models.OtherPoint(
         geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_group=point_plan_regulation_group_instance,
     )
     session.add(instance)
     session.commit()
@@ -780,6 +782,20 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
         short_name="K",
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
         name={"fin": "test_plan_regulation_group"},
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def point_plan_regulation_group_instance(
+    session, type_of_plan_regulation_group_instance
+):
+    instance = models.PlanRegulationGroup(
+        short_name="L",
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_point_plan_regulation_group"},
     )
     session.add(instance)
     session.commit()
@@ -833,6 +849,26 @@ def text_plan_regulation_instance(
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
         ordering=2,
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def point_text_plan_regulation_instance(
+    session,
+    preparation_status_instance,
+    type_of_plan_regulation_instance,
+    point_plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        text_value={"fin": "test_value"},
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=point_plan_regulation_group_instance,
+        ordering=1,
     )
     session.add(instance)
     session.commit()
@@ -944,9 +980,12 @@ def complete_test_plan(
     session: Session,
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
+    land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     text_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
@@ -975,6 +1014,10 @@ def complete_test_plan(
     # all fixtures.
     text_plan_regulation_instance.plan_theme = plan_theme_instance
     text_plan_regulation_instance.intended_use = type_of_additional_information_instance
+    point_text_plan_regulation_instance.plan_theme = plan_theme_instance
+    point_text_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance
+    )
     numeric_plan_regulation_instance.plan_theme = plan_theme_instance
     numeric_plan_regulation_instance.intended_use = (
         type_of_additional_information_instance
