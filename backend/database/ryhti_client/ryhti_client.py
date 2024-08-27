@@ -221,12 +221,17 @@ class RyhtiClient:
         # However, it seems that to_shape forgets to add the SRID information from the
         # EWKB (https://github.com/geoalchemy/geoalchemy2/issues/235), so we have to
         # paste the SRID back manually :/
+        shape = to_shape(geometry)
+        if len(shape.geoms) == 1:
+            # Ryhti API may not allow single geometries in multigeometries in all cases.
+            # Let's make them into single geometries instead:
+            shape = shape.geoms[0]
         # Also, we don't want to serialize the geojson quite yet. Looks like the only
         # way to do get python dict to actually convert the json back to dict until we
         # are ready to reserialize it :/
         return {
             "srid": str(base.PROJECT_SRID),
-            "geometry": json.loads(to_geojson(to_shape(geometry))),
+            "geometry": json.loads(to_geojson(shape)),
         }
 
     def get_lifecycle_dates(
