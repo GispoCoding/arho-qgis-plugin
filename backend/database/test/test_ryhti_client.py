@@ -313,8 +313,13 @@ def desired_plan_matter_dict(
 
 
 mock_rule = "random_rule"
+mock_matter_rule = "another_random_rule"
 mock_error_string = "There is something wrong with your plan! Good luck!"
+mock_matter_error_string = (
+    "There is something wrong with your plan matter as well! Have fun!"
+)
 mock_instance = "some field in your plan"
+mock_matter_instance = "some field in your plan matter"
 
 
 @pytest.fixture()
@@ -353,8 +358,43 @@ def mock_public_ryhti_validate_valid(requests_mock) -> None:
 @pytest.fixture()
 def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
     requests_mock.post(
-        "http://mock2.url:443/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
         text="MK-123456",
+        request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
+        status_code=200,
+    )
+
+
+@pytest.fixture()
+def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
+    requests_mock.post(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
+        text=json.dumps(
+            {
+                "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422",
+                "title": "One or more validation errors occurred.",
+                "status": 422,
+                "detail": "Validation failed: \r\n -- Type: Geometry coordinates do not match with geometry type. Severity: Error",
+                "errors": [
+                    {
+                        "ruleId": mock_matter_rule,
+                        "message": mock_matter_error_string,
+                        "instance": mock_matter_instance,
+                    }
+                ],
+                "warnings": [],
+                "traceId": "00-f5288710d1eb2265175052028d4b77c4-6ed94a9caece4333-00",
+            }
+        ),
+        request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
+        status_code=422,
+    )
+
+
+@pytest.fixture()
+def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
+    requests_mock.post(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
         request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
         status_code=200,
     )
@@ -536,6 +576,9 @@ def client_with_plan_with_permanent_identifier(
         client_with_valid_plan.plan_dictionaries[plan_instance.id]["planKey"]
         == received_plan_identifier
     )
+    client_with_valid_plan.plan_matter_dictionaries = (
+        client_with_valid_plan.get_plan_matters()
+    )
     return client_with_valid_plan
 
 
@@ -549,7 +592,7 @@ def test_get_plan_matters(
     the client has already marked the plan as valid and fetched a permanent identifer
     for the plan.
     """
-    plan_matter = client_with_plan_with_permanent_identifier.get_plan_matters()[
+    plan_matter = client_with_plan_with_permanent_identifier.plan_matter_dictionaries[
         plan_instance.id
     ]
     assert_dicts_equal(
@@ -562,3 +605,39 @@ def test_get_plan_matters(
             "planDecisionKey",
         ],
     )
+
+
+def test_validate_plan_matters(
+    client_with_plan_with_permanent_identifier: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_validate_invalid: Callable,
+):
+    """
+    Check that JSON is posted and response received
+    """
+    responses = client_with_plan_with_permanent_identifier.validate_plan_matters()
+    for plan_id, response in responses.items():
+        assert plan_id == plan_instance.id
+        assert response["errors"] == [
+            {
+                "ruleId": mock_matter_rule,
+                "message": mock_matter_error_string,
+                "instance": mock_matter_instance,
+            }
+        ]
+
+
+def test_save_plan_matter_validation_responses(
+    session: Session,
+    client_with_plan_data: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_validate_invalid: Callable,
+):
+    """
+    Check that Ryhti X-Road validation error is saved to database.
+    """
+    responses = client_with_plan_data.validate_plan_matters()
+    message = client_with_plan_data.save_plan_matter_validation_responses(responses)
+    session.refresh(plan_instance)
+    assert plan_instance.validated_at
+    assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]

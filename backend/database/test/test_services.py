@@ -181,7 +181,7 @@ def validate_invalid_plan(ryhti_client_url, complete_test_plan):
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Plan validations run."
+    assert data["title"] == "Plan and plan matter validations run."
     assert (
         data["details"][complete_test_plan.id]
         == f"Validation FAILED for {complete_test_plan.id}."
@@ -340,10 +340,10 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Plan validations run."
+    assert data["title"] == "Plan and plan matter validations run."
     assert (
         data["details"][valid_plan_in_preparation.id]
-        == f"Validation successful for {valid_plan_in_preparation.id}!"
+        == f"Plan matter validation successful for {valid_plan_in_preparation.id}!"
     )
     assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 200
     assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
@@ -354,10 +354,11 @@ def test_validate_valid_plan_matter_in_preparation(
 ):
     """
     Test the whole lambda endpoint with a valid plan and plan matter in preparation
-    stage. Plan is validated with Ryhti API. TODO: validate plan matter with mock
+    stage. Plan is validated with Ryhti API. Validate plan matter with mock
     X-Road.
 
-    The mock X-Road should return a permanent identifier.
+    The mock X-Road should return a permanent identifier and report the plan matter
+    as valid.
     """
     conn = psycopg2.connect(**main_db_params)
     try:
@@ -367,10 +368,7 @@ def test_validate_valid_plan_matter_in_preparation(
             )
             validation_date, errors, permanent_plan_identifier = cur.fetchone()
             assert validation_date
-            assert (
-                errors
-                == "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-asiaa ei ole vielä validoitu."
-            )
+            assert errors == "Kaava-asia on validi ja sen voi viedä Ryhtiin."
             assert permanent_plan_identifier == "MK-123456"
     finally:
         conn.close()

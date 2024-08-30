@@ -93,7 +93,7 @@ class RyhtiClient:
         xroad_server_address: Optional[str] = None,
         xroad_member_code: Optional[str] = None,
         xroad_client_id_base: Optional[str] = "FI-TEST/MUN/",
-        xroad_port: Optional[int] = 443,
+        xroad_port: Optional[int] = 8080,
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
@@ -132,8 +132,11 @@ class RyhtiClient:
         self.plans: List[models.Plan] = []
         # Save valid plans after validation, so they can be processed further.
         self.valid_plans: List[models.Plan] = []
-        # Cache plan dictionaries in case we want to POST them after validation
+        # Cache plan dictionaries
         self.plan_dictionaries: Dict[str, Dict] = dict()
+        # Cache plan matter dictionaries
+        self.plan_matter_dictionaries: Dict[str, Dict] = dict()
+
         self.initiated_status: LifeCycleStatus
         self.approved_status: LifeCycleStatus
         self.valid_status: LifeCycleStatus
@@ -525,7 +528,7 @@ class RyhtiClient:
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
-            entry["planDecisionKey"] = uuid4()
+            entry["planDecisionKey"] = str(uuid4())
             entry["name"] = decision.uri
             entry["typeOfDecisionMaker"] = self.decisionmaker_by_status[
                 plan.lifecycle_status.value
@@ -560,7 +563,7 @@ class RyhtiClient:
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
-            entry["handlingEventKey"] = uuid4()
+            entry["handlingEventKey"] = str(uuid4())
             entry["handlingEventType"] = event.uri
 
             period_of_current_status = self.get_lifecycle_dates(
@@ -589,7 +592,7 @@ class RyhtiClient:
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
-            entry["interactionEventKey"] = uuid4()
+            entry["interactionEventKey"] = str(uuid4())
             entry["interactionEventType"] = event.uri
 
             period_of_current_status = self.get_lifecycle_dates(
@@ -625,7 +628,7 @@ class RyhtiClient:
         #
         # However, such logic may not be forthcoming, if multiple phases with
         # the same lifecycle status are allowed??
-        phase["planMatterPhaseKey"] = uuid4()
+        phase["planMatterPhaseKey"] = str(uuid4())
         # Always post phase and plan with the same status.
         phase["lifeCycleStatus"] = self.plan_dictionaries[plan.id]["lifeCycleStatus"]
         phase["geographicalArea"] = self.plan_dictionaries[plan.id]["geographicalArea"]
@@ -750,6 +753,46 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
+    def validate_plan_matters(self) -> Dict[str, Dict]:
+        """
+        Validates all plan matters serialized in client plan matter dictionaries.
+        """
+        responses: Dict[str, Dict] = dict()
+        for plan_id, plan_matter in self.plan_matter_dictionaries.items():
+            permanent_id = plan_matter["permanentPlanIdentifier"]
+            plan_matter_validation_endpoint = (
+                self.xroad_server_address
+                + self.xroad_api_path
+                + f"RegionalPlanMatter/{permanent_id}/validate"
+            )
+            LOGGER.info(f"Validating JSON for plan matter {permanent_id}...")
+
+            if self.debug_json:
+                with open(f"ryhti_debug/{permanent_id}.json", "w") as plan_file:
+                    json.dump(plan_matter, plan_file)
+            LOGGER.info(f"POSTing JSON: {json.dumps(plan_matter)}")
+
+            # requests apparently uses simplejson automatically if it is installed!
+            # A bit too much magic for my taste, but seems to work.
+            response = requests.post(
+                plan_matter_validation_endpoint,
+                json=plan_matter,
+                headers=self.xroad_headers,
+            )
+            LOGGER.info(f"Got response {response}")
+            if response.status_code == 200:
+                # Successful validation does not return any json!
+                responses[plan_id] = {"status": 200, "errors": None}
+            else:
+                responses[plan_id] = response.json()
+            if self.debug_json:
+                with open(
+                    f"ryhti_debug/{permanent_id}.response.json", "w"
+                ) as response_file:
+                    json.dump(responses[plan_id], response_file)
+            LOGGER.info(responses[plan_id])
+        return responses
+
     def get_permanent_plan_identifiers(self) -> Dict[str, str | Dict]:
         """
         Get permanent plan identifiers for all plans that are marked
@@ -867,6 +910,68 @@ class RyhtiClient:
             "ryhti_responses": ryhti_responses,
         }
 
+    def save_plan_matter_validation_responses(
+        self, responses: Dict[str, Dict]
+    ) -> Response:
+        """
+        Save X-Road validation API response data to the database and return lambda
+        response.
+
+        If validation is successful, update validated_at field and validation_errors
+        field. Also add all valid plan matters to client valid_plan_matters,
+        to be processed further.
+
+        If validation/post is unsuccessful, save the error JSON in plan
+        validation_errors json field (in addition to saving it to AWS logs and
+        returning them in lambda return value).
+
+        If Ryhti request fails unexpectedly, save the returned error.
+        """
+        details: Dict[str, str] = {}
+        ryhti_responses: Dict[str, Dict] = {}
+        with self.Session(expire_on_commit=False) as session:
+            for plan_id, response in responses.items():
+                plan: models.Plan = session.get(models.Plan, plan_id)
+                if not plan:
+                    # Plan has been deleted in the middle of validation. Nothing
+                    # to see here, move on
+                    LOGGER.info(
+                        f"Plan {plan_id} no longer found in database! Moving on"
+                    )
+                    continue
+                LOGGER.info(f"Saving response for plan matter {plan_id}...")
+                LOGGER.info(response)
+                # In case Ryhti API does not respond in the expected manner,
+                # save the response for debugging.
+                if "status" not in response or "errors" not in response:
+                    details[
+                        plan_id
+                    ] = f"RYHTI API returned unexpected response: {response}"
+                    plan.validation_errors = f"RYHTI API ERROR: {response}"
+                elif response["status"] == 200:
+                    details[
+                        plan_id
+                    ] = f"Plan matter validation successful for {plan_id}!"
+                    plan.validation_errors = (
+                        "Kaava-asia on validi ja sen voi viedä Ryhtiin."
+                    )
+                    self.valid_plans.append(plan)
+                else:
+                    details[plan_id] = f"Plan matter validation FAILED for {plan_id}."
+                    plan.validation_errors = response["errors"]
+
+                ryhti_responses[plan_id] = response
+                LOGGER.info(details[plan_id])
+                LOGGER.info(f"Ryhti response: {json.dumps(response)}")
+                plan.validated_at = datetime.datetime.now()
+            session.commit()
+        return {
+            "statusCode": 200,
+            "title": "Plan and plan matter validations run.",
+            "details": details,
+            "ryhti_responses": ryhti_responses,
+        }
+
 
 def handler(event: Event, _) -> Response:
     """Handler which is called when accessing the endpoint.
@@ -890,7 +995,7 @@ def handler(event: Event, _) -> Response:
         )
     xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS")
     xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
-    xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 443))
+    xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 8080))
     xroad_client_id_base = os.environ.get("XROAD_CLIENTID_BASE", "FI-TEST/MUN/")
     if event_type is EventType.POST_PLANS and (
         not xroad_server_address or not xroad_member_code
@@ -925,7 +1030,7 @@ def handler(event: Event, _) -> Response:
         responses = client.validate_plans()
 
         # 3) Save plan validation data
-        LOGGER.info("Saving validation data...")
+        LOGGER.info("Saving plan validation data...")
         lambda_response = client.save_plan_validation_responses(responses)
 
         # *Also* validate plan matter if plans are already valid.
@@ -946,14 +1051,27 @@ def handler(event: Event, _) -> Response:
 
             LOGGER.info("Setting permanent plan identifiers for valid plans...")
             client.set_permanent_plan_identifiers(plan_identifiers)
-            # TODO: save further details in lambda responses
 
-            # 5) Validate plan matters with the identifiers with X-Road API
+            # 5) Validate plan matters with identifiers with X-Road API
             LOGGER.info("Formatting plan matter data for valid plans...")
-            client.get_plan_matters()
+            client.plan_matter_dictionaries = client.get_plan_matters()
 
-            # LOGGER.info("Validating plan matters...")
-            # responses = client.validate_plan_matters(plan_matter_dictionaries)
+            LOGGER.info("Validating plan matters for valid plans...")
+            responses = client.validate_plan_matters()
+
+            # 6) Save plan matter validation data
+            LOGGER.info("Saving plan matter validation data for valid plans...")
+            # Merge details and ryhti_responses for valid and invalid plans. Invalid
+            # plans will have plan validation responses, valid plans will have plan
+            # matter validation responses.
+            plan_matter_validation_response = (
+                client.save_plan_matter_validation_responses(responses)
+            )
+            lambda_response["title"] = plan_matter_validation_response["title"]
+            lambda_response["details"] |= plan_matter_validation_response["details"]
+            lambda_response["ryhti_responses"] |= plan_matter_validation_response[
+                "ryhti_responses"
+            ]
             if event_type is EventType.POST_PLANS:
                 pass
                 # 3) TODO: Check or create plan matter with the identifier
