@@ -18,6 +18,26 @@ variable "bastion_subdomain" {
   type        = string
 }
 
+variable "x-road_host" {
+  description = "Host name for X-Road security server"
+  type        = string
+}
+
+variable "x-road_subdomain" {
+  description = "Subdomain for X-road security server"
+  type     = string
+}
+
+variable "x-road_verification_record" {
+  description = "Domain verification string to set for x-road DNS record"
+  type     = string
+}
+
+variable "x-road_member_code" {
+  description = "Member code to set for x-road client instance. Usually this is Y-tunnus of your organization."
+  type     = string
+}
+
 variable "enable_route53_record" {
   type    = bool
   default = false
@@ -131,6 +151,7 @@ variable "extra_tags" {
 
 locals {
   bastion_dns_alias   = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  xroad_dns_record    = "${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix

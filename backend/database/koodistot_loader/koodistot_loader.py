@@ -170,6 +170,9 @@ class KoodistotLoader:
         """
         Find object based on its unique fields, or create new object. Update fields
         that are present in the incoming dict.
+
+        However, do *not* try to update uuids. They may have references to them already,
+        so we cannot set uuids, even if they are the same as before.
         """
         columns = code_class.__table__.columns
         unique_keys = set(column.key for column in columns if column.unique)
@@ -187,7 +190,8 @@ class KoodistotLoader:
             # This is because dirtying sqlalchemy objects happens via the __setattr__
             # method, so we will have to update instance fields one by one.
             for key, value in values.items():
-                setattr(instance, key, value)
+                if key != "id":
+                    setattr(instance, key, value)
         else:
             instance = code_class(**values)
             session.add(instance)
