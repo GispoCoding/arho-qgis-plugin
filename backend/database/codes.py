@@ -1,7 +1,8 @@
+from typing import Type
+
 from geoalchemy2 import Geometry
 from models import CodeBase
 from sqlalchemy import Column
-from typing import Type
 from sqlalchemy.orm import Session
 
 

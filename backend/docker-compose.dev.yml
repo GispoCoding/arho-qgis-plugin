@@ -83,7 +83,7 @@ services:
       - db
     volumes:
       - ./database/mml_loader/mml_loader.py:/var/task/app.py
-  
+
   mock_xroad:
       image: mockserver/mockserver:latest
       ports:

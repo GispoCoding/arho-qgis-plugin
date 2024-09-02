@@ -1,7 +1,7 @@
 """add_geom_column_into_admin_regions
 
 Revision ID: b8d3238d6b0a
-Revises: feb5395835bb
+Revises: b7f815ff2e73
 Create Date: 2024-06-24 10:34:22.634455
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "b8d3238d6b0a"
-down_revision: Union[str, None] = "feb5395835bb"
+down_revision: Union[str, None] = "b7f815ff2e73"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
