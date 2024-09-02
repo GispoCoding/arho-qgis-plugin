@@ -110,7 +110,7 @@ def test_land_use_point(
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
 ):
     # non-nullable plan object relations
     assert land_use_point_instance.lifecycle_status is preparation_status_instance
@@ -120,9 +120,12 @@ def test_land_use_point(
     assert land_use_point_instance.plan is plan_instance
     assert plan_instance.land_use_points == [land_use_point_instance]
     assert (
-        land_use_point_instance.plan_regulation_group is plan_regulation_group_instance
+        land_use_point_instance.plan_regulation_group
+        is point_plan_regulation_group_instance
     )
-    assert plan_regulation_group_instance.land_use_points == [land_use_point_instance]
+    assert point_plan_regulation_group_instance.land_use_points == [
+        land_use_point_instance
+    ]
 
 
 def test_other_point(
@@ -130,7 +133,7 @@ def test_other_point(
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
 ):
     # non-nullable plan object relations
     assert other_point_instance.lifecycle_status is preparation_status_instance
@@ -139,8 +142,11 @@ def test_other_point(
     assert type_of_underground_instance.other_points == [other_point_instance]
     assert other_point_instance.plan is plan_instance
     assert plan_instance.other_points == [other_point_instance]
-    assert other_point_instance.plan_regulation_group is plan_regulation_group_instance
-    assert plan_regulation_group_instance.other_points == [other_point_instance]
+    assert (
+        other_point_instance.plan_regulation_group
+        is point_plan_regulation_group_instance
+    )
+    assert point_plan_regulation_group_instance.other_points == [other_point_instance]
 
 
 def test_plan_regulation_group(

@@ -358,6 +358,7 @@ def test_update_lifecycle_status_triggers(
     session: Session,
     plan_instance: models.Plan,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
@@ -405,9 +406,13 @@ def test_update_lifecycle_status_triggers(
     assert other_area_instance.plan_regulation_group == plan_regulation_group_instance
     assert line_instance.plan_regulation_group == plan_regulation_group_instance
     assert (
-        land_use_point_instance.plan_regulation_group == plan_regulation_group_instance
+        land_use_point_instance.plan_regulation_group
+        == point_plan_regulation_group_instance
     )
-    assert other_point_instance.plan_regulation_group == plan_regulation_group_instance
+    assert (
+        other_point_instance.plan_regulation_group
+        == point_plan_regulation_group_instance
+    )
 
     # Change lifecycle status to fire the triggers
     plan_instance.lifecycle_status = another_code_instance

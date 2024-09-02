@@ -249,7 +249,9 @@ def valid_plan_in_preparation(
     populate_koodistot: None,
     complete_test_plan: models.Plan,
     land_use_area_instance: models.LandUseArea,
+    land_use_point_instance: models.LandUsePoint,
     text_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
@@ -263,7 +265,9 @@ def valid_plan_in_preparation(
     """
     session.add(complete_test_plan)
     session.add(land_use_area_instance)
+    session.add(land_use_point_instance)
     session.add(text_plan_regulation_instance)
+    session.add(point_text_plan_regulation_instance)
     session.add(numeric_plan_regulation_instance)
     session.add(verbal_plan_regulation_instance)
     session.add(plan_proposition_instance)
@@ -276,6 +280,7 @@ def valid_plan_in_preparation(
     )
     plan_proposition_instance.plan_theme = community_structure_theme
     text_plan_regulation_instance.plan_theme = community_structure_theme
+    point_text_plan_regulation_instance.plan_theme = community_structure_theme
     numeric_plan_regulation_instance.plan_theme = community_structure_theme
     verbal_plan_regulation_instance.plan_theme = community_structure_theme
     general_plan_regulation_instance.plan_theme = community_structure_theme
@@ -287,6 +292,7 @@ def valid_plan_in_preparation(
         .first()
     )
     text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
+    point_text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     numeric_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     general_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     verbal_type = (
@@ -321,6 +327,9 @@ def valid_plan_in_preparation(
     # General and verbal regulation type may *not* be intended use regulation!
     verbal_plan_regulation_instance.intended_use = None
     general_plan_regulation_instance.intended_use = None
+    # Also, points cannot have intended use at the moment, though they should
+    # be able to, they have detached houses type after all.
+    point_text_plan_regulation_instance.intended_use = None
 
     # Kaavan tyyppi
     overall_regional_plan_plan_type = (
@@ -341,6 +350,7 @@ def valid_plan_in_preparation(
         session.query(codes.TypeOfUnderground).filter_by(value="01").first()
     )
     land_use_area_instance.type_of_underground = overground_type_of_underground
+    land_use_point_instance.type_of_underground = overground_type_of_underground
 
     # Numeric plan regulations are actually not allowed in maakuntakaava. So let's
     # put in a text value instead:

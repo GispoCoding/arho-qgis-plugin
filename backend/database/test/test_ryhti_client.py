@@ -14,9 +14,12 @@ from sqlalchemy.orm import Session
 def desired_plan_dict(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
+    land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     text_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
@@ -39,16 +42,14 @@ def desired_plan_dict(
         "geographicalArea": {
             "srid": str(PROJECT_SRID),
             "geometry": {
-                "type": "MultiPolygon",
+                "type": "Polygon",
                 "coordinates": [
                     [
-                        [
-                            [381849.834412134019658, 6677967.973336197435856],
-                            [381849.834412134019658, 6680613.389312859624624],
-                            [386378.427863708813675, 6680613.389312859624624],
-                            [386378.427863708813675, 6677967.973336197435856],
-                            [381849.834412134019658, 6677967.973336197435856],
-                        ]
+                        [381849.834412134019658, 6677967.973336197435856],
+                        [381849.834412134019658, 6680613.389312859624624],
+                        [386378.427863708813675, 6680613.389312859624624],
+                        [386378.427863708813675, 6677967.973336197435856],
+                        [381849.834412134019658, 6677967.973336197435856],
                     ]
                 ],
             },
@@ -104,16 +105,14 @@ def desired_plan_dict(
                 "geometry": {
                     "srid": str(PROJECT_SRID),
                     "geometry": {
-                        "type": "MultiPolygon",
+                        "type": "Polygon",
                         "coordinates": [
                             [
-                                [
-                                    [381849.834412134019658, 6677967.973336197435856],
-                                    [381849.834412134019658, 6680613.389312859624624],
-                                    [386378.427863708813675, 6680613.389312859624624],
-                                    [386378.427863708813675, 6677967.973336197435856],
-                                    [381849.834412134019658, 6677967.973336197435856],
-                                ]
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
                             ]
                         ],
                     },
@@ -129,8 +128,61 @@ def desired_plan_dict(
                 },
                 "periodOfValidity": None,
             },
+            {
+                "planObjectKey": land_use_point_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/test",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [382000, 6678000],
+                    },
+                },
+                "name": land_use_point_instance.name,
+                "description": land_use_point_instance.description,
+                "objectNumber": land_use_point_instance.ordering,
+                "periodOfValidity": None,
+            },
         ],
         "planRegulationGroups": [
+            {
+                "planRegulationGroupKey": point_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": point_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": point_text_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": point_text_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            point_text_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            point_text_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": point_plan_regulation_group_instance.short_name,
+                "colorNumber": "#FFFFFF",
+            },
             {
                 "planRegulationGroupKey": plan_regulation_group_instance.id,
                 "titleOfPlanRegulation": plan_regulation_group_instance.name,
@@ -243,6 +295,10 @@ def desired_plan_dict(
             {
                 "planObjectKey": land_use_area_instance.id,
                 "planRegulationGroupKey": plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": land_use_point_instance.id,
+                "planRegulationGroupKey": point_plan_regulation_group_instance.id,
             },
         ],
     }
