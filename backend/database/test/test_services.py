@@ -30,6 +30,12 @@ def ryhti_client_url(docker_ip, docker_services):
 
 
 @pytest.fixture()
+def mml_loader_url(docker_ip, docker_services):
+    port = docker_services.port_for("mml_loader", 8080)
+    return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
+
+
+@pytest.fixture()
 def create_db(db_manager_url, main_db_params, root_db_params):
     payload = {
         "event_type": 1,
@@ -62,6 +68,17 @@ def populate_suomifi_koodistot(koodistot_loader_url, main_db_params, create_db):
 def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
     payload = {"suomifi_codes": False}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
+    data = r.json()
+    assert data["statusCode"] == 200, data["body"]
+
+
+@pytest.fixture()
+def populate_admin_region_geometries(
+    koodistot_loader_url, mml_loader_url, main_db_params, create_db
+):
+    payload = {}
+    r = requests.post(koodistot_loader_url, data=json.dumps(payload))
+    r = requests.post(mml_loader_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
 
@@ -163,6 +180,24 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
                     assert code_count > 0
+    finally:
+        conn.close()
+
+
+def test_populate_admin_region_geometries(
+    populate_admin_region_geometries, populate_koodistot, main_db_params
+):
+    """
+    Test that maakunta geometries are populated
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM codes.administrative_region WHERE geom IS NOT NULL"
+            )
+            geom_count = cur.fetchone()[0]
+            assert geom_count == 19
     finally:
         conn.close()
 
