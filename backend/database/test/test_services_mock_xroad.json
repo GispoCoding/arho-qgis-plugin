@@ -11,5 +11,17 @@
             "body": "MK-123456",
             "statusCode": 200
         }
+    },
+    {
+        "httpRequest": {
+            "method": "POST",
+            "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
+            "headers": {
+                "X-Road-Client": "FI-TEST/MUN/2455538-5"
+            }
+        },
+        "httpResponse": {
+            "statusCode": 200
+        }
     }
 ]
