@@ -73,8 +73,11 @@ def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
 
 
 @pytest.fixture()
-def populate_admin_region_geometries(mml_loader_url, main_db_params, create_db):
+def populate_admin_region_geometries(
+    koodistot_loader_url, mml_loader_url, main_db_params, create_db
+):
     payload = {}
+    r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     r = requests.post(mml_loader_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
@@ -191,7 +194,7 @@ def test_populate_admin_region_geometries(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT count(*) FROM codes.administrative_region WHERE geom IS NULL"
+                "SELECT count(*) FROM codes.administrative_region WHERE geom IS NOT NULL"
             )
             geom_count = cur.fetchone()[0]
             assert geom_count == 19
