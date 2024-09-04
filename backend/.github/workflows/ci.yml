@@ -81,6 +81,9 @@ jobs:
       - name: Update dev lambda functions
         if: github.ref == 'refs/heads/main'
         run: make prefix=hame-dev update-lambda -C infra
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       - name: Report to slack
         if: github.ref == 'refs/heads/main'
         uses: slackapi/slack-github-action@v1.22.0
