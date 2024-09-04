@@ -147,9 +147,7 @@ resource "aws_lambda_function" "mml_loader" {
       DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
       DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
-      SYKE_APIKEY         = var.syke_apikey
-      XROAD_SERVER_ADDRESS = data.aws_network_interface.interface_tags.private_ip
-      XROAD_MEMBER_CODE   = var.x-road_member_code
+      MML_APIKEY          = var.mml_apikey
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-mml_loader" })

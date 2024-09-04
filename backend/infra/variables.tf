@@ -103,6 +103,11 @@ variable "syke_apikey" {
   type        = string
 }
 
+variable "mml_apikey" {
+  description = "MML API key for MML Loader"
+  type        = string
+}
+
 variable "public-subnet-count" {
   description = "TODO"
   type        = number
