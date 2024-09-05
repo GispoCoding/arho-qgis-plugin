@@ -17,6 +17,13 @@ resource "aws_cloudwatch_log_group" "lambda_ryhti_client" {
   tags = local.default_tags
 }
 
+resource "aws_cloudwatch_log_group" "lambda_mml_loader" {
+  name              = "/aws/lambda/${aws_lambda_function.mml_loader.function_name}"
+
+  retention_in_days = 30
+  tags = local.default_tags
+}
+
 resource "aws_cloudwatch_log_group" "x-road_securityserver" {
   name              = "/aws/ecs/${aws_ecs_task_definition.x-road_securityserver.family}"
   retention_in_days = 30
