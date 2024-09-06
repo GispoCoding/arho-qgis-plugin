@@ -105,6 +105,10 @@ resource "aws_ecs_task_definition" "x-road_securityserver" {
         {
           name = "XROAD_DB_PWD"
           value = var.x-road_db_password
+        },
+        {
+          name = "XROAD_TOKEN_PIN"
+          value = var.x-road_token_pin
         }
       ]
     }

@@ -143,6 +143,9 @@ variable "x-road_secrets" {
 variable "x-road_db_password" {
 }
 
+variable "x-road_token_pin" {
+}
+
 variable "prefix" {
   description = "Prefix to be used in resource names"
   type        = string
