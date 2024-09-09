@@ -106,10 +106,16 @@ resource "aws_iam_policy" "lambda_update_policy" {
       {
         "Effect" : "Allow",
         "Action" : [
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
           "lambda:InvokeFunction",
+          "lambda:UpdateFunctionConfiguration"
          ],
         "Resource" : [
           aws_lambda_function.db_manager.arn,
+          aws_lambda_function.koodistot_loader.arn,
+          aws_lambda_function.ryhti_client.arn,
+          aws_lambda_function.mml_loader.arn,
         ]
       }
     ]
