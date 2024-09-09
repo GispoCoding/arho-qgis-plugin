@@ -2,7 +2,7 @@
 build:
 	make build-lambda -C ..
 
-update-lambda: update-db-manager update-koodistot-loader update-ryhti-client
+update-lambda: update-db-manager update-koodistot-loader update-ryhti-client update-mml-loader
 	echo "All updated"
 
 update-db-manager:
