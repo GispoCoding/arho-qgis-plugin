@@ -81,7 +81,6 @@ resource "aws_iam_policy" "lambda_update_policy" {
           # Necessary IAM permission to publish an image in ECR
           "ecr:DescribeImages",
           "ecr:DescribeRepositories",
-          "ecr:GetAuthorizationToken",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
           "ecr:BatchCheckLayerAvailability",
@@ -96,6 +95,22 @@ resource "aws_iam_policy" "lambda_update_policy" {
           aws_ecr_repository.ryhti_client.arn,
           aws_ecr_repository.mml_loader.arn
           ]
+      },
+      {
+          "Action": [
+              "ecr:GetAuthorizationToken"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "lambda:InvokeFunction",
+         ],
+        "Resource" : [
+          aws_lambda_function.db_manager.arn,
+        ]
       }
     ]
   })
