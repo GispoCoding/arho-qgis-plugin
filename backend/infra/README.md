@@ -29,9 +29,13 @@ For most AWS accounts, MFA is required. You will get 400 or 403 error when runni
 just the right access key. To set up MFA, install both AWS CLI and jq, and make sure you have `aws` and `jq` in path. Execute the `[get-mfa-vars.sh](https://gist.github.com/mvaaltola/0abced5790401f2454444fb2ffd4acc0)` script with the *AWS arn of your MFA device and current MFA access code*,
 and finally run `. /tmp/aws-mfa-token` to temporarily set the correct MFA environment variables in your shell. By default, the MFA session token will last for 12 hours.
 
+### Terraform workspaces
+
+Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. To list existing workspaces in S3, run `terraform workspace list`. To create a new workspace, run `terraform workspace new your-deployment`. To switch to a workspace, run `terraform workspace select your-deployment`.
+
 ## Managing existing instances
 
-To manage existing instances, decrypt `hame-dev.tfvars.enc.json` by running `sops -d hame-dev.tfvars.enc.json > hame-dev.tfvars.json`.
+To manage existing instances, activate the corresponding terraform workspace e.g. `terraform workspace select hame-dev` and decrypt encrypted variable file by running e.g. `sops -d hame-dev.tfvars.enc.json > hame-dev.tfvars.json`.
 
 To make changes to instances, first check that your variables and current infra is up to date with terraform state:
 
