@@ -98,7 +98,7 @@ This is because you need to apply for a separate permit for your subsystem to be
    - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`, e.g. `ryhti-vsl-client`.
 When your application is accepted, you are provided with the configuration anchor file needed later.
 2. Create an SSH key and add the public key to `bastion_ec2_tunnel_public_keys` in `hame-your-deployment.tfvars.json`.
-3. Fill in the desired admin username and password in `x-road_secrets` in `hame-your-deployment.tfvars.json`.
+3. Fill in the desired admin username and password in `x-road_secrets`, your desired  `x-road_db_password` (password for x-road database) and your desired `x-road_token_pin` (for accessing authentication tokens), in `hame-your-deployment.tfvars.json`.
 4. Apply the variables to AWS with `terraform apply --var-file hame-your-deployment.tfvars.json`.
 5. Check the private IP address of your `hame-your-deployment-x-road_securityserver` service task under your AWS Elastic Container Service `hame-your-deployment-x-road_securityserver` cluster in your AWS web console.
 6. Open an SSH tunnel to the X-Road server admin interface (e.g. `ssh -N -L4001:<private-ip>:4000 -i "~/.ssh/hame-ec2-tunnel.pem" ec2-user@hame-your-deployment.<bastion_subdomain>.<aws_hosted_domain>`, where `hame-ec2-tunnel.pem` contains your SSH key created in step 2, and `bastion_subdomain` and `aws_hosted_domain` are the settings in your `hame-your-deployment.tfvars.json`).
