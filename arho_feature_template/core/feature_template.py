@@ -27,5 +27,12 @@ class FeatureTemplate:
     name: str
     description: str
     feature_layer: QgsVectorLayer
-    feature_attributes: Sequence[FeatureAttribute]
+    feature_attributes: Sequence[FeatureAttribute] | None = None
     display_icon: QIcon | None = None
+
+    def add_feature_attributes(self, feature_attribute_groups: Sequence[dict]):
+        for _group in feature_attribute_groups:
+            # Should we add FeatureAttributeGroup as a class? Or can group name be
+            # only one class attribute of FeatureAttribute?
+            # TODO
+            pass
