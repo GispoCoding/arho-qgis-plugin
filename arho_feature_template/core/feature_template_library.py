@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import TYPE_CHECKING, Sequence
 
 from qgis.core import QgsMapLayer, QgsProject, QgsVectorLayer
@@ -8,6 +7,7 @@ from qgis.utils import iface
 
 from arho_feature_template.core.feature_template import FeatureTemplate
 from arho_feature_template.core.json_config import JsonKeys
+from arho_feature_template.core.utils import read_json
 
 if TYPE_CHECKING:
     from os import PathLike
@@ -18,15 +18,10 @@ class FeatureTemplateLibrary:
 
     def __init__(self, json_path: str | PathLike):
         self.templates = []
-        library_dict = self.read_json(json_path)
+        library_dict = read_json(json_path)
         self.name = library_dict.get(JsonKeys.NAME)
         self.version = library_dict.get(JsonKeys.VERSION)
         self.build_templates(library_dict)
-
-    def read_json(self, json_path: str | PathLike) -> dict:
-        self.source_json = json_path
-        with open(json_path) as f:
-            return json.load(f)
 
     def build_templates(self, library_dict: dict):
         """Build feature templates from input `library_dict` and update `templates` attribute."""
