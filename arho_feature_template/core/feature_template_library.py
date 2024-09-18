@@ -19,6 +19,8 @@ class FeatureTemplateLibrary:
     def __init__(self, json_path: str | PathLike):
         self.templates = []
         library_dict = self.read_json(json_path)
+        self.name = library_dict.get(JsonKeys.NAME)
+        self.version = library_dict.get(JsonKeys.VERSION)
         self.build_templates(library_dict)
 
     def read_json(self, json_path: str | PathLike) -> dict:
