@@ -57,6 +57,8 @@ services:
       - XROAD_HTTP_PORT=1080
       - XROAD_SERVER_ADDRESS=http://mock_xroad
       - XROAD_MEMBER_CODE=2455538-5
+      - XROAD_SYKE_CLIENT_ID=test-id
+      - XROAD_SYKE_CLIENT_SECRET=test-secret
     ports:
       - "8083:8080"
     depends_on:

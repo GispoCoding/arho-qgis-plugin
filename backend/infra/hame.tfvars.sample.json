@@ -3,6 +3,10 @@
     "AWS_LAMBDA_USER": "<AWS user for updating lambda functions>",
     "AWS_HOSTED_DOMAIN": "<Domain for route53 record>",
     "bastion_subdomain": "<Subdomain for ssh tunnel server route53 record>",
+	"x-road_host": "<Name for your X-road server>",
+	"x-road_subdomain": "<X-Road code of your X-Road subsystem>",
+	"x-road_verification_record": "<Verification record for your X-road server domain, if requested by DVV>",
+	"x-road_member_code": "<X-Road member code of your X-road organization>",
     "enable_route53_record": true,
     "hame_db_name": "<Name of the database to create>",
     "su_secrets": {
@@ -34,7 +38,10 @@
         "wrike_task_id": "<AWS task id tag>"
     },
     "SLACK_HOOK_URL": "<URL to slack hook for event reporting>",
-    "syke_apikey": "<Your Syke subscription api key for Ryhti client>",
+    "syke_apikey": "<Your Syke public API subscription key for Ryhti client>",
+    "syke_xroad_client_id": "<Your Syke client id for X-Road Ryhti client>",
+    "syke_xroad_client_secret": "<Your Syke client secret for X-Road Ryhti client>",
+    "mml_apikey": "<Your MML API key for loading MML data>",
     "bastion_ec2_user_public_key": "<Public key for ssh tunnel server superuser>",
     "bastion_ec2_tunnel_public_keys": [
         "<Public key to access ssh tunnel to database>",

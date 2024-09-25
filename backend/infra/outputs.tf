@@ -22,3 +22,13 @@ output "bastion_address" {
   description = "SSH tunneling server public address"
   value       = aws_route53_record.bastion[0].name
 }
+
+output "xroad_fqdn" {
+  description = "X-Road Security Server fully qualified domain name"
+  value       = local.xroad_dns_record
+}
+
+output "xroad_ip_address" {
+  description = "X-Road Security Server public IP address"
+  value       = aws_eip.eip.public_ip
+}

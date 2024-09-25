@@ -78,9 +78,13 @@ class Period(TypedDict):
 
 
 class RyhtiClient:
-    HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
+    HEADERS = {
+        "User-Agent": "ARHO - Open source Ryhti compatible database",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
-    xroad_api_path = "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/"
+    xroad_api_path = "/r1/FI/GOV/0996189-5/Ryhti-Syke-service/api/"
     xroad_server_address = ""
     xroad_client_id_base = "FI-TEST/MUN/"
     xroad_member_code = ""
@@ -90,6 +94,8 @@ class RyhtiClient:
         connection_string: str,
         public_api_url: Optional[str] = None,
         public_api_key: str = "",
+        xroad_syke_client_id: Optional[str] = "",
+        xroad_syke_client_secret: Optional[str] = "",
         xroad_server_address: Optional[str] = None,
         xroad_member_code: Optional[str] = None,
         xroad_client_id_base: Optional[str] = "FI-TEST/MUN/",
@@ -107,7 +113,6 @@ class RyhtiClient:
         self.public_api_key = public_api_key
         self.public_headers = {
             **self.HEADERS,
-            "Content-Type": "application/json",
             "Ocp-Apim-Subscription-Key": self.public_api_key,
         }
 
@@ -123,9 +128,13 @@ class RyhtiClient:
             self.xroad_client_id_base = xroad_client_id_base
         self.xroad_headers = {
             **self.HEADERS,
-            "Content-Type": "application/json",
             "X-Road-Client": self.xroad_client_id_base + self.xroad_member_code,
         }
+
+        # In addition, X-Road Ryhti API will require authentication token that
+        # will be set later based on these:
+        self.xroad_syke_client_id = xroad_syke_client_id
+        self.xroad_syke_client_secret = xroad_syke_client_secret
 
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
@@ -213,6 +222,24 @@ class RyhtiClient:
             print("got plans")
             LOGGER.info("Client initialized with plans to process:")
             LOGGER.info(self.plans)
+
+    def xroad_ryhti_authenticate(self):
+        # Seems that Ryhti API does not use the standard OAuth2 client credentials
+        # clientId:secret Bearer header in token endpoint. Instead, there is a custom
+        # authentication endpoint /api/Authenticate that wishes us to deliver the
+        # client secret as a *single JSON string*, which is not compatible with
+        # RFC 4627, but *is* compatible with newer RFC 8259.
+        authentication_data = self.xroad_syke_client_secret
+        response = requests.post(
+            self.xroad_server_address + self.xroad_api_path + "Authenticate",
+            headers=self.xroad_headers,
+            data=authentication_data,
+            params={"clientId": self.xroad_syke_client_id},
+        )
+        # The returned token is a jsonified string, so json() will return the bare
+        # string.
+        bearer_token = response.json()
+        self.xroad_headers["Authorization"] = f"Bearer {bearer_token}"
 
     def get_geojson(self, geometry: Geometry) -> dict:
         """
@@ -769,7 +796,7 @@ class RyhtiClient:
                 self.xroad_server_address
                 + self.xroad_api_path
                 + f"RegionalPlanMatter/{permanent_id}/validate"
-            )
+            )  # TODO: Set the endpoint address to depend on plan type!
             LOGGER.info(f"Validating JSON for plan matter {permanent_id}...")
 
             if self.debug_json:
@@ -807,7 +834,7 @@ class RyhtiClient:
             self.xroad_server_address
             + self.xroad_api_path
             + "RegionalPlanMatter/permanentPlanIdentifier"
-        )
+        )  # TODO: Set the endpoint address to depend on plan type!
         responses: Dict[str, str | Dict] = dict()
         for plan in self.valid_plans:
             if plan.to_be_exported and not plan.permanent_plan_identifier:
@@ -821,7 +848,7 @@ class RyhtiClient:
                 )
                 LOGGER.info(f"Got response {response}")
                 if response.status_code == 200:
-                    responses[plan.id] = response.text
+                    responses[plan.id] = response.json()
                 else:
                     responses[plan.id] = str(response)
                 if self.debug_json:
@@ -1002,13 +1029,20 @@ def handler(event: Event, _) -> Response:
     xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
     xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 8080))
     xroad_client_id_base = os.environ.get("XROAD_CLIENTID_BASE", "FI-TEST/MUN/")
+    xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID")
+    xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
     if event_type is EventType.POST_PLANS and (
-        not xroad_server_address or not xroad_member_code
+        not xroad_server_address
+        or not xroad_member_code
+        or not xroad_syke_client_id
+        or not xroad_syke_client_secret
     ):
         raise ValueError(
             (
                 "Please set your local XROAD_SERVER_ADDRESS and your organization "
-                "XROAD_MEMBER_CODE to make API requests to X-Road endpoints. To use "
+                "XROAD_MEMBER_CODE to make API requests to X-Road endpoints. Also, "
+                "set XROAD_SYKE_CLIENT_ID and XROAD_SYKE_CLIENT_SECRET that you"
+                "have received when registering to access SYKE X-Road API. To use "
                 "production X-Road instead of test X-road, you must also set "
                 'XROAD_CLIENTID_BASE to "FI". By default, it is set to "FI-TEST".'
             )
@@ -1020,6 +1054,8 @@ def handler(event: Event, _) -> Response:
         plan_uuid=plan_uuid,
         debug_json=debug_json,
         public_api_key=public_api_key,
+        xroad_syke_client_id=xroad_syke_client_id,
+        xroad_syke_client_secret=xroad_syke_client_secret,
         xroad_server_address=xroad_server_address,
         xroad_member_code=xroad_member_code,
         xroad_port=xroad_port,
@@ -1047,7 +1083,16 @@ def handler(event: Event, _) -> Response:
         # further, to create kaava-asiat etc. With uploading, therefore, the
         # JSON to be POSTed is more complex, but it has plan_dictionary embedded.
 
-        if xroad_server_address and xroad_member_code:
+        if (
+            xroad_server_address
+            and xroad_member_code
+            and xroad_syke_client_id
+            and xroad_syke_client_secret
+        ):
+            # Set authentication header first.
+            LOGGER.info("Authenticating to X-road Ryhti API...")
+            client.xroad_ryhti_authenticate()
+
             # Only get identifiers for those plans that are valid.
             # 4) Check or create permanent plan identifier for valid plans, from X-Road
             # API
@@ -1088,7 +1133,8 @@ def handler(event: Event, _) -> Response:
                 # 6) TODO: If documents exist, upload documents
         else:
             LOGGER.info(
-                "XROAD_SERVER_ADDRESS or your organization XROAD_MEMBER_CODE"
+                "Local XROAD_SERVER_ADDRESS, your organization XROAD_MEMBER_CODE, your "
+                "XROAD_SYKE_CLIENT_ID or your XROAD_SYKE_CLIENT_SECRET "
                 "not set. Cannot fetch permanent id or validate plan matters."
             )
     else:

@@ -2,13 +2,50 @@
     {
         "httpRequest": {
             "method": "POST",
+            "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/Authenticate",
+            "queryStringParameters": [
+                {
+                    "name": "clientId",
+                    "values": ["test-id"]
+                }
+            ],
+            "headers": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Road-Client": "FI-TEST/MUN/2455538-5"
+            },
+            "body": "test-secret"
+        },
+        "httpResponse": {
+            "body": {
+                "type": "JSON",
+                "json": "\"test-token\"",
+                "contentType": "application/json"
+            },
+            "statusCode": 200
+        }
+    },
+    {
+        "httpRequest": {
+            "method": "POST",
             "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/permanentPlanIdentifier",
             "headers": {
-                "X-Road-Client": "FI-TEST/MUN/2455538-5"
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Road-Client": "FI-TEST/MUN/2455538-5",
+                "Authorization": "Bearer test-token"
             }
         },
         "httpResponse": {
-            "body": "MK-123456",
+            "body": "\"MK-123456\"",
+            "headers": [
+                {
+                    "name": "Content-Type",
+                    "values": [
+                        "application/json"
+                    ]
+                }
+            ],
             "statusCode": 200
         }
     },
@@ -17,7 +54,10 @@
             "method": "POST",
             "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
             "headers": {
-                "X-Road-Client": "FI-TEST/MUN/2455538-5"
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Road-Client": "FI-TEST/MUN/2455538-5",
+                "Authorization": "Bearer test-token"
             }
         },
         "httpResponse": {

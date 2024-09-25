@@ -6,6 +6,7 @@ import codes
 import models
 import pytest
 from base import PROJECT_SRID
+from requests_mock.request import _RequestObjectProxy
 from ryhti_client.ryhti_client import RyhtiClient
 from sqlalchemy.orm import Session
 
@@ -412,11 +413,36 @@ def mock_public_ryhti_validate_valid(requests_mock) -> None:
 
 
 @pytest.fixture()
+def mock_xroad_ryhti_authenticate(requests_mock) -> None:
+    def match_request_body(request: _RequestObjectProxy):
+        # Oh great, looks like requests json method will not parse minimal json consisting of just string.
+        # Instead, we'll have to match the request text.
+        return request.text == "test-secret"
+
+    requests_mock.post(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/Authenticate?clientId=test-id",
+        json="test-token",
+        request_headers={
+            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        additional_matcher=match_request_body,
+        status_code=200,
+    )
+
+
+@pytest.fixture()
 def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
-        text="MK-123456",
-        request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
+        json="MK-123456",
+        request_headers={
+            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
         status_code=200,
     )
 
@@ -425,24 +451,27 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
 def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
-        text=json.dumps(
-            {
-                "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422",
-                "title": "One or more validation errors occurred.",
-                "status": 422,
-                "detail": "Validation failed: \r\n -- Type: Geometry coordinates do not match with geometry type. Severity: Error",
-                "errors": [
-                    {
-                        "ruleId": mock_matter_rule,
-                        "message": mock_matter_error_string,
-                        "instance": mock_matter_instance,
-                    }
-                ],
-                "warnings": [],
-                "traceId": "00-f5288710d1eb2265175052028d4b77c4-6ed94a9caece4333-00",
-            }
-        ),
-        request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
+        json={
+            "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422",
+            "title": "One or more validation errors occurred.",
+            "status": 422,
+            "detail": "Validation failed: \r\n -- Type: Geometry coordinates do not match with geometry type. Severity: Error",
+            "errors": [
+                {
+                    "ruleId": mock_matter_rule,
+                    "message": mock_matter_error_string,
+                    "instance": mock_matter_instance,
+                }
+            ],
+            "warnings": [],
+            "traceId": "00-f5288710d1eb2265175052028d4b77c4-6ed94a9caece4333-00",
+        },
+        request_headers={
+            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
         status_code=422,
     )
 
@@ -451,7 +480,12 @@ def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
 def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
-        request_headers={"X-Road-Client": "FI-TEST/MUN/2455538-5"},
+        request_headers={
+            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
         status_code=200,
     )
 
@@ -473,6 +507,8 @@ def client_with_plan_data(
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_member_code="2455538-5",
+        xroad_syke_client_id="test-id",
+        xroad_syke_client_secret="test-secret",
     )
     client.plan_dictionaries = client.get_plan_dictionaries()
     return client
@@ -567,15 +603,29 @@ def test_save_plan_validation_responses(
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]
 
 
+def test_authenticate_to_xroad_ryhti_api(
+    session: Session,
+    client_with_plan_data: RyhtiClient,
+    mock_xroad_ryhti_authenticate: Callable,
+):
+    """
+    Test authenticating to mock X-Road Ryhti API.
+    """
+    client_with_plan_data.xroad_ryhti_authenticate()
+    assert client_with_plan_data.xroad_headers["Authorization"] == "Bearer test-token"
+
+
 @pytest.fixture()
-def client_with_valid_plan(
+def authenticated_client_with_valid_plan(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
     mock_public_ryhti_validate_valid: Callable,
+    mock_xroad_ryhti_authenticate: Callable,
 ) -> RyhtiClient:
     """
-    Return RyhtiClient that has plan data read in and validated without errors.
+    Return RyhtiClient that has plan data read in and validated without errors, and
+    that is authenticated to our mock X-Road API.
     """
     responses = client_with_plan_data.validate_plans()
     client_with_plan_data.save_plan_validation_responses(responses)
@@ -585,12 +635,14 @@ def client_with_valid_plan(
         plan_instance.validation_errors
         == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
     )
+    client_with_plan_data.xroad_ryhti_authenticate()
+    assert client_with_plan_data.xroad_headers["Authorization"] == "Bearer test-token"
     return client_with_plan_data
 
 
 def test_set_permanent_plan_identifiers(
     session: Session,
-    client_with_valid_plan: RyhtiClient,
+    authenticated_client_with_valid_plan: RyhtiClient,
     plan_instance: models.Plan,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ):
@@ -599,14 +651,16 @@ def test_set_permanent_plan_identifiers(
     This requires that the client has already marked the plan as valid.
     """
 
-    id_responses = client_with_valid_plan.get_permanent_plan_identifiers()
-    client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
+    id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
+    authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (
-        client_with_valid_plan.plan_dictionaries[plan_instance.id]["planKey"]
+        authenticated_client_with_valid_plan.plan_dictionaries[plan_instance.id][
+            "planKey"
+        ]
         == received_plan_identifier
     )
 
@@ -614,7 +668,7 @@ def test_set_permanent_plan_identifiers(
 @pytest.fixture()
 def client_with_plan_with_permanent_identifier(
     session: Session,
-    client_with_valid_plan: RyhtiClient,
+    authenticated_client_with_valid_plan: RyhtiClient,
     plan_instance: models.Plan,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ) -> RyhtiClient:
@@ -622,20 +676,22 @@ def client_with_plan_with_permanent_identifier(
     Return RyhtiClient that has plan data read in, validated and its permanent
     identifier set.
     """
-    id_responses = client_with_valid_plan.get_permanent_plan_identifiers()
-    client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
+    id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
+    authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (
-        client_with_valid_plan.plan_dictionaries[plan_instance.id]["planKey"]
+        authenticated_client_with_valid_plan.plan_dictionaries[plan_instance.id][
+            "planKey"
+        ]
         == received_plan_identifier
     )
-    client_with_valid_plan.plan_matter_dictionaries = (
-        client_with_valid_plan.get_plan_matters()
+    authenticated_client_with_valid_plan.plan_matter_dictionaries = (
+        authenticated_client_with_valid_plan.get_plan_matters()
     )
-    return client_with_valid_plan
+    return authenticated_client_with_valid_plan
 
 
 def test_get_plan_matters(
