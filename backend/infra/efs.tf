@@ -1,4 +1,5 @@
 resource "aws_efs_file_system" "x-road_configuration_volume" {
+  creation_token = "${var.prefix}-x-road_configuration_volume"
   encrypted = true
 
   tags = merge(local.default_tags, {Name = "${var.prefix}-x-road_configuration_volume"})
@@ -13,6 +14,7 @@ resource "aws_efs_mount_target" "x-road_configuration_volume" {
 }
 
 resource "aws_efs_file_system" "x-road_archive_volume" {
+  creation_token = "${var.prefix}-x-road_archive_volume"
   encrypted = true
   # TODO: add backups!!
 
