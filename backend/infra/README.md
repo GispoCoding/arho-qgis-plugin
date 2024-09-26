@@ -89,9 +89,9 @@ Note: Setting up the instances takes a couple of minutes.
 
 ### Configuring X-Road (Suomi.fi Palveluväylä) access
 
-A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your Hame-Ryhti instance to Suomi.fi Palveluväylä to transfer official Maakuntakaava data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
+A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your Hame-Ryhti instance to Suomi.fi Palveluväylä to transfer official plan data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
 
-This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä. Follow the steps below:
+This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä, as well as a separate permit to connect to the Ryhti X-Road APIs once your X-Road server works. Follow the steps below:
 
 1. You must apply for permission to join the Palveluväylä test environment first: [Liittyminen kehitysympäristöön](https://palveluhallinta.suomi.fi/fi/sivut/palveluvayla/kayttoonotto/liittyminen-kehitysymparistoon). For the permission application, you will need
    - a proper domain name for your client. This can be set using the terraform variables `AWS_HOSTED_DOMAIN`, `x-road_subdomain` and `x-road_host`. The resulting domain name for your X-road client will be `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`.
@@ -106,9 +106,67 @@ When your application is accepted, you are provided with the configuration ancho
 must be HTTPS, and you must ignore the warning about invalid SSL certificate: the hostname is localhost instead of the server IP because of the SSH tunneling, and the certificate does not know that.
 8. Log in to the [https://localhost:4001](https://localhost:4001) admin interface with your x-road secrets that you selected in step 3.
 9. Configure your X-Road server following the general [X-Road security server installation guide](https://github.com/nordic-institute/X-Road/blob/master/doc/Manuals/ig-ss_x-road_v6_security_server_installation_guide.md#33-configuration) Chapter 3.3 (Configuration). Here, you will need the configuration anchor file provided when registering in step 1.
-10. Configure your X-Road server certificates following [Liityntäpalvelimen liittäminen testi- tai tuotantoympäristöön](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59145e7b14bbb10001966f72). This enables you to join the national X-Road Test instance (FI-TEST), once your certificates have been successfully signed by DVV and installed. When signing, if your domain is not registered as being owned by your client organization, DVV might request you to verify your possession of the hostname `<var.x-road_host>.<bastion_subdomain>.<aws_hosted_domain>`. This is the only reason the client needs a host name. You can do this by setting the terraform variable `x-road_verification_record`.
-11. Apply for permission for your new client to connect to Ryhti following the instructions at
-[Uuden alijärjestelmän liittäminen liityntäpalvelimeen ja sen poistaminen](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/591ac1e314bbb10001966f9c), and follow the instructions for adding the client in your admin interface.
+10. Configure your X-Road server certificates following [Liityntäpalvelimen liittäminen testi- tai tuotantoympäristöön](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59145e7b14bbb10001966f72). This enables you to join the national X-Road Test instance (FI-TEST), once your certificates have been successfully signed by DVV and you have imported them back. During signing, if your domain is not registered as being owned by your client organization, DVV might request you to verify your possession of the public hostname `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}` by adding a TXT record to the public hostname. Do this using terraform variable `x-road_verification_record`. Inside the private network, the same hostname is set to point to our X-Road server container.
+11. You must *activate* your imported server authentication key in X-road Admin (Clients and certificates > SIGN and AUTH keys > TOKEN: SOFTTOKEN-0 > AUTH Keys and Certificates > click on DVV TEST Service Certificates and click Activate). Make sure that both Authentication key and Signing key shows up as Good with STATUS Registered.
+12. Apply for permission for a subsystem to connect to X-Road following the instructions at
+[Uuden alijärjestelmän liittäminen liityntäpalvelimeen ja sen poistaminen](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/591ac1e314bbb10001966f9c), and follow the instructions for adding the subsystem in your admin interface.
+13. When the subsystem is added and shows as registered, make sure to allow connections to your subsystem using HTTP in our internal network, by selecting the client connection type HTTP with the instructions below: [Communication with information systems](https://docs.x-road.global/Manuals/ug-ss_x-road_6_security_server_user_guide.html#9-communication-with-information-systems).
+
+14. You may now try out X-Road test APIs to verify that your X-road server processes requests correctly: [Palveluväylän testipalvelut](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59cdf0e3cdd262007192ac3e).
+
+For testing purposes, you have to open the port 8080 from the AWS bastion security group to the AWS X-road server security group, i.e. for the duration of the tests, add
+
+```
+# TESTING ONLY: Allow traffic from bastion to x-road server client port
+resource "aws_security_group_rule" "x-road-bastion-test" {
+  description       = "X-road allow traffic from bastion"
+  type              = "ingress"
+
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+
+  source_security_group_id = aws_security_group.bastion.id
+  security_group_id = aws_security_group.x-road.id
+}
+```
+to [vpc.tf](vpc.tf). In production setup, only the lambda functions may access the X-road server.
+
+When the port is opened, you may try out the [Palveluväylän testipalvelut](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59cdf0e3cdd262007192ac3e) X-road requests on your SSH server. On the SSH server the test HTTP (not HTTPS!) request will be
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'accept: application/json'  -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0245437-2/TestService/rest-test/random
+```
+
+, filling in all the variables from your `hame-your-deployment.tfvars.json`, and it should return JSON containing a random number.
+
+*Don't forget to remove any added port openings for production use, since we don't want to allow SSH server users to directly connect to X-Road, bypassing our client.*
+
+15. Once you are properly connected to X-road, to get permission to access [X-Road Ryhti APIs](https://liityntakatalogi.test.suomi.fi/dataset/ryhti-syke-service/resource/8c7b68d4-0699-46c1-b639-9d80db6cb8c6), your organization must fill in an application with SYKE: [Tiedon tallentamisen rajapintapalvelut](https://ryhti.syke.fi/palvelut/tiedon-tallentamisen-rajapintapalvelut/). For API application, you need the public static IP of your X-Road server (`xroad_ip_address` in terraform output), as well as the full domain name of your X-Road server (`${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`). SYKE will give you a Ryhti client id and secret, which you must fill in as variables `syke_xroad_client_id` and `syke_xroad_client_secret` in your `hame-your-deployment.tfvars.json`file and deploy them.
+
+16. After SYKE have allowed access from your public IP, similarly to step 14, you must temporarily open the port 8080 if you want to test connecting to the SYKE Ryhti X-Road API from the SSH server with
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Status/health
+```
+
+, filling in all the variables from your `hame-your-deployment.tfvars.json` again. The API should respond with `401 Unauthorized`, because you haven't authenticated yet. Try out authenticating with
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -d '"${var.syke_xroad_client_secret}"' -i -X POST http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Authenticate?clientId=${var.syke_xroad_client_id}
+```
+
+, filling in the client id and client secret that SYKE provided you with. The API should respond with a long string, which will be your authentication token. Now you can try the health check endpoint again, adding the token to the request, with
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'Authorization: Bearer {authentication token that you received}' -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Status/health
+```
+
+If everything works correctly, the health endpoint should return `{"entries":{"RyhtiDbContext":{"data":{},"duration":"00:00:00.0184940","status":"Healthy","tags":[]}},"status":"Healthy","totalDuration":"00:00:00.0188119"}` or something similar.
+
+Congratulations! You now have access to X-Road Ryhti APIs!
+
+*Don't forget to remove any added port openings for production use, since we don't want to allow SSH server users to directly connect to X-Road, bypassing our client.*
 
 ## Teardown of instances
 

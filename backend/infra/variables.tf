@@ -99,12 +99,22 @@ variable "hame_rw_secrets" {
 }
 
 variable "syke_apikey" {
-  description = "Syke API key for Ryhti client"
+  description = "Syke API key for Ryhti public API client"
   type        = string
 }
 
 variable "mml_apikey" {
   description = "MML API key for MML Loader"
+  type        = string
+}
+
+variable "syke_xroad_client_id" {
+  description = "Syke client id for Ryhti X-road API client"
+  type        = string
+}
+
+variable "syke_xroad_client_secret" {
+  description = "Syke secret for Ryhti X-road API client"
   type        = string
 }
 
@@ -158,8 +168,9 @@ variable "extra_tags" {
 }
 
 locals {
-  bastion_dns_alias   = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
-  xroad_dns_record    = "${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  bastion_dns_alias    = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  xroad_private_domain = "${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  xroad_dns_record     = "${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix

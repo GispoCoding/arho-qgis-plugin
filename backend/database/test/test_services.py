@@ -399,8 +399,8 @@ def test_validate_valid_plan_matter_in_preparation(
 ):
     """
     Test the whole lambda endpoint with a valid plan and plan matter in preparation
-    stage. Plan is validated with Ryhti API. Validate plan matter with mock
-    X-Road.
+    stage. Plan is validated with public Ryhti API. Validate plan matter with mock
+    X-Road API.
 
     The mock X-Road should return a permanent identifier and report the plan matter
     as valid.
