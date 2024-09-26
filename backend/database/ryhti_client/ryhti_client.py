@@ -120,6 +120,12 @@ class RyhtiClient:
         # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
         if xroad_server_address:
             self.xroad_server_address = xroad_server_address
+            # do not require http in front of local dns record
+            if not (
+                xroad_server_address.startswith("http://")
+                or xroad_server_address.startswith("https://")
+            ):
+                self.xroad_server_address = "http://" + self.xroad_server_address
         if xroad_port:
             self.xroad_server_address += ":" + str(xroad_port)
         if xroad_member_code:
