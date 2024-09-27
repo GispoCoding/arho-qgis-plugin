@@ -21,12 +21,9 @@ omit = ["arho_feature_template/qgis_plugin_tools/*"]
 [tool.ruff]
 target-version = "py38"
 extend = "ruff_defaults.toml"
-
-
 exclude = ["arho_feature_template/qgis_plugin_tools"]
 
 [tool.ruff.lint]
-
 unfixable = [
     "F401", # unused imports
     "F841", # unused variables
@@ -39,3 +36,8 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = ["qgis.*", "osgeo.*"]
 ignore_missing_imports = true
+
+[tool.qgis-plugin-ci]
+plugin_path = "src/arho_feature_template"
+github_organization_slug= "GispoCoding"
+project_slug = "arho-feature-template"
