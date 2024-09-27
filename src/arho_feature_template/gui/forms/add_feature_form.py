@@ -1,5 +1,5 @@
 from arho_feature_template.core.feature_template import FeatureTemplate
-from arho_feature_template.core.forms.feature_attribute_form import FeatureAttributeForm
+from arho_feature_template.gui.forms.feature_attribute_form import FeatureAttributeForm
 
 
 class AddFeatureForm(FeatureAttributeForm):
