@@ -13,7 +13,7 @@ Create a virtual environment activate it and install needed dependencies with th
 ```console
 python create_qgis_venv.py
 .venv\Scripts\activate # On Linux and macOS run `source .venv\bin\activate`
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt -r requirements-test.txt
 ```
 
 For more detailed development instructions see [development](docs/development.md).
