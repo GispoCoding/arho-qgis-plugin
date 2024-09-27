@@ -40,7 +40,7 @@
                 },
                 "pathMappings": [
                     {
-                        "localRoot": "${workspaceFolder}/arho_feature_template",
+                        "localRoot": "${workspaceFolder}/src/arho_feature_template",
                         "remoteRoot": "${env:APPDATA}/QGIS/QGIS3/profiles/default/python/plugins/arho_feature_template"
                     }
                 ]

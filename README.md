@@ -24,17 +24,17 @@ A symbolic link / directory junction should be made to the directory containing 
 
 On Windows Command promt
 ```console
-mklink /J %AppData%\QGIS\QGIS3\profiles\default\python\plugins\arho_feature_template .\arho_feature_template
+mklink /J %AppData%\QGIS\QGIS3\profiles\default\python\plugins\arho_feature_template .\src\arho_feature_template
 ```
 
 On Windows PowerShell
 ```console
-New-Item -ItemType SymbolicLink -Path ${env:APPDATA}\QGIS\QGIS3\profiles\default\python\plugins\arho_feature_template -Value ${pwd}\arho_feature_template
+New-Item -ItemType SymbolicLink -Path ${env:APPDATA}\QGIS\QGIS3\profiles\default\python\plugins\arho_feature_template -Value ${pwd}\src\arho_feature_template
 ```
 
 On Linux
 ```console
-ln -s arho_feature_template/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/arho_feature_template
+ln -s src/arho_feature_template/ ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/arho_feature_template
 ```
 
 After that you should be able to enable the plugin in the QGIS Plugin Manager.
