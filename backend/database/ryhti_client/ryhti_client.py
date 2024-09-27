@@ -84,10 +84,11 @@ class RyhtiClient:
         "Accept": "application/json",
     }
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
-    xroad_api_path = "/r1/FI/GOV/0996189-5/Ryhti-Syke-service/api/"
     xroad_server_address = ""
-    xroad_client_id_base = "FI-TEST/MUN/"
+    xroad_api_path = "/GOV/0996189-5/Ryhti-Syke-service/api/"
     xroad_member_code = ""
+    public_headers = HEADERS.copy()
+    xroad_headers = HEADERS.copy()
 
     def __init__(
         self,
@@ -97,8 +98,9 @@ class RyhtiClient:
         xroad_syke_client_id: Optional[str] = "",
         xroad_syke_client_secret: Optional[str] = "",
         xroad_server_address: Optional[str] = None,
+        xroad_instance: str = "FI-TEST",
+        xroad_member_class: Optional[str] = "MUN",
         xroad_member_code: Optional[str] = None,
-        xroad_client_id_base: Optional[str] = "FI-TEST/MUN/",
         xroad_port: Optional[int] = 8080,
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
@@ -107,17 +109,13 @@ class RyhtiClient:
         self.event_type = event_type
         self.debug_json = debug_json
 
-        # Public API only needs an API key
+        # Public API only needs an API key and URL
         if public_api_url:
             self.public_api_base = public_api_url
         self.public_api_key = public_api_key
-        self.public_headers = {
-            **self.HEADERS,
-            "Ocp-Apim-Subscription-Key": self.public_api_key,
-        }
+        self.public_headers |= {"Ocp-Apim-Subscription-Key": self.public_api_key}
 
-        # X-Road API requires headers according to the X-Road REST API spec
-        # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
+        # X-Road API needs path and headers configured
         if xroad_server_address:
             self.xroad_server_address = xroad_server_address
             # do not require http in front of local dns record
@@ -128,15 +126,15 @@ class RyhtiClient:
                 self.xroad_server_address = "http://" + self.xroad_server_address
         if xroad_port:
             self.xroad_server_address += ":" + str(xroad_port)
+        # X-Road API requires specifying X-Road instance in path
+        self.xroad_api_path = "/r1/" + xroad_instance + self.xroad_api_path
+        # X-Road API requires headers according to the X-Road REST API spec
+        # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
         if xroad_member_code:
             self.xroad_member_code = xroad_member_code
-        if xroad_client_id_base:
-            self.xroad_client_id_base = xroad_client_id_base
-        self.xroad_headers = {
-            **self.HEADERS,
-            "X-Road-Client": self.xroad_client_id_base + self.xroad_member_code,
-        }
-
+            self.xroad_headers |= {
+                "X-Road-Client": f"{xroad_instance}/{xroad_member_class}/{self.xroad_member_code}"  # noqa
+            }
         # In addition, X-Road Ryhti API will require authentication token that
         # will be set later based on these:
         self.xroad_syke_client_id = xroad_syke_client_id
@@ -1035,7 +1033,8 @@ def handler(event: Event, _) -> Response:
     xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS")
     xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
     xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 8080))
-    xroad_client_id_base = os.environ.get("XROAD_CLIENTID_BASE", "FI-TEST/MUN/")
+    xroad_instance = os.environ.get("XROAD_INSTANCE", "FI-TEST")
+    xroad_member_class = os.environ.get("XROAD_MEMBER_CLASS", "MUN")
     xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID")
     xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
     if event_type is EventType.POST_PLANS and (
@@ -1051,7 +1050,7 @@ def handler(event: Event, _) -> Response:
                 "set XROAD_SYKE_CLIENT_ID and XROAD_SYKE_CLIENT_SECRET that you"
                 "have received when registering to access SYKE X-Road API. To use "
                 "production X-Road instead of test X-road, you must also set "
-                'XROAD_CLIENTID_BASE to "FI". By default, it is set to "FI-TEST".'
+                'XROAD_INSTANCE to "FI". By default, it is set to "FI-TEST".'
             )
         )
 
@@ -1063,10 +1062,11 @@ def handler(event: Event, _) -> Response:
         public_api_key=public_api_key,
         xroad_syke_client_id=xroad_syke_client_id,
         xroad_syke_client_secret=xroad_syke_client_secret,
+        xroad_instance=xroad_instance,
         xroad_server_address=xroad_server_address,
-        xroad_member_code=xroad_member_code,
         xroad_port=xroad_port,
-        xroad_client_id_base=xroad_client_id_base,
+        xroad_member_class=xroad_member_class,
+        xroad_member_code=xroad_member_code,
     )
     if client.plans:
         # 1) Serialize plans in database

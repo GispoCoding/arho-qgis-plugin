@@ -33,6 +33,18 @@ variable "x-road_verification_record" {
   type     = string
 }
 
+variable "x-road_instance" {
+  description = "X-road instance to connect to (test or production). Default is FI-TEST."
+  type     = string
+  default  = "FI-TEST"
+}
+
+variable "x-road_member_class" {
+  description = "X-road member class of your organization (government, municipality etc.). Default is MUN."
+  type     = string
+  default  = "MUN"
+}
+
 variable "x-road_member_code" {
   description = "Member code to set for x-road client instance. Usually this is Y-tunnus of your organization."
   type     = string

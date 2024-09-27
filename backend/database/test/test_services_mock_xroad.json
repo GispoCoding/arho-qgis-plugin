@@ -2,7 +2,7 @@
     {
         "httpRequest": {
             "method": "POST",
-            "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/Authenticate",
+            "path": "/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-Service/api/Authenticate",
             "queryStringParameters": [
                 {
                     "name": "clientId",
@@ -12,7 +12,7 @@
             "headers": {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
-                "X-Road-Client": "FI-TEST/MUN/2455538-5"
+                "X-Road-Client": "FI-TEST/COM/2455538-5"
             },
             "body": "test-secret"
         },
@@ -28,11 +28,11 @@
     {
         "httpRequest": {
             "method": "POST",
-            "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/permanentPlanIdentifier",
+            "path": "/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/permanentPlanIdentifier",
             "headers": {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
-                "X-Road-Client": "FI-TEST/MUN/2455538-5",
+                "X-Road-Client": "FI-TEST/COM/2455538-5",
                 "Authorization": "Bearer test-token"
             }
         },
@@ -52,11 +52,11 @@
     {
         "httpRequest": {
             "method": "POST",
-            "path": "/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
+            "path": "/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
             "headers": {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
-                "X-Road-Client": "FI-TEST/MUN/2455538-5",
+                "X-Road-Client": "FI-TEST/COM/2455538-5",
                 "Authorization": "Bearer test-token"
             }
         },

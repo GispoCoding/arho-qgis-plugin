@@ -423,7 +423,7 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/Authenticate?clientId=test-id",
         json="test-token",
         request_headers={
-            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5",
             "Accept": "application/json",
             "Content-type": "application/json",
         },
@@ -438,7 +438,7 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
         json="MK-123456",
         request_headers={
-            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
             "Content-type": "application/json",
@@ -467,7 +467,7 @@ def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
             "traceId": "00-f5288710d1eb2265175052028d4b77c4-6ed94a9caece4333-00",
         },
         request_headers={
-            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
             "Content-type": "application/json",
@@ -481,7 +481,7 @@ def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
         request_headers={
-            "X-Road-Client": "FI-TEST/MUN/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
             "Content-type": "application/json",
@@ -502,10 +502,13 @@ def client_with_plan_data(
     client like done in handler method, so all methods depending on data being serialized already
     will work as expected.
     """
+    # Let's mock production x-road with gispo organization client here.
     client = RyhtiClient(
         connection_string,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
+        xroad_instance="FI",
+        xroad_member_class="COM",
         xroad_member_code="2455538-5",
         xroad_syke_client_id="test-id",
         xroad_syke_client_secret="test-secret",

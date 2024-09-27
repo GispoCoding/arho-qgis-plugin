@@ -103,7 +103,11 @@ resource "aws_lambda_function" "ryhti_client" {
       DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
       SYKE_APIKEY         = var.syke_apikey
       XROAD_SERVER_ADDRESS = local.xroad_dns_record
+      XROAD_INSTANCE = var.x-road_instance
+      XROAD_MEMBER_CLASS = var.x-road_member_class
       XROAD_MEMBER_CODE   = var.x-road_member_code
+      XROAD_SYKE_CLIENT_ID = var.syke_xroad_client_id
+      XROAD_SYKE_CLIENT_SECRET = var.syke_xroad_client_secret
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })
