@@ -242,6 +242,7 @@ class RyhtiClient:
             data=authentication_data,
             params={"clientId": self.xroad_syke_client_id},
         )
+        response.raise_for_status()
         # The returned token is a jsonified string, so json() will return the bare
         # string.
         bearer_token = response.json()
