@@ -233,12 +233,28 @@ class RyhtiClient:
         # client secret as a *single JSON string*, which is not compatible with
         # RFC 4627, but *is* compatible with newer RFC 8259.
         authentication_data = self.xroad_syke_client_secret
+        authentication_url = (
+            self.xroad_server_address + self.xroad_api_path + "Authenticate"
+        )
+        url_params = {"clientId": self.xroad_syke_client_id}
+        LOGGER.info("Authentication headers")
+        LOGGER.info(self.xroad_headers)
+        LOGGER.info("Authentication URL")
+        LOGGER.info(authentication_url)
+        LOGGER.info("Authentication data")
+        LOGGER.info(authentication_data)
+        LOGGER.info("URL parameters")
+        LOGGER.info(url_params)
         response = requests.post(
-            self.xroad_server_address + self.xroad_api_path + "Authenticate",
+            url=authentication_url,
             headers=self.xroad_headers,
             data=authentication_data,
-            params={"clientId": self.xroad_syke_client_id},
+            params=url_params,
         )
+        LOGGER.info("Authentication response:")
+        LOGGER.info(response.status_code)
+        LOGGER.info(response.headers)
+        LOGGER.info(response.text)
         response.raise_for_status()
         # The returned token is a jsonified string, so json() will return the bare
         # string.
