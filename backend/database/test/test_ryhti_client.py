@@ -423,7 +423,7 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/Authenticate?clientId=test-id",
         json="test-token",
         request_headers={
-            "X-Road-Client": "FI/COM/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Accept": "application/json",
             "Content-type": "application/json",
         },
@@ -438,7 +438,7 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/PermanentPlanIdentifier",
         json="MK-123456",
         request_headers={
-            "X-Road-Client": "FI/COM/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
             "Content-type": "application/json",
@@ -467,7 +467,7 @@ def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
             "traceId": "00-f5288710d1eb2265175052028d4b77c4-6ed94a9caece4333-00",
         },
         request_headers={
-            "X-Road-Client": "FI/COM/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
             "Content-type": "application/json",
@@ -481,7 +481,7 @@ def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456/validate",
         request_headers={
-            "X-Road-Client": "FI/COM/2455538-5",
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
             "Content-type": "application/json",
@@ -510,6 +510,7 @@ def client_with_plan_data(
         xroad_instance="FI",
         xroad_member_class="COM",
         xroad_member_code="2455538-5",
+        xroad_member_client_name="ryhti-gispo-client",
         xroad_syke_client_id="test-id",
         xroad_syke_client_secret="test-secret",
     )

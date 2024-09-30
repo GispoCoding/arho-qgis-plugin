@@ -106,6 +106,7 @@ resource "aws_lambda_function" "ryhti_client" {
       XROAD_INSTANCE = var.x-road_instance
       XROAD_MEMBER_CLASS = var.x-road_member_class
       XROAD_MEMBER_CODE   = var.x-road_member_code
+      XROAD_MEMBER_CLIENT_NAME = var.x-road_subdomain
       XROAD_SYKE_CLIENT_ID = var.syke_xroad_client_id
       XROAD_SYKE_CLIENT_SECRET = var.syke_xroad_client_secret
     }

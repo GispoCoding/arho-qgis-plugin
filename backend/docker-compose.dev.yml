@@ -58,6 +58,7 @@ services:
       - XROAD_SERVER_ADDRESS=mock_xroad
       - XROAD_MEMBER_CLASS=COM
       - XROAD_MEMBER_CODE=2455538-5
+      - XROAD_MEMBER_CLIENT_NAME=ryhti-gispo-client
       - XROAD_SYKE_CLIENT_ID=test-id
       - XROAD_SYKE_CLIENT_SECRET=test-secret
     ports:

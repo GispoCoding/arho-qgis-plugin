@@ -86,7 +86,6 @@ class RyhtiClient:
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
     xroad_server_address = ""
     xroad_api_path = "/GOV/0996189-5/Ryhti-Syke-service/planService/api/"
-    xroad_member_code = ""
     public_headers = HEADERS.copy()
     xroad_headers = HEADERS.copy()
 
@@ -101,6 +100,7 @@ class RyhtiClient:
         xroad_instance: str = "FI-TEST",
         xroad_member_class: Optional[str] = "MUN",
         xroad_member_code: Optional[str] = None,
+        xroad_member_client_name: Optional[str] = None,
         xroad_port: Optional[int] = 8080,
         event_type: int = EventType.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
@@ -130,10 +130,9 @@ class RyhtiClient:
         self.xroad_api_path = "/r1/" + xroad_instance + self.xroad_api_path
         # X-Road API requires headers according to the X-Road REST API spec
         # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
-        if xroad_member_code:
-            self.xroad_member_code = xroad_member_code
+        if xroad_member_code and xroad_member_client_name:
             self.xroad_headers |= {
-                "X-Road-Client": f"{xroad_instance}/{xroad_member_class}/{self.xroad_member_code}"  # noqa
+                "X-Road-Client": f"{xroad_instance}/{xroad_member_class}/{xroad_member_code}/{xroad_member_client_name}"  # noqa
             }
         # In addition, X-Road Ryhti API will require authentication token that
         # will be set later based on these:
@@ -1032,6 +1031,7 @@ def handler(event: Event, _) -> Response:
         )
     xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS")
     xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
+    xroad_member_client_name = os.environ.get("XROAD_MEMBER_CLIENT_NAME")
     xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 8080))
     xroad_instance = os.environ.get("XROAD_INSTANCE", "FI-TEST")
     xroad_member_class = os.environ.get("XROAD_MEMBER_CLASS", "MUN")
@@ -1040,17 +1040,19 @@ def handler(event: Event, _) -> Response:
     if event_type is EventType.POST_PLANS and (
         not xroad_server_address
         or not xroad_member_code
+        or not xroad_member_client_name
         or not xroad_syke_client_id
         or not xroad_syke_client_secret
     ):
         raise ValueError(
             (
                 "Please set your local XROAD_SERVER_ADDRESS and your organization "
-                "XROAD_MEMBER_CODE to make API requests to X-Road endpoints. Also, "
-                "set XROAD_SYKE_CLIENT_ID and XROAD_SYKE_CLIENT_SECRET that you"
-                "have received when registering to access SYKE X-Road API. To use "
-                "production X-Road instead of test X-road, you must also set "
-                'XROAD_INSTANCE to "FI". By default, it is set to "FI-TEST".'
+                "XROAD_MEMBER_CODE and XROAD_MEMBER_CLIENT_NAME to make API requests "
+                "to X-Road endpoints. Also, set XROAD_SYKE_CLIENT_ID and "
+                "XROAD_SYKE_CLIENT_SECRET that you have received when registering to "
+                "access SYKE X-Road API. To use production X-Road instead of test "
+                "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
+                "is set to FI-TEST."
             )
         )
 
@@ -1067,6 +1069,7 @@ def handler(event: Event, _) -> Response:
         xroad_port=xroad_port,
         xroad_member_class=xroad_member_class,
         xroad_member_code=xroad_member_code,
+        xroad_member_client_name=xroad_member_client_name,
     )
     if client.plans:
         # 1) Serialize plans in database
