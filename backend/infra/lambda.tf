@@ -108,7 +108,7 @@ resource "aws_lambda_function" "ryhti_client" {
       XROAD_MEMBER_CODE   = var.x-road_member_code
       XROAD_MEMBER_CLIENT_NAME = var.x-road_subdomain
       XROAD_SYKE_CLIENT_ID = var.syke_xroad_client_id
-      XROAD_SYKE_CLIENT_SECRET = var.syke_xroad_client_secret
+      XROAD_SYKE_CLIENT_SECRET_ARN = aws_secretsmanager_secret.syke-xroad-client-secret.arn
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })

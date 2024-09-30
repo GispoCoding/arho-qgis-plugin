@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
 import base
+import boto3
 import models
 import requests
 import simplejson as json  # type: ignore
@@ -1052,7 +1053,19 @@ def handler(event: Event, _) -> Response:
     xroad_instance = os.environ.get("XROAD_INSTANCE", "FI-TEST")
     xroad_member_class = os.environ.get("XROAD_MEMBER_CLASS", "MUN")
     xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID")
-    xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
+    # Let's fetch the syke secret from AWS secrets, so it cannot be read in plain
+    # text when looking at lambda env variables.
+    if os.environ.get("READ_FROM_AWS", "1") == "1":
+        session = boto3.session.Session()
+        client = session.client(
+            service_name="secretsmanager",
+            region_name=os.environ.get("AWS_REGION_NAME"),
+        )
+        xroad_syke_client_secret = client.get_secret_value(
+            SecretId="XROAD_SYKE_CLIENT_SECRET_ARN"
+        )["SecretString"]
+    else:
+        xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
     if event_type is EventType.POST_PLANS and (
         not xroad_server_address
         or not xroad_member_code

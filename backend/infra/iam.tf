@@ -28,7 +28,7 @@ resource "aws_iam_policy" "secrets-policy" {
   # We need a separate policy for each hame instance, since they have separate secrets
   name        = "${var.prefix}-lambda-secrets-policy"
   path        = "/"
-  description = "Lambda db secrets policy"
+  description = "Lambda secrets policy"
 
   policy = jsonencode({
     Version   = "2012-10-17"
@@ -45,7 +45,8 @@ resource "aws_iam_policy" "secrets-policy" {
           aws_secretsmanager_secret.hame-db-su.arn,
           aws_secretsmanager_secret.hame-db-admin.arn,
           aws_secretsmanager_secret.hame-db-rw.arn,
-          aws_secretsmanager_secret.hame-db-r.arn
+          aws_secretsmanager_secret.hame-db-r.arn,
+          aws_secretsmanager_secret.syke-xroad-client-secret.arn
         ]
       }
     ]
