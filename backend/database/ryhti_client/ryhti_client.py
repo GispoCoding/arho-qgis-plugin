@@ -85,7 +85,7 @@ class RyhtiClient:
     }
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
     xroad_server_address = ""
-    xroad_api_path = "/GOV/0996189-5/Ryhti-Syke-service/api/"
+    xroad_api_path = "/GOV/0996189-5/Ryhti-Syke-service/planService/api/"
     xroad_member_code = ""
     public_headers = HEADERS.copy()
     xroad_headers = HEADERS.copy()

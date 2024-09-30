@@ -420,7 +420,7 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
         return request.text == "test-secret"
 
     requests_mock.post(
-        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/Authenticate?clientId=test-id",
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/Authenticate?clientId=test-id",
         json="test-token",
         request_headers={
             "X-Road-Client": "FI/COM/2455538-5",
@@ -435,7 +435,7 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
 @pytest.fixture()
 def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
     requests_mock.post(
-        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/PermanentPlanIdentifier",
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/PermanentPlanIdentifier",
         json="MK-123456",
         request_headers={
             "X-Road-Client": "FI/COM/2455538-5",
@@ -450,7 +450,7 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
 @pytest.fixture()
 def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
     requests_mock.post(
-        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456/validate",
         json={
             "type": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422",
             "title": "One or more validation errors occurred.",
@@ -479,7 +479,7 @@ def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
 @pytest.fixture()
 def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
     requests_mock.post(
-        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/api/RegionalPlanMatter/MK-123456/validate",
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456/validate",
         request_headers={
             "X-Road-Client": "FI/COM/2455538-5",
             "Authorization": "Bearer test-token",
