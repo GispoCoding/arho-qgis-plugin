@@ -1062,7 +1062,7 @@ def handler(event: Event, _) -> Response:
             region_name=os.environ.get("AWS_REGION_NAME"),
         )
         xroad_syke_client_secret = client.get_secret_value(
-            SecretId="XROAD_SYKE_CLIENT_SECRET_ARN"
+            SecretId=os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN")
         )["SecretString"]
     else:
         xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
