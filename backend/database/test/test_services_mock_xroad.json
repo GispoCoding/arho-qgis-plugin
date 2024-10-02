@@ -14,7 +14,7 @@
                 "Content-Type": "application/json",
                 "X-Road-Client": "FI-TEST/COM/2455538-5/ryhti-gispo-client"
             },
-            "body": "test-secret"
+            "body": "\"test-secret\""
         },
         "httpResponse": {
             "body": {

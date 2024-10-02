@@ -417,7 +417,7 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
     def match_request_body(request: _RequestObjectProxy):
         # Oh great, looks like requests json method will not parse minimal json consisting of just string.
         # Instead, we'll have to match the request text.
-        return request.text == "test-secret"
+        return request.text == '"test-secret"'
 
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/Authenticate?clientId=test-id",

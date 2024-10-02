@@ -233,7 +233,7 @@ class RyhtiClient:
         # authentication endpoint /api/Authenticate that wishes us to deliver the
         # client secret as a *single JSON string*, which is not compatible with
         # RFC 4627, but *is* compatible with newer RFC 8259.
-        authentication_data = self.xroad_syke_client_secret
+        authentication_data = json.dumps(self.xroad_syke_client_secret)
         authentication_url = (
             self.xroad_server_address + self.xroad_api_path + "Authenticate"
         )
