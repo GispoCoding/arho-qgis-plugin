@@ -242,8 +242,6 @@ class RyhtiClient:
         LOGGER.info(self.xroad_headers)
         LOGGER.info("Authentication URL")
         LOGGER.info(authentication_url)
-        LOGGER.info("Authentication data")
-        LOGGER.info(authentication_data)
         LOGGER.info("URL parameters")
         LOGGER.info(url_params)
         response = requests.post(
