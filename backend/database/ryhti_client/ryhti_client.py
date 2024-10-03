@@ -863,7 +863,7 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
-    def get_permanent_plan_identifiers(self) -> Dict[str, str | Dict]:
+    def get_permanent_plan_identifiers(self) -> Dict[str, str]:
         """
         Get permanent plan identifiers for all plans that are marked
         valid but do not have identifiers set yet.
@@ -873,7 +873,7 @@ class RyhtiClient:
             + self.xroad_api_path
             + "RegionalPlanMatter/permanentPlanIdentifier"
         )  # TODO: Set the endpoint address to depend on plan type!
-        responses: Dict[str, str | Dict] = dict()
+        responses: Dict[str, str] = dict()
         for plan in self.valid_plans:
             if not plan.permanent_plan_identifier:
                 LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
@@ -884,11 +884,9 @@ class RyhtiClient:
                 response = requests.post(
                     plan_identifier_endpoint, json=data, headers=self.xroad_headers
                 )
-                LOGGER.info(f"Got response {response}")
-                if response.status_code == 200:
-                    responses[plan.id] = response.json()
-                else:
-                    responses[plan.id] = str(response)
+                response.raise_for_status()
+                LOGGER.info(f"Received identifier {response.json()}")
+                responses[plan.id] = response.json()
                 if self.debug_json:
                     with open(
                         f"ryhti_debug/{plan.id}.identifier.response.json", "w"
@@ -899,7 +897,7 @@ class RyhtiClient:
                         json.dump(str(responses[plan.id]), response_file)
         return responses
 
-    def set_permanent_plan_identifiers(self, responses: Dict[str, str | Dict]):
+    def set_permanent_plan_identifiers(self, responses: Dict[str, str]):
         """
         Save permanent plan identifiers returned by RYHTI API to the database and the
         serialized plan dictionaries.
@@ -907,20 +905,13 @@ class RyhtiClient:
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
-                if isinstance(response, str):
-                    plan.permanent_plan_identifier = response
-                    # also update the identifier in the serialized plan!
-                    self.plan_dictionaries[plan_id]["planKey"] = response
-                    plan.validation_errors = (
-                        "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-"
-                        "asiaa ei ole vielä validoitu."
-                    )
-                else:
-                    plan.validation_errors = (
-                        "Kaava on validi. Ei saatu yhteyttä Palveluväylään "
-                        "pysyvän kaavatunnuksen luomiseksi, joten kaava-asiaa "
-                        "ei voida validoida."
-                    )
+                plan.permanent_plan_identifier = response
+                # also update the identifier in the serialized plan!
+                self.plan_dictionaries[plan_id]["planKey"] = response
+                plan.validation_errors = (
+                    "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-"
+                    "asiaa ei ole vielä validoitu."
+                )
             session.commit()
 
     def save_plan_validation_responses(self, responses: Dict[str, Dict]) -> Response:
