@@ -815,6 +815,25 @@ def general_regulation_group_instance(session, type_of_plan_regulation_group_ins
 
 
 @pytest.fixture(scope="module")
+def empty_value_plan_regulation_instance(
+    session,
+    preparation_status_instance,
+    type_of_plan_regulation_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        name={"fin": "test_regulation"},
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=1,
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
 def numeric_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -828,7 +847,7 @@ def numeric_plan_regulation_instance(
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=1,
+        ordering=2,
     )
     session.add(instance)
     session.commit()
@@ -848,7 +867,7 @@ def text_plan_regulation_instance(
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=2,
+        ordering=3,
     )
     session.add(instance)
     session.commit()
@@ -895,7 +914,7 @@ def verbal_plan_regulation_instance(
         type_of_plan_regulation=type_of_plan_regulation_instance,
         type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=3,
+        ordering=4,
     )
     session.add(instance)
     session.commit()
@@ -984,6 +1003,7 @@ def complete_test_plan(
     plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
@@ -1012,6 +1032,10 @@ def complete_test_plan(
     """
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
+    empty_value_plan_regulation_instance.plan_theme = plan_theme_instance
+    empty_value_plan_regulation_instance.intended_use = (
+        type_of_additional_information_instance
+    )
     text_plan_regulation_instance.plan_theme = plan_theme_instance
     text_plan_regulation_instance.intended_use = type_of_additional_information_instance
     point_text_plan_regulation_instance.plan_theme = plan_theme_instance

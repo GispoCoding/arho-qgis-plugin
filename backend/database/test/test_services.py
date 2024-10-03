@@ -250,6 +250,7 @@ def valid_plan_in_preparation(
     complete_test_plan: models.Plan,
     land_use_area_instance: models.LandUseArea,
     land_use_point_instance: models.LandUsePoint,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
@@ -266,6 +267,7 @@ def valid_plan_in_preparation(
     session.add(complete_test_plan)
     session.add(land_use_area_instance)
     session.add(land_use_point_instance)
+    session.add(empty_value_plan_regulation_instance)
     session.add(text_plan_regulation_instance)
     session.add(point_text_plan_regulation_instance)
     session.add(numeric_plan_regulation_instance)
@@ -279,6 +281,7 @@ def valid_plan_in_preparation(
         session.query(codes.PlanTheme).filter_by(value="01").first()
     )
     plan_proposition_instance.plan_theme = community_structure_theme
+    empty_value_plan_regulation_instance.plan_theme = community_structure_theme
     text_plan_regulation_instance.plan_theme = community_structure_theme
     point_text_plan_regulation_instance.plan_theme = community_structure_theme
     numeric_plan_regulation_instance.plan_theme = community_structure_theme
@@ -291,6 +294,7 @@ def valid_plan_in_preparation(
         .filter_by(value="asumisenAlue")
         .first()
     )
+    empty_value_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     point_text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
     numeric_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
@@ -317,6 +321,9 @@ def valid_plan_in_preparation(
         session.query(codes.TypeOfAdditionalInformation)
         .filter_by(value="paakayttotarkoitus")
         .first()
+    )
+    empty_value_plan_regulation_instance.intended_use = (
+        principal_intended_use_type_of_additional_information
     )
     text_plan_regulation_instance.intended_use = (
         principal_intended_use_type_of_additional_information

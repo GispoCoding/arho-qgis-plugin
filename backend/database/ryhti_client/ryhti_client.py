@@ -283,6 +283,17 @@ class RyhtiClient:
             "geometry": json.loads(to_geojson(shape)),
         }
 
+    def get_multilanguage_value(
+        self, multilanguage_dict: models.language_str
+    ) -> Optional[models.language_str]:
+        """
+        Returns multilanguage value if any language field is filled, or None if all
+        language fields are empty.
+        """
+        if any(value for value in multilanguage_dict.values()):
+            return multilanguage_dict
+        return None
+
     def get_lifecycle_dates(
         self, plan_base: base.PlanBase, status: Optional[LifeCycleStatus]
     ) -> Optional[Period]:
@@ -343,7 +354,7 @@ class RyhtiClient:
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
         if plan_regulation.plan_theme:
             regulation_dict["planThemes"] = [plan_regulation.plan_theme.uri]
-        if plan_regulation.name["fin"]:
+        if plan_regulation.name.get("fin"):
             regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
         regulation_dict["periodOfValidity"] = self.get_lifecycle_dates(
@@ -353,6 +364,8 @@ class RyhtiClient:
             regulation_dict["verbalRegulations"] = [
                 plan_regulation.type_of_verbal_plan_regulation.uri
             ]
+        # Additional informations may contain multiple additional info
+        # code values.
         regulation_dict["additionalInformations"] = []
         for code_value in [
             plan_regulation.intended_use,
@@ -368,17 +381,23 @@ class RyhtiClient:
                 regulation_dict["additionalInformations"].append(
                     {"type": code_value.uri}
                 )
-        if plan_regulation.numeric_value:
+
+        # Regulation itself may only have one type of value.
+        # TODO: support code values, if regulation itself needs code values.
+        # Probably code value would have to be saved as string in database,
+        # they depend on the code list.
+        text_value = self.get_multilanguage_value(plan_regulation.text_value)
+        if text_value:
+            regulation_dict["value"] = {
+                "dataType": "LocalizedText",
+                "text": text_value,
+            }
+        elif plan_regulation.numeric_value:
             regulation_dict["value"] = {
                 "dataType": "decimal",
                 # we have to use simplejson because numbers are Decimal
                 "number": plan_regulation.numeric_value,
                 "unitOfMeasure": plan_regulation.unit,
-            }
-        elif plan_regulation.text_value:
-            regulation_dict["value"] = {
-                "dataType": "LocalizedText",
-                "text": plan_regulation.text_value,
             }
         return regulation_dict
 
@@ -512,7 +531,7 @@ class RyhtiClient:
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         # For reasons unknown, Ryhti does not allow multilanguage description.
-        plan_dictionary["planDescription"] = plan.description["fin"]
+        plan_dictionary["planDescription"] = plan.description.get("fin")
         # Apparently Ryhti plans may cover multiple administrative areas, so the region
         # identifier has to be embedded in a list.
         plan_dictionary["administrativeAreaIdentifiers"] = [

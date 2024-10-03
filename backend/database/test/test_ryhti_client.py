@@ -19,6 +19,7 @@ def desired_plan_dict(
     plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
@@ -188,6 +189,30 @@ def desired_plan_dict(
                 "planRegulationGroupKey": plan_regulation_group_instance.id,
                 "titleOfPlanRegulation": plan_regulation_group_instance.name,
                 "planRegulations": [
+                    {
+                        "planRegulationKey": empty_value_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "subjectIdentifiers": [
+                            empty_value_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            empty_value_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
                     {
                         "planRegulationKey": numeric_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
