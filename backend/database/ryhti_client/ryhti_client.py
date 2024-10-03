@@ -875,7 +875,7 @@ class RyhtiClient:
         )  # TODO: Set the endpoint address to depend on plan type!
         responses: Dict[str, str | Dict] = dict()
         for plan in self.valid_plans:
-            if plan.to_be_exported and not plan.permanent_plan_identifier:
+            if not plan.permanent_plan_identifier:
                 LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
                 data = {
                     "administrativeAreaIdentifier": plan.organisation.administrative_region.value,  # noqa
