@@ -881,9 +881,19 @@ class RyhtiClient:
                     "administrativeAreaIdentifier": plan.organisation.administrative_region.value,  # noqa
                     "projectName": plan.producers_plan_identifier,
                 }
+                LOGGER.info("Request headers")
+                LOGGER.info(self.xroad_headers)
+                LOGGER.info("Request URL")
+                LOGGER.info(plan_identifier_endpoint)
+                LOGGER.info("Request data")
+                LOGGER.info(data)
                 response = requests.post(
                     plan_identifier_endpoint, json=data, headers=self.xroad_headers
                 )
+                LOGGER.info("Plan identifier response:")
+                LOGGER.info(response.status_code)
+                LOGGER.info(response.headers)
+                LOGGER.info(response.text)
                 response.raise_for_status()
                 LOGGER.info(f"Received identifier {response.json()}")
                 responses[plan.id] = response.json()
