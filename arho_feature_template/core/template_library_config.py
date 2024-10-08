@@ -72,6 +72,7 @@ class FeatureTemplate:
     name: str
     description: str | None
     feature: Feature
+    icon_file: str | None
 
     @classmethod
     def from_dict(cls, data: dict) -> FeatureTemplate:
@@ -79,6 +80,7 @@ class FeatureTemplate:
             name=data["name"],
             description=data.get("description"),
             feature=Feature.from_dict(data["feature"]),
+            icon_file=data.get("icon_file"),
         )
 
 

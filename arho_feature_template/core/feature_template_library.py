@@ -5,7 +5,7 @@ import logging
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
+from qgis.PyQt.QtGui import QIcon, QStandardItem, QStandardItemModel
 from qgis.utils import iface
 
 from arho_feature_template.core.template_library_config import (
@@ -18,8 +18,14 @@ from arho_feature_template.core.template_library_config import (
 from arho_feature_template.gui.feature_attribute_form import FeatureAttributeForm
 from arho_feature_template.gui.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
+from arho_feature_template.utils import get_icon_file_path
 
 logger = logging.getLogger(__name__)
+
+
+class IconFileNotFoundError(Exception):
+    def __init__(self, icon_file: str):
+        super().__init__(f"Icon file {icon_file} not found")
 
 
 class LayerNotFoundError(Exception):
@@ -57,6 +63,17 @@ class TemplateItem(QStandardItem):
         super().__init__(template_config.name)
 
         self.setCheckable(True)
+
+        if template_config.icon_file:
+            self.set_icon_from_config()
+
+    def set_icon_from_config(self):
+        icon_file = self.config.icon_file
+        icon_fp = get_icon_file_path(icon_file)
+        if icon_fp:
+            self.setIcon(QIcon(str(icon_fp)))
+        else:
+            raise IconFileNotFoundError(icon_file)
 
     def is_valid(self) -> bool:
         """Check if the template is valid agains current QGIS project
