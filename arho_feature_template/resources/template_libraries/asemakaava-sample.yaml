@@ -13,6 +13,7 @@ templates:
           default: 1
   - name: Asuin-, liike- ja toimistorakennusten alue
     description: Aluella kuvataan ...
+    icon_file: ak.jpg
     feature:
       layer: land_use_area
       attributes:
