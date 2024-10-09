@@ -61,3 +61,7 @@ the one with the path `.venv\Scripts\python.exe`.
 This plugin is distributed under the terms of the [GNU General Public License, version 2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) license.
 
 See [LICENSE](LICENSE) for more information.
+
+### Attributations
+<a href="https://www.flaticon.com/free-icons/open" title="open icons">Open icons created by Smashicons - Flaticon</a>
+<a href="https://www.flaticon.com/free-icons/land-use" title="land use icons">Land use icons created by Fusion5085 - Flaticon</a>
