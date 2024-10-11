@@ -1,7 +1,9 @@
+from typing import TYPE_CHECKING
+
 from qgis.core import QgsProject, QgsVectorLayer
-from qgis.utils import iface
 
 from arho_feature_template.core.update_plan import LandUsePlan, update_selected_plan
+from arho_feature_template.utils.qgis_utils import iface
 
 
 class NewPlan:

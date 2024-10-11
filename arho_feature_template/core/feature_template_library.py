@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QItemSelectionModel
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
-from qgis.utils import iface
 
 from arho_feature_template.core.template_library_config import (
     FeatureTemplate,
@@ -18,6 +18,7 @@ from arho_feature_template.core.template_library_config import (
 from arho_feature_template.gui.feature_attribute_form import FeatureAttributeForm
 from arho_feature_template.gui.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
+from arho_feature_template.utils.qgis_utils import iface
 
 logger = logging.getLogger(__name__)
 

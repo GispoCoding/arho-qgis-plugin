@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from qgis.core import QgsMapLayer, QgsProject, QgsVectorLayer
-from qgis.utils import iface
+
+from arho_feature_template.utils.qgis_utils import iface
 
 
 # To be extended and moved

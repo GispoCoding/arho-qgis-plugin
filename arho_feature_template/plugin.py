@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Callable
 
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QWidget
-from qgis.utils import iface
 
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.new_plan import NewPlan
@@ -17,11 +16,10 @@ from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import PLUGIN_PATH
+from arho_feature_template.utils.qgis_utils import iface
 
 if TYPE_CHECKING:
-    from qgis.gui import QgisInterface, QgsMapTool
-
-    iface: QgisInterface = cast("QgisInterface", iface)  # type: ignore[no-redef]
+    from qgis.gui import QgsMapTool
 
 
 class Plugin:
