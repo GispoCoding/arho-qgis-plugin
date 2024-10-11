@@ -18,7 +18,7 @@ class TemplateLibraryDock(QgsDockWidget, DockClass):  # type: ignore
     template_list: "QListView"
     txt_tip: "QLabel"
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
 
