@@ -459,6 +459,9 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
 
 @pytest.fixture()
 def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
+    def match_request_body_with_correct_region(request: _RequestObjectProxy):
+        return request.json()["administrativeAreaIdentifier"] == "test"
+
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/PermanentPlanIdentifier",
         json="MK-123456",
@@ -468,7 +471,29 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
             "Accept": "application/json",
             "Content-type": "application/json",
         },
+        additional_matcher=match_request_body_with_correct_region,
         status_code=200,
+    )
+
+    def match_request_body_with_wrong_region(request: _RequestObjectProxy):
+        return request.json()["administrativeAreaIdentifier"] == "other-test"
+
+    requests_mock.post(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/PermanentPlanIdentifier",
+        json={
+            "type": "https://httpstatuses.io/401",
+            "title": "Unauthorized",
+            "status": 401,
+            "traceId": "00-82a0a8d02f7824c2dcda16e481f4d2e8-3797b905d05ed6c3-00",
+        },
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        additional_matcher=match_request_body_with_wrong_region,
+        status_code=401,
     )
 
 
@@ -669,6 +694,34 @@ def authenticated_client_with_valid_plan(
     return client_with_plan_data
 
 
+def test_set_permanent_plan_identifiers_in_wrong_region(
+    session: Session,
+    authenticated_client_with_valid_plan: RyhtiClient,
+    plan_instance: models.Plan,
+    another_organisation_instance: models.Organisation,
+    mock_xroad_ryhti_permanentidentifier: Callable,
+):
+    """
+    Check that Ryhti permanent plan identifier is left empty, if Ryhti API reports that
+    the organization has no permission to create plans in the region. This requires
+    that the client has already marked the plan as valid.
+    """
+    authenticated_client_with_valid_plan.valid_plans[
+        0
+    ].organisation = another_organisation_instance
+
+    id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
+    authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
+    session.refresh(plan_instance)
+    print(id_responses)
+    assert not plan_instance.permanent_plan_identifier
+    print(plan_instance.permanent_plan_identifier)
+    assert (
+        plan_instance.validation_errors
+        == "Kaava on validi, mutta sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
+    )
+
+
 def test_set_permanent_plan_identifiers(
     session: Session,
     authenticated_client_with_valid_plan: RyhtiClient,
@@ -676,14 +729,15 @@ def test_set_permanent_plan_identifiers(
     mock_xroad_ryhti_permanentidentifier: Callable,
 ):
     """
-    Check that Ryhti permanent plan identifier is received and saved to the database.
-    This requires that the client has already marked the plan as valid.
+    Check that Ryhti permanent plan identifier is received and saved to the database, if
+    Ryhti API returns a permanent plan identifier. This requires that the client has already
+    marked the plan as valid.
     """
 
     id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
     authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
     session.refresh(plan_instance)
-    received_plan_identifier = next(iter(id_responses.values()))
+    received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (
@@ -708,7 +762,7 @@ def client_with_plan_with_permanent_identifier(
     id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
     authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
     session.refresh(plan_instance)
-    received_plan_identifier = next(iter(id_responses.values()))
+    received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (

@@ -50,11 +50,25 @@ class EventType(enum.IntEnum):
     POST_PLANS = 2
 
 
+class RyhtiResponse(TypedDict):
+    """
+    Represents the response of the Ryhti API to a single API all.
+    """
+
+    status: int
+    detail: Optional[str]
+    errors: Optional[dict]
+
+
 class Response(TypedDict):
+    """
+    Represents the response of the lambda function to the caller.
+    """
+
     statusCode: int  # noqa N815
     title: str
     details: Dict[str, str]
-    ryhti_responses: Dict[str, Dict]
+    ryhti_responses: Dict[str, RyhtiResponse]
 
 
 class Event(TypedDict):
@@ -775,12 +789,12 @@ class RyhtiClient:
             plan_matters[plan.id] = self.get_plan_matter(plan)
         return plan_matters
 
-    def validate_plans(self) -> Dict[str, Dict]:
+    def validate_plans(self) -> Dict[str, RyhtiResponse]:
         """
         Validates all plans serialized in client plan dictionaries.
         """
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
-        responses: Dict[str, Dict] = dict()
+        responses: Dict[str, RyhtiResponse] = dict()
         for plan_id, plan in self.plan_dictionaries.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
 
@@ -814,7 +828,7 @@ class RyhtiClient:
             LOGGER.info(f"Got response {response}")
             if response.status_code == 200:
                 # Successful validation does not return any json!
-                responses[plan_id] = {"status": 200, "errors": None}
+                responses[plan_id] = {"status": 200, "errors": None, "detail": None}
             else:
                 responses[plan_id] = response.json()
             if self.debug_json:
@@ -823,11 +837,11 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
-    def validate_plan_matters(self) -> Dict[str, Dict]:
+    def validate_plan_matters(self) -> Dict[str, RyhtiResponse]:
         """
         Validates all plan matters serialized in client plan matter dictionaries.
         """
-        responses: Dict[str, Dict] = dict()
+        responses: Dict[str, RyhtiResponse] = dict()
         for plan_id, plan_matter in self.plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
             plan_matter_validation_endpoint = (
@@ -852,7 +866,7 @@ class RyhtiClient:
             LOGGER.info(f"Got response {response}")
             if response.status_code == 200:
                 # Successful validation does not return any json!
-                responses[plan_id] = {"status": 200, "errors": None}
+                responses[plan_id] = {"status": 200, "errors": None, "detail": None}
             else:
                 responses[plan_id] = response.json()
             if self.debug_json:
@@ -863,7 +877,7 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
-    def get_permanent_plan_identifiers(self) -> Dict[str, str]:
+    def get_permanent_plan_identifiers(self) -> Dict[str, RyhtiResponse]:
         """
         Get permanent plan identifiers for all plans that are marked
         valid but do not have identifiers set yet.
@@ -873,7 +887,7 @@ class RyhtiClient:
             + self.xroad_api_path
             + "RegionalPlanMatter/permanentPlanIdentifier"
         )  # TODO: Set the endpoint address to depend on plan type!
-        responses: Dict[str, str] = dict()
+        responses: Dict[str, RyhtiResponse] = dict()
         for plan in self.valid_plans:
             if not plan.permanent_plan_identifier:
                 LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
@@ -894,9 +908,21 @@ class RyhtiClient:
                 LOGGER.info(response.status_code)
                 LOGGER.info(response.headers)
                 LOGGER.info(response.text)
-                response.raise_for_status()
-                LOGGER.info(f"Received identifier {response.json()}")
-                responses[plan.id] = response.json()
+                if response.status_code == 401:
+                    LOGGER.info("No permission to get plan identifier in this region!")
+                    responses[plan.id] = {
+                        "status": 401,
+                        "errors": response.json(),
+                        "detail": None,
+                    }
+                else:
+                    response.raise_for_status()
+                    LOGGER.info(f"Received identifier {response.json()}")
+                    responses[plan.id] = {
+                        "status": 200,
+                        "detail": response.json(),
+                        "errors": None,
+                    }
                 if self.debug_json:
                     with open(
                         f"ryhti_debug/{plan.id}.identifier.response.json", "w"
@@ -907,7 +933,7 @@ class RyhtiClient:
                         json.dump(str(responses[plan.id]), response_file)
         return responses
 
-    def set_permanent_plan_identifiers(self, responses: Dict[str, str]):
+    def set_permanent_plan_identifiers(self, responses: Dict[str, RyhtiResponse]):
         """
         Save permanent plan identifiers returned by RYHTI API to the database and the
         serialized plan dictionaries.
@@ -915,16 +941,24 @@ class RyhtiClient:
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
-                plan.permanent_plan_identifier = response
-                # also update the identifier in the serialized plan!
-                self.plan_dictionaries[plan_id]["planKey"] = response
-                plan.validation_errors = (
-                    "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-"
-                    "asiaa ei ole vielä validoitu."
-                )
+                if response["status"] == 200:
+                    plan.permanent_plan_identifier = response["detail"]
+                    # also update the identifier in the serialized plan!
+                    self.plan_dictionaries[plan_id]["planKey"] = response["detail"]
+                    plan.validation_errors = (
+                        "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-"
+                        "asiaa ei ole vielä validoitu."
+                    )
+                elif response["status"] == 401:
+                    plan.validation_errors = (
+                        "Kaava on validi, mutta sinulla ei ole oikeuksia luoda "
+                        "kaavaa tälle alueelle."
+                    )
             session.commit()
 
-    def save_plan_validation_responses(self, responses: Dict[str, Dict]) -> Response:
+    def save_plan_validation_responses(
+        self, responses: Dict[str, RyhtiResponse]
+    ) -> Response:
         """
         Save open validation API response data to the database and return lambda
         response.
@@ -939,7 +973,6 @@ class RyhtiClient:
         If Ryhti request fails unexpectedly, save the returned error.
         """
         details: Dict[str, str] = {}
-        ryhti_responses: Dict[str, Dict] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
@@ -969,7 +1002,6 @@ class RyhtiClient:
                     details[plan_id] = f"Validation FAILED for {plan_id}."
                     plan.validation_errors = response["errors"]
 
-                ryhti_responses[plan_id] = response
                 LOGGER.info(details[plan_id])
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                 plan.validated_at = datetime.datetime.now()
@@ -978,11 +1010,11 @@ class RyhtiClient:
             "statusCode": 200,
             "title": "Plan validations run.",
             "details": details,
-            "ryhti_responses": ryhti_responses,
+            "ryhti_responses": responses,
         }
 
     def save_plan_matter_validation_responses(
-        self, responses: Dict[str, Dict]
+        self, responses: Dict[str, RyhtiResponse]
     ) -> Response:
         """
         Save X-Road validation API response data to the database and return lambda
@@ -999,7 +1031,6 @@ class RyhtiClient:
         If Ryhti request fails unexpectedly, save the returned error.
         """
         details: Dict[str, str] = {}
-        ryhti_responses: Dict[str, Dict] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 plan: models.Plan = session.get(models.Plan, plan_id)
@@ -1031,7 +1062,6 @@ class RyhtiClient:
                     details[plan_id] = f"Plan matter validation FAILED for {plan_id}."
                     plan.validation_errors = response["errors"]
 
-                ryhti_responses[plan_id] = response
                 LOGGER.info(details[plan_id])
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                 plan.validated_at = datetime.datetime.now()
@@ -1040,7 +1070,7 @@ class RyhtiClient:
             "statusCode": 200,
             "title": "Plan and plan matter validations run.",
             "details": details,
-            "ryhti_responses": ryhti_responses,
+            "ryhti_responses": responses,
         }
 
 

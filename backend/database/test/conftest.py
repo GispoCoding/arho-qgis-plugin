@@ -567,6 +567,14 @@ def administrative_region_instance(session):
 
 
 @pytest.fixture(scope="module")
+def another_administrative_region_instance(session):
+    instance = codes.AdministrativeRegion(value="other-test", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
 def plan_theme_instance(session):
     instance = codes.PlanTheme(value="test", status="LOCAL")
     session.add(instance)
@@ -620,6 +628,17 @@ def plan_instance(
 def organisation_instance(session, administrative_region_instance):
     instance = models.Organisation(
         business_id="test", administrative_region=administrative_region_instance
+    )
+    session.add(instance)
+    session.commit()
+    return instance
+
+
+@pytest.fixture(scope="module")
+def another_organisation_instance(session, another_administrative_region_instance):
+    instance = models.Organisation(
+        business_id="other-test",
+        administrative_region=another_administrative_region_instance,
     )
     session.add(instance)
     session.commit()
