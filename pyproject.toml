@@ -20,7 +20,7 @@ omit = ["arho_feature_template/qgis_plugin_tools/*"]
 [tool.ruff]
 target-version = "py39"
 extend = "ruff_defaults.toml"
-exclude = ["arho_feature_template/qgis_plugin_tools"]
+exclude = ["arho_feature_template/qgis_plugin_tools", "create_qgis_venv.py"]
 
 [tool.ruff.lint]
 unfixable = [
@@ -28,8 +28,24 @@ unfixable = [
     "F841", # unused variables
 ]
 
+
+[tool.mypy]
+python_version = "3.9"
+disallow_untyped_defs = true
+disallow_any_unimported = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+show_error_codes = true
+warn_unused_ignores = true
+warn_unreachable = true
+
 [[tool.mypy.overrides]]
 module = "arho_feature_template.qgis_plugin_tools.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "create_qgis_venv"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
