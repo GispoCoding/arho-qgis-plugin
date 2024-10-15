@@ -825,7 +825,12 @@ class RyhtiClient:
                 # Successful validation does not return any json!
                 responses[plan_id] = {"status": 200, "errors": None, "detail": None}
             else:
-                responses[plan_id] = response.json()
+                try:
+                    # Validation errors always contain JSON
+                    responses[plan_id] = response.json()
+                except json.JSONDecodeError:
+                    # There is something wrong with the API
+                    response.raise_for_status()
             if self.debug_json:
                 with open(f"ryhti_debug/{plan_id}.response.json", "w") as response_file:
                     json.dump(responses[plan_id], response_file)
@@ -859,11 +864,17 @@ class RyhtiClient:
                 headers=self.xroad_headers,
             )
             LOGGER.info(f"Got response {response}")
+            LOGGER.info(response.text)
             if response.status_code == 200:
                 # Successful validation does not return any json!
                 responses[plan_id] = {"status": 200, "errors": None, "detail": None}
             else:
-                responses[plan_id] = response.json()
+                try:
+                    # Validation errors always contain JSON
+                    responses[plan_id] = response.json()
+                except json.JSONDecodeError:
+                    # There is something wrong with the API
+                    response.raise_for_status()
             if self.debug_json:
                 with open(
                     f"ryhti_debug/{permanent_id}.response.json", "w"
