@@ -3,6 +3,7 @@ import time
 import timeit
 from datetime import datetime
 from pathlib import Path
+from typing import Iterable
 
 import codes
 import models
@@ -582,7 +583,7 @@ def plan_theme_instance(session):
     return instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def plan_instance(
     session,
     preparation_status_instance,
@@ -621,7 +622,9 @@ def plan_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="module")
@@ -645,7 +648,7 @@ def another_organisation_instance(session, another_administrative_region_instanc
     return instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def land_use_area_instance(
     session,
     preparation_status_instance,
@@ -685,10 +688,12 @@ def land_use_area_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def other_area_instance(
     session,
     preparation_status_instance,
@@ -724,10 +729,12 @@ def other_area_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def line_instance(
     session,
     preparation_status_instance,
@@ -750,10 +757,12 @@ def line_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def land_use_point_instance(
     session,
     preparation_status_instance,
@@ -772,10 +781,12 @@ def land_use_point_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def other_point_instance(
     session,
     preparation_status_instance,
@@ -792,10 +803,12 @@ def other_point_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def plan_regulation_group_instance(session, type_of_plan_regulation_group_instance):
     instance = models.PlanRegulationGroup(
         short_name="K",
@@ -804,10 +817,12 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def point_plan_regulation_group_instance(
     session, type_of_plan_regulation_group_instance
 ):
@@ -818,10 +833,12 @@ def point_plan_regulation_group_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def general_regulation_group_instance(session, type_of_plan_regulation_group_instance):
     instance = models.PlanRegulationGroup(
         short_name="Y",
@@ -830,10 +847,12 @@ def general_regulation_group_instance(session, type_of_plan_regulation_group_ins
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def empty_value_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -849,10 +868,12 @@ def empty_value_plan_regulation_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def numeric_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -870,10 +891,12 @@ def numeric_plan_regulation_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def text_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -890,10 +913,12 @@ def text_plan_regulation_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def point_text_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -910,10 +935,12 @@ def point_text_plan_regulation_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def verbal_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -937,10 +964,12 @@ def verbal_plan_regulation_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def general_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -957,10 +986,12 @@ def general_plan_regulation_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def plan_proposition_instance(
     session, preparation_status_instance, plan_regulation_group_instance
 ):
@@ -971,10 +1002,12 @@ def plan_proposition_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def source_data_instance(session, plan_instance, type_of_source_data_instance):
     instance = models.SourceData(
         additional_information_uri="http://test.fi",
@@ -984,10 +1017,12 @@ def source_data_instance(session, plan_instance, type_of_source_data_instance):
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def document_instance(
     session, type_of_document_instance, category_of_publicity_instance, plan_instance
 ):
@@ -1002,7 +1037,9 @@ def document_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="module")
@@ -1013,7 +1050,7 @@ def lifecycle_date_instance(session, code_instance):
     return instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def complete_test_plan(
     session: Session,
     plan_instance: models.Plan,
@@ -1040,7 +1077,7 @@ def complete_test_plan(
     decisionmaker_type: codes.TypeOfDecisionMaker,
     pending_date_instance: models.LifeCycleDate,
     preparation_date_instance: models.LifeCycleDate,
-) -> models.Plan:
+) -> Iterable[models.Plan]:
     """
     Plan data that might be more or less complete, to be tested and validated with the
     Ryhti API.
@@ -1075,7 +1112,9 @@ def complete_test_plan(
     )
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
-    return plan_instance
+    yield plan_instance
+    session.delete(plan_instance)
+    session.commit()
 
 
 @pytest.fixture(scope="module")
@@ -1086,10 +1125,10 @@ def pending_status_instance(session) -> codes.LifeCycleStatus:
     return instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def pending_date_instance(
     session, plan_instance, pending_status_instance
-) -> models.LifeCycleDate:
+) -> Iterable[models.LifeCycleDate]:
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=pending_status_instance,
@@ -1097,13 +1136,15 @@ def pending_date_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def preparation_date_instance(
     session, plan_instance, preparation_status_instance
-) -> models.LifeCycleDate:
+) -> Iterable[models.LifeCycleDate]:
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=preparation_status_instance,
@@ -1111,7 +1152,9 @@ def preparation_date_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="module")
@@ -1122,10 +1165,10 @@ def approved_status_instance(session) -> codes.LifeCycleStatus:
     return instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def approved_date_instance(
     session, plan_instance, approved_status_instance
-) -> models.LifeCycleDate:
+) -> Iterable[models.LifeCycleDate]:
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=approved_status_instance,
@@ -1133,7 +1176,9 @@ def approved_date_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="module")
@@ -1144,10 +1189,10 @@ def valid_status_instance(session) -> codes.LifeCycleStatus:
     return instance
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def valid_date_instance(
     session, plan_instance, valid_status_instance
-) -> models.LifeCycleDate:
+) -> Iterable[models.LifeCycleDate]:
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=valid_status_instance,
@@ -1155,7 +1200,9 @@ def valid_date_instance(
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="module")

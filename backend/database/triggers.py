@@ -305,6 +305,13 @@ def generate_new_lifecycle_status_triggers():
             # group is linked to plan object. If SELECT returns NONE, the lifecycle
             # status should *not* be changed. This *cannot* be in the trigger condition,
             # because PostgreSQL does not allow subqueries in trigger conditions.
+            #
+            # The idea is that if
+            # a) we are adding a regulation to a group linked to object, it will get
+            # the same lifecycle status as object.
+            # b) we are adding a regulation to a group *not yet* linked to an object,
+            # the lifecycle status will not change. The change will have to happen
+            # later.
             trgfunc_definition = f"""
             RETURNS TRIGGER AS $$
             DECLARE status_id UUID := (

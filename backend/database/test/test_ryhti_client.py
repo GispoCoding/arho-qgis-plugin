@@ -11,7 +11,7 @@ from ryhti_client.ryhti_client import RyhtiClient
 from sqlalchemy.orm import Session
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def desired_plan_dict(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
@@ -330,7 +330,7 @@ def desired_plan_dict(
     }
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def desired_plan_matter_dict(
     session: Session,
     desired_plan_dict: dict,
@@ -540,7 +540,7 @@ def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def client_with_plan_data(
     connection_string: str, complete_test_plan: models.Plan
 ) -> RyhtiClient:
