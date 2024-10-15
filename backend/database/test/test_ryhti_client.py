@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from typing import Callable, List, Optional
+from typing import Callable, Iterable, List, Optional
 
 import codes
 import models
@@ -386,7 +386,7 @@ def desired_plan_matter_dict(
                     "decisionDate": "2024-02-01",
                     "dateOfDecision": "2024-02-01",
                     "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
-                    "plans": [{**desired_plan_dict, "planKey": "MK-123456"}],
+                    "plans": [desired_plan_dict],
                 },
             },
         ],
@@ -694,11 +694,39 @@ def authenticated_client_with_valid_plan(
     return client_with_plan_data
 
 
-def test_set_permanent_plan_identifiers_in_wrong_region(
+@pytest.fixture()
+def authenticated_client_with_valid_plan_in_wrong_region(
     session: Session,
-    authenticated_client_with_valid_plan: RyhtiClient,
+    client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
     another_organisation_instance: models.Organisation,
+    mock_public_ryhti_validate_valid: Callable,
+    mock_xroad_ryhti_authenticate: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data in the wrong region read in and validated
+    without errors, and that is authenticated to our mock X-Road API.
+    """
+    plan_instance.organisation = another_organisation_instance
+    session.commit()
+
+    responses = client_with_plan_data.validate_plans()
+    client_with_plan_data.save_plan_validation_responses(responses)
+    session.refresh(plan_instance)
+    assert plan_instance.validated_at
+    assert (
+        plan_instance.validation_errors
+        == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
+    )
+    client_with_plan_data.xroad_ryhti_authenticate()
+    assert client_with_plan_data.xroad_headers["Authorization"] == "Bearer test-token"
+    return client_with_plan_data
+
+
+def test_set_permanent_plan_identifiers_in_wrong_region(
+    session: Session,
+    authenticated_client_with_valid_plan_in_wrong_region: RyhtiClient,
+    plan_instance: models.Plan,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ):
     """
@@ -706,16 +734,14 @@ def test_set_permanent_plan_identifiers_in_wrong_region(
     the organization has no permission to create plans in the region. This requires
     that the client has already marked the plan as valid.
     """
-    authenticated_client_with_valid_plan.valid_plans[
-        0
-    ].organisation = another_organisation_instance
-
-    id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
-    authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
+    id_responses = (
+        authenticated_client_with_valid_plan_in_wrong_region.get_permanent_plan_identifiers()
+    )
+    authenticated_client_with_valid_plan_in_wrong_region.set_permanent_plan_identifiers(
+        id_responses
+    )
     session.refresh(plan_instance)
-    print(id_responses)
     assert not plan_instance.permanent_plan_identifier
-    print(plan_instance.permanent_plan_identifier)
     assert (
         plan_instance.validation_errors
         == "Kaava on validi, mutta sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
@@ -741,10 +767,8 @@ def test_set_permanent_plan_identifiers(
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
     assert (
-        authenticated_client_with_valid_plan.plan_dictionaries[plan_instance.id][
-            "planKey"
-        ]
-        == received_plan_identifier
+        plan_instance.validation_errors
+        == "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-asiaa ei ole vielä validoitu."
     )
 
 
@@ -762,17 +786,18 @@ def client_with_plan_with_permanent_identifier(
     id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
     authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
     session.refresh(plan_instance)
+    print(id_responses)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
-    assert (
-        authenticated_client_with_valid_plan.plan_dictionaries[plan_instance.id][
-            "planKey"
-        ]
-        == received_plan_identifier
-    )
     authenticated_client_with_valid_plan.plan_matter_dictionaries = (
         authenticated_client_with_valid_plan.get_plan_matters()
+    )
+    assert (
+        authenticated_client_with_valid_plan.plan_matter_dictionaries[plan_instance.id][
+            "permanentPlanIdentifier"
+        ]
+        == received_plan_identifier
     )
     return authenticated_client_with_valid_plan
 
@@ -824,15 +849,17 @@ def test_validate_plan_matters(
 
 def test_save_plan_matter_validation_responses(
     session: Session,
-    client_with_plan_data: RyhtiClient,
+    client_with_plan_with_permanent_identifier: RyhtiClient,
     plan_instance: models.Plan,
     mock_xroad_ryhti_validate_invalid: Callable,
 ):
     """
     Check that Ryhti X-Road validation error is saved to database.
     """
-    responses = client_with_plan_data.validate_plan_matters()
-    message = client_with_plan_data.save_plan_matter_validation_responses(responses)
+    responses = client_with_plan_with_permanent_identifier.validate_plan_matters()
+    message = client_with_plan_with_permanent_identifier.save_plan_matter_validation_responses(
+        responses
+    )
     session.refresh(plan_instance)
     assert plan_instance.validated_at
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]

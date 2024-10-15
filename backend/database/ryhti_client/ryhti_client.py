@@ -157,8 +157,8 @@ class RyhtiClient:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         self.plans: List[models.Plan] = []
-        # Save valid plans after validation, so they can be processed further.
-        self.valid_plans: List[models.Plan] = []
+        # Cache valid plans after validation, so they can be processed further.
+        self.valid_plans: Dict[str, models.Plan] = dict()
         # Cache plan dictionaries
         self.plan_dictionaries: Dict[str, Dict] = dict()
         # Cache plan matter dictionaries
@@ -529,13 +529,8 @@ class RyhtiClient:
         """
         plan_dictionary = dict()
 
-        if plan.permanent_plan_identifier:
-            # When uploading plans, the plan key needs to be obtained from Ryhti
-            # and saved to the database. When we are only validating, it is OK to use
-            # our database uuid, in case the plan has no Ryhti identifier yet.
-            plan_dictionary["planKey"] = plan.permanent_plan_identifier
-        else:
-            plan_dictionary["planKey"] = plan.id
+        # planKey should always be the local uuid, not the permanent plan matter id.
+        plan_dictionary["planKey"] = plan.id
         # Let's have all the code values preloaded joined from db.
         # It makes this super easy:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
@@ -747,7 +742,7 @@ class RyhtiClient:
         """
         plan_dictionary = self.plan_dictionaries[plan.id]
         plan_matter = dict()
-        plan_matter["permanentPlanIdentifier"] = plan_dictionary["planKey"]
+        plan_matter["permanentPlanIdentifier"] = plan.permanent_plan_identifier
         # Plan type has to be proper URI (not just value) here, *unlike* when only
         # validating plan. Go figure.
         plan_matter["planType"] = plan.plan_type.uri
@@ -785,7 +780,7 @@ class RyhtiClient:
         local database.
         """
         plan_matters = dict()
-        for plan in self.valid_plans:
+        for plan in self.valid_plans.values():
             plan_matters[plan.id] = self.get_plan_matter(plan)
         return plan_matters
 
@@ -888,7 +883,7 @@ class RyhtiClient:
             + "RegionalPlanMatter/permanentPlanIdentifier"
         )  # TODO: Set the endpoint address to depend on plan type!
         responses: Dict[str, RyhtiResponse] = dict()
-        for plan in self.valid_plans:
+        for plan in self.valid_plans.values():
             if not plan.permanent_plan_identifier:
                 LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
                 data = {
@@ -935,16 +930,15 @@ class RyhtiClient:
 
     def set_permanent_plan_identifiers(self, responses: Dict[str, RyhtiResponse]):
         """
-        Save permanent plan identifiers returned by RYHTI API to the database and the
-        serialized plan dictionaries.
+        Save permanent plan identifiers returned by RYHTI API to the database.
         """
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
-                plan: models.Plan = session.get(models.Plan, plan_id)
+                # Make sure that the plan in the valid plans dict stays up to date
+                plan = self.valid_plans[plan_id]
+                session.add(plan)
                 if response["status"] == 200:
                     plan.permanent_plan_identifier = response["detail"]
-                    # also update the identifier in the serialized plan!
-                    self.plan_dictionaries[plan_id]["planKey"] = response["detail"]
                     plan.validation_errors = (
                         "Kaava on validi. Pysyvä kaavatunnus tallennettu. Kaava-"
                         "asiaa ei ole vielä validoitu."
@@ -975,7 +969,7 @@ class RyhtiClient:
         details: Dict[str, str] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
-                plan: models.Plan = session.get(models.Plan, plan_id)
+                plan = session.get(models.Plan, plan_id)
                 if not plan:
                     # Plan has been deleted in the middle of validation. Nothing
                     # to see here, move on
@@ -997,7 +991,7 @@ class RyhtiClient:
                     plan.validation_errors = (
                         "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
                     )
-                    self.valid_plans.append(plan)
+                    self.valid_plans[plan_id] = plan
                 else:
                     details[plan_id] = f"Validation FAILED for {plan_id}."
                     plan.validation_errors = response["errors"]
@@ -1057,7 +1051,6 @@ class RyhtiClient:
                     plan.validation_errors = (
                         "Kaava-asia on validi ja sen voi viedä Ryhtiin."
                     )
-                    self.valid_plans.append(plan)
                 else:
                     details[plan_id] = f"Plan matter validation FAILED for {plan_id}."
                     plan.validation_errors = response["errors"]
