@@ -29,23 +29,33 @@ resource "aws_route53_record" "xroad-verification" {
 }
 
 # Create private domain for X-road server only
-resource "aws_route53_zone" "private_zone" {
-  name = local.xroad_private_domain
 
-  vpc {
-    vpc_id = aws_vpc.main.id
-  }
+# We have to use AWS service discovery, since the X-Road ECS ip will change if
+# the container is redeployed
+resource "aws_service_discovery_private_dns_namespace" "private" {
+  name        = local.xroad_private_domain
+  vpc         = aws_vpc.main.id
 
   tags = merge(local.default_tags, { Name = "${var.prefix}-private_zone" })
 }
 
-resource "aws_route53_record" "xroad-private" {
+resource "aws_service_discovery_service" "x-road_securityserver" {
+  name = var.x-road_host
 
-  zone_id = aws_route53_zone.private_zone.id
-  name    = local.xroad_dns_record
-  type    = "A"
-  records = [
-      data.aws_network_interface.interface_tags.private_ip
-  ]
-  ttl     = "60"
+  dns_config {
+    namespace_id = aws_service_discovery_private_dns_namespace.private.id
+
+    dns_records {
+      ttl  = "60"
+      type = "A"
+    }
+
+    routing_policy = "MULTIVALUE"
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+
+  tags = merge(local.default_tags, { Name = "${var.prefix}-private_zone" })
 }

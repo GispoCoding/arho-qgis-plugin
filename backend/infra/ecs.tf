@@ -166,16 +166,9 @@ resource "aws_ecs_service" "x-road_securityserver" {
     assign_public_ip = false
   }
 
-  tags = merge(local.default_tags, {Name = "${var.prefix}_-x-road_securityserver"})
-}
-
-# Use tag filter to identify network interface to ECS task:
-# https://stackoverflow.com/questions/75856201/how-to-retrieve-the-public-ip-address-of-an-aws-ecs-contrainer-using-terraform
-data "aws_network_interface" "interface_tags" {
-  depends_on = [ aws_ecs_service.x-road_securityserver ]
-
-  filter {
-    name   = "tag:aws:ecs:serviceName"
-    values = ["${var.prefix}-x-road_securityserver"]
+  service_registries {
+    registry_arn   = aws_service_discovery_service.x-road_securityserver.arn
   }
+
+  tags = merge(local.default_tags, {Name = "${var.prefix}_-x-road_securityserver"})
 }
