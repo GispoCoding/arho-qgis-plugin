@@ -366,7 +366,7 @@ def desired_plan_matter_dict(
                 "planMatterPhaseKey": "whatever",
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                 "geographicalArea": desired_plan_dict["geographicalArea"],
-                "planHandlingEvent": {
+                "handlingEvent": {
                     "handlingEventKey": "whatever",
                     "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
                     "eventTime": "2024-02-01",

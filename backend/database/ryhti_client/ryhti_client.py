@@ -713,7 +713,7 @@ class RyhtiClient:
         # phase, for reasons unknown. Therefore, let's pick the first possible event in
         # each phase.
         handling_events = self.get_plan_handling_events(plan)
-        phase["planHandlingEvent"] = handling_events[0] if handling_events else None
+        phase["handlingEvent"] = handling_events[0] if handling_events else None
         interaction_events = self.get_interaction_events(plan)
         phase["interactionEvents"] = interaction_events if interaction_events else None
 
