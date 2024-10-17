@@ -2,7 +2,6 @@ import datetime
 import enum
 import logging
 import os
-from copy import deepcopy
 from typing import Any, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
@@ -156,7 +155,8 @@ class RyhtiClient:
 
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
-        self.plans: List[models.Plan] = []
+        # Cache plans fetched from database
+        self.plans: Dict[str, models.Plan] = dict()
         # Cache valid plans after validation, so they can be processed further.
         self.valid_plans: Dict[str, models.Plan] = dict()
         # Cache plan dictionaries
@@ -231,7 +231,7 @@ class RyhtiClient:
             plan_query: Query = session.query(models.Plan)
             if plan_uuid:
                 plan_query = plan_query.filter_by(id=plan_uuid)
-            self.plans = plan_query.all()
+            self.plans = {plan.id: plan for plan in plan_query.all()}
             print(plan_query.all())
         if not self.plans:
             print("no plans")
@@ -534,18 +534,10 @@ class RyhtiClient:
         # Let's have all the code values preloaded joined from db.
         # It makes this super easy:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
-        # For some reason, plan type should *not* be the full URI, but just the plan
-        # type code value. It is inserted in querystring, for reasons unknown.
-        plan_dictionary["planType"] = plan.plan_type.value
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         # For reasons unknown, Ryhti does not allow multilanguage description.
         plan_dictionary["planDescription"] = plan.description.get("fin")
-        # Apparently Ryhti plans may cover multiple administrative areas, so the region
-        # identifier has to be embedded in a list.
-        plan_dictionary["administrativeAreaIdentifiers"] = [
-            plan.organisation.administrative_region.value
-        ]
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
@@ -589,8 +581,8 @@ class RyhtiClient:
         local database.
         """
         plan_dictionaries = dict()
-        for plan in self.plans:
-            plan_dictionaries[plan.id] = self.get_plan_dictionary(plan)
+        for plan_id, plan in self.plans.items():
+            plan_dictionaries[plan_id] = self.get_plan_dictionary(plan)
         return plan_dictionaries
 
     def get_plan_decisions(self, plan: models.Plan) -> List[Dict]:
@@ -740,7 +732,6 @@ class RyhtiClient:
         Construct a dict of single Ryhti compatible plan matter from plan in the local
         database.
         """
-        plan_dictionary = self.plan_dictionaries[plan.id]
         plan_matter = dict()
         plan_matter["permanentPlanIdentifier"] = plan.permanent_plan_identifier
         # Plan type has to be proper URI (not just value) here, *unlike* when only
@@ -759,8 +750,10 @@ class RyhtiClient:
         plan_matter["producerPlanIdentifier"] = plan.producers_plan_identifier
         plan_matter["caseIdentifiers"] = [plan.matter_management_identifier]
         plan_matter["recordNumbers"] = [plan.record_number]
-        plan_matter["administrativeAreaIdentifiers"] = plan_dictionary[
-            "administrativeAreaIdentifiers"
+        # Apparently Ryhti plans may cover multiple administrative areas, so the region
+        # identifier has to be embedded in a list.
+        plan_matter["administrativeAreaIdentifiers"] = [
+            plan.organisation.administrative_region.value
         ]
         # We have no need of importing the digital origin code list as long as we are
         # not digitizing old plans:
@@ -790,30 +783,27 @@ class RyhtiClient:
         """
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
         responses: Dict[str, RyhtiResponse] = dict()
-        for plan_id, plan in self.plan_dictionaries.items():
+        for plan_id, plan_dict in self.plan_dictionaries.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
 
-            # For some reason (no idea why) some plan fields have to be provided
-            # as query parameters, not as inline json. Shrug.
-            #
-            # Also, the data is *not* allowed to be in the posted plan, se we must
-            # pop them out, go figure.
-            plan_to_be_posted = deepcopy(plan)
-            plan_type_parameter = plan_to_be_posted.pop("planType")
-            # we only support one area id, no need for commas and concat:
-            admin_area_id_parameter = plan_to_be_posted.pop(
-                "administrativeAreaIdentifiers"
-            )[0]
+            # Some plan fields may only be present in plan matter, not in the plan
+            # dictionary. In the context of plan validation, they must be provided as
+            # query parameters.
+            plan_type_parameter = self.plans[plan_id].plan_type.value
+            # We only support one area id, no need for commas and concat:
+            admin_area_id_parameter = self.plans[
+                plan_id
+            ].organisation.administrative_region.value
             if self.debug_json:
                 with open(f"ryhti_debug/{plan_id}.json", "w") as plan_file:
-                    json.dump(plan_to_be_posted, plan_file)
-            LOGGER.info(f"POSTing JSON: {json.dumps(plan)}")
+                    json.dump(plan_dict, plan_file)
+            LOGGER.info(f"POSTing JSON: {json.dumps(plan_dict)}")
 
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             response = requests.post(
                 plan_validation_endpoint,
-                json=plan_to_be_posted,
+                json=plan_dict,
                 headers=self.public_headers,
                 params={
                     "planType": plan_type_parameter,
