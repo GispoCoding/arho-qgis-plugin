@@ -375,7 +375,7 @@ def desired_plan_matter_dict(
                     {
                         "interactionEventKey": "whatever",
                         "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
-                        "eventTime": "2024-02-01",
+                        "eventTime": {"begin": "2024-02-01", "end": None},
                     },
                 ],
                 "planDecision": {

@@ -669,9 +669,8 @@ class RyhtiClient:
             period_of_current_status = self.get_lifecycle_dates(
                 plan, plan.lifecycle_status
             )
-            entry["eventTime"] = (
-                period_of_current_status["begin"] if period_of_current_status else None
-            )
+            # Interaction eventTime is a period, not a single date.
+            entry["eventTime"] = period_of_current_status
 
             events.append(entry)
         return events
