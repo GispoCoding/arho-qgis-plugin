@@ -32,34 +32,40 @@ templates:
               attributes:
                 - attribute: type_of_plan_regulation_id
                   default: asumisenAlue
+                  description: Asumisen alue
                   hidden: true
               child_features:
                 - layer: additional_information_of_plan_regulation
                   attributes:
                     - attribute: type_of_additional_information_id
                       default: paakayttotarkoitus
+                      description: Pääkäyttötarkoitus
                       hidden: true
             - layer: plan_requlation
               attributes:
                 - attribute: type_of_plan_regulation_id
                   default: liikerakennustenAlue
+                  description: Liikerakennusten alue
                   hidden: true
               child_features:
                 - layer: additional_information_of_plan_regulation
                   attributes:
                     - attribute: type_of_additional_information_id
                       default: paakayttotarkoitus
+                      description: Pääkäyttötarkoitus
                       hidden: true
             - layer: plan_requlation
               attributes:
                 - attribute: type_of_plan_regulation_id
                   default: toimitilojenAlue
+                  description: Toimitilojen alue
                   hidden: true
               child_features:
                 - layer: additional_information_of_plan_regulation
                   attributes:
                     - attribute: type_of_additional_information_id
                       default: paakayttotarkoitus
+                      description: Pääkäyttötarkoitus
                       hidden: true
         - layer: plan_requlation_group
           attributes:
@@ -71,4 +77,5 @@ templates:
               attributes:
                 - attribute: type_of_plan_regulation_id
                   default: korttelinNumero
+                  description: Korttelin numero
                 - attribute: numeric_default

@@ -16,7 +16,7 @@ from arho_feature_template.core.template_library_config import (
     TemplateSyntaxError,
     parse_template_library_config,
 )
-from arho_feature_template.gui.feature_attribute_form import FeatureAttributeForm
+from arho_feature_template.gui.template_attribute_form import TemplateAttributeForm
 from arho_feature_template.gui.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
 
@@ -181,7 +181,7 @@ class FeatureTemplater:
         if not self.active_template:
             return
 
-        attribute_form = FeatureAttributeForm(self.active_template.config.feature)
+        attribute_form = TemplateAttributeForm(self.active_template.config)
 
         if attribute_form.exec_():
             layer = get_layer_from_project(self.active_template.config.feature.layer)

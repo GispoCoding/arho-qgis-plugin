@@ -113,10 +113,19 @@ class Attribute:
 
     attribute: str
     default: str | None
+    description: str | None
 
     @classmethod
     def from_dict(cls, data: dict) -> Attribute:
-        return cls(attribute=data["attribute"], default=data.get("default"))
+        return cls(attribute=data["attribute"], default=data.get("default"), description=data.get("description"))
+
+    def display(self) -> str:
+        if self.description is not None:
+            return self.description
+        elif self.default is not None:
+            return self.default
+        else:
+            return ""
 
 
 def parse_template_library_config(template_library_config: Path) -> TemplateLibraryConfig:
