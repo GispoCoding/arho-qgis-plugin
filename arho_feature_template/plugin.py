@@ -5,14 +5,17 @@ from typing import TYPE_CHECKING, Callable, cast
 
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QWidget
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QWidget
 from qgis.utils import iface
 
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.new_plan import NewPlan
+from arho_feature_template.core.update_plan import LandUsePlan, update_selected_plan
+from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
+from arho_feature_template.utils.db_utils import get_existing_database_connections
 from arho_feature_template.utils.misc_utils import PLUGIN_PATH
 
 if TYPE_CHECKING:
@@ -134,6 +137,7 @@ class Plugin:
 
         iface.mapCanvas().mapToolSet.connect(self.templater.digitize_map_tool.deactivate)
 
+        # Add main plugin action to the toolbar
         self.template_dock_action = self.add_action(
             "",
             "Feature Templates",
@@ -146,11 +150,11 @@ class Plugin:
 
         self.new_land_use_plan_action = self.add_action(
             plan_icon_path,
-            "Create New Plan",
-            self.digitize_new_plan,
+            "Create New Land Use Plan",
+            self.add_new_plan,
             add_to_menu=True,
             add_to_toolbar=True,
-            status_tip="Create a new plan",
+            status_tip="Create a new land use plan",
         )
 
         self.load_land_use_plan_action = self.add_action(
@@ -165,11 +169,29 @@ class Plugin:
         if not isinstance(new_tool, TemplateGeometryDigitizeMapTool):
             self.template_dock_action.setChecked(False)
 
-    def digitize_new_plan(self):
+    def add_new_plan(self):
         self.new_plan.add_new_plan()
 
     def load_existing_land_use_plan(self) -> None:
         """Open existing land use plan."""
+        connections = get_existing_database_connections()
+
+        if not connections:
+            QMessageBox.critical(None, "Error", "No database connections found.")
+            return
+
+        dialog = LoadPlanDialog(None, connections)
+
+        if dialog.exec_() == QDialog.Accepted:
+            selected_plan_id = dialog.get_selected_plan_id()
+
+            if not selected_plan_id:
+                QMessageBox.critical(None, "Error", "No plan was selected.")
+                return
+
+            plan = LandUsePlan(selected_plan_id)
+
+            update_selected_plan(plan)
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
