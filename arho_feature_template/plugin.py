@@ -15,7 +15,7 @@ from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
-from arho_feature_template.utils.db_utils import get_existing_database_connections
+from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import PLUGIN_PATH
 
 if TYPE_CHECKING:
@@ -174,7 +174,8 @@ class Plugin:
 
     def load_existing_land_use_plan(self) -> None:
         """Open existing land use plan."""
-        connections = get_existing_database_connections()
+
+        connections = get_existing_database_connection_names()
 
         if not connections:
             QMessageBox.critical(None, "Error", "No database connections found.")
