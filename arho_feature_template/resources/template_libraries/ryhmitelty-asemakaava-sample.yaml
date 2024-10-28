@@ -1,0 +1,51 @@
+version: 1
+meta:
+  name: Asemakaavan kaavamääräykset
+  version: "1.0"
+templates:
+  - name: Simppeli kaavakohde
+    group: Osa-alue
+    description: Kaavakohde ilman kikkareita
+    feature:
+      layer: land_use_area
+      attributes:
+        - attribute: name
+        - attribute: type_of_underground_id
+          default: 1
+
+  - name: Asuin-, liike- ja toimistorakennusten alue
+    group: Aluevaraus
+    description: Alueella kuvataan ...
+    feature:
+      layer: land_use_area
+      attributes:
+        - attribute: name
+        - attribute: type_of_underground_id
+          default: 1
+      child_features:
+        - layer: plan_requlation_group
+          attributes:
+            - attribute: name
+              default: Asuin-, liike- ja toimistorakennusten alue
+              allow_user_input: false
+          child_features:
+            - layer: plan_requlation
+              attributes:
+                - attribute: type_of_plan_regulation_id
+                  default: asumisenAlue
+                  hidden: true
+              child_features:
+                - layer: additional_information_of_plan_regulation
+                  attributes:
+                    - attribute: type_of_additional_information_id
+                      default: paakayttotarkoitus
+                      hidden: true
+
+  - name: Ryhmätön simppeli kaavakohde
+    description: Kaavakohde ilman kikkareita
+    feature:
+      layer: other_area
+      attributes:
+        - attribute: name
+        - attribute: type_of_underground_id
+          default: 1

@@ -53,6 +53,7 @@ class TemplateLibraryMeta:
     """Describes the metadata of a template library"""
 
     name: str
+    group: str | None
     description: str | None
     version: str | None
 
@@ -60,6 +61,7 @@ class TemplateLibraryMeta:
     def from_dict(cls, data: dict) -> TemplateLibraryMeta:
         return cls(
             name=data["name"],
+            group=data.get("group"),
             description=data.get("description"),
             version=data.get("version"),
         )
@@ -70,6 +72,7 @@ class FeatureTemplate:
     """Describes a feature template that can include nested features"""
 
     name: str
+    group: str | None
     description: str | None
     feature: Feature
 
@@ -77,6 +80,7 @@ class FeatureTemplate:
     def from_dict(cls, data: dict) -> FeatureTemplate:
         return cls(
             name=data["name"],
+            group=data.get("group"),
             description=data.get("description"),
             feature=Feature.from_dict(data["feature"]),
         )

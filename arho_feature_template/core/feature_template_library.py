@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsMapToolDigitizeFeature
@@ -81,15 +82,19 @@ class FeatureTemplater:
         self.template_model = QStandardItemModel()
         self.template_dock.template_list.setModel(self.template_model)
 
+        # Set the selection mode to allow single selection
+        self.template_dock.template_list.setSelectionMode(self.template_dock.template_list.SingleSelection)
+
         self._read_library_configs()
 
         self.template_dock.library_selection.addItems(self.get_library_names())
 
-        # Update template list when library selection changes
+        # Update template tree when library selection changes
         self.template_dock.library_selection.currentIndexChanged.connect(
             lambda: self.set_active_library(self.template_dock.library_selection.currentText())
         )
-        # Update template list when search text changes
+
+        # Update template tree when search text changes
         self.template_dock.search_box.valueChanged.connect(self.on_template_search_text_changed)
 
         # Activate map tool when template is selected
@@ -101,11 +106,17 @@ class FeatureTemplater:
 
     def on_template_item_clicked(self, index):
         item = self.template_model.itemFromIndex(index)
+
+        # Do nothing if clicked item is a group
+        if item.hasChildren():
+            return
+
         try:
             layer = get_layer_from_project(item.config.feature.layer)
         except (LayerNotFoundError, LayerNotVectorTypeError):
             logger.exception("Failed to activate template")
             return
+
         self.active_template = item
         self.start_digitizing_for_layer(layer)
 
@@ -114,16 +125,29 @@ class FeatureTemplater:
             index, QItemSelectionModel.Select | QItemSelectionModel.Rows
         )
 
-    def on_template_search_text_changed(self, search_text: str):
-        for row in range(self.template_model.rowCount()):
-            item = self.template_model.item(row)
+    def on_template_search_text_changed(self, search_text: str) -> None:
+        search_text = search_text.lower()
 
-            # If the search text is in the item's text, show the row
-            if search_text in item.text().lower():
-                self.template_dock.template_list.setRowHidden(row, False)
-            else:
-                # Otherwise, hide the row
-                self.template_dock.template_list.setRowHidden(row, True)
+        for row in range(self.template_model.rowCount()):
+            group_item = self.template_model.item(row)
+            group_visible = False
+
+            for child_row in range(group_item.rowCount()):
+                template_item = group_item.child(child_row)
+                matches = search_text in template_item.text().lower()
+                template_item.setEnabled(matches)
+                group_item.setChild(child_row, template_item)
+
+                if matches:
+                    group_visible = True
+
+            # Show or hide the group based on child matches
+            group_item.setEnabled(group_visible)
+
+            index = self.template_model.indexFromItem(group_item)
+            self.template_dock.template_list.setExpanded(index, group_visible)
+
+            self.template_model.setItem(row, group_item)
 
     def start_digitizing_for_layer(self, layer: QgsVectorLayer) -> None:
         self.digitize_map_tool.clean()
@@ -163,10 +187,26 @@ class FeatureTemplater:
     def set_active_library(self, library_name: str) -> None:
         self.template_model.clear()
 
+        # Group templates by their 'group' attribute, defaulting to "Ryhmittelemättömät" for ungrouped templates
+        grouped_templates = defaultdict(list)
         for template in self.library_configs[library_name].templates:
-            item = TemplateItem(template)
-            item.setEditable(False)
-            self.template_model.appendRow(item)
+            group = getattr(template, "group", None)
+            if not group:
+                group = "Ryhmittelemättömät"
+            grouped_templates[group].append(template)
+
+        for group_name, templates in grouped_templates.items():
+            group_item = QStandardItem(group_name)
+            group_item.setEditable(False)
+
+            for template in templates:
+                template_item = TemplateItem(template)
+                template_item.setEditable(False)
+                group_item.appendRow(template_item)
+
+            self.template_model.appendRow(group_item)
+
+        self.template_dock.template_list.expandAll()
 
     def _read_library_configs(self) -> None:
         for config_file in library_config_files():

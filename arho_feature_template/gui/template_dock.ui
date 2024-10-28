@@ -40,7 +40,7 @@
      <widget class="QgsFilterLineEdit" name="search_box"/>
     </item>
     <item>
-     <widget class="QListView" name="template_list"/>
+     <widget class="QTreeView" name="template_list"/>
     </item>
     <item>
      <widget class="QLabel" name="txt_tip">
