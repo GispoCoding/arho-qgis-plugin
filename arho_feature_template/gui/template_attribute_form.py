@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from arho_feature_template.core.template_library_config import Feature, FeatureTemplate
 
-ui_path = resources.files(__package__) / "template_attribute_form.ui"
+ui_path = resources.files(__package__) / "template_attribute_form2.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
@@ -40,7 +40,7 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.feature_vertical_boundaries: QLineEdit
         self.plan_regulation_group_scrollarea: QScrollArea
         self.plan_regulation_group_scrollarea_contents: QWidget
-        self.add_plan_regulation_group_btn: QPushButton
+        # self.add_plan_regulation_group_btn: QPushButton
         self.button_box: QDialogButtonBox
 
         # SIGNALS
@@ -52,7 +52,7 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.setWindowTitle(feature_template_config.name)
         self.init_plan_regulation_groups(feature_template_config)
-        self.init_add_plan_regulation_group_btn()
+        # self.init_add_plan_regulation_group_btn()
 
     def add_spacer(self):
         self.scroll_area_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
