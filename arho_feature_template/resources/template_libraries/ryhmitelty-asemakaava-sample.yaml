@@ -5,6 +5,7 @@ meta:
 templates:
   - name: Simppeli kaavakohde
     group: Osa-alue
+    sub_group: Alue
     description: Kaavakohde ilman kikkareita
     feature:
       layer: land_use_area
@@ -15,6 +16,7 @@ templates:
 
   - name: Asuin-, liike- ja toimistorakennusten alue
     group: Aluevaraus
+    sub_group: Alue
     description: Alueella kuvataan ...
     feature:
       layer: land_use_area

@@ -94,6 +94,10 @@
           "description": "The group of the template",
           "type": "string"
         },
+        "sub_group": {
+          "description": "The geometry type of the template",
+          "type": "string"
+        },
         "description": {
           "description": "The description of the template",
           "type": "string"

@@ -54,6 +54,7 @@ class TemplateLibraryMeta:
 
     name: str
     group: str | None
+    sub_group: str | None
     description: str | None
     version: str | None
 
@@ -62,6 +63,7 @@ class TemplateLibraryMeta:
         return cls(
             name=data["name"],
             group=data.get("group"),
+            sub_group=data.get("sub_group"),
             description=data.get("description"),
             version=data.get("version"),
         )
@@ -73,6 +75,7 @@ class FeatureTemplate:
 
     name: str
     group: str | None
+    sub_group: str | None
     description: str | None
     feature: Feature
 
@@ -81,6 +84,7 @@ class FeatureTemplate:
         return cls(
             name=data["name"],
             group=data.get("group"),
+            sub_group=data.get("sub_group"),
             description=data.get("description"),
             feature=Feature.from_dict(data["feature"]),
         )

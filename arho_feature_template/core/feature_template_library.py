@@ -133,21 +133,28 @@ class FeatureTemplater:
             group_visible = False
 
             for child_row in range(group_item.rowCount()):
-                template_item = group_item.child(child_row)
-                matches = search_text in template_item.text().lower()
-                template_item.setEnabled(matches)
-                group_item.setChild(child_row, template_item)
+                geometry_item = group_item.child(child_row)
+                geometry_visible = False
 
-                if matches:
-                    group_visible = True
+                for template_row in range(geometry_item.rowCount()):
+                    template_item = geometry_item.child(template_row)
+                    matches = search_text in template_item.text().lower()
+                    template_item.setEnabled(matches)
+
+                    if matches:
+                        geometry_visible = True
+
+                geometry_item.setEnabled(geometry_visible)
+                group_visible = group_visible or geometry_visible
+
+                index = self.template_model.indexFromItem(geometry_item)
+                self.template_dock.template_list.setExpanded(index, geometry_visible)
 
             # Show or hide the group based on child matches
             group_item.setEnabled(group_visible)
 
             index = self.template_model.indexFromItem(group_item)
             self.template_dock.template_list.setExpanded(index, group_visible)
-
-            self.template_model.setItem(row, group_item)
 
     def start_digitizing_for_layer(self, layer: QgsVectorLayer) -> None:
         self.digitize_map_tool.clean()
@@ -187,22 +194,33 @@ class FeatureTemplater:
     def set_active_library(self, library_name: str) -> None:
         self.template_model.clear()
 
-        # Group templates by their 'group' attribute, defaulting to "Ryhmittelemättömät" for ungrouped templates
-        grouped_templates = defaultdict(list)
+        grouped_templates: defaultdict[str, defaultdict[str, list[FeatureTemplate]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+
         for template in self.library_configs[library_name].templates:
             group = getattr(template, "group", None)
             if not group:
                 group = "Ryhmittelemättömät"
-            grouped_templates[group].append(template)
+            sub_group = getattr(template, "sub_group", None)
+            if not sub_group:
+                sub_group = "Tuntematon"
+            grouped_templates[group][sub_group].append(template)
 
-        for group_name, templates in grouped_templates.items():
+        # Build nested structure
+        for group_name, geometry_dict in grouped_templates.items():
             group_item = QStandardItem(group_name)
             group_item.setEditable(False)
 
-            for template in templates:
-                template_item = TemplateItem(template)
-                template_item.setEditable(False)
-                group_item.appendRow(template_item)
+            for geometry_name, templates in geometry_dict.items():
+                geometry_item = QStandardItem(geometry_name)
+                geometry_item.setEditable(False)
+                group_item.appendRow(geometry_item)
+
+                for template in templates:
+                    template_item = TemplateItem(template)
+                    template_item.setEditable(False)
+                    geometry_item.appendRow(template_item)
 
             self.template_model.appendRow(group_item)
 
