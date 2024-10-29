@@ -56,7 +56,6 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
 
         self.planTableView.setSelectionMode(QTableView.SingleSelection)
         self.planTableView.setSelectionBehavior(QTableView.SelectRows)
-        self.planTableView.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(5)
@@ -75,6 +74,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         self.filterProxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
 
         self.planTableView.setModel(self.filterProxyModel)
+        self.planTableView.selectionModel().selectionChanged.connect(self.on_selection_changed)
 
     def load_plans(self):
         self.model.removeRows(0, self.model.rowCount())
