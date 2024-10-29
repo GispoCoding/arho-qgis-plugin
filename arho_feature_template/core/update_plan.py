@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from qgis.core import Qgis, QgsMapLayer, QgsProject, QgsVectorLayer
 
+from arho_feature_template.core.exceptions import UnexpectedNoneError
 from arho_feature_template.utils.qgis_utils import show_message_bar
 
 
@@ -24,7 +26,7 @@ LAYER_PLAN_ID_MAP = {
 }
 
 
-def update_selected_plan(new_plan: LandUsePlan):
+def update_selected_plan(new_plan: LandUsePlan) -> None:
     """Update the project layers based on the selected land use plan."""
     plan_id = new_plan.id
 
@@ -33,14 +35,17 @@ def update_selected_plan(new_plan: LandUsePlan):
         set_filter_for_vector_layer(layer_name, field_name, plan_id)
 
 
-def set_filter_for_vector_layer(layer_name: str, field_name: str, field_value: str):
+def set_filter_for_vector_layer(layer_name: str, field_name: str, field_value: str) -> None:
     """Set a filter for the given vector layer."""
-    layers = QgsProject.instance().mapLayersByName(layer_name)
+    project = QgsProject.instance()
+    if project is None:
+        raise UnexpectedNoneError
+    layers = project.mapLayersByName(layer_name)
 
     if not _check_layer_count(layers):
         return
 
-    layer = layers[0]
+    layer = cast(QgsVectorLayer, layers[0])
 
     expression = f"\"{field_name}\" = '{field_value}'"
 

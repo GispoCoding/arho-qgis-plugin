@@ -1,33 +1,41 @@
+from typing import cast
+
 from qgis.core import Qgis, QgsProject, QgsVectorLayer
 
+from arho_feature_template.core.exceptions import UnexpectedNoneError
 from arho_feature_template.core.update_plan import LandUsePlan, update_selected_plan
 from arho_feature_template.utils.qgis_utils import iface, show_message_bar
 
 
 class NewPlan:
-    def add_new_plan(self):
+    def add_new_plan(self) -> None:
         # Filtered layers are not editable, so clear filters first.
         self.clear_all_filters()
 
-        layers = QgsProject.instance().mapLayersByName("Kaava")
+        instance = QgsProject.instance()
+        if instance is None:
+            raise UnexpectedNoneError
+        layers = instance.mapLayersByName("Kaava")
         if not layers:
             show_message_bar("Error", "Layer 'Kaava' not found", level=Qgis.MessageLevel.Warning)
             return
 
-        kaava_layer = layers[0]
+        kaava_layer = cast(QgsVectorLayer, layers[0])
 
         if not kaava_layer.isEditable():
             kaava_layer.startEditing()
 
         iface.setActiveLayer(kaava_layer)
 
-        iface.actionAddFeature().trigger()
+        add_feature_action = iface.actionAddFeature()
+        if add_feature_action is not None:
+            add_feature_action.trigger()
 
         # Connect the featureAdded signal
         kaava_layer.featureAdded.connect(self.feature_added)
 
-    def feature_added(self):
-        kaava_layer = iface.activeLayer()
+    def feature_added(self) -> None:
+        kaava_layer = cast(QgsVectorLayer, iface.activeLayer())
         kaava_layer.featureAdded.disconnect()
         feature_ids_before_commit = kaava_layer.allFeatureIds()
         if kaava_layer.isEditable():
@@ -54,9 +62,12 @@ class NewPlan:
         else:
             show_message_bar("Error", "No new feature was added.", level=Qgis.MessageLevel.Warning)
 
-    def clear_all_filters(self):
+    def clear_all_filters(self) -> None:
         """Clear filters for all vector layers in the project."""
-        layers = QgsProject.instance().mapLayers().values()
+        instance = QgsProject.instance()
+        if instance is None:
+            raise UnexpectedNoneError
+        layers = instance.mapLayers().values()
 
         for layer in layers:
             if isinstance(layer, QgsVectorLayer):

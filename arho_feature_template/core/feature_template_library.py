@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QItemSelectionModel
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 
+from arho_feature_template.core.exceptions import UnexpectedNoneError
 from arho_feature_template.core.template_library_config import (
     FeatureTemplate,
     TemplateLibraryConfig,
@@ -19,6 +20,9 @@ from arho_feature_template.gui.feature_attribute_form import FeatureAttributeFor
 from arho_feature_template.gui.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
 from arho_feature_template.utils.qgis_utils import iface
+
+if TYPE_CHECKING:
+    from qgis.PyQt.QtCore import QModelIndex
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +104,8 @@ class FeatureTemplater:
         self.digitize_map_tool.digitizingCompleted.connect(self.ask_for_feature_attributes)
         self.digitize_map_tool.deactivated.connect(self.template_dock.template_list.clearSelection)
 
-    def on_template_item_clicked(self, index):
-        item = self.template_model.itemFromIndex(index)
+    def on_template_item_clicked(self, index: QModelIndex) -> None:
+        item = cast(TemplateItem, self.template_model.itemFromIndex(index))
         try:
             layer = get_layer_from_project(item.config.feature.layer)
         except (LayerNotFoundError, LayerNotVectorTypeError):
@@ -115,7 +119,7 @@ class FeatureTemplater:
             index, QItemSelectionModel.Select | QItemSelectionModel.Rows
         )
 
-    def on_template_search_text_changed(self, search_text: str):
+    def on_template_search_text_changed(self, search_text: str) -> None:
         for row in range(self.template_model.rowCount()):
             item = self.template_model.item(row)
 
@@ -134,7 +138,10 @@ class FeatureTemplater:
             if not succeeded:
                 logger.warning("Failed to start editing layer %s", layer.name())
                 return
-        iface.mapCanvas().setMapTool(self.digitize_map_tool)
+        canvas = iface.mapCanvas()
+        if not canvas:
+            raise UnexpectedNoneError
+        canvas.setMapTool(self.digitize_map_tool)
 
     def ask_for_feature_attributes(self, feature: QgsFeature) -> None:
         """Shows a dialog to ask for feature attributes and creates the feature"""
@@ -151,7 +158,7 @@ class FeatureTemplater:
                 for attribute, widget in attributes.items():
                     feature.setAttribute(
                         attribute,
-                        widget.text(),
+                        widget.text(),  # type: ignore
                     )
 
             layer.beginEditCommand("Create feature from template")
