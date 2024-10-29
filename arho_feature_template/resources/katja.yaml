@@ -1,0 +1,74 @@
+aluevaraukset:
+  - geometria: Alue
+    värikoodi: #000000
+    kirjaintunnus: A
+    kaavamääräyksen_otsikko: Asuinrakennusten alue
+    kaavamääräykset:
+      - nimi: Asumisen alue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: #000000
+    kirjaintunnus: AK
+    kaavamääräyksen_otsikko: Asuinkerrostalojen alue
+    kaavamääräykset:
+      - nimi: Asuinkerrostaloalue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: "#A9D08E"
+    kirjaintunnus: AP
+    kaavamääräyksen_otsikko: Asuinpientalojen alue
+    kaavamääräykset:
+      - nimi: Asuinpientaloalue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: "#FFD966"
+    kirjaintunnus: AR
+    kaavamääräyksen_otsikko: Rivitalojen ja muiden kytkettyjen asuinrakennusten alue
+    kaavamääräykset:
+      - nimi: Rivitalojen ja muiden kytkettyjen asuinpientalojen alue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: "#E06666"
+    kirjaintunnus: AO
+    kaavamääräyksen_otsikko: Erillispientalojen alue
+    kaavamääräykset:
+      - nimi: Erillisten asuinpientalojen alue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: "#5B9BD5"
+    kirjaintunnus: AL
+    kaavamääräyksen_otsikko: Asuin-, liike- ja toimistorakennusten alue
+    kaavamääräykset:
+      - nimi: Asumisen alue
+      - nimi: Liikerakennusten alue
+      - nimi: Toimistorakennusten alue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: "#9BC2E6"
+    kirjaintunnus: AH
+    kaavamääräyksen_otsikko: Asumista palveleva yhteiskäyttöinen alue
+    kaavamääräykset:
+      - nimi: Asumista palveleva yhteiskäyttöinen alue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus
+
+  - geometria: Alue
+    värikoodi: "#FFD966"
+    kirjaintunnus: AM
+    kaavamääräyksen_otsikko: Maatilojen talouskeskusten alue
+    kaavamääräykset:
+      - nimi: Maatilan talouskeskuksen alue
+    lisätiedot:
+      - laji: Pääkäyttötarkoitus

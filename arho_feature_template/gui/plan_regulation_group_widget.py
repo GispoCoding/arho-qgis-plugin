@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
+from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QFont, QIcon
 from qgis.PyQt.QtWidgets import QLabel, QLineEdit, QWidget
 
@@ -23,6 +24,8 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 class PlanRegulationGroupWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan regulation group."""
+
+    delete_signal = pyqtSignal(QWidget)
 
     def __init__(self, feature: Feature):
         super().__init__()
@@ -62,16 +65,20 @@ class PlanRegulationGroupWidget(QWidget, FormClass):  # type: ignore
                 if child.layer == "plan_requlation":
                     self.create_widgets_for_plan_regulation(child)
 
+    def request_delete(self):
+        self.delete_signal.emit(self)
+
     def init_buttons(self):
         self.conf_btn.setIcon(QIcon(plugin_path("resources", "icons", "settings.svg")))
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
+        self.del_btn.clicked.connect(self.request_delete)
 
     def create_widgets_for_plan_regulation(self, plan_regulation_feature: Feature):
         row = self.plan_regulation_grid_layout.rowCount() + 1
         for plan_regulation_config in plan_regulation_feature.attributes:
             if plan_regulation_config.attribute == "type_of_plan_regulation_id":
                 id_label = QLabel(plan_regulation_config.display())
-                print(plan_regulation_config)
+                # print(plan_regulation_config)
                 self.plan_regulation_grid_layout.addWidget(id_label, row, 0)
             elif plan_regulation_config.attribute == "numeric_default":
                 if not self.input_value_header:
