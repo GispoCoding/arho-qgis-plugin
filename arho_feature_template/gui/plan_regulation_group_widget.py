@@ -71,7 +71,7 @@ class PlanRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         for plan_regulation_config in plan_regulation_feature.attributes:
             if plan_regulation_config.attribute == "type_of_plan_regulation_id":
                 id_label = QLabel(plan_regulation_config.display())
-                print(plan_regulation_config)
+                # print(plan_regulation_config)
                 self.plan_regulation_grid_layout.addWidget(id_label, row, 0)
             elif plan_regulation_config.attribute == "numeric_default":
                 if not self.input_value_header:
