@@ -1,9 +1,7 @@
-from typing import TYPE_CHECKING
-
-from qgis.core import QgsProject, QgsVectorLayer
+from qgis.core import Qgis, QgsProject, QgsVectorLayer
 
 from arho_feature_template.core.update_plan import LandUsePlan, update_selected_plan
-from arho_feature_template.utils.qgis_utils import iface
+from arho_feature_template.utils.qgis_utils import iface, show_message_bar
 
 
 class NewPlan:
@@ -13,7 +11,7 @@ class NewPlan:
 
         layers = QgsProject.instance().mapLayersByName("Kaava")
         if not layers:
-            iface.messageBar().pushMessage("Error", "Layer 'Kaava' not found", level=3)
+            show_message_bar("Error", "Layer 'Kaava' not found", level=Qgis.MessageLevel.Warning)
             return
 
         kaava_layer = layers[0]
@@ -34,10 +32,10 @@ class NewPlan:
         feature_ids_before_commit = kaava_layer.allFeatureIds()
         if kaava_layer.isEditable():
             if not kaava_layer.commitChanges():
-                iface.messageBar().pushMessage("Error", "Failed to commit changes to the layer.", level=3)
+                show_message_bar("Error", "Failed to commit changes to the layer.", level=Qgis.MessageLevel.Warning)
                 return
         else:
-            iface.messageBar().pushMessage("Error", "Layer is not editable.", level=3)
+            show_message_bar("Error", "Layer is not editable.", level=Qgis.MessageLevel.Warning)
             return
 
         feature_ids_after_commit = kaava_layer.allFeatureIds()
@@ -52,9 +50,9 @@ class NewPlan:
                 feature_id_value = new_feature["id"]
                 update_selected_plan(LandUsePlan(feature_id_value))
             else:
-                iface.messageBar().pushMessage("Error", "Invalid feature retrieved.", level=3)
+                show_message_bar("Error", "Invalid feature retrieved.", level=Qgis.MessageLevel.Warning)
         else:
-            iface.messageBar().pushMessage("Error", "No new feature was added.", level=3)
+            show_message_bar("Error", "No new feature was added.", level=Qgis.MessageLevel.Warning)
 
     def clear_all_filters(self):
         """Clear filters for all vector layers in the project."""
