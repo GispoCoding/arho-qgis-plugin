@@ -65,9 +65,14 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
 
     def add_plan_regulation_group(self, feature_config: Feature):
         new_plan_regulation_group = PlanRegulationGroupWidget(feature_config)
+        new_plan_regulation_group.delete_signal.connect(self.remove_plan_regulation_group)
         self.remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(new_plan_regulation_group)
         self.add_spacer()
+
+    def remove_plan_regulation_group(self, plan_regulation_group_widget: PlanRegulationGroupWidget):
+        self.plan_regulation_group_scrollarea_contents.layout().removeWidget(plan_regulation_group_widget)
+        plan_regulation_group_widget.deleteLater()
 
     def init_add_plan_regulation_group_btn(self):
         menu = QMenu()
