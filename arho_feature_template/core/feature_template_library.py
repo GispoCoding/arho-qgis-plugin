@@ -133,24 +133,33 @@ class FeatureTemplater:
             group_visible = False
 
             for child_row in range(group_item.rowCount()):
-                geometry_item = group_item.child(child_row)
-                geometry_visible = False
+                child_item = group_item.child(child_row)
 
-                for template_row in range(geometry_item.rowCount()):
-                    template_item = geometry_item.child(template_row)
+                if child_item.hasChildren():
+                    subgroup_visible = False
+
+                    for template_row in range(child_item.rowCount()):
+                        template_item = child_item.child(template_row)
+                        matches = search_text in template_item.text().lower()
+                        template_item.setEnabled(matches)
+
+                        if matches:
+                            subgroup_visible = True
+
+                    child_item.setEnabled(subgroup_visible)
+                    group_visible = group_visible or subgroup_visible
+
+                    index = self.template_model.indexFromItem(child_item)
+                    self.template_dock.template_list.setExpanded(index, subgroup_visible)
+
+                else:
+                    template_item = child_item
                     matches = search_text in template_item.text().lower()
                     template_item.setEnabled(matches)
 
                     if matches:
-                        geometry_visible = True
+                        group_visible = True
 
-                geometry_item.setEnabled(geometry_visible)
-                group_visible = group_visible or geometry_visible
-
-                index = self.template_model.indexFromItem(geometry_item)
-                self.template_dock.template_list.setExpanded(index, geometry_visible)
-
-            # Show or hide the group based on child matches
             group_item.setEnabled(group_visible)
 
             index = self.template_model.indexFromItem(group_item)
@@ -198,29 +207,33 @@ class FeatureTemplater:
             lambda: defaultdict(list)
         )
 
+        # Group templates by 'group' and 'sub_group'
         for template in self.library_configs[library_name].templates:
-            group = getattr(template, "group", None)
-            if not group:
-                group = "Ryhmittelemättömät"
+            group = getattr(template, "group", None) or "Ryhmittelemättömät"
             sub_group = getattr(template, "sub_group", None)
-            if not sub_group:
-                sub_group = "Tuntematon"
-            grouped_templates[group][sub_group].append(template)
+            if sub_group:
+                grouped_templates[group][sub_group].append(template)
+            else:
+                grouped_templates[group][""].append(template)
 
-        # Build nested structure
-        for group_name, geometry_dict in grouped_templates.items():
+        for group_name, sub_group_dict in grouped_templates.items():
             group_item = QStandardItem(group_name)
             group_item.setEditable(False)
 
-            for geometry_name, templates in geometry_dict.items():
-                geometry_item = QStandardItem(geometry_name)
-                geometry_item.setEditable(False)
-                group_item.appendRow(geometry_item)
+            for sub_group_name, templates in sub_group_dict.items():
+                if sub_group_name:
+                    sub_group_item = QStandardItem(sub_group_name)
+                    sub_group_item.setEditable(False)
+                    group_item.appendRow(sub_group_item)
+                    target_item = sub_group_item
+                else:
+                    # If template has no sub_group set, list it directly under group
+                    target_item = group_item
 
                 for template in templates:
                     template_item = TemplateItem(template)
                     template_item.setEditable(False)
-                    geometry_item.appendRow(template_item)
+                    target_item.appendRow(template_item)
 
             self.template_model.appendRow(group_item)
 
