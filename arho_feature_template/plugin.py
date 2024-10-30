@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Callable, cast
 
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
@@ -16,7 +15,6 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_l
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
-from arho_feature_template.utils.misc_utils import PLUGIN_PATH
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface, QgsMapTool
@@ -129,8 +127,8 @@ class Plugin:
         self.templater = FeatureTemplater()
         self.new_plan = NewPlan()
 
-        plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
-        load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
+        # plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
+        # load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
 
         iface.addDockWidget(Qt.RightDockWidgetArea, self.templater.template_dock)
         self.templater.template_dock.visibilityChanged.connect(self.dock_visibility_changed)
@@ -138,30 +136,32 @@ class Plugin:
         iface.mapCanvas().mapToolSet.connect(self.templater.digitize_map_tool.deactivate)
 
         # Add main plugin action to the toolbar
+        self.new_land_use_plan_action = self.add_action(
+            "",
+            "Luo uusi kaava",
+            self.add_new_plan,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Luo uusi kaava",
+        )
+
+        self.load_land_use_plan_action = self.add_action(
+            "",
+            text="Lataa/avaa kaavaa",
+            triggered_callback=self.load_existing_land_use_plan,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Lataa/avaa kaava",
+        )
+
         self.template_dock_action = self.add_action(
             "",
-            "Feature Templates",
+            "Kaavatemplaatit",
             None,
             toggled_callback=self.toggle_template_dock,
             checkable=True,
             add_to_menu=True,
-            add_to_toolbar=True,
-        )
-
-        self.new_land_use_plan_action = self.add_action(
-            plan_icon_path,
-            "Create New Land Use Plan",
-            self.add_new_plan,
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Create a new land use plan",
-        )
-
-        self.load_land_use_plan_action = self.add_action(
-            load_icon_path,
-            text="Load existing land use plan",
-            triggered_callback=self.load_existing_land_use_plan,
-            parent=iface.mainWindow(),
             add_to_toolbar=True,
         )
 
