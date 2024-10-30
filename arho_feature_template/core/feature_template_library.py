@@ -186,12 +186,7 @@ class FeatureTemplater:
         if attribute_form.exec_():
             layer = get_layer_from_project(self.active_template.config.feature.layer)
             # Save the feature
-            for attributes in attribute_form.attribute_widgets.values():
-                for attribute, widget in attributes.items():
-                    feature.setAttribute(
-                        attribute,
-                        widget.text(),
-                    )
+            attribute_form.set_feature_attributes(feature)
 
             layer.beginEditCommand("Create feature from template")
             layer.addFeature(feature)

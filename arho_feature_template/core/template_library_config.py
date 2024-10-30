@@ -122,10 +122,9 @@ class Attribute:
     def display(self) -> str:
         if self.description is not None:
             return self.description
-        elif self.default is not None:
+        if self.default is not None:
             return self.default
-        else:
-            return ""
+        return ""
 
 
 def parse_template_library_config(template_library_config: Path) -> TemplateLibraryConfig:
