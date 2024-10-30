@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, cast
 
+from qgis.core import QgsProject, QgsVectorLayer
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QWidget
@@ -15,6 +16,11 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_l
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
+from arho_feature_template.utils.misc_utils import (
+    check_layer_changes,
+    commit_all_layer_changes,
+    prompt_commit_changes,
+)
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface, QgsMapTool
@@ -181,10 +187,18 @@ class Plugin:
             QMessageBox.critical(None, "Error", "No database connections found.")
             return
 
+        if check_layer_changes() and (not prompt_commit_changes() or not commit_all_layer_changes()):
+            return
+
         dialog = LoadPlanDialog(None, connections)
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_id = dialog.get_selected_plan_id()
+
+            project = QgsProject.instance()
+            for layer in project.mapLayers().values():
+                if isinstance(layer, QgsVectorLayer) and layer.isEditable():
+                    layer.commitChanges()
 
             if not selected_plan_id:
                 QMessageBox.critical(None, "Error", "No plan was selected.")
