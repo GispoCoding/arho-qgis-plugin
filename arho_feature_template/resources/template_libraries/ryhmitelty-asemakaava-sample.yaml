@@ -19,7 +19,7 @@ templates:
     # sub_group: Alue
     description: Aluella kuvataan ...
     feature:
-      layer: land_use_area
+      layer: Aluevaraus
       # layer: Aluevaraus
       attributes:
         - attribute: name
@@ -62,7 +62,7 @@ templates:
     # sub_group: Alue
     description: Aluella kuvataan ...
     feature:
-      layer: land_use_area
+      layer: Aluevaraus
       # layer: Aluevaraus
       attributes:
         - attribute: name
@@ -132,7 +132,7 @@ templates:
     # sub_group: Alue
     description: Aluella kuvataan ...
     feature:
-      layer: land_use_area
+      layer: Aluevaraus
       # layer: Aluevaraus
       attributes:
         - attribute: name
@@ -170,7 +170,7 @@ templates:
     # sub_group: Alue
     description: Aluella kuvataan ...
     feature:
-      layer: land_use_area
+      layer: Aluevaraus
       # layer: Aluevaraus
       attributes:
         - attribute: name
@@ -215,7 +215,7 @@ templates:
     # sub_group: Alue
     description: Aluella kuvataan ...
     feature:
-      layer: land_use_area
+      layer: Aluevaraus
       # layer: Aluevaraus
       attributes:
         - attribute: name
@@ -245,7 +245,7 @@ templates:
   - name: Ryhmätön simppeli kaavakohde
     description: Kaavakohde ilman kikkareita
     feature:
-      layer: other_area
+      layer: Aluevaraus
       attributes:
         - attribute: name
         - attribute: type_of_underground_id
