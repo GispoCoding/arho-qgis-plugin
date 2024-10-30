@@ -16,11 +16,7 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_l
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
-from arho_feature_template.utils.misc_utils import (
-    check_layer_changes,
-    commit_all_layer_changes,
-    prompt_commit_changes,
-)
+from arho_feature_template.utils.misc_utils import handle_unsaved_changes
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface, QgsMapTool
@@ -187,7 +183,7 @@ class Plugin:
             QMessageBox.critical(None, "Error", "No database connections found.")
             return
 
-        if check_layer_changes() and (not prompt_commit_changes() or not commit_all_layer_changes()):
+        if not handle_unsaved_changes():
             return
 
         dialog = LoadPlanDialog(None, connections)
