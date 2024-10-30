@@ -40,7 +40,11 @@
      <widget class="QgsFilterLineEdit" name="search_box"/>
     </item>
     <item>
-     <widget class="QTreeView" name="template_list"/>
+     <widget class="QTreeView" name="template_list">
+      <attribute name="headerVisible">
+       <bool>false</bool>
+      </attribute>
+     </widget>
     </item>
     <item>
      <widget class="QLabel" name="txt_tip">
@@ -56,7 +60,7 @@
   <customwidget>
    <class>QgsFilterLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>qgis.gui</header>
+   <header>qgsfilterlineedit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
