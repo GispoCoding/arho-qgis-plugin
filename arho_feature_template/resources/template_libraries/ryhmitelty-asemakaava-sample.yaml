@@ -3,16 +3,57 @@ meta:
   name: Asemakaavan kaavamääräykset
   version: "1.0"
 templates:
-  - name: Simppeli kaavakohde
+  - name: Korttelialue tai korttelialueen osa
     group: Osa-alue
-    # sub_group: Alue
-    description: Kaavakohde ilman kikkareita
+    description: Korttelialue
     feature:
-      layer: land_use_area
+      layer: Osa-alue
       attributes:
         - attribute: name
         - attribute: type_of_underground_id
           default: 1
+      child_features:
+        - layer: plan_requlation_group
+          attributes:
+            - attribute: name
+              default: Korttelin numero
+          child_features:
+            - layer: plan_requlation
+              attributes:
+                - attribute: type_of_plan_regulation_id
+                  default: korttelinNumero
+                  description: korttelin numero
+                - attribute: numeric_default
+
+  - name: Sitovan tonttijaon mukainen tontti
+    group: Osa-alue
+    feature:
+      layer: Osa-alue
+      attributes:
+        - attribute: name
+        - attribute: type_of_underground_id
+          default: 1
+
+  - name: Rakennusala
+    group: Osa-alue
+    feature:
+      layer: Osa-alue
+      attributes:
+        - attribute: name
+        - attribute: type_of_underground_id
+          default: 1
+      child_features:
+        - layer: plan_requlation_group
+          attributes:
+            - attribute: name
+              default: Tehokkuusluku
+          child_features:
+            - layer: plan_requlation
+              attributes:
+                - attribute: type_of_plan_regulation_id
+                  default: tehokkuusluku
+                  description: Tehokkuusluku
+                - attribute: numeric_default
 
   - name: Asuinrakennusten alue
     group: Aluevaraus
