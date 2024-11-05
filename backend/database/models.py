@@ -430,7 +430,11 @@ class LifeCycleDate(VersionedBase):
     __tablename__ = "lifecycle_date"
 
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
+        ForeignKey(
+            "codes.lifecycle_status.id",
+            name="plan_lifecycle_status_id_fkey",
+            ondelete="CASCADE",
+        ),
         index=True,
     )
     plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
@@ -480,7 +484,7 @@ class LifeCycleDate(VersionedBase):
     )
     # Let's load all the codes for objects joined.
     lifecycle_status = relationship(
-        "LifeCycleStatus", backref="lifecycle_dates", lazy="joined"
+        "LifeCycleStatus", back_populates="lifecycle_dates", lazy="joined"
     )
     starting_at: Mapped[Optional[datetime]]
     ending_at: Mapped[Optional[datetime]]

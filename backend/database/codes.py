@@ -3,7 +3,7 @@ from typing import Type
 from geoalchemy2 import Geometry
 from models import CodeBase
 from sqlalchemy import Column
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 
 
 class LifeCycleStatus(CodeBase):
@@ -13,6 +13,10 @@ class LifeCycleStatus(CodeBase):
 
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
+
+    lifecycle_dates = relationship(
+        "LifeCycleDate", back_populates="lifecycle_status", cascade="delete"
+    )
 
 
 class PlanType(CodeBase):
