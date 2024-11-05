@@ -10,7 +10,7 @@ on:
       - "main"
   release:
     types: [published]
-  
+
 jobs:
   code-style:
     runs-on: ubuntu-latest
