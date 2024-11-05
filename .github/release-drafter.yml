@@ -1,0 +1,50 @@
+name-template: "$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+template: |
+  ## Muutokset
+
+  $CHANGES
+
+  **Yksityiskohtaisempi muutosloki**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+categories:
+  - title: "🚀 Uudet ominaisuudet"
+    labels:
+      - "feature"
+      - "enhancement"
+  - title: "🐛 Korjaukset"
+    labels:
+      - "fix"
+      - "bugfix"
+      - "bug"
+  - title: "📖 Dokumentaatio"
+    labels:
+      - "documentation"
+  - title: "🧰 Ylläpito"
+    labels:
+      - "chore"
+      - "internal"
+
+exclude-labels:
+  - "skip-changelog"
+
+change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
+change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
+
+version-resolver:
+  major:
+    labels:
+      - "major"
+      - "breaking"
+  minor:
+    labels:
+      - "minor"
+      - "feature"
+      - "enhancement"
+  patch:
+    labels:
+      - "patch"
+      - "fix"
+      - "bug"
+  default: patch
