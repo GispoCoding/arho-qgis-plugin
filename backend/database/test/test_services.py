@@ -11,25 +11,25 @@ from sqlalchemy.orm import Session
 from .conftest import assert_database_is_alright, drop_hame_db
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def db_manager_url(docker_ip, docker_services):
     port = docker_services.port_for("db_manager", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def koodistot_loader_url(docker_ip, docker_services):
     port = docker_services.port_for("koodistot_loader", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def ryhti_client_url(docker_ip, docker_services):
     port = docker_services.port_for("ryhti_client", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def mml_loader_url(docker_ip, docker_services):
     port = docker_services.port_for("mml_loader", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
@@ -221,10 +221,8 @@ def validate_invalid_plan(ryhti_client_url, complete_test_plan):
         data["details"][complete_test_plan.id]
         == f"Validation FAILED for {complete_test_plan.id}."
     )
-    # our invalid plan has invalid code uri value. For some reason, the Ryhti API
-    # currently considers this as a JSON deserialization error (which it is not),
-    # so it returns HTTP 400 instead of 422.
-    assert data["ryhti_responses"][complete_test_plan.id]["status"] == 400
+    # our invalid plan is not valid, because it has certain invalid code combinations
+    assert data["ryhti_responses"][complete_test_plan.id]["status"] == 422
     assert data["ryhti_responses"][complete_test_plan.id]["errors"]
 
 
@@ -246,7 +244,6 @@ def test_validate_invalid_plan(validate_invalid_plan, main_db_params):
 @pytest.fixture()
 def valid_plan_in_preparation(
     session: Session,
-    populate_koodistot: None,
     complete_test_plan: models.Plan,
     land_use_area_instance: models.LandUseArea,
     land_use_point_instance: models.LandUsePoint,
@@ -261,103 +258,20 @@ def valid_plan_in_preparation(
     """
     Valid Ryhti plan in preparation phase.
 
-    Complete test plan is not yet a valid plan, because it contains test code values.
-    Replace them with actual imported Ryhti codes to pass validation:
+    Complete test plan is not yet quite valid. Fulfil some validation rules regarding
+    code values.
     """
-    session.add(complete_test_plan)
-    session.add(land_use_area_instance)
-    session.add(land_use_point_instance)
-    session.add(empty_value_plan_regulation_instance)
-    session.add(text_plan_regulation_instance)
     session.add(point_text_plan_regulation_instance)
     session.add(numeric_plan_regulation_instance)
     session.add(verbal_plan_regulation_instance)
-    session.add(plan_proposition_instance)
     session.add(general_plan_regulation_instance)
 
-    # Elinkaaren vaihe already has a valid value!
-    # Kaavoitusteema
-    community_structure_theme = (
-        session.query(codes.PlanTheme).filter_by(value="01").first()
-    )
-    plan_proposition_instance.plan_theme = community_structure_theme
-    empty_value_plan_regulation_instance.plan_theme = community_structure_theme
-    text_plan_regulation_instance.plan_theme = community_structure_theme
-    point_text_plan_regulation_instance.plan_theme = community_structure_theme
-    numeric_plan_regulation_instance.plan_theme = community_structure_theme
-    verbal_plan_regulation_instance.plan_theme = community_structure_theme
-    general_plan_regulation_instance.plan_theme = community_structure_theme
-
-    # Kaavamääräyksen tyyppi
-    detached_houses_type = (
-        session.query(codes.TypeOfPlanRegulation)
-        .filter_by(value="asumisenAlue")
-        .first()
-    )
-    empty_value_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
-    text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
-    point_text_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
-    numeric_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
-    general_plan_regulation_instance.type_of_plan_regulation = detached_houses_type
-    verbal_type = (
-        session.query(codes.TypeOfPlanRegulation)
-        .filter_by(value="sanallinenMaarays")
-        .first()
-    )
-    verbal_plan_regulation_instance.type_of_plan_regulation = verbal_type
-
-    # Sanallisen kaavamääräyksen laji
-    foundation_type_of_verbal_regulation = (
-        session.query(codes.TypeOfVerbalPlanRegulation)
-        .filter_by(value="perustaminen")
-        .first()
-    )
-    verbal_plan_regulation_instance.type_of_verbal_plan_regulation = (
-        foundation_type_of_verbal_regulation
-    )
-
-    # Kaavamääräyksen lisätiedon laji
-    principal_intended_use_type_of_additional_information = (
-        session.query(codes.TypeOfAdditionalInformation)
-        .filter_by(value="paakayttotarkoitus")
-        .first()
-    )
-    empty_value_plan_regulation_instance.intended_use = (
-        principal_intended_use_type_of_additional_information
-    )
-    text_plan_regulation_instance.intended_use = (
-        principal_intended_use_type_of_additional_information
-    )
-    numeric_plan_regulation_instance.intended_use = (
-        principal_intended_use_type_of_additional_information
-    )
     # General and verbal regulation type may *not* be intended use regulation!
     verbal_plan_regulation_instance.intended_use = None
     general_plan_regulation_instance.intended_use = None
     # Also, points cannot have intended use at the moment, though they should
     # be able to, they have detached houses type after all.
     point_text_plan_regulation_instance.intended_use = None
-
-    # Kaavan tyyppi
-    overall_regional_plan_plan_type = (
-        session.query(codes.PlanType).filter_by(value="11").first()
-    )
-    complete_test_plan.plan_type = overall_regional_plan_plan_type
-
-    # Hallinnollinen alue
-    uusimaa_administrative_region = (
-        session.query(codes.AdministrativeRegion).filter_by(value="01").first()
-    )
-    complete_test_plan.organisation.administrative_region = (
-        uusimaa_administrative_region
-    )
-
-    # Maanalaisuuden laji
-    overground_type_of_underground = (
-        session.query(codes.TypeOfUnderground).filter_by(value="01").first()
-    )
-    land_use_area_instance.type_of_underground = overground_type_of_underground
-    land_use_point_instance.type_of_underground = overground_type_of_underground
 
     # Numeric plan regulations are actually not allowed in maakuntakaava. So let's
     # put in a text value instead:

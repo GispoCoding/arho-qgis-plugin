@@ -1,6 +1,6 @@
 import json
-from copy import deepcopy
-from typing import Callable, Iterable, List, Optional
+import re
+from typing import Callable, List, Optional
 
 import codes
 import models
@@ -8,6 +8,8 @@ import pytest
 from base import PROJECT_SRID
 from requests_mock.request import _RequestObjectProxy
 from ryhti_client.ryhti_client import RyhtiClient
+
+# from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
 
@@ -65,7 +67,7 @@ def desired_plan_dict(
                     {
                         "planRegulationKey": general_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
                         "value": {
                             "dataType": "LocalizedText",
                             "text": general_plan_regulation_instance.text_value,
@@ -77,11 +79,11 @@ def desired_plan_dict(
                         ],
                         "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -101,7 +103,7 @@ def desired_plan_dict(
             {
                 "planObjectKey": land_use_area_instance.id,
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/test",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
                 "geometry": {
                     "srid": str(PROJECT_SRID),
                     "geometry": {
@@ -131,7 +133,7 @@ def desired_plan_dict(
             {
                 "planObjectKey": land_use_point_instance.id,
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/test",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
                 "geometry": {
                     "srid": str(PROJECT_SRID),
                     "geometry": {
@@ -153,7 +155,7 @@ def desired_plan_dict(
                     {
                         "planRegulationKey": point_text_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
                         "value": {
                             "dataType": "LocalizedText",
                             "text": point_text_plan_regulation_instance.text_value,
@@ -165,11 +167,11 @@ def desired_plan_dict(
                         ],
                         "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -190,7 +192,7 @@ def desired_plan_dict(
                     {
                         "planRegulationKey": empty_value_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
                         "subjectIdentifiers": [
                             empty_value_plan_regulation_instance.name[
                                 "fin"
@@ -198,11 +200,11 @@ def desired_plan_dict(
                         ],
                         "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -214,7 +216,7 @@ def desired_plan_dict(
                     {
                         "planRegulationKey": numeric_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
                         "value": {
                             "dataType": "decimal",
                             "number": numeric_plan_regulation_instance.numeric_value,
@@ -227,11 +229,11 @@ def desired_plan_dict(
                         ],
                         "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -243,7 +245,7 @@ def desired_plan_dict(
                     {
                         "planRegulationKey": text_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
                         "value": {
                             "dataType": "LocalizedText",
                             "text": text_plan_regulation_instance.text_value,
@@ -255,11 +257,11 @@ def desired_plan_dict(
                         ],
                         "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(text_plan_regulation_instance.ordering),
@@ -269,7 +271,7 @@ def desired_plan_dict(
                     {
                         "planRegulationKey": verbal_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/test",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sanallinenMaarays",
                         "value": {
                             "dataType": "LocalizedText",
                             "text": verbal_plan_regulation_instance.text_value,
@@ -280,15 +282,15 @@ def desired_plan_dict(
                             ]  # TODO: onko asiasana aina yksikielinen??
                         ],
                         "verbalRegulations": [
-                            "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/test"
+                            "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/perustaminen"
                         ],
                         "additionalInformations": [
                             {
-                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/test"
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -304,7 +306,7 @@ def desired_plan_dict(
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "value": plan_proposition_instance.text_value,
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/test",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
                         ],
                         "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
@@ -352,18 +354,18 @@ def desired_plan_matter_dict(
 
     return {
         "permanentPlanIdentifier": "MK-123456",
-        "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/test",
+        "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/11",
         "name": plan_instance.name,
         "timeOfInitiation": "2024-01-01",
         "description": plan_instance.description,
         "producerPlanIdentifier": plan_instance.producers_plan_identifier,
         "caseIdentifiers": [plan_instance.matter_management_identifier],
         "recordNumbers": [plan_instance.record_number],
-        "administrativeAreaIdentifiers": ["test"],
+        "administrativeAreaIdentifiers": ["01"],
         "digitalOrigin": "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01",
         "planMatterPhases": [
             {
-                "planMatterPhaseKey": "whatever",
+                "planMatterPhaseKey": "third_phase_test",
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                 "geographicalArea": desired_plan_dict["geographicalArea"],
                 "handlingEvent": {
@@ -458,7 +460,7 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
 @pytest.fixture()
 def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
     def match_request_body_with_correct_region(request: _RequestObjectProxy):
-        return request.json()["administrativeAreaIdentifier"] == "test"
+        return request.json()["administrativeAreaIdentifier"] == "01"
 
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/PermanentPlanIdentifier",
@@ -474,7 +476,7 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
     )
 
     def match_request_body_with_wrong_region(request: _RequestObjectProxy):
-        return request.json()["administrativeAreaIdentifier"] == "other-test"
+        return request.json()["administrativeAreaIdentifier"] == "02"
 
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/PermanentPlanIdentifier",
@@ -697,6 +699,7 @@ def authenticated_client_with_valid_plan_in_wrong_region(
     session: Session,
     client_with_plan_data: RyhtiClient,
     plan_instance: models.Plan,
+    organisation_instance: models.Organisation,
     another_organisation_instance: models.Organisation,
     mock_public_ryhti_validate_valid: Callable,
     mock_xroad_ryhti_authenticate: Callable,

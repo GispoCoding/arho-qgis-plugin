@@ -463,134 +463,198 @@ def session(connection_string):
     yield session()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def code_instance(session):
     instance = codes.LifeCycleStatus(value="test", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def another_code_instance(session):
     instance = codes.LifeCycleStatus(value="test2", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
-def preparation_status_instance(session) -> codes.LifeCycleStatus:
+@pytest.fixture()
+def preparation_status_instance(session):
     instance = codes.LifeCycleStatus(value="03", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
+def plan_proposal_status_instance(session):
+    instance = codes.LifeCycleStatus(value="04", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def plan_type_instance(session):
-    instance = codes.PlanType(value="test", status="LOCAL")
+    # Let's use real code to allow testing API endpoints that require this
+    # code value as parameter
+    # https://koodistot.suomi.fi/codescheme;registryCode=rytj;schemeCode=RY_Kaavalaji
+    # 11: Kokonaismaakuntakaava
+    instance = codes.PlanType(value="11", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def type_of_underground_instance(session):
-    instance = codes.TypeOfUnderground(value="test", status="LOCAL")
+    instance = codes.TypeOfUnderground(value="01", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def type_of_plan_regulation_group_instance(session):
     instance = codes.TypeOfPlanRegulationGroup(value="test", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def type_of_plan_regulation_instance(session):
-    instance = codes.TypeOfPlanRegulation(value="test", status="LOCAL")
+    instance = codes.TypeOfPlanRegulation(value="asumisenAlue", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
+def type_of_plan_regulation_verbal_instance(session):
+    instance = codes.TypeOfPlanRegulation(value="sanallinenMaarays", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def type_of_verbal_plan_regulation_instance(session):
-    instance = codes.TypeOfVerbalPlanRegulation(value="test", status="LOCAL")
+    instance = codes.TypeOfVerbalPlanRegulation(value="perustaminen", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def type_of_additional_information_instance(session):
-    instance = codes.TypeOfAdditionalInformation(value="test", status="LOCAL")
+    instance = codes.TypeOfAdditionalInformation(
+        value="paakayttotarkoitus", status="LOCAL"
+    )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def type_of_source_data_instance(session):
     instance = codes.TypeOfSourceData(value="test", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def type_of_document_instance(session):
     instance = codes.TypeOfDocument(value="test", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def category_of_publicity_instance(session):
     instance = codes.CategoryOfPublicity(value="test", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def administrative_region_instance(session):
-    instance = codes.AdministrativeRegion(value="test", status="LOCAL")
+    instance = codes.AdministrativeRegion(value="01", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def another_administrative_region_instance(session):
-    instance = codes.AdministrativeRegion(value="other-test", status="LOCAL")
+    instance = codes.AdministrativeRegion(value="02", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def plan_theme_instance(session):
-    instance = codes.PlanTheme(value="test", status="LOCAL")
+    instance = codes.PlanTheme(value="01", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
 def plan_instance(
     session,
+    code_instance,
+    another_code_instance,
     preparation_status_instance,
+    plan_proposal_status_instance,
     organisation_instance,
+    another_organisation_instance,
     plan_type_instance,
     general_regulation_group_instance,
 ):
+    # Any status and organisation instances that may be added to the plan later
+    # have to be included above. If they are only created later, they will be torn
+    # down too early and teardown will fail, because plan cannot have empty
+    # status or organisation.
     instance = models.Plan(
         geom=from_shape(
             shape(
@@ -627,17 +691,19 @@ def plan_instance(
     session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def organisation_instance(session, administrative_region_instance):
     instance = models.Organisation(
         business_id="test", administrative_region=administrative_region_instance
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def another_organisation_instance(session, another_administrative_region_instance):
     instance = models.Organisation(
         business_id="other-test",
@@ -645,7 +711,9 @@ def another_organisation_instance(session, another_administrative_region_instanc
     )
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -944,7 +1012,7 @@ def point_text_plan_regulation_instance(
 def verbal_plan_regulation_instance(
     session,
     preparation_status_instance,
-    type_of_plan_regulation_instance,
+    type_of_plan_regulation_verbal_instance,
     type_of_verbal_plan_regulation_instance,
     plan_regulation_group_instance,
 ):
@@ -957,7 +1025,7 @@ def verbal_plan_regulation_instance(
         name={"fin": "test_regulation"},
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
-        type_of_plan_regulation=type_of_plan_regulation_instance,
+        type_of_plan_regulation=type_of_plan_regulation_verbal_instance,
         type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
         ordering=4,
@@ -1042,12 +1110,14 @@ def document_instance(
     session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def lifecycle_date_instance(session, code_instance):
     instance = models.LifeCycleDate(lifecycle_status=code_instance)
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -1071,8 +1141,12 @@ def complete_test_plan(
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_sending_out_for_opinions_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
     plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
     decisionmaker_type: codes.TypeOfDecisionMaker,
     pending_date_instance: models.LifeCycleDate,
@@ -1117,12 +1191,14 @@ def complete_test_plan(
     session.commit()
 
 
-@pytest.fixture(scope="module")
-def pending_status_instance(session) -> codes.LifeCycleStatus:
+@pytest.fixture()
+def pending_status_instance(session):
     instance = codes.LifeCycleStatus(value="02", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -1157,12 +1233,14 @@ def preparation_date_instance(
     session.commit()
 
 
-@pytest.fixture(scope="module")
-def approved_status_instance(session) -> codes.LifeCycleStatus:
+@pytest.fixture()
+def approved_status_instance(session):
     instance = codes.LifeCycleStatus(value="06", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -1181,12 +1259,14 @@ def approved_date_instance(
     session.commit()
 
 
-@pytest.fixture(scope="module")
-def valid_status_instance(session) -> codes.LifeCycleStatus:
+@pytest.fixture()
+def valid_status_instance(session):
     instance = codes.LifeCycleStatus(value="13", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
 @pytest.fixture(scope="function")
@@ -1205,69 +1285,131 @@ def valid_date_instance(
     session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def participation_plan_presenting_for_public_decision(
     session,
-) -> codes.NameOfPlanCaseDecision:
+):
     instance = codes.NameOfPlanCaseDecision(value="04", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def plan_material_presenting_for_public_decision(
     session,
-) -> codes.NameOfPlanCaseDecision:
+):
     instance = codes.NameOfPlanCaseDecision(value="05", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def draft_plan_presenting_for_public_decision(
     session,
-) -> codes.NameOfPlanCaseDecision:
+):
     instance = codes.NameOfPlanCaseDecision(value="06", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
+def plan_proposal_sending_out_for_opinions_decision(
+    session,
+):
+    instance = codes.NameOfPlanCaseDecision(value="07", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def plan_proposal_presenting_for_public_decision(
+    session,
+):
+    instance = codes.NameOfPlanCaseDecision(value="08", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def participation_plan_presenting_for_public_event(
     session,
-) -> codes.TypeOfProcessingEvent:
+):
     instance = codes.TypeOfProcessingEvent(value="05", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def plan_material_presenting_for_public_event(
     session,
-) -> codes.TypeOfProcessingEvent:
+):
     instance = codes.TypeOfProcessingEvent(value="06", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
+def plan_proposal_presenting_for_public_event(
+    session,
+):
+    instance = codes.TypeOfProcessingEvent(value="07", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def plan_proposal_requesting_for_opinions_event(
+    session,
+):
+    instance = codes.TypeOfProcessingEvent(value="08", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def presentation_to_the_public_interaction(
     session,
-) -> codes.TypeOfInteractionEvent:
+):
     instance = codes.TypeOfInteractionEvent(value="01", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
 
 
-@pytest.fixture(scope="module")
-def decisionmaker_type(session) -> codes.TypeOfDecisionMaker:
+@pytest.fixture()
+def decisionmaker_type(session):
     instance = codes.TypeOfDecisionMaker(value="01", status="LOCAL")
     session.add(instance)
     session.commit()
-    return instance
+    yield instance
+    session.delete(instance)
+    session.commit()
