@@ -1,0 +1,8 @@
+enhancement:
+  - head-branch: ["^feature/"]
+
+bug:
+  - head-branch: ["^fix/"]
+
+internal:
+  - head-branch: ["^chore/"]
