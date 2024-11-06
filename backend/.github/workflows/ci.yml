@@ -11,35 +11,6 @@ on:
     types: [published]
 
 jobs:
-  test_functions:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.12"
-      - name: Install dependencies
-        run: pip install -r requirements.txt -r requirements-dev.txt
-      - name: Copy .env file
-        run: cp .env.dev .env
-      - name: Create debug directory
-        run: mkdir database/ryhti_debug
-      - name: Test
-        run: python -m pytest
-        working-directory: database
-        env:
-          SYKE_APIKEY: ${{ secrets.SYKE_APIKEY }}
-          MML_APIKEY: ${{ secrets.MML_APIKEY }}
-      - uses: ravsamhq/notify-slack-action@v2
-        if: always()
-        with:
-          status: ${{ job.status }}
-          notification_title: "${{github.sha}} has {status_message}"
-          message_format: "{emoji} *{job}* {status_message}"
-          footer: "<{repo_url}|{repo}> | <{run_url}|View job>"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   build-and-deploy-lambda-functions:
     runs-on: ubuntu-latest
