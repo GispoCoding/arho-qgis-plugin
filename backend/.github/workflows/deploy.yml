@@ -20,7 +20,7 @@ jobs:
           else
             ENVIRONMENT=arho-test
           fi
-          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_OUTPUT
 
   build-and-deploy-lambda-functions:
     runs-on: ubuntu-latest
