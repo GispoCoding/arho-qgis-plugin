@@ -236,13 +236,11 @@ decisions_by_status = {
     "06": [
         "11A"
     ],  # lifecycle/req-codelist-plandecision-name-alternative-codevalues-approved-spatialplan  # noqa
-    "07": None,  # lifecycle/req-planmatterdecision-not-allowed-07-09-lifecycles
     "08": [
         "12",
         "13",
         "15",
     ],  # lifecycle/req-planmatterdecision-name-subject-appeal-lifecycle
-    "09": None,  # lifecycle/req-planmatterdecision-not-allowed-07-09-lifecycles
 }
 
 processing_events_by_status = {

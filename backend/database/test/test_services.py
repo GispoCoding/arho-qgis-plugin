@@ -299,7 +299,8 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     the lambda runs correctly, not that the plan *matter* is formed according to spec.
 
     A valid plan should make lambda return http 200 OK (to indicate that the validation
-    has been run successfully), with the validation errors list empty.
+    has been run successfully), with the validation errors list empty and validation
+    warnings returned.
     """
     payload = {"event_type": 1, "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
@@ -312,6 +313,7 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
         == f"Plan matter validation successful for {valid_plan_in_preparation.id}!"
     )
     assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 200
+    assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
     assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
 
 
@@ -336,5 +338,69 @@ def test_validate_valid_plan_matter_in_preparation(
             assert validation_date
             assert errors == "Kaava-asia on validi ja sen voi viedä Ryhtiin."
             assert permanent_plan_identifier == "MK-123456"
+    finally:
+        conn.close()
+
+
+@pytest.fixture()
+def post_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
+    """
+    Validate and POST a valid plan to the mock X-Road API. As earlier, the plan is first
+    validated with public API and plan matter validated with mock X-Road API.
+
+    A POSTed plan should make lambda return http 200 OK (to indicate that the POST
+    has been run successfully), with the validation errors list empty and validation
+    warnings returned.
+    """
+    payload = {"event_type": 2, "save_json": True}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    assert (
+        data["title"]
+        == "Plan and plan matter validations run. Marked plan matters POSTed."
+    )
+    assert (
+        data["details"][valid_plan_in_preparation.id]
+        == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
+    )
+    assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
+    assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
+    assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+
+
+def test_post_valid_plan_matter_in_preparation(
+    post_valid_plan_in_preparation, main_db_params
+):
+    """
+    Test the whole lambda endpoint with a valid plan and plan matter in preparation
+    stage. Plan is validated with public Ryhti API. Validate and POST plan matter with
+    mock X-Road API.
+
+    The mock X-Road should return a permanent identifier and report the plan matter
+    as valid.
+
+    After reporting the plan matter as valid, the mock X-Road should accept POSTed
+    plan matter and report the plan matter as being created in Ryhti.
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT validated_at, validation_errors, permanent_plan_identifier, to_be_exported, exported_at FROM hame.plan"
+            )
+            (
+                validation_date,
+                errors,
+                permanent_plan_identifier,
+                to_be_exported,
+                exported_at,
+            ) = cur.fetchone()
+            assert validation_date
+            assert errors == "Uusi kaava-asian vaihe on viety Ryhtiin."
+            assert permanent_plan_identifier == "MK-123456"
+            assert not to_be_exported
+            assert exported_at
     finally:
         conn.close()

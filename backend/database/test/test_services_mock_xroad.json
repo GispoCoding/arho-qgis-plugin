@@ -6,7 +6,9 @@
             "queryStringParameters": [
                 {
                     "name": "clientId",
-                    "values": ["test-id"]
+                    "values": [
+                        "test-id"
+                    ]
                 }
             ],
             "headers": {
@@ -61,7 +63,54 @@
             }
         },
         "httpResponse": {
+            "body": {
+                "type": "JSON",
+                "json": {
+                    "key": "string",
+                    "uri": "string",
+                    "warnings": [
+                        {
+                            "ruleId": "string",
+                            "message": "string",
+                            "instance": "string",
+                            "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                        }
+                    ]
+                },
+                "contentType": "application/json"
+            },
             "statusCode": 200
+        }
+    },
+    {
+        "httpRequest": {
+            "method": "POST",
+            "path": "/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456",
+            "headers": {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-Road-Client": "FI-TEST/COM/2455538-5/ryhti-gispo-client",
+                "Authorization": "Bearer test-token"
+            }
+        },
+        "httpResponse": {
+            "body": {
+                "type": "JSON",
+                "json": {
+                    "key": "string",
+                    "uri": "string",
+                    "warnings": [
+                        {
+                            "ruleId": "string",
+                            "message": "string",
+                            "instance": "string",
+                            "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                        }
+                    ]
+                },
+                "contentType": "application/json"
+            },
+            "statusCode": 201
         }
     }
 ]

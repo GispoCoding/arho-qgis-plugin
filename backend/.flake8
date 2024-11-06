@@ -9,3 +9,5 @@ extend-ignore =
             # whitespace before ':'
             ANN101
             # Missing type annotation for self in method
+            N815
+            # camelCase

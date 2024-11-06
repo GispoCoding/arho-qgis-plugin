@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Callable, List, Optional
+from typing import Callable, List, Mapping, Optional
 
 import codes
 import models
@@ -8,8 +8,7 @@ import pytest
 from base import PROJECT_SRID
 from requests_mock.request import _RequestObjectProxy
 from ryhti_client.ryhti_client import RyhtiClient
-
-# from simplejson import JSONEncoder
+from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
 
@@ -338,8 +337,12 @@ def desired_plan_matter_dict(
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_sending_out_for_opinions_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
     plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
     decisionmaker_type: codes.TypeOfDecisionMaker,
 ) -> dict:
@@ -433,6 +436,18 @@ def mock_public_ryhti_validate_invalid(requests_mock) -> None:
 def mock_public_ryhti_validate_valid(requests_mock) -> None:
     requests_mock.post(
         "http://mock.url/Plan/validate",
+        json={
+            "key": "string",
+            "uri": "string",
+            "warnings": [
+                {
+                    "ruleId": "string",
+                    "message": "string",
+                    "instance": "string",
+                    "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                }
+            ],
+        },
         status_code=200,
     )
 
@@ -530,6 +545,18 @@ def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
 def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456/validate",
+        json={
+            "key": "string",
+            "uri": "string",
+            "warnings": [
+                {
+                    "ruleId": "string",
+                    "message": "string",
+                    "instance": "string",
+                    "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                }
+            ],
+        },
         request_headers={
             "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Authorization": "Bearer test-token",
@@ -537,6 +564,111 @@ def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
             "Content-type": "application/json",
         },
         status_code=200,
+    )
+
+
+@pytest.fixture()
+def mock_xroad_ryhti_post_new_plan_matter(requests_mock) -> None:
+    requests_mock.get(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456",
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        status_code=404,
+    )
+    requests_mock.post(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456",
+        json={
+            "key": "string",
+            "uri": "string",
+            "warnings": [
+                {
+                    "ruleId": "string",
+                    "message": "string",
+                    "instance": "string",
+                    "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                }
+            ],
+        },
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        status_code=201,
+    )
+
+
+@pytest.fixture()
+def mock_xroad_ryhti_update_existing_plan_matter(
+    requests_mock, desired_plan_matter_dict
+) -> None:
+    # The plan matter exists
+    requests_mock.get(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456",
+        json=desired_plan_matter_dict,
+        json_encoder=JSONEncoder,  # We need simplejson to encode decimals!!
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        status_code=200,
+    )
+    # Existing phase may be updated.
+    requests_mock.put(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456/phase/third_phase_test",
+        json={
+            "key": "string",
+            "uri": "string",
+            "warnings": [
+                {
+                    "ruleId": "string",
+                    "message": "string",
+                    "instance": "string",
+                    "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                }
+            ],
+        },
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        status_code=200,
+    )
+    # New phase may be created.
+    requests_mock.post(
+        # *Any* path that is *not* used by the existing phase is valid. Check that we don't use the
+        # existing path when creating a new phase.
+        re.compile(
+            r"^http://mock2\.url:8080/r1/FI/GOV/0996189\-5/Ryhti\-Syke\-service/planService/api/RegionalPlanMatter/MK\-123456/phase/(?!third_phase_test).*$"
+        ),
+        json={
+            "key": "string",
+            "uri": "string",
+            "warnings": [
+                {
+                    "ruleId": "string",
+                    "message": "string",
+                    "instance": "string",
+                    "classKey": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                }
+            ],
+        },
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "application/json",
+        },
+        status_code=201,
     )
 
 
@@ -552,6 +684,44 @@ def client_with_plan_data(
     client like done in handler method, so all methods depending on data being serialized already
     will work as expected.
     """
+    # Let's mock production x-road with gispo organization client here.
+    client = RyhtiClient(
+        connection_string,
+        public_api_url="http://mock.url",
+        xroad_server_address="http://mock2.url",
+        xroad_instance="FI",
+        xroad_member_class="COM",
+        xroad_member_code="2455538-5",
+        xroad_member_client_name="ryhti-gispo-client",
+        xroad_syke_client_id="test-id",
+        xroad_syke_client_secret="test-secret",
+    )
+    client.plan_dictionaries = client.get_plan_dictionaries()
+    return client
+
+
+@pytest.fixture(scope="function")
+def client_with_plan_data_in_proposal_phase(
+    session: Session,
+    connection_string: str,
+    complete_test_plan: models.Plan,
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data in proposal phase read in.
+
+    We have to create the plan data in the database before returning the client, because the client
+    reads plans from the database when initializing. Also, let's cache plan dictionaries in the
+    client like done in handler method, so all methods depending on data being serialized already
+    will work as expected.
+    """
+    # Client will cache plan phase when it is initialized, so we have to make
+    # sure to update the plan phase in the database *before* that.
+    session.add(complete_test_plan)
+    session.add(plan_proposal_status_instance)
+    complete_test_plan.lifecycle_status = plan_proposal_status_instance
+    session.commit()
+
     # Let's mock production x-road with gispo organization client here.
     client = RyhtiClient(
         connection_string,
@@ -587,7 +757,9 @@ def assert_lists_equal(list1: list, list2: list, ignore_keys: Optional[List] = [
             assert item1 == item2
 
 
-def assert_dicts_equal(dict1: dict, dict2: dict, ignore_keys: Optional[List] = []):
+def assert_dicts_equal(
+    dict1: Mapping, dict2: Mapping, ignore_keys: Optional[List] = []
+):
     """
     Recursively check that dicts contain the same keys with same values.
 
@@ -724,6 +896,34 @@ def authenticated_client_with_valid_plan_in_wrong_region(
     return client_with_plan_data
 
 
+@pytest.fixture()
+def authenticated_client_with_valid_plan_in_proposal_phase(
+    session: Session,
+    client_with_plan_data_in_proposal_phase: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_ryhti_validate_valid: Callable,
+    mock_xroad_ryhti_authenticate: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data in proposal phase read in and validated
+    without errors, and that is authenticated to our mock X-Road API.
+    """
+    responses = client_with_plan_data_in_proposal_phase.validate_plans()
+    client_with_plan_data_in_proposal_phase.save_plan_validation_responses(responses)
+    session.refresh(plan_instance)
+    assert plan_instance.validated_at
+    assert (
+        plan_instance.validation_errors
+        == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
+    )
+    client_with_plan_data_in_proposal_phase.xroad_ryhti_authenticate()
+    assert (
+        client_with_plan_data_in_proposal_phase.xroad_headers["Authorization"]
+        == "Bearer test-token"
+    )
+    return client_with_plan_data_in_proposal_phase
+
+
 def test_set_permanent_plan_identifiers_in_wrong_region(
     session: Session,
     authenticated_client_with_valid_plan_in_wrong_region: RyhtiClient,
@@ -803,6 +1003,40 @@ def client_with_plan_with_permanent_identifier(
     return authenticated_client_with_valid_plan
 
 
+@pytest.fixture()
+def client_with_plan_with_permanent_identifier_in_proposal_phase(
+    session: Session,
+    authenticated_client_with_valid_plan_in_proposal_phase: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_permanentidentifier: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data in proposal phase read in, validated and
+    its permanent identifier set.
+    """
+    id_responses = (
+        authenticated_client_with_valid_plan_in_proposal_phase.get_permanent_plan_identifiers()
+    )
+    authenticated_client_with_valid_plan_in_proposal_phase.set_permanent_plan_identifiers(
+        id_responses
+    )
+    session.refresh(plan_instance)
+    print(id_responses)
+    received_plan_identifier = next(iter(id_responses.values()))["detail"]
+    assert plan_instance.permanent_plan_identifier
+    assert plan_instance.permanent_plan_identifier == received_plan_identifier
+    authenticated_client_with_valid_plan_in_proposal_phase.plan_matter_dictionaries = (
+        authenticated_client_with_valid_plan_in_proposal_phase.get_plan_matters()
+    )
+    assert (
+        authenticated_client_with_valid_plan_in_proposal_phase.plan_matter_dictionaries[
+            plan_instance.id
+        ]["permanentPlanIdentifier"]
+        == received_plan_identifier
+    )
+    return authenticated_client_with_valid_plan_in_proposal_phase
+
+
 def test_get_plan_matters(
     client_with_plan_with_permanent_identifier: RyhtiClient,
     plan_instance: models.Plan,
@@ -864,3 +1098,170 @@ def test_save_plan_matter_validation_responses(
     session.refresh(plan_instance)
     assert plan_instance.validated_at
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]
+
+
+@pytest.fixture()
+def client_with_plan_matter_to_be_posted(
+    session: Session,
+    client_with_plan_with_permanent_identifier: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_validate_valid: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data read in, validated, its permanent
+    identifier set and plan matter validated and marked to be exported.
+    """
+    responses = client_with_plan_with_permanent_identifier.validate_plan_matters()
+    message = client_with_plan_with_permanent_identifier.save_plan_matter_validation_responses(
+        responses
+    )
+    session.refresh(plan_instance)
+    # Mark plan instance to be exported
+    plan_instance.to_be_exported = True
+    session.commit()
+
+    assert not next(iter(responses.values()))["errors"]
+    assert plan_instance.validated_at
+    assert (
+        plan_instance.validation_errors
+        == "Kaava-asia on validi ja sen voi viedä Ryhtiin."
+    )
+    return client_with_plan_with_permanent_identifier
+
+
+@pytest.fixture()
+def client_with_plan_matter_in_new_phase_to_be_posted(
+    session: Session,
+    client_with_plan_with_permanent_identifier_in_proposal_phase: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_validate_valid: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data in proposal phase read in, validated,
+    its permanent identifier set and plan matter validated and marked to be exported.
+    """
+    responses = (
+        client_with_plan_with_permanent_identifier_in_proposal_phase.validate_plan_matters()
+    )
+    message = client_with_plan_with_permanent_identifier_in_proposal_phase.save_plan_matter_validation_responses(
+        responses
+    )
+    session.refresh(plan_instance)
+    # Mark plan instance to be exported
+    plan_instance.to_be_exported = True
+    session.commit()
+
+    assert not next(iter(responses.values()))["errors"]
+    assert plan_instance.validated_at
+    assert (
+        plan_instance.validation_errors
+        == "Kaava-asia on validi ja sen voi viedä Ryhtiin."
+    )
+    return client_with_plan_with_permanent_identifier_in_proposal_phase
+
+
+def test_post_new_plan_matters(
+    client_with_plan_matter_to_be_posted: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_post_new_plan_matter: Callable,
+):
+    """
+    Check that JSON is posted and response received when the plan matter does not
+    exist in Ryhti yet.
+    """
+    responses = client_with_plan_matter_to_be_posted.post_plan_matters()
+    for plan_id, response in responses.items():
+        assert plan_id == plan_instance.id
+        assert response["warnings"]
+        assert not response["errors"]
+
+
+def test_save_new_plan_matter_post_responses(
+    session: Session,
+    client_with_plan_matter_to_be_posted: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_post_new_plan_matter: Callable,
+):
+    """
+    Check that export time is saved to database.
+    """
+    responses = client_with_plan_matter_to_be_posted.post_plan_matters()
+    message = client_with_plan_matter_to_be_posted.save_plan_matter_post_responses(
+        responses
+    )
+    session.refresh(plan_instance)
+    assert plan_instance.exported_at
+    assert not plan_instance.to_be_exported
+    assert plan_instance.validation_errors == "Uusi kaava-asian vaihe on viety Ryhtiin."
+
+
+def test_update_existing_plan_matters(
+    session: Session,
+    client_with_plan_matter_in_new_phase_to_be_posted: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_update_existing_plan_matter: Callable,
+):
+    """
+    Check that JSON is posted and response received when the plan matter exists in Ryhti
+    and a new plan matter phase must be posted.
+    """
+    responses = client_with_plan_matter_in_new_phase_to_be_posted.post_plan_matters()
+    for plan_id, response in responses.items():
+        assert plan_id == plan_instance.id
+        assert response["warnings"]
+        assert not response["errors"]
+
+
+def test_save_update_existing_matter_post_responses(
+    session: Session,
+    client_with_plan_matter_in_new_phase_to_be_posted: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_update_existing_plan_matter: Callable,
+):
+    """
+    Check that export time is saved to database.
+    """
+    responses = client_with_plan_matter_in_new_phase_to_be_posted.post_plan_matters()
+    message = client_with_plan_matter_in_new_phase_to_be_posted.save_plan_matter_post_responses(
+        responses
+    )
+    session.refresh(plan_instance)
+    assert plan_instance.exported_at
+    assert not plan_instance.to_be_exported
+    assert plan_instance.validation_errors == "Uusi kaava-asian vaihe on viety Ryhtiin."
+
+
+def test_update_existing_plan_matter_phase(
+    session: Session,
+    client_with_plan_matter_to_be_posted: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_update_existing_plan_matter: Callable,
+):
+    """
+    Check that JSON is posted and response received when the plan matter and the plan matter
+    phase exist in Ryhti and the plan matter phase must be updated.
+    """
+    responses = client_with_plan_matter_to_be_posted.post_plan_matters()
+    for plan_id, response in responses.items():
+        assert plan_id == plan_instance.id
+        assert response["warnings"]
+        assert not response["errors"]
+
+
+def test_save_update_existing_matter_phase_post_responses(
+    session: Session,
+    client_with_plan_matter_to_be_posted: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_update_existing_plan_matter: Callable,
+):
+    """
+    Check that export time is saved to database.
+    """
+    responses = client_with_plan_matter_to_be_posted.post_plan_matters()
+    message = client_with_plan_matter_to_be_posted.save_plan_matter_post_responses(
+        responses
+    )
+    session.refresh(plan_instance)
+    assert plan_instance.exported_at
+    assert not plan_instance.to_be_exported
+    assert plan_instance.validation_errors == "Kaava-asian vaihe on päivitetty Ryhtiin."
