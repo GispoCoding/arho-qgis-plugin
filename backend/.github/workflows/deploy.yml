@@ -10,7 +10,7 @@ jobs:
   define-environment:
     runs-on: ubuntu-latest
     outputs:
-      environment: ${{ steps.set-env.outputs.ENVIRONMENT_ENABLED }}
+      environment: ${{ steps.set-env.outputs.environment }}
     steps:
       - name: Set environment
         id: set-env
@@ -20,7 +20,7 @@ jobs:
           else
             ENVIRONMENT=arho-test
           fi
-          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
 
   build-and-deploy-lambda-functions:
     runs-on: ubuntu-latest
