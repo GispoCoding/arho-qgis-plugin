@@ -2,21 +2,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, cast
 
-from qgis.core import QgsProject, QgsVectorLayer
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QWidget
+from qgis.PyQt.QtWidgets import QAction, QWidget
 from qgis.utils import iface
 
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
-from arho_feature_template.core.new_plan import NewPlan
-from arho_feature_template.core.update_plan import LandUsePlan, update_selected_plan
-from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
+from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
-from arho_feature_template.utils.db_utils import get_existing_database_connection_names
-from arho_feature_template.utils.misc_utils import handle_unsaved_changes
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface, QgsMapTool
@@ -32,6 +27,7 @@ class Plugin:
     def __init__(self) -> None:
         setup_logger(Plugin.name)
         self.digitizing_tool = None
+        self.plan_manager = PlanManager()
 
         # initialize locale
         locale, file_path = setup_translation()
@@ -127,7 +123,6 @@ class Plugin:
 
     def initGui(self) -> None:  # noqa N802
         self.templater = FeatureTemplater()
-        self.new_plan = NewPlan()
 
         # plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
         # load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
@@ -172,37 +167,10 @@ class Plugin:
             self.template_dock_action.setChecked(False)
 
     def add_new_plan(self):
-        self.new_plan.add_new_plan()
+        self.plan_manager.add_new_plan()
 
-    def load_existing_land_use_plan(self) -> None:
-        """Open existing land use plan."""
-
-        connections = get_existing_database_connection_names()
-
-        if not connections:
-            QMessageBox.critical(None, "Error", "No database connections found.")
-            return
-
-        if not handle_unsaved_changes():
-            return
-
-        dialog = LoadPlanDialog(None, connections)
-
-        if dialog.exec_() == QDialog.Accepted:
-            selected_plan_id = dialog.get_selected_plan_id()
-
-            project = QgsProject.instance()
-            for layer in project.mapLayers().values():
-                if isinstance(layer, QgsVectorLayer) and layer.isEditable():
-                    layer.commitChanges()
-
-            if not selected_plan_id:
-                QMessageBox.critical(None, "Error", "No plan was selected.")
-                return
-
-            plan = LandUsePlan(selected_plan_id)
-
-            update_selected_plan(plan)
+    def load_existing_land_use_plan(self):
+        self.plan_manager.load_land_use_plan()
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
