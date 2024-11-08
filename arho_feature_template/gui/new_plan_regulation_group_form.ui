@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
-    <height>480</height>
+    <width>769</width>
+    <height>535</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,8 +34,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>598</width>
-            <height>380</height>
+            <width>727</width>
+            <height>435</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout">
@@ -89,7 +89,25 @@
       <attribute name="title">
        <string>Kaavamääräykset</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QTreeWidget" name="plan_regulations_view">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <attribute name="headerVisible">
+          <bool>false</bool>
+         </attribute>
+         <column>
+          <property name="text">
+           <string notr="true">1</string>
+          </property>
+         </column>
+        </widget>
+       </item>
        <item>
         <widget class="QScrollArea" name="plan_regulations_scroll_area">
          <property name="widgetResizable">
@@ -100,35 +118,11 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>598</width>
-            <height>380</height>
+            <width>465</width>
+            <height>435</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="plan_regulations_layout">
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <item>
-              <widget class="QPushButton" name="add_plan_regulation_btn">
-               <property name="text">
-                <string>Lisää kaavamääräys</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
            <item>
             <spacer name="verticalSpacer">
              <property name="orientation">
@@ -163,8 +157,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>598</width>
-            <height>380</height>
+            <width>727</width>
+            <height>435</height>
            </rect>
           </property>
          </widget>
