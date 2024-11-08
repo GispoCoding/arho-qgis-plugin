@@ -7,8 +7,29 @@ on:
       - "vsl"
 
 jobs:
+  check-skip-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      skip-deploy: ${{ steps.check-skip-label.outputs.skip-deploy }}
+    steps:
+      - name: Check if the commit should be deployed
+        id: check-skip-label
+        run: |
+          SKIP_DEPLOY=false
+          # Get the PR number where the commit was introduced in
+          PR_NUMBER=$(gh pr list --search ${{ github.sha }} --state merged --json number --jq '.[0].number')
+          if [ -n "$PR_NUMBER" ]; then
+            LABELS=$(gh pr view $PR_NUMBER --json labels --jq '.labels[].name')
+            if echo "$LABELS" | grep -q "skip deploy"; then
+              SKIP_DEPLOY=true
+            fi
+          fi
+          echo "skip-deploy=$SKIP_DEPLOY" >> $GITHUB_OUTPUT
+
   define-environment:
     runs-on: ubuntu-latest
+    needs: check-skip-deploy
+    if: ${{ needs.check-skip-deploy.outputs.skip-deploy }} == 'false'
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
     steps:
