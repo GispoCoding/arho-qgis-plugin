@@ -8,7 +8,7 @@ import requests
 from koodistot_loader.koodistot_loader import codes
 from sqlalchemy.orm import Session
 
-from .conftest import assert_database_is_alright, drop_hame_db
+from .conftest import assert_database_is_alright, assert_dicts_equal, drop_hame_db
 
 
 @pytest.fixture(scope="module")
@@ -38,7 +38,7 @@ def mml_loader_url(docker_ip, docker_services):
 @pytest.fixture()
 def create_db(db_manager_url, main_db_params, root_db_params):
     payload = {
-        "event_type": 1,
+        "action": "create_db",
     }
     r = requests.post(db_manager_url, data=json.dumps(payload))
     data = r.json()
@@ -203,6 +203,41 @@ def test_populate_admin_region_geometries(
 
 
 @pytest.fixture()
+def get_plan(ryhti_client_url, complete_test_plan, desired_plan_dict):
+    """
+    Get invalid plan JSON from lambda. The plan should be validated separately.
+
+    Getting plan should make lambda return http 200 OK (to indicate that serialization
+    has been run successfully), with the ryhti_responses dict empty, and details
+    dict containing the serialized plan(s).
+    """
+    payload = {"action": "get_plans", "save_json": True}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    assert data["title"] == "Returning serialized plans from database."
+    assert_dicts_equal(data["details"][complete_test_plan.id], desired_plan_dict)
+    assert not data["ryhti_responses"]
+
+
+def test_get_plan(get_plan, main_db_params):
+    """
+    Test the whole lambda endpoint with an invalid plan
+    """
+    # getting plan JSON from lambda should not run validations
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
+    finally:
+        conn.close()
+
+
+@pytest.fixture()
 def validate_invalid_plan(ryhti_client_url, complete_test_plan):
     """
     Validate an invalid Ryhti plan against the Ryhti API. Complete test plan is not yet a
@@ -211,7 +246,7 @@ def validate_invalid_plan(ryhti_client_url, complete_test_plan):
     An invalid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors returned in the payload.
     """
-    payload = {"event_type": 1, "save_json": True}
+    payload = {"action": "validate_plans", "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
     data = r.json()
     print(data)
@@ -302,7 +337,7 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     has been run successfully), with the validation errors list empty and validation
     warnings returned.
     """
-    payload = {"event_type": 1, "save_json": True}
+    payload = {"action": "validate_plans", "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
     data = r.json()
     print(data)
@@ -352,7 +387,7 @@ def post_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
     has been run successfully), with the validation errors list empty and validation
     warnings returned.
     """
-    payload = {"event_type": 2, "save_json": True}
+    payload = {"action": "post_plans", "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
     data = r.json()
     print(data)

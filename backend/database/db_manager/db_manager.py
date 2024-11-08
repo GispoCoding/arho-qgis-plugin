@@ -20,10 +20,10 @@ LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
 
-class EventType(enum.Enum):
-    CREATE_DB = 1
-    CHANGE_PWS = 2
-    MIGRATE_DB = 3
+class Action(enum.Enum):
+    CREATE_DB = "create_db"
+    CHANGE_PWS = "change_pws"
+    MIGRATE_DB = "migrate_db"
 
 
 class Response(TypedDict):
@@ -32,7 +32,7 @@ class Response(TypedDict):
 
 
 class Event(TypedDict):
-    event_type: int  # EventType
+    action: str  # EventType
     version: Optional[str]  # Ansible version id
 
 
@@ -258,12 +258,12 @@ def handler(event: Event, _) -> Response:
     response: Response = {"statusCode": 200, "body": json.dumps("")}
     db_helper = DatabaseHelper()
 
-    event_type = event.get("event_type", EventType.CREATE_DB.value)
-    if event_type == EventType.CREATE_DB.value:
+    event_type = event.get("action", Action.CREATE_DB.value)
+    if event_type == Action.CREATE_DB.value:
         msg = migrate_hame_db(db_helper)
-    elif event_type == EventType.CHANGE_PWS.value:
+    elif event_type == Action.CHANGE_PWS.value:
         msg = change_passwords(db_helper)
-    elif event_type == EventType.MIGRATE_DB.value:
+    elif event_type == Action.MIGRATE_DB.value:
         version = str(event.get("version", ""))
         if version:
             msg = migrate_hame_db(db_helper, version)

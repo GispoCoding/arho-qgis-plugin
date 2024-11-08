@@ -40,16 +40,19 @@ log-ryhti-client:
 
 ## Commands to invoke lambda functions
 create-db:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"event_type": 1}' response_db.json
+	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "create_db"}' response_db.json
 
 change-db-pw:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"event_type": 2}' response_db.json
+	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "change_pws"}' response_db.json
 
 migrate-db:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"event_type": 3}' response_db.json
+	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "migrate_db"}' response_db.json
 
 load-koodistot:
 	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-koodistot_loader --payload '{}' response_koodistot.json
 
 validate-plans:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --payload '{"event_type": 1}' response_ryhti.json
+	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --payload '{"action": "validate_plans"}' response_ryhti.json
+
+get-plans:
+	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --payload '{"action": "get_plans"}' response_ryhti.json

@@ -3,7 +3,7 @@ import time
 import timeit
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, List, Mapping, Optional
 
 import codes
 import models
@@ -122,7 +122,7 @@ def current_head_version_id(alembic_cfg):
 
 @pytest.fixture(scope="module")
 def hame_database_created(root_db_params, main_db_params, current_head_version_id):
-    event = {"event_type": 1}
+    event = {"action": "create_db"}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
     yield current_head_version_id
@@ -132,7 +132,7 @@ def hame_database_created(root_db_params, main_db_params, current_head_version_i
 
 @pytest.fixture()
 def hame_database_migrated(root_db_params, main_db_params, current_head_version_id):
-    event = {"event_type": 3}
+    event = {"action": "migrate_db"}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
     yield current_head_version_id
@@ -142,7 +142,7 @@ def hame_database_migrated(root_db_params, main_db_params, current_head_version_
 
 @pytest.fixture()
 def hame_database_migrated_down(hame_database_migrated):
-    event = {"event_type": 3, "version": "base"}
+    event = {"action": "migrate_db", "version": "base"}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
     yield "base"
@@ -214,7 +214,7 @@ def new_migration(alembic_cfg, hame_database_migrated, current_head_version_id):
 
 @pytest.fixture()
 def hame_database_upgraded(new_migration):
-    event = {"event_type": 3}
+    event = {"action": "migrate_db"}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
     yield new_migration
@@ -222,7 +222,7 @@ def hame_database_upgraded(new_migration):
 
 @pytest.fixture()
 def hame_database_downgraded(hame_database_upgraded, current_head_version_id):
-    event = {"event_type": 3, "version": current_head_version_id}
+    event = {"action": "migrate_db", "version": current_head_version_id}
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
     yield current_head_version_id
@@ -281,7 +281,7 @@ def assert_database_is_alright(
     """
     # Check schemas
     cur.execute(
-        "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN ('hame', 'codes') ORDER BY schema_name DESC"  # noqa
+        "SELECT schema_name FROM information_schema.schemata WHERE schema_name IN ('hame', 'codes') ORDER BY schema_name DESC"
     )
     assert cur.fetchall() == [("hame",), ("codes",)]
 
@@ -309,7 +309,7 @@ def assert_database_is_alright(
         # Check table owner and read permissions
         assert owner == os.environ.get("SU_USER", "")
         cur.execute(
-            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_schema = 'hame' AND table_name='{table_name}';"  # noqa
+            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_schema = 'hame' AND table_name='{table_name}';"
         )
         grants = cur.fetchall()
         assert (os.environ.get("R_USER"), "SELECT") in grants
@@ -327,11 +327,11 @@ def assert_database_is_alright(
 
         # Check indexes
         cur.execute(
-            f"SELECT * FROM pg_indexes WHERE schemaname = 'hame' AND tablename = '{table_name}';"  # noqa
+            f"SELECT * FROM pg_indexes WHERE schemaname = 'hame' AND tablename = '{table_name}';"
         )
         indexes = cur.fetchall()
         cur.execute(
-            f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'hame' AND table_name = '{table_name}';"  # noqa
+            f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'hame' AND table_name = '{table_name}';"
         )
         columns = cur.fetchall()
         if ("id",) in columns:
@@ -340,7 +340,7 @@ def assert_database_is_alright(
                 table_name,
                 f"{table_name}_pkey",
                 None,
-                f"CREATE UNIQUE INDEX {table_name}_pkey ON hame.{table_name} USING btree (id)",  # noqa
+                f"CREATE UNIQUE INDEX {table_name}_pkey ON hame.{table_name} USING btree (id)",
             ) in indexes
         if ("geom",) in columns:
             assert (
@@ -348,7 +348,7 @@ def assert_database_is_alright(
                 table_name,
                 f"idx_{table_name}_geom",
                 None,
-                f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",  # noqa
+                f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",
             ) in indexes
         if ("ordering",) in columns:
             assert (
@@ -356,7 +356,7 @@ def assert_database_is_alright(
                 table_name,
                 f"ix_hame_{table_name}_ordering",
                 None,
-                f"CREATE INDEX ix_hame_{table_name}_ordering ON hame.{table_name} USING btree (ordering)",  # noqa
+                f"CREATE INDEX ix_hame_{table_name}_ordering ON hame.{table_name} USING btree (ordering)",
             ) in indexes
 
     # Check code tables
@@ -371,7 +371,7 @@ def assert_database_is_alright(
         # Check table owner and read permissions
         assert owner == os.environ.get("SU_USER", "")
         cur.execute(
-            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_schema = 'codes' AND table_name='{table_name}';"  # noqa
+            f"SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_schema = 'codes' AND table_name='{table_name}';"
         )
         grants = cur.fetchall()
         assert (os.environ.get("R_USER"), "SELECT") in grants
@@ -389,7 +389,7 @@ def assert_database_is_alright(
 
         # Check code indexes
         cur.execute(
-            f"SELECT * FROM pg_indexes WHERE schemaname = 'codes' AND tablename = '{table_name}';"  # noqa
+            f"SELECT * FROM pg_indexes WHERE schemaname = 'codes' AND tablename = '{table_name}';"
         )
         indexes = cur.fetchall()
         assert (
@@ -397,35 +397,35 @@ def assert_database_is_alright(
             table_name,
             f"{table_name}_pkey",
             None,
-            f"CREATE UNIQUE INDEX {table_name}_pkey ON codes.{table_name} USING btree (id)",  # noqa
+            f"CREATE UNIQUE INDEX {table_name}_pkey ON codes.{table_name} USING btree (id)",
         ) in indexes
         assert (
             "codes",
             table_name,
             f"ix_codes_{table_name}_level",
             None,
-            f"CREATE INDEX ix_codes_{table_name}_level ON codes.{table_name} USING btree (level)",  # noqa
+            f"CREATE INDEX ix_codes_{table_name}_level ON codes.{table_name} USING btree (level)",
         ) in indexes
         assert (
             "codes",
             table_name,
             f"ix_codes_{table_name}_parent_id",
             None,
-            f"CREATE INDEX ix_codes_{table_name}_parent_id ON codes.{table_name} USING btree (parent_id)",  # noqa
+            f"CREATE INDEX ix_codes_{table_name}_parent_id ON codes.{table_name} USING btree (parent_id)",
         ) in indexes
         assert (
             "codes",
             table_name,
             f"ix_codes_{table_name}_short_name",
             None,
-            f"CREATE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",  # noqa
+            f"CREATE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",
         ) in indexes
         assert (
             "codes",
             table_name,
             f"ix_codes_{table_name}_value",
             None,
-            f"CREATE UNIQUE INDEX ix_codes_{table_name}_value ON codes.{table_name} USING btree (value)",  # noqa
+            f"CREATE UNIQUE INDEX ix_codes_{table_name}_value ON codes.{table_name} USING btree (value)",
         ) in indexes
 
     # TODO: Check materialized views once we have any
@@ -1182,7 +1182,7 @@ def complete_test_plan(
     )
     general_plan_regulation_instance.plan_theme = plan_theme_instance
     general_plan_regulation_instance.intended_use = (
-        type_of_additional_information_instance  # noqa
+        type_of_additional_information_instance
     )
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
@@ -1413,3 +1413,431 @@ def decisionmaker_type(session):
     yield instance
     session.delete(instance)
     session.commit()
+
+
+@pytest.fixture(scope="function")
+def desired_plan_dict(
+    plan_instance: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    land_use_point_instance: models.LandUsePoint,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
+    numeric_plan_regulation_instance: models.PlanRegulation,
+    verbal_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    pending_date_instance: models.LifeCycleDate,
+) -> dict:
+    """
+    Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
+
+    Let's 1) write explicitly the complex fields, and 2) just check that the simple fields have
+    the same values as the original plan fixture in the database.
+    """
+
+    return {
+        "planKey": plan_instance.id,
+        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+        "scale": plan_instance.scale,
+        "geographicalArea": {
+            "srid": str(PROJECT_SRID),
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [381849.834412134019658, 6677967.973336197435856],
+                        [381849.834412134019658, 6680613.389312859624624],
+                        [386378.427863708813675, 6680613.389312859624624],
+                        [386378.427863708813675, 6677967.973336197435856],
+                        [381849.834412134019658, 6677967.973336197435856],
+                    ]
+                ],
+            },
+        },
+        # TODO: plan documents to be added.
+        "periodOfValidity": None,
+        "approvalDate": None,
+        "generalRegulationGroups": [
+            {
+                "generalRegulationGroupKey": general_regulation_group_instance.id,
+                "titleOfPlanRegulation": general_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": general_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": general_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            general_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            general_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                ],
+                "planRecommendations": [],
+            }
+        ],
+        "planDescription": plan_instance.description[
+            "fin"
+        ],  # TODO: should this be a single language string? why?
+        "planObjects": [
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ],
+                    },
+                },
+                "name": land_use_area_instance.name,
+                "description": land_use_area_instance.description,
+                "objectNumber": land_use_area_instance.ordering,
+                "verticalLimit": {
+                    "dataType": "decimalRange",
+                    "minimumValue": land_use_area_instance.height_range.lower,
+                    "maximumValue": land_use_area_instance.height_range.upper,
+                    "unitOfMeasure": land_use_area_instance.height_unit,
+                },
+                "periodOfValidity": None,
+            },
+            {
+                "planObjectKey": land_use_point_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [382000, 6678000],
+                    },
+                },
+                "name": land_use_point_instance.name,
+                "description": land_use_point_instance.description,
+                "objectNumber": land_use_point_instance.ordering,
+                "periodOfValidity": None,
+            },
+        ],
+        "planRegulationGroups": [
+            {
+                "planRegulationGroupKey": point_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": point_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": point_text_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": point_text_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            point_text_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            point_text_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": point_plan_regulation_group_instance.short_name,
+                "colorNumber": "#FFFFFF",
+            },
+            {
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": empty_value_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "subjectIdentifiers": [
+                            empty_value_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            empty_value_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                    {
+                        "planRegulationKey": numeric_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "decimal",
+                            "number": numeric_plan_regulation_instance.numeric_value,
+                            "unitOfMeasure": numeric_plan_regulation_instance.unit,
+                        },
+                        "subjectIdentifiers": [
+                            numeric_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            numeric_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                    {
+                        "planRegulationKey": text_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": text_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            text_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(text_plan_regulation_instance.ordering),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                    {
+                        "planRegulationKey": verbal_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sanallinenMaarays",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": verbal_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": [
+                            verbal_plan_regulation_instance.name[
+                                "fin"
+                            ]  # TODO: onko asiasana aina yksikielinen??
+                        ],
+                        "verbalRegulations": [
+                            "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/perustaminen"
+                        ],
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            verbal_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                ],
+                "planRecommendations": [
+                    {
+                        "planRecommendationKey": plan_proposition_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "value": plan_proposition_instance.text_value,
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        "recommendationNumber": plan_proposition_instance.ordering,
+                        # TODO: plan recommendation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                ],
+                "letterIdentifier": plan_regulation_group_instance.short_name,
+                "colorNumber": "#FFFFFF",
+            },
+        ],
+        "planRegulationGroupRelations": [
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": land_use_point_instance.id,
+                "planRegulationGroupKey": point_plan_regulation_group_instance.id,
+            },
+        ],
+    }
+
+
+@pytest.fixture(scope="function")
+def desired_plan_matter_dict(
+    session: Session,
+    desired_plan_dict: dict,
+    plan_instance: models.Plan,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_sending_out_for_opinions_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+    decisionmaker_type: codes.TypeOfDecisionMaker,
+) -> dict:
+    """
+    Plan matter dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Palveluväylä/Kaavoitus%20OpenApi.json
+
+    Constructing the plan matter requires certain additional codes to be present in the database and set in the plan instance.
+
+    Let's 1) write explicitly the complex fields, and 2) just check that the simple fields have
+    the same values as the original plan fixture in the database.
+    """
+
+    return {
+        "permanentPlanIdentifier": "MK-123456",
+        "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/11",
+        "name": plan_instance.name,
+        "timeOfInitiation": "2024-01-01",
+        "description": plan_instance.description,
+        "producerPlanIdentifier": plan_instance.producers_plan_identifier,
+        "caseIdentifiers": [plan_instance.matter_management_identifier],
+        "recordNumbers": [plan_instance.record_number],
+        "administrativeAreaIdentifiers": ["01"],
+        "digitalOrigin": "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01",
+        "planMatterPhases": [
+            {
+                "planMatterPhaseKey": "third_phase_test",
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "geographicalArea": desired_plan_dict["geographicalArea"],
+                "handlingEvent": {
+                    "handlingEventKey": "whatever",
+                    "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
+                    "eventTime": "2024-02-01",
+                },
+                "interactionEvents": [
+                    {
+                        "interactionEventKey": "whatever",
+                        "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
+                        "eventTime": {"begin": "2024-02-01", "end": "2024-02-01"},
+                    },
+                ],
+                "planDecision": {
+                    "planDecisionKey": "whatever",
+                    "name": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi/code/04",
+                    "decisionDate": "2024-02-01",
+                    "dateOfDecision": "2024-02-01",
+                    "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
+                    "plans": [desired_plan_dict],
+                },
+            },
+        ],
+        # TODO: plan documents, source data etc. non-mandatory fields to be added
+    }
+
+
+def assert_lists_equal(list1: list, list2: list, ignore_keys: Optional[List] = None):
+    """
+    Recursively check that lists have the same items in the same order.
+
+    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
+    the remote Ryhti API) can be ignored when comparing dicts in the lists, because
+    they are not provided in the incoming data.
+    """
+    assert len(list1) == len(list2)
+    for item1, item2 in zip(list1, list2):
+        print(f"comparing values {item1} and {item2}")
+        if isinstance(item1, dict):
+            assert_dicts_equal(item1, item2, ignore_keys=ignore_keys)
+        elif isinstance(item1, list):
+            assert_lists_equal(item1, item2, ignore_keys=ignore_keys)
+        else:
+            assert item1 == item2
+
+
+def assert_dicts_equal(
+    dict1: Mapping, dict2: Mapping, ignore_keys: Optional[List] = None
+):
+    """
+    Recursively check that dicts contain the same keys with same values.
+
+    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
+    the remote Ryhti API) can be ignored when comparing, because they are not
+    provided in the incoming data.
+    """
+    for key in dict2.keys():
+        if not ignore_keys or key not in ignore_keys:
+            assert key in dict1
+    for key, value in dict1.items():
+        if not ignore_keys or key not in ignore_keys:
+            print(f"comparing {key} {value} to {dict2[key]}")
+            if isinstance(value, dict):
+                assert_dicts_equal(dict2[key], value, ignore_keys=ignore_keys)
+            elif isinstance(value, list):
+                assert_lists_equal(dict2[key], value, ignore_keys=ignore_keys)
+            else:
+                assert dict2[key] == value

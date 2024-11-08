@@ -45,9 +45,10 @@ LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
 
-class EventType(enum.IntEnum):
-    VALIDATE_PLANS = 1
-    POST_PLANS = 2
+class Action(enum.Enum):
+    VALIDATE_PLANS = "validate_plans"
+    POST_PLANS = "post_plans"
+    GET_PLANS = "get_plans"
 
 
 class RyhtiResponse(TypedDict):
@@ -74,7 +75,7 @@ class Response(TypedDict):
 
 class Event(TypedDict):
     """
-    Support validating or POSTing a desired plan.
+    Support validating, POSTing or getting a desired plan.
 
     If plan_uuid is empty, all plans in database are processed. However, only
     plans that have their to_be_exported field set to true are actually POSTed.
@@ -83,7 +84,7 @@ class Event(TypedDict):
     as {plan_id}.json and {plan_id}.response.json in the ryhti_debug directory.
     """
 
-    event_type: int  # EventType
+    action: str  # Action
     plan_uuid: Optional[str]  # UUID for plan to be used
     save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
 
@@ -165,7 +166,7 @@ class RyhtiClient:
         xroad_member_code: Optional[str] = None,
         xroad_member_client_name: Optional[str] = None,
         xroad_port: Optional[int] = 8080,
-        event_type: int = EventType.VALIDATE_PLANS,
+        event_type: str = Action.VALIDATE_PLANS.value,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
     ) -> None:
@@ -1434,7 +1435,7 @@ def handler(event: Event, _) -> Response:
     # write access is required to update plan information after
     # validating or POSTing data
     db_helper = DatabaseHelper(user=User.READ_WRITE)
-    event_type = event.get("event_type", EventType.VALIDATE_PLANS)
+    event_type = event.get("action", Action.VALIDATE_PLANS.value)
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
     public_api_key = os.environ.get("SYKE_APIKEY")
@@ -1462,7 +1463,7 @@ def handler(event: Event, _) -> Response:
         )["SecretString"]
     else:
         xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
-    if event_type == EventType.POST_PLANS.value and (
+    if event_type == Action.POST_PLANS.value and (
         not xroad_server_address
         or not xroad_member_code
         or not xroad_member_client_name
@@ -1500,6 +1501,16 @@ def handler(event: Event, _) -> Response:
         # 1) Serialize plans in database
         LOGGER.info("Formatting plan data...")
         client.plan_dictionaries = client.get_plan_dictionaries()
+        if event_type == Action.GET_PLANS.value:
+            # just return the JSON to the user
+            lambda_response = {
+                "statusCode": 200,
+                "title": "Returning serialized plans from database.",
+                "details": client.plan_dictionaries,
+                "ryhti_responses": {},
+            }
+            LOGGER.info(lambda_response["title"])
+            return cast(Response, lambda_response)
 
         # 2) Validate plans in database with public API
         LOGGER.info("Validating plans...")
@@ -1557,7 +1568,7 @@ def handler(event: Event, _) -> Response:
             lambda_response["ryhti_responses"] |= plan_matter_validation_response[
                 "ryhti_responses"
             ]
-            if event_type == EventType.POST_PLANS.value:
+            if event_type == Action.POST_PLANS.value:
                 # 7) Update Ryhti plan matters
                 LOGGER.info("POSTing marked and valid plan matters:")
                 responses = client.post_plan_matters()
@@ -1593,4 +1604,4 @@ def handler(event: Event, _) -> Response:
         }
 
     LOGGER.info(lambda_response["title"])
-    return lambda_response
+    return cast(Response, lambda_response)

@@ -1,10 +1,10 @@
 test-create-db:
 	@echo "Creating Hame database..."
-	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d '{"event_type" : 1}'
+	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d '{"action" : "create_db"}'
 
 test-migrate-db:
 	@echo "Migrating Hame database..."
-	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d '{"event_type" : 3}'
+	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d '{"action" : "migrate_db"}'
 
 test-koodistot:
 	@echo "Loading Koodistot data..."
@@ -13,7 +13,7 @@ test-koodistot:
 
 test-ryhti-validate:
 	@echo "Validating database contents with Ryhti API..."
-	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"event_type": 1}'
+	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "validate_plans"}'
 
 pytest:
 	docker compose -f docker-compose.dev.yml down -v
