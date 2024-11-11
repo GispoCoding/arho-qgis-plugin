@@ -15,299 +15,273 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <layout class="QFormLayout" name="feature_details_layout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="feature_name_label">
-       <property name="text">
-        <string>Kohteen nimi</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="feature_name"/>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="feature_description_label">
-       <property name="text">
-        <string>Kohteen kuvaus</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="feature_description"/>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="feature_underground_label">
-       <property name="text">
-        <string>Maanalaisuus</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="feature_vertical_boundaries_label">
-       <property name="text">
-        <string>Pystysuuntainen rajaus</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="feature_vertical_boundaries"/>
-     </item>
-     <item row="2" column="1">
-      <widget class="QSpinBox" name="feature_underground"/>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <spacer name="feature_details_spacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+    <widget class="QTabWidget" name="tabs">
+     <property name="currentIndex">
+      <number>0</number>
      </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Preferred</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>10</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item>
-    <widget class="Line" name="horizontal_divider">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
+     <widget class="QWidget" name="feature_tab">
+      <attribute name="title">
+       <string>Kaavakohteen tiedot</string>
+      </attribute>
+      <layout class="QFormLayout" name="formLayout">
+       <item row="0" column="0">
+        <widget class="QLabel" name="feature_name_label">
+         <property name="text">
+          <string>Kaavakohteen nimi</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="feature_name"/>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="feature_description_label">
+         <property name="text">
+          <string>Kaavakohteen kuvaus</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QTextEdit" name="feature_description">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="feature_underground_label">
+         <property name="text">
+          <string>Maanalaisuus</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="feature_underground"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="plan_regulation_groups_tab">
+      <attribute name="title">
+       <string>Kaavamääräysryhmät</string>
+      </attribute>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Kaavamääräysryhmäkirjastot</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboBox">
+           <item>
+            <property name="text">
+             <string>Katja</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Omat</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QgsFilterLineEdit" name="mLineEdit">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="placeholderText">
+            <string>Suodata kaavamääräysryhmiä</string>
+           </property>
+           <property name="clearButtonEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="showSearchIcon">
+            <bool>true</bool>
+           </property>
+           <property name="qgisRelation" stdset="0">
+            <string notr="true"/>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="plan_regulation_groups_tree">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="editTriggers">
+            <set>QAbstractItemView::NoEditTriggers</set>
+           </property>
+           <property name="dragDropMode">
+            <enum>QAbstractItemView::NoDragDrop</enum>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>false</bool>
+           </property>
+           <attribute name="headerVisible">
+            <bool>false</bool>
+           </attribute>
+           <column>
+            <property name="text">
+             <string>1</string>
+            </property>
+           </column>
+           <item>
+            <property name="text">
+             <string>Aluevaraukset</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Asuinrakennusten alue</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Asuinkerrostalojen alue</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Asuinpientalojen alue</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Rivitalojen ja muiden kytkettyjen asuinrakennusten alue</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Erillispientalojen alue</string>
+             </property>
+            </item>
+           </item>
+           <item>
+            <property name="text">
+             <string>Rakennusalat</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Kunnan tai kaupunginosas raja</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Korttelialue tai korttelialueen osa</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Sitovan tonttijaon mukainen tontti</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Ohjeellinen tontti / rakennusala</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Rakennusala</string>
+             </property>
+            </item>
+           </item>
+           <item>
+            <property name="text">
+             <string>Numeeriset ja tekstimuotoiset määräykset</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Kaupungin- tai kunnanosan numero</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Kaupungin- tai kunnanosan nimi</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Korttelin numero</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Tontin tai rakennuspaikan numero</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Ohjeellisen tontin tai rakennuspaikan numero</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Kadun tai tien nimi</string>
+             </property>
+            </item>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Kaavamääräysryhmät</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QScrollArea" name="plan_regulation_group_scrollarea">
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="plan_regulation_group_scrollarea_contents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>449</width>
+              <height>624</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_2"/>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
-    <spacer name="plan_regulation_group_spacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Preferred</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>10</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>Lisää kaavamääräysryhmä</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QgsFilterLineEdit" name="mLineEdit">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="placeholderText">
-          <string>Suodata kaavamääräysryhmiä</string>
-         </property>
-         <property name="clearButtonEnabled">
-          <bool>true</bool>
-         </property>
-         <property name="showSearchIcon">
-          <bool>true</bool>
-         </property>
-         <property name="qgisRelation" stdset="0">
-          <string notr="true"/>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QTreeWidget" name="plan_regulation_groups_tree">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Sunken</enum>
-         </property>
-         <property name="editTriggers">
-          <set>QAbstractItemView::NoEditTriggers</set>
-         </property>
-         <property name="dragDropMode">
-          <enum>QAbstractItemView::NoDragDrop</enum>
-         </property>
-         <property name="alternatingRowColors">
-          <bool>false</bool>
-         </property>
-         <attribute name="headerVisible">
-          <bool>false</bool>
-         </attribute>
-         <column>
-          <property name="text">
-           <string>1</string>
-          </property>
-         </column>
-         <item>
-          <property name="text">
-           <string>Aluevaraukset</string>
-          </property>
-          <item>
-           <property name="text">
-            <string>Asuinrakennusten alue</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Asuinkerrostalojen alue</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Asuinpientalojen alue</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Rivitalojen ja muiden kytkettyjen asuinrakennusten alue</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Erillispientalojen alue</string>
-           </property>
-          </item>
-         </item>
-         <item>
-          <property name="text">
-           <string>Rakennusalat</string>
-          </property>
-          <item>
-           <property name="text">
-            <string>Kunnan tai kaupunginosas raja</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Korttelialue tai korttelialueen osa</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Sitovan tonttijaon mukainen tontti</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Ohjeellinen tontti / rakennusala</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Rakennusala</string>
-           </property>
-          </item>
-         </item>
-         <item>
-          <property name="text">
-           <string>Numeeriset ja tekstimuotoiset määräykset</string>
-          </property>
-          <item>
-           <property name="text">
-            <string>Kaupungin- tai kunnanosan numero</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Kaupungin- tai kunnanosan nimi</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Korttelin numero</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Tontin tai rakennuspaikan numero</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Ohjeellisen tontin tai rakennuspaikan numero</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Kadun tai tien nimi</string>
-           </property>
-          </item>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="add_plan_regulation_group_btn">
-         <property name="text">
-          <string>Lisää kaavamääräysryhmä</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Kaavamääräykset</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QScrollArea" name="plan_regulation_group_scrollarea">
-         <property name="widgetResizable">
-          <bool>true</bool>
-         </property>
-         <widget class="QWidget" name="plan_regulation_group_scrollarea_contents">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>469</width>
-            <height>501</height>
-           </rect>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2"/>
-         </widget>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QDialogButtonBox" name="button_box">
-       <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
+    </widget>
    </item>
   </layout>
  </widget>
