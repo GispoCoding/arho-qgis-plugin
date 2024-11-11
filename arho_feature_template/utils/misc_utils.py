@@ -1,6 +1,7 @@
 import os
 
 from qgis.core import QgsProject, QgsVectorLayer
+from qgis.PyQt.QtCore import QSettings
 from qgis.PyQt.QtWidgets import QMessageBox
 
 PLUGIN_PATH = os.path.dirname(os.path.dirname(__file__))
@@ -55,3 +56,11 @@ def handle_unsaved_changes() -> bool:
         if not commit_all_layer_changes():
             return False
     return True
+
+
+def get_lambda_settings():
+    """Retrieve Lambda settings, using defaults if not set."""
+    settings = QSettings("ArhoFeatureTemplate")
+    lambda_host = settings.value("lambda_host", "localhost")
+    lambda_port = settings.value("lambda_port", "8083")
+    return lambda_host, lambda_port
