@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PluginSettings</class>
+ <widget class="QDialog" name="PluginSettings">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>300</width>
+    <height>150</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Asetukset</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="labelHost">
+     <property name="text">
+      <string>Lambdan isäntä:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="hostInput"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="labelPort">
+     <property name="text">
+      <string>Lambdan portti:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="portInput"/>
+   </item>
+   <item>
+    <widget class="QPushButton" name="saveButton">
+     <property name="text">
+      <string>Tallenna asetukset</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

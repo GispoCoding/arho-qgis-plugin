@@ -10,6 +10,7 @@ from qgis.utils import iface
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.new_plan_regulation_group_form import NewPlanRegulationGroupForm
+from arho_feature_template.gui.plugin_settings import PluginSettings
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
@@ -171,6 +172,15 @@ class Plugin:
             add_to_toolbar=True,
         )
 
+        self.plugin_settings_action = self.add_action(
+            "",
+            text="Asetukset",
+            triggered_callback=self.open_settings,
+            add_to_menu=True,
+            add_to_toolbar=False,
+            status_tip="Säädä pluginin asetuksia",
+        )
+
     def on_map_tool_changed(self, new_tool: QgsMapTool, old_tool: QgsMapTool) -> None:  # noqa: ARG002
         if not isinstance(new_tool, TemplateGeometryDigitizeMapTool):
             self.template_dock_action.setChecked(False)
@@ -180,6 +190,11 @@ class Plugin:
 
     def load_existing_land_use_plan(self):
         self.plan_manager.load_land_use_plan()
+
+    def open_settings(self):
+        """Open the plugin settings dialog."""
+        settings = PluginSettings()
+        settings.exec_()
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
