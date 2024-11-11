@@ -1,6 +1,6 @@
 import os
 
-from qgis.core import QgsProject, QgsVectorLayer
+from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
 from qgis.PyQt.QtCore import QSettings
 from qgis.PyQt.QtWidgets import QMessageBox
 
@@ -56,6 +56,12 @@ def handle_unsaved_changes() -> bool:
         if not commit_all_layer_changes():
             return False
     return True
+
+
+def get_active_plan_id():
+    """Retrieve the active plan ID stored as a project variable."""
+    # return QgsExpressionContextUtils.projectScope(QgsProject.instance(), "active_plan_id")
+    return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
 
 
 def get_lambda_settings():

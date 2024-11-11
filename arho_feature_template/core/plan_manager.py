@@ -1,4 +1,4 @@
-from qgis.core import QgsProject, QgsVectorLayer
+from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 from qgis.utils import iface
 
@@ -95,7 +95,8 @@ class PlanManager:
             update_selected_plan(plan)
 
     def clear_all_filters(self):
-        """Clear filters for all vector layers in the project."""
+        """Clear active_plan_id and filters for all vector layers in the project."""
+        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "active_plan_id", None)
         for layer in QgsProject.instance().mapLayers().values():
             if isinstance(layer, QgsVectorLayer):
                 layer.setSubsetString("")
