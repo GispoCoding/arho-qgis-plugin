@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from qgis.core import QgsMapLayer, QgsProject, QgsVectorLayer
+from qgis.core import QgsExpressionContextUtils, QgsMapLayer, QgsProject, QgsVectorLayer
 from qgis.utils import iface
 
 
@@ -24,6 +24,7 @@ LAYER_PLAN_ID_MAP = {
 def update_selected_plan(new_plan: LandUsePlan):
     """Update the project layers based on the selected land use plan."""
     plan_id = new_plan.id
+    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "active_plan_id", plan_id)
 
     for layer_name, field_name in LAYER_PLAN_ID_MAP.items():
         # Set the filter on each layer using the plan_id
