@@ -5,16 +5,10 @@ on:
       - closed
       - labeled
 
-permissions:
-  contents: read
-
 jobs:
   backport:
     name: Backport
     runs-on: ubuntu-latest
-
-    permissions:
-      pull-requests: write
 
     if: >
       github.event.pull_request.merged
@@ -29,9 +23,15 @@ jobs:
         )
       )
     steps:
+      - name: Generate a token to create a backport PR
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PULL_REGUESTER_APP_ID }}
+          private-key: ${{ secrets.PULL_REGUESTER_PRIVATE_KEY }}
+
       - name: Backport Bot
         id: backport
-
         uses: m-kuhn/backport@v1.2.7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ steps.generate-token.outputs.token }}
