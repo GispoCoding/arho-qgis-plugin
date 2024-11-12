@@ -34,7 +34,7 @@ jobs:
   define-environment:
     runs-on: ubuntu-latest
     needs: check-skip-deploy
-    if: ${{ needs.check-skip-deploy.outputs.skip-deploy }} == 'false'
+    if: ${{ needs.check-skip-deploy.outputs.skip-deploy == 'false' }}
     outputs:
       environment: ${{ steps.set-env.outputs.environment }}
     steps:
