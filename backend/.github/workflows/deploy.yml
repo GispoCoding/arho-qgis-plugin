@@ -20,13 +20,16 @@ jobs:
           SKIP_DEPLOY=false
           # Get the PR number where the commit was introduced in
           PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --search ${{ github.sha }} --state merged --json number --jq '.[0].number')
+          echo "The commit was introduced in PR $PR_NUMBER".
           if [ -n "$PR_NUMBER" ]; then
             LABELS=$(gh pr view --repo ${{ github.repository }} $PR_NUMBER --json labels --jq '.labels[].name')
+            echo "The PR has the following labels: $(echo "$LABELS" | sed 's/^\|$/"/g' | paste -sd, -)."
             if echo "$LABELS" | grep -q "skip deploy"; then
               SKIP_DEPLOY=true
             fi
           fi
           echo "skip-deploy=$SKIP_DEPLOY" >> $GITHUB_OUTPUT
+          echo "skip-deploy: $SKIP_DEPLOY"
 
   define-environment:
     runs-on: ubuntu-latest
