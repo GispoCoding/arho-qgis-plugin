@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Check if the commit should be deployed
         id: check-skip-label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           SKIP_DEPLOY=false
           # Get the PR number where the commit was introduced in
