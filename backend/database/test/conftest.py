@@ -691,6 +691,57 @@ def plan_instance(
     session.commit()
 
 
+@pytest.fixture(scope="function")
+def another_plan_instance(
+    session,
+    code_instance,
+    another_code_instance,
+    preparation_status_instance,
+    plan_proposal_status_instance,
+    organisation_instance,
+    another_organisation_instance,
+    plan_type_instance,
+):
+    # Any status and organisation instances that may be added to the plan later
+    # have to be included above. If they are only created later, they will be torn
+    # down too early and teardown will fail, because plan cannot have empty
+    # status or organisation.
+    instance = models.Plan(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        scale=1,
+        description={"fin": "another_test_plan"},
+        lifecycle_status=preparation_status_instance,
+        organisation=organisation_instance,
+        plan_type=plan_type_instance,
+        plan_regulation_group=None,
+        to_be_exported=True,
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
 @pytest.fixture()
 def organisation_instance(session, administrative_region_instance):
     instance = models.Organisation(
@@ -1188,6 +1239,13 @@ def complete_test_plan(
     session.commit()
     yield plan_instance
     session.delete(plan_instance)
+    session.commit()
+
+
+@pytest.fixture()
+def another_test_plan(session, another_plan_instance):
+    yield another_plan_instance
+    session.delete(another_plan_instance)
     session.commit()
 
 
@@ -1729,6 +1787,43 @@ def desired_plan_dict(
                 "planRegulationGroupKey": point_plan_regulation_group_instance.id,
             },
         ],
+    }
+
+
+@pytest.fixture(scope="function")
+def another_plan_dict(another_plan_instance: models.Plan) -> dict:
+    """
+    Minimal invalid plan dict with no related objects.
+    """
+    return {
+        "planKey": another_plan_instance.id,
+        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+        "scale": another_plan_instance.scale,
+        "geographicalArea": {
+            "srid": str(PROJECT_SRID),
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [381849.834412134019658, 6677967.973336197435856],
+                        [381849.834412134019658, 6680613.389312859624624],
+                        [386378.427863708813675, 6680613.389312859624624],
+                        [386378.427863708813675, 6677967.973336197435856],
+                        [381849.834412134019658, 6677967.973336197435856],
+                    ]
+                ],
+            },
+        },
+        # TODO: plan documents to be added.
+        "periodOfValidity": None,
+        "approvalDate": None,
+        "generalRegulationGroups": [],
+        "planDescription": another_plan_instance.description[
+            "fin"
+        ],  # TODO: should this be a single language string? why?
+        "planObjects": [],
+        "planRegulationGroups": [],
+        "planRegulationGroupRelations": [],
     }
 
 

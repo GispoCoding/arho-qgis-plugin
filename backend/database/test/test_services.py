@@ -203,13 +203,19 @@ def test_populate_admin_region_geometries(
 
 
 @pytest.fixture()
-def get_plan(ryhti_client_url, complete_test_plan, desired_plan_dict):
+def get_all_plans(
+    ryhti_client_url,
+    complete_test_plan,
+    another_test_plan,
+    desired_plan_dict,
+    another_plan_dict,
+):
     """
-    Get invalid plan JSON from lambda. The plan should be validated separately.
+    Get invalid plan JSONs from lambda. The plans should be validated separately.
 
-    Getting plan should make lambda return http 200 OK (to indicate that serialization
+    Getting plans should make lambda return http 200 OK (to indicate that serialization
     has been run successfully), with the ryhti_responses dict empty, and details
-    dict containing the serialized plan(s).
+    dict containing the serialized plans.
     """
     payload = {"action": "get_plans", "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
@@ -218,10 +224,11 @@ def get_plan(ryhti_client_url, complete_test_plan, desired_plan_dict):
     assert data["statusCode"] == 200
     assert data["title"] == "Returning serialized plans from database."
     assert_dicts_equal(data["details"][complete_test_plan.id], desired_plan_dict)
+    assert_dicts_equal(data["details"][another_test_plan.id], another_plan_dict)
     assert not data["ryhti_responses"]
 
 
-def test_get_plan(get_plan, main_db_params):
+def test_get_all_plans(get_all_plans, main_db_params):
     """
     Test the whole lambda endpoint with an invalid plan
     """
@@ -229,7 +236,11 @@ def test_get_plan(get_plan, main_db_params):
     conn = psycopg2.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
+            # Check that plans are NOT validated
             cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
             validation_date, errors = cur.fetchone()
             assert not validation_date
             assert not errors
@@ -238,9 +249,57 @@ def test_get_plan(get_plan, main_db_params):
 
 
 @pytest.fixture()
-def validate_invalid_plan(ryhti_client_url, complete_test_plan):
+def get_single_plan(
+    ryhti_client_url, complete_test_plan, another_test_plan, desired_plan_dict
+):
     """
-    Validate an invalid Ryhti plan against the Ryhti API. Complete test plan is not yet a
+    Get single plan JSON from lambda by id. Another plan in the database should not be
+    serialized.
+
+    Getting plan should make lambda return http 200 OK (to indicate that serialization
+    has been run successfully), with the ryhti_responses dict empty, and details
+    dict containing the serialized plan.
+    """
+    payload = {
+        "action": "get_plans",
+        "plan_uuid": complete_test_plan.id,
+        "save_json": True,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    assert data["title"] == "Returning serialized plans from database."
+    # Check that other plan is NOT returned
+    assert len(data["details"]) == 1
+    assert_dicts_equal(data["details"][complete_test_plan.id], desired_plan_dict)
+    assert not data["ryhti_responses"]
+
+
+def test_get_single_plan(get_single_plan, main_db_params):
+    """
+    Test the whole lambda endpoint with single_plan
+    """
+    # getting plan JSON from lambda should not run validations
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            # Check that plans are NOT validated
+            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
+    finally:
+        conn.close()
+
+
+@pytest.fixture()
+def validate_invalid_plans(ryhti_client_url, complete_test_plan, another_test_plan):
+    """
+    Validate invalid Ryhti plans against the Ryhti API. Complete test plan is not yet a
     valid plan, because it contains test code values.
 
     An invalid plan should make lambda return http 200 OK (to indicate that the validation
@@ -256,14 +315,21 @@ def validate_invalid_plan(ryhti_client_url, complete_test_plan):
         data["details"][complete_test_plan.id]
         == f"Validation FAILED for {complete_test_plan.id}."
     )
-    # our invalid plan is not valid, because it has certain invalid code combinations
+    assert (
+        data["details"][another_test_plan.id]
+        == f"Validation FAILED for {another_test_plan.id}."
+    )
+    # Our invalid plan is not valid, because it has certain invalid code combinations
     assert data["ryhti_responses"][complete_test_plan.id]["status"] == 422
     assert data["ryhti_responses"][complete_test_plan.id]["errors"]
+    # Another test plan contains nothing really
+    assert data["ryhti_responses"][another_test_plan.id]["status"] == 400
+    assert data["ryhti_responses"][another_test_plan.id]["errors"]
 
 
-def test_validate_invalid_plan(validate_invalid_plan, main_db_params):
+def test_validate_invalid_plans(validate_invalid_plans, main_db_params):
     """
-    Test the whole lambda endpoint with an invalid plan
+    Test the whole lambda endpoint with invalid plans
     """
     conn = psycopg2.connect(**main_db_params)
     try:
@@ -272,6 +338,61 @@ def test_validate_invalid_plan(validate_invalid_plan, main_db_params):
             validation_date, errors = cur.fetchone()
             assert validation_date
             assert errors
+            validation_date, errors = cur.fetchone()
+            assert validation_date
+            assert errors
+    finally:
+        conn.close()
+
+
+@pytest.fixture()
+def validate_single_plan(ryhti_client_url, complete_test_plan, another_test_plan):
+    """
+    Validate an invalid Ryhti plan against the Ryhti API. Complete test plan is not yet a
+    valid plan, because it contains test code values.
+
+    An invalid plan should make lambda return http 200 OK (to indicate that the validation
+    has been run successfully), with the validation errors returned in the payload.
+    """
+    payload = {
+        "action": "validate_plans",
+        "plan_uuid": complete_test_plan.id,
+        "save_json": True,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    assert data["title"] == "Plan and plan matter validations run."
+    # Check that other plan is NOT reported validated
+    assert len(data["details"]) == 1
+    assert (
+        data["details"][complete_test_plan.id]
+        == f"Validation FAILED for {complete_test_plan.id}."
+    )
+    assert len(data["ryhti_responses"]) == 1
+    # our invalid plan is not valid, because it has certain invalid code combinations
+    assert data["ryhti_responses"][complete_test_plan.id]["status"] == 422
+    assert data["ryhti_responses"][complete_test_plan.id]["errors"]
+
+
+def test_validate_single_plan(validate_single_plan, main_db_params):
+    """
+    Test the whole lambda endpoint with an invalid plan
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT validated_at, validation_errors FROM hame.plan ORDER BY modified_at DESC"
+            )
+            validation_date, errors = cur.fetchone()
+            assert validation_date
+            assert errors
+            # Check that other plan is NOT marked validated
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
     finally:
         conn.close()
 
@@ -378,14 +499,16 @@ def test_validate_valid_plan_matter_in_preparation(
 
 
 @pytest.fixture()
-def post_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
+def post_plans_in_preparation(
+    ryhti_client_url, valid_plan_in_preparation, another_test_plan
+):
     """
-    Validate and POST a valid plan to the mock X-Road API. As earlier, the plan is first
-    validated with public API and plan matter validated with mock X-Road API.
+    Validate and POST all valid plans to the mock X-Road API. As earlier, plans are first
+    validated with public API, and valid plan matters validated with mock X-Road API.
 
-    A POSTed plan should make lambda return http 200 OK (to indicate that the POST
-    has been run successfully), with the validation errors list empty and validation
-    warnings returned.
+    POSTing plans should make lambda return http 200 OK (to indicate that the validations/POSTs
+    have been run successfully), with the validation errors list empty and validation
+    warnings returned (if plan was valid) or validation errors (if plan was invalid).
     """
     payload = {"action": "post_plans", "save_json": True}
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
@@ -394,12 +517,105 @@ def post_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
     assert data["statusCode"] == 200
     assert (
         data["title"]
-        == "Plan and plan matter validations run. Marked plan matters POSTed."
+        == "Plan and plan matter validations run. Valid marked plan matters POSTed."
     )
     assert (
         data["details"][valid_plan_in_preparation.id]
         == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
     )
+    assert (
+        data["details"][another_test_plan.id]
+        == f"Validation FAILED for {another_test_plan.id}."
+    )
+    # Valid plan was posted
+    assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
+    assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
+    assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    # Another plan was invalid and not posted
+    assert data["ryhti_responses"][another_test_plan.id]["status"] == 400
+    assert not data["ryhti_responses"][another_test_plan.id]["warnings"]
+    assert data["ryhti_responses"][another_test_plan.id]["errors"]
+
+
+def test_post_plans_in_preparation(post_plans_in_preparation, main_db_params):
+    """
+    Test the whole lambda endpoint with multiple plans and plan matters in preparation
+    stage. Plans are validated with public Ryhti API. Validate and POST plan matters with
+    mock X-Road API.
+
+    The mock X-Road should return permanent identifier and report the plan matter
+    as valid for the valid plan. Non-valid plan is not processed with X-Road.
+
+    After reporting the plan matter as valid, the mock X-Road should accept POSTed
+    plan matter and report the plan matter as being created in Ryhti.
+    """
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT validated_at, validation_errors, permanent_plan_identifier, to_be_exported, exported_at FROM hame.plan ORDER BY modified_at DESC"
+            )
+            (
+                validation_date,
+                errors,
+                permanent_plan_identifier,
+                to_be_exported,
+                exported_at,
+            ) = cur.fetchone()
+            assert validation_date
+            assert errors == "Uusi kaava-asian vaihe on viety Ryhtiin."
+            assert permanent_plan_identifier == "MK-123456"
+            assert not to_be_exported
+            assert exported_at
+            # Check that other plan is not marked exported because it is not valid
+            (
+                validation_date,
+                errors,
+                permanent_plan_identifier,
+                to_be_exported,
+                exported_at,
+            ) = cur.fetchone()
+            assert validation_date
+            assert errors
+            assert not permanent_plan_identifier
+            assert to_be_exported
+            assert not exported_at
+    finally:
+        conn.close()
+
+
+@pytest.fixture()
+def post_valid_plan_in_preparation(
+    ryhti_client_url, valid_plan_in_preparation, another_test_plan
+):
+    """
+    Validate and POST single valid plan to the mock X-Road API. As earlier, the plan is first
+    validated with public API and plan matter validated with mock X-Road API.
+
+    A POSTed plan should make lambda return http 200 OK (to indicate that the POST
+    has been run successfully), with the validation errors list empty and validation
+    warnings returned.
+    """
+    payload = {
+        "action": "post_plans",
+        "plan_uuid": valid_plan_in_preparation.id,
+        "save_json": True,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    assert (
+        data["title"]
+        == "Plan and plan matter validations run. Valid marked plan matters POSTed."
+    )
+    # Check that other plan is NOT reported exported
+    assert len(data["details"]) == 1
+    assert (
+        data["details"][valid_plan_in_preparation.id]
+        == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
+    )
+    assert len(data["ryhti_responses"]) == 1
     assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
     assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
     assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
@@ -423,7 +639,7 @@ def test_post_valid_plan_matter_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT validated_at, validation_errors, permanent_plan_identifier, to_be_exported, exported_at FROM hame.plan"
+                f"SELECT validated_at, validation_errors, permanent_plan_identifier, to_be_exported, exported_at FROM hame.plan ORDER BY modified_at DESC"
             )
             (
                 validation_date,
@@ -437,5 +653,18 @@ def test_post_valid_plan_matter_in_preparation(
             assert permanent_plan_identifier == "MK-123456"
             assert not to_be_exported
             assert exported_at
+            # Check that other plan is NOT validated or marked exported
+            (
+                validation_date,
+                errors,
+                permanent_plan_identifier,
+                to_be_exported,
+                exported_at,
+            ) = cur.fetchone()
+            assert not validation_date
+            assert not errors
+            assert not permanent_plan_identifier
+            assert to_be_exported
+            assert not exported_at
     finally:
         conn.close()

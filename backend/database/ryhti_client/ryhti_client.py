@@ -618,6 +618,8 @@ class RyhtiClient:
             plan_dictionary["generalRegulationGroups"] = [
                 self.get_plan_regulation_group(plan.plan_regulation_group, general=True)
             ]
+        else:
+            plan_dictionary["generalRegulationGroups"] = []
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.
         plan_dictionary["planObjects"] = self.get_plan_object_dicts(plan_objects)
@@ -1416,7 +1418,8 @@ class RyhtiClient:
         return {
             "statusCode": 200,
             "title": (
-                "Plan and plan matter validations run. Marked plan matters POSTed."
+                "Plan and plan matter validations run. "
+                "Valid marked plan matters POSTed."
             ),
             "details": details,
             "ryhti_responses": responses,
