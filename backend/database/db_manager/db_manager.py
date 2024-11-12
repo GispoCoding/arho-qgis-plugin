@@ -255,15 +255,23 @@ def handler(event: Event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     # if the code fails before returning response, aws lambda will return http 500
     # with the exception stack trace, as desired.
-    response: Response = {"statusCode": 200, "body": json.dumps("")}
+    response = Response(statusCode=200, body=json.dumps(""))
     db_helper = DatabaseHelper()
+    try:
+        event_type = Action(event["action"])
+    except KeyError:
+        event_type = Action.CREATE_DB
+    except ValueError:
+        return Response(
+            statusCode=400,
+            body=f"Unknown action {event['action']}.",
+        )
 
-    event_type = event.get("action", Action.CREATE_DB.value)
-    if event_type == Action.CREATE_DB.value:
+    if event_type is Action.CREATE_DB:
         msg = migrate_hame_db(db_helper)
-    elif event_type == Action.CHANGE_PWS.value:
+    elif event_type is Action.CHANGE_PWS:
         msg = change_passwords(db_helper)
-    elif event_type == Action.MIGRATE_DB.value:
+    elif event_type is Action.MIGRATE_DB:
         version = str(event.get("version", ""))
         if version:
             msg = migrate_hame_db(db_helper, version)

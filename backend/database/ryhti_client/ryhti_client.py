@@ -166,7 +166,7 @@ class RyhtiClient:
         xroad_member_code: Optional[str] = None,
         xroad_member_client_name: Optional[str] = None,
         xroad_port: Optional[int] = 8080,
-        event_type: str = Action.VALIDATE_PLANS.value,
+        event_type: Action = Action.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
     ) -> None:
@@ -1435,7 +1435,17 @@ def handler(event: Event, _) -> Response:
     # write access is required to update plan information after
     # validating or POSTing data
     db_helper = DatabaseHelper(user=User.READ_WRITE)
-    event_type = event.get("action", Action.VALIDATE_PLANS.value)
+    try:
+        event_type = Action(event["action"])
+    except KeyError:
+        event_type = Action.VALIDATE_PLANS
+    except ValueError:
+        return Response(
+            statusCode=400,
+            title="Unknown action.",
+            details={event["action"]: "Unknown action."},
+            ryhti_responses={},
+        )
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
     public_api_key = os.environ.get("SYKE_APIKEY")
@@ -1463,7 +1473,7 @@ def handler(event: Event, _) -> Response:
         )["SecretString"]
     else:
         xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
-    if event_type == Action.POST_PLANS.value and (
+    if event_type is Action.POST_PLANS and (
         not xroad_server_address
         or not xroad_member_code
         or not xroad_member_client_name
@@ -1501,16 +1511,16 @@ def handler(event: Event, _) -> Response:
         # 1) Serialize plans in database
         LOGGER.info("Formatting plan data...")
         client.plan_dictionaries = client.get_plan_dictionaries()
-        if event_type == Action.GET_PLANS.value:
+        if event_type is Action.GET_PLANS:
             # just return the JSON to the user
-            lambda_response = {
-                "statusCode": 200,
-                "title": "Returning serialized plans from database.",
-                "details": client.plan_dictionaries,
-                "ryhti_responses": {},
-            }
+            lambda_response = Response(
+                statusCode=200,
+                title="Returning serialized plans from database.",
+                details=client.plan_dictionaries,
+                ryhti_responses={},
+            )
             LOGGER.info(lambda_response["title"])
-            return cast(Response, lambda_response)
+            return lambda_response
 
         # 2) Validate plans in database with public API
         LOGGER.info("Validating plans...")
@@ -1568,7 +1578,7 @@ def handler(event: Event, _) -> Response:
             lambda_response["ryhti_responses"] |= plan_matter_validation_response[
                 "ryhti_responses"
             ]
-            if event_type == Action.POST_PLANS.value:
+            if event_type is Action.POST_PLANS:
                 # 7) Update Ryhti plan matters
                 LOGGER.info("POSTing marked and valid plan matters:")
                 responses = client.post_plan_matters()
@@ -1596,12 +1606,12 @@ def handler(event: Event, _) -> Response:
                 "not set. Cannot fetch permanent id or validate or post plan matters."
             )
     else:
-        lambda_response = {
-            "statusCode": 200,
-            "title": "Plans not found in database, exiting.",
-            "details": {},
-            "ryhti_responses": {},
-        }
+        lambda_response = Response(
+            statusCode=200,
+            title="Plans not found in database, exiting.",
+            details={},
+            ryhti_responses={},
+        )
 
     LOGGER.info(lambda_response["title"])
     return cast(Response, lambda_response)
