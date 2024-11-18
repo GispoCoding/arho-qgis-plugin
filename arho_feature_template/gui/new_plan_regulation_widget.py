@@ -8,10 +8,10 @@ from qgis.core import QgsApplication
 from qgis.gui import QgsDoubleSpinBox, QgsFileWidget, QgsSpinBox
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal
-from qgis.PyQt.QtWidgets import QComboBox, QFormLayout, QMenu, QTextEdit, QWidget
+from qgis.PyQt.QtWidgets import QComboBox, QFormLayout, QHBoxLayout, QLineEdit, QMenu, QSizePolicy, QTextEdit, QWidget
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QLineEdit, QPushButton
+    from qgis.PyQt.QtWidgets import QPushButton
 
 ui_path = resources.files(__package__) / "new_plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -80,35 +80,45 @@ class NewPlanRegulationWidget(QWidget, FormClass):  # type: ignore
 
     def add_input_field(self, input_field_type: InputTypes):
         if input_field_type == InputTypes.TEXT_VALUE:
-            widget = QTextEdit()
-            self.form_layout.addRow("Tekstiarvo", widget)
+            inputs = QTextEdit()
+            self.form_layout.addRow("Tekstiarvo", inputs)
         elif input_field_type == InputTypes.NUMERIC_VALUE:
-            widget = QgsDoubleSpinBox()  # Or QgsSpinBox?
-            self.form_layout.addRow("Numeerinen arvo", widget)
+            value_widget = QgsDoubleSpinBox()  # Or QgsSpinBox?
+            value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            unit_widget = QLineEdit()
+            inputs = QHBoxLayout()
+            inputs.addWidget(value_widget)
+            inputs.addWidget(unit_widget)
+            self.form_layout.addRow("Numeerinen arvo", inputs)
         elif input_field_type == InputTypes.CODE_VALUE:
-            widget = QComboBox()
-            # TODO: widget.addItems()
-            self.form_layout.addRow("Koodiarvo", widget)
+            code_widget = QComboBox()
+            code_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            value_widget = QLineEdit()
+            inputs = QHBoxLayout()
+            inputs.addWidget(code_widget)
+            inputs.addWidget(value_widget)
+            # TODO: inputs.addItems()
+            self.form_layout.addRow("Koodiarvo", inputs)
 
         elif input_field_type == InputTypes.TEXT_INFO:
-            widget = QTextEdit()
-            self.form_layout.addRow("Lisätieto", widget)
+            inputs = QTextEdit()
+            self.form_layout.addRow("Lisätieto", inputs)
         elif input_field_type == InputTypes.NUMERIC_INFO:
-            widget = QgsDoubleSpinBox()
-            self.form_layout.addRow("Lisätieto", widget)
+            inputs = QgsDoubleSpinBox()
+            self.form_layout.addRow("Lisätieto", inputs)
         elif input_field_type == InputTypes.CODE_INFO:
-            widget = QComboBox()
-            # TODO: widget.addItems()
-            self.form_layout.addRow("Lisätieto", widget)
+            inputs = QComboBox()
+            # TODO: inputs.addItems()
+            self.form_layout.addRow("Lisätieto", inputs)
 
         elif input_field_type == InputTypes.REGULATION_NUMBER:
-            widget = QgsSpinBox()
-            self.form_layout.addRow("Määräysnumero", widget)
+            inputs = QgsSpinBox()
+            self.form_layout.addRow("Määräysnumero", inputs)
         elif input_field_type == InputTypes.RELATED_FILE:
-            widget = QgsFileWidget()
-            self.form_layout.addRow("Liiteasiakirja", widget)
+            inputs = QgsFileWidget()
+            self.form_layout.addRow("Liiteasiakirja", inputs)
 
         if self.widgets.get(input_field_type) is None:
-            self.widgets[input_field_type] = [widget]
+            self.widgets[input_field_type] = [inputs]
         else:
-            self.widgets[input_field_type].append(widget)
+            self.widgets[input_field_type].append(inputs)
