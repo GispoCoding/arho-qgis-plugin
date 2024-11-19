@@ -202,8 +202,28 @@ def test_populate_admin_region_geometries(
         conn.close()
 
 
-@pytest.fixture()
+# Test getting all plans with both direct lambda call and HTTPS API call:
+@pytest.fixture(
+    params=[
+        {"action": "get_plans", "save_json": True},
+        {
+            "version": "2.0",
+            "routeKey": "",
+            "rawPath": "",
+            "rawQueryString": "",
+            "cookies": [],
+            "headers": {},
+            "queryStringParameters": {},
+            "requestContext": {},
+            "body": {"action": "get_plans", "save_json": True},
+            "pathParameters": {},
+            "isBase64Encoded": False,
+            "stageVariables": {},
+        },
+    ],
+)
 def get_all_plans(
+    request,
     ryhti_client_url,
     complete_test_plan,
     another_test_plan,
@@ -217,8 +237,7 @@ def get_all_plans(
     has been run successfully), with the ryhti_responses dict empty, and details
     dict containing the serialized plans.
     """
-    payload = {"action": "get_plans", "save_json": True}
-    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    r = requests.post(ryhti_client_url, data=json.dumps(request.param))
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
