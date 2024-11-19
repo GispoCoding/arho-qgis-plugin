@@ -1,0 +1,155 @@
+version: 1
+plan_regulations:
+# ASUMISEN ALUE (valmis?)
+  - regulation_code: asumisenAlue
+    letter_code: [A, AA]
+
+  - regulation_code: asuinPientaloAlue
+    parent_regulation: asumisenAlue
+    letter_code: AP
+
+  - regulation_code: erillistenAsuinpientalojenAlue
+    parent_regulation: asuinPientaloAlue
+    letter_code: AO
+
+  - regulation_code: rivitalojenJaMuidenKytkettyjenAsuinpientalojenAlue
+    parent_regulation: asuinPientaloAlue
+    letter_code: AR
+
+  - regulation_code: asuinkerrostaloalue
+    parent_regulation: asumisenAlue
+    letter_code: AK
+
+  - regulation_code: asumistaPalvelevaYhteiskayttoinenAlue
+    parent_regulation: asumisenAlue
+    letter_code: AH
+
+  - regulation_code: maatilanTalouskeskuksenAlue
+    parent_regulation: asumisenAlue
+    letter_code: AM
+
+  - regulation_code: kylaAlue
+    parent_regulation: asumisenAlue
+    letter_code: AT
+
+# VIHERALUE (kesken)
+  - regulation_code: viheralue
+    heading_only: true
+
+  - regulation_code: virkistysalue
+    parent_regulation: viheralue
+    letter_code: V
+
+# VESIALUE (valmis?)
+  - regulation_code: vesialue
+    letter_code: W
+
+  - regulation_code: pohjavesialue
+    parent_regulation: vesialue
+    letter_code: pv
+
+# RAKENTAMISEN MÄÄRÄ (valmis?)
+  - regulation_code: rakentamisenMaara
+    heading_only: true
+
+  - regulation_code: sallittuKerrosala
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+    unit: k-m2
+
+  - regulation_code: sallittuRakennustilavuus
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+    unit: m3
+
+  - regulation_code: tehokkuusluku
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen desimaali
+    unit: k-m2/m2
+
+  - regulation_code: rakentamisenSuhdeAlueenPintaAlaan
+    parent_regulation: tehokkuusluku
+    value_type: positiivinen kokonaisluku
+    unit: prosentti
+
+  - regulation_code: valjyysluku
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen desimaali
+    unit: m2/k-m2
+
+  - regulation_code: maanpaallinenKerroslukuLuku
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: maanpaallinenKerroslukuArvovali
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku arvoväli
+
+  - regulation_code: maanalainenKerroslukuLuku
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: maanalainenKerroslukuArvovali
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku arvoväli
+
+  - regulation_code: kellarinSallittuOsuusKerrosalasta
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+    unit: prosentti
+
+  - regulation_code: ullakonSallittuOsuusKerrosalasta
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+    unit: prosentti
+
+  - regulation_code: asuntojenMaara
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: rakennuspaikkojenMaara
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: tuulivoimaloidenMaara
+    parent_regulation: rakentamisenMaara
+    value_type: positiivinen kokonaisluku
+
+# SANALLINEN MÄÄRÄYS (valmis?)
+  - regulation_code: sanallinenMaarays
+    value_type: kieliversioitu teksti
+
+  - regulation_code: rakentamisrajoitusYleiskaava
+    parent_regulation: sanallinenMaarays
+    letter_code: yk-rr
+    value_type: kieliversioitu teksti
+
+  - regulation_code: rakentamisrajoitusMaakuntakaava
+    parent_regulation: sanallinenMaarays
+    value_type: kieliversioitu teksti
+
+  - regulation_code: maaraAikainenRakentamisrajoitus
+    parent_regulation: sanallinenMaarays
+    value_type: kieliversioitu teksti
+
+  - regulation_code: toimenpiderajoitus
+    parent_regulation: sanallinenMaarays
+    letter_code: tr
+    value_type: kieliversioitu teksti
+
+  - regulation_code: maaraAikainenKieltoRakennuksenRakentamiseksi
+    parent_regulation: sanallinenMaarays
+    letter_code: mrk
+    value_type: kieliversioitu teksti
+
+  - regulation_code: suunnittelumaarays
+    parent_regulation: sanallinenMaarays
+    value_type: kieliversioitu teksti
+
+  - regulation_code: rakentamismaarays
+    parent_regulation: sanallinenMaarays
+    value_type: kieliversioitu teksti
+
+  - regulation_code: suojelumaarays
+    parent_regulation: sanallinenMaarays
+    value_type: kieliversioitu teksti
