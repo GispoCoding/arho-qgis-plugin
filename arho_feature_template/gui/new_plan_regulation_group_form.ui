@@ -42,7 +42,7 @@
            <item row="0" column="0">
             <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>Kaavamääräyksen otsikko</string>
+              <string>Otsikko</string>
              </property>
             </widget>
            </item>
@@ -118,8 +118,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>98</width>
-            <height>28</height>
+            <width>465</width>
+            <height>435</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="plan_regulations_layout">
@@ -157,8 +157,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>98</width>
-            <height>28</height>
+            <width>727</width>
+            <height>435</height>
            </rect>
           </property>
          </widget>
