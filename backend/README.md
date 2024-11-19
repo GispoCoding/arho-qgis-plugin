@@ -128,7 +128,7 @@ you have to provide to the database administrator, and the private key in file `
 Once the administrator has added your public key to the server, you can connect to the database using ssh:
 - On *Windows*, the easiest way to open the SSH tunnel to the server is by using a batch script named `create_tunnel.bat` found [here](docs/create_tunnel.bat) in this repository. Save the file to your computer in a convenient location. After this you can open the tunnel by executing this script by double clicking the file. On *Linux/Mac OS* (or if you want to use a command prompt), just copy-paste the command
 ```
-ssh -N -L 5433:hame-devdb.ctcspesmxrh1.eu-central-1.rds.amazonaws.com:5432 -i "~/.ssh/id_ed25519" ec2-tunnel@hame-dev.bastion.gispocoding.fi
+ssh -N -L 5433:hame-devdb.ctcspesmxrh1.eu-central-1.rds.amazonaws.com:5432 -L 5443:kfhh24yii6.execute-api.eu-central-1.amazonaws.com:443  -i "~/.ssh/id_ed25519" ec2-tunnel@hame-dev.bastion.gispocoding.fi
 ```
 - Enter the passphrase for the key (if set) and hit enter. If no error messages appear, the tunnel is connected. Do not close the command prompt window, otherwise the SSH tunnel is disconnected.
 - Now you can connect to the database using `localhost` as the host and `5433` as the port. The details how to do this with
