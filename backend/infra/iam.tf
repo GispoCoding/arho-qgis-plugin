@@ -157,6 +157,34 @@ resource "aws_iam_role_policy_attachment" "backend" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+
+# This IAM role will be used by API gateway to create Cloudwatch log groups
+resource "aws_iam_role" "api-gateway-cloudwatch" {
+  name               = "${var.prefix}-api-gateway-cloudwatch"
+  assume_role_policy = jsonencode(
+  {
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+  tags               = merge(local.default_tags, { Name = "${var.prefix}-api-gateway-cloudwatch" })
+
+}
+
+# Apparently this is an existing policy that allows pushing to cloudwatch
+resource "aws_iam_role_policy_attachment" "api-gateway-cloudwatch" {
+  role       = aws_iam_role.api-gateway-cloudwatch.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+
 #
 # Bastion
 #

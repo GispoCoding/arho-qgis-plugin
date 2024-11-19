@@ -132,6 +132,15 @@ resource "aws_lambda_permission" "cloudwatch_call_ryhti_client" {
     source_arn = aws_cloudwatch_event_rule.lambda_ryhti_client.arn
 }
 
+resource "aws_lambda_permission" "api_gateway_call_ryhti_client" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.ryhti_client.function_name
+  principal     = "apigateway.amazonaws.com"
+  # The /* part allows invocation from any stage, method and resource path
+  # within API Gateway.
+  source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*"
+}
+
 resource "aws_lambda_function" "mml_loader" {
   function_name = "${var.prefix}-mml_loader"
   image_uri     = "${aws_ecr_repository.mml_loader.repository_url}:latest"

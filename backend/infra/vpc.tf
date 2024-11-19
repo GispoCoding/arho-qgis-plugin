@@ -68,15 +68,6 @@ resource "aws_subnet" "private" {
   })
 }
 
-# TODO: no longer supported, use aws_subnets
-# data "aws_subnet_ids" "private" {
-#   vpc_id  = aws_vpc.main.id
-
-#   tags = {
-#     SubnetType = "private"
-#   }
-# }
-
 data "aws_subnets" "private"{
     filter {
         name   = "vpc-id"
@@ -213,6 +204,16 @@ resource "aws_security_group" "bastion" {
   })
 }
 
+resource "aws_security_group_rule" "bastion-self" {
+  description       = "Allow traffic from the same security group to e.g. vpc endpoints"
+  security_group_id = aws_security_group.bastion.id
+  protocol          = -1
+  self              = true
+  from_port         = 0
+  to_port           = 0
+  type              = "ingress"
+}
+
 resource "aws_security_group_rule" "internet-bastion" {
   description       = "Allow developers to access the bastion"
   security_group_id = aws_security_group.bastion.id
@@ -244,6 +245,27 @@ resource "aws_security_group_rule" "rds-bastion" {
   # cidr_blocks       = ["10.0.0.0/16"]
   source_security_group_id = aws_security_group.bastion.id
   security_group_id = aws_security_group.rds.id
+}
+
+# Add API gateway to bastion security group only
+
+# Apparently this is an existing endpoint service we don't need to configure:
+data "aws_vpc_endpoint_service" "execute-api" {
+  service = "execute-api"
+}
+
+resource "aws_vpc_endpoint" "lambda_api" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = data.aws_vpc_endpoint_service.execute-api.service_name
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids = [aws_subnet.private[0].id, aws_subnet.private[1].id]
+  security_group_ids = [aws_security_group.bastion.id]
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-lambda-api-endpoint"
+  })
 }
 
 # Allow traffic from x-road server to internet, file system and database
@@ -324,7 +346,7 @@ resource "aws_security_group_rule" "lambda-x-road" {
 }
 
 # Allow traffic from bastion to x-road server admin port
-resource "aws_security_group_rule" "x-road-bastion" {
+resource "aws_security_group_rule" "bastion-x-road" {
   description       = "X-road allow traffic from bastion"
   type              = "ingress"
 

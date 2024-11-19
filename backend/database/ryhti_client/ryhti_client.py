@@ -2,7 +2,7 @@ import datetime
 import enum
 import logging
 import os
-from typing import Any, Dict, List, Optional, TypedDict, cast
+from typing import Any, Dict, List, Literal, Optional, TypedDict, cast
 from uuid import uuid4
 
 import base
@@ -62,20 +62,34 @@ class RyhtiResponse(TypedDict):
     warnings: Optional[dict]
 
 
-class Response(TypedDict):
+class ResponseBody(TypedDict):
     """
-    Represents the response of the lambda function to the caller.
+    Data returned in lambda function response.
     """
 
-    statusCode: int  # noqa N815
     title: str
     details: Dict[str, str]
     ryhti_responses: Dict[str, RyhtiResponse]
 
 
+class Response(TypedDict):
+    """
+    Represents the response of the lambda function to the caller.
+
+    Let's abide by the AWS API Gateway 2.0 response format. If we want to specify
+    a custom status code, this means that other data must be embedded in request body.
+
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
+    """
+
+    statusCode: int  # noqa N815
+    body: ResponseBody
+
+
 class Event(TypedDict):
     """
-    Support validating, POSTing or getting a desired plan.
+    Support validating, POSTing or getting a desired plan. If provided directly to
+    lambda, the lambda request needs only contain these keys.
 
     If plan_uuid is empty, all plans in database are processed. However, only
     plans that have their to_be_exported field set to true are actually POSTed.
@@ -87,6 +101,24 @@ class Event(TypedDict):
     action: str  # Action
     plan_uuid: Optional[str]  # UUID for plan to be used
     save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
+
+
+class AWSAPIGatewayPayload(TypedDict):
+    """
+    Represents the request coming to Lambda through AWS API Gateway.
+
+    The same request may arrive to lambda either through AWS integrations or API
+    Gateway. If arriving through the API Gateway, it will contain all data that
+    were contained in the whole HTTPS request, and the event is found in request body.
+
+    https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
+    """
+
+    version: Literal["2.0"]
+    headers: Dict
+    queryStringParameters: Dict
+    requestContext: Dict
+    body: Event
 
 
 class Period(TypedDict):
@@ -1264,12 +1296,14 @@ class RyhtiClient:
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                 plan.validated_at = datetime.datetime.now()
             session.commit()
-        return {
-            "statusCode": 200,
-            "title": "Plan validations run.",
-            "details": details,
-            "ryhti_responses": responses,
-        }
+        return Response(
+            statusCode=200,
+            body=ResponseBody(
+                title="Plan validations run.",
+                details=details,
+                ryhti_responses=responses,
+            ),
+        )
 
     def set_permanent_plan_identifiers(self, responses: Dict[str, RyhtiResponse]):
         """
@@ -1351,12 +1385,14 @@ class RyhtiClient:
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                 plan.validated_at = datetime.datetime.now()
             session.commit()
-        return {
-            "statusCode": 200,
-            "title": "Plan and plan matter validations run.",
-            "details": details,
-            "ryhti_responses": responses,
-        }
+        return Response(
+            statusCode=200,
+            body=ResponseBody(
+                title="Plan and plan matter validations run.",
+                details=details,
+                ryhti_responses=responses,
+            ),
+        )
 
     def save_plan_matter_post_responses(
         self, responses: Dict[str, RyhtiResponse]
@@ -1415,19 +1451,23 @@ class RyhtiClient:
                 LOGGER.info(details[plan_id])
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
             session.commit()
-        return {
-            "statusCode": 200,
-            "title": (
-                "Plan and plan matter validations run. "
-                "Valid marked plan matters POSTed."
+        return Response(
+            statusCode=200,
+            body=ResponseBody(
+                title=(
+                    "Plan and plan matter validations run. "
+                    "Valid marked plan matters POSTed."
+                ),
+                details=details,
+                ryhti_responses=responses,
             ),
-            "details": details,
-            "ryhti_responses": responses,
-        }
+        )
 
 
-def handler(event: Event, _) -> Response:
-    """Handler which is called when accessing the endpoint.
+def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
+    """
+    Handler which is called when accessing the endpoint. We must handle both API
+    gateway HTTP requests and regular lambda requests.
 
     If lambda runs successfully, we always return 200 OK. In case a python
     exception occurs, AWS lambda will return the exception.
@@ -1435,6 +1475,16 @@ def handler(event: Event, _) -> Response:
     We want to return general result message of the lambda run, as well as all the
     Ryhti API results and errors, separated by plan id.
     """
+    LOGGER.info(f"Received {payload}...")
+    # The payload may contain only the event dict *or* all possible data coming from an
+    # API Gateway HTTP request. We kinda have to infer which one is the case here.
+    try:
+        # API Gateway request
+        event = cast(Event, cast(AWSAPIGatewayPayload, payload)["body"])
+    except KeyError:
+        # Direct lambda request
+        event = cast(Event, payload)
+
     # write access is required to update plan information after
     # validating or POSTing data
     db_helper = DatabaseHelper(user=User.READ_WRITE)
@@ -1445,9 +1495,11 @@ def handler(event: Event, _) -> Response:
     except ValueError:
         return Response(
             statusCode=400,
-            title="Unknown action.",
-            details={event["action"]: "Unknown action."},
-            ryhti_responses={},
+            body=ResponseBody(
+                title="Unknown action.",
+                details={event["action"]: "Unknown action."},
+                ryhti_responses={},
+            ),
         )
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
@@ -1518,11 +1570,13 @@ def handler(event: Event, _) -> Response:
             # just return the JSON to the user
             lambda_response = Response(
                 statusCode=200,
-                title="Returning serialized plans from database.",
-                details=client.plan_dictionaries,
-                ryhti_responses={},
+                body=ResponseBody(
+                    title="Returning serialized plans from database.",
+                    details=client.plan_dictionaries,
+                    ryhti_responses={},
+                ),
             )
-            LOGGER.info(lambda_response["title"])
+            LOGGER.info(lambda_response["body"]["title"])
             return lambda_response
 
         # 2) Validate plans in database with public API
@@ -1576,11 +1630,15 @@ def handler(event: Event, _) -> Response:
             plan_matter_validation_response = (
                 client.save_plan_matter_validation_responses(responses)
             )
-            lambda_response["title"] = plan_matter_validation_response["title"]
-            lambda_response["details"] |= plan_matter_validation_response["details"]
-            lambda_response["ryhti_responses"] |= plan_matter_validation_response[
-                "ryhti_responses"
+            lambda_response["body"]["title"] = plan_matter_validation_response["body"][
+                "title"
             ]
+            lambda_response["body"]["details"] |= plan_matter_validation_response[
+                "body"
+            ]["details"]
+            lambda_response["body"][
+                "ryhti_responses"
+            ] |= plan_matter_validation_response["body"]["ryhti_responses"]
             if event_type is Action.POST_PLANS:
                 # 7) Update Ryhti plan matters
                 LOGGER.info("POSTing marked and valid plan matters:")
@@ -1595,11 +1653,15 @@ def handler(event: Event, _) -> Response:
                 plan_matter_post_response = client.save_plan_matter_post_responses(
                     responses
                 )
-                lambda_response["title"] = plan_matter_post_response["title"]
-                lambda_response["details"] |= plan_matter_post_response["details"]
-                lambda_response["ryhti_responses"] |= plan_matter_post_response[
-                    "ryhti_responses"
+                lambda_response["body"]["title"] = plan_matter_post_response["body"][
+                    "title"
                 ]
+                lambda_response["body"]["details"] |= plan_matter_post_response["body"][
+                    "details"
+                ]
+                lambda_response["body"]["ryhti_responses"] |= plan_matter_post_response[
+                    "body"
+                ]["ryhti_responses"]
 
                 # 9) TODO: If documents exist, upload documents
         else:
@@ -1611,10 +1673,12 @@ def handler(event: Event, _) -> Response:
     else:
         lambda_response = Response(
             statusCode=200,
-            title="Plans not found in database, exiting.",
-            details={},
-            ryhti_responses={},
+            body=ResponseBody(
+                title="Plans not found in database, exiting.",
+                details={},
+                ryhti_responses={},
+            ),
         )
 
-    LOGGER.info(lambda_response["title"])
+    LOGGER.info(lambda_response["body"]["title"])
     return cast(Response, lambda_response)

@@ -222,10 +222,11 @@ def get_all_plans(
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Returning serialized plans from database."
-    assert_dicts_equal(data["details"][complete_test_plan.id], desired_plan_dict)
-    assert_dicts_equal(data["details"][another_test_plan.id], another_plan_dict)
-    assert not data["ryhti_responses"]
+    body = data["body"]
+    assert body["title"] == "Returning serialized plans from database."
+    assert_dicts_equal(body["details"][complete_test_plan.id], desired_plan_dict)
+    assert_dicts_equal(body["details"][another_test_plan.id], another_plan_dict)
+    assert not body["ryhti_responses"]
 
 
 def test_get_all_plans(get_all_plans, main_db_params):
@@ -269,11 +270,12 @@ def get_single_plan(
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Returning serialized plans from database."
+    body = data["body"]
+    assert body["title"] == "Returning serialized plans from database."
     # Check that other plan is NOT returned
-    assert len(data["details"]) == 1
-    assert_dicts_equal(data["details"][complete_test_plan.id], desired_plan_dict)
-    assert not data["ryhti_responses"]
+    assert len(body["details"]) == 1
+    assert_dicts_equal(body["details"][complete_test_plan.id], desired_plan_dict)
+    assert not body["ryhti_responses"]
 
 
 def test_get_single_plan(get_single_plan, main_db_params):
@@ -310,21 +312,22 @@ def validate_invalid_plans(ryhti_client_url, complete_test_plan, another_test_pl
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Plan and plan matter validations run."
+    body = data["body"]
+    assert body["title"] == "Plan and plan matter validations run."
     assert (
-        data["details"][complete_test_plan.id]
+        body["details"][complete_test_plan.id]
         == f"Validation FAILED for {complete_test_plan.id}."
     )
     assert (
-        data["details"][another_test_plan.id]
+        body["details"][another_test_plan.id]
         == f"Validation FAILED for {another_test_plan.id}."
     )
     # Our invalid plan is not valid, because it has certain invalid code combinations
-    assert data["ryhti_responses"][complete_test_plan.id]["status"] == 422
-    assert data["ryhti_responses"][complete_test_plan.id]["errors"]
+    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 422
+    assert body["ryhti_responses"][complete_test_plan.id]["errors"]
     # Another test plan contains nothing really
-    assert data["ryhti_responses"][another_test_plan.id]["status"] == 400
-    assert data["ryhti_responses"][another_test_plan.id]["errors"]
+    assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
+    assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
 def test_validate_invalid_plans(validate_invalid_plans, main_db_params):
@@ -363,17 +366,18 @@ def validate_single_plan(ryhti_client_url, complete_test_plan, another_test_plan
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Plan and plan matter validations run."
+    body = data["body"]
+    assert body["title"] == "Plan and plan matter validations run."
     # Check that other plan is NOT reported validated
-    assert len(data["details"]) == 1
+    assert len(body["details"]) == 1
     assert (
-        data["details"][complete_test_plan.id]
+        body["details"][complete_test_plan.id]
         == f"Validation FAILED for {complete_test_plan.id}."
     )
-    assert len(data["ryhti_responses"]) == 1
+    assert len(body["ryhti_responses"]) == 1
     # our invalid plan is not valid, because it has certain invalid code combinations
-    assert data["ryhti_responses"][complete_test_plan.id]["status"] == 422
-    assert data["ryhti_responses"][complete_test_plan.id]["errors"]
+    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 422
+    assert body["ryhti_responses"][complete_test_plan.id]["errors"]
 
 
 def test_validate_single_plan(validate_single_plan, main_db_params):
@@ -463,14 +467,15 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
-    assert data["title"] == "Plan and plan matter validations run."
+    body = data["body"]
+    assert body["title"] == "Plan and plan matter validations run."
     assert (
-        data["details"][valid_plan_in_preparation.id]
+        body["details"][valid_plan_in_preparation.id]
         == f"Plan matter validation successful for {valid_plan_in_preparation.id}!"
     )
-    assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 200
-    assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
-    assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    assert body["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 200
+    assert body["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
+    assert not body["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
 
 
 def test_validate_valid_plan_matter_in_preparation(
@@ -515,26 +520,27 @@ def post_plans_in_preparation(
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
+    body = data["body"]
     assert (
-        data["title"]
+        body["title"]
         == "Plan and plan matter validations run. Valid marked plan matters POSTed."
     )
     assert (
-        data["details"][valid_plan_in_preparation.id]
+        body["details"][valid_plan_in_preparation.id]
         == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
     )
     assert (
-        data["details"][another_test_plan.id]
+        body["details"][another_test_plan.id]
         == f"Validation FAILED for {another_test_plan.id}."
     )
     # Valid plan was posted
-    assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
-    assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
-    assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    assert body["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
+    assert body["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
+    assert not body["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
     # Another plan was invalid and not posted
-    assert data["ryhti_responses"][another_test_plan.id]["status"] == 400
-    assert not data["ryhti_responses"][another_test_plan.id]["warnings"]
-    assert data["ryhti_responses"][another_test_plan.id]["errors"]
+    assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
+    assert not body["ryhti_responses"][another_test_plan.id]["warnings"]
+    assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
 def test_post_plans_in_preparation(post_plans_in_preparation, main_db_params):
@@ -605,20 +611,21 @@ def post_valid_plan_in_preparation(
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
+    body = data["body"]
     assert (
-        data["title"]
+        body["title"]
         == "Plan and plan matter validations run. Valid marked plan matters POSTed."
     )
     # Check that other plan is NOT reported exported
-    assert len(data["details"]) == 1
+    assert len(body["details"]) == 1
     assert (
-        data["details"][valid_plan_in_preparation.id]
+        body["details"][valid_plan_in_preparation.id]
         == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
     )
-    assert len(data["ryhti_responses"]) == 1
-    assert data["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
-    assert data["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
-    assert not data["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    assert len(body["ryhti_responses"]) == 1
+    assert body["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
+    assert body["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
+    assert not body["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
 
 
 def test_post_valid_plan_matter_in_preparation(

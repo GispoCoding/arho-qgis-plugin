@@ -30,6 +30,12 @@ resource "aws_cloudwatch_log_group" "x-road_securityserver" {
   tags = local.default_tags
 }
 
+resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
+  name              = "/aws/apigateway/${aws_api_gateway_rest_api.lambda_api.name}"
+  retention_in_days = 30
+  tags = local.default_tags
+}
+
 resource "aws_cloudwatch_event_rule" "lambda_koodistot" {
   name        = "${var.prefix}-lambda-koodistot-update"
   description = "Run koodistot import every night"

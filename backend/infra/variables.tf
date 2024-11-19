@@ -18,6 +18,12 @@ variable "bastion_subdomain" {
   type        = string
 }
 
+variable "apigateway_subdomain" {
+  description = "Subdomain for private API gateway to lambda"
+  type        = string
+  default     = "lambda-api"
+}
+
 variable "x-road_host" {
   description = "Host name for X-Road security server"
   type        = string
@@ -181,6 +187,7 @@ variable "extra_tags" {
 
 locals {
   bastion_dns_alias    = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  apigateway_dns_record = "${var.prefix}.${var.apigateway_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   xroad_private_domain = "${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   xroad_dns_record     = "${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   default_tags         = merge(var.extra_tags, {

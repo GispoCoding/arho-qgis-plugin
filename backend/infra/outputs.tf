@@ -13,6 +13,11 @@ output "lambda_koodistot_loader" {
   value       = aws_lambda_function.koodistot_loader.function_name
 }
 
+output "lambda_ryhti_client" {
+  description = "Name of the ryhti_loader Lambda function."
+  value       = aws_lambda_function.ryhti_client.function_name
+}
+
 output "lambda_update_user" {
   description = "Name of the lambda function update user."
   value       = aws_iam_user.lambda_update_user.name
