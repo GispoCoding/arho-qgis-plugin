@@ -88,9 +88,7 @@ class PlanRegulationConfig:
     """Describes the configuration of a plan regulation."""
 
     regulation_code: str
-    parent_regulation: str | None
-    heading_only: bool
-    letter_code: str | None
+    category_only: bool
     value_type: ValueType | None
     unit: Unit | None
     child_regulations: list[PlanRegulationConfig] | None
@@ -104,14 +102,8 @@ class PlanRegulationConfig:
         """
         return cls(
             regulation_code=data["regulation_code"],
-            parent_regulation=data.get("parent_regulation"),
-            heading_only=data.get("heading_only", False),
-            letter_code=data.get("letter_code"),
+            category_only=data.get("category_only", False),
             value_type=ValueType(data["value_type"]) if "value_type" in data else None,
             unit=Unit(data["unit"]) if "unit" in data else None,
-            child_regulations=(
-                [PlanRegulationConfig.from_dict(config) for config in data["child_regulations"]]
-                if "child_regulations" in data
-                else None
-            ),
+            child_regulations=[PlanRegulationConfig.from_dict(config) for config in data.get("child_regulations", [])],
         )

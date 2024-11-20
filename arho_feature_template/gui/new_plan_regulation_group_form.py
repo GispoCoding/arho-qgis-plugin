@@ -53,7 +53,7 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def add_selected_plan_regulation(self, item: QTreeWidgetItem, column: int):
         config: PlanRegulationConfig = item.data(column, Qt.UserRole)  # Retrieve the associated config
-        if config.heading_only:
+        if config.category_only:
             return
         self.add_plan_regulation(config)
 
