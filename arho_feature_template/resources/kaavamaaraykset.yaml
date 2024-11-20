@@ -1,0 +1,117 @@
+version: 1
+plan_regulations:
+# ASUMISEN ALUE (valmis?)
+  - regulation_code: asumisenAlue
+    child_regulations:
+
+    - regulation_code: asuinPientaloAlue
+      child_regulations:
+
+      - regulation_code: erillistenAsuinpientalojenAlue
+
+      - regulation_code: rivitalojenJaMuidenKytkettyjenAsuinpientalojenAlue
+
+    - regulation_code: asuinkerrostaloalue
+
+    - regulation_code: asumistaPalvelevaYhteiskayttoinenAlue
+
+    - regulation_code: maatilanTalouskeskuksenAlue
+
+    - regulation_code: kylaAlue
+
+# VIHERALUE (kesken)
+  - regulation_code: viheralue
+    category_only: true
+    child_regulations:
+
+    - regulation_code: virkistysalue
+
+# VESIALUE (valmis?)
+  - regulation_code: vesialue
+    child_regulations:
+
+    - regulation_code: pohjavesialue
+
+# RAKENTAMISEN MÄÄRÄ (valmis?)
+  - regulation_code: rakentamisenMaara
+    category_only: true
+    child_regulations:
+
+    - regulation_code: sallittuKerrosala
+      value_type: positiivinen kokonaisluku
+      unit: k-m2
+
+    - regulation_code: sallittuRakennustilavuus
+      value_type: positiivinen kokonaisluku
+      unit: m3
+
+    - regulation_code: tehokkuusluku
+      value_type: positiivinen desimaali
+      unit: k-m2/m2
+      child_regulations:
+
+      - regulation_code: rakentamisenSuhdeAlueenPintaAlaan
+        value_type: positiivinen kokonaisluku
+        unit: prosentti
+
+    - regulation_code: valjyysluku
+      value_type: positiivinen desimaali
+      unit: m2/k-m2
+
+    - regulation_code: maanpaallinenKerroslukuLuku
+      value_type: positiivinen kokonaisluku
+
+    - regulation_code: maanpaallinenKerroslukuArvovali
+      value_type: positiivinen kokonaisluku arvoväli
+
+    - regulation_code: maanalainenKerroslukuLuku
+      value_type: positiivinen kokonaisluku
+
+    - regulation_code: maanalainenKerroslukuArvovali
+      value_type: positiivinen kokonaisluku arvoväli
+
+    - regulation_code: kellarinSallittuOsuusKerrosalasta
+      value_type: positiivinen kokonaisluku
+      unit: prosentti
+
+    - regulation_code: ullakonSallittuOsuusKerrosalasta
+      value_type: positiivinen kokonaisluku
+      unit: prosentti
+
+    - regulation_code: asuntojenMaara
+      value_type: positiivinen kokonaisluku
+
+    - regulation_code: rakennuspaikkojenMaara
+      value_type: positiivinen kokonaisluku
+
+    - regulation_code: tuulivoimaloidenMaara
+      value_type: positiivinen kokonaisluku
+
+# SANALLINEN MÄÄRÄYS (valmis?)
+  - regulation_code: sanallinenMaarays
+    value_type: kieliversioitu teksti
+    child_regulations:
+
+    - regulation_code: rakentamisrajoitusYleiskaava
+      value_type: kieliversioitu teksti
+
+    - regulation_code: rakentamisrajoitusMaakuntakaava
+      value_type: kieliversioitu teksti
+
+    - regulation_code: maaraAikainenRakentamisrajoitus
+      value_type: kieliversioitu teksti
+
+    - regulation_code: toimenpiderajoitus
+      value_type: kieliversioitu teksti
+
+    - regulation_code: maaraAikainenKieltoRakennuksenRakentamiseksi
+      value_type: kieliversioitu teksti
+
+    - regulation_code: suunnittelumaarays
+      value_type: kieliversioitu teksti
+
+    - regulation_code: rakentamismaarays
+      value_type: kieliversioitu teksti
+
+    - regulation_code: suojelumaarays
+      value_type: kieliversioitu teksti
