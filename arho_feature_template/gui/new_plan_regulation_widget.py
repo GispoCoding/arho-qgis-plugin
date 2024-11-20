@@ -65,7 +65,7 @@ class NewPlanRegulationWidget(QWidget, FormClass):  # type: ignore
         # NOTE: Maybe this is not something needed? Instead, when user clicks Ok, write into a YAML
         # in a separate script?
         self.attribute_widgets: dict[str, QWidget | tuple[QWidget, str | Number]] = defaultdict(dict)
-        self.plan_regulation_name.setText(config.regulation_code)  # TODO: Change to display name
+        self.plan_regulation_name.setText(config.name)
         self.plan_regulation_name.setReadOnly(True)
         self.init_value_fields()
         self.init_buttons()

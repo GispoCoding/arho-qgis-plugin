@@ -34,9 +34,8 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.plan_regulations_view.itemDoubleClicked.connect(self.add_selected_plan_regulation)
 
     def _initalize_regulation_from_config(self, config: PlanRegulationConfig, parent: QTreeWidgetItem | None = None):
-        display_name = config.regulation_code  # TODO: Get display name from DB
         tree_item = QTreeWidgetItem(parent)
-        tree_item.setText(0, display_name)
+        tree_item.setText(0, config.name)
         tree_item.setData(0, Qt.UserRole, config)
 
         if parent is None:

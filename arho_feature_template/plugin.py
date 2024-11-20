@@ -45,7 +45,7 @@ class Plugin:
         self.menu = Plugin.name
 
         # Initialize plan regulations set
-        PlanRegulationsSet.load_config()
+        PlanRegulationsSet.initialize()
 
     def add_action(
         self,
