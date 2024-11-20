@@ -1484,6 +1484,16 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
     except KeyError:
         # Direct lambda request
         event = cast(Event, payload)
+    except TypeError:
+        # Something wrong with the request
+        return Response(
+            statusCode=400,
+            body=ResponseBody(
+                title="Received malformed event JSON.",
+                details={"event": str(event)},
+                ryhti_responses={},
+            ),
+        )
 
     # write access is required to update plan information after
     # validating or POSTing data
