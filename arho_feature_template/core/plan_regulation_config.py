@@ -133,7 +133,7 @@ class PlanRegulationConfig:
     category_only: bool
     value_type: ValueType | None
     unit: Unit | None
-    child_regulations: list[PlanRegulationConfig] | None
+    child_regulations: list[PlanRegulationConfig]
 
     @classmethod
     def from_dict(cls, data: dict) -> PlanRegulationConfig:
@@ -154,7 +154,5 @@ class PlanRegulationConfig:
     def add_name(self, code_to_name_mapping: dict[str, dict[str, str]], language: Literal["fin", "eng", "swe"]):
         language_to_name_dict = code_to_name_mapping.get(self.regulation_code)
         self.name = language_to_name_dict[language] if language_to_name_dict else self.regulation_code
-        if not self.child_regulations:
-            return
         for regulation in self.child_regulations:
             regulation.add_name(code_to_name_mapping, language)
