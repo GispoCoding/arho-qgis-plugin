@@ -118,7 +118,7 @@ class AWSAPIGatewayPayload(TypedDict):
     headers: Dict
     queryStringParameters: Dict
     requestContext: Dict
-    body: Event
+    body: str  # The event is stringified json, we have to jsonify it first
 
 
 class Period(TypedDict):
@@ -1479,21 +1479,11 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
     # The payload may contain only the event dict *or* all possible data coming from an
     # API Gateway HTTP request. We kinda have to infer which one is the case here.
     try:
-        # API Gateway request
-        event = cast(Event, cast(AWSAPIGatewayPayload, payload)["body"])
+        # API Gateway request. The JSON body has to be converted to python object.
+        event = cast(Event, json.loads(cast(AWSAPIGatewayPayload, payload)["body"]))
     except KeyError:
         # Direct lambda request
         event = cast(Event, payload)
-    except TypeError:
-        # Something wrong with the request
-        return Response(
-            statusCode=400,
-            body=ResponseBody(
-                title="Received malformed event JSON.",
-                details={"event": str(event)},
-                ryhti_responses={},
-            ),
-        )
 
     # write access is required to update plan information after
     # validating or POSTing data

@@ -202,7 +202,8 @@ def test_populate_admin_region_geometries(
         conn.close()
 
 
-# Test getting all plans with both direct lambda call and HTTPS API call:
+# Test getting all plans with both direct lambda call and HTTPS API call.
+# The HTTPS API call body will be a JSON string.
 @pytest.fixture(
     params=[
         {"action": "get_plans", "save_json": True},
@@ -215,7 +216,7 @@ def test_populate_admin_region_geometries(
             "headers": {},
             "queryStringParameters": {},
             "requestContext": {},
-            "body": {"action": "get_plans", "save_json": True},
+            "body": '{"action": "get_plans", "save_json": true}',
             "pathParameters": {},
             "isBase64Encoded": False,
             "stageVariables": {},
