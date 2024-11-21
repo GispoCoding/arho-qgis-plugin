@@ -8,16 +8,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 import yaml
-from qgis.core import QgsProject
 from qgis.utils import iface
 
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.utils.misc_utils import get_layer_by_name
 
 if TYPE_CHECKING:
     from numbers import Number
     from typing import Literal
 
-    from qgis.core import QgsMapLayer
     from qgis.gui import QgisInterface
 
     iface: QgisInterface = cast("QgisInterface", iface)  # type: ignore[no-redef]
@@ -54,16 +53,6 @@ class Unit(Enum):
     AREA_RATIO = "m2/k-m2"
     DEGREES = "°"
     DECIBEL = "dB"
-
-
-# TODO: Same as in PlanManager, should refactor
-def get_layer_by_name(layer_name: str) -> QgsMapLayer | None:
-    """Retrieve a layer by name from the project."""
-    layers = QgsProject.instance().mapLayersByName(layer_name)
-    if layers:
-        return layers[0]
-    iface.messageBar().pushMessage("Error", f"Layer '{layer_name}' not found", level=3)
-    return None
 
 
 def get_name_mapping_for_plan_regulations(layer_name: str) -> dict[str, dict[str, str]] | None:
@@ -188,7 +177,9 @@ class PlanRegulationDefinition:
 
     regulation_config: PlanRegulationConfig
     default_value: str | Number | None
-    additional_info: dict[str, str | Number | None]  # NOTE: Correct typing for additional information values?
+    additional_information: list[
+        dict[str, str | Number | None]
+    ]  # NOTE: Correct typing for additional information values?
     regulation_number: int | None
     attached_files: list[Path]
 
@@ -197,7 +188,7 @@ class PlanRegulationDefinition:
         return cls(
             regulation_config=data["config"],
             default_value=data.get("default_value"),
-            additional_info=data.get("additional_info", {}),
+            additional_information=data.get("additional_information", []),
             regulation_number=data.get("regulation_number"),
             attached_files=data.get("attached_files", []),
         )

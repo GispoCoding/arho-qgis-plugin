@@ -20,6 +20,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, Unit, ValueType
+from arho_feature_template.utils.misc_utils import get_additional_information_name
 
 if TYPE_CHECKING:
     from numbers import Number
