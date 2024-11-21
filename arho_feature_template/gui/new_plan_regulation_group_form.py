@@ -8,7 +8,7 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QDialog, QTreeWidget, QTreeWidgetItem
 
 from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, PlanRegulationsSet
-from arho_feature_template.gui.new_plan_regulation_widget import NewPlanRegulationWidget
+from arho_feature_template.gui.plan_regulation_widget import PlanRegulationWidget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QBoxLayout, QWidget
@@ -57,11 +57,11 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation(config)
 
     def add_plan_regulation(self, config: PlanRegulationConfig):
-        widget = NewPlanRegulationWidget(config=config, parent=self.plan_regulations_scroll_area_contents)
+        widget = PlanRegulationWidget(config=config, parent=self.plan_regulations_scroll_area_contents)
         widget.delete_signal.connect(self.delete_plan_regulation)
         index = self.plan_regulations_layout.count() - 1
         self.plan_regulations_layout.insertWidget(index, widget)
 
-    def delete_plan_regulation(self, plan_regulation_widget: NewPlanRegulationWidget):
+    def delete_plan_regulation(self, plan_regulation_widget: PlanRegulationWidget):
         self.plan_regulations_layout.removeWidget(plan_regulation_widget)
         plan_regulation_widget.deleteLater()

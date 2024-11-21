@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>757</width>
+    <width>906</width>
     <height>749</height>
    </rect>
   </property>
@@ -78,18 +78,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QComboBox" name="comboBox">
-           <item>
-            <property name="text">
-             <string>Katja</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Omat</string>
-            </property>
-           </item>
-          </widget>
+          <widget class="QComboBox" name="plan_regulation_group_libraries_combobox"/>
          </item>
          <item>
           <widget class="QgsFilterLineEdit" name="mLineEdit">
@@ -116,7 +105,7 @@
          <item>
           <widget class="QTreeWidget" name="plan_regulation_groups_tree">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -141,104 +130,9 @@
            </attribute>
            <column>
             <property name="text">
-             <string>1</string>
+             <string/>
             </property>
            </column>
-           <item>
-            <property name="text">
-             <string>Aluevaraukset</string>
-            </property>
-            <item>
-             <property name="text">
-              <string>Asuinrakennusten alue</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Asuinkerrostalojen alue</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Asuinpientalojen alue</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Rivitalojen ja muiden kytkettyjen asuinrakennusten alue</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Erillispientalojen alue</string>
-             </property>
-            </item>
-           </item>
-           <item>
-            <property name="text">
-             <string>Rakennusalat</string>
-            </property>
-            <item>
-             <property name="text">
-              <string>Kunnan tai kaupunginosas raja</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Korttelialue tai korttelialueen osa</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Sitovan tonttijaon mukainen tontti</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Ohjeellinen tontti / rakennusala</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Rakennusala</string>
-             </property>
-            </item>
-           </item>
-           <item>
-            <property name="text">
-             <string>Numeeriset ja tekstimuotoiset määräykset</string>
-            </property>
-            <item>
-             <property name="text">
-              <string>Kaupungin- tai kunnanosan numero</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Kaupungin- tai kunnanosan nimi</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Korttelin numero</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Tontin tai rakennuspaikan numero</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Ohjeellisen tontin tai rakennuspaikan numero</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Kadun tai tien nimi</string>
-             </property>
-            </item>
-           </item>
           </widget>
          </item>
         </layout>
@@ -262,7 +156,7 @@
              <rect>
               <x>0</x>
               <y>0</y>
-              <width>449</width>
+              <width>598</width>
               <height>624</height>
              </rect>
             </property>

@@ -13,7 +13,8 @@ from arho_feature_template.gui.plan_regulation_widget import PlanRegulationWidge
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QPushButton
 
-    from arho_feature_template.core.template_library_config import Feature
+    from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig
+    from arho_feature_template.core.plan_regulation_group_config import PlanRegulationGroupDefinition
 
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -24,7 +25,7 @@ class PlanRegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     delete_signal = pyqtSignal(QWidget)
 
-    def __init__(self, feature: Feature):
+    def __init__(self, group_definition: PlanRegulationGroupDefinition):
         super().__init__()
         self.setupUi(self)
 
@@ -34,31 +35,26 @@ class PlanRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.del_btn: QPushButton
 
         # INIT
-        self.feature = feature
-        self.layer = self.feature.layer  # Should be plan_regulation_group layer
+        self.group_definition = group_definition
+        self.layer = "plan_regulation_group"
 
+        self.heading.setText(self.group_definition.name)
         self.init_buttons()
-        self.set_group_heading()
-        self.add_plan_regulation_widgets()
-
-    def request_delete(self):
-        self.delete_signal.emit(self)
+        for plan_regulation_definition in self.group_definition.plan_regulations:
+            config = plan_regulation_definition.regulation_config
+            widget = self.add_plan_regulation_widget(config)
+            widget.populate_from_definition(plan_regulation_definition)
 
     def init_buttons(self):
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
-        self.del_btn.clicked.connect(self.request_delete)
+        self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
 
-    def set_group_heading(self):
-        for attribute_config in self.feature.attributes:
-            if attribute_config.attribute == "name":
-                self.heading.setText(attribute_config.display())
+    def add_plan_regulation_widget(self, config: PlanRegulationConfig) -> PlanRegulationWidget:
+        widget = PlanRegulationWidget(config=config, parent=self.frame)
+        widget.delete_signal.connect(self.delete_plan_regulation_widget)
+        self.frame.layout().addWidget(widget)
+        return widget
 
-    def add_plan_regulation_widgets(self):
-        if self.feature.child_features is not None:
-            for child in self.feature.child_features:
-                if child.layer == "plan_requlation":
-                    self.add_plan_regulation_widget(child)
-
-    def add_plan_regulation_widget(self, plan_regulation_feature: Feature):
-        plan_regulation_widget = PlanRegulationWidget(plan_regulation_feature)
-        self.frame.layout().addWidget(plan_regulation_widget)
+    def delete_plan_regulation_widget(self, plan_regulation_widget: PlanRegulationWidget):
+        self.frame.layout().removeWidget(plan_regulation_widget)
+        plan_regulation_widget.deleteLater()
