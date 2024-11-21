@@ -1,316 +1,277 @@
-version: 1
 meta:
   name: Asemakaavan kaavamääräysryhmät (Katja)
-  version: "1.0"
-plan_regulation_groups:
-  - name: Asuinrakennusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #000000
-    letter_code: A
-    plan_regulations:
-      - regulation_code: asumisenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+  version: 1
+categories:
 
-  - name: Asuinkerrostalojen alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #000000
-    letter_code: AK
-    plan_regulations:
-      - regulation_code: asuinkerrostaloalue
-        additional_information:
-          - type: paakayttotarkoitus
+  - category_code: aluevaraukset
+    name: Aluevaraukset
+    plan_regulation_groups:
 
-  - name: Asuinpientalojen alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #A9D08E
-    letter_code: AP
-    plan_regulations:
-      - regulation_code: asuinpientaloalue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Asuinrakennusten alue
+      geometry: Alue
+      color_code: #000000
+      letter_code: A
+      plan_regulations:
+        - regulation_code: asumisenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Rivitalojen ja muiden kytkettyjen asuinrakennusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #FFD966
-    letter_code: AR
-    plan_regulations:
-      - regulation_code: rivitalojenJaMuidenKytkettyjenAsuinpientalojenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Asuinkerrostalojen alue
+      geometry: Alue
+      color_code: #000000
+      letter_code: AK
+      plan_regulations:
+        - regulation_code: asuinkerrostaloalue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Erillispientalojen alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #E06666
-    letter_code: AO
-    plan_regulations:
-      - regulation_code: erillistenAsuinpientalojenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Asuinpientalojen alue
+      geometry: Alue
+      color_code: #A9D08E
+      letter_code: AP
+      plan_regulations:
+        - regulation_code: asuinpientaloalue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Asuin-, liike- ja toimistorakennusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #5B9BD5
-    letter_code: AL
-    plan_regulations:
-      - regulation_code: asumisenAlue
-        additional_information:
-          - type: paakayttotarkoitus
-      - regulation_code: liikerakennustenAlue
-        additional_information:
-          - type: paakayttotarkoitus
-      - regulation_code: toimistorakennustenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Rivitalojen ja muiden kytkettyjen asuinrakennusten alue
+      geometry: Alue
+      color_code: #FFD966
+      letter_code: AR
+      plan_regulations:
+        - regulation_code: rivitalojenJaMuidenKytkettyjenAsuinpientalojenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Asumista palveleva yhteiskäyttöinen alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #9BC2E6
-    letter_code: AH
-    plan_regulations:
-      - regulation_code: asumistaPalvelevaYhteiskayttoinenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Erillispientalojen alue
+      geometry: Alue
+      color_code: #E06666
+      letter_code: AO
+      plan_regulations:
+        - regulation_code: erillistenAsuinpientalojenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Maatilojen talouskeskusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #FFD966
-    letter_code: AM
-    plan_regulations:
-      - regulation_code: maatilanTalouskeskuksenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Asuin-, liike- ja toimistorakennusten alue
+      geometry: Alue
+      color_code: #5B9BD5
+      letter_code: AL
+      plan_regulations:
+        - regulation_code: asumisenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+        - regulation_code: liikerakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+        - regulation_code: toimistorakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Keskustatoimintojen alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #D9D9D9
-    letter_code: C
-    plan_regulations:
-      - regulation_code: keskustatoimintojenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Asumista palveleva yhteiskäyttöinen alue
+      geometry: Alue
+      color_code: #9BC2E6
+      letter_code: AH
+      plan_regulations:
+        - regulation_code: asumistaPalvelevaYhteiskayttoinenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Yleisten rakennusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #C6E0B4
-    letter_code: Y
-    plan_regulations:
-      - regulation_code: yleistenRakennustenAlue
-        additional_information:
-          - type: paakayttotarkoitus
-          - type: varattuYleiseenKayttoon
+    - name: Maatilojen talouskeskusten alue
+      geometry: Alue
+      color_code: #FFD966
+      letter_code: AM
+      plan_regulations:
+        - regulation_code: maatilanTalouskeskuksenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Palvelurakennusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #FFC000
-    letter_code: P
-    plan_regulations:
-      - regulation_code: palvelujenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Keskustatoimintojen alue
+      geometry: Alue
+      color_code: #D9D9D9
+      letter_code: C
+      plan_regulations:
+        - regulation_code: keskustatoimintojenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Teollisuus- ja varastorakennusten alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #70AD47
-    letter_code: T
-    plan_regulations:
-      - regulation_code: teollisuusAlue
-        additional_information:
-          - type: paakayttotarkoitus
-      - regulation_code: varastoAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Yleisten rakennusten alue
+      geometry: Alue
+      color_code: #C6E0B4
+      letter_code: Y
+      plan_regulations:
+        - regulation_code: yleistenRakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
 
-  - name: Teollisuusrakennusten alue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #5B9BD5
-    letter_code: TY
-    plan_regulations:
-      - regulation_code: teollisuusAlue
-        additional_information:
-          - type: paakayttotarkoitus
-          - type: ymparistoAsettaaToiminnanLaadulleErityisiaVaatimuksia
+    - name: Palvelurakennusten alue
+      geometry: Alue
+      color_code: #FFC000
+      letter_code: P
+      plan_regulations:
+        - regulation_code: palvelujenAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Puisto
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #4472C4
-    letter_code: VP
-    plan_regulations:
-      - regulation_code: puisto
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Teollisuus- ja varastorakennusten alue
+      geometry: Alue
+      color_code: #70AD47
+      letter_code: T
+      plan_regulations:
+        - regulation_code: teollisuusalue
+          additional_information:
+            - type: paakayttotarkoitus
+        - regulation_code: varastoalue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Leikkipuisto
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #A9D08E
-    letter_code: VK
-    plan_regulations:
-      - regulation_code: leikkipuisto
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Teollisuusrakennusten alue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
+      geometry: Alue
+      color_code: #5B9BD5
+      letter_code: TY
+      plan_regulations:
+        - regulation_code: teollisuusalue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: ymparistoAsettaaToiminnanLaadulleErityisiaVaatimuksia
 
-  - name: Uimaranta-alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #E06666
-    letter_code: VV
-    plan_regulations:
-      - regulation_code: uimaranta
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Puisto
+      geometry: Alue
+      color_code: #4472C4
+      letter_code: VP
+      plan_regulations:
+        - regulation_code: puisto
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Vapaa-ajan asumisen ja matkailun alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #70AD47
-    letter_code: R
-    plan_regulations:
-      - regulation_code: vapaaAjanAsumisenJaMatkailunAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Leikkipuisto
+      geometry: Alue
+      color_code: #A9D08E
+      letter_code: VK
+      plan_regulations:
+        - regulation_code: leikkipuisto
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Matkailupalvelujen alue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #5B9BD5
-    letter_code: RM
-    plan_regulations:
-      - regulation_code: matkailupalvelujenAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Uimaranta-alue
+      geometry: Alue
+      color_code: #E06666
+      letter_code: VV
+      plan_regulations:
+        - regulation_code: uimaranta
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Maisemallisesti arvokas peltoalue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #abcdef
-    letter_code: MA
-    plan_regulations:
-      - regulation_code: pelto
-        additional_information:
-          - type: paakayttotarkoitus
-      - regulation_code: maisemallisestiArvokasAlue
-      # Lisätieto: Pääkäyttötarkoitus ???
+    - name: Vapaa-ajan asumisen ja matkailun alue
+      geometry: Alue
+      color_code: #70AD47
+      letter_code: R
+      plan_regulations:
+        - regulation_code: vapaaAjanAsumisenJaMatkailunAlue
+          additional_information:
+            - type: paakayttotarkoitus
 
-  - name: Virkistysalue
-    category: aluevaraukset
-    geometry: Alue
-    color_code: #FFC000
-    letter_code: V
-    plan_regulations:
-      - regulation_code: virkistysAlue
-        additional_information:
-          - type: paakayttotarkoitus
+    - name: Maisemallisesti arvokas peltoalue
+      geometry: Alue
+      color_code: #abcdef
+      letter_code: MA
+      plan_regulations:
+        - regulation_code: pelto
+          additional_information:
+            - type: paakayttotarkoitus
+        - regulation_code: maisemallisestiArvokasAlue
+        # Lisätieto: Pääkäyttötarkoitus ???
 
+    - name: Virkistysalue
+      geometry: Alue
+      color_code: #FFC000
+      letter_code: V
+      plan_regulations:
+        - regulation_code: virkistysalue
+          additional_information:
+            - type: paakayttotarkoitus
 
+  - category_code: rakennusala
+    name: Rakennusala
+    plan_regulation_groups:
 
+    - name: Auton säilytyspaikan rakennusala
+      geometry: Alue
+      letter_code: a
+      plan_regulations:
+        - regulation_code: rakennusala
+          additional_information:
+            - type: osaAlue
+            - type: kayttotarkoituskohdistus
+              value: Pysäköinnin alue
 
+    - name: Rakennusala, jolle saa sijoittaa lasten päiväkodin
+      geometry: Alue
+      letter_code: pk
+      plan_regulations:
+        - regulation_code: rakennusala
+          additional_information:
+            - type: osaAlue
+            - type: kayttotarkoituskohdistus
+              value: Opetusrakennusten alue
 
+    - name: Rakennusala, jolle saa sijoittaa saunan
+      geometry: Alue
+      letter_code: sa
+      plan_regulations:
+        - regulation_code: rakennusalaJolleSaaSijoittaaSaunan
+          additional_information:
+            - type: osaAlue
 
-
-
-
-  - name: Auton säilytyspaikan rakennusala
-    category: rakennusalat
-    geometry: Alue
-    letter_code: a
-    plan_regulations:
-      - regulation_code: rakennusala
-        additional_information:
+    - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
+      geometry: Alue
+      letter_code: kyma
+      plan_regulations:
+        - regulation_code: maisemallisestiArvokasAlue
+          additional_information:
           - type: osaAlue
-          - type: kayttotarkoituskohdistus
-            value: Pysäköinnin alue
+        - regulation_code: merkittavaRakennettuKulttuuriymparisto
+          additional_information:
+            - type: osaAlue
 
-  - name: Rakennusala, jolle saa sijoittaa lasten päiväkodin
-    category: rakennusalat
-    geometry: Alue
-    letter_code: pk
-    plan_regulations:
-      - regulation_code: rakennusala
-        additional_information:
-          - type: osaAlue
-          - type: kayttotarkoituskohdistus
-            value: Opetusrakennusten alue
+    - name: Maisemallisesti arvokas alue
+      geometry: Alue
+      letter_code: ma
+      plan_regulations:
+        - regulation_code: maisemallisestiArvokasAlue
+          additional_information:
+            - type: osaAlue
 
-  - name: Rakennusala, jolle saa sijoittaa saunan
-    category: rakennusalat
-    geometry: Alue
-    letter_code: sa
-    plan_regulations:
-      - regulation_code: rakennusalaJolleSaaSijoittaaSaunan
-        additional_information:
-          - type: osaAlue
-
-  - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
-    category: rakennusalat
-    geometry: Alue
-    letter_code: kyma
-    plan_regulations:
-      - regulation_code: maisemallisestiArvokasAlue
-        additional_information:
-        - type: osaAlue
-      - regulation_code: merkittavaRakennettuKulttuuriymparisto
-        additional_information:
-          - type: osaAlue
-
-  - name: Maisemallisesti arvokas alue
-    category: rakennusalat
-    geometry: Alue
-    letter_code: ma
-    plan_regulations:
-      - regulation_code: maisemallisestiArvokasAlue
-        additional_information:
-          - type: osaAlue
-
-  - name: Kansainvälisesti arvokas maisema-alue
-    category: rakennusalat
-    geometry: Alue
-    letter_code: kvma
-    plan_regulations:
-      - regulation_code: maisemallisestiArvokasAlue
-        additional_information:
-          - type: osaAlue
-          - type: kansainvalinen
+    - name: Kansainvälisesti arvokas maisema-alue
+      geometry: Alue
+      letter_code: kvma
+      plan_regulations:
+        - regulation_code: maisemallisestiArvokasAlue
+          additional_information:
+            - type: osaAlue
+            - type: kansainvalinen
 
 
+  - category_code: numeerisetJaTekstimuotoiset
+    name: Numeeriset ja tekstimuotoiset
+    plan_regulation_groups:
 
+    - name: Rakennusoikeus kuutiometreinä
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: sallittuRakennustilavuus
 
+    - name: Luku osoittaa, kuinka suuri osa alueesta tai rakennusalasta tulee jättää rakentamatta
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: valjyysluku
 
+    - name: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanpaallinenKerroslukuArvovali
 
-  - name: Rakennusoikeus kuutiometreinä
-    category: numeeriset ja tekstimuotoiset
-    geometry: Alue
-    plan_regulations:
-      - regulation_code: sallittuRakennustilavuus
-
-  - name: Luku osoittaa, kuinka suuri osa alueesta tai rakennusalasta tulee jättää rakentamatta
-    category: numeeriset ja tekstimuotoiset
-    geometry: Alue
-    plan_regulations:
-      - regulation_code: valjyysluku
-
-  - name: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
-    category: numeeriset ja tekstimuotoiset
-    geometry: Alue
-    plan_regulations:
-      - regulation_code: maanpaallinenKerroslukuArvovali
-
-  - name: Kattokaltevuus
-    category: numeeriset ja tekstimuotoiset
-    geometry: Alue
-    plan_regulations:
-      - regulation_code: kattokaltevuus
+    - name: Kattokaltevuus
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kattokaltevuus

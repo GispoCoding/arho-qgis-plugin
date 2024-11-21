@@ -4,7 +4,7 @@ plan_regulations:
   - regulation_code: asumisenAlue
     child_regulations:
 
-    - regulation_code: asuinPientaloAlue
+    - regulation_code: asuinpientaloalue
       child_regulations:
 
       - regulation_code: erillistenAsuinpientalojenAlue
@@ -19,18 +19,121 @@ plan_regulations:
 
     - regulation_code: kylaAlue
 
+# TYÖPAIKKOJEN ALUE (valmis?)
+  - regulation_code: tyopaikkojenAlue
+    child_regulations:
+
+    - regulation_code: toimitilojenAlue
+      child_regulations:
+
+      - regulation_code: toimistorakennustenAlue
+
+      - regulation_code: palvelujenAlue
+        child_regulations:
+
+        - regulation_code: liikerakennustenAlue
+          child_regulations:
+
+          - regulation_code: myymalarakennustenAlue
+            child_regulations:
+
+            - regulation_code: vahittaiskaupanSuuryksikkö
+
+            - regulation_code: vahittaiskaupanMyymalakeskittyma
+
+      - regulation_code: huviJaViihdeRakennustenAlue
+
+      - regulation_code: yleistenRakennustenAlue
+        child_regulations:
+
+        - regulation_code: hoitoalanRakennustenAlue
+
+        - regulation_code: museorakennustenAlue
+
+        - regulation_code: urheiluJaLiikuntaRakennustenAlue
+
+        - regulation_code: kulttuurirakennustenAlue
+
+        - regulation_code: uskonnollistenYhteisojenRakennustenAlue
+
+        - regulation_code: opetusrakennustenAlue
+
+      - regulation_code: teollisuusalue
+
+      - regulation_code: varastoalue
+
+# VAPAA-AJAN ASUMISEN JA MATKAILUN ALUE (valmis?)
+
+  - regulation_code: vapaaAjanAsumisenJaMatkailunAlue
+    child_regulatons:
+
+    - regulation_code: vapaaAjanAsumisenJaMatkailunAlue
+
+    - regulation_code: matkailupalvelujenAlue
+
+    - regulation_code: leirintaAlue
+
+    - regulation_code: asuntovaunualue
+
+    - regulation_code: siirtolapuutarhaAlue
+
+    - regulation_code: palstaviljelyalue
+
+# TAAJAMATOIMIEN ALUE (valmis?)
+  - regulation_code: taajamatoimintojenAlue
+    child_regulations:
+
+    - regulation_code: keskustatoimintojenAlue
+      child_regulations:
+
+      - regulation_code: keskustatoimintojenAlakeskus
+
 # VIHERALUE (kesken)
   - regulation_code: viheralue
     category_only: true
     child_regulations:
 
     - regulation_code: virkistysalue
+      child_regulations:
+
+      - regulation_code: uimaranta
+
+      - regulation_code: puisto
+
+      - regulation_code: leikkipuisto
+
+# MAATALOUSALUE (kesken)
+  - regulation_code: maaJaMetsatalousAlue
+    child_regulations:
+
+    - regulation_code: maatalousalue
+      child_regulations:
+
+      - regulation_code: pelto
 
 # VESIALUE (valmis?)
   - regulation_code: vesialue
     child_regulations:
 
     - regulation_code: pohjavesialue
+
+# YMPÄRISTÖARVOJEN ALUE (kesken)
+  - regulation_code: ymparistoarvojenAlue
+    category_only: true
+    child_regulations:
+
+    - regulation_code: kulttuuriymparistoarvojenAlue
+      child_regulations:
+
+      - regulation_code: merkittavaRakennettuKulttuuriymparisto
+
+    - regulation_code: maisemallisestiArvokasAlue
+
+# RAKENNUSALA (kesken)
+  - regulation_code: rakennusala
+    child_regulations:
+
+    - regulation_code: rakennusalaJolleSaaSijoittaaSaunan
 
 # RAKENTAMISEN MÄÄRÄ (valmis?)
   - regulation_code: rakentamisenMaara
@@ -86,6 +189,19 @@ plan_regulations:
 
     - regulation_code: tuulivoimaloidenMaara
       value_type: positiivinen kokonaisluku
+
+# RAKENTAMISEN TAPA
+  - regulation_code: rakentamisenTapa
+    category_only: true
+    child_regulations:
+
+    - regulation_code: kattokaltevuus
+      value_type: desimaali
+      unit: °
+
+    - regulation_code: aaneneristavyys
+      value_type: positiivinen desimaali
+      unit: dB
 
 # SANALLINEN MÄÄRÄYS (valmis?)
   - regulation_code: sanallinenMaarays
