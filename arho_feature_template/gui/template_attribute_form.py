@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
 from importlib import resources
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from qgis.gui import QgsSpinBox
 from qgis.PyQt import uic
+from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QLineEdit,
@@ -16,13 +19,17 @@ from qgis.PyQt.QtWidgets import (
     QTreeWidgetItem,
 )
 
+from arho_feature_template.core.plan_regulation_group_config import (
+    PlanRegulationGroupDefinition,
+    PlanRegulationGroupLibrary,
+)
 from arho_feature_template.gui.plan_regulation_group_widget import PlanRegulationGroupWidget
+from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature
     from qgis.PyQt.QtWidgets import QWidget
 
-    from arho_feature_template.core.template_library_config import Feature, FeatureTemplate
+    from arho_feature_template.core.template_library_config import FeatureTemplate
 
 ui_path = resources.files(__package__) / "template_attribute_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -41,29 +48,17 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.feature_underground: QLineEdit
         self.plan_regulation_group_scrollarea: QScrollArea
         self.plan_regulation_group_scrollarea_contents: QWidget
+        self.plan_regulation_group_libraries_combobox: QComboBox
         self.plan_regulation_groups_tree: QTreeWidget
         self.button_box: QDialogButtonBox
 
-        # SIGNALS
+        # INIT
+        self.scroll_area_spacer = None
+        self.setWindowTitle(feature_template_config.name)
+        self.init_plan_regulation_group_libraries()
+        # self.init_plan_regulation_groups_from_template(feature_template_config)
         self.button_box.accepted.connect(self._on_ok_clicked)
         self.plan_regulation_groups_tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
-
-        # INIT
-        self.attribute_widgets = {
-            "name": self.feature_name,
-            "description": self.feature_description,
-            "type_of_underground_id": self.feature_underground,
-        }
-        # TODO: The 'configs' could be a mapping where keys are plan regulation group names and
-        # values are the related configurations
-        self.configs: dict[str, Feature] = {}
-        self.scroll_area_spacer = None
-        self.available_plan_regulation_group_configs: list[Feature] = []
-
-        self.setWindowTitle(feature_template_config.name)
-        self.init_feature_attributes_from_template(feature_template_config)
-        self.init_plan_regulation_groups_from_template(feature_template_config)
-        self.init_plan_regulation_group_library()
 
     def _add_spacer(self):
         self.scroll_area_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -77,14 +72,11 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
     def add_selected_plan_regulation_group(self, item: QTreeWidgetItem, column: int):
         if not item.parent():
             return
-        config = self.configs.get(item.text(column))
-        if not config:
-            print(f"Could not find plan regulation group configuration for {item.text(column)}")  # noqa: T201
-            return
-        self.add_plan_regulation_group(config)
+        definition: PlanRegulationGroupDefinition = item.data(column, Qt.UserRole)
+        self.add_plan_regulation_group(definition)
 
-    def add_plan_regulation_group(self, feature_config: Feature):
-        new_plan_regulation_group = PlanRegulationGroupWidget(feature_config)
+    def add_plan_regulation_group(self, definition: PlanRegulationGroupDefinition):
+        new_plan_regulation_group = PlanRegulationGroupWidget(definition)
         new_plan_regulation_group.delete_signal.connect(self.remove_plan_regulation_group)
         self._remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(new_plan_regulation_group)
@@ -94,42 +86,22 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.plan_regulation_group_scrollarea_contents.layout().removeWidget(plan_regulation_group_widget)
         plan_regulation_group_widget.deleteLater()
 
-    def init_plan_regulation_group_library(self):
-        # Now plan regulation group tree widget/view is just static placeholder for demo
-        pass
+    def init_plan_regulation_group_libraries(self):
+        katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
+        libraries = [PlanRegulationGroupLibrary.new_from_file(katja_asemakaava_path)]
+        for library in libraries:
+            self.init_plan_regulation_group_library(library)
 
-    def init_feature_attributes_from_template(self, feature_template_config: FeatureTemplate):
-        if feature_template_config.feature.attributes is None:
-            return
-        for _attribute in feature_template_config.feature.attributes:
-            # TODO: TO be implemented
-            pass
-
-    def init_plan_regulation_groups_from_template(self, feature_template_config: FeatureTemplate):
-        if feature_template_config.feature.child_features is None:
-            return
-        for child_feature in feature_template_config.feature.child_features:
-            if child_feature.layer == "plan_requlation_group":
-                # Collect encountered plan regulation groups in init
-                # This does not need to be done if Katja config file is read beforehand and
-                # that handles available plan regulation groups
-                self.available_plan_regulation_group_configs.append(child_feature)
-                self.add_plan_regulation_group(child_feature)
-            else:
-                # TODO: Implement
-                print(f"Encountered child feature with unrecognized layer: {child_feature.layer}")  # noqa: T201
+    def init_plan_regulation_group_library(self, library: PlanRegulationGroupLibrary):
+        self.plan_regulation_group_libraries_combobox.addItem(library.meta.name)
+        for category in library.plan_regulation_group_categories:
+            category_item = QTreeWidgetItem()
+            category_item.setText(0, category.name)
+            self.plan_regulation_groups_tree.addTopLevelItem(category_item)
+            for group_definition in category.plan_regulation_groups:
+                regulation_group_item = QTreeWidgetItem(category_item)
+                regulation_group_item.setText(0, group_definition.name)
+                regulation_group_item.setData(0, Qt.UserRole, group_definition)
 
     def _on_ok_clicked(self):
         self.accept()
-
-    def set_feature_attributes(self, feature: QgsFeature):
-        for attribute, widget in self.attribute_widgets.items():
-            feature.setAttribute(attribute, self._get_widget_value(widget))
-
-    def _get_widget_value(self, widget: QWidget) -> str | int | None:
-        if isinstance(widget, QLineEdit):
-            return widget.text()
-        if isinstance(widget, QgsSpinBox):
-            return widget.value()
-        return None
-        # TODO: Implement
