@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="labelHost">
      <property name="text">
-      <string>Lambdan isäntä:</string>
+      <string>Proxy isäntä:</string>
      </property>
     </widget>
    </item>
@@ -27,12 +27,22 @@
    <item>
     <widget class="QLabel" name="labelPort">
      <property name="text">
-      <string>Lambdan portti:</string>
+      <string>Proxy portti:</string>
      </property>
     </widget>
    </item>
    <item>
     <widget class="QLineEdit" name="portInput"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="labelLambda">
+     <property name="text">
+      <string>Lambdan osoite:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="lambdaInput"/>
    </item>
    <item>
     <widget class="QPushButton" name="saveButton">

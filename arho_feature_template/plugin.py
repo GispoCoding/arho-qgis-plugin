@@ -172,6 +172,15 @@ class Plugin:
             add_to_toolbar=True,
         )
 
+        self.serialize_plan_action = self.add_action(
+            "",
+            text="Tallenna kaava JSON",
+            triggered_callback=self.serialize_plan,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Tallenna aktiivinen kaava JSON muodossa",
+        )
+
         self.plugin_settings_action = self.add_action(
             "",
             text="Asetukset",
@@ -190,6 +199,10 @@ class Plugin:
 
     def load_existing_land_use_plan(self):
         self.plan_manager.load_land_use_plan()
+
+    def serialize_plan(self):
+        """Serializes currently active plan."""
+        self.plan_manager.get_plan_json()
 
     def open_settings(self):
         """Open the plugin settings dialog."""

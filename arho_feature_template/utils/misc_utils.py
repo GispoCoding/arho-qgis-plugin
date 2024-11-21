@@ -106,9 +106,10 @@ def get_active_plan_id():
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
 
 
-def get_lambda_settings():
-    """Retrieve Lambda settings, using defaults if not set."""
+def get_settings():
+    """Retrieve stored settings, using defaults if not set."""
     settings = QSettings("ArhoFeatureTemplate")
-    lambda_host = settings.value("lambda_host", "localhost")
-    lambda_port = settings.value("lambda_port", "8083")
-    return lambda_host, lambda_port
+    proxy_host = settings.value("proxy_host", "localhost")
+    proxy_port = settings.value("proxy_port", "5443")
+    lambda_url = settings.value("lambda_url", "https://t5w26iqnsf.execute-api.eu-central-1.amazonaws.com/v0/ryhti")
+    return proxy_host, proxy_port, lambda_url
