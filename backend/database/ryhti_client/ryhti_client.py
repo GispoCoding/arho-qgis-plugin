@@ -83,7 +83,7 @@ class Response(TypedDict):
     """
 
     statusCode: int  # noqa N815
-    body: ResponseBody
+    body: str | ResponseBody  # Response body must be stringified for API gateway
 
 
 class Event(TypedDict):
@@ -1464,10 +1464,19 @@ class RyhtiClient:
         )
 
 
+def bodify(body: ResponseBody, using_api_gateway: bool = False) -> str | ResponseBody:
+    """
+    Convert response body to JSON string if the request arrived through API gateway.
+    If we want to provide status code to API gateway, the JSON body must be string.
+    """
+    return json.dumps(body) if using_api_gateway else body
+
+
 def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
     """
     Handler which is called when accessing the endpoint. We must handle both API
-    gateway HTTP requests and regular lambda requests.
+    gateway HTTP requests and regular lambda requests. API gateway requires
+    the response body to be stringified.
 
     If lambda runs successfully, we always return 200 OK. In case a python
     exception occurs, AWS lambda will return the exception.
@@ -1476,11 +1485,14 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
     Ryhti API results and errors, separated by plan id.
     """
     LOGGER.info(f"Received {payload}...")
+
+    using_api_gateway = False
     # The payload may contain only the event dict *or* all possible data coming from an
     # API Gateway HTTP request. We kinda have to infer which one is the case here.
     try:
         # API Gateway request. The JSON body has to be converted to python object.
         event = cast(Event, json.loads(cast(AWSAPIGatewayPayload, payload)["body"]))
+        using_api_gateway = True
     except KeyError:
         # Direct lambda request
         event = cast(Event, payload)
@@ -1493,12 +1505,17 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
     except KeyError:
         event_type = Action.VALIDATE_PLANS
     except ValueError:
+        response_title = "Unknown action."
+        LOGGER.info(response_title)
         return Response(
             statusCode=400,
-            body=ResponseBody(
-                title="Unknown action.",
-                details={event["action"]: "Unknown action."},
-                ryhti_responses={},
+            body=bodify(
+                ResponseBody(
+                    title=response_title,
+                    details={event["action"]: "Unknown action."},
+                    ryhti_responses={},
+                ),
+                using_api_gateway,
             ),
         )
     debug_json = event.get("save_json", False)
@@ -1568,16 +1585,19 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
         client.plan_dictionaries = client.get_plan_dictionaries()
         if event_type is Action.GET_PLANS:
             # just return the JSON to the user
-            lambda_response = Response(
+            response_title = "Returning serialized plans from database."
+            LOGGER.info(response_title)
+            return Response(
                 statusCode=200,
-                body=ResponseBody(
-                    title="Returning serialized plans from database.",
-                    details=client.plan_dictionaries,
-                    ryhti_responses={},
+                body=bodify(
+                    ResponseBody(
+                        title=response_title,
+                        details=client.plan_dictionaries,
+                        ryhti_responses={},
+                    ),
+                    using_api_gateway,
                 ),
             )
-            LOGGER.info(lambda_response["body"]["title"])
-            return lambda_response
 
         # 2) Validate plans in database with public API
         LOGGER.info("Validating plans...")
@@ -1681,4 +1701,6 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
         )
 
     LOGGER.info(lambda_response["body"]["title"])
+    # Before responding, make sure the response body has correct format
+    lambda_response["body"] = bodify(lambda_response["body"], using_api_gateway)
     return cast(Response, lambda_response)

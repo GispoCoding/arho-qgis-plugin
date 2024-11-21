@@ -237,12 +237,18 @@ def get_all_plans(
     Getting plans should make lambda return http 200 OK (to indicate that serialization
     has been run successfully), with the ryhti_responses dict empty, and details
     dict containing the serialized plans.
+
+    If the request is coming through the API Gateway with stringified JSON body, the
+    response to the API gateway must similarly contain stringified JSON body.
     """
     r = requests.post(ryhti_client_url, data=json.dumps(request.param))
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
     body = data["body"]
+    if request.param != {"action": "get_plans", "save_json": True}:
+        # API gateway response must have JSON body stringified.
+        body = json.loads(body)
     assert body["title"] == "Returning serialized plans from database."
     assert_dicts_equal(body["details"][complete_test_plan.id], desired_plan_dict)
     assert_dicts_equal(body["details"][another_test_plan.id], another_plan_dict)
