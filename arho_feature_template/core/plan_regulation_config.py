@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
@@ -14,6 +14,7 @@ from qgis.utils import iface
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
+    from numbers import Number
     from typing import Literal
 
     from qgis.core import QgsMapLayer
@@ -34,10 +35,11 @@ class ConfigSyntaxError(Exception):
 
 class UninitializedError(Exception):
     def __init__(self):
-        super().__init__("PlanRegulationsSet is not initialized. Call 'load_config' first")
+        super().__init__("PlanRegulationsSet is not initialized. Call 'initialize' first")
 
 
 class ValueType(Enum):
+    DECIMAL = "desimaali"
     POSITIVE_DECIMAL = "positiivinen desimaali"
     POSITIVE_INTEGER = "positiivinen kokonaisluku"
     POSITIVE_INTEGER_RANGE = "positiivinen kokonaisluku arvoväli"
@@ -50,6 +52,8 @@ class Unit(Enum):
     EFFICIENCY_RATIO = "k-m2/m2"
     PERCENTAGE = "prosentti"
     AREA_RATIO = "m2/k-m2"
+    DEGREES = "°"
+    DECIBEL = "dB"
 
 
 # TODO: Same as in PlanManager, should refactor
@@ -75,6 +79,7 @@ class PlanRegulationsSet:
 
     version: str
     regulations: list[PlanRegulationConfig]
+    regulations_dict: dict[str, PlanRegulationConfig] = field(default_factory=dict)
 
     _instance: PlanRegulationsSet | None = None
 
@@ -87,9 +92,18 @@ class PlanRegulationsSet:
 
     @classmethod
     def get_regulations(cls) -> list[PlanRegulationConfig]:
-        """Get the list of regulation configs, if instance is initialized."""
-        instance = cls.get_instance()
-        return instance.regulations
+        """Get the list of top-level regulation configs, if instance is initialized."""
+        return cls.get_instance().regulations
+
+    @classmethod
+    def get_regulations_dict(cls) -> dict[str, PlanRegulationConfig]:
+        """Get all regulations in a dictionary where keys are regulations codes and values PlanRegulationConfigs."""
+        return cls.get_instance().regulations_dict
+
+    @classmethod
+    def get_regulation_by_code(cls, regulation_code: str) -> PlanRegulationConfig | None:
+        """Get a regulation by it's regulation code (if exists)."""
+        return cls.get_instance().regulations_dict.get(regulation_code)
 
     @classmethod
     def initialize(
@@ -103,12 +117,17 @@ class PlanRegulationsSet:
             data = yaml.safe_load(f)
             cls._instance = cls.from_dict(data)
 
-        # Add names from plan regulation layer
+        regulations = cls.get_regulations()
+        regulations_dict: dict[str, PlanRegulationConfig] = {}
         mapping = get_name_mapping_for_plan_regulations(type_of_plan_regulations_layer_name)
-        if mapping:
-            for regulation in cls.get_regulations():
+
+        # Add names to dictionary, add names to regulations
+        for regulation in regulations:
+            regulation.add_to_dictionary(regulations_dict)
+            if mapping:
                 regulation.add_name(mapping, language)
 
+        cls._instance.regulations_dict = regulations_dict
         logger.info("PlanRegulationsSet initialized successfully.")
         return cls._instance
 
@@ -156,3 +175,29 @@ class PlanRegulationConfig:
         self.name = language_to_name_dict[language] if language_to_name_dict else self.regulation_code
         for regulation in self.child_regulations:
             regulation.add_name(code_to_name_mapping, language)
+
+    def add_to_dictionary(self, dictionary: dict[str, PlanRegulationConfig]):
+        dictionary[self.regulation_code] = self
+        for regulation in self.child_regulations:
+            regulation.add_to_dictionary(dictionary)
+
+
+@dataclass
+class PlanRegulationDefinition:
+    """Associates a PlanRegulationConfig with an optional default value and additional data."""
+
+    regulation_config: PlanRegulationConfig
+    default_value: str | Number | None
+    additional_info: dict[str, str | Number | None]  # NOTE: Correct typing for additional information values?
+    regulation_number: int | None
+    attached_files: list[Path]
+
+    @classmethod
+    def from_dict(cls, data: dict) -> PlanRegulationDefinition:
+        return cls(
+            regulation_config=data["config"],
+            default_value=data.get("default_value"),
+            additional_info=data.get("additional_info", {}),
+            regulation_number=data.get("regulation_number"),
+            attached_files=data.get("attached_files", []),
+        )
