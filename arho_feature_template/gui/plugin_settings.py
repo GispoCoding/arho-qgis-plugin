@@ -22,16 +22,19 @@ class PluginSettings(QDialog, FormClass):  # type: ignore
         """Load settings from QSettings with default values."""
         settings = QSettings("ArhoFeatureTemplate")
 
-        lambda_host = settings.value("lambda_host", "localhost")
-        lambda_port = settings.value("lambda_port", "5435")
+        proxy_host = settings.value("proxy_host", "localhost")
+        proxy_port = settings.value("proxy_port", "5443")
+        lambda_url = settings.value("lambda_url", "https://t5w26iqnsf.execute-api.eu-central-1.amazonaws.com/v0/ryhti")
 
-        self.hostInput.setText(lambda_host)
-        self.portInput.setText(lambda_port)
+        self.hostInput.setText(proxy_host)
+        self.portInput.setText(proxy_port)
+        self.lambdaInput.setText(lambda_url)
 
     def save_settings(self):
         """Save settings to QSettings."""
         settings = QSettings("ArhoFeatureTemplate")
-        settings.setValue("lambda_host", self.hostInput.text())
-        settings.setValue("lambda_port", self.portInput.text())
+        settings.setValue("proxy_host", self.hostInput.text())
+        settings.setValue("proxy_port", self.portInput.text())
+        settings.setValue("lambda_url", self.lambdaInput.text())
 
         self.accept()
