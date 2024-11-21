@@ -5,20 +5,12 @@ from qgis.utils import iface
 from arho_feature_template.core.update_plan import LandUsePlan, update_selected_plan
 from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
-from arho_feature_template.utils.misc_utils import handle_unsaved_changes
+from arho_feature_template.utils.misc_utils import get_layer_by_name, handle_unsaved_changes
 
 
 class PlanManager:
     def __init__(self):
-        self.kaava_layer = self.get_layer_by_name("Kaava")
-
-    def get_layer_by_name(self, layer_name):
-        """Retrieve a layer by name from the project."""
-        layers = QgsProject.instance().mapLayersByName(layer_name)
-        if layers:
-            return layers[0]
-        iface.messageBar().pushMessage("Error", f"Layer '{layer_name}' not found", level=3)
-        return None
+        self.kaava_layer = get_layer_by_name("Kaava")
 
     def add_new_plan(self):
         """Initiate the process to add a new plan to the Kaava layer."""

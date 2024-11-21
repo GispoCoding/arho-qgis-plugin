@@ -1,10 +1,52 @@
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
 from qgis.PyQt.QtCore import QSettings
 from qgis.PyQt.QtWidgets import QMessageBox
+from qgis.utils import iface
+
+if TYPE_CHECKING:
+    from typing import Literal
+
+    from qgis.core import QgsMapLayer
+    from qgis.gui import QgisInterface
+
+    iface: QgisInterface = cast("QgisInterface", iface)  # type: ignore[no-redef]
 
 PLUGIN_PATH = os.path.dirname(os.path.dirname(__file__))
+
+
+# NOTE: Consider creating "layer_utils.py" or similar for layer related utils in the future
+def get_layer_by_name(layer_name: str) -> QgsMapLayer | None:
+    """
+    Retrieve a layer by name from the project.
+
+    If multiple layers with the same name exist, returns the first one. Returns None
+    if layer with a matching name is not found.
+    """
+    layers = QgsProject.instance().mapLayersByName(layer_name)
+    if layers:
+        return layers[0]
+    iface.messageBar().pushWarning("Error", f"Layer '{layer_name}' not found")
+    return None
+
+
+def get_additional_information_name(info_type: str, language: Literal["fin", "eng", "swe"] = "fin") -> str:
+    """
+    Retrieve name of input additional information type from associated QGIS layer.
+
+    Returns input `info_type` if name is not found.
+    """
+    type_of_additional_information_layer_name = "Lisätiedonlaji"
+    layer = get_layer_by_name(type_of_additional_information_layer_name)
+    if layer:
+        for feature in layer.getFeatures():
+            if feature["value"] == info_type:
+                return feature["name"][language]
+    return info_type
 
 
 def check_layer_changes() -> bool:
