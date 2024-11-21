@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
 from qgis.gui import QgsDoubleSpinBox, QgsFileWidget, QgsSpinBox
@@ -42,6 +42,9 @@ UNIT_FIELD = "unit"
 TEXT_VALUE_FIELD = "text_value"
 REGULATION_TYPE_ADDITIONAL_INFORMATION_ID = "regulation_type_additional_information_id"
 
+# TO BE REPLACED
+ADDITIONAL_INFORMATION_TYPES_WITH_INPUT = ["kayttotarkoituskohdistus"]
+
 
 class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan regulation."""
@@ -74,7 +77,18 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         self.init_buttons()
 
     def populate_from_definition(self, definition: PlanRegulationDefinition):
-        pass
+        # Additional information
+        for info in definition.additional_information:
+            info_type: str = cast("str", info["type"])
+            layout = self.add_additional_info(info_type)
+            if info_type in ADDITIONAL_INFORMATION_TYPES_WITH_INPUT:
+                info_value_widget = QLineEdit()
+                layout.addWidget(info_value_widget)
+                value = info.get("value")
+                if value:
+                    info_value_widget.setText(value)
+
+        # TODO: Other saved information from PlanRegulationDefinition
 
     def init_value_fields(self):
         layout = QHBoxLayout()
@@ -187,10 +201,14 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         layout.addWidget(text_widget)
         self.form_layout.addRow("Kieliversioitu teksti", layout)
 
-    def add_additional_info(self, info_type):
-        info_type_label = QLineEdit(info_type)
+    def add_additional_info(self, info_type: str) -> QHBoxLayout:
+        layout = QHBoxLayout()
+        info_name = get_additional_information_name(info_type)
+        info_type_label = QLineEdit(info_name)
         info_type_label.setReadOnly(True)
-        self.form_layout.addRow("Lisätiedonlaji", info_type_label)
+        layout.addWidget(info_type_label)
+        self.form_layout.addRow("Lisätiedonlaji", layout)
+        return layout
 
     def add_regulation_number(self):
         if not self.regulation_number_added:
