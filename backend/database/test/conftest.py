@@ -1252,15 +1252,11 @@ def complete_test_plan(
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
     yield plan_instance
-    session.delete(plan_instance)
-    session.commit()
 
 
 @pytest.fixture()
 def another_test_plan(session, another_plan_instance):
     yield another_plan_instance
-    session.delete(another_plan_instance)
-    session.commit()
 
 
 @pytest.fixture()
