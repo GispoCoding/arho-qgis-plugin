@@ -538,6 +538,18 @@ def type_of_plan_regulation_group_instance(session):
 
 
 @pytest.fixture()
+def type_of_general_plan_regulation_group_instance(session):
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="generalRegulations", status="LOCAL"
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def type_of_plan_regulation_instance(session):
     instance = codes.TypeOfPlanRegulation(value="asumisenAlue", status="LOCAL")
     session.add(instance)
@@ -958,10 +970,12 @@ def point_plan_regulation_group_instance(
 
 
 @pytest.fixture(scope="function")
-def general_regulation_group_instance(session, type_of_plan_regulation_group_instance):
+def general_regulation_group_instance(
+    session, type_of_general_plan_regulation_group_instance
+):
     instance = models.PlanRegulationGroup(
         short_name="Y",
-        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
         name={"fin": "test_general_regulation_group"},
     )
     session.add(instance)
