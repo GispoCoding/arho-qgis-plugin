@@ -1905,7 +1905,9 @@ def desired_plan_matter_dict(
     }
 
 
-def assert_lists_equal(list1: list, list2: list, ignore_keys: Optional[List] = None):
+def assert_lists_equal(
+    list1: list, list2: list, ignore_keys: Optional[List] = None, path: str = ""
+):
     """
     Recursively check that lists have the same items in the same order.
 
@@ -1913,19 +1915,19 @@ def assert_lists_equal(list1: list, list2: list, ignore_keys: Optional[List] = N
     the remote Ryhti API) can be ignored when comparing dicts in the lists, because
     they are not provided in the incoming data.
     """
-    assert len(list1) == len(list2)
-    for item1, item2 in zip(list1, list2):
-        print(f"comparing values {item1} and {item2}")
+    assert len(list1) == len(list2), f"Lists differ in length in path {path}"
+    for i, (item1, item2) in enumerate(zip(list1, list2)):
+        current_path = f"{path}[{i}]" if path else f"[{i}]"
         if isinstance(item1, dict):
-            assert_dicts_equal(item1, item2, ignore_keys=ignore_keys)
+            assert_dicts_equal(item1, item2, ignore_keys=ignore_keys, path=current_path)
         elif isinstance(item1, list):
-            assert_lists_equal(item1, item2, ignore_keys=ignore_keys)
+            assert_lists_equal(item1, item2, ignore_keys=ignore_keys, path=current_path)
         else:
-            assert item1 == item2
+            assert item1 == item2, f"Items differ at {current_path}"
 
 
 def assert_dicts_equal(
-    dict1: Mapping, dict2: Mapping, ignore_keys: Optional[List] = None
+    dict1: Mapping, dict2: Mapping, ignore_keys: Optional[List] = None, path: str = ""
 ):
     """
     Recursively check that dicts contain the same keys with same values.
@@ -1936,13 +1938,17 @@ def assert_dicts_equal(
     """
     for key in dict2.keys():
         if not ignore_keys or key not in ignore_keys:
-            assert key in dict1
+            assert key in dict1, f"Key {key} missing in {path}"
     for key, value in dict1.items():
+        current_path = f"{path}.{key}" if path else key
         if not ignore_keys or key not in ignore_keys:
-            print(f"comparing {key} {value} to {dict2[key]}")
             if isinstance(value, dict):
-                assert_dicts_equal(dict2[key], value, ignore_keys=ignore_keys)
+                assert_dicts_equal(
+                    dict2[key], value, ignore_keys=ignore_keys, path=current_path
+                )
             elif isinstance(value, list):
-                assert_lists_equal(dict2[key], value, ignore_keys=ignore_keys)
+                assert_lists_equal(
+                    dict2[key], value, ignore_keys=ignore_keys, path=current_path
+                )
             else:
-                assert dict2[key] == value
+                assert dict2[key] == value, f"Items differ at {current_path}"
