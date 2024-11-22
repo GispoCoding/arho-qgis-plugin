@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
     from arho_feature_template.core.plan_regulation_group_config import PlanRegulationDefinition
 
-ui_path = resources.files(__package__) / "new_plan_regulation_widget.ui"
+ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
