@@ -45,8 +45,8 @@ def test_plan(
     # Let's not change plan instance lifecycle status here. It's just asking
     # for trouble, and we will test all those triggers in test_triggers anyway.
     # nullable plan relations
-    assert plan_instance.plan_regulation_group is general_regulation_group_instance
-    assert general_regulation_group_instance.plans == [plan_instance]
+    assert plan_instance.plan_regulation_groups == [general_regulation_group_instance]
+    assert general_regulation_group_instance.plan == plan_instance
 
 
 def test_land_use_area(

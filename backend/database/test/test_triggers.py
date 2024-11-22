@@ -215,7 +215,9 @@ def test_new_lifecycle_status_triggers(
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     type_of_underground_instance: codes.TypeOfUnderground,
 ):
-    assert plan_instance.plan_regulation_group == general_regulation_group_instance
+    assert plan_instance.general_plan_regulation_groups == [
+        general_regulation_group_instance
+    ]
 
     plan_instance.lifecycle_status = another_code_instance
     session.flush()
@@ -400,7 +402,9 @@ def test_update_lifecycle_status_triggers(
     assert line_instance.lifecycle_status != another_code_instance
     assert land_use_point_instance.lifecycle_status != another_code_instance
     assert other_point_instance.lifecycle_status != another_code_instance
-    assert plan_instance.plan_regulation_group == general_regulation_group_instance
+    assert plan_instance.general_plan_regulation_groups == [
+        general_regulation_group_instance
+    ]
     assert (
         land_use_area_instance.plan_regulation_group == plan_regulation_group_instance
     )

@@ -661,7 +661,6 @@ def plan_instance(
     organisation_instance,
     another_organisation_instance,
     plan_type_instance,
-    general_regulation_group_instance,
 ):
     # Any status and organisation instances that may be added to the plan later
     # have to be included above. If they are only created later, they will be torn
@@ -693,7 +692,6 @@ def plan_instance(
         lifecycle_status=preparation_status_instance,
         organisation=organisation_instance,
         plan_type=plan_type_instance,
-        plan_regulation_group=general_regulation_group_instance,
         to_be_exported=True,
     )
     session.add(instance)
@@ -744,7 +742,6 @@ def another_plan_instance(
         lifecycle_status=preparation_status_instance,
         organisation=organisation_instance,
         plan_type=plan_type_instance,
-        plan_regulation_group=None,
         to_be_exported=True,
     )
     session.add(instance)
@@ -940,9 +937,12 @@ def other_point_instance(
 
 
 @pytest.fixture(scope="function")
-def plan_regulation_group_instance(session, type_of_plan_regulation_group_instance):
+def plan_regulation_group_instance(
+    session, plan_instance, type_of_plan_regulation_group_instance
+):
     instance = models.PlanRegulationGroup(
         short_name="K",
+        plan=plan_instance,
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
         name={"fin": "test_plan_regulation_group"},
     )
@@ -955,10 +955,11 @@ def plan_regulation_group_instance(session, type_of_plan_regulation_group_instan
 
 @pytest.fixture(scope="function")
 def point_plan_regulation_group_instance(
-    session, type_of_plan_regulation_group_instance
+    session, plan_instance, type_of_plan_regulation_group_instance
 ):
     instance = models.PlanRegulationGroup(
         short_name="L",
+        plan=plan_instance,
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
         name={"fin": "test_point_plan_regulation_group"},
     )
@@ -971,10 +972,11 @@ def point_plan_regulation_group_instance(
 
 @pytest.fixture(scope="function")
 def general_regulation_group_instance(
-    session, type_of_general_plan_regulation_group_instance
+    session, plan_instance, type_of_general_plan_regulation_group_instance
 ):
     instance = models.PlanRegulationGroup(
         short_name="Y",
+        plan=plan_instance,
         type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
         name={"fin": "test_general_regulation_group"},
     )

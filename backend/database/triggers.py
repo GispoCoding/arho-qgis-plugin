@@ -214,19 +214,31 @@ def generate_update_lifecycle_status_triggers():
             )
             trgs.append(trg)
 
-    # Finally, we want to update general regulations as well:
+    # Finally, we want to update regulations belonging to a general regulation
+    # groups as well:
     for regulation_table in plan_regulation_tables:
         trgfunc_signature = f"trgfunc_plan_{regulation_table}_update_lifecycle_status()"
         trgfunc_definition = f"""
-        RETURNS TRIGGER AS $$
-        BEGIN
-            UPDATE hame.{regulation_table}
-            SET lifecycle_status_id = NEW.lifecycle_status_id
-            WHERE (plan_regulation_group_id = NEW.plan_regulation_group_id
-            AND lifecycle_status_id = OLD.lifecycle_status_id);
-            RETURN NEW;
-        END;
-        $$ language 'plpgsql'
+            RETURNS TRIGGER AS $$
+            BEGIN
+                UPDATE hame.{regulation_table}
+                SET lifecycle_status_id = NEW.lifecycle_status_id
+                WHERE
+                    lifecycle_status_id = OLD.lifecycle_status_id
+                    AND EXISTS ( -- Only update in case of general regulation group
+                        SELECT 1
+                        FROM
+                            hame.plan_regulation_group prg
+                            JOIN codes.type_of_plan_regulation_group tprg
+                                ON prg.type_of_plan_regulation_group_id = tprg.id
+                        WHERE
+                            prg.plan_id = NEW.id
+                            AND prg.id = plan_regulation_group_id
+                            AND tprg.value = 'generalRegulations'
+                    );
+                RETURN NEW;
+            END;
+            $$ language 'plpgsql'
         """
 
         trg_signature = f"trg_plan_{regulation_table}_update_lifecycle_status"
@@ -344,9 +356,6 @@ def generate_new_lifecycle_status_triggers():
                 definition=trgfunc_definition,
             )
             trgfuncs.append(trgfunc)
-            print(trgfuncs)
-            # assert False
-
             trg = PGTrigger(
                 schema="hame",
                 signature=trg_signature,
@@ -359,25 +368,22 @@ def generate_new_lifecycle_status_triggers():
     # Finally, we want to update general regulations as well:
     for regulation_table in plan_regulation_tables:
         trgfunc_signature = f"trgfunc_{regulation_table}_plan_new_lifecycle_status()"
-        # We must *only* update the lifecycle status *if* the plan regulation
-        # group is linked to plan. If SELECT returns NONE, the lifecycle
-        # status should *not* be changed. This *cannot* be in the trigger condition,
-        # because PostgreSQL does not allow subqueries in trigger conditions.
+
+        # Set the life cycle status of the new regulation to the same as the plan
         trgfunc_definition = """
-        RETURNS TRIGGER AS $$
-        DECLARE status_id UUID := (
-            SELECT lifecycle_status_id
-            FROM hame.plan
-            WHERE plan_regulation_group_id = NEW.plan_regulation_group_id
-            LIMIT 1
-            );
-        BEGIN
-            IF status_id IS NOT NULL THEN
-                NEW.lifecycle_status_id = status_id;
-            END IF;
-            RETURN NEW;
-        END;
-        $$ language 'plpgsql'
+            RETURNS TRIGGER AS $$
+            BEGIN
+                NEW.lifecycle_status_id = (
+                    SELECT p.lifecycle_status_id
+                    FROM
+                        hame.plan p
+                        JOIN hame.plan_regulation_group prg
+                            ON p.id = prg.plan_id
+                    WHERE prg.id = NEW.plan_regulation_group_id
+                );
+                RETURN NEW;
+            END;
+            $$ language 'plpgsql'
         """
 
         trg_signature = f"trg_{regulation_table}_plan_new_lifecycle_status"

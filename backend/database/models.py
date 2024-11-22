@@ -31,15 +31,11 @@ class Plan(PlanBase):
     organisation: Mapped["Organisation"] = relationship(
         "Organisation", backref="plans", lazy="joined"
     )
-    plan_regulation_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey(
-            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
-        )
+
+    plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+        "PlanRegulationGroup", back_populates="plan", lazy="joined"
     )
-    # Let's do lazy loading for all general plan regulations.
-    plan_regulation_group = relationship(
-        "PlanRegulationGroup", backref="plans", lazy="joined"
-    )
+
     plan_type_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
     )
@@ -59,6 +55,14 @@ class Plan(PlanBase):
     validated_at: Mapped[Optional[datetime]]
     validation_errors: Mapped[Optional[dict[str, str]]]
     to_be_exported: Mapped[bool] = mapped_column(server_default="f")
+
+    @property
+    def general_plan_regulation_groups(self) -> List["PlanRegulationGroup"]:
+        return [
+            group
+            for group in self.plan_regulation_groups
+            if group.type_of_plan_regulation_group.value == "generalRegulations"
+        ]
 
 
 class LandUseArea(PlanObjectBase):
@@ -120,6 +124,17 @@ class PlanRegulationGroup(VersionedBase):
 
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
+
+    plan_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan.id",
+            name="plan_id_fkey",
+        ),
+        nullable=False,
+        comment="Plan to which this regulation group belongs",
+    )
+    plan: Mapped["Plan"] = relationship(back_populates="plan_regulation_groups")
+
     # värikoodi?
     type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
@@ -128,7 +143,7 @@ class PlanRegulationGroup(VersionedBase):
         )
     )
     type_of_plan_regulation_group = relationship(
-        "TypeOfPlanRegulationGroup", backref="plan_regulation_groups"
+        "TypeOfPlanRegulationGroup", backref="plan_regulation_groups", lazy="joined"
     )
 
     # Let's add backreference to allow lazy loading from this side.

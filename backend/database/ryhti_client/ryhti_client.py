@@ -637,13 +637,12 @@ class RyhtiClient:
             plan_objects += plan.lines
             plan_objects += plan.land_use_points
             plan_objects += plan.other_points
-        # Our plans may only have one general regulation group.
-        if plan.plan_regulation_group:
-            plan_dictionary["generalRegulationGroups"] = [
-                self.get_plan_regulation_group(plan.plan_regulation_group, general=True)
-            ]
-        else:
-            plan_dictionary["generalRegulationGroups"] = []
+
+        plan_dictionary["generalRegulationGroups"] = [
+            self.get_plan_regulation_group(regulation_group, general=True)
+            for regulation_group in plan.general_plan_regulation_groups
+        ]
+
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.
         plan_dictionary["planObjects"] = self.get_plan_object_dicts(plan_objects)
