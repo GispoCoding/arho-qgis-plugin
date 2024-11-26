@@ -44,7 +44,51 @@ regulation_group_association = Table(
         index=True,
         comment="A plan in which the regulation group is a general regulation group",
     ),
-    # TODO: Add foreign keys for all plan object tables
+    Column(
+        "land_use_area_id",
+        ForeignKey(
+            "hame.land_use_area.id",
+            name="land_use_area_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "other_area_id",
+        ForeignKey(
+            "hame.other_area.id",
+            name="other_area_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "land_use_point_id",
+        ForeignKey(
+            "hame.land_use_point.id",
+            name="land_use_point_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "line_id",
+        ForeignKey(
+            "hame.line.id",
+            name="line_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "other_point_id",
+        ForeignKey(
+            "hame.other_point.id",
+            name="other_point_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
     schema="hame",
 )
 
@@ -84,7 +128,12 @@ class Plan(PlanBase):
     to_be_exported: Mapped[bool] = mapped_column(server_default="f")
 
     general_plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
-        secondary=regulation_group_association, lazy="joined"
+        secondary=regulation_group_association,
+        lazy="joined",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "land_use_points,lines,plan_regulation_groups"
+        ),
     )
 
 
@@ -193,6 +242,47 @@ class PlanRegulationGroup(VersionedBase):
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanProposition.ordering",  # list propositions in right order
+    )
+
+    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "land_use_points,lines,plan_regulation_groups"
+        ),
+    )
+    other_areas: Mapped[List["OtherArea"]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "land_use_points,lines,plan_regulation_groups"
+        ),
+    )
+    lines: Mapped[List["Line"]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "land_use_points,lines,plan_regulation_groups"
+        ),
+    )
+    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "land_use_points,lines,plan_regulation_groups"
+        ),
+    )
+    other_points: Mapped[List["OtherPoint"]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "land_use_points,lines,plan_regulation_groups"
+        ),
     )
 
 

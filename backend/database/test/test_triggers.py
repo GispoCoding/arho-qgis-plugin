@@ -246,7 +246,7 @@ def test_new_lifecycle_status_triggers(
         ),
         plan=plan_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     other_area_instance = models.OtherArea(
         lifecycle_status=code_instance,
@@ -270,7 +270,7 @@ def test_new_lifecycle_status_triggers(
         ),
         plan=plan_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     line_instance = models.Line(
         lifecycle_status=code_instance,
@@ -283,21 +283,21 @@ def test_new_lifecycle_status_triggers(
         ),
         plan=plan_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     land_use_point_instance = models.LandUsePoint(
         lifecycle_status=code_instance,
         geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
         plan=plan_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     other_point_instance = models.OtherPoint(
         lifecycle_status=code_instance,
         geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
         plan=plan_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(land_use_area_instance)
     session.add(other_area_instance)
@@ -406,19 +406,19 @@ def test_update_lifecycle_status_triggers(
     assert plan_instance.general_plan_regulation_groups == [
         general_regulation_group_instance
     ]
-    assert (
-        land_use_area_instance.plan_regulation_group == plan_regulation_group_instance
-    )
-    assert other_area_instance.plan_regulation_group == plan_regulation_group_instance
-    assert line_instance.plan_regulation_group == plan_regulation_group_instance
-    assert (
-        land_use_point_instance.plan_regulation_group
-        == point_plan_regulation_group_instance
-    )
-    assert (
-        other_point_instance.plan_regulation_group
-        == point_plan_regulation_group_instance
-    )
+    assert land_use_area_instance.plan_regulation_groups == [
+        plan_regulation_group_instance
+    ]
+    assert other_area_instance.plan_regulation_groups == [
+        plan_regulation_group_instance
+    ]
+    assert line_instance.plan_regulation_groups == [plan_regulation_group_instance]
+    assert land_use_point_instance.plan_regulation_groups == [
+        point_plan_regulation_group_instance
+    ]
+    assert other_point_instance.plan_regulation_groups == [
+        point_plan_regulation_group_instance
+    ]
 
     # Change lifecycle status to fire the triggers
     plan_instance.lifecycle_status = another_code_instance
@@ -496,7 +496,7 @@ def test_add_plan_id_fkey_triggers(
         geom=from_shape(polygon_1),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(another_land_use_area_instance)
 
@@ -504,7 +504,7 @@ def test_add_plan_id_fkey_triggers(
         geom=from_shape(polygon_2),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(another_area_instance)
 
@@ -512,14 +512,14 @@ def test_add_plan_id_fkey_triggers(
         geom=from_shape(line_1),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(another_line_instance)
     another_another_line_instance = models.Line(
         geom=from_shape(line_2),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(another_another_line_instance)
 
@@ -527,7 +527,7 @@ def test_add_plan_id_fkey_triggers(
         geom=from_shape(point_1),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(another_land_use_point_instance)
 
@@ -535,7 +535,7 @@ def test_add_plan_id_fkey_triggers(
         geom=from_shape(point_2),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(another_point_instance)
     session.flush()
@@ -583,7 +583,7 @@ def test_validate_polygon_geometry_triggers(
         geom=from_shape(invalid_polygon),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(invalid_land_use_area_instance)
     with pytest.raises(InternalError):
@@ -594,7 +594,7 @@ def test_validate_polygon_geometry_triggers(
         geom=from_shape(invalid_polygon),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(invalid_other_area_instance)
     with pytest.raises(InternalError):
@@ -617,7 +617,7 @@ def test_validate_line_geometry(
         ),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     with pytest.raises(InternalError):
         session.add(another_line_instance)
@@ -642,7 +642,6 @@ def test_overlapping_land_use_area_geometries_trigger(
         geom=from_shape(square),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(land_use_area_instance)
     session.flush()
@@ -654,7 +653,6 @@ def test_overlapping_land_use_area_geometries_trigger(
         geom=from_shape(overlapping_square),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
     )
 
     with pytest.raises(InternalError) as excinfo:
@@ -680,7 +678,6 @@ def test_adjacent_land_use_areas_should_be_fine(
         geom=from_shape(square),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
     )
     session.add(land_use_area_instance)
     session.flush()
@@ -692,7 +689,6 @@ def test_adjacent_land_use_areas_should_be_fine(
         geom=from_shape(adjacent_square),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
     )
 
     session.add(new_land_use_area_instance)

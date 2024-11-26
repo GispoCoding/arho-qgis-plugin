@@ -67,9 +67,10 @@ def test_land_use_area(
     assert type_of_underground_instance.land_use_areas == [land_use_area_instance]
     assert land_use_area_instance.plan is plan_instance
     assert plan_instance.land_use_areas == [land_use_area_instance]
-    assert (
-        land_use_area_instance.plan_regulation_group is plan_regulation_group_instance
-    )
+    assert land_use_area_instance.plan_regulation_groups == [
+        plan_regulation_group_instance
+    ]
+
     assert plan_regulation_group_instance.land_use_areas == [land_use_area_instance]
 
 
@@ -87,7 +88,9 @@ def test_other_area(
     assert type_of_underground_instance.other_areas == [other_area_instance]
     assert other_area_instance.plan is plan_instance
     assert plan_instance.other_areas == [other_area_instance]
-    assert other_area_instance.plan_regulation_group is plan_regulation_group_instance
+    assert other_area_instance.plan_regulation_groups == [
+        plan_regulation_group_instance
+    ]
     assert plan_regulation_group_instance.other_areas == [other_area_instance]
 
 
@@ -105,7 +108,7 @@ def test_line(
     assert type_of_underground_instance.lines == [line_instance]
     assert line_instance.plan is plan_instance
     assert plan_instance.lines == [line_instance]
-    assert line_instance.plan_regulation_group is plan_regulation_group_instance
+    assert line_instance.plan_regulation_groups == [plan_regulation_group_instance]
     assert plan_regulation_group_instance.lines == [line_instance]
 
 
@@ -123,10 +126,10 @@ def test_land_use_point(
     assert type_of_underground_instance.land_use_points == [land_use_point_instance]
     assert land_use_point_instance.plan is plan_instance
     assert plan_instance.land_use_points == [land_use_point_instance]
-    assert (
-        land_use_point_instance.plan_regulation_group
-        is point_plan_regulation_group_instance
-    )
+    assert land_use_point_instance.plan_regulation_groups == [
+        point_plan_regulation_group_instance
+    ]
+
     assert point_plan_regulation_group_instance.land_use_points == [
         land_use_point_instance
     ]
@@ -146,10 +149,10 @@ def test_other_point(
     assert type_of_underground_instance.other_points == [other_point_instance]
     assert other_point_instance.plan is plan_instance
     assert plan_instance.other_points == [other_point_instance]
-    assert (
-        other_point_instance.plan_regulation_group
-        is point_plan_regulation_group_instance
-    )
+    assert other_point_instance.plan_regulation_groups == [
+        point_plan_regulation_group_instance
+    ]
+
     assert point_plan_regulation_group_instance.other_points == [other_point_instance]
 
 

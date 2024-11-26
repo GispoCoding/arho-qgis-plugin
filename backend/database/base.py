@@ -164,12 +164,6 @@ class PlanObjectBase(PlanBase):
     plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
     )
-    plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
-        ),
-        index=True,
-    )
 
     # class reference in abstract base class, with backreference to class name
     # Let's load all the codes for objects joined.
@@ -186,5 +180,14 @@ class PlanObjectBase(PlanBase):
 
     # class reference in abstract base class, with backreference to class name:
     @declared_attr
-    def plan_regulation_group(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship("PlanRegulationGroup", backref=f"{cls.__tablename__}s")
+    def plan_regulation_groups(cls) -> Mapped[List[VersionedBase]]:  # noqa
+        return relationship(
+            "PlanRegulationGroup",
+            secondary="hame.regulation_group_association",
+            back_populates=f"{cls.__tablename__}s",
+            overlaps=(
+                "general_plan_regulation_groups,land_use_areas,other_areas,"
+                "land_use_points,lines,plan_regulation_groups"
+            ),
+            lazy="joined",
+        )

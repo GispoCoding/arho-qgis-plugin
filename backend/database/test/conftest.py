@@ -818,7 +818,7 @@ def land_use_area_instance(
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(instance)
     session.commit()
@@ -859,7 +859,7 @@ def other_area_instance(
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(instance)
     session.commit()
@@ -887,7 +887,7 @@ def line_instance(
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=plan_regulation_group_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(instance)
     session.commit()
@@ -911,7 +911,7 @@ def land_use_point_instance(
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=point_plan_regulation_group_instance,
+        plan_regulation_groups=[point_plan_regulation_group_instance],
     )
     session.add(instance)
     session.commit()
@@ -933,7 +933,7 @@ def other_point_instance(
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_group=point_plan_regulation_group_instance,
+        plan_regulation_groups=[point_plan_regulation_group_instance],
     )
     session.add(instance)
     session.commit()

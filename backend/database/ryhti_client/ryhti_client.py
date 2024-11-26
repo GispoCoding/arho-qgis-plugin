@@ -2,7 +2,7 @@ import datetime
 import enum
 import logging
 import os
-from typing import Any, Dict, List, Literal, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, TypedDict, cast
 from uuid import uuid4
 
 import base
@@ -27,6 +27,9 @@ from geoalchemy2.shape import to_shape
 from shapely import to_geojson
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Query, sessionmaker
+
+if TYPE_CHECKING:
+    import uuid
 
 """
 Client for validating and POSTing all Maakuntakaava data to Ryhti API
@@ -578,7 +581,11 @@ class RyhtiClient:
         """
         group_dicts = []
         group_ids = set(
-            [plan_object.plan_regulation_group_id for plan_object in plan_objects]
+            [
+                regulation_group.id
+                for plan_object in plan_objects
+                for regulation_group in plan_object.plan_regulation_groups
+            ]
         )
         # Let's fetch all the plan regulation groups for all the objects with a single
         # query. Hoping lazy loading does its trick with all the plan regulations.
@@ -595,20 +602,19 @@ class RyhtiClient:
 
     def get_plan_regulation_group_relations(
         self, plan_objects: List[base.PlanObjectBase]
-    ) -> List:
+    ) -> List[Dict[str, "uuid.UUID"]]:
         """
         Construct a list of Ryhti compatible plan regulation group relations from plan
         objects in the local database.
         """
-        relation_dicts = []
-        for plan_object in plan_objects:
-            relation_dicts.append(
-                {
-                    "planObjectKey": plan_object.id,
-                    "planRegulationGroupKey": plan_object.plan_regulation_group_id,
-                }
-            )
-        return relation_dicts
+        return [
+            {
+                "planObjectKey": plan_object.id,
+                "planRegulationGroupKey": regulation_group.id,
+            }
+            for plan_object in plan_objects
+            for regulation_group in plan_object.plan_regulation_groups
+        ]
 
     # TODO: plan documents not implemented yet!
 
