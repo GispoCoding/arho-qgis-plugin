@@ -943,6 +943,7 @@ def plan_regulation_group_instance(
     instance = models.PlanRegulationGroup(
         short_name="K",
         plan=plan_instance,
+        ordering=2,
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
         name={"fin": "test_plan_regulation_group"},
     )
@@ -960,6 +961,7 @@ def point_plan_regulation_group_instance(
     instance = models.PlanRegulationGroup(
         short_name="L",
         plan=plan_instance,
+        ordering=1,
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
         name={"fin": "test_point_plan_regulation_group"},
     )
@@ -977,6 +979,7 @@ def general_regulation_group_instance(
     instance = models.PlanRegulationGroup(
         short_name="Y",
         plan=plan_instance,
+        ordering=1,
         type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
         name={"fin": "test_general_regulation_group"},
     )
@@ -1536,6 +1539,7 @@ def desired_plan_dict(
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
                 "titleOfPlanRegulation": general_regulation_group_instance.name,
+                "groupNumber": general_regulation_group_instance.ordering,
                 "planRegulations": [
                     {
                         "planRegulationKey": general_plan_regulation_instance.id,
@@ -1656,6 +1660,7 @@ def desired_plan_dict(
                 ],
                 "planRecommendations": [],
                 "letterIdentifier": point_plan_regulation_group_instance.short_name,
+                "groupNumber": point_plan_regulation_group_instance.ordering,
                 "colorNumber": "#FFFFFF",
             },
             {
@@ -1787,6 +1792,7 @@ def desired_plan_dict(
                     },
                 ],
                 "letterIdentifier": plan_regulation_group_instance.short_name,
+                "groupNumber": plan_regulation_group_instance.ordering,
                 "colorNumber": "#FFFFFF",
             },
         ],

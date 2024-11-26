@@ -519,7 +519,8 @@ class RyhtiClient:
         else:
             group_dict["planRegulationGroupKey"] = group.id
         group_dict["titleOfPlanRegulation"] = group.name
-        #  group_dict["groupNumber"] = 1  # not needed if we only have one group
+        if group.ordering is not None:
+            group_dict["groupNumber"] = group.ordering
         if not general:
             group_dict["letterIdentifier"] = group.short_name
             group_dict["colorNumber"] = "#FFFFFF"
@@ -585,6 +586,7 @@ class RyhtiClient:
             plan_regulation_groups = (
                 session.query(models.PlanRegulationGroup)
                 .filter(models.PlanRegulationGroup.id.in_(group_ids))
+                .order_by(models.PlanRegulationGroup.ordering)
                 .all()
             )
             for group in plan_regulation_groups:

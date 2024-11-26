@@ -160,6 +160,8 @@ class PlanRegulationGroup(VersionedBase):
     )
     plan: Mapped["Plan"] = relationship()
 
+    ordering: Mapped[Optional[int]] = mapped_column(index=True)
+
     # värikoodi?
     type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
