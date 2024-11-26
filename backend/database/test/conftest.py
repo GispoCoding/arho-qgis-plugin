@@ -23,7 +23,7 @@ from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
-hame_count: int = 13  # adjust me when adding tables
+hame_count: int = 14  # adjust me when adding tables
 codes_count: int = 16  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -981,6 +981,7 @@ def general_regulation_group_instance(
         name={"fin": "test_general_regulation_group"},
     )
     session.add(instance)
+    plan_instance.general_plan_regulation_groups.append(instance)
     session.commit()
     yield instance
     session.delete(instance)

@@ -4,6 +4,7 @@ from typing import List, Optional
 
 # we have to import CodeBase in codes.py from here to allow two-way relationships
 from base import (  # noqa
+    Base,
     CodeBase,
     PlanBase,
     PlanObjectBase,
@@ -14,8 +15,38 @@ from base import (  # noqa
     unique_str,
 )
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, ForeignKey, Table, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+
+regulation_group_association = Table(
+    "regulation_group_association",
+    Base.metadata,
+    Column("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column(
+        "plan_regulation_group_id",
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    # General groups cannot actually be n2n but use this approach anyway
+    # to make the approach uniform with the plan objects
+    Column(
+        "plan_id",
+        ForeignKey(
+            "hame.plan.id",
+            name="plan_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+        comment="A plan in which the regulation group is a general regulation group",
+    ),
+    # TODO: Add foreign keys for all plan object tables
+    schema="hame",
+)
 
 
 class Plan(PlanBase):
@@ -30,10 +61,6 @@ class Plan(PlanBase):
     )
     organisation: Mapped["Organisation"] = relationship(
         "Organisation", backref="plans", lazy="joined"
-    )
-
-    plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
-        "PlanRegulationGroup", back_populates="plan", lazy="joined"
     )
 
     plan_type_id: Mapped[uuid.UUID] = mapped_column(
@@ -56,13 +83,9 @@ class Plan(PlanBase):
     validation_errors: Mapped[Optional[dict[str, str]]]
     to_be_exported: Mapped[bool] = mapped_column(server_default="f")
 
-    @property
-    def general_plan_regulation_groups(self) -> List["PlanRegulationGroup"]:
-        return [
-            group
-            for group in self.plan_regulation_groups
-            if group.type_of_plan_regulation_group.value == "generalRegulations"
-        ]
+    general_plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+        secondary=regulation_group_association, lazy="joined"
+    )
 
 
 class LandUseArea(PlanObjectBase):
@@ -129,11 +152,13 @@ class PlanRegulationGroup(VersionedBase):
         ForeignKey(
             "hame.plan.id",
             name="plan_id_fkey",
+            ondelete="CASCADE",
         ),
         nullable=False,
         comment="Plan to which this regulation group belongs",
+        index=True,
     )
-    plan: Mapped["Plan"] = relationship(back_populates="plan_regulation_groups")
+    plan: Mapped["Plan"] = relationship()
 
     # värikoodi?
     type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(

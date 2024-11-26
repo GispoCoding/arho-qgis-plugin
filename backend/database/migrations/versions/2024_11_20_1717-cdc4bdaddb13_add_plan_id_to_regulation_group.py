@@ -5,7 +5,6 @@ Revises: 626124880789
 Create Date: 2024-11-20 17:17:16.166363
 
 """
-from textwrap import dedent
 from typing import Sequence, Union
 
 import geoalchemy2
@@ -36,20 +35,25 @@ def upgrade() -> None:
     # Update plan_id for existing plan regulation groups
     # Looses data if there are multiple plans for a regulation group. Sets the last plan for the group.
     op.execute(
-        dedent(
-            """\
-            UPDATE hame.plan_regulation_group
-            SET plan_id = plan.id
-            FROM hame.plan
-            WHERE plan_regulation_group.id = plan.plan_regulation_group_id
-            """
-        )
+        """
+        UPDATE hame.plan_regulation_group
+        SET plan_id = plan.id
+        FROM hame.plan
+        WHERE plan_regulation_group.id = plan.plan_regulation_group_id
+        """
     )
     op.alter_column(
         "plan_regulation_group",
         "plan_id",
         existing_type=sa.UUID(as_uuid=False),
         nullable=False,
+        schema="hame",
+    )
+    op.create_index(
+        op.f("ix_hame_plan_regulation_group_plan_id"),
+        "plan_regulation_group",
+        ["plan_id"],
+        unique=False,
         schema="hame",
     )
 
@@ -61,15 +65,8 @@ def upgrade() -> None:
         ["id"],
         source_schema="hame",
         referent_schema="hame",
+        ondelete="CASCADE",
     )
-
-    op.drop_constraint(
-        "plan_regulation_group_id_fkey",
-        "plan",
-        schema="hame",
-        type_="foreignkey",
-    )
-    op.drop_column("plan", "plan_regulation_group_id", schema="hame")
 
     # ### end Alembic commands ###
 
@@ -82,24 +79,10 @@ def downgrade() -> None:
         schema="hame",
         type_="foreignkey",
     )
-    op.drop_column("plan_regulation_group", "plan_id", schema="hame")
-    op.add_column(
-        "plan",
-        sa.Column(
-            "plan_regulation_group_id",
-            sa.UUID(),
-            autoincrement=False,
-            nullable=True,
-        ),
+    op.drop_index(
+        op.f("ix_hame_plan_regulation_group_plan_id"),
+        table_name="plan_regulation_group",
         schema="hame",
     )
-    op.create_foreign_key(
-        "plan_regulation_group_id_fkey",
-        "plan",
-        "plan_regulation_group",
-        ["plan_regulation_group_id"],
-        ["id"],
-        source_schema="hame",
-        referent_schema="hame",
-    )
+    op.drop_column("plan_regulation_group", "plan_id", schema="hame")
     # ### end Alembic commands ###
