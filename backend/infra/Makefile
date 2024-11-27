@@ -17,11 +17,16 @@ update-koodistot-loader:
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 	aws lambda update-function-code --function-name $(prefix)-koodistot_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 
+## With ryhti client, we need to publish new version and update alias for provisioned concurrency.
+## Also, we have to wait until update is complete to publish the new version.
 update-ryhti-client:
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
 	docker tag hame-ryhti-ryhti_client:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
 	aws lambda update-function-code --function-name $(prefix)-ryhti_client --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
+	while aws lambda get-function --function-name hame-dev-ryhti_client --query "Configuration.LastUpdateStatus" | grep "InProgress" ; do sleep 1; echo "Waiting for AWS to complete function update..."; done
+	aws lambda publish-version --function-name $(prefix)-ryhti_client --query "Version" | \
+		xargs -I {} aws lambda update-alias --function-name $(prefix)-ryhti_client --name live --function-version {}
 
 update-mml-loader:
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com

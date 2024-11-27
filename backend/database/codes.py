@@ -214,7 +214,17 @@ class TypeOfDecisionMaker(CodeBase):
 
 
 def get_code(session: Session, code_class: Type[CodeBase], value: str) -> CodeBase:
+    """
+    Get code object by value.
+    """
     return session.query(code_class).filter_by(value=value).first()
+
+
+def get_code_uri(code_class: Type[CodeBase], value: str) -> str:
+    """
+    Get code URI by value, without querying the database.
+    """
+    return code_class(value=value).uri
 
 
 decisions_by_status = {

@@ -78,10 +78,15 @@ pytest==7.4.4
     # via
     #   -r requirements-dev.in
     #   pytest-docker
+    #   pytest-dotenv
 pytest-docker==2.0.1
     # via -r requirements-dev.in
-python-dotenv==1.0.0
+pytest-dotenv==0.5.2
     # via -r requirements-dev.in
+python-dotenv==1.0.0
+    # via
+    #   -r requirements-dev.in
+    #   pytest-dotenv
 pyyaml==6.0.1
     # via pre-commit
 requests==2.31.0

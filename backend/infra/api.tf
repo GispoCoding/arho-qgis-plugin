@@ -12,17 +12,11 @@ resource "aws_api_gateway_rest_api" "lambda_api" {
             Action = "execute-api:Invoke",
             # TODO: should we only add EC2 here??
             Principal = "*",
-            Resource = [
-                "execute-api:/*"
-            ]
         },
         {
             Effect = "Deny",
             Action = "execute-api:Invoke",
             Principal = "*",
-            Resource = [
-                "execute-api:/*"
-            ],
             Condition = {
                 StringNotEquals = {
                    "aws:SourceVpce": aws_vpc_endpoint.lambda_api.id,
@@ -71,10 +65,10 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.lambda_api.id
 
   triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.ryhti_client.id,
-      aws_api_gateway_method.ryhti_call.id,
-      aws_api_gateway_integration.lambda_integration.id,
+    redeployment = sha1(join(",",[
+      jsonencode(aws_api_gateway_resource.ryhti_client),
+      jsonencode(aws_api_gateway_method.ryhti_call),
+      jsonencode(aws_api_gateway_integration.lambda_integration),
     ]))
   }
 

@@ -85,6 +85,7 @@ resource "aws_lambda_function" "ryhti_client" {
   function_name = "${var.prefix}-ryhti_client"
   image_uri     = "${aws_ecr_repository.ryhti_client.repository_url}:latest"
   package_type  = "Image"
+  memory_size   = 256
   timeout       = 120
 
   role = aws_iam_role.lambda_exec.arn
@@ -123,6 +124,23 @@ resource "aws_ecr_repository" "ryhti_client" {
   }
 
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })
+}
+
+# For reasons unknown, provisioned concurrency requires an alias and qualifier
+# for lambda function, just for the fun of it. $LATEST is not an alias itself.
+resource "aws_lambda_alias" "ryhti_client_live" {
+  name             = "live"
+  description      = "Alias to latest ryhti client"
+  function_name    = "${var.prefix}-ryhti_client"
+  function_version = aws_lambda_function.ryhti_client.version
+}
+
+resource "aws_lambda_provisioned_concurrency_config" "ryhti_client" {
+  function_name = aws_lambda_alias.ryhti_client_live.function_name
+  # Assume only one run at a time for now
+  provisioned_concurrent_executions = 1
+  # Should we use ARN, it changes with every lambda deploy?
+  qualifier = aws_lambda_alias.ryhti_client_live.name
 }
 
 resource "aws_lambda_permission" "cloudwatch_call_ryhti_client" {

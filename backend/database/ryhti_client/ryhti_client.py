@@ -11,14 +11,13 @@ import models
 import requests
 import simplejson as json  # type: ignore
 from codes import (
-    LifeCycleStatus,
     NameOfPlanCaseDecision,
     TypeOfDecisionMaker,
     TypeOfInteractionEvent,
     TypeOfProcessingEvent,
     decisionmaker_by_status,
     decisions_by_status,
-    get_code,
+    get_code_uri,
     interaction_events_by_status,
     processing_events_by_status,
 )
@@ -27,7 +26,6 @@ from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
 from sqlalchemy import create_engine
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Query, sessionmaker
 
 """
@@ -41,8 +39,37 @@ X-Road POST API:
 https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Palveluväylä/Kaavoitus%20OpenApi.json
 """
 
+# All non-request specific initialization should be done *before* the handler
+# method is run. It is run with burst CPU, so we will get faster initialization.
+# Boto3 and db helper initialization should go here.
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
+# write access is required to update plan information after
+# validating or POSTing data
+db_helper = DatabaseHelper(user=User.READ_WRITE)
+# Let's fetch the syke secret from AWS secrets, so it cannot be read in plain
+# text when looking at lambda env variables.
+if os.environ.get("READ_FROM_AWS", "1") == "1":
+    session = boto3.session.Session()
+    client = session.client(
+        service_name="secretsmanager",
+        region_name=os.environ.get("AWS_REGION_NAME", ""),
+    )
+    xroad_syke_client_secret = client.get_secret_value(
+        SecretId=os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN", "")
+    )["SecretString"]
+else:
+    xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET", "")
+public_api_key = os.environ.get("SYKE_APIKEY", "")
+if not public_api_key:
+    raise ValueError("Please set SYKE_APIKEY environment variable to run Ryhti client.")
+xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS", "")
+xroad_member_code = os.environ.get("XROAD_MEMBER_CODE", "")
+xroad_member_client_name = os.environ.get("XROAD_MEMBER_CLIENT_NAME", "")
+xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 8080))
+xroad_instance = os.environ.get("XROAD_INSTANCE", "FI-TEST")
+xroad_member_class = os.environ.get("XROAD_MEMBER_CLASS", "MUN")
+xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID", "")
 
 
 class Action(enum.Enum):
@@ -83,7 +110,7 @@ class Response(TypedDict):
     """
 
     statusCode: int  # noqa N815
-    body: str | ResponseBody  # Response body must be stringified for API gateway
+    body: ResponseBody
 
 
 class Event(TypedDict):
@@ -121,6 +148,17 @@ class AWSAPIGatewayPayload(TypedDict):
     body: str  # The event is stringified json, we have to jsonify it first
 
 
+class AWSAPIGatewayResponse(TypedDict):
+    """
+    Represents the response from Lambda to AWS API Gateway.
+
+    For the API gateway, we just have to stringify the body.
+    """
+
+    statusCode: int
+    body: str  # Response body must be stringified for API gateway
+
+
 class Period(TypedDict):
     begin: str
     end: str
@@ -143,7 +181,7 @@ class RyhtiPlan(TypedDict, total=False):
 
 class RyhtiPlanDecision(TypedDict, total=False):
     planDecisionKey: str
-    name: Dict
+    name: str
     decisionDate: str
     dateOfDecision: str
     typeOfDecisionMaker: str
@@ -202,6 +240,7 @@ class RyhtiClient:
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
     ) -> None:
+        LOGGER.info("Initializing Ryhti client...")
         self.event_type = event_type
         self.debug_json = debug_json
 
@@ -248,9 +287,17 @@ class RyhtiClient:
         # Cache valid plan matters after validation, so they can be processed further.
         self.valid_plan_matters: Dict[str, RyhtiPlanMatter] = dict()
 
-        self.initiated_status: LifeCycleStatus
-        self.approved_status: LifeCycleStatus
-        self.valid_status: LifeCycleStatus
+        # We only ever need code uri values, not codes themselves, so let's not bother
+        # fetching codes from the database at all. URI is known from class and value.
+        # TODO: check that valid status is "13" and approval status is "06" when
+        # the lifecycle status code list transitions from DRAFT to VALID.
+        #
+        # It is exceedingly weird that this, the most important of all codes, is
+        # *not* a descriptive string, but a random number that may change, while all
+        # the other code lists have descriptive strings that will *not* change.
+        self.pending_status_value = "02"
+        self.approved_status_value = "06"
+        self.valid_status_value = "13"
 
         # Do some prefetching before starting the run.
         #
@@ -261,67 +308,16 @@ class RyhtiClient:
         # Otherwise, we may access old plan data without having to create a session
         # and query.
         with self.Session(expire_on_commit=False) as session:
-            # Lifecycle status "valid" is used everywhere, so let's fetch it ready.
-            # TODO: check that valid status is "13" and approval status is "06" when
-            # the lifecycle status code list transitions from DRAFT to VALID.
-            #
-            # It is exceedingly weird that this, the most important of all statuses, is
-            # *not* a descriptive string, but a random number that may change, while all
-            # the other code lists have descriptive strings that will *not* change.
-            self.pending_status = get_code(session, LifeCycleStatus, "02")
-            self.approved_status = get_code(session, LifeCycleStatus, "06")
-            self.valid_status = get_code(session, LifeCycleStatus, "13")
-            # Plan decisions, processing events and interaction events are best
-            # prefetched, they will depend on the status of each plan:
-            self.decisions_by_status = {
-                status_code: (
-                    [
-                        get_code(session, NameOfPlanCaseDecision, decision_code)
-                        for decision_code in decisions
-                    ]
-                    if decisions
-                    else []
-                )
-                for status_code, decisions in decisions_by_status.items()
-            }
-            self.processing_events_by_status = {
-                status_code: (
-                    [
-                        get_code(session, TypeOfProcessingEvent, processing_code)
-                        for processing_code in processing_events
-                    ]
-                    if processing_events
-                    else []
-                )
-                for status_code, processing_events in processing_events_by_status.items()  # noqa
-            }
-            self.interaction_events_by_status = {
-                status_code: (
-                    [
-                        get_code(session, TypeOfInteractionEvent, interaction_code)
-                        for interaction_code in interactions
-                    ]
-                    if interactions
-                    else []
-                )
-                for status_code, interactions in interaction_events_by_status.items()
-            }
-            self.decisionmaker_by_status = {
-                status_code: get_code(session, TypeOfDecisionMaker, decisionmaker)
-                for status_code, decisionmaker in decisionmaker_by_status.items()
-            }
-
+            LOGGER.info("Caching requested plans from database...")
             # Only process specified plans
             plan_query: Query = session.query(models.Plan)
             if plan_uuid:
+                LOGGER.info(f"Only fetching plan {plan_uuid}")
                 plan_query = plan_query.filter_by(id=plan_uuid)
             self.plans = {plan.id: plan for plan in plan_query.all()}
-            print(plan_query.all())
         if not self.plans:
-            print("no plans")
             LOGGER.info("No plans found in database.")
         else:
-            print("got plans")
             LOGGER.info("Client initialized with plans to process:")
             LOGGER.info(self.plans)
 
@@ -405,21 +401,17 @@ class RyhtiClient:
         return None
 
     def get_lifecycle_dates(
-        self, plan_base: base.PlanBase, status: Optional[LifeCycleStatus]
+        self, plan_base: base.PlanBase, status_value: str
     ) -> Optional[Period]:
         """
         Returns the start and end dates of a lifecycle status for object, or
         None if no dates are found.
         """
-        if not status:
-            # it is possible for tests etc. to look for a status that
-            # is actually not present in the database at all.
-            return None
         for lifecycle_date in plan_base.lifecycle_dates:
             # Note that the lifecycle status fetched from database
             # and the one in the plan are not the same sqlalchemy object,
             # because they are fetched in different sessions!
-            if lifecycle_date.lifecycle_status.value == status.value:
+            if lifecycle_date.lifecycle_status.value == status_value:
                 return {
                     "begin": (
                         lifecycle_date.starting_at.date().isoformat()
@@ -449,7 +441,7 @@ class RyhtiClient:
             recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
         recommendation_dict["periodOfValidity"] = self.get_lifecycle_dates(
-            plan_recommendation, self.valid_status
+            plan_recommendation, self.valid_status_value
         )
         recommendation_dict["value"] = plan_recommendation.text_value
         return recommendation_dict
@@ -468,7 +460,7 @@ class RyhtiClient:
             regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
         regulation_dict["periodOfValidity"] = self.get_lifecycle_dates(
-            plan_regulation, self.valid_status
+            plan_regulation, self.valid_status_value
         )
         if plan_regulation.type_of_verbal_plan_regulation:
             regulation_dict["verbalRegulations"] = [
@@ -554,7 +546,7 @@ class RyhtiClient:
         plan_object_dict["description"] = plan_object.description
         plan_object_dict["objectNumber"] = plan_object.ordering
         plan_object_dict["periodOfValidity"] = self.get_lifecycle_dates(
-            plan_object, self.valid_status
+            plan_object, self.valid_status_value
         )
         if plan_object.height_range:
             plan_object_dict["verticalLimit"] = {
@@ -664,9 +656,9 @@ class RyhtiClient:
 
         # Dates come from plan lifecycle dates.
         plan_dictionary["periodOfValidity"] = self.get_lifecycle_dates(
-            plan, self.valid_status
+            plan, self.valid_status_value
         )
-        period_of_approval = self.get_lifecycle_dates(plan, self.approved_status)
+        period_of_approval = self.get_lifecycle_dates(plan, self.approved_status_value)
         plan_dictionary["approvalDate"] = (
             period_of_approval["begin"] if period_of_approval else None
         )
@@ -691,27 +683,24 @@ class RyhtiClient:
         decisions: List[RyhtiPlanDecision] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
-        print(self.decisions_by_status.get(plan.lifecycle_status.value, []))
-        for decision in self.decisions_by_status.get(plan.lifecycle_status.value, []):
-            if not decision:
-                # decision not found in database, probably we are running tests, haven't
-                # run code import, or code lists have mysteriously changed!
-                raise NoResultFound()
+        print(decisions_by_status.get(plan.lifecycle_status.value, []))
+        for decision_value in decisions_by_status.get(plan.lifecycle_status.value, []):
             entry = RyhtiPlanDecision()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["planDecisionKey"] = str(uuid4())
-            entry["name"] = decision.uri
-            entry["typeOfDecisionMaker"] = self.decisionmaker_by_status[
-                plan.lifecycle_status.value
-            ].uri
+            entry["name"] = get_code_uri(NameOfPlanCaseDecision, decision_value)
+            entry["typeOfDecisionMaker"] = get_code_uri(
+                TypeOfDecisionMaker,
+                decisionmaker_by_status[plan.lifecycle_status.value],
+            )
             # Plan must be embedded in decision when POSTing!
             entry["plans"] = [self.plan_dictionaries[plan.id]]
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status
+                plan, plan.lifecycle_status.value
             )
             if not period_of_current_status:
                 raise AssertionError(
@@ -731,23 +720,21 @@ class RyhtiClient:
         events: List[Dict] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
-        for event in self.processing_events_by_status.get(
+        for event_value in processing_events_by_status.get(
             plan.lifecycle_status.value, []
         ):
-            if not event:
-                # event not found in database, probably we are running tests, haven't
-                # run code import, or code lists have mysteriously changed!
-                raise NoResultFound()
             entry: Dict[str, Any] = dict()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["handlingEventKey"] = str(uuid4())
-            entry["handlingEventType"] = event.uri
+            entry["handlingEventType"] = get_code_uri(
+                TypeOfProcessingEvent, event_value
+            )
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status
+                plan, plan.lifecycle_status.value
             )
             if not period_of_current_status:
                 raise AssertionError(
@@ -766,23 +753,21 @@ class RyhtiClient:
         events: List[Dict] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
-        for event in self.interaction_events_by_status.get(
+        for event_value in interaction_events_by_status.get(
             plan.lifecycle_status.value, []
         ):
-            if not event:
-                # event not found in database, probably we are running tests, haven't
-                # run code import, or code lists have mysteriously changed!
-                raise NoResultFound()
             entry: Dict[str, Any] = dict()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
             # already before reposting.
             entry["interactionEventKey"] = str(uuid4())
-            entry["interactionEventType"] = event.uri
+            entry["interactionEventType"] = get_code_uri(
+                TypeOfInteractionEvent, event_value
+            )
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status
+                plan, plan.lifecycle_status.value
             )
             if not period_of_current_status:
                 raise AssertionError(
@@ -863,7 +848,7 @@ class RyhtiClient:
         # only contains description, and only in one language.
         plan_matter["name"] = plan.name
 
-        period_of_initiation = self.get_lifecycle_dates(plan, self.pending_status)
+        period_of_initiation = self.get_lifecycle_dates(plan, self.pending_status_value)
         plan_matter["timeOfInitiation"] = (
             period_of_initiation["begin"] if period_of_initiation else None
         )
@@ -1464,15 +1449,25 @@ class RyhtiClient:
         )
 
 
-def bodify(body: ResponseBody, using_api_gateway: bool = False) -> str | ResponseBody:
+def responsify(
+    response: Response, using_api_gateway: bool = False
+) -> Response | AWSAPIGatewayResponse:
     """
-    Convert response body to JSON string if the request arrived through API gateway.
+    Convert response to API gateway response if the request arrived through API gateway.
     If we want to provide status code to API gateway, the JSON body must be string.
     """
-    return json.dumps(body) if using_api_gateway else body
+    return (
+        AWSAPIGatewayResponse(
+            statusCode=response["statusCode"], body=json.dumps(response["body"])
+        )
+        if using_api_gateway
+        else response
+    )
 
 
-def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
+def handler(
+    payload: Event | AWSAPIGatewayPayload, _
+) -> Response | AWSAPIGatewayResponse:
     """
     Handler which is called when accessing the endpoint. We must handle both API
     gateway HTTP requests and regular lambda requests. API gateway requires
@@ -1497,9 +1492,6 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
         # Direct lambda request
         event = cast(Event, payload)
 
-    # write access is required to update plan information after
-    # validating or POSTing data
-    db_helper = DatabaseHelper(user=User.READ_WRITE)
     try:
         event_type = Action(event["action"])
     except KeyError:
@@ -1507,44 +1499,19 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
     except ValueError:
         response_title = "Unknown action."
         LOGGER.info(response_title)
-        return Response(
-            statusCode=400,
-            body=bodify(
-                ResponseBody(
+        return responsify(
+            Response(
+                statusCode=400,
+                body=ResponseBody(
                     title=response_title,
                     details={event["action"]: "Unknown action."},
                     ryhti_responses={},
                 ),
-                using_api_gateway,
             ),
+            using_api_gateway,
         )
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
-    public_api_key = os.environ.get("SYKE_APIKEY")
-    if not public_api_key:
-        raise ValueError(
-            "Please set SYKE_APIKEY environment variable to run Ryhti client."
-        )
-    xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS")
-    xroad_member_code = os.environ.get("XROAD_MEMBER_CODE")
-    xroad_member_client_name = os.environ.get("XROAD_MEMBER_CLIENT_NAME")
-    xroad_port = int(os.environ.get("XROAD_HTTP_PORT", 8080))
-    xroad_instance = os.environ.get("XROAD_INSTANCE", "FI-TEST")
-    xroad_member_class = os.environ.get("XROAD_MEMBER_CLASS", "MUN")
-    xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID")
-    # Let's fetch the syke secret from AWS secrets, so it cannot be read in plain
-    # text when looking at lambda env variables.
-    if os.environ.get("READ_FROM_AWS", "1") == "1":
-        session = boto3.session.Session()
-        client = session.client(
-            service_name="secretsmanager",
-            region_name=os.environ.get("AWS_REGION_NAME"),
-        )
-        xroad_syke_client_secret = client.get_secret_value(
-            SecretId=os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN")
-        )["SecretString"]
-    else:
-        xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET")
     if event_type is Action.POST_PLANS and (
         not xroad_server_address
         or not xroad_member_code
@@ -1587,16 +1554,16 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
             # just return the JSON to the user
             response_title = "Returning serialized plans from database."
             LOGGER.info(response_title)
-            return Response(
-                statusCode=200,
-                body=bodify(
-                    ResponseBody(
+            return responsify(
+                Response(
+                    statusCode=200,
+                    body=ResponseBody(
                         title=response_title,
-                        details=client.plan_dictionaries,
+                        details=cast(dict, client.plan_dictionaries),
                         ryhti_responses={},
                     ),
-                    using_api_gateway,
                 ),
+                using_api_gateway,
             )
 
         # 2) Validate plans in database with public API
@@ -1701,6 +1668,4 @@ def handler(payload: Event | AWSAPIGatewayPayload, _) -> Response:
         )
 
     LOGGER.info(lambda_response["body"]["title"])
-    # Before responding, make sure the response body has correct format
-    lambda_response["body"] = bodify(lambda_response["body"], using_api_gateway)
-    return cast(Response, lambda_response)
+    return responsify(lambda_response, using_api_gateway)
