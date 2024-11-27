@@ -160,7 +160,7 @@ class Plugin:
 
         self.template_dock_action = self.add_action(
             "",
-            "Kaavatemplaatit",
+            "Kaavakohdetemplaatit",
             None,
             toggled_callback=self.toggle_template_dock,
             checkable=True,
