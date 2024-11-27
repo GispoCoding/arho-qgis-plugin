@@ -9,7 +9,6 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QFormLayout,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
     QMenu,
@@ -20,7 +19,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, Unit, ValueType
-from arho_feature_template.utils.misc_utils import get_additional_information_name
+from arho_feature_template.utils.misc_utils import get_additional_information_name, get_layer_by_name
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
@@ -70,7 +69,7 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         self.config = config
         self.regulation_number_added = False
         self.expanded = True
-        self.widgets: list[tuple] = []
+        self.widgets: list[tuple[QLabel, QWidget]] = []
         self.plan_regulation_name.setText(config.name)
         self.plan_regulation_name.setReadOnly(True)
         self.init_value_fields()
@@ -80,43 +79,34 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         # Additional information
         for info in definition.additional_information:
             info_type: str = cast("str", info["type"])
-            layout = self.add_additional_info(info_type)
-            if info_type in ADDITIONAL_INFORMATION_TYPES_WITH_INPUT:
+            self.add_additional_info(info_type)
+            if info_type == "kayttotarkoituskohdistus":
                 info_value_widget = QLineEdit()
-                layout.addWidget(info_value_widget)
+                label = QLabel(get_additional_information_name(info_type))
                 value = info.get("value")
                 if value:
                     info_value_widget.setText(value)
+                self.form_layout.addRow(label, info_value_widget)
 
         # TODO: Other saved information from PlanRegulationDefinition
 
     def init_value_fields(self):
-        layout = QHBoxLayout()
         value_type = self.config.value_type
         if value_type:
-            self._add_value_input(value_type, layout)
+            self._add_value_input(value_type, self.config.unit)
 
-        unit = self.config.unit
-        if unit:
-            self._add_value_unit(unit, layout)
-
-    def _add_value_input(self, value_type: ValueType, layout: QHBoxLayout):
+    def _add_value_input(self, value_type: ValueType, unit: Unit | None):
         if value_type in [ValueType.DECIMAL, ValueType.POSITIVE_DECIMAL]:
-            self.add_decimal_input(layout, value_type)
+            self.add_decimal_input(value_type, unit)
         elif value_type == ValueType.POSITIVE_INTEGER:
-            self.add_positive_integer_input(layout)
+            self.add_positive_integer_input(unit)
         elif value_type == ValueType.POSITIVE_INTEGER_RANGE:
-            self.add_positive_integer_range_input(layout)
+            self.add_positive_integer_range_input(unit)
         elif value_type == ValueType.VERSIONED_TEXT:
-            self.add_versioned_text_input(layout)
+            self.add_versioned_text_input()
         else:
             msg = f"Invalid input value type for plan regulation: {value_type}"
             raise ValueError(msg)
-
-    def _add_value_unit(self, unit: Unit, layout: QHBoxLayout):
-        # NOTE: Unit could also be suffix in the QgsSpinBox, could be clearer?
-        unit_label = QLabel(unit.value)
-        layout.addWidget(unit_label)
 
     def init_buttons(self):
         # DEL
@@ -163,6 +153,16 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         add_field_menu = QMenu(self)
         add_field_menu.addAction("Määräysnumero").triggered.connect(self.add_regulation_number)
         add_field_menu.addAction("Liiteasiakirja").triggered.connect(self.add_file)
+        add_field_menu.addAction("Aihetunniste").triggered.connect(self.add_topic_tag)
+
+        theme_menu = QMenu("Kaavoitusteema", self)
+        language = "fin"
+        for feature in get_layer_by_name("Kaavoitusteemat").getFeatures():
+            name = feature["name"][language]
+            action = theme_menu.addAction(name)
+            action.triggered.connect(lambda _, name=name: self.add_theme(name))
+        add_field_menu.addMenu(theme_menu)
+
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
@@ -171,22 +171,28 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
 
     def _on_expand_hide_btn_clicked(self):
         if self.expanded:
-            for label, widget in self.widgets:
+            for label, value_widget in self.widgets:
                 self.form_layout.removeWidget(label)
                 label.hide()
-                self.form_layout.removeWidget(widget)
-                widget.hide()
+                self.form_layout.removeWidget(value_widget)
+                value_widget.hide()
             self.expand_hide_btn.setArrowType(Qt.ArrowType.DownArrow)
             self.expanded = False
         else:
-            for label, widget in self.widgets:
+            for label, value_widget in self.widgets:
+                self.form_layout.addRow(label, value_widget)
                 label.show()
-                widget.show()
-                self.form_layout.addRow(label, widget)
+                value_widget.show()
             self.expand_hide_btn.setArrowType(Qt.ArrowType.UpArrow)
             self.expanded = True
 
-    def add_decimal_input(self, layout: QHBoxLayout, value_type: ValueType):
+    def _add_widgets_to_form(self, label: QLabel, widget: QWidget):
+        self.form_layout.addRow(label, widget)
+        self.widgets.append((label, widget))
+        if not self.expanded:
+            self._on_expand_hide_btn_clicked()
+
+    def add_decimal_input(self, value_type: ValueType, unit: Unit | None):
         value_widget = QgsDoubleSpinBox()
         label = QLabel("Arvo")
         if value_type == ValueType.POSITIVE_DECIMAL:
@@ -196,65 +202,67 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
             value_widget.setMinimum(-9999.9)
             label.setToolTip("Tyyppi: desimaali")
         value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        layout.addWidget(value_widget)
-        self.form_layout.addRow(label, layout)
-        self.widgets.append((label, value_widget))
+        if unit:
+            value_widget.setSuffix(f" {unit.value}")
+        self._add_widgets_to_form(label, value_widget)
 
-    def add_positive_integer_input(self, layout: QHBoxLayout):
+    def add_positive_integer_input(self, unit: Unit | None):
         value_widget = QgsSpinBox()
         value_widget.setMinimum(0)
         value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        layout.addWidget(value_widget)
+        if unit:
+            value_widget.setSuffix(f" {unit.value}")
         label = QLabel("Arvo")
         label.setToolTip("Tyyppi: kokonaisluku (positiivinen)")
-        self.form_layout.addRow(label, layout)
-        self.widgets.append((label, value_widget))
+        self._add_widgets_to_form(label, value_widget)
 
-    def add_positive_integer_range_input(self, layout: QHBoxLayout):
+    def add_positive_integer_range_input(self, unit: Unit | None):
         min_widget = QgsSpinBox()
         min_widget.setMinimum(0)
+        min_label = QLabel("Arvo minimi")
+        min_label.setToolTip("Tyyppi: kokonaisluku arvoväli (positiivinen)")
+
         max_widget = QgsSpinBox()
         max_widget.setMinimum(0)
-        layout.addWidget(min_widget)
-        dash_label = QLabel(" — ")
-        dash_label.setAlignment(Qt.AlignCenter)
-        dash_label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-        layout.addWidget(dash_label)
-        layout.addWidget(max_widget)
-        label = QLabel("Arvo")
-        label.setToolTip("Tyyppi: kokonaisluku arvoväli (positiivinen)")
-        self.form_layout.addRow(label, layout)
-        self.widgets.append((label, layout))
+        max_label = QLabel("Arvo maksimi")
+        max_label.setToolTip("Tyyppi: kokonaisluku arvoväli (positiivinen)")
+        if unit:
+            min_widget.setSuffix(f" {unit.value}")
+            max_widget.setSuffix(f" {unit.value}")
+        self._add_widgets_to_form(min_label, min_widget)
+        self._add_widgets_to_form(max_label, max_widget)
 
-    def add_versioned_text_input(self, layout: QHBoxLayout):
+    def add_versioned_text_input(self):
         text_widget = QTextEdit()
-        layout.addWidget(text_widget)
         label = QLabel("Arvo")
         label.setToolTip("Tyyppi: kieliversioitu teksti")
-        self.form_layout.addRow(label, layout)
-        self.widgets.append((label, text_widget))
+        self._add_widgets_to_form(label, text_widget)
 
-    def add_additional_info(self, info_type: str) -> QHBoxLayout:
-        layout = QHBoxLayout()
-        info_name = get_additional_information_name(info_type)
-        info_type_label = QLineEdit(info_name)
-        info_type_label.setReadOnly(True)
-        layout.addWidget(info_type_label)
+    def add_additional_info(self, info_type: str):
+        info_type_line = QLineEdit(get_additional_information_name(info_type))
+        info_type_line.setReadOnly(True)
         label = QLabel("Lisätiedonlaji")
-        self.form_layout.addRow(label, layout)
-        self.widgets.append((label, info_type_label))
-        return layout
+        self._add_widgets_to_form(label, info_type_line)
 
     def add_regulation_number(self):
         if not self.regulation_number_added:
             number_widget = QgsSpinBox()
             label = QLabel("Määräysnumero")
-            self.form_layout.addRow(label, number_widget)
-            self.widgets.append((label, number_widget))
+            self._add_widgets_to_form(label, number_widget)
             self.regulation_number_added = True
 
     def add_file(self):
         file_input = QgsFileWidget()
         label = QLabel("Liiteasiakirja")
-        self.form_layout.addRow(label, file_input)
-        self.widgets.append((label, file_input))
+        self._add_widgets_to_form(label, file_input)
+
+    def add_topic_tag(self):
+        text_input = QLineEdit()
+        label = QLabel("Aihetunniste")
+        self._add_widgets_to_form(label, text_input)
+
+    def add_theme(self, theme_name: str):
+        theme_type_line = QLineEdit(theme_name)
+        theme_type_line.setReadOnly(True)
+        label = QLabel("Kaavoitusteema")
+        self._add_widgets_to_form(label, theme_type_line)
