@@ -18,7 +18,9 @@ from triggers import (
     generate_new_lifecycle_status_triggers,
     generate_update_lifecycle_status_triggers,
     generate_validate_polygon_geometry_triggers,
+    trg_prevent_land_use_area_overlaps,
     trg_validate_line_geometry,
+    trgfunc_prevent_land_use_area_overlaps,
     trgfunc_validate_line_geometry,
 )
 
@@ -60,6 +62,8 @@ imported_functions = (
     + validate_polygon_geometry_trgfuncs
     + [trg_validate_line_geometry]
     + [trgfunc_validate_line_geometry]
+    + [trgfunc_prevent_land_use_area_overlaps]
+    + [trg_prevent_land_use_area_overlaps]
 )
 
 register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])

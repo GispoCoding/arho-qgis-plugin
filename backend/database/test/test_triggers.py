@@ -4,6 +4,7 @@ import codes
 import models
 import pytest
 from geoalchemy2.shape import from_shape
+from shapely import transform
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, shape
 from sqlalchemy.exc import InternalError
 from sqlalchemy.orm import Session
@@ -624,41 +625,77 @@ def test_validate_line_geometry(
     session.rollback()
 
 
-def test_intersecting_other_area_geometries_trigger(
+def test_overlapping_land_use_area_geometries_trigger(
     session: Session,
-    empty_value_plan_regulation_instance: models.PlanRegulation,
+    plan_instance: models.Plan,
     code_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    rollback_after,
 ):
-    paakayttotarkoitus_additional_information_instance = (
-        codes.TypeOfAdditionalInformation(value="paakayttotarkoitus", status="LOCAL")
+    square = MultiPolygon([(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)),)])
+    overlapping_square = transform(square, lambda x: x + 0.5)
+
+    land_use_area_instance = models.LandUseArea(
+        plan=plan_instance,
+        name="area 1",
+        geom=from_shape(square),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
     )
-    session.add(paakayttotarkoitus_additional_information_instance)
-    empty_value_plan_regulation_instance.intended_use = (
-        paakayttotarkoitus_additional_information_instance
-    )
+    session.add(land_use_area_instance)
     session.flush()
 
-    another_area_instance = models.OtherArea(
-        geom=from_shape(
-            MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
-        ),
+    # Create a new land_use_area that overlaps land_use_area_instance
+    new_land_use_area_instance = models.LandUseArea(
+        plan=plan_instance,
+        name="area 2",
+        geom=from_shape(overlapping_square),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
         plan_regulation_group=plan_regulation_group_instance,
     )
-    session.add(another_area_instance)
-    # Create a new other_area_instance that intersects another_area_instance
-    new_other_area_instance = models.OtherArea(
-        geom=from_shape(
-            MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
-        ),
-        lifecycle_status=code_instance,
-        type_of_underground=type_of_underground_instance,
-        plan_regulation_group=plan_regulation_group_instance,
-    )
-    session.add(new_other_area_instance)
-    with pytest.raises(InternalError):
+
+    with pytest.raises(InternalError) as excinfo:
+        session.add(new_land_use_area_instance)
         session.flush()
-    session.rollback()
+    assert "Geometries overlap" in str(excinfo.value.orig.pgerror)
+
+
+def test_adjacent_land_use_areas_should_be_fine(
+    session: Session,
+    plan_instance: models.Plan,
+    code_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    rollback_after,
+):
+    square = MultiPolygon([(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)),)])
+    adjacent_square = transform(square, lambda vertex: vertex + [1, 0])
+
+    land_use_area_instance = models.LandUseArea(
+        plan=plan_instance,
+        name="area 1",
+        geom=from_shape(square),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(land_use_area_instance)
+    session.flush()
+
+    # Create a new land_use_area that is adjacent to land_use_area_instance
+    new_land_use_area_instance = models.LandUseArea(
+        plan=plan_instance,
+        name="area 2",
+        geom=from_shape(adjacent_square),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+
+    session.add(new_land_use_area_instance)
+    session.flush()
+
+    assert True  # No exception was raised

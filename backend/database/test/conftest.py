@@ -463,6 +463,12 @@ def session(connection_string):
     yield session()
 
 
+@pytest.fixture
+def rollback_after(session: Session):
+    yield
+    session.rollback()
+
+
 @pytest.fixture()
 def code_instance(session):
     instance = codes.LifeCycleStatus(value="test", status="LOCAL")
