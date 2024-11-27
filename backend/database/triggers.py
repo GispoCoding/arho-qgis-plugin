@@ -306,70 +306,10 @@ def generate_new_lifecycle_status_triggers():
         )
         trgs.append(trg)
 
-        # Also, each plan object table may trigger changes in *all* regulations linked
-        # to the plan object table *through* a regulation group, let's create the
-        # two extra trigger functions for each plan object table here:
-        for regulation_table in plan_regulation_tables:
-            trgfunc_signature = (
-                f"trgfunc_{regulation_table}_{object_table}_new_lifecycle_status()"
-            )
-            # We must *only* update the lifecycle status *if* the plan regulation
-            # group is linked to plan object. If SELECT returns NONE, the lifecycle
-            # status should *not* be changed. This *cannot* be in the trigger condition,
-            # because PostgreSQL does not allow subqueries in trigger conditions.
-            #
-            # The idea is that if
-            # a) we are adding a regulation to a group linked to object, it will get
-            # the same lifecycle status as object.
-            # b) we are adding a regulation to a group *not yet* linked to an object,
-            # the lifecycle status will not change. The change will have to happen
-            # later.
-            trgfunc_definition = f"""
-            RETURNS TRIGGER AS $$
-            DECLARE status_id UUID := (
-                SELECT lifecycle_status_id
-                FROM hame.{object_table}
-                WHERE plan_regulation_group_id = NEW.plan_regulation_group_id
-                LIMIT 1
-                );
-            BEGIN
-                IF status_id IS NOT NULL THEN
-                    NEW.lifecycle_status_id = status_id;
-                END IF;
-                RETURN NEW;
-            END;
-            $$ language 'plpgsql'
-            """
-
-            trg_signature = (
-                f"trg_{regulation_table}_{object_table}_new_lifecycle_status"
-            )
-            trg_definition = f"""
-            BEFORE INSERT ON hame.{regulation_table}
-            FOR EACH ROW
-            EXECUTE FUNCTION hame.{trgfunc_signature}
-            """
-
-            trgfunc = PGFunction(
-                schema="hame",
-                signature=trgfunc_signature,
-                definition=trgfunc_definition,
-            )
-            trgfuncs.append(trgfunc)
-            trg = PGTrigger(
-                schema="hame",
-                signature=trg_signature,
-                on_entity=f"hame.{regulation_table}",
-                is_constraint=False,
-                definition=trg_definition,
-            )
-            trgs.append(trg)
-
-    # Finally, we want to update general regulations as well:
+    # Set the life cycle status of the new regulation to the same as the plan
     for regulation_table in plan_regulation_tables:
         trgfunc_signature = f"trgfunc_{regulation_table}_plan_new_lifecycle_status()"
 
-        # Set the life cycle status of the new regulation to the same as the plan
         trgfunc_definition = """
             RETURNS TRIGGER AS $$
             BEGIN
