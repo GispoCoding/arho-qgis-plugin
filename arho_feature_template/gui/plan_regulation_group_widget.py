@@ -13,7 +13,7 @@ from arho_feature_template.gui.plan_regulation_widget import PlanRegulationWidge
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QPushButton
 
-    from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig
+    from arho_feature_template.core.plan_regulation_config import PlanRegulationDefinition
     from arho_feature_template.core.plan_regulation_group_config import PlanRegulationGroupDefinition
 
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
@@ -41,16 +41,14 @@ class PlanRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.heading.setText(self.group_definition.name)
         self.init_buttons()
         for plan_regulation_definition in self.group_definition.plan_regulations:
-            config = plan_regulation_definition.regulation_config
-            widget = self.add_plan_regulation_widget(config)
-            widget.populate_from_definition(plan_regulation_definition)
+            _ = self.add_plan_regulation_widget(plan_regulation_definition)
 
     def init_buttons(self):
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
 
-    def add_plan_regulation_widget(self, config: PlanRegulationConfig) -> PlanRegulationWidget:
-        widget = PlanRegulationWidget(config=config, parent=self.frame)
+    def add_plan_regulation_widget(self, definition: PlanRegulationDefinition) -> PlanRegulationWidget:
+        widget = PlanRegulationWidget.from_definition(definition=definition, parent=self.frame)
         widget.delete_signal.connect(self.delete_plan_regulation_widget)
         self.frame.layout().addWidget(widget)
         return widget

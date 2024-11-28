@@ -57,7 +57,7 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation(config)
 
     def add_plan_regulation(self, config: PlanRegulationConfig):
-        widget = PlanRegulationWidget(config=config, parent=self.plan_regulations_scroll_area_contents)
+        widget = PlanRegulationWidget.from_config(config=config, parent=self.plan_regulations_scroll_area_contents)
         widget.delete_signal.connect(self.delete_plan_regulation)
         index = self.plan_regulations_layout.count() - 1
         self.plan_regulations_layout.insertWidget(index, widget)

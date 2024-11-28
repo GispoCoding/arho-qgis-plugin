@@ -176,7 +176,7 @@ class PlanRegulationDefinition:
     """Associates a PlanRegulationConfig with an optional default value and additional data."""
 
     regulation_config: PlanRegulationConfig
-    default_value: str | Number | None
+    default_value: str | Number | list[int] | None
     additional_information: list[
         dict[str, str | Number | None]
     ]  # NOTE: Correct typing for additional information values?

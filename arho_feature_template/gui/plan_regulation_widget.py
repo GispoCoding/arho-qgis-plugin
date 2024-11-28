@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
+from numbers import Number
 from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
@@ -73,42 +74,70 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         self.widgets: list[tuple[QLabel, QWidget]] = []
         self.plan_regulation_name.setText(config.name)
         self.plan_regulation_name.setReadOnly(True)
-        self.init_value_fields()
-        self.init_additional_information_btn()
-        self.init_other_information_btn()
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
+        self.init_additional_information_btn()
+        self.init_other_information_btn()
 
-    def populate_from_definition(self, definition: PlanRegulationDefinition):
+    @classmethod
+    def from_config(cls, config: PlanRegulationConfig, parent=None) -> PlanRegulationWidget:
+        instance = cls(config, parent)
+        instance.init_fields()
+        return instance
+
+    @classmethod
+    def from_definition(cls, definition: PlanRegulationDefinition, parent=None) -> PlanRegulationWidget:
+        instance = cls(definition.regulation_config, parent)
+        instance.init_fields_from_definition(definition)
+        return instance
+
+    def init_fields_from_definition(self, definition: PlanRegulationDefinition):
+        # Value input
+        value_type = self.config.value_type
+        if value_type:
+            self._add_value_input(value_type, self.config.unit, definition.default_value)
+
         # Additional information
         for info in definition.additional_information:
             info_type: str = cast("str", info["type"])
-            self.add_additional_info(info_type)
-            if info_type == "kayttotarkoituskohdistus":
-                info_value_widget = QLineEdit()
-                label = QLabel(get_additional_information_name(info_type))
-                value = info.get("value")
-                if value:
-                    info_value_widget.setText(value)
-                self.form_layout.addRow(label, info_value_widget)
+            self.add_additional_info(info_type, info.get("value"))
 
         # TODO: Other saved information from PlanRegulationDefinition
 
-    def init_value_fields(self):
+    def init_fields(self):
         value_type = self.config.value_type
         if value_type:
             self._add_value_input(value_type, self.config.unit)
 
-    def _add_value_input(self, value_type: ValueType, unit: Unit | None):
+    @staticmethod
+    def _check_number_or_none(value: str | Number | None, error_msg: str):
+        if not isinstance(value, Number) and value is not None:
+            raise ValueError(error_msg)
+
+    def _add_value_input(
+        self, value_type: ValueType, unit: Unit | None, default_value: str | Number | list[int] | None = None
+    ):
+        base_error_msg = f"Invalid type for default value {type(default_value)}."
         if value_type in [ValueType.DECIMAL, ValueType.POSITIVE_DECIMAL]:
-            self.add_decimal_input(value_type, unit)
+            if not isinstance(default_value, Number) and default_value is not None:
+                raise ValueError(base_error_msg)
+            self.add_decimal_input(value_type, unit, default_value)
         elif value_type == ValueType.POSITIVE_INTEGER:
-            self.add_positive_integer_input(unit)
+            if not isinstance(default_value, int) and default_value is not None:
+                raise ValueError(base_error_msg)
+            self.add_positive_integer_input(unit, default_value)
         elif value_type == ValueType.POSITIVE_INTEGER_RANGE:
-            self.add_positive_integer_range_input(unit)
+            if not isinstance(default_value, list) and default_value is not None:
+                raise ValueError(base_error_msg)
+            if isinstance(default_value, list) and len(default_value) != 2:  # noqa: PLR2004
+                error_msg = f"Invalid number of values in default value {type(default_value)}."
+                raise ValueError(error_msg)
+            self.add_positive_integer_range_input(unit, default_value)
         elif value_type == ValueType.VERSIONED_TEXT:
-            self.add_versioned_text_input()
+            if not isinstance(default_value, str) and default_value is not None:
+                raise ValueError(base_error_msg)
+            self.add_versioned_text_input(default_value)
         else:
             msg = f"Invalid input value type for plan regulation: {value_type}"
             raise ValueError(msg)
@@ -185,7 +214,7 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         if not self.expanded:
             self._on_expand_hide_btn_clicked()
 
-    def add_decimal_input(self, value_type: ValueType, unit: Unit | None):
+    def add_decimal_input(self, value_type: ValueType, unit: Unit | None, default_value: Number | None = None):
         value_widget = QgsDoubleSpinBox()
         label = QLabel("Arvo")
         if value_type == ValueType.POSITIVE_DECIMAL:
@@ -197,9 +226,11 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         if unit:
             value_widget.setSuffix(f" {unit.value}")
+        if default_value:
+            value_widget.setValue(default_value)
         self._add_widgets_to_form(label, value_widget)
 
-    def add_positive_integer_input(self, unit: Unit | None):
+    def add_positive_integer_input(self, unit: Unit | None, default_value: int | None = None):
         value_widget = QgsSpinBox()
         value_widget.setMinimum(0)
         value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -207,9 +238,11 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
             value_widget.setSuffix(f" {unit.value}")
         label = QLabel("Arvo")
         label.setToolTip("Tyyppi: kokonaisluku (positiivinen)")
+        if default_value:
+            value_widget.setValue(default_value)
         self._add_widgets_to_form(label, value_widget)
 
-    def add_positive_integer_range_input(self, unit: Unit | None):
+    def add_positive_integer_range_input(self, unit: Unit | None, default_values: list[int] | None = None):
         min_widget = QgsSpinBox()
         min_widget.setMinimum(0)
         min_label = QLabel("Arvo minimi")
@@ -222,20 +255,36 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         if unit:
             min_widget.setSuffix(f" {unit.value}")
             max_widget.setSuffix(f" {unit.value}")
+        if default_values:
+            min_widget.setValue(default_values[0])
+            max_widget.setValue(default_values[1])
         self._add_widgets_to_form(min_label, min_widget)
         self._add_widgets_to_form(max_label, max_widget)
 
-    def add_versioned_text_input(self):
+    def add_versioned_text_input(self, default_value: str | None = None):
         text_widget = QTextEdit()
         label = QLabel("Arvo")
         label.setToolTip("Tyyppi: kieliversioitu teksti")
+        if default_value:
+            text_widget.setText(default_value)
         self._add_widgets_to_form(label, text_widget)
 
-    def add_additional_info(self, info_type: str):
-        info_type_line = QLineEdit(get_additional_information_name(info_type))
+    def add_additional_info(self, info_type: str, default_value: str | Number | None = None):
+        # NOTE: Now info type is the name / readable version when this is triggered by user
+        # Might need to refactor this later..
+        name = get_additional_information_name(info_type)
+        info_type_line = QLineEdit(name)
         info_type_line.setReadOnly(True)
         label = QLabel("Lisätiedonlaji")
         self._add_widgets_to_form(label, info_type_line)
+
+        if name == "Käyttötarkoituskohdistus":
+            info_value_widget = QLineEdit()
+            info_value_label = QLabel(name)
+            self._add_widgets_to_form(info_value_label, info_value_widget)
+
+            if default_value:
+                info_value_widget.setText(str(default_value))
 
     def add_regulation_number(self):
         if not self.regulation_number_added:
