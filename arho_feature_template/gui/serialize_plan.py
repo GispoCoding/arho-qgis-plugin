@@ -8,14 +8,14 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 
 class SerializePlan(QDialog, FormClass):  # type: ignore
+    plan_outline_path_edit: QLineEdit
+    plan_path_edit: QLineEdit
+    plan_outline_select_button: QPushButton
+    plan_select_button: QPushButton
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-
-        self.plan_outline_path_edit = self.findChild(QLineEdit, "plan_outline_path_edit")
-        self.plan_path_edit = self.findChild(QLineEdit, "plan_path_edit")
-        self.plan_outline_select_button = self.findChild(QPushButton, "plan_outline_select_button")
-        self.plan_select_button = self.findChild(QPushButton, "plan_select_button")
 
         self.plan_outline_select_button.clicked.connect(self.select_plan_outline_file)
         self.plan_select_button.clicked.connect(self.select_plan_file)
