@@ -416,13 +416,15 @@ def generate_add_plan_id_fkey_triggers():
     RETURNS TRIGGER AS $$
     BEGIN
         -- Get the most recent plan whose geometry contains the plan object
-        NEW.plan_id := (
-            SELECT id
-            FROM hame.plan
-            WHERE ST_Contains(geom, NEW.geom)
-            ORDER BY created_at DESC
-            LIMIT 1
-        );
+        IF NEW.plan_id IS NULL THEN
+            NEW.plan_id := (
+                SELECT id
+                FROM hame.plan
+                WHERE ST_Contains(geom, NEW.geom)
+                ORDER BY created_at DESC
+                LIMIT 1
+            );
+        END IF;
         RETURN NEW;
     END;
     $$ language 'plpgsql'
