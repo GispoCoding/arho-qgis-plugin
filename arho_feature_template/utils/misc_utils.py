@@ -102,7 +102,6 @@ def handle_unsaved_changes() -> bool:
 
 def get_active_plan_id():
     """Retrieve the active plan ID stored as a project variable."""
-    # return QgsExpressionContextUtils.projectScope(QgsProject.instance(), "active_plan_id")
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
 
 
@@ -113,3 +112,16 @@ def get_settings():
     proxy_port = settings.value("proxy_port", "5443")
     lambda_url = settings.value("lambda_url", "https://t5w26iqnsf.execute-api.eu-central-1.amazonaws.com/v0/ryhti")
     return proxy_host, proxy_port, lambda_url
+
+
+def get_plan_name(plan_id: str, language: Literal["fin", "eng", "swe"] = "fin") -> str:
+    """Retrieve the name of a plan from the 'Kaava' layer based on its ID."""
+    layer = get_layer_by_name("Kaava")
+    if layer:
+        for feature in layer.getFeatures():
+            if feature["id"] == plan_id:
+                name_field = feature["name"]
+                name = name_field.get(language, "")
+                # Return "Nimetön" if the name is an empty string
+                return name if name.strip() else "Nimetön"
+    return "Nimetön"
