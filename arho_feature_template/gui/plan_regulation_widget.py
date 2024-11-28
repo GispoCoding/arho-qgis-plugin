@@ -46,6 +46,8 @@ ADDITIONAL_INFORMATION_TYPES_WITH_INPUT = ["kayttotarkoituskohdistus"]
 class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan regulation."""
 
+    language = "fin"
+
     delete_signal = pyqtSignal(QWidget)
 
     def __init__(self, config: PlanRegulationConfig, parent=None):
@@ -53,7 +55,6 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        # self.spacer_layout: QBoxLayout
         self.plan_regulation_name: QLineEdit
         self.form_layout: QFormLayout
 
@@ -73,7 +74,11 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         self.plan_regulation_name.setText(config.name)
         self.plan_regulation_name.setReadOnly(True)
         self.init_value_fields()
-        self.init_buttons()
+        self.init_additional_information_btn()
+        self.init_other_information_btn()
+        self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
+        self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
+        self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
     def populate_from_definition(self, definition: PlanRegulationDefinition):
         # Additional information
@@ -108,66 +113,54 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
             msg = f"Invalid input value type for plan regulation: {value_type}"
             raise ValueError(msg)
 
-    def init_buttons(self):
-        # DEL
-        self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
-        self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
+    def init_additional_information_btn(self):
+        informations_dict: dict[str, QMenu] = {}
+        add_later: dict[str, list[str]] = {}
 
-        # ADDITIONAL INFORMATION
-        type_menu = QMenu("Tyyppi", self)
-        type_menu_items = [
-            "Pääkäyttötarkoitus",
-            "Osa-alue",
-            "Poisluettava käyttötarkoitus",
-            "Väliaikainen määräys",
-            "Vaihtoehtoinen",
-            "Ohjeellinen sijainti",
-            "Yhteystarve",
-        ]
+        def _add_action(informations_dict: dict[str, QMenu], parent_id: str, info_type: str):
+            action = informations_dict[parent_id].addAction(info_type)
+            action.triggered.connect(lambda _: self.add_additional_info(info_type))
 
-        for item in type_menu_items:
-            action = type_menu.addAction(item)
-            action.triggered.connect(lambda _, item=item: self.add_additional_info(item))
+        # Iterate code layer and build menus
+        for feature in get_layer_by_name("Lisätiedonlaji").getFeatures():
+            if feature["level"] == 1:
+                menu = QMenu(feature["name"][self.language], self)
+                informations_dict[feature["id"]] = menu
+            else:
+                parent_id = feature["parent_id"]
+                info_type = feature["name"][self.language]
+                if parent_id in informations_dict:
+                    _add_action(informations_dict, parent_id, info_type)
+                else:
+                    if parent_id not in add_later:
+                        add_later[parent_id] = []
+                    add_later[parent_id].append(info_type)
+        for parent_id, additional_information_types in add_later.items():
+            for info_type in additional_information_types:
+                _add_action(informations_dict, parent_id, info_type)
 
-        signifigance_menu = QMenu("Merkittävyys", self)
-        signifigance_menu_items = [
-            "Kansainvälinen",
-            "Valtakunnallinen",
-            "Maakunnallinen",
-            "Seudullinen",
-            "Alueellinen",
-            "Paikallinen",
-        ]
-
-        for item in signifigance_menu_items:
-            action = signifigance_menu.addAction(item)
-            action.triggered.connect(lambda _, item=item: self.add_additional_info(item))
-
-        type_main_menu = QMenu(self)
-        type_main_menu.addMenu(type_menu)
-        type_main_menu.addMenu(signifigance_menu)
-        self.add_additional_information_btn.setMenu(type_main_menu)
+        # Create main menu for btn and add submenus
+        additional_information_type_menu = QMenu(self)
+        for menu in informations_dict.values():
+            additional_information_type_menu.addMenu(menu)
+        self.add_additional_information_btn.setMenu(additional_information_type_menu)
         self.add_additional_information_btn.setIcon(QgsApplication.getThemeIcon("mActionPropertiesWidget.svg"))
 
-        # OTHER INFO / ADD FIELD
+    def init_other_information_btn(self):
         add_field_menu = QMenu(self)
         add_field_menu.addAction("Määräysnumero").triggered.connect(self.add_regulation_number)
         add_field_menu.addAction("Liiteasiakirja").triggered.connect(self.add_file)
         add_field_menu.addAction("Aihetunniste").triggered.connect(self.add_topic_tag)
 
         theme_menu = QMenu("Kaavoitusteema", self)
-        language = "fin"
         for feature in get_layer_by_name("Kaavoitusteemat").getFeatures():
-            name = feature["name"][language]
+            name = feature["name"][self.language]
             action = theme_menu.addAction(name)
             action.triggered.connect(lambda _, name=name: self.add_theme(name))
         add_field_menu.addMenu(theme_menu)
 
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
-
-        # EXPAND BTN
-        self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
     def _on_expand_hide_btn_clicked(self):
         if self.expanded:
