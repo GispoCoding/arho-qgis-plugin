@@ -155,6 +155,7 @@ resource "aws_ecs_service" "x-road_securityserver" {
   # quit terraform until the container has reached steady state:
   # https://stackoverflow.com/questions/75856201/how-to-retrieve-the-public-ip-address-of-an-aws-ecs-contrainer-using-terraform
   enable_ecs_managed_tags = true
+  propagate_tags = "TASK_DEFINITION"
   wait_for_steady_state = true
 
   network_configuration {
