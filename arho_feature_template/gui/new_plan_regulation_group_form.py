@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QDialog, QTreeWidget, QTreeWidgetItem
+from qgis.PyQt.QtWidgets import QDialog, QTextBrowser, QTreeWidget, QTreeWidgetItem
 
 from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, PlanRegulationsSet
 from arho_feature_template.gui.plan_regulation_widget import PlanRegulationWidget
@@ -28,10 +28,12 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.plan_regulations_view: QTreeWidget
         self.plan_regulations_scroll_area_contents: QWidget
         self.plan_regulations_layout: QBoxLayout
+        self.plan_regulation_info: QTextBrowser
 
         # INIT
         self.initialize_plan_regulations()
         self.plan_regulations_view.itemDoubleClicked.connect(self.add_selected_plan_regulation)
+        self.plan_regulations_view.itemClicked.connect(self.update_selected_plan_regulation)
 
     def _initalize_regulation_from_config(self, config: PlanRegulationConfig, parent: QTreeWidgetItem | None = None):
         tree_item = QTreeWidgetItem(parent)
@@ -49,6 +51,10 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
     def initialize_plan_regulations(self):
         for config in PlanRegulationsSet.get_regulations():
             self._initalize_regulation_from_config(config)
+
+    def update_selected_plan_regulation(self, item: QTreeWidgetItem, column: int):
+        config: PlanRegulationConfig = item.data(column, Qt.UserRole)  # Retrieve the associated config
+        self.plan_regulation_info.setText(config.description)
 
     def add_selected_plan_regulation(self, item: QTreeWidgetItem, column: int):
         config: PlanRegulationConfig = item.data(column, Qt.UserRole)  # Retrieve the associated config
