@@ -1,12 +1,98 @@
 version: 1
 plan_regulations:
 
+  # Asumisen alue (valmis)
+
+  # Taajamatoiminnan alue (valmis)
+
+  # Työpaikkojen alue (valmis)
+
+  # Vapa-ajan asumisen ja matkailun alue (valmis)
+
+  # Viheralue (valmis)
   - regulation_code: viheralue
     category_only: true
 
+  - regulation_code: vihertehokkuus
+    value_type: positiivinen desimaali
+    unit: m2/m2
+
+  # Maa- ja metsätalousalue (valmis)
+
+  # Erityisalue (valmis)
+  - regulation_code: ymparistohairionTorjunnanRakenne
+    category_only: true
+
+  # Liikennealue (valmis)
+  - regulation_code: terminaalialue
+    category_only: true
+
+  - regulation_code: vesiliikenteenAlue
+    category_only: true
+
+  - regulation_code: vesivayla
+    category_only: true
+
+  # Vesialue (valmis)
+
+  # Ympäristöarvojen alue (valmis)
   - regulation_code: ymparistoarvojenAlue
     category_only: true
 
+  - regulation_code: luontoarvoiltaanArvokasAlue
+    category_only: true
+
+  - regulation_code: kulttuuriymparistoarvojenAlue
+    category_only: true
+
+  # Ympäristöhäiriöalue (valmis)
+
+  # Kunnan tai kaupungin osa (valmis)
+
+  # Korttelialue tai korttelialueen osa (valmis)
+
+  # Rakennuspaikka (valmis)
+
+  # Rakennusala (valmis)
+
+  # Alue, jota koskee kehittämisperiaate (valmis)
+  - regulation_code: alueJotaKoskeeKehittamisperiaate
+    category_only: true
+
+  # Kehittämisalue (valmis)
+
+  # Suunnittelutarvealue (valmis)
+
+  # Nimistö (valmis)
+  - regulation_code: nimisto
+    category_only: true
+
+  - regulation_code: kadunTaiTienNimi
+    value_type: kieliversioitu teksti
+
+  - regulation_code: torinTaiKatuaukionNimi
+    value_type: kieliversioitu teksti
+
+  - regulation_code: puistonTaiMuunYleisenAlueenNimi
+    value_type: kieliversioitu teksti
+
+  - regulation_code: kaupunginTaiKunnanosanNimi
+    value_type: kieliversioitu teksti
+
+  # Aluetunnukset (valmis)
+  - regulation_code: aluetunnukset
+    category_only: true
+
+  - regulation_code: korttelinNumero
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: tontinTaiRakennuspaikanNumero
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: kaupunginTaiKunnanosanNumero
+    value_type: positiivinen kokonaisluku
+
+  # Rakentamisen määrä (valmis)
   - regulation_code: rakentamisenMaara
     category_only: true
 
@@ -59,6 +145,43 @@ plan_regulations:
   - regulation_code: tuulivoimaloidenMaara
     value_type: positiivinen kokonaisluku
 
+  # Korkeusasema (valmis)
+  - regulation_code: korkeusasema
+    category_only: true
+
+  - regulation_code: maanpinnanKorkeusasema
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: vesikatonYlimmanKohdanKorkeusasema
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: julkisivupinnanJaVesikatonLeikkauskohdanKorkeusasema
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: julkisivunEnimmaiskorkeus
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: rakennustenRakenteidenJaLaitteidenYlinKorkeusasema
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: alinPainovoimainenViemarointitaso
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: rakennustenRakenteidenJaLaitteidenAlinKorkeusasema
+    value_type: desimaali
+    unit: m
+
+  - regulation_code: tuulivoimalanEnimmaiskorkeus
+    value_type: positiivinen kokonaisluku
+    unit: m
+
+  # Rakentamisen tapa (valmis)
   - regulation_code: rakentamisenTapa
     category_only: true
 
@@ -70,29 +193,33 @@ plan_regulations:
     value_type: positiivinen desimaali
     unit: dB
 
+  # Liikenteen suureet (valmis)
+  - regulation_code: liikenteenSuureet
+    category_only: true
+
+  - regulation_code: pysakoinninMaara
+    category_only: true
+
+  - regulation_code: autopaikkojenMaara
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: autopaikkojenMaaraAsuntoaKohden
+    value_type: positiivinen desimaali
+
+  - regulation_code: kerrosneliomaaraYhtaAutopaikkaaKohden
+    value_type: positiivinen kokonaisluku
+    unit: k-m2
+
+  - regulation_code: pyorapaikkojenMaara
+    value_type: positiivinen kokonaisluku
+
+  - regulation_code: pyorapaikkojenMaaraAsuntoaKohden
+    value_type: positiivinen desimaali
+
+  - regulation_code: kerrosneliomaaraYhtaPyorapaikkaaKohden
+    value_type: positiivinen kokonaisluku
+    unit: k-m2
+
+  # Sanallinen määräys
   - regulation_code: sanallinenMaarays
-    value_type: kieliversioitu teksti
-
-  - regulation_code: rakentamisrajoitusYleiskaava
-    value_type: kieliversioitu teksti
-
-  - regulation_code: rakentamisrajoitusMaakuntakaava
-    value_type: kieliversioitu teksti
-
-  - regulation_code: maaraAikainenRakentamisrajoitus
-    value_type: kieliversioitu teksti
-
-  - regulation_code: toimenpiderajoitus
-    value_type: kieliversioitu teksti
-
-  - regulation_code: maaraAikainenKieltoRakennuksenRakentamiseksi
-    value_type: kieliversioitu teksti
-
-  - regulation_code: suunnittelumaarays
-    value_type: kieliversioitu teksti
-
-  - regulation_code: rakentamismaarays
-    value_type: kieliversioitu teksti
-
-  - regulation_code: suojelumaarays
     value_type: kieliversioitu teksti
