@@ -19,7 +19,7 @@ from qgis.PyQt.QtWidgets import (
     QWidget,
 )
 
-from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, Unit, ValueType
+from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, ValueType
 from arho_feature_template.utils.misc_utils import get_additional_information_name, get_layer_by_name
 
 if TYPE_CHECKING:
@@ -116,7 +116,7 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
             raise ValueError(error_msg)
 
     def _add_value_input(
-        self, value_type: ValueType, unit: Unit | None, default_value: str | Number | list[int] | None = None
+        self, value_type: ValueType, unit: str | None, default_value: str | Number | list[int] | None = None
     ):
         base_error_msg = f"Invalid type for default value {type(default_value)}."
         if value_type in [ValueType.DECIMAL, ValueType.POSITIVE_DECIMAL]:
@@ -214,7 +214,7 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         if not self.expanded:
             self._on_expand_hide_btn_clicked()
 
-    def add_decimal_input(self, value_type: ValueType, unit: Unit | None, default_value: Number | None = None):
+    def add_decimal_input(self, value_type: ValueType, unit: str | None, default_value: Number | None = None):
         value_widget = QgsDoubleSpinBox()
         label = QLabel("Arvo")
         if value_type == ValueType.POSITIVE_DECIMAL:
@@ -225,24 +225,24 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
             label.setToolTip("Tyyppi: desimaali")
         value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         if unit:
-            value_widget.setSuffix(f" {unit.value}")
+            value_widget.setSuffix(f" {unit}")
         if default_value:
             value_widget.setValue(default_value)
         self._add_widgets_to_form(label, value_widget)
 
-    def add_positive_integer_input(self, unit: Unit | None, default_value: int | None = None):
+    def add_positive_integer_input(self, unit: str | None, default_value: int | None = None):
         value_widget = QgsSpinBox()
         value_widget.setMinimum(0)
         value_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         if unit:
-            value_widget.setSuffix(f" {unit.value}")
+            value_widget.setSuffix(f" {unit}")
         label = QLabel("Arvo")
         label.setToolTip("Tyyppi: kokonaisluku (positiivinen)")
         if default_value:
             value_widget.setValue(default_value)
         self._add_widgets_to_form(label, value_widget)
 
-    def add_positive_integer_range_input(self, unit: Unit | None, default_values: list[int] | None = None):
+    def add_positive_integer_range_input(self, unit: str | None, default_values: list[int] | None = None):
         min_widget = QgsSpinBox()
         min_widget.setMinimum(0)
         min_label = QLabel("Arvo minimi")
@@ -253,8 +253,8 @@ class PlanRegulationWidget(QWidget, FormClass):  # type: ignore
         max_label = QLabel("Arvo maksimi")
         max_label.setToolTip("Tyyppi: kokonaisluku arvoväli (positiivinen)")
         if unit:
-            min_widget.setSuffix(f" {unit.value}")
-            max_widget.setSuffix(f" {unit.value}")
+            min_widget.setSuffix(f" {unit}")
+            max_widget.setSuffix(f" {unit}")
         if default_values:
             min_widget.setValue(default_values[0])
             max_widget.setValue(default_values[1])

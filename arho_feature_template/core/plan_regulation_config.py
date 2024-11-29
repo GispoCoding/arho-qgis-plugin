@@ -46,14 +46,14 @@ class ValueType(Enum):
     VERSIONED_TEXT = "kieliversioitu teksti"
 
 
-class Unit(Enum):
-    SQUARE_METERS = "k-m2"
-    CUBIC_METERS = "m3"
-    EFFICIENCY_RATIO = "k-m2/m2"
-    PERCENTAGE = "prosentti"
-    AREA_RATIO = "m2/k-m2"
-    DEGREES = "°"
-    DECIBEL = "dB"
+# class Unit(Enum):
+#     SQUARE_METERS = "k-m2"
+#     CUBIC_METERS = "m3"
+#     EFFICIENCY_RATIO = "k-m2/m2"
+#     PERCENTAGE = "prosentti"
+#     AREA_RATIO = "m2/k-m2"
+#     DEGREES = "°"
+#     DECIBEL = "dB"
 
 
 def get_name_mapping_for_plan_regulations(layer_name: str) -> dict[str, dict[str, str]] | None:
@@ -129,7 +129,7 @@ class PlanRegulationsSet:
                 if data:
                     regulation_config.category_only = data.get("category_only", False)
                     regulation_config.value_type = ValueType(data["value_type"]) if "value_type" in data else None
-                    regulation_config.unit = Unit(data["unit"]) if "unit" in data else None
+                    regulation_config.unit = data["unit"] if "unit" in data else None
 
                 # Top-level, add to list
                 if not regulation_config.parent_id:
@@ -173,7 +173,7 @@ class PlanRegulationConfig:
 
     category_only: bool = False
     value_type: ValueType | None = None
-    unit: Unit | None = None
+    unit: str | None = None
 
     @classmethod
     def from_feature(cls, feature: QgsFeature, language: str = "fin") -> PlanRegulationConfig:
