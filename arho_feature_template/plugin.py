@@ -9,7 +9,6 @@ from qgis.utils import iface
 
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.plan_manager import PlanManager
-from arho_feature_template.core.plan_regulation_config import PlanRegulationsSet
 from arho_feature_template.gui.new_plan_regulation_group_form import NewPlanRegulationGroupForm
 from arho_feature_template.gui.plugin_settings import PluginSettings
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
@@ -43,9 +42,6 @@ class Plugin:
             pass
         self.actions: list[QAction] = []
         self.menu = Plugin.name
-
-        # Initialize plan regulations set
-        PlanRegulationsSet.initialize()
 
     def add_action(
         self,

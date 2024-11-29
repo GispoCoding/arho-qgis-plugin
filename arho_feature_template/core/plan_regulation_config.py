@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from numbers import Number
     from typing import Literal
 
+    from qgis.core import QgsFeature
     from qgis.gui import QgisInterface
 
     iface: QgisInterface = cast("QgisInterface", iface)  # type: ignore[no-redef]
@@ -68,7 +69,7 @@ class PlanRegulationsSet:
 
     version: str
     regulations: list[PlanRegulationConfig]
-    regulations_dict: dict[str, PlanRegulationConfig] = field(default_factory=dict)
+    regulations_dict: dict[str, PlanRegulationConfig]
 
     _instance: PlanRegulationsSet | None = None
 
@@ -76,7 +77,7 @@ class PlanRegulationsSet:
     def get_instance(cls) -> PlanRegulationsSet:
         """Get the singleton instance, if initialized."""
         if cls._instance is None:
-            raise UninitializedError
+            return cls.initialize()
         return cls._instance
 
     @classmethod
@@ -101,71 +102,98 @@ class PlanRegulationsSet:
         type_of_plan_regulations_layer_name="Kaavamääräyslaji",
         language: Literal["fin", "eng", "swe"] = "fin",
     ) -> PlanRegulationsSet:
-        # Initialize PlanRegulationsSet and PlanRegulationConfigs from config file
+        # Initialize PlanRegulationsSet and PlanRegulationConfigs from QGIS layer and config file
+
+        # 1. Read config file into a dict
         with config_path.open(encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-            cls._instance = cls.from_dict(data)
+            config_data = yaml.safe_load(f)
 
-        regulations = cls.get_regulations()
-        regulations_dict: dict[str, PlanRegulationConfig] = {}
-        mapping = get_name_mapping_for_plan_regulations(type_of_plan_regulations_layer_name)
+        # 2. Read code layer
+        layer = get_layer_by_name(type_of_plan_regulations_layer_name)
+        if layer is None:
+            msg = f"Could not find layer {type_of_plan_regulations_layer_name}!"
+            raise KeyError(msg)
 
-        # Add names to dictionary, add names to regulations
-        for regulation in regulations:
-            regulation.add_to_dictionary(regulations_dict)
-            if mapping:
-                regulation.add_name(mapping, language)
+        # 3. Initialize regulation configs from layer. Storing them by their ID is handy for adding childs later
+        id_to_regulation_map: dict[str, PlanRegulationConfig] = {
+            feature["id"]: PlanRegulationConfig.from_feature(feature, language) for feature in layer.getFeatures()
+        }
 
-        cls._instance.regulations_dict = regulations_dict
-        logger.info("PlanRegulationsSet initialized successfully.")
-        return cls._instance
-
-    @classmethod
-    def from_dict(cls, data: dict) -> PlanRegulationsSet:
-        file_version = data["version"]
+        # 4. Add information from config file (value, unit, category only) and link child regulations
         try:
-            return cls(
-                version=file_version,
-                regulations=[PlanRegulationConfig.from_dict(config) for config in data["plan_regulations"]],
-            )
+            regulation_data: dict = {data["regulation_code"]: data for data in config_data["plan_regulations"]}
+            top_level_regulations: list[PlanRegulationConfig] = []
+            for regulation_config in id_to_regulation_map.values():
+                # Add possible information from config data file
+                data = regulation_data.get(regulation_config.regulation_code)
+                if data:
+                    regulation_config.category_only = data.get("category_only", False)
+                    regulation_config.value_type = ValueType(data["value_type"]) if "value_type" in data else None
+                    regulation_config.unit = Unit(data["unit"]) if "unit" in data else None
+
+                # Top-level, add to list
+                if not regulation_config.parent_id:
+                    top_level_regulations.append(regulation_config)
+                else:
+                    # Add as child of another regulation
+                    id_to_regulation_map[regulation_config.parent_id].child_regulations.append(regulation_config)
         except KeyError as e:
             raise ConfigSyntaxError(str(e)) from e
+
+        # 5. Create dictionary, useful when creating PlanRegulationDefinitions at least
+        regulations_dict: dict[str, PlanRegulationConfig] = {}
+        for reg in top_level_regulations:
+            reg.add_to_dictionary(regulations_dict)
+
+        # 5. Create instance
+        cls._instance = cls(
+            version=config_data["version"], regulations=top_level_regulations, regulations_dict=regulations_dict
+        )
+        logger.info("PlanRegulationsSet initialized successfully.")
+        return cls._instance
 
 
 @dataclass
 class PlanRegulationConfig:
-    """Describes the configuration of a plan regulation."""
+    """
+    Describes the configuration of a plan regulation.
 
+    Combination of information read from code layer in QGIS / DB and other information
+    from a configuration file.
+    """
+
+    id: str
     regulation_code: str
     name: str
-    category_only: bool
-    value_type: ValueType | None
-    unit: Unit | None
-    child_regulations: list[PlanRegulationConfig]
+    description: str
+    status: str
+    level: int
+    parent_id: str | None
+    child_regulations: list[PlanRegulationConfig] = field(default_factory=list)
+
+    category_only: bool = False
+    value_type: ValueType | None = None
+    unit: Unit | None = None
 
     @classmethod
-    def from_dict(cls, data: dict) -> PlanRegulationConfig:
+    def from_feature(cls, feature: QgsFeature, language: str = "fin") -> PlanRegulationConfig:
         """
-        Initialize PlanRegulationConfig from dict.
+        Initialize PlanRegulationConfig from QgsFeature.
 
-        Intializes child regulations recursively.
+        Child regulations, value type ,category only and unit need to be set separately.
         """
         return cls(
-            regulation_code=data["regulation_code"],
-            name=data["regulation_code"],
-            category_only=data.get("category_only", False),
-            value_type=ValueType(data["value_type"]) if "value_type" in data else None,
-            unit=Unit(data["unit"]) if "unit" in data else None,
-            child_regulations=[PlanRegulationConfig.from_dict(config) for config in data.get("child_regulations", [])],
+            id=feature["id"],
+            regulation_code=feature["value"],
+            name=feature["name"][language],
+            description=feature["description"][language],
+            status=feature["status"],
+            level=feature["level"],
+            parent_id=feature["parent_id"],
         )
 
-    def add_name(self, code_to_name_mapping: dict[str, dict[str, str]], language: Literal["fin", "eng", "swe"]):
-        language_to_name_dict = code_to_name_mapping.get(self.regulation_code)
-        self.name = language_to_name_dict[language] if language_to_name_dict else self.regulation_code
-        for regulation in self.child_regulations:
-            regulation.add_name(code_to_name_mapping, language)
-
     def add_to_dictionary(self, dictionary: dict[str, PlanRegulationConfig]):
+        """Add child regulations to dictionary too."""
         dictionary[self.regulation_code] = self
         for regulation in self.child_regulations:
             regulation.add_to_dictionary(dictionary)
