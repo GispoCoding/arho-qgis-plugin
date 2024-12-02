@@ -4,6 +4,7 @@ import logging
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, TypedDict, cast
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import base
 import boto3
@@ -47,6 +48,8 @@ https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/P
 # Boto3 and db helper initialization should go here.
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
+LOCAL_TZ = ZoneInfo("Europe/Helsinki")
+
 # write access is required to update plan information after
 # validating or POSTing data
 db_helper = DatabaseHelper(user=User.READ_WRITE)
@@ -175,6 +178,7 @@ class RyhtiPlan(TypedDict, total=False):
     geographicalArea: Dict
     periodOfValidity: Period | None
     approvalDate: str | None
+    planMaps: List
     generalRegulationGroups: List[Dict]
     planDescription: str
     planObjects: List
@@ -404,25 +408,40 @@ class RyhtiClient:
         return None
 
     def get_lifecycle_dates(
-        self, plan_base: base.PlanBase, status_value: str
+        self, plan_base: base.PlanBase, status_value: str, datetimes: bool = True
     ) -> Optional[Period]:
         """
-        Returns the start and end dates of a lifecycle status for object, or
-        None if no dates are found.
+        Returns the start and end datetimes of a lifecycle status for object, or
+        None if no datetimes are found. Datetimes are isoformatted UTC, but instead
+        of +00:00, Ryhti API requires Z.
+
+        Optionally, only dates instead of datetimes may be returned. Dates must be
+        in the local timezone.
         """
         for lifecycle_date in plan_base.lifecycle_dates:
-            # Note that the lifecycle status fetched from database
-            # and the one in the plan are not the same sqlalchemy object,
-            # because they are fetched in different sessions!
             if lifecycle_date.lifecycle_status.value == status_value:
                 return {
                     "begin": (
-                        lifecycle_date.starting_at.date().isoformat()
+                        (
+                            lifecycle_date.starting_at.isoformat().replace(
+                                "+00:00", "Z"
+                            )
+                            if datetimes
+                            else lifecycle_date.starting_at.astimezone(LOCAL_TZ)
+                            .date()
+                            .isoformat()
+                        )
                         if lifecycle_date.starting_at
                         else None
                     ),
                     "end": (
-                        lifecycle_date.ending_at.date().isoformat()
+                        (
+                            lifecycle_date.ending_at.isoformat().replace("+00:00", "Z")
+                            if datetimes
+                            else lifecycle_date.ending_at.astimezone(LOCAL_TZ)
+                            .date()
+                            .isoformat()
+                        )
                         if lifecycle_date.ending_at
                         else None
                     ),
@@ -669,6 +688,8 @@ class RyhtiClient:
         plan_dictionary["approvalDate"] = (
             period_of_approval["begin"] if period_of_approval else None
         )
+        # TODO: include maps
+        plan_dictionary["planMaps"] = []
 
         return plan_dictionary
 
@@ -707,7 +728,7 @@ class RyhtiClient:
             entry["plans"] = [self.plan_dictionaries[plan.id]]
 
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value
+                plan, plan.lifecycle_status.value, datetimes=False
             )
             if not period_of_current_status:
                 raise AssertionError(
@@ -740,14 +761,16 @@ class RyhtiClient:
                 TypeOfProcessingEvent, event_value
             )
 
+            # Handling event time is not time after all. It must be a date :D
             period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value
+                plan, plan.lifecycle_status.value, datetimes=False
             )
             if not period_of_current_status:
                 raise AssertionError(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
             entry["eventTime"] = period_of_current_status["begin"]
+            entry["cancelled"] = False
 
             events.append(entry)
         return events
@@ -780,11 +803,16 @@ class RyhtiClient:
                 raise AssertionError(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
-            # Interaction eventTime is a period, not a single date. Let us keep it
-            # a zero length period at the moment though.
+            # Interaction eventTime is a period, not a single date. Nähtävilläoloaika
+            # is 30 days.
             entry["eventTime"] = {
                 "begin": (period_of_current_status["begin"]),
-                "end": (period_of_current_status["begin"]),
+                "end": (
+                    datetime.datetime.fromisoformat(period_of_current_status["begin"])
+                    + datetime.timedelta(days=30)
+                )
+                .isoformat()
+                .replace("+00:00", "Z"),
             }
 
             events.append(entry)
@@ -855,15 +883,23 @@ class RyhtiClient:
         # only contains description, and only in one language.
         plan_matter["name"] = plan.name
 
-        period_of_initiation = self.get_lifecycle_dates(plan, self.pending_status_value)
+        dates_of_initiation = self.get_lifecycle_dates(
+            plan, self.pending_status_value, datetimes=False
+        )
         plan_matter["timeOfInitiation"] = (
-            period_of_initiation["begin"] if period_of_initiation else None
+            dates_of_initiation["begin"] if dates_of_initiation else None
         )
         # Hooray, unlike plan, the plan *matter* description allows multilanguage data!
         plan_matter["description"] = plan.description
         plan_matter["producerPlanIdentifier"] = plan.producers_plan_identifier
-        plan_matter["caseIdentifiers"] = [plan.matter_management_identifier]
-        plan_matter["recordNumbers"] = [plan.record_number]
+        plan_matter["caseIdentifiers"] = (
+            [plan.matter_management_identifier]
+            if plan.matter_management_identifier
+            else []
+        )
+        plan_matter["recordNumbers"] = (
+            [plan.record_number] if plan.record_number else []
+        )
         # Apparently Ryhti plans may cover multiple administrative areas, so the region
         # identifier has to be embedded in a list.
         plan_matter["administrativeAreaIdentifiers"] = [
@@ -1286,7 +1322,7 @@ class RyhtiClient:
 
                 LOGGER.info(details[plan_id])
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
-                plan.validated_at = datetime.datetime.now()
+                plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
             session.commit()
         return Response(
             statusCode=200,
@@ -1375,7 +1411,7 @@ class RyhtiClient:
 
                 LOGGER.info(details[plan_id])
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
-                plan.validated_at = datetime.datetime.now()
+                plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
             session.commit()
         return Response(
             statusCode=200,
@@ -1425,7 +1461,7 @@ class RyhtiClient:
                         plan_id
                     ] = f"Plan matter phase PUT successful for {plan_id}!"
                     plan.validation_errors = "Kaava-asian vaihe on päivitetty Ryhtiin."
-                    plan.exported_at = datetime.datetime.now()
+                    plan.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
                     plan.to_be_exported = False
                 elif response["status"] == 201:
                     details[plan_id] = (
@@ -1434,7 +1470,7 @@ class RyhtiClient:
                         + "!"
                     )
                     plan.validation_errors = "Uusi kaava-asian vaihe on viety Ryhtiin."
-                    plan.exported_at = datetime.datetime.now()
+                    plan.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
                     plan.to_be_exported = False
                 else:
                     details[plan_id] = f"Plan matter POST FAILED for {plan_id}."

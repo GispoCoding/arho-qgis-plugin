@@ -14,6 +14,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.sql import func
+from sqlalchemy.types import TIMESTAMP
 from typing_extensions import Annotated
 
 PROJECT_SRID = 3067
@@ -31,6 +32,7 @@ class Base(DeclarativeBase):
         MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
         MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),
         Range[float]: NUMRANGE,
+        datetime: TIMESTAMP(timezone=True),
     }
 
 

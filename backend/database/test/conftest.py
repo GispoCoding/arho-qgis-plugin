@@ -4,6 +4,7 @@ import timeit
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Mapping, Optional
+from zoneinfo import ZoneInfo
 
 import codes
 import models
@@ -32,6 +33,7 @@ USE_DOCKER = (
     "1"  # Use "" if you don't want pytest-docker to start and destroy the containers
 )
 SCHEMA_FILES_PATH = Path(".")
+LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -1169,7 +1171,7 @@ def plan_proposition_instance(
 def source_data_instance(session, plan_instance, type_of_source_data_instance):
     instance = models.SourceData(
         additional_information_uri="http://test.fi",
-        detachment_date=datetime.now(),
+        detachment_date=datetime.now(tz=LOCAL_TZ),
         plan=plan_instance,
         type_of_source_data=type_of_source_data_instance,
     )
@@ -1301,7 +1303,7 @@ def pending_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=pending_status_instance,
-        starting_at=datetime(2024, 1, 1),
+        starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1317,7 +1319,7 @@ def preparation_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=preparation_status_instance,
-        starting_at=datetime(2024, 2, 1),
+        starting_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1343,7 +1345,7 @@ def approved_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=approved_status_instance,
-        starting_at=datetime(2024, 3, 1),
+        starting_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1369,7 +1371,7 @@ def valid_date_instance(
     instance = models.LifeCycleDate(
         plan=plan_instance,
         lifecycle_status=valid_status_instance,
-        starting_at=datetime(2024, 4, 1),
+        starting_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1551,6 +1553,7 @@ def desired_plan_dict(
                 ],
             },
         },
+        "planMaps": [],
         # TODO: plan documents to be added.
         "periodOfValidity": None,
         "approvalDate": None,
@@ -1862,6 +1865,7 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
         "planObjects": [],
         "planRegulationGroups": [],
         "planRegulationGroupRelations": [],
+        "planMaps": [],
     }
 
 
@@ -1898,8 +1902,8 @@ def desired_plan_matter_dict(
         "timeOfInitiation": "2024-01-01",
         "description": plan_instance.description,
         "producerPlanIdentifier": plan_instance.producers_plan_identifier,
-        "caseIdentifiers": [plan_instance.matter_management_identifier],
-        "recordNumbers": [plan_instance.record_number],
+        "caseIdentifiers": [],
+        "recordNumbers": [],
         "administrativeAreaIdentifiers": ["01"],
         "digitalOrigin": "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01",
         "planMatterPhases": [
@@ -1911,12 +1915,16 @@ def desired_plan_matter_dict(
                     "handlingEventKey": "whatever",
                     "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
                     "eventTime": "2024-02-01",
+                    "cancelled": False,
                 },
                 "interactionEvents": [
                     {
                         "interactionEventKey": "whatever",
                         "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
-                        "eventTime": {"begin": "2024-02-01", "end": "2024-02-01"},
+                        "eventTime": {
+                            "begin": "2024-01-31T22:00:00Z",
+                            "end": "2024-03-01T22:00:00Z",
+                        },
                     },
                 ],
                 "planDecision": {
