@@ -12,7 +12,6 @@ from base import (  # noqa
     language_str,
     numeric_range,
     timestamp,
-    unique_str,
 )
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
@@ -195,10 +194,16 @@ class PlanRegulationGroup(VersionedBase):
     __tablename__ = "plan_regulation_group"
     __table_args__ = (
         Index("ix_plan_regulation_group_plan_id_ordering", "plan_id", "ordering"),
+        Index(
+            "ix_plan_regulation_group_plan_id_short_name",
+            "plan_id",
+            "short_name",
+            unique=True,
+        ),
         VersionedBase.__table_args__,
     )
 
-    short_name: Mapped[unique_str]
+    short_name: Mapped[str] = mapped_column(nullable=True)
     name: Mapped[language_str]
 
     plan_id: Mapped[uuid.UUID] = mapped_column(
