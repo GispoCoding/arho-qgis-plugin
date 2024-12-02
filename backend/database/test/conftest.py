@@ -3,7 +3,7 @@ import time
 import timeit
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional
+from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
 import codes
 import models
@@ -26,6 +26,24 @@ from sqlalchemy.orm import Session, sessionmaker
 hame_count: int = 14  # adjust me when adding tables
 codes_count: int = 16  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
+
+
+class IndexMeta(NamedTuple):
+    columns: Tuple[str, ...]
+    unique: bool
+
+
+ordering_index_by_table = {
+    "plan_regulation_group": IndexMeta(("plan_id", "ordering"), False),
+    "plan_regulation": IndexMeta(("plan_regulation_group_id", "ordering"), True),
+    "plan_proposition": IndexMeta(("plan_regulation_group_id", "ordering"), True),
+    "land_use_area": IndexMeta(("plan_id", "ordering"), True),
+    "other_area": IndexMeta(("plan_id", "ordering"), True),
+    "line": IndexMeta(("plan_id", "ordering"), True),
+    "land_use_point": IndexMeta(("plan_id", "ordering"), True),
+    "other_point": IndexMeta(("plan_id", "ordering"), True),
+}
+
 
 USE_DOCKER = (
     "1"  # Use "" if you don't want pytest-docker to start and destroy the containers
@@ -350,14 +368,19 @@ def assert_database_is_alright(
                 None,
                 f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",
             ) in indexes
+
+        # Check ordering index
         if ("ordering",) in columns:
-            assert (
+            index_meta = ordering_index_by_table[table_name]
+            index_type = "UNIQUE INDEX" if index_meta.unique else "INDEX"
+            expected_row = (
                 "hame",
                 table_name,
-                f"ix_hame_{table_name}_ordering",
+                f"ix_{table_name}_{'_'.join(index_meta.columns)}",
                 None,
-                f"CREATE INDEX ix_hame_{table_name}_ordering ON hame.{table_name} USING btree (ordering)",
-            ) in indexes
+                f"CREATE {index_type} ix_{table_name}_{'_'.join(index_meta.columns)} ON hame.{table_name} USING btree ({', '.join(index_meta.columns)})",
+            )
+            assert expected_row in indexes
 
     # Check code tables
     cur.execute("SELECT tablename, tableowner FROM pg_tables WHERE schemaname='codes';")

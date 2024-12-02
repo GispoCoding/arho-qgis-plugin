@@ -15,7 +15,7 @@ from base import (  # noqa
     unique_str,
 )
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
-from sqlalchemy import Column, ForeignKey, Table, Uuid
+from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -193,6 +193,10 @@ class PlanRegulationGroup(VersionedBase):
     """
 
     __tablename__ = "plan_regulation_group"
+    __table_args__ = (
+        Index("ix_plan_regulation_group_plan_id_ordering", "plan_id", "ordering"),
+        VersionedBase.__table_args__,
+    )
 
     short_name: Mapped[unique_str]
     name: Mapped[language_str]
@@ -209,7 +213,7 @@ class PlanRegulationGroup(VersionedBase):
     )
     plan: Mapped["Plan"] = relationship()
 
-    ordering: Mapped[Optional[int]] = mapped_column(index=True)
+    ordering: Mapped[Optional[int]]
 
     # värikoodi?
     type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
@@ -292,6 +296,15 @@ class PlanRegulation(PlanBase):
     """
 
     __tablename__ = "plan_regulation"
+    __table_args__ = (
+        Index(
+            "ix_plan_regulation_plan_regulation_group_id_ordering",
+            "plan_regulation_group_id",
+            "ordering",
+            unique=True,
+        ),
+        PlanBase.__table_args__,
+    )
 
     plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
@@ -446,7 +459,7 @@ class PlanRegulation(PlanBase):
     unit: Mapped[str] = mapped_column(nullable=True)
     text_value: Mapped[language_str]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
-    ordering: Mapped[Optional[int]] = mapped_column(index=True)
+    ordering: Mapped[Optional[int]]
 
 
 class PlanProposition(PlanBase):
@@ -455,6 +468,15 @@ class PlanProposition(PlanBase):
     """
 
     __tablename__ = "plan_proposition"
+    __table_args__ = (
+        Index(
+            "ix_plan_proposition_plan_regulation_group_id_ordering",
+            "plan_regulation_group_id",
+            "ordering",
+            unique=True,
+        ),
+        PlanBase.__table_args__,
+    )
 
     plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
@@ -471,7 +493,7 @@ class PlanProposition(PlanBase):
     # Let's load all the codes for objects joined.
     plan_theme = relationship("PlanTheme", backref="plan_propositions", lazy="joined")
     text_value: Mapped[language_str]
-    ordering: Mapped[Optional[int]] = mapped_column(index=True)
+    ordering: Mapped[Optional[int]]
 
 
 class SourceData(VersionedBase):

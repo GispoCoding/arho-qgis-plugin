@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID, Range
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -56,7 +56,7 @@ class VersionedBase(Base):
     """
 
     __abstract__ = True
-    __table_args__ = {"schema": "hame"}
+    __table_args__: Any = {"schema": "hame"}
 
     # Go figure. We have to *explicitly state* id is a mapped column, because id will
     # have to be defined inside all the subclasses for relationship remote_side
@@ -152,11 +152,24 @@ class PlanObjectBase(PlanBase):
 
     __abstract__ = True
 
+    @declared_attr.directive
+    @classmethod
+    def __table_args__(cls):
+        return (
+            Index(
+                f"ix_{cls.__tablename__}_plan_id_ordering",
+                "plan_id",
+                "ordering",
+                unique=True,
+            ),
+            PlanBase.__table_args__,
+        )
+
     description: Mapped[language_str]
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)
-    ordering: Mapped[Optional[int]] = mapped_column(index=True)
+    ordering: Mapped[Optional[int]]
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
         index=True,
