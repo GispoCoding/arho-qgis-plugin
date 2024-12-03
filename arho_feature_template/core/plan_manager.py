@@ -18,50 +18,52 @@ class PlanManager:
     def __init__(self):
         self.json_plan_path = None
         self.json_plan_outline_path = None
-        self.kaava_layer = get_layer_by_name("Kaava")
 
     def add_new_plan(self):
         """Initiate the process to add a new plan to the Kaava layer."""
         if not handle_unsaved_changes():
             return
 
+        kaava_layer = get_layer_by_name("Kaava")
         self.clear_all_filters()
 
-        if not self.kaava_layer:
+        if not kaava_layer:
             return
 
-        if not self.kaava_layer.isEditable():
-            self.kaava_layer.startEditing()
+        if not kaava_layer.isEditable():
+            kaava_layer.startEditing()
 
-        iface.setActiveLayer(self.kaava_layer)
+        iface.setActiveLayer(kaava_layer)
         iface.actionAddFeature().trigger()
 
         # Connect the featureAdded signal to a callback method
-        self.kaava_layer.featureAdded.connect(self.feature_added)
+        kaava_layer.featureAdded.connect(self.feature_added)
 
     def feature_added(self):
         """Callback for when a new feature is added to the Kaava layer."""
-        if not self.kaava_layer:
+
+        kaava_layer = get_layer_by_name("Kaava")
+        if not kaava_layer:
             return
 
         # Disconnect the signal to avoid repeated triggers
-        self.kaava_layer.featureAdded.disconnect()
+        kaava_layer.featureAdded.disconnect()
 
-        feature_ids_before_commit = self.kaava_layer.allFeatureIds()
+        feature_ids_before_commit = kaava_layer.allFeatureIds()
 
-        if self.kaava_layer.isEditable():
-            if not self.kaava_layer.commitChanges():
+        if kaava_layer.isEditable():
+            if not kaava_layer.commitChanges():
                 iface.messageBar().pushMessage("Error", "Failed to commit changes to the layer.", level=3)
                 return
         else:
             iface.messageBar().pushMessage("Error", "Layer is not editable.", level=3)
             return
 
-        feature_ids_after_commit = self.kaava_layer.allFeatureIds()
+        feature_ids_after_commit = kaava_layer.allFeatureIds()
         new_feature_id = next((fid for fid in feature_ids_after_commit if fid not in feature_ids_before_commit), None)
 
         if new_feature_id is not None:
-            new_feature = self.kaava_layer.getFeature(new_feature_id)
+            new_feature = kaava_layer.getFeature(new_feature_id)
             if new_feature.isValid():
                 feature_id_value = new_feature["id"]
                 update_selected_plan(LandUsePlan(feature_id_value))
