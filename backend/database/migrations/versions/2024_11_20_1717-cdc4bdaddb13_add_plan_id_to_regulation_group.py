@@ -33,15 +33,45 @@ def upgrade() -> None:
     )
 
     # Update plan_id for existing plan regulation groups
-    # Looses data if there are multiple plans for a regulation group. Sets the last plan for the group.
+    # Set the regulation group to the the first plan it is associated with
     op.execute(
         """
         UPDATE hame.plan_regulation_group
-        SET plan_id = plan.id
-        FROM hame.plan
-        WHERE plan_regulation_group.id = plan.plan_regulation_group_id
+        SET plan_id = plan_ids.plan_id
+        FROM
+            (
+                SELECT DISTINCT ON (plan_regulation_group_id)
+                    rg.id plan_regulation_group_id,
+                    COALESCE(
+                        p.id,
+                        lua.plan_id,
+                        lup.plan_id,
+                        l.plan_id,
+                        oa.plan_id,
+                        op.plan_id
+                    ) plan_id
+                FROM
+                    hame.plan_regulation_group rg
+                    LEFT JOIN hame.plan p
+                        ON rg.id = p.plan_regulation_group_id
+                    LEFT JOIN hame.land_use_area lua
+                        ON rg.id = lua.plan_regulation_group_id
+                    LEFT JOIN hame.land_use_point lup
+                        ON rg.id = lup.plan_regulation_group_id
+                    LEFT JOIN hame.line l
+                        ON rg.id = l.plan_regulation_group_id
+                    LEFT JOIN hame.other_area oa
+                        ON rg.id = oa.plan_regulation_group_id
+                    LEFT JOIN hame.other_point op
+                        ON rg.id = op.plan_regulation_group_id
+                ORDER BY 1, 2 NULLS LAST
+            ) plan_ids
+        WHERE plan_regulation_group.id = plan_ids.plan_regulation_group_id
         """
     )
+    # We did our best to set the plan_id for each regulation group.
+    # Delete the rest which are not associated with any plan.
+    op.execute("""DELETE FROM hame.plan_regulation_group WHERE plan_id IS NULL""")
     op.alter_column(
         "plan_regulation_group",
         "plan_id",
