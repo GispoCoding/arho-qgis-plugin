@@ -16,8 +16,6 @@ from arho_feature_template.utils.misc_utils import get_active_plan_id, get_layer
 
 class PlanManager:
     def __init__(self):
-        self.lambda_service = LambdaService()
-        self.lambda_service.jsons_received.connect(self.save_plan_jsons)
         self.json_plan_path = None
         self.json_plan_outline_path = None
         self.kaava_layer = get_layer_by_name("Kaava")
@@ -121,6 +119,8 @@ class PlanManager:
                 QMessageBox.critical(None, "Virhe", "Ei aktiivista kaavaa.")
                 return
 
+            self.lambda_service = LambdaService()
+            self.lambda_service.jsons_received.connect(self.save_plan_jsons)
             self.lambda_service.send_request("get_plans", plan_id)
 
     def save_plan_jsons(self, plan_json, outline_json):

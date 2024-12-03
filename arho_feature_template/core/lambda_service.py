@@ -17,9 +17,12 @@ class LambdaService(QObject):
         # Init network manager
         self.network_manager = QNetworkAccessManager()
 
-        # Get settings
+    def send_request(self, action: str, plan_id: str):
+        """Sends a request to the lambda function."""
+
         proxy_host, proxy_port, self.lambda_url = get_settings()
 
+        # Initialize or reset proxy each time a request is sent. Incase settings have changed.
         if proxy_host and proxy_port:
             # Set up SOCKS5 Proxy if values are provided
             proxy = QNetworkProxy()
@@ -27,9 +30,9 @@ class LambdaService(QObject):
             proxy.setHostName(proxy_host)
             proxy.setPort(int(proxy_port))
             self.network_manager.setProxy(proxy)
+        else:
+            self.network_manager.setProxy(QNetworkProxy())
 
-    def send_request(self, action: str, plan_id: str):
-        """Sends a request to the lambda function."""
         payload = {"action": action, "plan_uuid": plan_id}
         payload_bytes = QByteArray(json.dumps(payload).encode("utf-8"))
 
@@ -53,7 +56,6 @@ class LambdaService(QObject):
 
         try:
             response_data = reply.readAll().data().decode("utf-8")
-
             response_json = json.loads(response_data)
 
             # Determine if the proxy is set up.
@@ -71,7 +73,7 @@ class LambdaService(QObject):
             if not isinstance(plan_json, dict):
                 plan_json = {}
 
-            outline_json = None
+            outline_json = {}
             if plan_json:
                 geographical_area = plan_json.get("geographicalArea")
                 if geographical_area:
@@ -82,9 +84,6 @@ class LambdaService(QObject):
                         "srid": geographical_area.get("srid"),
                         "geometry": geographical_area.get("geometry"),
                     }
-
-            if outline_json is None:
-                outline_json = {}  # Fallback to empty dictionary if no outline JSON is created
 
             # Emit the signal with the two JSONs
             self.jsons_received.emit(plan_json, outline_json)
