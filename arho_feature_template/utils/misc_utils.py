@@ -54,7 +54,7 @@ def check_layer_changes() -> bool:
     project = QgsProject.instance()
     layers = project.mapLayers().values()
 
-    return any(isinstance(layer, QgsVectorLayer) and layer.isModified() for layer in layers)
+    return any(layer.isModified() for layer in layers if isinstance(layer, QgsVectorLayer))
 
 
 def prompt_commit_changes() -> bool:
