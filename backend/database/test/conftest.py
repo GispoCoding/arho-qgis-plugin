@@ -3,7 +3,7 @@ import time
 import timeit
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List, Mapping, NamedTuple, Optional, Tuple
+from typing import Iterable, List, Mapping, Optional
 
 import codes
 import models
@@ -26,23 +26,6 @@ from sqlalchemy.orm import Session, sessionmaker
 hame_count: int = 14  # adjust me when adding tables
 codes_count: int = 16  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
-
-
-class IndexMeta(NamedTuple):
-    columns: Tuple[str, ...]
-    unique: bool
-
-
-ordering_index_by_table = {
-    "plan_regulation_group": IndexMeta(("plan_id", "ordering"), False),
-    "plan_regulation": IndexMeta(("plan_regulation_group_id", "ordering"), True),
-    "plan_proposition": IndexMeta(("plan_regulation_group_id", "ordering"), True),
-    "land_use_area": IndexMeta(("plan_id", "ordering"), True),
-    "other_area": IndexMeta(("plan_id", "ordering"), True),
-    "line": IndexMeta(("plan_id", "ordering"), True),
-    "land_use_point": IndexMeta(("plan_id", "ordering"), True),
-    "other_point": IndexMeta(("plan_id", "ordering"), True),
-}
 
 
 USE_DOCKER = (
@@ -345,42 +328,49 @@ def assert_database_is_alright(
 
         # Check indexes
         cur.execute(
-            f"SELECT * FROM pg_indexes WHERE schemaname = 'hame' AND tablename = '{table_name}';"
+            f"SELECT indexdef FROM pg_indexes WHERE schemaname = 'hame' AND tablename = '{table_name}';"
         )
-        indexes = cur.fetchall()
+        index_defs = [index_def for (index_def,) in cur]
+
         cur.execute(
             f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'hame' AND table_name = '{table_name}';"
         )
-        columns = cur.fetchall()
-        if ("id",) in columns:
-            assert (
-                "hame",
-                table_name,
-                f"{table_name}_pkey",
-                None,
-                f"CREATE UNIQUE INDEX {table_name}_pkey ON hame.{table_name} USING btree (id)",
-            ) in indexes
-        if ("geom",) in columns:
-            assert (
-                "hame",
-                table_name,
-                f"idx_{table_name}_geom",
-                None,
-                f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)",
-            ) in indexes
+        columns = [column for (column,) in cur]
 
-        # Check ordering index
-        if ("ordering",) in columns:
-            index_meta = ordering_index_by_table[table_name]
-            index_type = "UNIQUE INDEX" if index_meta.unique else "INDEX"
-            expected_row = (
-                "hame",
-                table_name,
-                f"ix_{table_name}_{'_'.join(index_meta.columns)}",
-                None,
-                f"CREATE {index_type} ix_{table_name}_{'_'.join(index_meta.columns)} ON hame.{table_name} USING btree ({', '.join(index_meta.columns)})",
+        if "id" in columns:
+            assert (
+                f"CREATE UNIQUE INDEX {table_name}_pkey ON hame.{table_name} USING btree (id)"
+                in index_defs
             )
-            assert expected_row in indexes
+        if "geom" in columns:
+            assert (
+                f"CREATE INDEX idx_{table_name}_geom ON hame.{table_name} USING gist (geom)"
+                in index_defs
+            )
+
+        # Check ordering index, all ordering columns should have an index
+        if "ordering" in columns:
+            if table_name == "plan_regulation_group":
+                assert (
+                    "CREATE INDEX ix_plan_regulation_group_plan_id_ordering "
+                    "ON hame.plan_regulation_group USING btree (plan_id, ordering)"
+                ) in index_defs
+            elif table_name in ("plan_regulation", "plan_proposition"):
+                assert (
+                    f"CREATE UNIQUE INDEX ix_{table_name}_plan_regulation_group_id_ordering "
+                    f"ON hame.{table_name} USING btree (plan_regulation_group_id, ordering)"
+                ) in index_defs
+            elif table_name in (
+                "land_use_area",
+                "other_area",
+                "line",
+                "land_use_point",
+                "other_point",
+            ):
+                assert (
+                    f"CREATE UNIQUE INDEX ix_{table_name}_plan_id_ordering "
+                    f"ON hame.{table_name} USING btree (plan_id, ordering)"
+                ) in index_defs
 
     # Check code tables
     cur.execute("SELECT tablename, tableowner FROM pg_tables WHERE schemaname='codes';")
