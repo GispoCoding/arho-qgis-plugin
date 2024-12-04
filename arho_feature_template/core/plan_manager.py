@@ -37,9 +37,9 @@ class PlanManager:
         iface.actionAddFeature().trigger()
 
         # Connect the featureAdded signal to a callback method
-        plan_layer.featureAdded.connect(self.feature_added)
+        plan_layer.featureAdded.connect(self._feature_added)
 
-    def feature_added(self):
+    def _feature_added(self):
         """Callback for when a new feature is added to the Kaava layer."""
 
         plan_layer = get_layer_by_name("Kaava")
