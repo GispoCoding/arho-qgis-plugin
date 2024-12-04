@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
-from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QItemSelectionModel
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
@@ -16,40 +16,16 @@ from arho_feature_template.core.template_library_config import (
     TemplateSyntaxError,
     parse_template_library_config,
 )
+from arho_feature_template.exceptions import LayerNotFoundError, LayerNotVectorTypeError
 from arho_feature_template.gui.template_attribute_form import TemplateAttributeForm
 from arho_feature_template.gui.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
+from arho_feature_template.utils.project_utils import get_layer_from_project
+
+if TYPE_CHECKING:
+    from qgis.core import QgsFeature, QgsVectorLayer
 
 logger = logging.getLogger(__name__)
-
-
-class LayerNotFoundError(Exception):
-    def __init__(self, layer_name: str):
-        super().__init__(f"Layer {layer_name} not found")
-
-
-class LayerNotVectorTypeError(Exception):
-    def __init__(self, layer_name: str):
-        super().__init__(f"Layer {layer_name} is not a vector layer")
-
-
-def get_layer_from_project(layer_name: str) -> QgsVectorLayer:
-    project = QgsProject.instance()
-    if not project:
-        raise LayerNotFoundError(layer_name)
-
-    layers = project.mapLayersByName(layer_name)
-    if not layers:
-        raise LayerNotFoundError(layer_name)
-
-    if len(layers) > 1:
-        logger.warning("Multiple layers with the same name found. Using the first one.")
-
-    layer = layers[0]
-    if not isinstance(layer, QgsVectorLayer):
-        raise LayerNotVectorTypeError(layer_name)
-
-    return layer
 
 
 class TemplateItem(QStandardItem):
