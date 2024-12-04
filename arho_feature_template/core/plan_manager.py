@@ -13,6 +13,8 @@ from arho_feature_template.gui.serialize_plan import SerializePlan
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import get_active_plan_id, get_layer_by_name, handle_unsaved_changes
 
+LAYER_NAME_PLAN = "Kaava"
+
 
 class PlanManager:
     def __init__(self):
@@ -24,7 +26,7 @@ class PlanManager:
         if not handle_unsaved_changes():
             return
 
-        plan_layer = get_layer_by_name("Kaava")
+        plan_layer = get_layer_by_name(LAYER_NAME_PLAN)
         self.clear_all_filters()
 
         if not plan_layer:
@@ -41,8 +43,7 @@ class PlanManager:
 
     def _feature_added(self):
         """Callback for when a new feature is added to the Kaava layer."""
-
-        plan_layer = get_layer_by_name("Kaava")
+        plan_layer = get_layer_by_name(LAYER_NAME_PLAN)
         if not plan_layer:
             return
 
