@@ -47,7 +47,7 @@ class PlanManager:
             return
 
         # Disconnect the signal to avoid repeated triggers
-        plan_layer.featureAdded.disconnect()
+        plan_layer.featureAdded.disconnect(self._feature_added)
 
         feature_ids_before_commit = plan_layer.allFeatureIds()
 
