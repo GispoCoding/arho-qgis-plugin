@@ -7,13 +7,16 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QWidget
 from qgis.utils import iface
 
-from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
-from arho_feature_template.core.plan_manager import PlanManager
-from arho_feature_template.gui.plan_regulation_group_form import PlanRegulationGroupForm
-from arho_feature_template.gui.plugin_settings import PluginSettings
+from arho_feature_template.plan.plan_manager import PlanManager
+from arho_feature_template.plan_feature.feature_template_library import (
+    FeatureTemplater,
+    TemplateGeometryDigitizeMapTool,
+)
+from arho_feature_template.plan_regulation_group.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
+from arho_feature_template.utils.plugin_settings import PluginSettings
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface, QgsMapTool

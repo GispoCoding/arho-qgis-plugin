@@ -7,13 +7,13 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QDialog, QTextBrowser, QTreeWidget, QTreeWidgetItem
 
-from arho_feature_template.core.plan_regulation_config import PlanRegulationConfig, PlanRegulationsSet
-from arho_feature_template.gui.plan_regulation_widget import PlanRegulationWidget
+from arho_feature_template.plan_regulation.plan_regulation_config import PlanRegulationConfig, PlanRegulationsSet
+from arho_feature_template.plan_regulation.plan_regulation_widget import PlanRegulationWidget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QBoxLayout, QWidget
 
-ui_path = resources.files(__package__) / "new_plan_regulation_group_form.ui"
+ui_path = resources.files(__package__) / "plan_regulation_group_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
