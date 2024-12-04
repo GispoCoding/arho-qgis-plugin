@@ -18,16 +18,27 @@ from arho_feature_template.utils.misc_utils import get_active_plan_id, get_layer
 logger = logging.getLogger(__name__)
 
 LAYER_NAME_PLAN = "Kaava"
+LAYER_NAME_LAND_USE_POINT = "Maankäytön kohteet"
+LAYER_NAME_OTHER_POINT = "Muut pisteet"
+LAYER_NAME_LINE = "Viivat"
+LAYER_NAME_OTHER_AREA = "Osa-alue"
+LAYER_NAME_LAND_USE_AREA = "Aluevaraus"
+LAYER_NAME_PLAN_REGULATION_GROUP = "Kaavamääräysryhmät"
+LAYER_NAME_PLAN_REGULATION = "Kaavamääräys"
+LAYER_NAME_PLAN_PROPOSITION = "Kaavasuositus"
+LAYER_NAME_DOCUMENT = "Asiakirjat"
+LAYER_NAME_SOURCE_DATA = "Lähtötietoaineistot"
+LAYER_NAME_REGULATION_GROUP_ASSOCIATION = "Kaavamääräysryhmien assosiaatiot"
 
 PLAN_FILTER_TEMPLATES = {
-    "Kaava": Template("id = '$plan_id'"),
-    "Maankäytön kohteet": Template("plan_id = '$plan_id'"),
-    "Muut pisteet": Template("plan_id = '$plan_id'"),
-    "Viivat": Template("plan_id = '$plan_id'"),
-    "Aluevaraus": Template("plan_id = '$plan_id'"),
-    "Osa-alue": Template("plan_id = '$plan_id'"),
-    "Kaavamääräysryhmät": Template("plan_id = '$plan_id'"),
-    "Kaavamääräysryhmien assosiaatiot": Template(
+    LAYER_NAME_PLAN: Template("id = '$plan_id'"),
+    LAYER_NAME_LAND_USE_POINT: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_OTHER_POINT: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_LINE: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_LAND_USE_AREA: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_OTHER_AREA: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_PLAN_REGULATION_GROUP: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_REGULATION_GROUP_ASSOCIATION: Template(
         dedent(
             """\
             EXISTS (
@@ -39,7 +50,7 @@ PLAN_FILTER_TEMPLATES = {
             )"""
         )
     ),
-    "Kaavamääräys": Template(
+    LAYER_NAME_PLAN_REGULATION: Template(
         dedent(
             """\
             EXISTS (
@@ -51,7 +62,7 @@ PLAN_FILTER_TEMPLATES = {
             )"""
         )
     ),
-    "Kaavasuositus": Template(
+    LAYER_NAME_PLAN_PROPOSITION: Template(
         dedent(
             """\
             EXISTS (
@@ -63,8 +74,8 @@ PLAN_FILTER_TEMPLATES = {
             )"""
         )
     ),
-    "Asiakirjat": Template("plan_id = '$plan_id'"),
-    "Lähtötietoaineistot": Template("plan_id = '$plan_id'"),
+    LAYER_NAME_DOCUMENT: Template("plan_id = '$plan_id'"),
+    LAYER_NAME_SOURCE_DATA: Template("plan_id = '$plan_id'"),
 }
 
 
