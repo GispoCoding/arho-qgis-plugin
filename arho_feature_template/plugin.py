@@ -9,7 +9,7 @@ from qgis.utils import iface
 
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.plan_manager import PlanManager
-from arho_feature_template.gui.new_plan_regulation_group_form import NewPlanRegulationGroupForm
+from arho_feature_template.gui.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.plugin_settings import PluginSettings
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
@@ -225,5 +225,5 @@ class Plugin:
         self.templater.template_dock.setUserVisible(show)
 
     def open_plan_regulation_group_form(self):
-        self.new_plan_regulation_group_dialog = NewPlanRegulationGroupForm()
+        self.new_plan_regulation_group_dialog = PlanRegulationGroupForm()
         self.new_plan_regulation_group_dialog.exec_()

@@ -17,7 +17,7 @@ ui_path = resources.files(__package__) / "new_plan_regulation_group_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
+class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
     """Form to create a new plan regulation group."""
 
     def __init__(self):

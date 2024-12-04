@@ -35,7 +35,7 @@ ui_path = resources.files(__package__) / "template_attribute_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
+class PlanFeatureForm(QDialog, FormClass):  # type: ignore
     """Parent class for feature template forms for adding and modifying feature attribute data."""
 
     def __init__(self, feature_template_config: FeatureTemplate):
