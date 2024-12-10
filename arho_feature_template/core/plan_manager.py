@@ -152,7 +152,7 @@ class PlanManager:
 
             self.lambda_service = LambdaService()
             self.lambda_service.jsons_received.connect(self.save_plan_jsons)
-            self.lambda_service.send_request("get_plans", plan_id)
+            self.lambda_service.serialize_plan(plan_id)
 
     def save_plan_jsons(self, plan_json, outline_json):
         """This slot saves the plan and outline JSONs to files."""
