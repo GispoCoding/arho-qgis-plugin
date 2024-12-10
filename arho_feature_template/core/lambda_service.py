@@ -11,15 +11,24 @@ from arho_feature_template.utils.misc_utils import get_active_plan_id, get_plan_
 
 class LambdaService(QObject):
     jsons_received = pyqtSignal(dict, dict)
+    validation_received = pyqtSignal(dict)
+    ActionAttribute = QNetworkRequest.User + 1
+    ACTION_VALIDATE_PLANS = "validate_plans"
+    ACTION_GET_PLANS = "get_plans"
 
     def __init__(self):
-        super().__init__()  # Ensure QObject initialization
-        # Init network manager
+        super().__init__()
         self.network_manager = QNetworkAccessManager()
+        self.network_manager.finished.connect(self._handle_reply)
 
-    def send_request(self, action: str, plan_id: str):
+    def serialize_plan(self, plan_id: str):
+        self._send_request(action=self.ACTION_GET_PLANS, plan_id=plan_id)
+
+    def validate_plan(self, plan_id: str):
+        self._send_request(action=self.ACTION_VALIDATE_PLANS, plan_id=plan_id)
+
+    def _send_request(self, action: str, plan_id: str):
         """Sends a request to the lambda function."""
-
         proxy_host, proxy_port, self.lambda_url = get_settings()
 
         # Initialize or reset proxy each time a request is sent. Incase settings have changed.
@@ -35,16 +44,48 @@ class LambdaService(QObject):
 
         payload = {"action": action, "plan_uuid": plan_id}
         payload_bytes = QByteArray(json.dumps(payload).encode("utf-8"))
-
         request = QNetworkRequest(QUrl(self.lambda_url))
+        request.setAttribute(LambdaService.ActionAttribute, action)
         request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+        self.network_manager.post(request, payload_bytes)
 
-        reply = self.network_manager.post(request, payload_bytes)
+    def _handle_reply(self, reply: QNetworkReply):
+        action = reply.request().attribute(LambdaService.ActionAttribute)
+        if action == self.ACTION_GET_PLANS:
+            self._process_json_reply(reply)
+        elif action == self.ACTION_VALIDATE_PLANS:
+            self._process_validation_reply(reply)
 
-        # Connect reply signal to handle the response
-        reply.finished.connect(lambda: self._process_reply(reply))
+    def _process_validation_reply(self, reply: QNetworkReply):
+        """Processes the validation reply from the lambda and emits a signal."""
+        if reply.error() != QNetworkReply.NoError:
+            error_string = reply.errorString()
+            QMessageBox.critical(None, "API Error", f"Lambda call failed: {error_string}")
+            reply.deleteLater()
+            return
 
-    def _process_reply(self, reply: QNetworkReply):
+        try:
+            response_data = reply.readAll().data().decode("utf-8")
+            response_json = json.loads(response_data)
+
+            # Determine if the proxy is set up.
+            if hasattr(self, "network_manager") and self.network_manager.proxy().type() == QNetworkProxy.Socks5Proxy:
+                # If proxy has been set up, retrieve 'ryhti_responses' directly
+                validation_errors = response_json.get("ryhti_responses", {})
+            else:
+                # If proxy has not been set up (using local docker lambda), the response includes 'body'.
+                # In this case we need to retrieve 'ryhti_responses' from 'body' first.
+                body = response_json.get("body", {})
+                validation_errors = body.get("ryhti_responses", {})
+
+            self.validation_received.emit(validation_errors)
+
+        except json.JSONDecodeError as e:
+            QMessageBox.critical(None, "JSON Error", f"Failed to parse response JSON: {e}")
+        finally:
+            reply.deleteLater()
+
+    def _process_json_reply(self, reply: QNetworkReply):
         """Processes the reply from the lambda and emits signal."""
         plan_id = get_active_plan_id()
 

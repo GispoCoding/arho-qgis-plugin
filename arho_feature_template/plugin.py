@@ -12,6 +12,7 @@ from arho_feature_template.core.feature_template_library import FeatureTemplater
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.new_plan_regulation_group_form import NewPlanRegulationGroupForm
 from arho_feature_template.gui.plugin_settings import PluginSettings
+from arho_feature_template.gui.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
@@ -137,6 +138,11 @@ class Plugin:
 
         iface.mapCanvas().mapToolSet.connect(self.templater.digitize_map_tool.deactivate)
 
+        self.validation_dock = ValidationDock()
+        iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
+
+        self.validation_dock.visibilityChanged.connect(self.validation_dock_visibility_changed)
+
         # icons to consider:
         # icon=QgsApplication.getThemeIcon("mActionStreamingDigitize.svg"),
         # icon=QgsApplication.getThemeIcon("mIconGeometryCollectionLayer.svg"),
@@ -166,6 +172,15 @@ class Plugin:
             text="Kaavakohdetemplaatit",
             icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
             toggled_callback=self.toggle_template_dock,
+            checkable=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+        )
+
+        self.validation_dock_action = self.add_action(
+            text="Validointi virheet",
+            icon=QgsApplication.getThemeIcon("mActionEditNodesItem.svg"),
+            toggled_callback=self.toggle_validation_dock,
             checkable=True,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -224,12 +239,19 @@ class Plugin:
         teardown_logger(Plugin.name)
 
         self.templater.template_dock.close()
+        self.validation_dock.close()
 
     def dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
         self.template_dock_action.setChecked(visible)
 
     def toggle_template_dock(self, show: bool) -> None:  # noqa: FBT001
         self.templater.template_dock.setUserVisible(show)
+
+    def validation_dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
+        self.validation_dock_action.setChecked(visible)
+
+    def toggle_validation_dock(self, show: bool) -> None:  # noqa: FBT001
+        self.validation_dock.setUserVisible(show)
 
     def open_plan_regulation_group_form(self):
         self.new_plan_regulation_group_dialog = NewPlanRegulationGroupForm()
