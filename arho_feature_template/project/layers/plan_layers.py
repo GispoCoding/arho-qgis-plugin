@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 import logging
+from abc import abstractmethod
 from string import Template
 from textwrap import dedent
-from typing import ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
+from qgis.core import QgsFeature, QgsVectorLayerUtils
 from qgis.utils import iface
 
 from arho_feature_template.project.layers import AbstractLayer
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from arho_feature_template.core.models import Plan
 
 
 class AbstractPlanLayer(AbstractLayer):
@@ -31,10 +36,36 @@ class AbstractPlanLayer(AbstractLayer):
                 level=3,
             )
 
+    @classmethod
+    @abstractmethod
+    def feature_from_model(cls, model: Any) -> QgsFeature:
+        raise NotImplementedError
+
 
 class PlanLayer(AbstractPlanLayer):
     name = "Kaava"
     filter_template = Template("id = '$plan_id'")
+
+    @classmethod
+    def feature_from_model(cls, model: Plan) -> QgsFeature:
+        layer = cls.get_from_project()
+
+        if not model.geom:
+            message = "Plan must have a geometry to be added to the layer"
+            raise ValueError(message)
+
+        feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
+        feature["name"] = {"fin": model.name}
+        feature["description"] = {"fin": model.description} if model.description else None
+        feature["permanent_plan_identifier"] = model.permanent_plan_identifier
+        feature["record_number"] = model.record_number
+        feature["producers_plan_identifier"] = model.producers_plan_identifier
+        feature["matter_management_identifier"] = model.matter_management_identifier
+        feature["plan_type_id"] = model.plan_type_id
+        feature["lifecycle_status_id"] = model.lifecycle_status_id
+        feature["organisation_id"] = model.organisation_id
+
+        return feature
 
 
 class LandUsePointLayer(AbstractPlanLayer):
@@ -62,7 +93,7 @@ class OtherAreaLayer(AbstractPlanLayer):
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class PlanRegulationGroupLayer(AbstractPlanLayer):
+class RegulationGroupLayer(AbstractPlanLayer):
     name = "Kaavamääräysryhmät"
     filter_template = Template("plan_id = '$plan_id'")
 
