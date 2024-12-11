@@ -9,6 +9,7 @@ from qgis.PyQt.QtWidgets import QDialog
 from arho_feature_template.core.models import Plan
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
+    OrganisationLayer,
     PlanTypeLayer,
 )
 
@@ -24,6 +25,7 @@ FormClass, _ = uic.loadUiType(ui_path)
 class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     permanent_identifier_line_edit: QLineEdit
     name_line_edit: QLineEdit
+    organisation_combo_box: CodeComboBox
     description_text_edit: QTextEdit
     plan_type_combo_box: HierarchicalCodeComboBox
     lifecycle_status_combo_box: CodeComboBox
@@ -38,6 +40,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.plan_type_combo_box.populate_from_code_layer(PlanTypeLayer)
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
+        self.organisation_combo_box.populate_from_code_layer(OrganisationLayer)
 
     def get_plan_attributes(self) -> Plan:
         return Plan(
@@ -45,6 +48,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             name=self.name_line_edit.text(),
             description=self.description_text_edit.toPlainText() or None,
             plan_type_id=self.plan_type_combo_box.value(),
+            organisation_id=self.organisation_combo_box.value(),
             permanent_plan_identifier=self.permanent_identifier_line_edit.text() or None,
             record_number=self.record_number_line_edit.text() or None,
             producers_plan_identifier=self.producers_plan_identifier_line_edit.text() or None,

@@ -14,4 +14,8 @@ class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
 
 
+class OrganisationLayer(AbstractCodeLayer):
+    name = "Toimija"
+
+
 code_layers = AbstractCodeLayer.__subclasses__()

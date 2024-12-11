@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>537</width>
-    <height>350</height>
+    <width>535</width>
+    <height>343</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -61,8 +61,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>507</width>
-            <height>271</height>
+            <width>505</width>
+            <height>264</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -97,7 +97,7 @@
              <item row="1" column="0">
               <widget class="QLabel" name="nimiLabel">
                <property name="text">
-                <string>Nimi:</string>
+                <string>Nimi*:</string>
                </property>
                <property name="buddy">
                 <cstring>name_line_edit</cstring>
@@ -128,39 +128,49 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
+             <item row="4" column="0">
               <widget class="QLabel" name="tyyppiLabel">
                <property name="text">
-                <string>Kaavalaji:</string>
+                <string>Kaavalaji*:</string>
                </property>
                <property name="buddy">
                 <cstring>plan_type_combo_box</cstring>
                </property>
               </widget>
              </item>
-             <item row="3" column="1">
+             <item row="4" column="1">
               <widget class="HierarchicalCodeComboBox" name="plan_type_combo_box">
                <property name="toolTip">
                 <string>Kaava-asian kaavalaji</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
+             <item row="5" column="0">
               <widget class="QLabel" name="elinkaarenTilaLabel">
                <property name="text">
-                <string>Elinkaaren tila:</string>
+                <string>Elinkaaren tila*:</string>
                </property>
                <property name="buddy">
                 <cstring>lifecycle_status_combo_box</cstring>
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
+             <item row="5" column="1">
               <widget class="CodeComboBox" name="lifecycle_status_combo_box">
                <property name="toolTip">
                 <string>Kaavan elinkaaren tila</string>
                </property>
               </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Organisaatio*:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="CodeComboBox" name="organisation_combo_box"/>
              </item>
             </layout>
            </item>
@@ -248,8 +258,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>507</width>
-            <height>271</height>
+            <width>505</width>
+            <height>264</height>
            </rect>
           </property>
          </widget>
@@ -260,7 +270,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="buttonBox">
+    <widget class="QDialogButtonBox" name="button_box">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -292,7 +302,6 @@
  <tabstops>
   <tabstop>tabWidget</tabstop>
   <tabstop>general_info_scroll_area</tabstop>
-  <tabstop>permanent_identifier_line_edit</tabstop>
   <tabstop>name_line_edit</tabstop>
   <tabstop>description_text_edit</tabstop>
   <tabstop>plan_type_combo_box</tabstop>
@@ -305,7 +314,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>buttonBox</sender>
+   <sender>button_box</sender>
    <signal>accepted()</signal>
    <receiver>Dialog</receiver>
    <slot>accept()</slot>
@@ -321,7 +330,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonBox</sender>
+   <sender>button_box</sender>
    <signal>rejected()</signal>
    <receiver>Dialog</receiver>
    <slot>reject()</slot>
