@@ -56,13 +56,11 @@ class PlanManager:
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
             return
+        self.previously_editable = plan_layer.isEditable()
 
         self.set_active_plan(None)
 
-        self.previously_editable = plan_layer.isEditable()
-        if not plan_layer.isEditable():
-            plan_layer.startEditing()
-
+        plan_layer.startEditing()
         self.digitize_map_tool.setLayer(plan_layer)
         iface.mapCanvas().setMapTool(self.digitize_map_tool)
 
@@ -77,12 +75,14 @@ class PlanManager:
             plan_attributes = attribute_form.get_plan_attributes()
             plan_attributes.geom = feature.geometry()
             feature = save_plan(plan_attributes)
-            plan_layer = PlanLayer.get_from_project()
-            if plan_layer.isEditable():
-                plan_layer.commitChanges()
-            self.set_active_plan(feature["id"])
-            if self.previously_editable:
-                plan_layer.startEditing()
+            plan_to_be_activated = feature["id"]
+        else:
+            plan_to_be_activated = self.previous_active_plan_id
+
+        self.set_active_plan(plan_to_be_activated)
+
+        if self.previously_editable:
+            plan_layer.startEditing()
 
         iface.mapCanvas().setMapTool(self.previous_map_tool)
 
