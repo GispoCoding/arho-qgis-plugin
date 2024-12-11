@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from qgis.core import QgsFeature, QgsVectorLayerUtils
 from qgis.utils import iface
 
+from arho_feature_template.exceptions import LayerEditableError
 from arho_feature_template.project.layers import AbstractLayer
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,9 @@ class AbstractPlanLayer(AbstractLayer):
         """Apply a filter to the layer based on the plan_id."""
         filter_expression = cls.filter_template.substitute(plan_id=plan_id) if plan_id else ""
         layer = cls.get_from_project()
+        if layer.isEditable():
+            raise LayerEditableError(cls.name)
+
         if not layer:
             logger.warning("Layer %s not found", cls.name)
             return None
@@ -56,7 +60,7 @@ class PlanLayer(AbstractPlanLayer):
 
         feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
         feature["name"] = {"fin": model.name}
-        feature["description"] = {"fin": model.description} if model.description else None
+        feature["description"] = {"fin": model.description}
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
         feature["record_number"] = model.record_number
         feature["producers_plan_identifier"] = model.producers_plan_identifier

@@ -14,12 +14,14 @@ from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 from qgis.utils import iface
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.plan_attribure_form import PlanAttributeForm
 from arho_feature_template.gui.serialize_plan import SerializePlan
 from arho_feature_template.project.layers.plan_layers import PlanLayer, RegulationGroupLayer, plan_layers
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import (
+    check_layer_changes,
     get_active_plan_id,
     handle_unsaved_changes,
 )
@@ -85,11 +87,27 @@ class PlanManager:
         iface.mapCanvas().setMapTool(self.previous_map_tool)
 
     def set_active_plan(self, plan_id: str | None):
-        """Update the project layers based on the selected land use plan."""
-        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "active_plan_id", plan_id)
+        """Update the project layers based on the selected land use plan.
 
+        Layers to be filtered cannot be in edit mode.
+        This method disables edit mode temporarily if needed.
+        Therefore if there are unsaved changes, this method will raise an exception.
+        """
+
+        if check_layer_changes():
+            raise UnsavedChangesError
+
+        plan_layer = PlanLayer.get_from_project()
+        previously_in_edit_mode = plan_layer.isEditable()
+        if previously_in_edit_mode:
+            plan_layer.rollBack()
+
+        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "active_plan_id", plan_id)
         for layer in plan_layers:
             layer.apply_filter(plan_id)
+
+        if previously_in_edit_mode:
+            plan_layer.startEditing()
 
     def load_land_use_plan(self):
         """Load an existing land use plan using a dialog selection."""
