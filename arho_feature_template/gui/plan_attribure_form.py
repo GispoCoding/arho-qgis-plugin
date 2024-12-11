@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox
 
 from arho_feature_template.core.models import Plan
 from arho_feature_template.project.layers.code_layers import (
@@ -33,6 +33,8 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     producers_plan_identifier_line_edit: QLineEdit
     matter_management_identifier_line_edit: QLineEdit
 
+    button_box: QDialogButtonBox
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -41,6 +43,25 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.plan_type_combo_box.populate_from_code_layer(PlanTypeLayer)
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
         self.organisation_combo_box.populate_from_code_layer(OrganisationLayer)
+
+        self.name_line_edit.textChanged.connect(self._check_required_fields)
+        self.organisation_combo_box.currentIndexChanged.connect(self._check_required_fields)
+        self.plan_type_combo_box.currentIndexChanged.connect(self._check_required_fields)
+        self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
+
+        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+
+    def _check_required_fields(self) -> None:
+        ok_button = self.button_box.button(QDialogButtonBox.Ok)
+        if (
+            self.name_line_edit.text() != ""
+            and self.plan_type_combo_box.value() is not None
+            and self.organisation_combo_box.value() is not None
+            and self.lifecycle_status_combo_box.value() is not None
+        ):
+            ok_button.setEnabled(True)
+        else:
+            ok_button.setEnabled(False)
 
     def get_plan_attributes(self) -> Plan:
         return Plan(
