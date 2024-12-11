@@ -112,7 +112,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
                     p.plan_type_id = pt.id;
             """)
             for plan in plans:
-                self.model.appendRow([QStandardItem(column) for column in plan])
+                self.model.appendRow([QStandardItem(column or "") for column in plan])
 
         except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Error", f"Failed to load plans: {e}")
