@@ -20,15 +20,17 @@ class CodeComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.addItem("NULL")
+        self.setItemData(0, None)
+
+        self.setCurrentIndex(0)
+
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         try:
             layer = layer_type.get_from_project()
         except LayerNotFoundError:
             logger.warning("Layer % not found.", layer_type.name)
             return
-
-        self.addItem("NULL")
-        self.setItemData(0, None)
 
         for i, feature in enumerate(layer.getFeatures(), start=1):
             self.addItem(feature["name"]["fin"])
@@ -51,15 +53,18 @@ class HierarchicalCodeComboBox(QComboBox):
 
         self.tree_widget.viewport().installEventFilter(self)
 
+        null_item = QTreeWidgetItem(["NULL"])
+        null_item.setData(0, Qt.UserRole, None)
+        self.tree_widget.addTopLevelItem(null_item)
+        null_index = self.tree_widget.indexFromItem(null_item)
+        self.tree_widget.setCurrentIndex(null_index)
+
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         try:
             layer = layer_type.get_from_project()
         except LayerNotFoundError:
             logger.warning("Layer % not found.", layer_type.name)
             return
-
-        null_item = QTreeWidgetItem(["NULL"])
-        self.tree_widget.addTopLevelItem(null_item)
 
         codes = {feature["id"]: feature for feature in layer.getFeatures()}
         items: dict[str, QTreeWidgetItem] = {}
