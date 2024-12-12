@@ -188,7 +188,6 @@ def save_plan(plan_data: Plan) -> QgsFeature:
     edit_message = "Kaavan lisäys" if plan_data.id_ is None else "Kaavan muokkaus"
     plan_layer.beginEditCommand(edit_message)
 
-    plan_data.organisation_id = "99e20d66-9730-4110-815f-5947d3f8abd3"
     plan_feature = PlanLayer.feature_from_model(plan_data)
 
     if plan_data.id_ is None:
