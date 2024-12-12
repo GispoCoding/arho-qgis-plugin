@@ -142,8 +142,8 @@ class PlanManager:
         """Serializes plan and plan outline to JSON"""
         dialog = SerializePlan()
         if dialog.exec_() == QDialog.Accepted:
-            self.json_plan_path = dialog.plan_path_edit.text()
-            self.json_plan_outline_path = dialog.plan_outline_path_edit.text()
+            self.json_plan_path = str(dialog.plan_file.filePath())
+            self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
 
             plan_id = get_active_plan_id()
             if not plan_id:
