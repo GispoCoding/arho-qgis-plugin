@@ -38,5 +38,5 @@ ignore_missing_imports = true
 
 [tool.qgis-plugin-ci]
 plugin_path = "arho_feature_template"
-github_organization_slug= "GispoCoding"
+github_organization_slug = "GispoCoding"
 project_slug = "arho-feature-template"

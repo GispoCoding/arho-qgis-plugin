@@ -20,7 +20,7 @@ from arho_feature_template.exceptions import LayerNotFoundError, LayerNotVectorT
 from arho_feature_template.gui.template_attribute_form import TemplateAttributeForm
 from arho_feature_template.gui.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
-from arho_feature_template.utils.project_utils import get_layer_from_project
+from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature, QgsVectorLayer
@@ -38,7 +38,7 @@ class TemplateItem(QStandardItem):
 
         Checks if the layer and attributes defined in the template acutally exists"""
         try:
-            get_layer_from_project(self.config.feature.layer)  # TODO: check child features recursively
+            get_vector_layer_from_project(self.config.feature.layer)  # TODO: check child features recursively
         except (LayerNotFoundError, LayerNotVectorTypeError):
             return False
         else:
@@ -88,7 +88,7 @@ class FeatureTemplater:
             return
 
         try:
-            layer = get_layer_from_project(item.config.feature.layer)
+            layer = get_vector_layer_from_project(item.config.feature.layer)
         except (LayerNotFoundError, LayerNotVectorTypeError):
             logger.exception("Failed to activate template")
             return
@@ -160,7 +160,7 @@ class FeatureTemplater:
         attribute_form = TemplateAttributeForm(self.active_template.config)
 
         if attribute_form.exec_():
-            layer = get_layer_from_project(self.active_template.config.feature.layer)
+            layer = get_vector_layer_from_project(self.active_template.config.feature.layer)
             # Save the feature
             attribute_form.set_feature_attributes(feature)
 
