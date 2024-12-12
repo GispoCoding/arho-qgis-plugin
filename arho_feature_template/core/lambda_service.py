@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
+from http import HTTPStatus
+from typing import cast
 
 from qgis.PyQt.QtCore import QByteArray, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
@@ -12,7 +15,7 @@ from arho_feature_template.utils.misc_utils import get_active_plan_id, get_plan_
 class LambdaService(QObject):
     jsons_received = pyqtSignal(dict, dict)
     validation_received = pyqtSignal(dict)
-    ActionAttribute = QNetworkRequest.User + 1
+    ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.User + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
     ACTION_GET_PLANS = "get_plans"
 
@@ -49,18 +52,15 @@ class LambdaService(QObject):
         request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
         self.network_manager.post(request, payload_bytes)
 
-    def _handle_reply(self, reply: QNetworkReply):
-        action = reply.request().attribute(LambdaService.ActionAttribute)
-        if action == self.ACTION_GET_PLANS:
-            self._process_json_reply(reply)
-        elif action == self.ACTION_VALIDATE_PLANS:
-            self._process_validation_reply(reply)
+    def _is_api_gateway_request(self) -> bool:
+        """Determines if the lambda request is going through the API Gateway."""
+        match = re.match(r"^https://.*execute-api.*amazonaws\.com.*$", self.lambda_url)
+        return bool(match)
 
-    def _process_validation_reply(self, reply: QNetworkReply):
-        """Processes the validation reply from the lambda and emits a signal."""
+    def _handle_reply(self, reply: QNetworkReply):
         if reply.error() != QNetworkReply.NoError:
-            error_string = reply.errorString()
-            QMessageBox.critical(None, "API Error", f"Lambda call failed: {error_string}")
+            error = reply.errorString()
+            QMessageBox.critical(None, "API Error", f"Lambda call failed: {error}")
             reply.deleteLater()
             return
 
@@ -68,68 +68,58 @@ class LambdaService(QObject):
             response_data = reply.readAll().data().decode("utf-8")
             response_json = json.loads(response_data)
 
-            # Determine if the proxy is set up.
-            if hasattr(self, "network_manager") and self.network_manager.proxy().type() == QNetworkProxy.Socks5Proxy:
-                # If proxy has been set up, retrieve 'ryhti_responses' directly
-                validation_errors = response_json.get("ryhti_responses", {})
+            if not self._is_api_gateway_request():
+                # If calling the lambda directly, the response includes status code and body
+                if int(response_json.get("statusCode", 0)) != HTTPStatus.OK:
+                    error = response_json["body"] if "body" in response_json else response_json["errorMessage"]
+                    QMessageBox.critical(None, "API Error", f"Lambda call failed: {error}")
+                    reply.deleteLater()
+                    return
+                body = response_json["body"]
             else:
-                # If proxy has not been set up (using local docker lambda), the response includes 'body'.
-                # In this case we need to retrieve 'ryhti_responses' from 'body' first.
-                body = response_json.get("body", {})
-                validation_errors = body.get("ryhti_responses", {})
+                body = response_json
 
-            self.validation_received.emit(validation_errors)
-
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, KeyError) as e:
             QMessageBox.critical(None, "JSON Error", f"Failed to parse response JSON: {e}")
+            return
         finally:
             reply.deleteLater()
 
-    def _process_json_reply(self, reply: QNetworkReply):
+        action = reply.request().attribute(LambdaService.ActionAttribute)
+        if action == self.ACTION_GET_PLANS:
+            self._process_json_reply(body)
+        elif action == self.ACTION_VALIDATE_PLANS:
+            self._process_validation_reply(body)
+
+    def _process_validation_reply(self, response_json: dict):
+        """Processes the validation reply from the lambda and emits a signal."""
+
+        validation_errors = response_json.get("ryhti_responses")
+
+        self.validation_received.emit(validation_errors)
+
+    def _process_json_reply(self, response_json: dict):
         """Processes the reply from the lambda and emits signal."""
         plan_id = get_active_plan_id()
 
-        if reply.error() != QNetworkReply.NoError:
-            error_string = reply.errorString()
-            QMessageBox.critical(None, "API Virhe", f"Lambdan kutsu epäonnistui: {error_string}")
-            reply.deleteLater()
-            return
+        details = response_json.get("details", {})
 
-        try:
-            response_data = reply.readAll().data().decode("utf-8")
-            response_json = json.loads(response_data)
+        # Extract the plan JSON for the given plan_id
+        plan_json = details.get(plan_id, {})
+        if not isinstance(plan_json, dict):
+            plan_json = {}
 
-            # Determine if the proxy is set up.
-            if hasattr(self, "network_manager") and self.network_manager.proxy().type() == QNetworkProxy.Socks5Proxy:
-                # If proxy has been set up, retrieve 'details' directly
-                details = response_json.get("details", {})
-            else:
-                # If proxy has not been set up (using local docker lambda), the response includes 'body'.
-                # In this case we need to retrieve 'details' from 'body' first.
-                body = response_json.get("body", {})
-                details = body.get("details", {})
+        outline_json = {}
+        if plan_json:
+            geographical_area = plan_json.get("geographicalArea")
+            if geographical_area:
+                outline_name = get_plan_name(plan_id, language="fin")
+                outline_json = {
+                    "type": "Feature",
+                    "properties": {"name": outline_name},
+                    "srid": geographical_area.get("srid"),
+                    "geometry": geographical_area.get("geometry"),
+                }
 
-            # Extract the plan JSON for the given plan_id
-            plan_json = details.get(plan_id, {})
-            if not isinstance(plan_json, dict):
-                plan_json = {}
-
-            outline_json = {}
-            if plan_json:
-                geographical_area = plan_json.get("geographicalArea")
-                if geographical_area:
-                    outline_name = get_plan_name(plan_id, language="fin")
-                    outline_json = {
-                        "type": "Feature",
-                        "properties": {"name": outline_name},
-                        "srid": geographical_area.get("srid"),
-                        "geometry": geographical_area.get("geometry"),
-                    }
-
-            # Emit the signal with the two JSONs
-            self.jsons_received.emit(plan_json, outline_json)
-
-        except json.JSONDecodeError as e:
-            QMessageBox.critical(None, "JSON Virhe", f"Failed to parse response JSON: {e}")
-        finally:
-            reply.deleteLater()
+        # Emit the signal with the two JSONs
+        self.jsons_received.emit(plan_json, outline_json)
