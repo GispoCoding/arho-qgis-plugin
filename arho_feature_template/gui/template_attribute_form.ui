@@ -40,6 +40,16 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="1">
+       <widget class="QTextEdit" name="feature_description">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
       <item row="2" column="0">
        <widget class="QLabel" name="feature_underground_label">
         <property name="text">
@@ -48,7 +58,7 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QComboBox" name="feature_underground">
+       <widget class="QComboBox" name="feature_type_of_underground">
         <item>
          <property name="text">
           <string>Maanpäällinen</string>
@@ -59,16 +69,6 @@
           <string>Maanalainen</string>
          </property>
         </item>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QTextEdit" name="feature_description">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
        </widget>
       </item>
      </layout>

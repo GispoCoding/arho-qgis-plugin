@@ -10,7 +10,6 @@ from qgis.PyQt.QtWidgets import QWidget
 
 from arho_feature_template.core.models import Regulation, RegulationGroup
 from arho_feature_template.gui.plan_regulation_widget import RegulationWidget
-from arho_feature_template.project.layers.plan_layers import RegulationGroupLayer
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QPushButton
@@ -30,7 +29,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         # TYPES
         self.frame: QFrame
-        self.name: QLineEdit  # "heading"
+        self.name: QLineEdit
         self.del_btn: QPushButton
 
         # INIT
@@ -53,29 +52,12 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.regulation_widgets.remove(regulation_widget)
         regulation_widget.deleteLater()
 
-    def into_model(self, id_: int | None) -> RegulationGroup:
+    def into_model(self) -> RegulationGroup:
         return RegulationGroup(
             type_code=self.regulation_group_data.type_code,
             name=self.name.text(),
             short_name=self.regulation_group_data.short_name,
             color_code=self.regulation_group_data.color_code,
-            letter_code=self.regulation_group_data.letter_code,
-            regulations=[widget.save_data(id_) for widget in self.regulation_widgets],
-            id_=id_,
+            regulations=[widget.into_model() for widget in self.regulation_widgets],
+            id_=self.regulation_group_data.id_,
         )
-
-    def save_data(self):
-        if not self.regulation_group_data.id_:
-            new_feature = True
-            id_ = "new_id_here"  # TODO: Implement creating new ID
-        else:
-            new_feature = False
-            id_ = self.regulation_group_data.id_
-
-        model = self.into_model(id_)
-        regulation_feature = RegulationGroupLayer.feature_from_model(model)
-        layer = RegulationGroupLayer.get_from_project()
-        if new_feature:
-            layer.addFeature(regulation_feature)
-        else:
-            layer.updateFeature(regulation_feature)

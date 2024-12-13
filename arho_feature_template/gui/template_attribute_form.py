@@ -15,15 +15,18 @@ from qgis.PyQt.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpacerItem,
+    QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
 )
 
-from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.core.models import PlanFeature, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.plan_regulation_group_widget import RegulationGroupWidget
+from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, PlanFeatureLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
+    from qgis.core import QgsFeature
     from qgis.PyQt.QtWidgets import QWidget
 
     from arho_feature_template.core.template_library_config import FeatureTemplate
@@ -35,14 +38,21 @@ FormClass, _ = uic.loadUiType(ui_path)
 class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
     """Parent class for feature template forms for adding and modifying feature attribute data."""
 
-    def __init__(self, feature_template_config: FeatureTemplate):
+    def __init__(
+        self,
+        feature_template_config: FeatureTemplate,
+        base_feature: QgsFeature,
+        feature_layer_class: type[PlanFeatureLayer] = LandUseAreaLayer,  # NOTE: All are now saved to LandUseAreaLayer
+    ):
         super().__init__()
         self.setupUi(self)
 
         # TYPES
+        self.geom = base_feature.geometry()
+        self.feature_layer_class = feature_layer_class
         self.feature_name: QLineEdit
-        self.feature_description: QLineEdit
-        self.feature_underground: QLineEdit
+        self.feature_description: QTextEdit
+        self.feature_type_of_underground: QComboBox
         self.plan_regulation_group_scrollarea: QScrollArea
         self.plan_regulation_group_scrollarea_contents: QWidget
         self.plan_regulation_group_libraries_combobox: QComboBox
@@ -50,6 +60,7 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.button_box: QDialogButtonBox
 
         # INIT
+        self.regulation_group_widgets: list[RegulationGroupWidget] = []
         self.scroll_area_spacer = None
         self.setWindowTitle(feature_template_config.name)
         self.init_plan_regulation_group_libraries()
@@ -73,15 +84,17 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, definition: RegulationGroup):
-        new_plan_regulation_group = RegulationGroupWidget(definition)
-        new_plan_regulation_group.delete_signal.connect(self.remove_plan_regulation_group)
+        regulation_group_widget = RegulationGroupWidget(definition)
+        regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         self._remove_spacer()
-        self.plan_regulation_group_scrollarea_contents.layout().addWidget(new_plan_regulation_group)
+        self.plan_regulation_group_scrollarea_contents.layout().addWidget(regulation_group_widget)
+        self.regulation_group_widgets.append(regulation_group_widget)
         self._add_spacer()
 
-    def remove_plan_regulation_group(self, plan_regulation_group_widget: RegulationGroupWidget):
-        self.plan_regulation_group_scrollarea_contents.layout().removeWidget(plan_regulation_group_widget)
-        plan_regulation_group_widget.deleteLater()
+    def remove_plan_regulation_group(self, regulation_group_widget: RegulationGroupWidget):
+        self.plan_regulation_group_scrollarea_contents.layout().removeWidget(regulation_group_widget)
+        self.regulation_group_widgets.remove(regulation_group_widget)
+        regulation_group_widget.deleteLater()
 
     def init_plan_regulation_group_libraries(self):
         katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
@@ -100,5 +113,22 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
                 regulation_group_item.setText(0, group_definition.name)
                 regulation_group_item.setData(0, Qt.UserRole, group_definition)
 
+    def into_model(self) -> PlanFeature:
+        return PlanFeature(
+            name=self.feature_name.text(),
+            type_of_underground=self.feature_type_of_underground.currentIndex(),
+            description=self.feature_description.toPlainText(),
+            geom=self.geom,
+            feature_layer_class=self.feature_layer_class,
+            id_=None,
+        )
+
     def _on_ok_clicked(self):
+        # Plan feature data
+        self.into_model().save_data()
+
+        # Regulation group data
+        for regulation_group_widget in self.regulation_group_widgets:
+            regulation_group_widget.into_model().save_data()
+
         self.accept()

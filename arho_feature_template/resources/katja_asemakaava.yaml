@@ -9,7 +9,7 @@ categories:
     - name: Asuinrakennusten alue
       geometry: Alue
       color_code: #000000
-      letter_code: A
+      short_name: A
       plan_regulations:
         - regulation_code: asumisenAlue
           additional_information:
@@ -18,7 +18,7 @@ categories:
     - name: Asuinkerrostalojen alue
       geometry: Alue
       color_code: #000000
-      letter_code: AK
+      short_name: AK
       plan_regulations:
         - regulation_code: asuinkerrostaloalue
           additional_information:
@@ -27,7 +27,7 @@ categories:
     - name: Asuinpientalojen alue
       geometry: Alue
       color_code: #A9D08E
-      letter_code: AP
+      short_name: AP
       plan_regulations:
         - regulation_code: asuinpientaloalue
           additional_information:
@@ -36,7 +36,7 @@ categories:
     - name: Rivitalojen ja muiden kytkettyjen asuinrakennusten alue
       geometry: Alue
       color_code: #FFD966
-      letter_code: AR
+      short_name: AR
       plan_regulations:
         - regulation_code: rivitalojenJaMuidenKytkettyjenAsuinpientalojenAlue
           additional_information:
@@ -45,7 +45,7 @@ categories:
     - name: Erillispientalojen alue
       geometry: Alue
       color_code: #E06666
-      letter_code: AO
+      short_name: AO
       plan_regulations:
         - regulation_code: erillistenAsuinpientalojenAlue
           additional_information:
@@ -54,7 +54,7 @@ categories:
     - name: Asuin-, liike- ja toimistorakennusten alue
       geometry: Alue
       color_code: #5B9BD5
-      letter_code: AL
+      short_name: AL
       plan_regulations:
         - regulation_code: asumisenAlue
           additional_information:
@@ -69,7 +69,7 @@ categories:
     - name: Asumista palveleva yhteiskäyttöinen alue
       geometry: Alue
       color_code: #9BC2E6
-      letter_code: AH
+      short_name: AH
       plan_regulations:
         - regulation_code: asumistaPalvelevaYhteiskayttoinenAlue
           additional_information:
@@ -78,7 +78,7 @@ categories:
     - name: Maatilojen talouskeskusten alue
       geometry: Alue
       color_code: #FFD966
-      letter_code: AM
+      short_name: AM
       plan_regulations:
         - regulation_code: maatilanTalouskeskuksenAlue
           additional_information:
@@ -87,7 +87,7 @@ categories:
     - name: Keskustatoimintojen alue
       geometry: Alue
       color_code: #D9D9D9
-      letter_code: C
+      short_name: C
       plan_regulations:
         - regulation_code: keskustatoimintojenAlue
           additional_information:
@@ -96,7 +96,7 @@ categories:
     - name: Yleisten rakennusten alue
       geometry: Alue
       color_code: #C6E0B4
-      letter_code: Y
+      short_name: Y
       plan_regulations:
         - regulation_code: yleistenRakennustenAlue
           additional_information:
@@ -106,7 +106,7 @@ categories:
     - name: Palvelurakennusten alue
       geometry: Alue
       color_code: #FFC000
-      letter_code: P
+      short_name: P
       plan_regulations:
         - regulation_code: palvelujenAlue
           additional_information:
@@ -115,7 +115,7 @@ categories:
     - name: Teollisuus- ja varastorakennusten alue
       geometry: Alue
       color_code: #70AD47
-      letter_code: T
+      short_name: T
       plan_regulations:
         - regulation_code: teollisuusalue
           additional_information:
@@ -127,7 +127,7 @@ categories:
     - name: Teollisuusrakennusten alue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
       geometry: Alue
       color_code: #5B9BD5
-      letter_code: TY
+      short_name: TY
       plan_regulations:
         - regulation_code: teollisuusalue
           additional_information:
@@ -137,7 +137,7 @@ categories:
     - name: Puisto
       geometry: Alue
       color_code: #4472C4
-      letter_code: VP
+      short_name: VP
       plan_regulations:
         - regulation_code: puisto
           additional_information:
@@ -146,7 +146,7 @@ categories:
     - name: Leikkipuisto
       geometry: Alue
       color_code: #A9D08E
-      letter_code: VK
+      short_name: VK
       plan_regulations:
         - regulation_code: leikkipuisto
           additional_information:
@@ -155,7 +155,7 @@ categories:
     - name: Uimaranta-alue
       geometry: Alue
       color_code: #E06666
-      letter_code: VV
+      short_name: VV
       plan_regulations:
         - regulation_code: uimaranta
           additional_information:
@@ -164,7 +164,7 @@ categories:
     - name: Vapaa-ajan asumisen ja matkailun alue
       geometry: Alue
       color_code: #70AD47
-      letter_code: R
+      short_name: R
       plan_regulations:
         - regulation_code: vapaaAjanAsumisenJaMatkailunAlue
           additional_information:
@@ -173,7 +173,7 @@ categories:
     - name: Maisemallisesti arvokas peltoalue
       geometry: Alue
       color_code: #abcdef
-      letter_code: MA
+      short_name: MA
       plan_regulations:
         - regulation_code: pelto
           additional_information:
@@ -184,7 +184,7 @@ categories:
     - name: Virkistysalue
       geometry: Alue
       color_code: #FFC000
-      letter_code: V
+      short_name: V
       plan_regulations:
         - regulation_code: virkistysalue
           additional_information:
@@ -196,7 +196,7 @@ categories:
 
     - name: Auton säilytyspaikan rakennusala
       geometry: Alue
-      letter_code: a
+      short_name: a
       plan_regulations:
         - regulation_code: rakennusala
           additional_information:
@@ -206,7 +206,7 @@ categories:
 
     - name: Rakennusala, jolle saa sijoittaa lasten päiväkodin
       geometry: Alue
-      letter_code: pk
+      short_name: pk
       plan_regulations:
         - regulation_code: rakennusala
           additional_information:
@@ -216,7 +216,7 @@ categories:
 
     - name: Rakennusala, jolle saa sijoittaa saunan
       geometry: Alue
-      letter_code: sa
+      short_name: sa
       plan_regulations:
         - regulation_code: rakennusalaJolleSaaSijoittaaSaunan
           additional_information:
@@ -224,7 +224,7 @@ categories:
 
     - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
       geometry: Alue
-      letter_code: kyma
+      short_name: kyma
       plan_regulations:
         - regulation_code: maisemallisestiArvokasAlue
           additional_information:
@@ -235,7 +235,7 @@ categories:
 
     - name: Maisemallisesti arvokas alue
       geometry: Alue
-      letter_code: ma
+      short_name: ma
       plan_regulations:
         - regulation_code: maisemallisestiArvokasAlue
           additional_information:
@@ -243,7 +243,7 @@ categories:
 
     - name: Kansainvälisesti arvokas maisema-alue
       geometry: Alue
-      letter_code: kvma
+      short_name: kvma
       plan_regulations:
         - regulation_code: maisemallisestiArvokasAlue
           additional_information:

@@ -157,16 +157,8 @@ class FeatureTemplater:
         if not self.active_template:
             return
 
-        attribute_form = TemplateAttributeForm(self.active_template.config)
-
-        if attribute_form.exec_():
-            layer = get_vector_layer_from_project(self.active_template.config.feature.layer)
-            # Save the feature
-            attribute_form.set_feature_attributes(feature)
-
-            layer.beginEditCommand("Create feature from template")
-            layer.addFeature(feature)
-            layer.commitChanges(stopEditing=False)
+        attribute_form = TemplateAttributeForm(self.active_template.config, feature)
+        attribute_form.exec_()
 
     def get_library_names(self) -> list[str]:
         return list(self.library_configs.keys())
