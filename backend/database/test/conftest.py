@@ -25,7 +25,7 @@ from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 14  # adjust me when adding tables
-codes_count: int = 16  # adjust me when adding tables
+codes_count: int = 20  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 
@@ -623,8 +623,8 @@ def type_of_source_data_instance(session):
 
 
 @pytest.fixture()
-def type_of_document_instance(session):
-    instance = codes.TypeOfDocument(value="test", status="LOCAL")
+def type_of_document_plan_map_instance(session):
+    instance = codes.TypeOfDocument(value="03", status="LOCAL")
     session.add(instance)
     session.commit()
     yield instance
@@ -633,8 +633,48 @@ def type_of_document_instance(session):
 
 
 @pytest.fixture()
-def category_of_publicity_instance(session):
-    instance = codes.CategoryOfPublicity(value="test", status="LOCAL")
+def category_of_publicity_public_instance(session):
+    instance = codes.CategoryOfPublicity(value="1", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def personal_data_content_no_personal_data_instance(session):
+    instance = codes.PersonalDataContent(value="1", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def retention_time_permanent_instance(session):
+    instance = codes.RetentionTime(value="01", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def language_finnish_instance(session):
+    instance = codes.Language(value="fi", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def municipality_instance(session):
+    instance = codes.Municipality(value="Paimio", status="LOCAL")
     session.add(instance)
     session.commit()
     yield instance
@@ -1182,18 +1222,47 @@ def source_data_instance(session, plan_instance, type_of_source_data_instance):
     session.commit()
 
 
+# @pytest.fixture(scope="function")
+# def document_instance(
+#     session, type_of_document_instance, category_of_publicity_instance, plan_instance
+# ):
+#     instance = models.Document(
+#         name="Testidokumentti",
+#         type_of_document=type_of_document_instance,
+#         personal_details="Testihenkilö",
+#         publicity=category_of_publicity_instance,
+#         language="fin",
+#         decision=False,
+#         plan=plan_instance,
+#     )
+#     session.add(instance)
+#     session.commit()
+#     yield instance
+#     session.delete(instance)
+#     session.commit()
+
+
 @pytest.fixture(scope="function")
-def document_instance(
-    session, type_of_document_instance, category_of_publicity_instance, plan_instance
+def plan_map_instance(
+    session,
+    plan_instance,
+    type_of_document_plan_map_instance,
+    category_of_publicity_public_instance,
+    personal_data_content_no_personal_data_instance,
+    retention_time_permanent_instance,
+    language_finnish_instance,
 ):
     instance = models.Document(
-        name="Testidokumentti",
-        type_of_document=type_of_document_instance,
-        personal_details="Testihenkilö",
-        publicity=category_of_publicity_instance,
-        language="fin",
+        name={"fin": "Kaavakartta"},
+        type_of_document=type_of_document_plan_map_instance,
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
         decision=False,
         plan=plan_instance,
+        url="https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
     )
     session.add(instance)
     session.commit()
@@ -1215,6 +1284,7 @@ def lifecycle_date_instance(session, code_instance):
 @pytest.fixture(scope="function")
 def complete_test_plan(
     session: Session,
+    plan_map_instance: models.Document,
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
     land_use_point_instance: models.LandUsePoint,
@@ -1554,7 +1624,9 @@ def desired_plan_dict(
             },
         },
         "planMaps": [],
-        # TODO: plan documents to be added.
+        "planAnnexes": [],
+        "otherPlanMaterials": [],
+        "planReport": None,
         "periodOfValidity": None,
         "approvalDate": None,
         "generalRegulationGroups": [
@@ -1866,6 +1938,9 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
         "planRegulationGroups": [],
         "planRegulationGroupRelations": [],
         "planMaps": [],
+        "planAnnexes": [],
+        "otherPlanMaterials": [],
+        "planReport": None,
     }
 
 
@@ -1933,11 +2008,26 @@ def desired_plan_matter_dict(
                     "decisionDate": "2024-02-01",
                     "dateOfDecision": "2024-02-01",
                     "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
-                    "plans": [desired_plan_dict],
+                    "plans": [
+                        {
+                            # Maps must be added to the valid plan inside plan matter
+                            **desired_plan_dict,
+                            "planMaps": [
+                                {
+                                    "planMapKey": "whatever",
+                                    "name": {
+                                        "fin": "Kaavakartta",
+                                    },
+                                    "fileKey": "whatever else",
+                                    "coordinateSystem": "3067",
+                                }
+                            ],
+                        }
+                    ],
                 },
             },
         ],
-        # TODO: plan documents, source data etc. non-mandatory fields to be added
+        # TODO: source data etc. non-mandatory fields to be added
     }
 
 

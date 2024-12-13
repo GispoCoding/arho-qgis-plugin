@@ -73,7 +73,7 @@ def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
 
 
 @pytest.fixture()
-def populate_admin_region_geometries(
+def populate_geometries(
     koodistot_loader_url, mml_loader_url, main_db_params, create_db
 ):
     payload = {}
@@ -184,11 +184,9 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
         conn.close()
 
 
-def test_populate_admin_region_geometries(
-    populate_admin_region_geometries, populate_koodistot, main_db_params
-):
+def test_populate_geometries(populate_geometries, populate_koodistot, main_db_params):
     """
-    Test that maakunta geometries are populated
+    Test that kunta and maakunta geometries are populated
     """
     conn = psycopg2.connect(**main_db_params)
     try:
@@ -198,6 +196,11 @@ def test_populate_admin_region_geometries(
             )
             geom_count = cur.fetchone()[0]
             assert geom_count == 19
+            cur.execute(
+                "SELECT count(*) FROM codes.municipality WHERE geom IS NOT NULL"
+            )
+            geom_count = cur.fetchone()[0]
+            assert geom_count == 309
     finally:
         conn.close()
 

@@ -129,6 +129,16 @@ class TypeOfDocument(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_AsiakirjanLaji_YKAK"
 
 
+class Municipality(CodeBase):
+    """
+    Kunta
+    """
+
+    __tablename__ = "municipality"
+    code_list_uri = "http://uri.suomi.fi/codelist/jhs/kunta_1_20240101"
+    geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True)
+
+
 class AdministrativeRegion(CodeBase):
     """
     Maakunta
@@ -173,6 +183,33 @@ class CategoryOfPublicity(CodeBase):
 
     __tablename__ = "category_of_publicity"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/julkisuus"
+
+
+class PersonalDataContent(CodeBase):
+    """
+    Asiakirjan henkilötietosisältö
+    """
+
+    __tablename__ = "personal_data_content"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto"
+
+
+class RetentionTime(CodeBase):
+    """
+    Asiakirjan säilytysaika
+    """
+
+    __tablename__ = "retention_time"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/sailytysaika"
+
+
+class Language(CodeBase):
+    """
+    Rakennetun ympäristön tietojärjestelmän tukemat kielet
+    """
+
+    __tablename__ = "language"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/ryhtikielet"
 
 
 class TypeOfInteractionEvent(CodeBase):

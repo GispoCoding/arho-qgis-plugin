@@ -1,6 +1,8 @@
 import json
+import os
 import re
 from typing import Callable
+from uuid import uuid4
 
 import codes
 import models
@@ -68,6 +70,32 @@ def mock_public_ryhti_validate_valid(requests_mock) -> None:
 
 
 @pytest.fixture()
+def mock_public_map_document(requests_mock):
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "test_ryhti_client_plan_map.tif"
+    )
+    with open(path, "rb") as plan_map:
+        requests_mock.get(
+            "https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
+            body=plan_map,
+            headers={
+                "Content-type": "image/tiff",
+                "Last-Modified": "Mon, 01 Jan 2024 00:00:00 GMT",
+            },
+            status_code=200,
+        )
+        requests_mock.head(
+            "https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
+            headers={
+                "Content-type": "image/tiff",
+                "Last-Modified": "Mon, 01 Jan 2024 00:00:00 GMT",
+            },
+            status_code=200,
+        )
+        yield
+
+
+@pytest.fixture()
 def mock_xroad_ryhti_authenticate(requests_mock) -> None:
     def match_request_body(request: _RequestObjectProxy):
         # Oh great, looks like requests json method will not parse minimal json consisting of just string.
@@ -84,6 +112,30 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
         },
         additional_matcher=match_request_body,
         status_code=200,
+    )
+
+
+@pytest.fixture()
+def mock_xroad_ryhti_fileupload(requests_mock) -> None:
+    def match_request_body(request: _RequestObjectProxy):
+        # Check that the file is uploaded:
+        return (
+            b'Content-Disposition: form-data; name="file"; filename="GeogToWGS84GeoKey5.tif"'
+            in request.body
+        )
+
+    requests_mock.post(
+        "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/File?regionId=01",
+        # Return random file id
+        json=str(uuid4()),
+        request_headers={
+            "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
+            "Authorization": "Bearer test-token",
+            "Accept": "application/json",
+            "Content-type": "multipart/form-data",
+        },
+        additional_matcher=match_request_body,
+        status_code=201,
     )
 
 
@@ -496,6 +548,127 @@ def authenticated_client_with_valid_plan_in_proposal_phase(
     return client_with_plan_data_in_proposal_phase
 
 
+def test_upload_plan_documents(
+    session: Session,
+    authenticated_client_with_valid_plan: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_map_document: Callable,
+    mock_xroad_ryhti_fileupload: Callable,
+):
+    """
+    Check that plan documents are uploaded.
+    """
+    responses = authenticated_client_with_valid_plan.upload_plan_documents()
+    for plan_id, document_responses in responses.items():
+        assert plan_id == plan_instance.id
+        for document_response in document_responses:
+            assert document_response["status"] == 201
+            assert not document_response["errors"]
+            assert document_response["detail"]
+
+
+def test_set_plan_documents(
+    session: Session,
+    authenticated_client_with_valid_plan: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_map_document: Callable,
+    mock_xroad_ryhti_fileupload: Callable,
+):
+    """
+    Check that uploaded document ids are saved to the database.
+    """
+    responses = authenticated_client_with_valid_plan.upload_plan_documents()
+    authenticated_client_with_valid_plan.set_plan_documents(responses)
+    session.refresh(plan_instance.documents[0])
+    assert plan_instance.documents[0].exported_at
+    assert plan_instance.documents[0].exported_file_key
+
+
+@pytest.fixture()
+def authenticated_client_with_valid_plan_and_document(
+    session: Session,
+    authenticated_client_with_valid_plan: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_map_document: Callable,
+    mock_xroad_ryhti_fileupload: Callable,
+) -> RyhtiClient:
+    """
+    Returns Ryhti client that has plan data read in and validated
+    without errors, that is authenticated to our mock X-Road API, and that has plan
+    document uploaded.
+    """
+    responses = authenticated_client_with_valid_plan.upload_plan_documents()
+    for plan_id, document_responses in responses.items():
+        assert plan_id == plan_instance.id
+        for document_response in document_responses:
+            assert document_response["status"] == 201
+            assert not document_response["errors"]
+            assert document_response["detail"]
+    authenticated_client_with_valid_plan.set_plan_documents(responses)
+    session.refresh(plan_instance.documents[0])
+    assert plan_instance.documents[0].exported_at
+    assert plan_instance.documents[0].exported_file_key
+    return authenticated_client_with_valid_plan
+
+
+@pytest.fixture()
+def authenticated_client_with_valid_plan_and_document_in_proposal_phase(
+    session: Session,
+    authenticated_client_with_valid_plan_in_proposal_phase: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_map_document: Callable,
+    mock_xroad_ryhti_fileupload: Callable,
+) -> RyhtiClient:
+    """
+    Returns Ryhti client that has plan data in proposal phase read in and validated
+    without errors, that is authenticated to our mock X-Road API, and that has plan
+    document uploaded.
+    """
+    responses = (
+        authenticated_client_with_valid_plan_in_proposal_phase.upload_plan_documents()
+    )
+    for plan_id, document_responses in responses.items():
+        assert plan_id == plan_instance.id
+        for document_response in document_responses:
+            assert document_response["status"] == 201
+            assert not document_response["errors"]
+            assert document_response["detail"]
+    authenticated_client_with_valid_plan_in_proposal_phase.set_plan_documents(responses)
+    session.refresh(plan_instance.documents[0])
+    assert plan_instance.documents[0].exported_at
+    assert plan_instance.documents[0].exported_file_key
+    return authenticated_client_with_valid_plan_in_proposal_phase
+
+
+def test_upload_unchanged_plan_documents(
+    session: Session,
+    authenticated_client_with_valid_plan_and_document: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_public_map_document: Callable,
+    mock_xroad_ryhti_fileupload: Callable,
+):
+    """
+    Check that unchanged plan documents are not uploaded.
+    """
+    old_exported_at = plan_instance.documents[0].exported_at
+    old_file_key = plan_instance.documents[0].exported_file_key
+    reupload_responses = (
+        authenticated_client_with_valid_plan_and_document.upload_plan_documents()
+    )
+    for plan_id, document_responses in reupload_responses.items():
+        assert plan_id == plan_instance.id
+        for document_response in document_responses:
+            assert plan_id == plan_instance.id
+            assert document_response["status"] is None
+            assert document_response["detail"] == "File unchanged since last upload."
+    authenticated_client_with_valid_plan_and_document.set_plan_documents(
+        reupload_responses
+    )
+    session.refresh(plan_instance.documents[0])
+    assert plan_instance.documents[0].exported_at == old_exported_at
+    assert plan_instance.documents[0].exported_file_key == old_file_key
+
+
 def test_set_permanent_plan_identifiers_in_wrong_region(
     session: Session,
     authenticated_client_with_valid_plan_in_wrong_region: RyhtiClient,
@@ -523,7 +696,7 @@ def test_set_permanent_plan_identifiers_in_wrong_region(
 
 def test_set_permanent_plan_identifiers(
     session: Session,
-    authenticated_client_with_valid_plan: RyhtiClient,
+    authenticated_client_with_valid_plan_and_document: RyhtiClient,
     plan_instance: models.Plan,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ):
@@ -533,8 +706,12 @@ def test_set_permanent_plan_identifiers(
     marked the plan as valid.
     """
 
-    id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
-    authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
+    id_responses = (
+        authenticated_client_with_valid_plan_and_document.get_permanent_plan_identifiers()
+    )
+    authenticated_client_with_valid_plan_and_document.set_permanent_plan_identifiers(
+        id_responses
+    )
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
@@ -548,48 +725,18 @@ def test_set_permanent_plan_identifiers(
 @pytest.fixture()
 def client_with_plan_with_permanent_identifier(
     session: Session,
-    authenticated_client_with_valid_plan: RyhtiClient,
+    authenticated_client_with_valid_plan_and_document: RyhtiClient,
     plan_instance: models.Plan,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ) -> RyhtiClient:
     """
-    Return RyhtiClient that has plan data read in, validated and its permanent
+    Return RyhtiClient that has plan data read in, validated, documents uploaded and its permanent
     identifier set.
     """
-    id_responses = authenticated_client_with_valid_plan.get_permanent_plan_identifiers()
-    authenticated_client_with_valid_plan.set_permanent_plan_identifiers(id_responses)
-    session.refresh(plan_instance)
-    print(id_responses)
-    received_plan_identifier = next(iter(id_responses.values()))["detail"]
-    assert plan_instance.permanent_plan_identifier
-    assert plan_instance.permanent_plan_identifier == received_plan_identifier
-    authenticated_client_with_valid_plan.plan_matter_dictionaries = (
-        authenticated_client_with_valid_plan.get_plan_matters()
-    )
-    assert (
-        authenticated_client_with_valid_plan.plan_matter_dictionaries[plan_instance.id][
-            "permanentPlanIdentifier"
-        ]
-        == received_plan_identifier
-    )
-    return authenticated_client_with_valid_plan
-
-
-@pytest.fixture()
-def client_with_plan_with_permanent_identifier_in_proposal_phase(
-    session: Session,
-    authenticated_client_with_valid_plan_in_proposal_phase: RyhtiClient,
-    plan_instance: models.Plan,
-    mock_xroad_ryhti_permanentidentifier: Callable,
-) -> RyhtiClient:
-    """
-    Return RyhtiClient that has plan data in proposal phase read in, validated and
-    its permanent identifier set.
-    """
     id_responses = (
-        authenticated_client_with_valid_plan_in_proposal_phase.get_permanent_plan_identifiers()
+        authenticated_client_with_valid_plan_and_document.get_permanent_plan_identifiers()
     )
-    authenticated_client_with_valid_plan_in_proposal_phase.set_permanent_plan_identifiers(
+    authenticated_client_with_valid_plan_and_document.set_permanent_plan_identifiers(
         id_responses
     )
     session.refresh(plan_instance)
@@ -597,16 +744,52 @@ def client_with_plan_with_permanent_identifier_in_proposal_phase(
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
-    authenticated_client_with_valid_plan_in_proposal_phase.plan_matter_dictionaries = (
-        authenticated_client_with_valid_plan_in_proposal_phase.get_plan_matters()
+    authenticated_client_with_valid_plan_and_document.plan_matter_dictionaries = (
+        authenticated_client_with_valid_plan_and_document.get_plan_matters()
     )
     assert (
-        authenticated_client_with_valid_plan_in_proposal_phase.plan_matter_dictionaries[
+        authenticated_client_with_valid_plan_and_document.plan_matter_dictionaries[
             plan_instance.id
         ]["permanentPlanIdentifier"]
         == received_plan_identifier
     )
-    return authenticated_client_with_valid_plan_in_proposal_phase
+    return authenticated_client_with_valid_plan_and_document
+
+
+@pytest.fixture()
+def client_with_plan_with_permanent_identifier_in_proposal_phase(
+    session: Session,
+    authenticated_client_with_valid_plan_and_document_in_proposal_phase: RyhtiClient,
+    plan_instance: models.Plan,
+    mock_xroad_ryhti_permanentidentifier: Callable,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data in proposal phase read in, validated, documents uploaded and
+    its permanent identifier set.
+    """
+    id_responses = (
+        authenticated_client_with_valid_plan_and_document_in_proposal_phase.get_permanent_plan_identifiers()
+    )
+    authenticated_client_with_valid_plan_and_document_in_proposal_phase.set_permanent_plan_identifiers(
+        id_responses
+    )
+    session.refresh(plan_instance)
+    print(id_responses)
+    received_plan_identifier = next(iter(id_responses.values()))["detail"]
+    assert plan_instance.permanent_plan_identifier
+    assert plan_instance.permanent_plan_identifier == received_plan_identifier
+    authenticated_client_with_valid_plan_and_document_in_proposal_phase.plan_matter_dictionaries = (
+        authenticated_client_with_valid_plan_and_document_in_proposal_phase.get_plan_matters()
+    )
+    assert (
+        authenticated_client_with_valid_plan_and_document_in_proposal_phase.plan_matter_dictionaries[
+            plan_instance.id
+        ][
+            "permanentPlanIdentifier"
+        ]
+        == received_plan_identifier
+    )
+    return authenticated_client_with_valid_plan_and_document_in_proposal_phase
 
 
 def test_get_plan_matters(
@@ -630,6 +813,8 @@ def test_get_plan_matters(
             "handlingEventKey",
             "interactionEventKey",
             "planDecisionKey",
+            "planMapKey",
+            "fileKey",
         ],
     )
 

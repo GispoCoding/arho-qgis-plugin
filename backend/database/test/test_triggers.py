@@ -23,7 +23,7 @@ def test_modified_at_triggers(
     plan_proposition_instance: models.PlanProposition,
     source_data_instance: models.SourceData,
     organisation_instance: models.Organisation,
-    document_instance: models.Document,
+    plan_map_instance: models.Document,
     lifecycle_date_instance: models.LifeCycleDate,
 ):
     # Save old modified_at timestamps
@@ -40,7 +40,7 @@ def test_modified_at_triggers(
     plan_proposition_instance_old_modified_at = plan_proposition_instance.modified_at
     source_data_instance_old_modified_at = source_data_instance.modified_at
     organisation_instance_old_modified_at = organisation_instance.modified_at
-    document_instance_old_modified_at = document_instance.modified_at
+    plan_map_instance_old_modified_at = plan_map_instance.modified_at
     lifecycle_date_instance_old_modified_at = lifecycle_date_instance.modified_at
 
     # Edit tables to fire the triggers
@@ -55,7 +55,7 @@ def test_modified_at_triggers(
     plan_proposition_instance.text_value = "foo"
     source_data_instance.additional_information_uri = "http://test2.fi"
     organisation_instance.business_id = "foo"
-    document_instance.name = "foo"
+    plan_map_instance.name = "foo"
     lifecycle_date_instance.ending_at = datetime.now()
     session.flush()
     session.refresh(plan_instance)
@@ -69,7 +69,7 @@ def test_modified_at_triggers(
     session.refresh(plan_proposition_instance)
     session.refresh(source_data_instance)
     session.refresh(organisation_instance)
-    session.refresh(document_instance)
+    session.refresh(plan_map_instance)
     session.refresh(lifecycle_date_instance)
 
     assert plan_instance.modified_at != plan_old_modified_at
@@ -91,7 +91,7 @@ def test_modified_at_triggers(
     )
     assert source_data_instance.modified_at != source_data_instance_old_modified_at
     assert organisation_instance.modified_at != organisation_instance_old_modified_at
-    assert document_instance != document_instance_old_modified_at
+    assert plan_map_instance != plan_map_instance_old_modified_at
     assert (
         lifecycle_date_instance.modified_at != lifecycle_date_instance_old_modified_at
     )

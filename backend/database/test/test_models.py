@@ -388,15 +388,34 @@ def test_organisation(
 
 def test_document(
     session: Session,
-    document_instance: models.Document,
-    type_of_document_instance: codes.TypeOfDocument,
+    plan_map_instance: models.Document,
+    type_of_document_plan_map_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
     plan_instance: models.Plan,
 ):
     # non-nullable document relations
-    assert document_instance.type_of_document is type_of_document_instance
-    assert type_of_document_instance.documents == [document_instance]
-    assert document_instance.plan is plan_instance
-    assert plan_instance.documents == [document_instance]
+    assert plan_map_instance.type_of_document is type_of_document_plan_map_instance
+    assert type_of_document_plan_map_instance.documents == [plan_map_instance]
+    assert plan_map_instance.plan is plan_instance
+    assert plan_instance.documents == [plan_map_instance]
+    assert (
+        plan_map_instance.category_of_publicity is category_of_publicity_public_instance
+    )
+    assert category_of_publicity_public_instance.documents == [plan_map_instance]
+    assert (
+        plan_map_instance.personal_data_content
+        is personal_data_content_no_personal_data_instance
+    )
+    assert personal_data_content_no_personal_data_instance.documents == [
+        plan_map_instance
+    ]
+    assert plan_map_instance.retention_time is retention_time_permanent_instance
+    assert retention_time_permanent_instance.documents == [plan_map_instance]
+    assert plan_map_instance.language is language_finnish_instance
+    assert language_finnish_instance.documents == [plan_map_instance]
     session.flush()
 
 

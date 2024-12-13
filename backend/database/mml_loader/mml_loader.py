@@ -10,7 +10,7 @@ from xml.etree import ElementTree
 
 import pygml
 import requests
-from codes import AdministrativeRegion
+from codes import AdministrativeRegion, Municipality
 from db_helper import DatabaseHelper, User
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiPolygon, shape
@@ -18,8 +18,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 """
-For populating administrative regions (Maakunta) with geometries,
-adapted from Tarmo lambda functions
+For populating administrative regions (Maakunta) and municipalities (Kunta) with
+geometries, adapted from Tarmo lambda functions
 """
 
 LOGGER = logging.getLogger()
@@ -66,7 +66,7 @@ class MMLLoader:
         """
         session = requests.Session()
 
-        output_dir = "admin_region_geom_data"
+        output_dir = "geom_data"
         os.makedirs(output_dir, exist_ok=True)
 
         year = str(self.payload["inputs"]["yearInput"])  # type: ignore
@@ -118,8 +118,20 @@ class MMLLoader:
         }
 
         with self.Session() as session:
-            admin_regions = session.query(AdministrativeRegion).all()
-            au_codes = sorted([admin_region.value for admin_region in admin_regions])
+            region_codes = [
+                value[0]
+                for value in (
+                    session.query(AdministrativeRegion.value)
+                    .order_by(AdministrativeRegion.value)
+                    .all()
+                )
+            ]
+            municipality_codes = [
+                value[0]
+                for value in (
+                    session.query(Municipality.value).order_by(Municipality.value).all()
+                )
+            ]
 
         polygons = {}
 
@@ -128,8 +140,10 @@ class MMLLoader:
         for au_elem in au_elements:
             au_id = au_elem.get(prefix + "id")
 
-            # Check that each id starts with 'FI_AU_ADMINISTRATIVEUNIT_REGION_'
-            if au_id and au_id.startswith("FI_AU_ADMINISTRATIVEUNIT_REGION_"):
+            if au_id and (
+                au_id.startswith("FI_AU_ADMINISTRATIVEUNIT_REGION_")
+                or au_id.startswith("FI_AU_ADMINISTRATIVEUNIT_MUNICIPALITY_")
+            ):
                 gml_elements = au_elem.findall(".//gml:*", namespaces)
                 for gml_elem in gml_elements:
                     gml_string = ElementTree.tostring(
@@ -142,10 +156,16 @@ class MMLLoader:
 
         # Parse GML elements into shapely geometries
         geoms = {}
-        for au_code in au_codes:
-            if au_code in polygons:
-                geom = pygml.parse(polygons[au_code])
-                geoms[au_code] = from_shape(
+        for region_code in region_codes:
+            if region_code in polygons:
+                geom = pygml.parse(polygons[region_code])
+                geoms[region_code] = from_shape(
+                    MultiPolygon([(shape(geom.__geo_interface__))])
+                )
+        for municipality_code in municipality_codes:
+            if municipality_code in polygons:
+                geom = pygml.parse(polygons[municipality_code])
+                geoms[municipality_code] = from_shape(
                     MultiPolygon([(shape(geom.__geo_interface__))])
                 )
 
@@ -153,23 +173,30 @@ class MMLLoader:
 
     def save_geometries(self, geoms: Dict) -> str:
         """
-        Save all geometries into administrative regions table.
+        Save all geometries into the corresponding tables.
         """
         successful_actions = 0
         with self.Session() as session:
             admin_regions = session.query(AdministrativeRegion).all()
+            municipalities = session.query(Municipality).all()
             for admin_region in admin_regions:
                 LOGGER.info(
                     f"Adding geometry to administrative region {admin_region.value}..."
                 )
-                for admin_region_id, geom in geoms.items():
-                    if admin_region_id == admin_region.value:
-                        admin_region.geom = geom
-                        LOGGER.info(
-                            f"Geometry added to administrative region {admin_region.value}"  # noqa
-                        )
-                        successful_actions += 1
-                        break
+                if geom := geoms.get(admin_region.value):
+                    admin_region.geom = geom
+                    LOGGER.info(
+                        f"Geometry added to administrative region {admin_region.value}"  # noqa
+                    )
+                    successful_actions += 1
+            for municipality in municipalities:
+                LOGGER.info(f"Adding geometry to municipality {municipality.value}...")
+                if geom := geoms.get(municipality.value):
+                    municipality.geom = geom
+                    LOGGER.info(
+                        f"Geometry added to municipality {municipality.value}"  # noqa
+                    )
+                    successful_actions += 1
             session.commit()
         msg = f"{successful_actions} inserted or updated. 0 deleted."
         LOGGER.info(msg)
@@ -183,7 +210,7 @@ def handler(event, _) -> Response:
     api_key = os.environ.get("MML_APIKEY")
     if not api_key:
         raise ValueError(
-            "Please set MML_APIKEY environment variable to fetch Administrative region geometries."  # noqa
+            "Please set MML_APIKEY environment variable to fetch geometries."  # noqa
         )
 
     loader = MMLLoader(db_helper.get_connection_string(), api_key=api_key)
