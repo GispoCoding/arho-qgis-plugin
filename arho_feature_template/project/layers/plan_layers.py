@@ -84,7 +84,7 @@ class PlanFeatureLayer(AbstractPlanLayer):
 
         feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
         feature["name"] = {"fin": model.name if model.name else ""}
-        feature["type_of_underground_id"] = "adbf1d95-ce21-40c2-ae83-a82c13591e78"  # TODO: change
+        feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = {"fin": model.description if model.description else ""}
         feature["plan_id"] = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
 

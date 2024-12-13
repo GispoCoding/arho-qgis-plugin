@@ -320,7 +320,7 @@ class RegulationGroup:
 class PlanFeature:
     geom: QgsGeometry
     feature_layer_class: type[PlanFeatureLayer]
-    type_of_underground: int
+    type_of_underground_id: str
     name: str | None = None
     description: str | None = None
     plan_id: int | None = None
