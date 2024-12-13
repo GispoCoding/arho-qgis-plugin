@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
+from numbers import Number
 from string import Template
 from textwrap import dedent
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from qgis.core import QgsFeature, QgsVectorLayerUtils
+from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
 from qgis.utils import iface
 
 from arho_feature_template.exceptions import LayerEditableError
@@ -15,7 +16,7 @@ from arho_feature_template.project.layers import AbstractLayer
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import Plan, Regulation, RegulationGroup
+    from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup
 
 
 class AbstractPlanLayer(AbstractLayer):
@@ -72,27 +73,45 @@ class PlanLayer(AbstractPlanLayer):
         return feature
 
 
-class LandUsePointLayer(AbstractPlanLayer):
+class PlanFeatureLayer(AbstractPlanLayer):
+    @classmethod
+    def feature_from_model(cls, model: PlanFeature) -> QgsFeature:
+        layer = cls.get_from_project()
+
+        if not model.geom:
+            message = "Plan feature must have a geometry to be added to the layer"
+            raise ValueError(message)
+
+        feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
+        feature["name"] = {"fin": model.name if model.name else ""}
+        feature["type_of_underground_id"] = "adbf1d95-ce21-40c2-ae83-a82c13591e78"  # TODO: change
+        feature["description"] = {"fin": model.description if model.description else ""}
+        feature["plan_id"] = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
+
+        return feature
+
+
+class LandUsePointLayer(PlanFeatureLayer):
     name = "Maankäytön kohteet"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class OtherPointLayer(AbstractPlanLayer):
+class OtherPointLayer(PlanFeatureLayer):
     name = "Muut pisteet"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class LineLayer(AbstractPlanLayer):
+class LineLayer(PlanFeatureLayer):
     name = "Viivat"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class LandUseAreaLayer(AbstractPlanLayer):
+class LandUseAreaLayer(PlanFeatureLayer):
     name = "Aluevaraus"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class OtherAreaLayer(AbstractPlanLayer):
+class OtherAreaLayer(PlanFeatureLayer):
     name = "Osa-alue"
     filter_template = Template("plan_id = '$plan_id'")
 
@@ -102,10 +121,17 @@ class RegulationGroupLayer(AbstractPlanLayer):
     filter_template = Template("plan_id = '$plan_id'")
 
     @classmethod
-    def feature_from_model(cls, _model: RegulationGroup) -> QgsFeature:
+    def feature_from_model(cls, model: RegulationGroup) -> QgsFeature:
         layer = cls.get_from_project()
-        # TODO: Implement
-        return QgsVectorLayerUtils.createFeature(layer)
+
+        feature = QgsVectorLayerUtils.createFeature(layer)
+        feature["short_name"] = model.short_name
+        feature["name"] = {"fin": model.name}
+        feature["type_of_plan_regulation_group_id"] = "036d82ea-b4ae-44e9-bd06-6466d5c39d20"  # TODO: change
+        # feature["type_of_plan_regulation_group_id"] = model.type_code -> type_code_id ?
+        feature["plan_id"] = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
+
+        return feature
 
 
 class RegulationGroupAssociationLayer(AbstractPlanLayer):
@@ -140,10 +166,20 @@ class PlanRegulationLayer(AbstractPlanLayer):
     )
 
     @classmethod
-    def feat_from_model(cls, _model: Regulation, _regulation_group_id: int | None) -> QgsFeature:
+    def feature_from_model(cls, model: Regulation) -> QgsFeature:
         layer = cls.get_from_project()
-        # TODO: Implement
-        return QgsVectorLayerUtils.createFeature(layer)
+
+        feature = QgsVectorLayerUtils.createFeature(layer)
+        feature["plan_regulation_group_id"] = model.regulation_group_id_
+        feature["type_of_plan_regulation_id"] = model.config.id
+        feature["unit"] = model.config.unit
+        feature["text_value"] = {"fin": model.value if isinstance(model.value, str) else ""}
+        feature["numeric_value"] = model.value if isinstance(model.value, Number) else NULL
+        feature["name"] = {"fin": model.topic_tag if model.topic_tag else ""}
+        # feature["plan_theme_id"]
+        # feature["type_of_verbal_plan_regulation_id"]
+
+        return feature
 
 
 class PlanPropositionLayer(AbstractPlanLayer):
@@ -173,3 +209,5 @@ class SourceDataLayer(AbstractPlanLayer):
 
 
 plan_layers = AbstractPlanLayer.__subclasses__()
+plan_layers.remove(PlanFeatureLayer)
+plan_layers.extend(PlanFeatureLayer.__subclasses__())

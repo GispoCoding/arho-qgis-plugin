@@ -24,7 +24,6 @@ from arho_feature_template.gui.plan_regulation_input_widgets import (
     MultilineTextInputWidget,
     SinglelineTextInputWidget,
 )
-from arho_feature_template.project.layers.plan_layers import PlanRegulationLayer
 from arho_feature_template.utils.misc_utils import get_additional_information_name, get_layer_by_name, iface
 
 if TYPE_CHECKING:
@@ -34,7 +33,6 @@ ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 # TO BE REPLACED
-ADDITIONAL_INFORMATION_TYPES_WITH_INPUT = ["kayttotarkoituskohdistus"]
 LANGUAGE = "fin"
 
 
@@ -87,7 +85,6 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         value_type = self.config.value_type
         if value_type:
             self._add_value_input(value_type, self.config.unit, self.regulation.value)
-            #   if self.regulation else None)
 
         # Additional information
         if self.regulation.additional_information:
@@ -267,14 +264,3 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             topic_tag=self.topic_tag_widget.get_value() if self.topic_tag_widget else None,
             id_=self.regulation.id_,
         )
-
-    def save_data(self, regulation_group_id: int | None) -> Regulation:
-        model = self.into_model()
-        regulation_feature = PlanRegulationLayer.feat_from_model(model, regulation_group_id)
-        layer = PlanRegulationLayer.get_from_project()
-        if model.id_ is None:
-            layer.addFeature(regulation_feature)
-        else:
-            layer.updateFeature(regulation_feature)
-
-        return model

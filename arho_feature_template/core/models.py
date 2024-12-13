@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import yaml
 
 from arho_feature_template.exceptions import ConfigSyntaxError
+from arho_feature_template.project.layers.plan_layers import PlanFeatureLayer, PlanRegulationLayer, RegulationGroupLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import get_layer_by_name, iface
 
@@ -219,20 +220,38 @@ class Regulation:
     files: list[str] = field(default_factory=list)
     theme: str | None = None
     topic_tag: str | None = None
+    regulation_group_id_: int | None = None
     id_: int | None = None
     # value_string: str | None
     # value_number: Number | None
     # value_number_pair: tuple[Number, Number] | None
 
+    def save_data(self):
+        feature = PlanRegulationLayer.feature_from_model(self)
+        layer = PlanRegulationLayer.get_from_project()
+
+        if not layer.isEditable():
+            layer.startEditing()
+        layer.beginEditCommand("Kaavamääräyksen lisäys" if self.id_ is None else "Kaavamääräyksen muokkaus")
+
+        if self.id_ is None:
+            layer.addFeature(feature)
+        else:
+            layer.updateFeature(feature)
+
+        layer.endEditCommand()
+        layer.commitChanges(stopEditing=False)
+
+        # TODO: associations?
+
 
 @dataclass
 class RegulationGroup:
-    type_code: str | None
+    type_code: str
     name: str | None
     short_name: str | None
     color_code: str | None
-    letter_code: str | None
-    regulations: list[Regulation]
+    regulations: list[Regulation] = field(default_factory=list)
     id_: int | None = None
 
     @classmethod
@@ -254,24 +273,74 @@ class RegulationGroup:
                         files=reg_data.get("files") if reg_data.get("files") else [],
                         theme=reg_data.get("theme"),
                         topic_tag=reg_data.get("topic_tag"),
+                        regulation_group_id_=None,
                         id_=None,
                     )
                 )
             else:
                 iface.messageBar().pushWarning("", f"Could not find plan regulation {reg_code}!")
         return cls(
-            type_code=None,
+            type_code="landUseRegulations",
             name=data.get("name"),
-            short_name=data.get("color_code"),
+            short_name=data.get("short_name"),
             color_code=data.get("color_code"),
-            letter_code=data.get("letter_code"),
             regulations=regulations,
             id_=None,
         )
 
+    def save_data(self):
+        feature = RegulationGroupLayer.feature_from_model(self)
+        layer = RegulationGroupLayer.get_from_project()
+
+        if not layer.isEditable():
+            layer.startEditing()
+        layer.beginEditCommand("Kaavamääräysryhmän lisäys" if self.id_ is None else "Kaavamääräysryhmän muokkaus")
+
+        if self.id_ is None:
+            layer.addFeature(feature)
+        else:
+            layer.updateFeature(feature)
+
+        layer.endEditCommand()
+        layer.commitChanges(stopEditing=False)
+
+        if self.regulations:
+            for regulation in self.regulations:
+                regulation.regulation_group_id_ = feature["id"]  # Updating regulation group ID
+                regulation.save_data()
+
+        # TODO: associations?
+
     # @classmethod
     # def from_database(cls) -> RegulationGroup:
     #     pass
+
+
+@dataclass
+class PlanFeature:
+    geom: QgsGeometry
+    feature_layer_class: type[PlanFeatureLayer]
+    type_of_underground: int
+    name: str | None = None
+    description: str | None = None
+    plan_id: int | None = None
+    id_: int | None = None
+
+    def save_data(self):
+        feature = self.feature_layer_class.feature_from_model(self)
+        layer = self.feature_layer_class.get_from_project()
+
+        if not layer.isEditable():
+            layer.startEditing()
+        layer.beginEditCommand("Kaavakohteen lisäys" if self.id_ is None else "Kaavakohteen muokkaus")
+
+        if self.id_ is None:
+            layer.addFeature(feature)
+        else:
+            layer.updateFeature(feature)
+
+        layer.endEditCommand()
+        layer.commitChanges(stopEditing=False)
 
 
 @dataclass
