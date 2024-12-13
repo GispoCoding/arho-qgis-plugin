@@ -22,6 +22,7 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import PlanFeature, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.plan_regulation_group_widget import RegulationGroupWidget
+from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
 from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, PlanFeatureLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QWidget
 
     from arho_feature_template.core.template_library_config import FeatureTemplate
+    from arho_feature_template.gui.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "template_attribute_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -52,7 +54,7 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.feature_layer_class = feature_layer_class
         self.feature_name: QLineEdit
         self.feature_description: QTextEdit
-        self.feature_type_of_underground: QComboBox
+        self.feature_type_of_underground: CodeComboBox
         self.plan_regulation_group_scrollarea: QScrollArea
         self.plan_regulation_group_scrollarea_contents: QWidget
         self.plan_regulation_group_libraries_combobox: QComboBox
@@ -60,6 +62,10 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.button_box: QDialogButtonBox
 
         # INIT
+        self.feature_type_of_underground.populate_from_code_layer(UndergroundTypeLayer)
+        self.feature_type_of_underground.removeItem(0)  # Remove NULL from combobox as underground data is required
+        self.feature_type_of_underground.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
+
         self.regulation_group_widgets: list[RegulationGroupWidget] = []
         self.scroll_area_spacer = None
         self.setWindowTitle(feature_template_config.name)
@@ -116,7 +122,7 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
     def into_model(self) -> PlanFeature:
         return PlanFeature(
             name=self.feature_name.text(),
-            type_of_underground=self.feature_type_of_underground.currentIndex(),
+            type_of_underground_id=self.feature_type_of_underground.value(),
             description=self.feature_description.toPlainText(),
             geom=self.geom,
             feature_layer_class=self.feature_layer_class,

@@ -18,4 +18,8 @@ class OrganisationLayer(AbstractCodeLayer):
     name = "Toimija"
 
 
+class UndergroundTypeLayer(AbstractCodeLayer):
+    name = "Maanalaisuuden tyyppi"
+
+
 code_layers = AbstractCodeLayer.__subclasses__()
