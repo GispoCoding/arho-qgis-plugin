@@ -10,9 +10,12 @@ from qgis.PyQt.QtWidgets import QWidget
 
 from arho_feature_template.core.models import Regulation, RegulationGroup
 from arho_feature_template.gui.plan_regulation_widget import RegulationWidget
+from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QFrame, QLineEdit, QPushButton
+    from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLabel, QLineEdit, QPushButton
+
+    from arho_feature_template.gui.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -30,14 +33,32 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         # TYPES
         self.frame: QFrame
         self.name: QLineEdit
+        self.short_name: QLineEdit
         self.del_btn: QPushButton
+        self.type_of_regulation_group_label: QLabel
+        self.type_of_regulation_group: CodeComboBox
+        self.regulation_group_details_layout: QFormLayout
+        # NOTE: Maybe user input is not needed and wanted for type of plan regulation group and it would be defined
+        # by the plan feature directly (and hidden from user)
 
         # INIT
         self.regulation_group_data = regulation_group_data
         self.regulation_widgets: list[RegulationWidget] = [
             self.add_regulation_widget(regulation) for regulation in self.regulation_group_data.regulations
         ]
-        self.name.setText(self.regulation_group_data.name)
+
+        # If regulation group type code is defined, delete selection for user
+        if regulation_group_data.type_code_id:
+            self.regulation_group_details_layout.removeWidget(self.type_of_regulation_group_label)
+            self.regulation_group_details_layout.removeWidget(self.type_of_regulation_group)
+            self.type_of_regulation_group_label.deleteLater()
+            self.type_of_regulation_group.deleteLater()
+        else:
+            self.type_of_regulation_group.populate_from_code_layer(PlanRegulationGroupTypeLayer)
+            self.type_of_regulation_group.removeItem(0)  # Remove NULL from combobox as underground data is required
+
+        self.name.setText(self.regulation_group_data.name if self.regulation_group_data.name else "")
+        self.short_name.setText(self.regulation_group_data.short_name if self.regulation_group_data.short_name else "")
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
 
@@ -54,9 +75,11 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     def into_model(self) -> RegulationGroup:
         return RegulationGroup(
-            type_code=self.regulation_group_data.type_code,
+            type_code_id=self.regulation_group_data.type_code_id
+            if self.regulation_group_data.type_code_id
+            else self.type_of_regulation_group.value(),
             name=self.name.text(),
-            short_name=self.regulation_group_data.short_name,
+            short_name=self.short_name.text(),
             color_code=self.regulation_group_data.color_code,
             regulations=[widget.into_model() for widget in self.regulation_widgets],
             id_=self.regulation_group_data.id_,

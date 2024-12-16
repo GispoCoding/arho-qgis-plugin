@@ -18,7 +18,18 @@ from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.plan_attribure_form import PlanAttributeForm
 from arho_feature_template.gui.serialize_plan import SerializePlan
-from arho_feature_template.project.layers.plan_layers import PlanLayer, RegulationGroupLayer, plan_layers
+from arho_feature_template.project.layers.plan_layers import (
+    LandUseAreaLayer,
+    LandUsePointLayer,
+    LineLayer,
+    OtherAreaLayer,
+    OtherPointLayer,
+    PlanFeatureLayer,
+    PlanLayer,
+    PlanRegulationLayer,
+    RegulationGroupLayer,
+    plan_layers,
+)
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -29,7 +40,8 @@ from arho_feature_template.utils.misc_utils import (
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
-    from arho_feature_template.core.models import Plan, RegulationGroup
+    from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup
+
 logger = logging.getLogger(__name__)
 
 
@@ -179,6 +191,20 @@ class PlanManager:
         )
 
 
+def _save_feature(feature: QgsFeature, layer: QgsVectorLayer, id_: int | None, edit_text: str = ""):
+    if not layer.isEditable():
+        layer.startEditing()
+    layer.beginEditCommand(edit_text)
+
+    if id_ is None:
+        layer.addFeature(feature)
+    else:
+        layer.updateFeature(feature)
+
+    layer.endEditCommand()
+    layer.commitChanges(stopEditing=False)
+
+
 def save_plan(plan_data: Plan) -> QgsFeature:
     plan_layer = PlanLayer.get_from_project()
     in_edit_mode = plan_layer.isEditable()
@@ -208,11 +234,76 @@ def save_plan(plan_data: Plan) -> QgsFeature:
     return plan_feature
 
 
-def save_regulation_group(regulation_group: RegulationGroup, plan_id: str) -> QgsFeature:
-    feature = RegulationGroupLayer.feature_from_model(regulation_group)
-    feature["plan_id"] = plan_id
+def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> QgsFeature:
+    layer_name_to_class_map: dict[str, type[PlanFeatureLayer]] = {
+        LandUsePointLayer.name: LandUsePointLayer,
+        OtherAreaLayer.name: OtherAreaLayer,
+        OtherPointLayer.name: OtherPointLayer,
+        LandUseAreaLayer.name: LandUseAreaLayer,
+        LineLayer.name: LineLayer,
+    }
+
+    if not plan_feature.layer_name:
+        msg = "Cannot save plan feature without a target layer"
+        raise ValueError(msg)
+    layer_class = layer_name_to_class_map.get(plan_feature.layer_name)
+    if not layer_class:
+        msg = f"Could not find plan feature layer class for layer name {plan_feature.layer_name}"
+        raise ValueError(msg)
+    feature = layer_class.feature_from_model(plan_feature)
+    layer = layer_class.get_from_project()
+
+    if plan_id:
+        feature["plan_id"] = plan_id
+
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=plan_feature.id_,
+        edit_text="Kaavakohteen lisäys" if plan_feature.id_ is None else "Kaavakohteen muokkaus",
+    )
+
+    # Handle regulation groups
+    if plan_feature.regulation_groups:
+        for group in plan_feature.regulation_groups:
+            save_regulation_group(group)
+
+    return feature
+
+
+def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> QgsFeature:
+    feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
+    layer = RegulationGroupLayer.get_from_project()
+
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=regulation_group.id_,
+        edit_text="Kaavamääräysryhmän lisäys" if regulation_group.id_ is None else "Kaavamääräysryhmän muokkaus",
+    )
+
+    # Handle regulations
+    if regulation_group.regulations:
+        for regulation in regulation_group.regulations:
+            regulation.regulation_group_id_ = feature["id"]  # Updating regulation group ID
+            save_regulation(regulation)
+
     return feature
 
 
 def save_regulation_grop_assosiation(plan_id: str, regulation_group_id: str):
     pass
+
+
+def save_regulation(regulation: Regulation) -> QgsFeature:
+    feature = PlanRegulationLayer.feature_from_model(regulation)
+    layer = PlanRegulationLayer.get_from_project()
+
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=regulation.id_,
+        edit_text="Kaavamääräyksen lisäys" if regulation.id_ is None else "Kaavamääräyksen muokkaus",
+    )
+
+    return feature

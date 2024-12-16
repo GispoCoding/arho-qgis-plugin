@@ -75,7 +75,7 @@ class PlanLayer(AbstractPlanLayer):
 
 class PlanFeatureLayer(AbstractPlanLayer):
     @classmethod
-    def feature_from_model(cls, model: PlanFeature) -> QgsFeature:
+    def feature_from_model(cls, model: PlanFeature, plan_id: str | None = None) -> QgsFeature:
         layer = cls.get_from_project()
 
         if not model.geom:
@@ -86,7 +86,11 @@ class PlanFeatureLayer(AbstractPlanLayer):
         feature["name"] = {"fin": model.name if model.name else ""}
         feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = {"fin": model.description if model.description else ""}
-        feature["plan_id"] = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
+        feature["plan_id"] = (
+            plan_id
+            if plan_id
+            else QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
+        )
 
         return feature
 
@@ -121,16 +125,18 @@ class RegulationGroupLayer(AbstractPlanLayer):
     filter_template = Template("plan_id = '$plan_id'")
 
     @classmethod
-    def feature_from_model(cls, model: RegulationGroup) -> QgsFeature:
+    def feature_from_model(cls, model: RegulationGroup, plan_id: str | None = None) -> QgsFeature:
         layer = cls.get_from_project()
 
         feature = QgsVectorLayerUtils.createFeature(layer)
-        feature["short_name"] = model.short_name
+        feature["short_name"] = model.short_name if model.short_name else None
         feature["name"] = {"fin": model.name}
-        feature["type_of_plan_regulation_group_id"] = "036d82ea-b4ae-44e9-bd06-6466d5c39d20"  # TODO: change
-        # feature["type_of_plan_regulation_group_id"] = model.type_code -> type_code_id ?
-        feature["plan_id"] = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
-
+        feature["type_of_plan_regulation_group_id"] = model.type_code_id
+        feature["plan_id"] = (
+            plan_id
+            if plan_id
+            else QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
+        )
         return feature
 
 

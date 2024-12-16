@@ -209,7 +209,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self._add_widgets(QLabel("Arvo"), self.value_widget)
 
     def _add_versioned_text_input(self, default_value: str | None = None):
-        self.value_widget = MultilineTextInputWidget(default_value=default_value, editable=False)
+        self.value_widget = MultilineTextInputWidget(default_value=default_value, editable=True)
         self._add_widgets(QLabel("Arvo"), self.value_widget)
 
     def _add_additional_info(self, info_type: str, default_value: str | float | None = None):
