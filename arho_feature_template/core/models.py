@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 import yaml
 
 from arho_feature_template.exceptions import ConfigSyntaxError
-from arho_feature_template.project.layers.plan_layers import PlanFeatureLayer, PlanRegulationLayer, RegulationGroupLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import get_layer_by_name, iface
 
@@ -226,28 +225,10 @@ class Regulation:
     # value_number: Number | None
     # value_number_pair: tuple[Number, Number] | None
 
-    def save_data(self):
-        feature = PlanRegulationLayer.feature_from_model(self)
-        layer = PlanRegulationLayer.get_from_project()
-
-        if not layer.isEditable():
-            layer.startEditing()
-        layer.beginEditCommand("Kaavamääräyksen lisäys" if self.id_ is None else "Kaavamääräyksen muokkaus")
-
-        if self.id_ is None:
-            layer.addFeature(feature)
-        else:
-            layer.updateFeature(feature)
-
-        layer.endEditCommand()
-        layer.commitChanges(stopEditing=False)
-
-        # TODO: associations?
-
 
 @dataclass
 class RegulationGroup:
-    type_code: str
+    type_code_id: str | None
     name: str | None
     short_name: str | None
     color_code: str | None
@@ -280,7 +261,8 @@ class RegulationGroup:
             else:
                 iface.messageBar().pushWarning("", f"Could not find plan regulation {reg_code}!")
         return cls(
-            type_code="landUseRegulations",
+            type_code_id=data.get("type"),  # NOTE: Might need to convert type code into type code ID here when
+            # config file has type codes for regulation groups
             name=data.get("name"),
             short_name=data.get("short_name"),
             color_code=data.get("color_code"),
@@ -288,59 +270,17 @@ class RegulationGroup:
             id_=None,
         )
 
-    def save_data(self):
-        feature = RegulationGroupLayer.feature_from_model(self)
-        layer = RegulationGroupLayer.get_from_project()
-
-        if not layer.isEditable():
-            layer.startEditing()
-        layer.beginEditCommand("Kaavamääräysryhmän lisäys" if self.id_ is None else "Kaavamääräysryhmän muokkaus")
-
-        if self.id_ is None:
-            layer.addFeature(feature)
-        else:
-            layer.updateFeature(feature)
-
-        layer.endEditCommand()
-        layer.commitChanges(stopEditing=False)
-
-        if self.regulations:
-            for regulation in self.regulations:
-                regulation.regulation_group_id_ = feature["id"]  # Updating regulation group ID
-                regulation.save_data()
-
-        # TODO: associations?
-
-    # @classmethod
-    # def from_database(cls) -> RegulationGroup:
-    #     pass
-
 
 @dataclass
 class PlanFeature:
     geom: QgsGeometry
-    feature_layer_class: type[PlanFeatureLayer]
     type_of_underground_id: str
+    layer_name: str | None = None
     name: str | None = None
     description: str | None = None
+    regulation_groups: list[RegulationGroup] = field(default_factory=list)
     plan_id: int | None = None
     id_: int | None = None
-
-    def save_data(self):
-        feature = self.feature_layer_class.feature_from_model(self)
-        layer = self.feature_layer_class.get_from_project()
-
-        if not layer.isEditable():
-            layer.startEditing()
-        layer.beginEditCommand("Kaavakohteen lisäys" if self.id_ is None else "Kaavakohteen muokkaus")
-
-        if self.id_ is None:
-            layer.addFeature(feature)
-        else:
-            layer.updateFeature(feature)
-
-        layer.endEditCommand()
-        layer.commitChanges(stopEditing=False)
 
 
 @dataclass

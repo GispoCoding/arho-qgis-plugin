@@ -23,11 +23,10 @@ from qgis.PyQt.QtWidgets import (
 from arho_feature_template.core.models import PlanFeature, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
-from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, PlanFeatureLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature
+    from qgis.core import QgsGeometry
     from qgis.PyQt.QtWidgets import QWidget
 
     from arho_feature_template.core.template_library_config import FeatureTemplate
@@ -43,15 +42,14 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
     def __init__(
         self,
         feature_template_config: FeatureTemplate,
-        base_feature: QgsFeature,
-        feature_layer_class: type[PlanFeatureLayer] = LandUseAreaLayer,  # NOTE: All are now saved to LandUseAreaLayer
+        geometry: QgsGeometry,
     ):
         super().__init__()
         self.setupUi(self)
 
         # TYPES
-        self.geom = base_feature.geometry()
-        self.feature_layer_class = feature_layer_class
+        # self.model = None
+        self.geom = geometry
         self.feature_name: QLineEdit
         self.feature_description: QTextEdit
         self.feature_type_of_underground: CodeComboBox
@@ -66,9 +64,10 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground.removeItem(0)  # Remove NULL from combobox as underground data is required
         self.feature_type_of_underground.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
+        self.config = feature_template_config
         self.regulation_group_widgets: list[RegulationGroupWidget] = []
         self.scroll_area_spacer = None
-        self.setWindowTitle(feature_template_config.name)
+        self.setWindowTitle(self.config.name)
         self.init_plan_regulation_group_libraries()
         # self.init_plan_regulation_groups_from_template(feature_template_config)
         self.button_box.accepted.connect(self._on_ok_clicked)
@@ -125,16 +124,11 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
             type_of_underground_id=self.feature_type_of_underground.value(),
             description=self.feature_description.toPlainText(),
             geom=self.geom,
-            feature_layer_class=self.feature_layer_class,
+            layer_name=self.config.group,
+            regulation_groups=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
             id_=None,
         )
 
     def _on_ok_clicked(self):
-        # Plan feature data
-        self.into_model().save_data()
-
-        # Regulation group data
-        for regulation_group_widget in self.regulation_group_widgets:
-            regulation_group_widget.into_model().save_data()
-
+        self.model = self.into_model()
         self.accept()

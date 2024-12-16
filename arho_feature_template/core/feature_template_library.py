@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QItemSelectionModel
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.utils import iface
 
+from arho_feature_template.core.plan_manager import save_plan_feature
 from arho_feature_template.core.template_library_config import (
     FeatureTemplate,
     TemplateLibraryConfig,
@@ -157,8 +158,9 @@ class FeatureTemplater:
         if not self.active_template:
             return
 
-        attribute_form = TemplateAttributeForm(self.active_template.config, feature)
-        attribute_form.exec_()
+        attribute_form = TemplateAttributeForm(self.active_template.config, feature.geometry())
+        if attribute_form.exec_():
+            save_plan_feature(attribute_form.model)
 
     def get_library_names(self) -> list[str]:
         return list(self.library_configs.keys())

@@ -274,3 +274,8 @@ categories:
       geometry: Alue
       plan_regulations:
         - regulation_code: kattokaltevuus
+
+    - name: Kadun tai tien nimi
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kadunTaiTienNimi
