@@ -155,6 +155,30 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         )
     )
 
+    layer_name_to_attribute_map: ClassVar[dict[str, str]] = {
+        LandUsePointLayer.name: "land_use_point_id",
+        OtherAreaLayer.name: "other_area_id",
+        OtherPointLayer.name: "other_point_id",
+        LandUseAreaLayer.name: "land_use_area_id",
+        LineLayer.name: "line_id",
+        PlanLayer.name: "plan_id",
+    }
+
+    @classmethod
+    def feature_from(cls, regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature:
+        layer = cls.get_from_project()
+
+        feature = QgsVectorLayerUtils.createFeature(layer)
+        feature["plan_regulation_group_id"] = regulation_group_id
+
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        if not attribute:
+            msg = f"Unrecognized layer name given for saving regulation group association: {layer_name}"
+            raise ValueError(msg)
+        feature[attribute] = feature_id
+
+        return feature
+
 
 class PlanRegulationLayer(AbstractPlanLayer):
     name = "Kaavamääräys"

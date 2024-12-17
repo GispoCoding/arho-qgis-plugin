@@ -27,6 +27,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanFeatureLayer,
     PlanLayer,
     PlanRegulationLayer,
+    RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     plan_layers,
 )
@@ -229,7 +230,7 @@ def save_plan(plan_data: Plan) -> QgsFeature:
         for regulation_group in plan_data.general_regulations:
             plan_id = plan_feature["id"]
             regulation_group_feature = save_regulation_group(regulation_group, plan_id)
-            save_regulation_grop_assosiation(plan_id, regulation_group_feature["id"])
+            save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id)
 
     return plan_feature
 
@@ -250,11 +251,9 @@ def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> 
     if not layer_class:
         msg = f"Could not find plan feature layer class for layer name {plan_feature.layer_name}"
         raise ValueError(msg)
-    feature = layer_class.feature_from_model(plan_feature)
-    layer = layer_class.get_from_project()
 
-    if plan_id:
-        feature["plan_id"] = plan_id
+    feature = layer_class.feature_from_model(plan_feature, plan_id)
+    layer = layer_class.get_from_project()
 
     _save_feature(
         feature=feature,
@@ -266,7 +265,8 @@ def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> 
     # Handle regulation groups
     if plan_feature.regulation_groups:
         for group in plan_feature.regulation_groups:
-            save_regulation_group(group)
+            regulation_group_feature = save_regulation_group(group)
+            save_regulation_group_association(regulation_group_feature["id"], plan_feature.layer_name, feature["id"])
 
     return feature
 
@@ -291,8 +291,13 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     return feature
 
 
-def save_regulation_grop_assosiation(plan_id: str, regulation_group_id: str):
-    pass
+def save_regulation_group_association(regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature:
+    feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
+    layer = RegulationGroupAssociationLayer.get_from_project()
+
+    _save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavamääräysryhmän assosiaation lisäys")
+
+    return feature
 
 
 def save_regulation(regulation: Regulation) -> QgsFeature:
