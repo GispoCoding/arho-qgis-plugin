@@ -674,7 +674,7 @@ def language_finnish_instance(session):
 
 @pytest.fixture()
 def municipality_instance(session):
-    instance = codes.Municipality(value="Paimio", status="LOCAL")
+    instance = codes.Municipality(value="577", status="LOCAL")
     session.add(instance)
     session.commit()
     yield instance

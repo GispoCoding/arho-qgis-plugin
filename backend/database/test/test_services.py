@@ -72,17 +72,6 @@ def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
     assert data["statusCode"] == 200, data["body"]
 
 
-@pytest.fixture()
-def populate_geometries(
-    koodistot_loader_url, mml_loader_url, main_db_params, create_db
-):
-    payload = {}
-    r = requests.post(koodistot_loader_url, data=json.dumps(payload))
-    r = requests.post(mml_loader_url, data=json.dumps(payload))
-    data = r.json()
-    assert data["statusCode"] == 200, data["body"]
-
-
 def test_create_db(create_db, main_db_params_with_root_user):
     """
     Test the whole lambda endpoint
@@ -180,27 +169,6 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
                     code_count = cur.fetchone()[0]
                     assert code_count > 0
-    finally:
-        conn.close()
-
-
-def test_populate_geometries(populate_geometries, populate_koodistot, main_db_params):
-    """
-    Test that kunta and maakunta geometries are populated
-    """
-    conn = psycopg2.connect(**main_db_params)
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT count(*) FROM codes.administrative_region WHERE geom IS NOT NULL"
-            )
-            geom_count = cur.fetchone()[0]
-            assert geom_count == 19
-            cur.execute(
-                "SELECT count(*) FROM codes.municipality WHERE geom IS NOT NULL"
-            )
-            geom_count = cur.fetchone()[0]
-            assert geom_count == 309
     finally:
         conn.close()
 

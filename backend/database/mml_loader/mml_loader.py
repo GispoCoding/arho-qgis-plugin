@@ -34,7 +34,7 @@ class Response(TypedDict):
 class MMLLoader:
     HEADERS = {
         "Accept": "application/json",
-        "Content-Type": "application/zip",
+        "Content-Type": "application/json",
     }
     api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"  # noqa
     job_api_base = (
