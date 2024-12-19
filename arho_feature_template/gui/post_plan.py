@@ -30,8 +30,8 @@ class PostPlan(QDialog, FormClass):  # type: ignore
 
         # Initialize progress bar
         self.progress_bar: QProgressBar = self.progressBar
-        self.progress_bar.setRange(0, 0)  # Set to "busy" indicator mode initially
-        self.progress_bar.hide()  # Hide initially
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.hide()
 
         # Initialize buttons
         self.export_button = self.exportButton
@@ -39,33 +39,43 @@ class PostPlan(QDialog, FormClass):  # type: ignore
         self.dialogButtonBox.rejected.connect(self.reject)
 
     def post_plan(self):
-        """Handles the 'Vie kaava' button logic."""
+        """Triggers Ryhti export."""
         # Disable the button to prevent multiple clicks
         self.export_button.setEnabled(False)
         self.progress_bar.show()
 
         plan_id = get_active_plan_id()
+        if not plan_id:
+            QMessageBox.critical(self, "Virhe", "Ei aktiivista kaavaa.")
+            self._enable_export_button()
+            return
         self.lambda_service = LambdaService()
-        self.lambda_service.post_received.connect(self.do_something)
+        self.lambda_service.post_received.connect(self.update_message_list)
         self.lambda_service.post_plan(plan_id)
 
-    def do_something(self, post_json):
+    def update_message_list(self, post_json):
         """Handles the Lambda response."""
         if not post_json:
             self.progress_bar.hide()
             QMessageBox.critical(self, "Virhe", "Lambda palautti tyhjän vastauksen.")
             self.export_button.setEnabled(True)
+            self._enable_export_button()
             return
 
         # Clear previous validation messages
         self.validation_list_model.setStringList([])
 
-        ryhti_responses = post_json.get("ryhti_responses", {})
-        validation_messages = form_validation_messages(ryhti_responses)
+        if not post_json:
+            QMessageBox.critical(self, "Virhe", "Lambdan vastauksesta puuttuu 'ryhti_responses'.")
+            self._enable_export_button()
+            return
+        validation_messages = form_validation_messages(post_json)
 
         # Update the list view with errors and warnings
         self.validation_list_model.setStringList(validation_messages)
+        self._enable_export_button()
 
-        # Hide progress bar and re-enable the button
+    def _enable_export_button(self):
+        """Hides progress bar and re-enables export_button"""
         self.progress_bar.hide()
         self.export_button.setEnabled(True)

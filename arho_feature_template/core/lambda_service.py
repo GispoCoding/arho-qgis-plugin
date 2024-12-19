@@ -96,8 +96,7 @@ class LambdaService(QObject):
         elif action == self.ACTION_VALIDATE_PLANS:
             self._process_validation_reply(body)
         elif action == self.ACTION_POST_PLANS:
-            self.post_received.emit(body)
-            # self._process_post_reply(body)
+            self._process_post_reply(body)
 
     def _process_validation_reply(self, response_json: dict):
         """Processes the validation reply from the lambda and emits a signal."""
@@ -106,9 +105,11 @@ class LambdaService(QObject):
 
         self.validation_received.emit(validation_errors)
 
-    # def _process_post_reply(self, response_json: dict):
-    # """Processes the post reply from the lambda and emits a signal."""
-    # self.post_received.emit(response_json)
+    def _process_post_reply(self, response_json: dict):
+        """Processes the post reply from the lambda and emits a signal."""
+        ryhti_responses = response_json.get("ryhti_responses")
+
+        self.post_received.emit(ryhti_responses)
 
     def _process_json_reply(self, response_json: dict):
         """Processes the reply from the lambda and emits signal."""
