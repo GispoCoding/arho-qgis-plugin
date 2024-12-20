@@ -139,6 +139,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
             if plan_id
             else QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
         )
+        feature["id"] = model.id_ if model.id_ else feature["id"]
         return feature
 
     @classmethod
