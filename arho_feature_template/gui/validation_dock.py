@@ -5,34 +5,39 @@ from typing import TYPE_CHECKING
 
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QStringListModel
 from qgis.utils import iface
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.utils.misc_utils import get_active_plan_id
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QListView, QProgressBar
+    from qgis.PyQt.QtWidgets import QProgressBar, QPushButton
+
+    from arho_feature_template.gui.validation_tree_view import ValidationTreeView
 
 ui_path = resources.files(__package__) / "validation_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
 
 
 class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
-    error_list_view: QListView
     progress_bar: QProgressBar
+    validation_result_tree_view: ValidationTreeView
+    validate_button: QPushButton
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setupUi(self)
+
         self.lambda_service = LambdaService()
         self.lambda_service.validation_received.connect(self.list_validation_errors)
-        self.error_list_model = QStringListModel()
-        self.error_list_view.setModel(self.error_list_model)
         self.validate_button.clicked.connect(self.validate)
 
     def validate(self):
         """Handles the button press to trigger the validation process."""
+
+        # Clear the existing errors from the list view
+        self.validation_result_tree_view.clear_errors()
+
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
             iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavaa.", level=3)
@@ -49,10 +54,6 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         if not validation_json:
             iface.messageBar().pushMessage("Virhe", "Validaatio json puuttuu.", level=1)
             return
-        # Clear the existing errors from the list view
-        self.error_list_model.setStringList([])
-
-        new_errors = []
 
         if not validation_json:
             # If no errors or warnings, display a message and exit
@@ -60,27 +61,26 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             return
 
         for error_data in validation_json.values():
-            if isinstance(error_data, dict):
-                # Get the errors for this plan
-                errors = error_data.get("errors", [])
-                for error in errors:
-                    rule_id = error.get("ruleId", "Tuntematon sääntö")
-                    message = error.get("message", "Ei viestiä")
-                    instance = error.get("instance", "Tuntematon instance")
-                    error_message = f"Validointivirhe - Sääntö: {rule_id}, Viesti: {message}, Instance: {instance}"
-                    new_errors.append(error_message)
+            if not isinstance(error_data, dict):
+                continue
+            errors = error_data.get("errors", [])
+            for error in errors:
+                self.validation_result_tree_view.add_error(
+                    error.get("ruleId", ""),
+                    error.get("instance", ""),
+                    error.get("message", ""),
+                )
 
-                # Get any warnings for this plan using list comprehension
-                warnings = error_data.get("warnings", [])
-                new_errors.extend([f"Varoitus: {warning}" for warning in warnings])
+            warnings = error_data.get("warnings", [])
+            for warning in warnings:
+                self.validation_result_tree_view.add_warning(
+                    warning.get("ruleId", ""),
+                    warning.get("instance", ""),
+                    warning.get("message", ""),
+                )
 
-        # If no errors or warnings, display a message
-        if not new_errors:
-            new_errors.append("Kaava on validi. Ei virheitä tai varoituksia havaittu.")
-            return
-
-        # Update the list view with the new errors and warnings
-        self.error_list_model.setStringList(new_errors)
         # Hide progress bar and re-enable the button
         self.progress_bar.setVisible(False)
         self.validate_button.setEnabled(True)
+        self.validation_result_tree_view.expandAll()
+        self.validation_result_tree_view.resizeColumnToContents(0)

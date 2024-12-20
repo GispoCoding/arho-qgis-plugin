@@ -1,41 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>ValidationDock</class>
  <widget class="QDockWidget" name="ValidationDock">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>269</width>
+    <height>362</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>Validaation tulokset</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="buttonLayout">
-      <item>
-       <widget class="QPushButton" name="validate_button">
-        <property name="text">
-         <string>Validoi aktiivinen kaava</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <widget class="QPushButton" name="validate_button">
+      <property name="text">
+       <string>Validoi aktiivinen kaava</string>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QProgressBar" name="progress_bar">
+      <property name="visible">
+       <bool>false</bool>
+      </property>
       <property name="minimum">
        <number>0</number>
       </property>
       <property name="maximum">
        <number>0</number>
       </property>
-      <property name="visible">
-       <bool>false</bool>
-      </property>
      </widget>
     </item>
     <item>
-     <widget class="QListView" name="error_list_view"/>
+     <widget class="ValidationTreeView" name="validation_result_tree_view"/>
     </item>
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ValidationTreeView</class>
+   <extends>QTreeView</extends>
+   <header>arho_feature_template.gui.validation_tree_view</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
