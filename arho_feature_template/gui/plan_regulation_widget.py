@@ -100,7 +100,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
                 raise ValueError(base_error_msg)
             self._add_decimal_input(value_type, unit, default_value)
         elif value_type == ValueType.POSITIVE_INTEGER:
-            if not isinstance(default_value, int) and default_value is not None:
+            if not isinstance(default_value, (int, float)) and default_value is not None:
                 raise ValueError(base_error_msg)
             self._add_integer_input(value_type, unit, default_value)
         elif value_type == ValueType.POSITIVE_INTEGER_RANGE:
@@ -195,8 +195,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.value_widget = DecimalInputWidget(default_value, unit, positive)
         self._add_widgets(QLabel("Arvo"), self.value_widget)
 
-    def _add_integer_input(self, value_type: ValueType, unit: str | None, default_value: int | None = None):
+    def _add_integer_input(self, value_type: ValueType, unit: str | None, default_value: float | None = None):
         positive = value_type == ValueType.POSITIVE_INTEGER
+        default_value = int(default_value) if default_value else None
         self.value_widget = IntegerInputWidget(default_value=default_value, unit=unit, positive=positive)
         self._add_widgets(QLabel("Arvo"), self.value_widget)
 
