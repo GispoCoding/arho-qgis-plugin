@@ -11,7 +11,7 @@ from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, Q
 from qgis.utils import iface
 
 from arho_feature_template.core.models import PlanFeature, Regulation, RegulationGroup, RegulationLibrary
-from arho_feature_template.exceptions import LayerEditableError
+from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
 
@@ -47,6 +47,16 @@ class AbstractPlanLayer(AbstractLayer):
     @abstractmethod
     def feature_from_model(cls, model: Any) -> QgsFeature:
         raise NotImplementedError
+
+    @classmethod
+    def initialize_feature_from_model(cls, model: Any) -> QgsFeature:
+        if model.id_ is not None:  # Expects all plan layer models to have 'id_' attribute
+            feature = cls.get_feature_by_id(model.id_)
+            if not feature:
+                raise FeatureNotFoundError(model.id_, cls.name)
+        else:
+            feature = QgsVectorLayerUtils.createFeature(cls.get_from_project())
+        return feature
 
 
 class PlanLayer(AbstractPlanLayer):
@@ -128,9 +138,8 @@ class RegulationGroupLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from_model(cls, model: RegulationGroup, plan_id: str | None = None) -> QgsFeature:
-        layer = cls.get_from_project()
+        feature = cls.initialize_feature_from_model(model)
 
-        feature = QgsVectorLayerUtils.createFeature(layer)
         feature["short_name"] = model.short_name if model.short_name else None
         feature["name"] = {"fin": model.name}
         feature["type_of_plan_regulation_group_id"] = model.type_code_id
@@ -215,15 +224,15 @@ class PlanRegulationLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from_model(cls, model: Regulation) -> QgsFeature:
-        layer = cls.get_from_project()
+        feature = cls.initialize_feature_from_model(model)
 
-        feature = QgsVectorLayerUtils.createFeature(layer)
         feature["plan_regulation_group_id"] = model.regulation_group_id_
         feature["type_of_plan_regulation_id"] = model.config.id
         feature["unit"] = model.config.unit
         feature["text_value"] = {"fin": model.value if isinstance(model.value, str) else ""}
         feature["numeric_value"] = model.value if isinstance(model.value, Number) else NULL
         feature["name"] = {"fin": model.topic_tag if model.topic_tag else ""}
+        feature["id"] = model.id_ if model.id_ else feature["id"]
         # feature["plan_theme_id"]
         # feature["type_of_verbal_plan_regulation_id"]
 
