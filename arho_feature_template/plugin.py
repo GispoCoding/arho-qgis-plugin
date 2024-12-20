@@ -150,7 +150,7 @@ class Plugin:
 
         # Add main plugin action to the toolbar
         self.new_land_use_plan_action = self.add_action(
-            text="Luo uusi kaava",
+            text="Luo kaava",
             icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
             triggered_callback=self.add_new_plan,
             add_to_menu=True,
@@ -159,7 +159,7 @@ class Plugin:
         )
 
         self.load_land_use_plan_action = self.add_action(
-            text="Lataa/avaa kaavaa",
+            text="Avaa kaava",
             icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
             triggered_callback=self.load_existing_land_use_plan,
             parent=iface.mainWindow(),
@@ -178,7 +178,7 @@ class Plugin:
         )
 
         self.validation_dock_action = self.add_action(
-            text="Validointi virheet",
+            text="Validointi",
             icon=QgsApplication.getThemeIcon("mActionEditNodesItem.svg"),
             toggled_callback=self.toggle_validation_dock,
             checkable=True,
@@ -208,7 +208,7 @@ class Plugin:
             triggered_callback=self.open_settings,
             add_to_menu=True,
             add_to_toolbar=False,
-            status_tip="Säädä pluginin asetuksia",
+            status_tip="Muokkaa pluginin asetuksia",
         )
 
     def on_map_tool_changed(self, new_tool: QgsMapTool, old_tool: QgsMapTool) -> None:  # noqa: ARG002
