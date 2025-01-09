@@ -71,15 +71,15 @@ class FeatureTemplater:
             lambda: self.set_active_library(self.template_dock.library_selection.currentText())
         )
 
-        # Update template tree when search text changes
-        self.template_dock.search_box.valueChanged.connect(self.on_template_search_text_changed)
-
         # Activate map tool when template is selected
         self.template_dock.template_list.clicked.connect(self.on_template_item_clicked)
 
         self.digitize_map_tool = TemplateGeometryDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
         self.digitize_map_tool.digitizingCompleted.connect(self.ask_for_feature_attributes)
-        self.digitize_map_tool.deactivated.connect(self.template_dock.template_list.clearSelection)
+        self.digitize_map_tool.deactivated.connect(self.on_digitizing_deactivated)
+
+        # Digitize from empty feature
+        self.template_dock.new_feature_grid.feature_type_clicked.connect(self.on_empty_feature_digitize_clicked)
 
     def on_template_item_clicked(self, index):
         item = self.template_model.itemFromIndex(index)
@@ -95,6 +95,8 @@ class FeatureTemplater:
             return
 
         self.active_template = item
+        self.template_dock.new_feature_grid.clear_selections()
+        self.active_empty_feature_template = None
         self.start_digitizing_for_layer(layer)
 
         # Reselect as a workaround for first selection visual clarity
@@ -102,45 +104,16 @@ class FeatureTemplater:
             index, QItemSelectionModel.Select | QItemSelectionModel.Rows
         )
 
-    def on_template_search_text_changed(self, search_text: str) -> None:
-        search_text = search_text.lower()
+    def on_empty_feature_digitize_clicked(self, feature_name: str, layer_name: str):
+        self.active_empty_feature_template = (feature_name, layer_name)
+        self.template_dock.template_list.clearSelection()
+        self.active_template = None
+        self.start_digitizing_for_layer(get_vector_layer_from_project(layer_name))
 
-        for row in range(self.template_model.rowCount()):
-            group_item = self.template_model.item(row)
-            group_visible = False
-
-            for child_row in range(group_item.rowCount()):
-                child_item = group_item.child(child_row)
-
-                if child_item.hasChildren():
-                    subgroup_visible = False
-
-                    for template_row in range(child_item.rowCount()):
-                        template_item = child_item.child(template_row)
-                        matches = search_text in template_item.text().lower()
-                        template_item.setEnabled(matches)
-
-                        if matches:
-                            subgroup_visible = True
-
-                    child_item.setEnabled(subgroup_visible)
-                    group_visible = group_visible or subgroup_visible
-
-                    index = self.template_model.indexFromItem(child_item)
-                    self.template_dock.template_list.setExpanded(index, subgroup_visible)
-
-                else:
-                    template_item = child_item
-                    matches = search_text in template_item.text().lower()
-                    template_item.setEnabled(matches)
-
-                    if matches:
-                        group_visible = True
-
-            group_item.setEnabled(group_visible)
-
-            index = self.template_model.indexFromItem(group_item)
-            self.template_dock.template_list.setExpanded(index, group_visible)
+    def on_digitizing_deactivated(self):
+        # Clear selections
+        self.template_dock.template_list.clearSelection()
+        self.template_dock.new_feature_grid.clear_selections()
 
     def start_digitizing_for_layer(self, layer: QgsVectorLayer) -> None:
         self.digitize_map_tool.clean()
@@ -155,10 +128,15 @@ class FeatureTemplater:
     def ask_for_feature_attributes(self, feature: QgsFeature) -> None:
         """Shows a dialog to ask for feature attributes and creates the feature"""
 
-        if not self.active_template:
+        if self.active_template:
+            name = self.active_template.config.name
+            target_layer_name = self.active_template.config.group
+        elif self.active_empty_feature_template:
+            name, target_layer_name = self.active_empty_feature_template
+        else:
             return
 
-        attribute_form = TemplateAttributeForm(self.active_template.config, feature.geometry())
+        attribute_form = TemplateAttributeForm(name, target_layer_name, feature.geometry())
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
 
