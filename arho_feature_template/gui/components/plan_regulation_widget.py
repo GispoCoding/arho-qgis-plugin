@@ -17,7 +17,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.models import Regulation, ValueType
-from arho_feature_template.gui.plan_regulation_input_widgets import (
+from arho_feature_template.gui.components.plan_regulation_input_widgets import (
     DecimalInputWidget,
     IntegerInputWidget,
     IntegerRangeInputWidget,

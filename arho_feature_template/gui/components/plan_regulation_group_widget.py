@@ -9,13 +9,13 @@ from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QWidget
 
 from arho_feature_template.core.models import Regulation, RegulationGroup
-from arho_feature_template.gui.plan_regulation_widget import RegulationWidget
+from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLabel, QLineEdit, QPushButton
 
-    from arho_feature_template.gui.code_combobox import CodeComboBox
+    from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)

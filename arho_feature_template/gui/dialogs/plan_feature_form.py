@@ -22,7 +22,7 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import PlanFeature, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.core.plan_manager import regulation_group_library_from_active_plan
-from arho_feature_template.gui.plan_regulation_group_widget import RegulationGroupWidget
+from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
@@ -30,14 +30,14 @@ if TYPE_CHECKING:
     from qgis.core import QgsGeometry
     from qgis.PyQt.QtWidgets import QWidget
 
-    from arho_feature_template.gui.code_combobox import CodeComboBox
+    from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
-ui_path = resources.files(__package__) / "template_attribute_form.ui"
+ui_path = resources.files(__package__) / "plan_feature_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
-    """Parent class for feature template forms for adding and modifying feature attribute data."""
+class PlanFeatureForm(QDialog, FormClass):  # type: ignore
+    """Parent class for feature forms for adding and modifying feature attribute data."""
 
     def __init__(
         self,

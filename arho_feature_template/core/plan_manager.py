@@ -16,10 +16,10 @@ from qgis.utils import iface
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import RegulationGroupCategory, RegulationGroupLibrary
 from arho_feature_template.exceptions import UnsavedChangesError
-from arho_feature_template.gui.load_plan_dialog import LoadPlanDialog
-from arho_feature_template.gui.new_plan_regulation_group_form import NewPlanRegulationGroupForm
-from arho_feature_template.gui.plan_attribure_form import PlanAttributeForm
-from arho_feature_template.gui.serialize_plan import SerializePlan
+from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
+from arho_feature_template.gui.dialogs.new_plan_regulation_group_form import NewPlanRegulationGroupForm
+from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
+from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
