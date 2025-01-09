@@ -20,7 +20,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.models import Plan, RegulationGroup, RegulationGroupLibrary
-from arho_feature_template.gui.plan_regulation_group_widget import RegulationGroupWidget
+from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     OrganisationLayer,
@@ -31,7 +31,7 @@ from arho_feature_template.qgis_plugin_tools.tools.resources import resources_pa
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QTextEdit, QTreeWidget, QWidget
 
-    from arho_feature_template.gui.code_combobox import CodeComboBox, HierarchicalCodeComboBox
+    from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
 
 ui_path = resources.files(__package__) / "plan_attribute_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -87,7 +87,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         else:
             ok_button.setEnabled(False)
 
-    # --- COPIED FROM TEMPLATE ATTRIBUTE FORM ---
+    # --- COPIED FROM PLAN FEATURE FORM ---
 
     def _add_spacer(self):
         self.scroll_area_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)

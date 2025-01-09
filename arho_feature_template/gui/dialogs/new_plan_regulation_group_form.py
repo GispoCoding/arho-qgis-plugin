@@ -8,14 +8,14 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QTextBrowser, QTreeWidget, QTreeWidgetItem
 
 from arho_feature_template.core.models import Regulation, RegulationConfig, RegulationGroup, RegulationLibrary
-from arho_feature_template.gui.plan_regulation_widget import RegulationWidget
+from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 
 if TYPE_CHECKING:
     from qgis.gui import QgsSpinBox
     from qgis.PyQt.QtWidgets import QBoxLayout, QLineEdit, QWidget
 
-    from arho_feature_template.gui.code_combobox import CodeComboBox
+    from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "new_plan_regulation_group_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)

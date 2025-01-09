@@ -18,8 +18,8 @@ from arho_feature_template.core.template_library_config import (
     parse_template_library_config,
 )
 from arho_feature_template.exceptions import LayerNotFoundError, LayerNotVectorTypeError
-from arho_feature_template.gui.template_attribute_form import TemplateAttributeForm
-from arho_feature_template.gui.template_dock import TemplateLibraryDock
+from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
+from arho_feature_template.gui.docks.template_dock import TemplateLibraryDock
 from arho_feature_template.resources.template_libraries import library_config_files
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
@@ -136,7 +136,7 @@ class FeatureTemplater:
         else:
             return
 
-        attribute_form = TemplateAttributeForm(name, target_layer_name, feature.geometry())
+        attribute_form = PlanFeatureForm(name, target_layer_name, feature.geometry())
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
 

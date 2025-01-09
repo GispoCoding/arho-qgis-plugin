@@ -10,8 +10,8 @@ from qgis.utils import iface
 
 from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.plan_manager import PlanManager
-from arho_feature_template.gui.plugin_settings import PluginSettings
-from arho_feature_template.gui.validation_dock import ValidationDock
+from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
+from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
