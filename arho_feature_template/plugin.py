@@ -168,7 +168,7 @@ class Plugin:
         )
 
         self.template_dock_action = self.add_action(
-            text="Kaavakohdetemplaatit",
+            text="Luo kaavakohde",
             icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
             toggled_callback=self.toggle_template_dock,
             checkable=True,

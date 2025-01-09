@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>309</width>
+    <width>294</width>
     <height>502</height>
    </rect>
   </property>
@@ -14,7 +14,7 @@
    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
   </property>
   <property name="windowTitle">
-   <string>Kaavakohteiden templaatit</string>
+   <string>Luo kaavakohde</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -34,7 +34,38 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QComboBox" name="library_selection"/>
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Kohteen tyyppi</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Alusta kaavamääräykset templaatista</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Kirjasto</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="library_selection"/>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QgsFilterLineEdit" name="search_box"/>

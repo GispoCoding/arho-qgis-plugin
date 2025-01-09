@@ -30,7 +30,6 @@ if TYPE_CHECKING:
     from qgis.core import QgsGeometry
     from qgis.PyQt.QtWidgets import QWidget
 
-    from arho_feature_template.core.template_library_config import FeatureTemplate
     from arho_feature_template.gui.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "template_attribute_form.ui"
@@ -42,7 +41,8 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
 
     def __init__(
         self,
-        feature_template_config: FeatureTemplate,
+        feature_name: str,
+        target_layer_name: str,
         geometry: QgsGeometry,
     ):
         super().__init__()
@@ -65,10 +65,10 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground.removeItem(0)  # Remove NULL from combobox as underground data is required
         self.feature_type_of_underground.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
-        self.config = feature_template_config
+        self.target_layer_name = target_layer_name
         self.regulation_group_widgets: list[RegulationGroupWidget] = []
         self.scroll_area_spacer = None
-        self.setWindowTitle(self.config.name)
+        self.setWindowTitle(feature_name)
 
         katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
         self.regulation_group_libraries = [
@@ -131,7 +131,7 @@ class TemplateAttributeForm(QDialog, FormClass):  # type: ignore
             type_of_underground_id=self.feature_type_of_underground.value(),
             description=self.feature_description.toPlainText(),
             geom=self.geom,
-            layer_name=self.config.group,
+            layer_name=self.target_layer_name,
             regulation_groups=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
             id_=None,
         )
