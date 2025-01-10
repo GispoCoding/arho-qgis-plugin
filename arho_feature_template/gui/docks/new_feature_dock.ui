@@ -34,6 +34,13 @@
      <number>0</number>
     </property>
     <item>
+     <widget class="QPushButton" name="start_digitize_btn">
+      <property name="text">
+       <string>Piirrä</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QLabel" name="label">
       <property name="text">
        <string>Kohteen tyyppi</string>
@@ -71,11 +78,7 @@
      <widget class="QgsFilterLineEdit" name="search_box"/>
     </item>
     <item>
-     <widget class="QTreeView" name="template_list">
-      <attribute name="headerVisible">
-       <bool>false</bool>
-      </attribute>
-     </widget>
+     <widget class="QListWidget" name="template_list"/>
     </item>
     <item>
      <widget class="QLabel" name="txt_tip">
