@@ -8,7 +8,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QWidget
 from qgis.utils import iface
 
-from arho_feature_template.core.feature_template_library import FeatureTemplater, TemplateGeometryDigitizeMapTool
+from arho_feature_template.core.feature_template_library import TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
@@ -127,15 +127,15 @@ class Plugin:
         return action
 
     def initGui(self) -> None:  # noqa N802
-        self.templater = FeatureTemplater()
+        self.plan_manager = PlanManager()
 
         # plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
         # load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
 
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.templater.template_dock)
-        self.templater.template_dock.visibilityChanged.connect(self.dock_visibility_changed)
+        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
+        self.plan_manager.new_feature_dock.visibilityChanged.connect(self.dock_visibility_changed)
 
-        iface.mapCanvas().mapToolSet.connect(self.templater.digitize_map_tool.deactivate)
+        iface.mapCanvas().mapToolSet.connect(self.plan_manager.digitize_map_tool.deactivate)
 
         self.validation_dock = ValidationDock()
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
@@ -167,10 +167,10 @@ class Plugin:
             status_tip="Lataa/avaa kaava",
         )
 
-        self.template_dock_action = self.add_action(
+        self.new_feature_dock_action = self.add_action(
             text="Luo kaavakohde",
             icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
-            toggled_callback=self.toggle_template_dock,
+            toggled_callback=self.toggle_new_feature_dock,
             checkable=True,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -212,7 +212,7 @@ class Plugin:
 
     def on_map_tool_changed(self, new_tool: QgsMapTool, old_tool: QgsMapTool) -> None:  # noqa: ARG002
         if not isinstance(new_tool, TemplateGeometryDigitizeMapTool):
-            self.template_dock_action.setChecked(False)
+            self.new_feature_dock_action.setChecked(False)
 
     def add_new_plan(self):
         self.plan_manager.add_new_plan()
@@ -237,14 +237,14 @@ class Plugin:
         iface.mainWindow().removeToolBar(self.toolbar)
         teardown_logger(Plugin.name)
 
-        self.templater.template_dock.close()
+        self.plan_manager.new_feature_dock.close()
         self.validation_dock.close()
 
     def dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
-        self.template_dock_action.setChecked(visible)
+        self.new_feature_dock_action.setChecked(visible)
 
-    def toggle_template_dock(self, show: bool) -> None:  # noqa: FBT001
-        self.templater.template_dock.setUserVisible(show)
+    def toggle_new_feature_dock(self, show: bool) -> None:  # noqa: FBT001
+        self.plan_manager.new_feature_dock.setUserVisible(show)
 
     def validation_dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
         self.validation_dock_action.setChecked(visible)

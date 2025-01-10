@@ -18,7 +18,7 @@ FEATURE_BUTTON_HEIGHT = 90
 
 
 class NewFeatureGridWidget(QListWidget):
-    feature_type_clicked = pyqtSignal(str, str)
+    active_feature_type_changed = pyqtSignal(str, str)
 
     def __init__(self):
         super().__init__()
@@ -34,9 +34,9 @@ class NewFeatureGridWidget(QListWidget):
         self.buttons = {feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES}
         for btn in self.buttons.values():
             self.add_button(btn)
-            btn.clicked.connect(lambda _, name=btn.text(): self.handle_button_click(name))  # noqa: B008
+            btn.clicked.connect(lambda _, button=btn: self.handle_button_click(button))
 
-    def add_button(self, button: QPushButton):
+    def add_button(self, button: FeatureButton):
         item = QListWidgetItem()
         item.setFlags(item.flags() & ~(Qt.ItemIsSelectable | Qt.ItemIsEnabled))
         self.addItem(item)
@@ -55,16 +55,19 @@ class NewFeatureGridWidget(QListWidget):
         new_height = rows_needed * (FEATURE_BUTTON_HEIGHT + 4 + 2)
         self.setFixedHeight(new_height)
 
-    def handle_button_click(self, text: str):
+    def handle_button_click(self, btn: FeatureButton):
         # Clear other button selections
-        self.clear_selections(text)
+        self.clear_selections(btn)
 
         # Map button texts to layer names
-        self.feature_type_clicked.emit(text, FEATURE_TYPE_TO_LAYER_NAME[text])
+        if btn.isChecked():
+            self.active_feature_type_changed.emit(btn.text(), FEATURE_TYPE_TO_LAYER_NAME[btn.text()])
+        else:
+            self.active_feature_type_changed.emit("", "")
 
-    def clear_selections(self, exclude: str | None = None):
-        for txt, btn in self.buttons.items():
-            if exclude and txt == exclude:
+    def clear_selections(self, exclude: FeatureButton | None = None):
+        for btn in self.buttons.values():
+            if exclude and btn == exclude:
                 continue
             btn.setChecked(False)
 

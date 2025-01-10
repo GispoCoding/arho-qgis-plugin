@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 from importlib import resources
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
@@ -20,16 +18,14 @@ from qgis.PyQt.QtWidgets import (
     QTreeWidgetItem,
 )
 
-from arho_feature_template.core.models import PlanFeature, RegulationGroup, RegulationGroupLibrary
-from arho_feature_template.core.plan_manager import regulation_group_library_from_active_plan
+from arho_feature_template.core.models import PlanFeature, RegulationGroup
 from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
-from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
-    from qgis.core import QgsGeometry
     from qgis.PyQt.QtWidgets import QWidget
 
+    from arho_feature_template.core.models import RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_feature_form.ui"
@@ -40,17 +36,12 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
     """Parent class for feature forms for adding and modifying feature attribute data."""
 
     def __init__(
-        self,
-        feature_name: str,
-        target_layer_name: str,
-        geometry: QgsGeometry,
+        self, plan_feature: PlanFeature, form_title: str, regulation_group_libraries: list[RegulationGroupLibrary]
     ):
         super().__init__()
         self.setupUi(self)
 
         # TYPES
-        # self.model = None
-        self.geom = geometry
         self.feature_name: QLineEdit
         self.feature_description: QTextEdit
         self.feature_type_of_underground: CodeComboBox
@@ -65,16 +56,20 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground.removeItem(0)  # Remove NULL from combobox as underground data is required
         self.feature_type_of_underground.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
-        self.target_layer_name = target_layer_name
         self.regulation_group_widgets: list[RegulationGroupWidget] = []
         self.scroll_area_spacer = None
-        self.setWindowTitle(feature_name)
+        self.setWindowTitle(form_title)
 
-        katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
-        self.regulation_group_libraries = [
-            RegulationGroupLibrary.from_config_file(katja_asemakaava_path),
-            regulation_group_library_from_active_plan(),
-        ]
+        self.plan_feature = plan_feature
+        self.layer_name = plan_feature.layer_name  # Should have a layer name
+        if plan_feature.name:
+            self.feature_name.setText(plan_feature.name)
+        if plan_feature.description:
+            self.feature_description.setText(plan_feature.description)
+        for regulation_group in plan_feature.regulation_groups:
+            self.add_plan_regulation_group(regulation_group)
+
+        self.regulation_group_libraries = regulation_group_libraries
         self.plan_regulation_group_libraries_combobox.addItems(
             library.name for library in self.regulation_group_libraries
         )
@@ -130,10 +125,10 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
             name=self.feature_name.text(),
             type_of_underground_id=self.feature_type_of_underground.value(),
             description=self.feature_description.toPlainText(),
-            geom=self.geom,
-            layer_name=self.target_layer_name,
+            geom=self.plan_feature.geom,
+            layer_name=self.layer_name,
             regulation_groups=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
-            id_=None,
+            id_=self.plan_feature.id_,
         )
 
     def _on_ok_clicked(self):

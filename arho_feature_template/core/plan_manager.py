@@ -11,15 +11,21 @@ from qgis.core import (
 )
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox
-from qgis.utils import iface
 
 from arho_feature_template.core.lambda_service import LambdaService
-from arho_feature_template.core.models import RegulationGroupCategory, RegulationGroupLibrary
+from arho_feature_template.core.models import (
+    FeatureTemplateLibrary,
+    PlanFeature,
+    RegulationGroupCategory,
+    RegulationGroupLibrary,
+)
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.dialogs.new_plan_regulation_group_form import NewPlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
+from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
+from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
@@ -34,22 +40,35 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
     plan_layers,
 )
+from arho_feature_template.resources.template_libraries import library_config_files
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
     get_active_plan_id,
     handle_unsaved_changes,
+    iface,
 )
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
-    from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup
+    from arho_feature_template.core.models import Plan, Regulation, RegulationGroup
 
 logger = logging.getLogger(__name__)
 
+FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
+    LandUsePointLayer.name: LandUsePointLayer,
+    OtherAreaLayer.name: OtherAreaLayer,
+    OtherPointLayer.name: OtherPointLayer,
+    LandUseAreaLayer.name: LandUseAreaLayer,
+    LineLayer.name: LineLayer,
+}
+
 
 class PlanDigitizeMapTool(QgsMapToolDigitizeFeature): ...
+
+
+class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature): ...
 
 
 class PlanManager:
@@ -59,6 +78,31 @@ class PlanManager:
 
         self.digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
         self.digitize_map_tool.digitizingCompleted.connect(self._plan_geom_digitized)
+
+        # Initialize new feature dock
+        self.feature_template_libraries = [
+            FeatureTemplateLibrary.from_config_file(config_file) for config_file in library_config_files()
+        ]
+        # self.feature_template_libraries = []
+
+        # TODO: change
+        import os
+        from pathlib import Path
+
+        from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+
+        katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
+        self.regulation_group_libraries = [
+            RegulationGroupLibrary.from_config_file(katja_asemakaava_path),
+            regulation_group_library_from_active_plan(),
+        ]
+
+        self.new_feature_dock = NewFeatureDock(self.feature_template_libraries)
+        self.new_feature_dock.start_digitize_btn.clicked.connect(self.add_new_plan_feature)
+        self.new_feature_dock.hide()
+
+        self.feature_digitize_map_tool = PlanFeatureDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
+        self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
 
     def add_new_plan(self):
         """Initiate the process to add a new plan to the Kaava layer."""
@@ -80,6 +124,29 @@ class PlanManager:
         self.digitize_map_tool.setLayer(plan_layer)
         iface.mapCanvas().setMapTool(self.digitize_map_tool)
 
+    def add_new_plan_feature(self):
+        self.previous_map_tool = iface.mapCanvas().mapTool()
+
+        if not handle_unsaved_changes():
+            return
+
+        layer_name = self.new_feature_dock.active_feature_layer
+        if layer_name is None:
+            msg = "No plan feature type selected"
+            iface.messageBar().pushWarning("", msg)
+            return
+
+        layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
+        if not layer_class:
+            msg = f"Could not find plan feature layer class for layer name {layer_name}"
+            raise ValueError(msg)
+        layer = layer_class.get_from_project()
+
+        layer.startEditing()
+        self.feature_digitize_map_tool.clean()  # Is this needed? add_new_plan does not call this
+        self.feature_digitize_map_tool.setLayer(layer)
+        iface.mapCanvas().setMapTool(self.feature_digitize_map_tool)
+
     def _plan_geom_digitized(self, feature: QgsFeature):
         """Callback for when a new feature is added to the Kaava layer."""
         plan_layer = PlanLayer.get_from_project()
@@ -99,6 +166,26 @@ class PlanManager:
 
         if self.previously_editable:
             plan_layer.startEditing()
+
+        iface.mapCanvas().setMapTool(self.previous_map_tool)
+
+    def _plan_feature_geom_digitized(self, feature: QgsFeature):
+        # NOTE: What if user has changed dock selections while digitizng?
+        layer_name = self.new_feature_dock.active_feature_layer
+        template = self.new_feature_dock.active_template
+        if template:
+            plan_feature = template
+            title = template.name
+        else:
+            plan_feature = PlanFeature(
+                layer_name=layer_name,
+            )
+            title = self.new_feature_dock.active_feature_type
+
+        plan_feature.geom = feature.geometry()
+        attribute_form = PlanFeatureForm(plan_feature, title, self.regulation_group_libraries)
+        if attribute_form.exec_():
+            save_plan_feature(attribute_form.model)
 
         iface.mapCanvas().setMapTool(self.previous_map_tool)
 
@@ -274,18 +361,10 @@ def save_plan(plan_data: Plan) -> QgsFeature:
 
 
 def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> QgsFeature:
-    layer_name_to_class_map: dict[str, type[PlanFeatureLayer]] = {
-        LandUsePointLayer.name: LandUsePointLayer,
-        OtherAreaLayer.name: OtherAreaLayer,
-        OtherPointLayer.name: OtherPointLayer,
-        LandUseAreaLayer.name: LandUseAreaLayer,
-        LineLayer.name: LineLayer,
-    }
-
     if not plan_feature.layer_name:
         msg = "Cannot save plan feature without a target layer"
         raise ValueError(msg)
-    layer_class = layer_name_to_class_map.get(plan_feature.layer_name)
+    layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(plan_feature.layer_name)
     if not layer_class:
         msg = f"Could not find plan feature layer class for layer name {plan_feature.layer_name}"
         raise ValueError(msg)

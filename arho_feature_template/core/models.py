@@ -32,6 +32,47 @@ class ValueType(Enum):
     VERSIONED_TEXT = "kieliversioitu teksti"
 
 
+class TemplateSyntaxError(Exception):
+    def __init__(self, template_cls: str, message: str):
+        super().__init__(f"Invalid template syntax for {template_cls}: {message}")
+
+
+@dataclass
+class FeatureTemplateLibrary:
+    """Describes the configuration of a feature template library"""
+
+    name: str
+    version: str | None
+    description: str | None
+    feature_templates: list[PlanFeature]
+
+    @classmethod
+    def from_config_file(cls, config_fp: Path) -> FeatureTemplateLibrary:
+        with config_fp.open(encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+            try:
+                return FeatureTemplateLibrary(
+                    name=data["name"],
+                    version=data.get("version"),
+                    description=data.get("description"),
+                    feature_templates=[
+                        PlanFeature(
+                            geom=None,
+                            type_of_underground_id=feature_data.get("type_of_underground"),  # Need ID conversion?
+                            layer_name=feature_data.get("layer_name"),
+                            name=feature_data.get("name"),
+                            description=feature_data.get("description"),
+                            regulation_groups=[],  # feature_data.get("regulation_groups"),  # Handle regulation group creaton
+                            plan_id=None,
+                            id_=None,
+                        )
+                        for feature_data in data["feature_templates"]
+                    ],
+                )
+            except KeyError as e:
+                raise TemplateSyntaxError(str(cls), str(e)) from e
+
+
 @dataclass
 class RegulationGroupCategory:
     category_code: str | None
@@ -273,14 +314,19 @@ class RegulationGroup:
 
 @dataclass
 class PlanFeature:
-    geom: QgsGeometry
-    type_of_underground_id: str
+    geom: QgsGeometry | None = None  # Need to allow None for feature templates
+    type_of_underground_id: str | None = None
     layer_name: str | None = None
     name: str | None = None
     description: str | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list)
     plan_id: int | None = None
     id_: int | None = None
+
+    @classmethod
+    def from_config_data(cls, data: dict) -> PlanFeature:
+        # TODO: Implement
+        return cls(**data)
 
 
 @dataclass
