@@ -185,14 +185,12 @@ class PlanManager:
 
     def _plan_feature_geom_digitized(self, feature: QgsFeature):
         # NOTE: What if user has changed dock selections while digitizng?
-        layer_name = self.new_feature_dock.active_feature_layer
-        template = self.new_feature_dock.active_template
-        if template:
-            plan_feature = template
-            title = template.name
+        if self.new_feature_dock.active_template:
+            plan_feature = self.new_feature_dock.active_template
+            title = plan_feature.name
         else:
             plan_feature = PlanFeature(
-                layer_name=layer_name,
+                layer_name=self.new_feature_dock.active_feature_layer,
             )
             title = self.new_feature_dock.active_feature_type
 
