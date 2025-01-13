@@ -377,12 +377,12 @@
   <customwidget>
    <class>CodeComboBox</class>
    <extends>QComboBox</extends>
-   <header>arho_feature_template.gui.code_combobox</header>
+   <header>arho_feature_template.gui.components.code_combobox</header>
   </customwidget>
   <customwidget>
    <class>HierarchicalCodeComboBox</class>
    <extends>QComboBox</extends>
-   <header>arho_feature_template.gui.code_combobox</header>
+   <header>arho_feature_template.gui.components.code_combobox</header>
   </customwidget>
  </customwidgets>
  <tabstops>

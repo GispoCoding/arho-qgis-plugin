@@ -4,11 +4,7 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from qgis.core import (
-    QgsExpressionContextUtils,
-    QgsProject,
-    QgsVectorLayer,
-)
+from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 
@@ -40,7 +36,8 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
     plan_layers,
 )
-from arho_feature_template.resources.template_libraries import library_config_files
+from arho_feature_template.resources.libraries.feature_templates import feature_template_library_config_files
+from arho_feature_template.resources.libraries.regulation_groups import regulation_group_library_config_files
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -68,7 +65,9 @@ FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
 class PlanDigitizeMapTool(QgsMapToolDigitizeFeature): ...
 
 
-class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature): ...
+class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature):
+    def __init__(self, mode: QgsMapToolDigitizeFeature.CaptureMode):
+        super().__init__(iface.mapCanvas(), iface.cadDockWidget(), mode)
 
 
 class PlanManager:
@@ -76,33 +75,51 @@ class PlanManager:
         self.json_plan_path = None
         self.json_plan_outline_path = None
 
+        # Initialize libraries
+        self.feature_template_libraries = [
+            FeatureTemplateLibrary.from_config_file(file) for file in feature_template_library_config_files()
+        ]
+        self.regulation_group_libraries = [
+            RegulationGroupLibrary.from_config_file(file) for file in regulation_group_library_config_files()
+        ]
+        self.regulation_group_libraries.append(regulation_group_library_from_active_plan())
+
+        # Initialize new feature dock
+        self.new_feature_dock = NewFeatureDock(self.feature_template_libraries)
+        self.new_feature_dock.tool_activated.connect(self.add_new_plan_feature)
+        self.new_feature_dock.hide()
+
+        # Initialize digitize tools
         self.digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
         self.digitize_map_tool.digitizingCompleted.connect(self._plan_geom_digitized)
 
-        # Initialize new feature dock
-        self.feature_template_libraries = [
-            FeatureTemplateLibrary.from_config_file(config_file) for config_file in library_config_files()
-        ]
-        # self.feature_template_libraries = []
+        self.feature_digitize_map_tool = None
+        self.initialize_feature_digitize_map_tool()
 
-        # TODO: change
-        import os
-        from pathlib import Path
+    def initialize_feature_digitize_map_tool(self, layer: QgsVectorLayer | None = None):
+        # Get matcing capture mode for given layer
+        if layer is None:
+            mode = PlanFeatureDigitizeMapTool.CaptureMode.CaptureNone
+        elif layer.geometryType() == QgsWkbTypes.PointGeometry:
+            mode = PlanFeatureDigitizeMapTool.CaptureMode.CapturePoint
+        elif layer.geometryType() == QgsWkbTypes.LineGeometry:
+            mode = PlanFeatureDigitizeMapTool.CaptureMode.CaptureLine
+        elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+            mode = PlanFeatureDigitizeMapTool.CaptureMode.CapturePolygon
 
-        from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+        # Disconnect signals first to not trigger them unwantedly
+        if self.feature_digitize_map_tool:
+            self.feature_digitize_map_tool.digitizingCompleted.disconnect()
+            self.feature_digitize_map_tool.digitizingFinished.disconnect()
 
-        katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
-        self.regulation_group_libraries = [
-            RegulationGroupLibrary.from_config_file(katja_asemakaava_path),
-            regulation_group_library_from_active_plan(),
-        ]
-
-        self.new_feature_dock = NewFeatureDock(self.feature_template_libraries)
-        self.new_feature_dock.start_digitize_btn.clicked.connect(self.add_new_plan_feature)
-        self.new_feature_dock.hide()
-
-        self.feature_digitize_map_tool = PlanFeatureDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
+        # Reinitialize and reconnect signals
+        self.feature_digitize_map_tool = PlanFeatureDigitizeMapTool(mode)
         self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
+        self.feature_digitize_map_tool.digitizingFinished.connect(self.new_feature_dock.deactivate_and_clear_selections)
+
+        # Set layer if given
+        if layer:
+            self.feature_digitize_map_tool.setLayer(layer)
 
     def add_new_plan(self):
         """Initiate the process to add a new plan to the Kaava layer."""
@@ -125,8 +142,6 @@ class PlanManager:
         iface.mapCanvas().setMapTool(self.digitize_map_tool)
 
     def add_new_plan_feature(self):
-        self.previous_map_tool = iface.mapCanvas().mapTool()
-
         if not handle_unsaved_changes():
             return
 
@@ -141,10 +156,9 @@ class PlanManager:
             msg = f"Could not find plan feature layer class for layer name {layer_name}"
             raise ValueError(msg)
         layer = layer_class.get_from_project()
-
         layer.startEditing()
-        self.feature_digitize_map_tool.clean()  # Is this needed? add_new_plan does not call this
-        self.feature_digitize_map_tool.setLayer(layer)
+
+        self.initialize_feature_digitize_map_tool(layer)
         iface.mapCanvas().setMapTool(self.feature_digitize_map_tool)
 
     def _plan_geom_digitized(self, feature: QgsFeature):
@@ -186,8 +200,6 @@ class PlanManager:
         attribute_form = PlanFeatureForm(plan_feature, title, self.regulation_group_libraries)
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
-
-        iface.mapCanvas().setMapTool(self.previous_map_tool)
 
     def set_active_plan(self, plan_id: str | None):
         """Update the project layers based on the selected land use plan.

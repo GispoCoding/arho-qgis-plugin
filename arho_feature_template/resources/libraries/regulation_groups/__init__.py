@@ -8,7 +8,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def library_config_files() -> Iterator[Path]:
+# COPIED FROM
+def regulation_group_library_config_files() -> Iterator[Path]:
     """Get all template library configuration files."""
 
     for resource in resources.files(__package__).iterdir():
