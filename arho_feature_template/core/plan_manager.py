@@ -167,7 +167,7 @@ class PlanManager:
             return
 
         attribute_form = PlanAttributeForm(
-            [*self.regulation_group_libraries + regulation_group_library_from_active_plan()]
+            [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
         )
         if attribute_form.exec_():
             plan_attributes = attribute_form.get_plan_attributes()
@@ -197,7 +197,7 @@ class PlanManager:
 
         plan_feature.geom = feature.geometry()
         attribute_form = PlanFeatureForm(
-            plan_feature, title, [*self.regulation_group_libraries + regulation_group_library_from_active_plan()]
+            plan_feature, title, [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
