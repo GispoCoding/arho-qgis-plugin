@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QComboBox, QLabel, QWidget
 
-    from arho_feature_template.core.models import FeatureTemplateLibrary
+    from arho_feature_template.core.models import FeatureTemplateLibrary, PlanFeature
 
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
@@ -40,7 +40,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         # 2. Feature templates
         self.active_feature_type: str | None = None
         self.active_feature_layer: str | None = None
-        self.active_template = None
+        self.active_template: PlanFeature | None = None
         self.feature_template_libraries: list[FeatureTemplateLibrary] = feature_template_libraries
         self.library_selection.addItems([library.name for library in self.feature_template_libraries])
         self.library_selection.currentIndexChanged.connect(self.set_active_feature_template_library)
@@ -68,19 +68,26 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         for index in range(self.template_list.count()):
             item = self.template_list.item(index)
             item_text = item.text().lower()
-            plan_feature = item.data(Qt.UserRole)
+            plan_feature: PlanFeature = item.data(Qt.UserRole)
             text_matches = search_text in item_text
             feature_type_matches = (
                 plan_feature.layer_name == self.active_feature_layer if self.active_feature_layer else True
             )
             item.setHidden(not (text_matches and feature_type_matches))
 
+            # Clear selection if the selected template was filtered
+            if self.active_template and self.active_template is plan_feature and item.isHidden():
+                self.template_list.clearSelection()
+
     def on_template_item_clicked(self, index: int):
         item = self.template_list.itemFromIndex(index)
-        template = item.data(Qt.UserRole)
+        template: PlanFeature = item.data(Qt.UserRole)
         # Clicked new list item => activate new template
         if template != self.active_template:
             self.active_template = template
+            # NOTE: Workaround to fix make sure clicked item is selected. At least after a selected item has been
+            # filtered out, clicking on a new template will select, immediately deselect (but keep focus)
+            self.template_list.setCurrentItem(item)
         else:
             # Clicked selected list item => clear selection
             self.active_template = None
