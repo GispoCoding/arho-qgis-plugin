@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING
 
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem
 
 from arho_feature_template.gui.components.new_feature_grid_widget import NewFeatureGridWidget
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
-    from qgis.PyQt.QtWidgets import QComboBox, QLabel, QPushButton, QWidget
+    from qgis.PyQt.QtWidgets import QComboBox, QLabel, QWidget
 
     from arho_feature_template.core.models import FeatureTemplateLibrary
 
@@ -19,6 +19,8 @@ DockClass, _ = uic.loadUiType(ui_path)
 
 
 class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
+    tool_activated = pyqtSignal()
+
     def __init__(self, feature_template_libraries: list):
         super().__init__()
         self.setupUi(self)
@@ -29,7 +31,6 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.template_list: QListWidget
         self.txt_tip: QLabel
         self.dockWidgetContents: QWidget
-        self.start_digitize_btn: QPushButton
 
         # INIT
         # 1. New feature grid
@@ -47,11 +48,8 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
             self.set_active_feature_template_library(0)
 
         self.template_list.setSelectionMode(self.template_list.SingleSelection)
+        self.search_box.valueChanged.connect(self.filter_plan_feature_templates)
 
-        self.search_box.setShowSearchIcon(True)
-        self.search_box.valueChanged.connect(lambda _: self.filter_plan_feature_templates)
-
-        # Activate map tool when template is selected
         # NOTE: If user moves selection with arrow keys, this is not registered currently
         self.template_list.clicked.connect(self.on_template_item_clicked)
         self.new_feature_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
@@ -60,6 +58,8 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_feature_type = feature_name if feature_name else None
         self.active_feature_layer = layer_name if layer_name else None
         self.filter_plan_feature_templates()
+        if self.active_feature_type:
+            self.tool_activated.emit()
 
     def filter_plan_feature_templates(self):
         # Consider both search text and active plan feature type
@@ -70,18 +70,27 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
             item_text = item.text().lower()
             plan_feature = item.data(Qt.UserRole)
             text_matches = search_text in item_text
-            feature_type_matches = plan_feature.layer_name == self.active_feature_layer
+            feature_type_matches = (
+                plan_feature.layer_name == self.active_feature_layer if self.active_feature_layer else True
+            )
             item.setHidden(not (text_matches and feature_type_matches))
 
     def on_template_item_clicked(self, index: int):
         item = self.template_list.itemFromIndex(index)
         template = item.data(Qt.UserRole)
+        # Clicked new list item => activate new template
         if template != self.active_template:
             self.active_template = template
         else:
-            # If user clicks an already selected list item, clear selection
+            # Clicked selected list item => clear selection
             self.active_template = None
             self.template_list.clearSelection()
+
+    def deactivate_and_clear_selections(self):
+        self.on_active_feature_type_changed("", "")
+        self.new_feature_grid.clear_selections()
+        self.active_template = None
+        self.template_list.clearSelection()
 
     def set_active_feature_template_library(self, index: int) -> None:
         self.template_list.clear()

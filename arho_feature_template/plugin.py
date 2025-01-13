@@ -8,7 +8,6 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QWidget
 from qgis.utils import iface
 
-from arho_feature_template.core.feature_template_library import TemplateGeometryDigitizeMapTool
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
@@ -17,7 +16,7 @@ from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
 
 if TYPE_CHECKING:
-    from qgis.gui import QgisInterface, QgsMapTool
+    from qgis.gui import QgisInterface
 
     iface: QgisInterface = cast("QgisInterface", iface)  # type: ignore[no-redef]
 
@@ -209,10 +208,6 @@ class Plugin:
             add_to_toolbar=False,
             status_tip="Muokkaa pluginin asetuksia",
         )
-
-    def on_map_tool_changed(self, new_tool: QgsMapTool, old_tool: QgsMapTool) -> None:  # noqa: ARG002
-        if not isinstance(new_tool, TemplateGeometryDigitizeMapTool):
-            self.new_feature_dock_action.setChecked(False)
 
     def add_new_plan(self):
         self.plan_manager.add_new_plan()
