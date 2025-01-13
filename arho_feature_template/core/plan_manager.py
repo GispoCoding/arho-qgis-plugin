@@ -166,9 +166,7 @@ class PlanManager:
         if not plan_layer:
             return
 
-        attribute_form = PlanAttributeForm(
-            [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
-        )
+        attribute_form = PlanAttributeForm(self.regulation_group_libraries)
         if attribute_form.exec_():
             plan_attributes = attribute_form.get_plan_attributes()
             plan_attributes.geom = feature.geometry()

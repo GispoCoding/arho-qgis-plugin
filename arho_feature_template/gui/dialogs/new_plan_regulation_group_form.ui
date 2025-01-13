@@ -111,52 +111,12 @@
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout">
+        <layout class="QVBoxLayout" name="regulations_tree_layout">
          <item>
           <widget class="QLabel" name="label_6">
            <property name="text">
             <string>Kaavamääräykset</string>
            </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QgsFilterLineEdit" name="mLineEdit">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="placeholderText">
-            <string>Suodata kaavamääräyksiä</string>
-           </property>
-           <property name="showSearchIcon">
-            <bool>true</bool>
-           </property>
-           <property name="qgisRelation" stdset="0">
-            <string notr="true"/>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTreeWidget" name="regulations_view">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <attribute name="headerVisible">
-            <bool>false</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string notr="true">1</string>
-            </property>
-           </column>
           </widget>
          </item>
          <item>
@@ -256,11 +216,6 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>QgsFilterLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>qgsfilterlineedit.h</header>
-  </customwidget>
   <customwidget>
    <class>QgsSpinBox</class>
    <extends>QSpinBox</extends>
