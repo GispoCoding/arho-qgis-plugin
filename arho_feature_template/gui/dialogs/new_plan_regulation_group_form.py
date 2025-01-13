@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QTextBrowser, QTreeWidget, QTreeWidgetItem
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QTextBrowser, QTreeWidgetItem, QVBoxLayout
 
 from arho_feature_template.core.models import Regulation, RegulationConfig, RegulationGroup, RegulationLibrary
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
+from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 
 if TYPE_CHECKING:
@@ -35,7 +36,7 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.color_code: QLineEdit
         self.type_of_regulation_group: CodeComboBox
 
-        self.regulations_view: QTreeWidget
+        self.regulations_tree_layout: QVBoxLayout
         self.regulations_scroll_area_contents: QWidget
         self.regulations_layout: QBoxLayout
         self.regulation_info: QTextBrowser
@@ -43,31 +44,26 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.button_box: QDialogButtonBox
 
         # INIT
-        self.initialize_regulations()
+        self.regulations_selection_widget = TreeWithSearchWidget()
+        self.regulations_tree_layout.insertWidget(1, self.regulations_selection_widget)
+        self.regulations_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_regulation)
+        self.regulations_selection_widget.tree.itemClicked.connect(self.update_selected_regulation)
+        for config in RegulationLibrary.get_regulations():
+            self._initalize_regulation_from_config(config)
+
         self.type_of_regulation_group.populate_from_code_layer(PlanRegulationGroupTypeLayer)
         self.type_of_regulation_group.removeItem(0)  # Remove NULL from combobox as underground data is required
-        self.regulations_view.itemDoubleClicked.connect(self.add_selected_regulation)
-        self.regulations_view.itemClicked.connect(self.update_selected_regulation)
         self.button_box.accepted.connect(self._on_ok_clicked)
         self.regulation_widgets: list[RegulationWidget] = []
         self.save_as_config = False
 
     def _initalize_regulation_from_config(self, config: RegulationConfig, parent: QTreeWidgetItem | None = None):
-        tree_item = QTreeWidgetItem(parent)
-        tree_item.setText(0, config.name)
-        tree_item.setData(0, Qt.UserRole, config)
-
-        if parent is None:
-            self.regulations_view.addTopLevelItem(tree_item)
+        item = self.regulations_selection_widget.add_item_to_tree(config.name, config, parent)
 
         # Initialize plan regulations recursively
         if config.child_regulations:
             for child_config in config.child_regulations:
-                self._initalize_regulation_from_config(child_config, tree_item)
-
-    def initialize_regulations(self):
-        for config in RegulationLibrary.get_regulations():
-            self._initalize_regulation_from_config(config)
+                self._initalize_regulation_from_config(child_config, item)
 
     def update_selected_regulation(self, item: QTreeWidgetItem, column: int):
         config: RegulationConfig = item.data(column, Qt.UserRole)  # Retrieve the associated config

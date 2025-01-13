@@ -13,12 +13,12 @@ from qgis.PyQt.QtWidgets import (
     QSizePolicy,
     QSpacerItem,
     QTextEdit,
-    QTreeWidget,
     QTreeWidgetItem,
 )
 
 from arho_feature_template.core.models import Plan, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
+from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     OrganisationLayer,
@@ -26,7 +26,7 @@ from arho_feature_template.project.layers.code_layers import (
 )
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QTextEdit, QTreeWidget, QWidget
+    from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QTextEdit, QVBoxLayout, QWidget
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
 
@@ -47,7 +47,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     plan_regulation_group_scrollarea_contents: QWidget
     plan_regulation_group_libraries_combobox: QComboBox
-    plan_regulation_groups_tree: QTreeWidget
+    regulation_groups_tree_layout: QVBoxLayout
 
     button_box: QDialogButtonBox
 
@@ -66,9 +66,13 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         self.scroll_area_spacer = None
+        self.regulation_groups_selection_widget = TreeWithSearchWidget()
+        self.regulation_groups_tree_layout.insertWidget(2, self.regulation_groups_selection_widget)
         self.regulation_group_widgets: list[RegulationGroupWidget] = []
-        [self.init_plan_regulation_group_library(library) for library in regulation_group_libraries]
-        self.plan_regulation_groups_tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
+        for library in regulation_group_libraries:
+            self.init_plan_regulation_group_library(library)
+
+        self.regulation_groups_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
 
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
 
@@ -117,13 +121,11 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     def init_plan_regulation_group_library(self, library: RegulationGroupLibrary):
         self.plan_regulation_group_libraries_combobox.addItem(library.name)
         for category in library.regulation_group_categories:
-            category_item = QTreeWidgetItem()
-            category_item.setText(0, category.name)
-            self.plan_regulation_groups_tree.addTopLevelItem(category_item)
+            category_item = self.regulation_groups_selection_widget.add_item_to_tree(category.name)
             for group_definition in category.regulation_groups:
-                regulation_group_item = QTreeWidgetItem(category_item)
-                regulation_group_item.setText(0, group_definition.name)
-                regulation_group_item.setData(0, Qt.UserRole, group_definition)
+                self.regulation_groups_selection_widget.add_item_to_tree(
+                    group_definition.name, group_definition, category_item
+                )
 
     # ---
 
