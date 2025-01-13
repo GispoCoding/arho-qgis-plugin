@@ -82,7 +82,6 @@ class PlanManager:
         self.regulation_group_libraries = [
             RegulationGroupLibrary.from_config_file(file) for file in regulation_group_library_config_files()
         ]
-        self.regulation_group_libraries.append(regulation_group_library_from_active_plan())
 
         # Initialize new feature dock
         self.new_feature_dock = NewFeatureDock(self.feature_template_libraries)
@@ -167,7 +166,9 @@ class PlanManager:
         if not plan_layer:
             return
 
-        attribute_form = PlanAttributeForm()
+        attribute_form = PlanAttributeForm(
+            [*self.regulation_group_libraries + regulation_group_library_from_active_plan()]
+        )
         if attribute_form.exec_():
             plan_attributes = attribute_form.get_plan_attributes()
             plan_attributes.geom = feature.geometry()
@@ -195,7 +196,9 @@ class PlanManager:
             title = self.new_feature_dock.active_feature_type
 
         plan_feature.geom = feature.geometry()
-        attribute_form = PlanFeatureForm(plan_feature, title, self.regulation_group_libraries)
+        attribute_form = PlanFeatureForm(
+            plan_feature, title, [*self.regulation_group_libraries + regulation_group_library_from_active_plan()]
+        )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
 

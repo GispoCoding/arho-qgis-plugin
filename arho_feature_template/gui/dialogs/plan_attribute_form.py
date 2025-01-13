@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 from importlib import resources
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
@@ -26,7 +24,6 @@ from arho_feature_template.project.layers.code_layers import (
     OrganisationLayer,
     PlanTypeLayer,
 )
-from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QTextEdit, QTreeWidget, QWidget
@@ -54,7 +51,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     button_box: QDialogButtonBox
 
-    def __init__(self, parent=None):
+    def __init__(self, regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
         super().__init__(parent)
 
         self.setupUi(self)
@@ -70,7 +67,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.scroll_area_spacer = None
         self.regulation_group_widgets: list[RegulationGroupWidget] = []
-        self.init_plan_regulation_group_libraries()
+        [self.init_plan_regulation_group_library(library) for library in regulation_group_libraries]
         self.plan_regulation_groups_tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
 
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
@@ -116,12 +113,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.plan_regulation_group_scrollarea_contents.layout().removeWidget(regulation_group_widget)
         self.regulation_group_widgets.remove(regulation_group_widget)
         regulation_group_widget.deleteLater()
-
-    def init_plan_regulation_group_libraries(self):
-        katja_asemakaava_path = Path(os.path.join(resources_path(), "katja_asemakaava.yaml"))
-        libraries = [RegulationGroupLibrary.from_config_file(katja_asemakaava_path)]
-        for library in libraries:
-            self.init_plan_regulation_group_library(library)
 
     def init_plan_regulation_group_library(self, library: RegulationGroupLibrary):
         self.plan_regulation_group_libraries_combobox.addItem(library.name)
