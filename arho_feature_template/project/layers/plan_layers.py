@@ -88,13 +88,12 @@ class PlanLayer(AbstractPlanLayer):
 class PlanFeatureLayer(AbstractPlanLayer):
     @classmethod
     def feature_from_model(cls, model: PlanFeature, plan_id: str | None = None) -> QgsFeature:
-        layer = cls.get_from_project()
-
         if not model.geom:
             message = "Plan feature must have a geometry to be added to the layer"
             raise ValueError(message)
 
-        feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
+        feature = cls.initialize_feature_from_model(model)
+        feature.setGeometry(model.geom)
         feature["name"] = {"fin": model.name if model.name else ""}
         feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = {"fin": model.description if model.description else ""}
@@ -105,6 +104,22 @@ class PlanFeatureLayer(AbstractPlanLayer):
         )
 
         return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> PlanFeature:
+        return PlanFeature(
+            geom=feature.geometry(),
+            type_of_underground_id=feature["type_of_underground_id"],
+            layer_name=cls.get_from_project().name(),
+            name=feature["name"]["fin"],
+            description=feature["description"]["fin"],
+            regulation_groups=[
+                RegulationGroupLayer.model_from_feature(RegulationGroupLayer.get_feature_by_id(group_id))
+                for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+            ],
+            plan_id=feature["plan_id"],
+            id_=feature["id"],
+        )
 
 
 class LandUsePointLayer(PlanFeatureLayer):
@@ -192,19 +207,44 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
     }
 
     @classmethod
-    def feature_from(cls, regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature:
+    def feature_from(cls, regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature | None:
         layer = cls.get_from_project()
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+
+        # Check if association exists to avoid duplicate assocations
+        for feature in layer.getFeatures():
+            if feature["plan_regulation_group_id"] == regulation_group_id and feature[attribute] == feature_id:
+                return None
 
         feature = QgsVectorLayerUtils.createFeature(layer)
         feature["plan_regulation_group_id"] = regulation_group_id
 
-        attribute = cls.layer_name_to_attribute_map.get(layer_name)
         if not attribute:
             msg = f"Unrecognized layer name given for saving regulation group association: {layer_name}"
             raise ValueError(msg)
         feature[attribute] = feature_id
 
         return feature
+
+    @classmethod
+    def get_associations_for_feature(cls, feature_id: str, layer_name: str) -> list[QgsFeature]:
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        return [feature for feature in cls.get_features() if feature[attribute] == feature_id]
+
+    @classmethod
+    def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> list[str]:
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        return [
+            feature["plan_regulation_group_id"] for feature in cls.get_features() if feature[attribute] == feature_id
+        ]
+
+    @classmethod
+    def get_dangling_associations(
+        cls, groups: list[RegulationGroup], feature_id: str, layer_name: str
+    ) -> list[QgsFeature]:
+        associations = RegulationGroupAssociationLayer.get_associations_for_feature(feature_id, layer_name)
+        updated_group_ids = [group.id_ for group in groups]
+        return [assoc for assoc in associations if assoc["plan_regulation_group_id"] not in updated_group_ids]
 
 
 class PlanRegulationLayer(AbstractPlanLayer):
