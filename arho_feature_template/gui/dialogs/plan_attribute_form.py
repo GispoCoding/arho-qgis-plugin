@@ -106,7 +106,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = RegulationGroupWidget(regulation_group, general_regulation=True)
+        regulation_group_widget = RegulationGroupWidget(regulation_group, layer_name="Kaava")
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         self._remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(regulation_group_widget)

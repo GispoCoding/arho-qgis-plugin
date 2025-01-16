@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
@@ -76,7 +76,8 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
 
         # Initialize attributes from template
         self.plan_feature = plan_feature
-        self.layer_name = plan_feature.layer_name  # Should have a layer name
+        self.layer_name = plan_feature.layer_name  # Should always have a layer name
+
         if plan_feature.name:
             self.feature_name.setText(plan_feature.name)
         if plan_feature.description:
@@ -102,7 +103,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, definition: RegulationGroup):
-        regulation_group_widget = RegulationGroupWidget(definition)
+        regulation_group_widget = RegulationGroupWidget(definition, cast(str, self.layer_name))
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         self._remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(regulation_group_widget)
