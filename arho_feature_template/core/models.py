@@ -266,6 +266,16 @@ class Regulation:
 
 
 @dataclass
+class Proposition:
+    name: str
+    value: str
+    theme_id: str | None = None
+    proposition_number: int | None = None
+    regulation_group_id_: int | None = None
+    id_: int | None = None
+
+
+@dataclass
 class RegulationGroup:
     type_code_id: str | None
     name: str | None
@@ -273,6 +283,7 @@ class RegulationGroup:
     color_code: str | None
     group_number: int | None = None
     regulations: list[Regulation] = field(default_factory=list)
+    propositions: list[Proposition] = field(default_factory=list)
     id_: int | None = None
 
     @classmethod
@@ -308,6 +319,7 @@ class RegulationGroup:
             color_code=data.get("color_code"),
             group_number=data.get("group_number"),
             regulations=regulations,
+            propositions=[],
             id_=None,
         )
 

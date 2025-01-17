@@ -26,6 +26,10 @@ class UndergroundTypeLayer(AbstractCodeLayer):
     name = "Maanalaisuuden tyyppi"
 
 
+class PlanThemeLayer(AbstractCodeLayer):
+    name = "Kaavoitusteemat"
+
+
 class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
     name = "Kaavamääräysryhmän tyyppi"
 
