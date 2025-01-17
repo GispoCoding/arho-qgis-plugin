@@ -33,6 +33,7 @@ from arho_feature_template.project.layers.plan_layers import (
     OtherPointLayer,
     PlanFeatureLayer,
     PlanLayer,
+    PlanPropositionLayer,
     PlanRegulationLayer,
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
@@ -51,7 +52,7 @@ from arho_feature_template.utils.misc_utils import (
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
-    from arho_feature_template.core.models import Regulation, RegulationGroup
+    from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
 
 logger = logging.getLogger(__name__)
 
@@ -517,6 +518,12 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
             regulation.regulation_group_id_ = feature["id"]  # Updating regulation group ID
             save_regulation(regulation)
 
+    # Handle propositions
+    if regulation_group.propositions:
+        for proposition in regulation_group.propositions:
+            proposition.regulation_group_id_ = feature["id"]  # Updating regulation group ID
+            save_proposition(proposition)
+
     return feature
 
 
@@ -542,6 +549,20 @@ def save_regulation(regulation: Regulation) -> QgsFeature:
         layer=layer,
         id_=regulation.id_,
         edit_text="Kaavamääräyksen lisäys" if regulation.id_ is None else "Kaavamääräyksen muokkaus",
+    )
+
+    return feature
+
+
+def save_proposition(proposition: Proposition) -> QgsFeature:
+    feature = PlanPropositionLayer.feature_from_model(proposition)
+    layer = PlanPropositionLayer.get_from_project()
+
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=proposition.id_,
+        edit_text="Kaavasuosituksen lisäys" if proposition.id_ is None else "Kaavasuosituksen muokkaus",
     )
 
     return feature

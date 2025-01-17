@@ -180,7 +180,7 @@ p, li { white-space: pre-wrap; }
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="recommendations_tab">
+     <widget class="QWidget" name="propositions_tab">
       <attribute name="title">
        <string>Suositukset</string>
       </attribute>
@@ -190,7 +190,7 @@ p, li { white-space: pre-wrap; }
          <property name="widgetResizable">
           <bool>true</bool>
          </property>
-         <widget class="QWidget" name="scrollAreaWidgetContents_2">
+         <widget class="QWidget" name="propositions_scroll_contents">
           <property name="geometry">
            <rect>
             <x>0</x>
@@ -199,6 +199,34 @@ p, li { white-space: pre-wrap; }
             <height>577</height>
            </rect>
           </property>
+          <layout class="QVBoxLayout" name="propositions_layout">
+           <item>
+            <widget class="QPushButton" name="add_proposition_btn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Lisää suositus</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="verticalSpacer_2">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>5</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
          </widget>
         </widget>
        </item>

@@ -8,7 +8,8 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QWidget
 
-from arho_feature_template.core.models import Regulation, RegulationGroup
+from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
+from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 
@@ -41,6 +42,9 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.regulation_widgets: list[RegulationWidget] = [
             self.add_regulation_widget(regulation) for regulation in self.regulation_group_data.regulations
         ]
+        self.proposition_widgets: list[PropositionWidget] = [
+            self.add_proposition_widget(proposition) for proposition in self.regulation_group_data.propositions
+        ]
 
         regulation_group_data.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
         self.name.setText(self.regulation_group_data.name if self.regulation_group_data.name else "")
@@ -59,6 +63,17 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.regulation_widgets.remove(regulation_widget)
         regulation_widget.deleteLater()
 
+    def add_proposition_widget(self, proposition: Proposition) -> PropositionWidget:
+        widget = PropositionWidget(proposition=proposition, parent=self.frame)
+        widget.delete_signal.connect(self.delete_proposition_widget)
+        self.frame.layout().addWidget(widget)
+        return widget
+
+    def delete_proposition_widget(self, proposition_widget: RegulationWidget):
+        self.frame.layout().removeWidget(proposition_widget)
+        self.proposition_widgets.remove(proposition_widget)
+        proposition_widget.deleteLater()
+
     def into_model(self) -> RegulationGroup:
         return RegulationGroup(
             type_code_id=self.regulation_group_data.type_code_id,
@@ -66,5 +81,6 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             short_name=None if not self.short_name.text() else self.short_name.text(),
             color_code=self.regulation_group_data.color_code,
             regulations=[widget.into_model() for widget in self.regulation_widgets],
+            propositions=[widget.into_model() for widget in self.proposition_widgets],
             id_=self.regulation_group_data.id_,
         )

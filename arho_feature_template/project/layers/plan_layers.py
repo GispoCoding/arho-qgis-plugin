@@ -10,7 +10,14 @@ from typing import Any, ClassVar, Generator
 from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
 from qgis.utils import iface
 
-from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup, RegulationLibrary
+from arho_feature_template.core.models import (
+    Plan,
+    PlanFeature,
+    Proposition,
+    Regulation,
+    RegulationGroup,
+    RegulationLibrary,
+)
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
@@ -202,6 +209,10 @@ class RegulationGroupLayer(AbstractPlanLayer):
                 PlanRegulationLayer.model_from_feature(feat)
                 for feat in PlanRegulationLayer.regulations_with_group_id(feature["id"])
             ],
+            propositions=[
+                PlanPropositionLayer.model_from_feature(feat)
+                for feat in PlanPropositionLayer.propositions_with_group_id(feature["id"])
+            ],
             id_=feature["id"],
         )
 
@@ -349,6 +360,34 @@ class PlanPropositionLayer(AbstractPlanLayer):
             )"""
         )
     )
+
+    @classmethod
+    def feature_from_model(cls, model: Proposition) -> QgsFeature:
+        feature = cls.initialize_feature_from_model(model)
+
+        feature["name"] = {"fin": model.name}
+        feature["text_value"] = {"fin": model.value}
+        feature["plan_regulation_group_id"] = model.regulation_group_id_
+        feature["ordering"] = model.proposition_number
+        feature["plan_theme_id"] = model.theme_id
+        feature["id"] = model.id_ if model.id_ else feature["id"]
+
+        return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> Proposition:
+        return Proposition(
+            name=feature["name"]["fin"],
+            value=feature["text_value"]["fin"],
+            regulation_group_id_=feature["plan_regulation_group_id"],
+            proposition_number=feature["ordering"],
+            theme_id=feature["plan_theme_id"],
+            id_=feature["id"],
+        )
+
+    @classmethod
+    def propositions_with_group_id(cls, group_id: str) -> list[QgsFeature]:
+        return [feat for feat in cls.get_features() if feat["plan_regulation_group_id"] == group_id]
 
 
 class DocumentLayer(AbstractPlanLayer):
