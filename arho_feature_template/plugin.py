@@ -167,6 +167,16 @@ class Plugin:
             status_tip="Lataa/avaa kaava",
         )
 
+        self.edit_land_use_plan_action = self.add_action(
+            text="Muokkaa kaavaa",
+            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            triggered_callback=self.plan_manager.edit_plan,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Muokkaa aktiivisen kaavan tietoja",
+        )
+
         self.new_feature_dock_action = self.add_action(
             text="Luo kaavakohde",
             icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),

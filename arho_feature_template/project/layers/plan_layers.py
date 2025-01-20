@@ -5,20 +5,17 @@ from abc import abstractmethod
 from numbers import Number
 from string import Template
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any, ClassVar
 
 from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
 from qgis.utils import iface
 
-from arho_feature_template.core.models import PlanFeature, Regulation, RegulationGroup, RegulationLibrary
+from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup, RegulationLibrary
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from arho_feature_template.core.models import Plan
 
 
 class AbstractPlanLayer(AbstractLayer):
@@ -65,13 +62,12 @@ class PlanLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from_model(cls, model: Plan) -> QgsFeature:
-        layer = cls.get_from_project()
+        feature = cls.initialize_feature_from_model(model)
 
         if not model.geom:
             message = "Plan must have a geometry to be added to the layer"
             raise ValueError(message)
 
-        feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
         feature["name"] = {"fin": model.name}
         feature["description"] = {"fin": model.description}
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
@@ -83,6 +79,26 @@ class PlanLayer(AbstractPlanLayer):
         feature["organisation_id"] = model.organisation_id
 
         return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> Plan:
+        return Plan(
+            geom=feature.geometry(),
+            name=feature["name"]["fin"],
+            description=feature["description"]["fin"],
+            permanent_plan_identifier=feature["permanent_plan_identifier"],
+            record_number=feature["record_number"],
+            producers_plan_identifier=feature["producers_plan_identifier"],
+            matter_management_identifier=feature["matter_management_identifier"],
+            plan_type_id=feature["plan_type_id"],
+            lifecycle_status_id=feature["lifecycle_status_id"],
+            organisation_id=feature["organisation_id"],
+            general_regulations=[
+                RegulationGroupLayer.model_from_feature(RegulationGroupLayer.get_feature_by_id(group_id))
+                for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+            ],
+            id_=feature["id"],
+        )
 
 
 class PlanFeatureLayer(AbstractPlanLayer):

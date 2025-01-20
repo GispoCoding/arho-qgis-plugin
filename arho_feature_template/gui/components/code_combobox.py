@@ -39,6 +39,17 @@ class CodeComboBox(QComboBox):
     def value(self) -> str:
         return self.currentData()
 
+    def set_value(self, value: str | None) -> None:
+        if value is None:
+            self.setCurrentIndex(0)
+            return
+
+        index = self.findData(value)
+        if index != -1:
+            self.setCurrentIndex(index)
+        else:
+            self.setCurrentIndex(0)  # Set NULL if not found
+
 
 class HierarchicalCodeComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -56,8 +67,8 @@ class HierarchicalCodeComboBox(QComboBox):
         null_item = QTreeWidgetItem(["NULL"])
         null_item.setData(0, Qt.UserRole, None)
         self.tree_widget.addTopLevelItem(null_item)
-        null_index = self.tree_widget.indexFromItem(null_item)
-        self.tree_widget.setCurrentIndex(null_index)
+        self.null_index = self.tree_widget.indexFromItem(null_item)
+        self.tree_widget.setCurrentIndex(self.null_index)
 
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         try:
@@ -90,3 +101,30 @@ class HierarchicalCodeComboBox(QComboBox):
     def value(self) -> str:
         item = self.tree_widget.selectedItems()[0]
         return item.data(0, Qt.UserRole)
+
+    def set_value(self, value: str | None) -> None:
+        # NOTE: Does not work fully currently
+
+        def find_item_recursive(item: QTreeWidgetItem, value: str) -> QTreeWidgetItem:
+            if item.data(0, Qt.UserRole) == value:
+                return item
+            for i in range(item.childCount()):
+                found_item = find_item_recursive(item.child(i), value)
+                if found_item:
+                    return found_item
+            return None
+
+        if value is None:
+            self.setCurrentIndex(0)
+            return
+
+        for i in range(self.count()):
+            found_item = find_item_recursive(self.tree_widget.topLevelItem(i), value)
+            if found_item:
+                idx = self.tree_widget.indexFromItem(found_item)
+                self.setRootModelIndex(idx.parent())
+                self.setCurrentIndex(idx.row())
+                self.setRootModelIndex(self.null_index.parent())
+                return
+
+        self.setCurrentIndex(0)  # Set combobox index to NULL

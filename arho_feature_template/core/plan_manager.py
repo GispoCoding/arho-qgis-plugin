@@ -11,6 +11,7 @@ from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
     FeatureTemplateLibrary,
+    Plan,
     PlanFeature,
     RegulationGroupCategory,
     RegulationGroupLibrary,
@@ -50,7 +51,7 @@ from arho_feature_template.utils.misc_utils import (
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
-    from arho_feature_template.core.models import Plan, Regulation, RegulationGroup
+    from arho_feature_template.core.models import Regulation, RegulationGroup
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,22 @@ class PlanManager:
         self.digitize_map_tool.setLayer(plan_layer)
         iface.mapCanvas().setMapTool(self.digitize_map_tool)
 
+    def edit_plan(self):
+        plan_layer = PlanLayer.get_from_project()
+        if not plan_layer:
+            return
+
+        active_plan_id = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
+        feature = PlanLayer.get_feature_by_id(active_plan_id)
+        if feature is None:
+            iface.messageBar().pushWarning("", "No active/open plan found!")
+            return
+        plan_model = PlanLayer.model_from_feature(feature)
+
+        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
+        if attribute_form.exec_():
+            feature = save_plan(attribute_form.model)
+
     def add_new_plan_feature(self):
         if not handle_unsaved_changes():
             return
@@ -180,11 +197,10 @@ class PlanManager:
         if not plan_layer:
             return
 
-        attribute_form = PlanAttributeForm(self.regulation_group_libraries)
+        plan_model = Plan(geom=feature.geometry())
+        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
-            plan_attributes = attribute_form.get_plan_attributes()
-            plan_attributes.geom = feature.geometry()
-            feature = save_plan(plan_attributes)
+            feature = save_plan(attribute_form.model)
             plan_to_be_activated = feature["id"]
         else:
             plan_to_be_activated = self.previous_active_plan_id
@@ -379,33 +395,37 @@ def _delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str
     layer.commitChanges(stopEditing=False)
 
 
-def save_plan(plan_data: Plan) -> QgsFeature:
-    plan_layer = PlanLayer.get_from_project()
-    in_edit_mode = plan_layer.isEditable()
-    if not in_edit_mode:
-        plan_layer.startEditing()
+def save_plan(plan: Plan) -> QgsFeature:
+    feature = PlanLayer.feature_from_model(plan)
+    layer = PlanLayer.get_from_project()
 
-    edit_message = "Kaavan lisäys" if plan_data.id_ is None else "Kaavan muokkaus"
-    plan_layer.beginEditCommand(edit_message)
+    editing = plan.id_ is not None
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=plan.id_,
+        edit_text="Kaavan muokkaus" if editing else "Kaavan luominen",
+    )
 
-    # plan_data.organisation_id = "99e20d66-9730-4110-815f-5947d3f8abd3"
-    plan_feature = PlanLayer.feature_from_model(plan_data)
+    # Check for deleted general regulations
+    if editing:
+        for association in RegulationGroupAssociationLayer.get_dangling_associations(
+            plan.general_regulations, feature["id"], PlanLayer.name
+        ):
+            _delete_feature(
+                association,
+                RegulationGroupAssociationLayer.get_from_project(),
+                "Kaavamääräysryhmän assosiaation poisto",
+            )
 
-    if plan_data.id_ is None:
-        plan_layer.addFeature(plan_feature)
-    else:
-        plan_layer.updateFeature(plan_feature)
-
-    plan_layer.endEditCommand()
-    plan_layer.commitChanges(stopEditing=False)
-
-    if plan_data.general_regulations:
-        for regulation_group in plan_data.general_regulations:
-            plan_id = plan_feature["id"]
+    # Save general regulations
+    if plan.general_regulations:
+        for regulation_group in plan.general_regulations:
+            plan_id = feature["id"]
             regulation_group_feature = save_regulation_group(regulation_group, plan_id)
             save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id)
 
-    return plan_feature
+    return feature
 
 
 def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> QgsFeature:
