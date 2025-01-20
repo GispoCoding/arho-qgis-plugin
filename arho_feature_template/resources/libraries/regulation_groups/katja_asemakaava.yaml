@@ -101,6 +101,177 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
+  # p. 3 end
+    - name: Julkisten palvelurakennusten alue
+      geometry: Alue
+      short_name: PY
+      plan_regulations:
+        - regulation_code: palvelujenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Lähipalvelurakennusten alue
+      geometry: Alue
+      short_name: PL
+      plan_regulations:
+        - regulation_code: palvelujenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: paikallinen
+
+    - name: Julkisten lähipalvelurakennusten alue
+      geometry: Alue
+      short_name: YL
+      plan_regulations:
+        - regulation_code: palvelujenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+            - type: paikallinen
+
+    - name: Toimistorakennusten alue
+      geometry: Alue
+      short_name: KT
+      plan_regulations:
+        - regulation_code: toimistorakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Hallinto- ja virastorakennusten alue
+      geometry: Alue
+      short_name: YH
+      plan_regulations:
+        - regulation_code: toimistorakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Opetusrakennusten alue
+      geometry: Alue
+      short_name: YO
+      plan_regulations:
+        - regulation_code: opetusrakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Terveydenhuolto- ja sosiaalipalvelurakennusten alue
+      geometry: Alue
+      short_name: YS
+      plan_regulations:
+        - regulation_code: hoitoalanRakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Kulttuuritoiminnan rakennusten alue
+      geometry: Alue
+      short_name: YY
+      plan_regulations:
+        - regulation_code: kulttuurirakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Museorakennusten alue
+      geometry: Alue
+      short_name: YM
+      plan_regulations:
+        - regulation_code: museorakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Kirkkojen ja muiden seurakunnallisten rakennusten alue
+      geometry: Alue
+      short_name: YK
+      plan_regulations:
+        - regulation_code: uskonnollistenYhteisojenRakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Urheilutoimintaa palvelevien rakennusten alue
+      geometry: Alue
+      short_name: YU
+      plan_regulations:
+        - regulation_code: urheiluJaLiikuntaRakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon 
+            
+    - name: Huvi- ja viihderakennusten alue
+      geometry: Alue
+      short_name: PV
+      plan_regulations:
+        - regulation_code: huviJaViihdeRakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Liike- ja toimistorakennusten alue
+      geometry: Alue
+      short_name: K
+      plan_regulations:
+        - regulation_code: liikerakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+        - regulation_code: toimistorakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Liike- ja toimistorakennusten alue
+      geometry: Alue
+      short_name: K
+      plan_regulations:
+        - regulation_code: liikerakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+        - regulation_code: toimistorakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Liikerakennusten alue
+      geometry: Alue
+      short_name: KL
+      plan_regulations:
+        - regulation_code: liikerakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Myymälärakennusten alue
+      geometry: Alue
+      short_name: KLM
+      plan_regulations:
+        - regulation_code: myymalarakennustenAlue
+          additional_information:
+            - type: paakayttotarkoitus  
+
+    - name: Myymälärakennusten alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
+      geometry: Alue
+      short_name: KM
+      plan_regulations:
+        - regulation_code: vahittaiskaupanSuuryksikko
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Myymälärakennusten alue, jolle saa sijoittaa vähittäiskaupan myymäläkeskittymän
+      geometry: Alue
+      short_name: KMK
+      plan_regulations:
+        - regulation_code: vahittaiskaupanMyymalakeskittyma
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Toimitilarakennusten alue
+      geometry: Alue
+      short_name: KTY
+      plan_regulations:
+        - regulation_code: toimitilojenAlue
+          additional_information:
+            - type: paakayttotarkoitus     
+
+  # p. 4 end
     - name: Teollisuus- ja varastorakennusten alue
       geometry: Alue
       short_name: T
@@ -112,6 +283,14 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
+    - name: Teollisuusrakennusten alue
+      geometry: Alue
+      short_name: TT
+      plan_regulations:
+        - regulation_code: teollisuusalue
+          additional_information:
+            - type: paakayttotarkoitus                 
+
     - name: Teollisuusrakennusten alue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
       geometry: Alue
       short_name: TY
@@ -121,6 +300,35 @@ categories:
             - type: paakayttotarkoitus
             - type: ymparistoAsettaaToiminnanLaadulleErityisiaVaatimuksia
 
+    - name: Varastorakennusten alue
+      geometry: Alue
+      short_name: TV
+      plan_regulations:
+        - regulation_code: varastoalue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Teollisuus- ja varastorakennusten alue, jolla on/jolle saa sijoittaa merkittävän, vaarallisia kemikaaleja valmistavan tai varastoivan laitoksen
+      geometry: Alue
+      short_name: T/kem
+      plan_regulations:
+        - regulation_code: teollisuusalue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: VaarallistenKemikaalienValmistusJaVarastointiSallittu
+        - regulation_code: varastoalue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: VaarallistenKemikaalienValmistusJaVarastointiSallittu
+
+    - name: Virkistysalue
+      geometry: Alue
+      short_name: V
+      plan_regulations:
+        - regulation_code: virkistysalue
+          additional_information:
+            - type: paakayttotarkoitus         
+
     - name: Puisto
       geometry: Alue
       short_name: VP
@@ -129,6 +337,14 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
+    - name: Lähivirkistysalue
+      geometry: Alue
+      short_name: VL
+      plan_regulations:
+        - regulation_code: lahivirkistysalue
+          additional_information:
+            - type: paakayttotarkoitus            
+
     - name: Leikkipuisto
       geometry: Alue
       short_name: VK
@@ -136,6 +352,22 @@ categories:
         - regulation_code: leikkipuisto
           additional_information:
             - type: paakayttotarkoitus
+
+    - name: Urheilu- ja virkistyspalvelujen alue
+      geometry: Alue
+      short_name: VU
+      plan_regulations:
+        - regulation_code: urheiluJaVirkistyspalvelujenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Retkeily- ja ulkoilualue
+      geometry: Alue
+      short_name: VR
+      plan_regulations:
+        - regulation_code: retkeilyJaUlkoilualue
+          additional_information:
+            - type: paakayttotarkoitus                            
 
     - name: Uimaranta-alue
       geometry: Alue
@@ -153,6 +385,305 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
+    - name: Vapaa-ajan asumisen alue
+      geometry: Alue
+      short_name: RA
+      plan_regulations:
+        - regulation_code: vapaaAjanAsumisenAlue
+          additional_information:
+            - type: paakayttotarkoitus        
+
+    - name: Matkailupalvelujen
+      geometry: Alue
+      short_name: RM
+      plan_regulations:
+        - regulation_code: matkailupalvelujenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+# p. 6 start
+    - name: Leirintäalue
+      geometry: Alue
+      short_name: RL
+      plan_regulations:
+        - regulation_code: leirintaAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Leirintäalue
+      geometry: Alue
+      short_name: RL
+      plan_regulations:
+        - regulation_code: leirintaAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Asuntovaunualue
+      geometry: Alue
+      short_name: RV
+      plan_regulations:
+        - regulation_code: asuntovaunualue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Siirtolapuutarha-alue
+      geometry: Alue
+      short_name: RSP
+      plan_regulations:
+        - regulation_code: siirtolapuutarhaAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Palstaviljelyalue
+      geometry: Alue
+      short_name: RP
+      plan_regulations:
+        - regulation_code: palstaviljelyalue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Liikennealue
+      geometry: Alue
+      short_name: L
+      plan_regulations:
+        - regulation_code: liikennealue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Maantieliikenteen alue
+      geometry: Alue
+      short_name: LT
+      plan_regulations:
+        - regulation_code: maantie
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Maantiehen kuuluva jalankulku- ja pyörätie
+      geometry: Alue
+      short_name: LT/jkpp
+      plan_regulations:
+        - regulation_code: maantie
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Katu
+      geometry: Alue
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Jalankululle varattu katu
+      geometry: Alue
+      short_name: jk
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: jalankulkualue
+
+    - name: Jalankululle ja pyöräilylle varattu katu
+      geometry: Alue
+      short_name: jk/pp
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: jalankulkualue
+            - type: kayttotarkoituskohdistus
+              value: pyorailyalue  
+
+    - name: Jalankululle varattu katu, jolla huoltoajo on sallittu
+      geometry: Alue
+      short_name: jk/h
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: jalankulkualue
+            - type: kayttotarkoituskohdistus
+              value: huoltoajoalue
+
+    - name: Jalankululle varattu katu, jolla tontille/rakennuspaikalle ajo on sallittu
+      geometry: Alue
+      short_name: jk/ajo
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: jalankulkualue
+            - type: tontilleAjoSallittu
+
+    - name: Joukkoliikenteelle varattu katu
+      geometry: Alue
+      short_name: jl
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: joukkoliikenteenAlue
+# p. 7
+    - name: Raitioliikenteelle varattu katu
+      geometry: Alue
+      short_name: rt
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: kayttotarkoituskohdistus
+              value: raitiotie
+
+    - name: Pihakatu
+      geometry: Alue
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: pihakatu
+
+    - name: Hidaskatu
+      geometry: Alue
+      short_name: jl
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: hidaskatu
+
+    - name: Katuaukio tai tori
+      geometry: Alue
+      short_name: hk
+      plan_regulations:
+        - regulation_code: katu
+          additional_information:
+            - type: paakayttotarkoitus 
+            - type: kayttotarkoituskohdistus
+              value: katuaukioTaiTori
+
+    - name: Rautatieliikenteen alue
+      geometry: Alue
+      short_name: LR
+      plan_regulations:
+        - regulation_code: raideliikenteenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Lentokenttäalue
+      geometry: Alue
+      short_name: LL
+      plan_regulations:
+        - regulation_code: lentoliikenteenAlue
+          additional_information:
+            - type: paakayttotarkoitus      
+
+    - name: Satama-alue
+      geometry: Alue
+      short_name: LS
+      plan_regulations:
+        - regulation_code: satama-alue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Kanava-alue
+      geometry: Alue
+      short_name: LK
+      plan_regulations:
+        - regulation_code: satama-alue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Venesatama-alue
+      geometry: Alue
+      short_name: LV
+      plan_regulations:
+        - regulation_code: venesatama
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Venevalkama
+      geometry: Alue
+      short_name: LVV
+      plan_regulations:
+        - regulation_code: venevalkama
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Yleinen pysäköintialue
+      geometry: Alue
+      short_name: LP
+      plan_regulations:
+        - regulation_code: pysakoinninAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Yleisten pysäköintilaitosten alue
+      geometry: Alue
+      short_name: LPY
+      plan_regulations:
+        - regulation_code: pysakointilaitostenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+            - type: varattuYleiseenKayttoon
+
+    - name: Autopaikkojen alue
+      geometry: Alue
+      short_name: LPA
+      plan_regulations:
+        - regulation_code: pysakoinninAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Pysäköintilaitosten alue
+      geometry: Alue
+      short_name: LPL
+      plan_regulations:
+        - regulation_code: pysakointilaitostenAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Huoltoaseman alue
+      geometry: Alue
+      short_name: LH
+      plan_regulations:
+        - regulation_code: huoltoasemaAlue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Henkilöliikenteen terminaalialue
+      geometry: Alue
+      short_name: LHA
+      plan_regulations:
+        - regulation_code: henkiloliikenteenTerminaalialue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Tavaraliikenteen terminaalialue
+      geometry: Alue
+      short_name: LTA
+      plan_regulations:
+        - regulation_code: tavaraliikenteenTerminaalialue
+          additional_information:
+            - type: paakayttotarkoitus
+
+    - name: Varikkoalue
+      geometry: Alue
+      short_name: LVH
+      plan_regulations:
+        - regulation_code: varikko
+          additional_information:
+            - type: paakayttotarkoitus            
+# p. 8 start
+
+# Later
     - name: Maisemallisesti arvokas peltoalue
       geometry: Alue
       short_name: MA
@@ -163,14 +694,7 @@ categories:
         - regulation_code: maisemallisestiArvokasAlue
         # Lisätieto: Pääkäyttötarkoitus ???
 
-    - name: Virkistysalue
-      geometry: Alue
-      short_name: V
-      plan_regulations:
-        - regulation_code: virkistysalue
-          additional_information:
-            - type: paakayttotarkoitus
-
+# New category
   - category_code: rakennusala
     name: Rakennusala
     plan_regulation_groups:
@@ -183,7 +707,7 @@ categories:
           additional_information:
             - type: osaAlue
             - type: kayttotarkoituskohdistus
-              value: Pysäköinnin alue
+              value: Pysäköinnin alue # NOTE: FIX
 
     - name: Rakennusala, jolle saa sijoittaa lasten päiväkodin
       geometry: Alue
@@ -193,7 +717,7 @@ categories:
           additional_information:
             - type: osaAlue
             - type: kayttotarkoituskohdistus
-              value: Opetusrakennusten alue
+              value: Opetusrakennusten alue # NOTE: FIX
 
     - name: Rakennusala, jolle saa sijoittaa saunan
       geometry: Alue
@@ -231,7 +755,7 @@ categories:
             - type: osaAlue
             - type: kansainvalinen
 
-
+# New vategory
   - category_code: numeerisetJaTekstimuotoiset
     name: Numeeriset ja tekstimuotoiset
     plan_regulation_groups:
