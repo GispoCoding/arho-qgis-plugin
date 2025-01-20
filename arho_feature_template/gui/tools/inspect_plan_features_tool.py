@@ -3,11 +3,12 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from qgis.core import QgsFeature, QgsFeatureRequest, QgsGeometry, QgsPointXY, QgsSpatialIndex, QgsVectorLayer
+from qgis.core import QgsFeature, QgsFeatureRequest, QgsPointXY, QgsRectangle, QgsSpatialIndex, QgsVectorLayer
 from qgis.gui import QgsMapCanvas, QgsMapMouseEvent, QgsMapTool, QgsRubberBand
-from qgis.PyQt.QtCore import QPoint, QTimer, pyqtSignal
+from qgis.PyQt.QtCore import QPoint, Qt, QTimer, pyqtSignal
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QMenu
+from qgis.utils import OverrideCursor
 
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.plan_layers import PlanFeatureLayer
@@ -66,18 +67,20 @@ class InspectPlanFeatures(QgsMapTool):
     def query_nearby_features(self, point: QgsPointXY) -> dict[QgsVectorLayer, list[QgsFeature]]:
         """Query all feature layers for features near (within `CLICK_POS_TOLERANCE`) the clicked point."""
         results = {}
-        for layer in self.layers:
-            spatial_index = self.spatial_indexes.get(layer.id())
-            if spatial_index is None:
-                continue
-
-            # Buffer around the clicked point
-            tolerance_geom = QgsGeometry.fromPointXY(point).buffer(self.CLICK_POS_TOLERANCE, 1)
-            candidate_ids = spatial_index.intersects(tolerance_geom.boundingBox())
-            request = QgsFeatureRequest().setFilterFids(candidate_ids)
-            features = [feat for feat in layer.getFeatures(request) if feat.geometry().intersects(tolerance_geom)]
-            if features:
-                results[layer] = features
+        tolerance_geom = QgsRectangle(
+            point.x() - self.CLICK_POS_TOLERANCE,
+            point.y() - self.CLICK_POS_TOLERANCE,
+            point.x() + self.CLICK_POS_TOLERANCE,
+            point.y() + self.CLICK_POS_TOLERANCE,
+        )
+        request = QgsFeatureRequest()
+        request.setFilterRect(tolerance_geom)
+        request.setFlags(QgsFeatureRequest.Flag.ExactIntersect)
+        with OverrideCursor(Qt.WaitCursor):
+            for layer in self.layers:
+                features = list(layer.getFeatures(request))
+                if features:
+                    results[layer] = features
 
         return results
 
