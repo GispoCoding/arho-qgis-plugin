@@ -602,7 +602,7 @@ categories:
               - type: paakayttotarkoitus
 
   - category_code: ymparistonmuuutosAluevaraukset
-    name: Ympäristön muutosta koskevien määräysten vaikutus yleiskaavan aluevarauksen esitystapaan
+    name: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     plan_regulation_groups:
 
       - name: Olemassa oleva asuntovaltainen alue
@@ -669,7 +669,7 @@ categories:
               - type: eheytettavaTaiTiivistettava
 
   - category_code: osa-alueet
-    name: Osa-alueet
+    name: Erityisominaisuudet ja muut osa-alueet
     plan_regulation_groups:
 
       - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
@@ -1237,7 +1237,7 @@ categories:
               - type: osaAlue
 
   - category_code: kehittämisperiaatteet
-    name: Kehittämisperiaatteet
+    name: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     plan_regulation_groups:
 
       - name: Kaupunkikehittämisvyöhyke
@@ -1413,7 +1413,7 @@ categories:
           - regulation_code: sanallinenMaarays
 
   - category_code: viivat
-    name: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Geometrialtaan viivamaiset kaavakohteet ja niihin liittyvät määräykset)
+    name: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     plan_regulation_groups:
 
       - name: Nykyinen tie
@@ -1767,7 +1767,7 @@ categories:
               - type: yhteystarve
 
   - category_code: muutLinjaukset
-    name: Muita yleiskaavassa osoitettavia linjauksia koskevat kaavamääräykset
+    name: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     plan_regulation_groups:
 
       - name: Viheryhteys
@@ -1879,39 +1879,34 @@ categories:
               - type: yhteystarve
 
   - category_code: numeerisetJaTekstimuotoiset
-    name: Yleiskaavan määräykset, joille annetaan numeerinen tai tekstimuotoinen arvo
+    name: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     plan_regulation_groups:
 
       - name: Kaupungin- tai kunnanosan nimi
         geometry: Alue
-        short_name: KAUP
         plan_regulations:
           - regulation_code: kaupunginTaiKunnanosanNimi
-            value: Kieliversioitu teksti
 
-      - name: Tuulivoimalan enimmäiskorkeus #Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
+      - name: Tuulivoimalan enimmäiskorkeus
         geometry: Alue
-        short_name: tv 00m
+        description: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
         plan_regulations:
           - regulation_code: tuulivoimalanEnimmaiskorkeus
-            value: Positiivinen kokonaisluku (m)
 
-      - name: Tuulivoimaloiden määrä # Määräys osoittaa kuinka monta tuulivoimalaa alueelle saa rakentaa
+      - name: Tuulivoimaloiden määrä
         geometry: Alue
-        short_name: tv00
+        description: Määräys osoittaa kuinka monta tuulivoimalaa alueelle saa rakentaa
         plan_regulations:
           - regulation_code: tuulivoimaloidenMaara
-            value: Positiivinen kokonaisluku
 
-      - name: Rakennuspaikkojen määrä #Määräys osoittaa kuinka monta rakennuspaikkaa alueelle saa rakentaa
+      - name: Rakennuspaikkojen määrä
         geometry: Alue
-        short_name: rak00
+        description: Määräys osoittaa kuinka monta rakennuspaikkaa alueelle saa rakentaa
         plan_regulations:
           - regulation_code: rakennuspaikkojenMaara
-            value: Positiivinen kokonaisluku
 
   - category_code: rakennuspaikka
-    name: Yleiskaavan rakennuspaikkaa koskevat määräykset
+    name: Rakennuspaikkaa koskevat kaavamääräysryhmät
     plan_regulation_groups:
 
       - name: Rakennuspaikka
