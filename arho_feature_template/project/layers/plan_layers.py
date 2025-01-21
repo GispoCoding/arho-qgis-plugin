@@ -5,20 +5,17 @@ from abc import abstractmethod
 from numbers import Number
 from string import Template
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import Any, ClassVar, Generator
 
 from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
 from qgis.utils import iface
 
-from arho_feature_template.core.models import PlanFeature, Regulation, RegulationGroup, RegulationLibrary
-from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError
+from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup, RegulationLibrary
+from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from arho_feature_template.core.models import Plan
 
 
 class AbstractPlanLayer(AbstractLayer):
@@ -51,7 +48,7 @@ class AbstractPlanLayer(AbstractLayer):
     @classmethod
     def initialize_feature_from_model(cls, model: Any) -> QgsFeature:
         if model.id_ is not None:  # Expects all plan layer models to have 'id_' attribute
-            feature = cls.get_feature_by_id(model.id_)
+            feature = cls.get_feature_by_id(model.id_, no_geometries=False)
             if not feature:
                 raise FeatureNotFoundError(model.id_, cls.name)
         else:
@@ -65,13 +62,12 @@ class PlanLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from_model(cls, model: Plan) -> QgsFeature:
-        layer = cls.get_from_project()
+        feature = cls.initialize_feature_from_model(model)
 
         if not model.geom:
             message = "Plan must have a geometry to be added to the layer"
             raise ValueError(message)
 
-        feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
         feature["name"] = {"fin": model.name}
         feature["description"] = {"fin": model.description}
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
@@ -84,17 +80,41 @@ class PlanLayer(AbstractPlanLayer):
 
         return feature
 
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> Plan:
+        general_regulation_features = [
+            RegulationGroupLayer.get_feature_by_id(group_id)
+            for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+        ]
+        return Plan(
+            geom=feature.geometry(),
+            name=feature["name"]["fin"],
+            description=feature["description"]["fin"],
+            permanent_plan_identifier=feature["permanent_plan_identifier"],
+            record_number=feature["record_number"],
+            producers_plan_identifier=feature["producers_plan_identifier"],
+            matter_management_identifier=feature["matter_management_identifier"],
+            plan_type_id=feature["plan_type_id"],
+            lifecycle_status_id=feature["lifecycle_status_id"],
+            organisation_id=feature["organisation_id"],
+            general_regulations=[
+                RegulationGroupLayer.model_from_feature(feat)
+                for feat in general_regulation_features
+                if feat is not None
+            ],
+            id_=feature["id"],
+        )
+
 
 class PlanFeatureLayer(AbstractPlanLayer):
     @classmethod
     def feature_from_model(cls, model: PlanFeature, plan_id: str | None = None) -> QgsFeature:
-        layer = cls.get_from_project()
-
         if not model.geom:
             message = "Plan feature must have a geometry to be added to the layer"
             raise ValueError(message)
 
-        feature = QgsVectorLayerUtils.createFeature(layer, model.geom)
+        feature = cls.initialize_feature_from_model(model)
+        feature.setGeometry(model.geom)
         feature["name"] = {"fin": model.name if model.name else ""}
         feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = {"fin": model.description if model.description else ""}
@@ -105,6 +125,25 @@ class PlanFeatureLayer(AbstractPlanLayer):
         )
 
         return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> PlanFeature:
+        regulation_group_features = [
+            RegulationGroupLayer.get_feature_by_id(group_id)
+            for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+        ]
+        return PlanFeature(
+            geom=feature.geometry(),
+            type_of_underground_id=feature["type_of_underground_id"],
+            layer_name=cls.get_from_project().name(),
+            name=feature["name"]["fin"],
+            description=feature["description"]["fin"],
+            regulation_groups=[
+                RegulationGroupLayer.model_from_feature(feat) for feat in regulation_group_features if feat is not None
+            ],
+            plan_id=feature["plan_id"],
+            id_=feature["id"],
+        )
 
 
 class LandUsePointLayer(PlanFeatureLayer):
@@ -192,19 +231,49 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
     }
 
     @classmethod
-    def feature_from(cls, regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature:
+    def feature_from(cls, regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature | None:
         layer = cls.get_from_project()
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
 
         feature = QgsVectorLayerUtils.createFeature(layer)
         feature["plan_regulation_group_id"] = regulation_group_id
 
-        attribute = cls.layer_name_to_attribute_map.get(layer_name)
         if not attribute:
             msg = f"Unrecognized layer name given for saving regulation group association: {layer_name}"
             raise ValueError(msg)
         feature[attribute] = feature_id
 
         return feature
+
+    @classmethod
+    def association_exists(cls, regulation_group_id: str, layer_name: str, feature_id: str):
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        for feature in cls.get_features_by_attribute_value("plan_regulation_group_id", regulation_group_id):
+            if feature[attribute] == feature_id:
+                return True
+        return False
+
+    @classmethod
+    def get_associations_for_feature(cls, feature_id: str, layer_name: str) -> Generator[QgsFeature]:
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        if not attribute:
+            raise LayerNotFoundError(layer_name)
+        return cls.get_features_by_attribute_value(attribute, feature_id)
+
+    @classmethod
+    def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> Generator[str]:
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        if not attribute:
+            raise LayerNotFoundError(layer_name)
+        return cls.get_attribute_values_by_another_attribute_value("plan_regulation_group_id", attribute, feature_id)
+
+    @classmethod
+    def get_dangling_associations(
+        cls, groups: list[RegulationGroup], feature_id: str, layer_name: str
+    ) -> list[QgsFeature]:
+        associations = RegulationGroupAssociationLayer.get_associations_for_feature(feature_id, layer_name)
+        updated_group_ids = [group.id_ for group in groups]
+        return [assoc for assoc in associations if assoc["plan_regulation_group_id"] not in updated_group_ids]
 
 
 class PlanRegulationLayer(AbstractPlanLayer):
@@ -262,8 +331,8 @@ class PlanRegulationLayer(AbstractPlanLayer):
         )
 
     @classmethod
-    def regulations_with_group_id(cls, group_id: str) -> list[QgsFeature]:
-        return [feat for feat in cls.get_features() if feat["plan_regulation_group_id"] == group_id]
+    def regulations_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
+        return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
 
 class PlanPropositionLayer(AbstractPlanLayer):

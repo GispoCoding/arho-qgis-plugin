@@ -39,6 +39,17 @@ class CodeComboBox(QComboBox):
     def value(self) -> str:
         return self.currentData()
 
+    def set_value(self, value: str | None) -> None:
+        if value is None:
+            self.setCurrentIndex(0)
+            return
+
+        index = self.findData(value)
+        if index != -1:
+            self.setCurrentIndex(index)
+        else:
+            self.setCurrentIndex(0)  # Set selection to NULL if item with `value` was not found
+
 
 class HierarchicalCodeComboBox(QComboBox):
     def __init__(self, parent=None):
@@ -56,8 +67,8 @@ class HierarchicalCodeComboBox(QComboBox):
         null_item = QTreeWidgetItem(["NULL"])
         null_item.setData(0, Qt.UserRole, None)
         self.tree_widget.addTopLevelItem(null_item)
-        null_index = self.tree_widget.indexFromItem(null_item)
-        self.tree_widget.setCurrentIndex(null_index)
+        self.null_index = self.tree_widget.indexFromItem(null_item)
+        self.tree_widget.setCurrentIndex(self.null_index)
 
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         try:
@@ -90,3 +101,40 @@ class HierarchicalCodeComboBox(QComboBox):
     def value(self) -> str:
         item = self.tree_widget.selectedItems()[0]
         return item.data(0, Qt.UserRole)
+
+    def _find_item_recursive(self, item: QTreeWidgetItem, value: str) -> QTreeWidgetItem:
+        """Recursively try to find item with given value and return the item if found."""
+        # Found item, return it
+        if item.data(0, Qt.UserRole) == value:
+            return item
+
+        # Loop children
+        for i in range(item.childCount()):
+            found_item = self._find_item_recursive(item.child(i), value)
+            if found_item:
+                return found_item
+
+        return None
+
+    def set_value(self, value: str | None) -> None:
+        # Set selection to NULL if `value` is None
+        if value is None:
+            self.setCurrentIndex(self.null_index)
+            return
+
+        # Loop top level tree items
+        for i in range(self.count()):
+            # Handle child items recursively
+            found_item = self._find_item_recursive(self.tree_widget.topLevelItem(i), value)
+
+            # If matching item was found, set it as selected. Because of the hybrid TreeWidget + ComboBox
+            # nature of the widget, value setting is unintuitive and tricky
+            if found_item:
+                self.tree_widget.setCurrentItem(found_item)
+                idx = self.tree_widget.indexFromItem(found_item)
+                self.setRootModelIndex(idx.parent())
+                self.setCurrentIndex(idx.row())
+                self.setRootModelIndex(self.null_index.parent())
+                return
+
+        self.setCurrentIndex(self.null_index)  # Set selection to NULL if item with `value` was not found

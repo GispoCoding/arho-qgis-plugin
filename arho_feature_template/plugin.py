@@ -29,7 +29,6 @@ class Plugin:
     def __init__(self) -> None:
         setup_logger(Plugin.name)
         self.digitizing_tool = None
-        self.plan_manager = PlanManager()
 
         # initialize locale
         locale, file_path = setup_translation()
@@ -126,18 +125,20 @@ class Plugin:
         return action
 
     def initGui(self) -> None:  # noqa N802
-        self.plan_manager = PlanManager()
-
         # plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
         # load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
+        self.plan_manager = PlanManager()
 
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
+        self.plan_manager.new_feature_dock.setUserVisible(False)
+
         self.plan_manager.new_feature_dock.visibilityChanged.connect(self.dock_visibility_changed)
 
         iface.mapCanvas().mapToolSet.connect(self.plan_manager.digitize_map_tool.deactivate)
 
         self.validation_dock = ValidationDock()
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
+        self.validation_dock.setUserVisible(False)
 
         self.validation_dock.visibilityChanged.connect(self.validation_dock_visibility_changed)
 
@@ -164,6 +165,16 @@ class Plugin:
             add_to_menu=True,
             add_to_toolbar=True,
             status_tip="Lataa/avaa kaava",
+        )
+
+        self.edit_land_use_plan_action = self.add_action(
+            text="Muokkaa kaavaa",
+            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            triggered_callback=self.plan_manager.edit_plan,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Muokkaa aktiivisen kaavan tietoja",
         )
 
         self.new_feature_dock_action = self.add_action(
@@ -207,6 +218,17 @@ class Plugin:
             add_to_menu=True,
             add_to_toolbar=False,
             status_tip="Muokkaa pluginin asetuksia",
+        )
+
+        self.identify_plan_features_action = self.add_action(
+            text="Muokkaa kohteita",
+            toggled_callback=self.plan_manager.toggle_identify_plan_features,
+            add_to_menu=False,
+            add_to_toolbar=True,
+            checkable=True,
+        )
+        self.plan_manager.inspect_plan_feature_tool.deactivated.connect(
+            lambda: self.identify_plan_features_action.setChecked(False)
         )
 
     def add_new_plan(self):

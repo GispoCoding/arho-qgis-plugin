@@ -51,14 +51,32 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     button_box: QDialogButtonBox
 
-    def __init__(self, regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
+    def __init__(self, plan: Plan, regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
         super().__init__(parent)
 
         self.setupUi(self)
 
+        self.plan = plan
+
         self.plan_type_combo_box.populate_from_code_layer(PlanTypeLayer)
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
         self.organisation_combo_box.populate_from_code_layer(OrganisationLayer)
+
+        self.plan_type_combo_box.set_value(plan.plan_type_id)
+        self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
+        self.organisation_combo_box.set_value(plan.organisation_id)
+        self.name_line_edit.setText(plan.name if plan.name else "")
+        self.description_text_edit.setText(plan.description if plan.description else "")
+        self.permanent_identifier_line_edit.setText(
+            plan.permanent_plan_identifier if plan.permanent_plan_identifier else ""
+        )
+        self.record_number_line_edit.setText(plan.record_number if plan.record_number else "")
+        self.producers_plan_identifier_line_edit.setText(
+            plan.producers_plan_identifier if plan.producers_plan_identifier else ""
+        )
+        self.matter_management_identifier_line_edit.setText(
+            plan.matter_management_identifier if plan.matter_management_identifier else ""
+        )
 
         self.name_line_edit.textChanged.connect(self._check_required_fields)
         self.organisation_combo_box.currentIndexChanged.connect(self._check_required_fields)
@@ -74,7 +92,13 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.regulation_groups_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
 
+        for regulation_group in plan.general_regulations:
+            self.add_plan_regulation_group(regulation_group)
+
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.accepted.connect(self._on_ok_clicked)
+
+        self._check_required_fields()
 
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
@@ -106,7 +130,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = RegulationGroupWidget(regulation_group, general_regulation=True)
+        regulation_group_widget = RegulationGroupWidget(regulation_group, layer_name="Kaava")
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         self._remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(regulation_group_widget)
@@ -129,9 +153,9 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     # ---
 
-    def get_plan_attributes(self) -> Plan:
+    def into_model(self) -> Plan:
         return Plan(
-            id_=None,
+            id_=self.plan.id_,
             name=self.name_line_edit.text(),
             description=self.description_text_edit.toPlainText() or None,
             plan_type_id=self.plan_type_combo_box.value(),
@@ -142,4 +166,9 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             matter_management_identifier=self.matter_management_identifier_line_edit.text() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),
             general_regulations=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
+            geom=self.plan.geom,
         )
+
+    def _on_ok_clicked(self):
+        self.model = self.into_model()
+        self.accept()

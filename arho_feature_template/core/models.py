@@ -331,14 +331,14 @@ class PlanFeature:
 
 @dataclass
 class Plan:
-    name: str
-    description: str | None
-    plan_type_id: str
-    lifecycle_status_id: str
-    record_number: str | None
-    matter_management_identifier: str | None
-    permanent_plan_identifier: str | None
-    producers_plan_identifier: str | None
+    name: str | None = None
+    description: str | None = None
+    plan_type_id: str | None = None
+    lifecycle_status_id: str | None = None
+    record_number: str | None = None
+    matter_management_identifier: str | None = None
+    permanent_plan_identifier: str | None = None
+    producers_plan_identifier: str | None = None
     organisation_id: str | None = None
     general_regulations: list[RegulationGroup] = field(default_factory=list)
     geom: QgsGeometry | None = None
