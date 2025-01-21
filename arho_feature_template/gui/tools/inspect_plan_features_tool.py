@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from qgis.core import QgsFeature, QgsFeatureRequest, QgsPointXY, QgsRectangle, QgsSpatialIndex, QgsVectorLayer
+from qgis.core import QgsFeature, QgsFeatureRequest, QgsPointXY, QgsRectangle, QgsVectorLayer
 from qgis.gui import QgsMapCanvas, QgsMapMouseEvent, QgsMapTool, QgsRubberBand
 from qgis.PyQt.QtCore import QPoint, Qt, QTimer, pyqtSignal
 from qgis.PyQt.QtGui import QColor
@@ -24,18 +24,12 @@ class InspectPlanFeatures(QgsMapTool):
 
         self.layer_classes = layer_classes
         self.layers = [cls.get_from_project() for cls in layer_classes]
-        self.spatial_indexes: dict[str, QgsSpatialIndex] = {}
 
         self.highlighted: tuple[QgsFeature, str] | None = None
         self.highlight_rubber_band: QgsRubberBand | None = None
 
     def activate(self):
         super().activate()
-        self.rebuild_spatial_indexes()
-
-    def rebuild_spatial_indexes(self):
-        for layer in self.layers:
-            self.spatial_indexes[layer.id()] = QgsSpatialIndex(layer.getFeatures())
 
     def create_highlight_rubberband(self, feature: QgsFeature, layer: QgsVectorLayer):
         self.highlight_rubber_band = QgsRubberBand(self.canvas, layer.geometryType())
