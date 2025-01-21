@@ -91,8 +91,8 @@ class PlanManager:
         self.new_feature_dock.hide()
 
         # Initialize digitize tools
-        self.digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
-        self.digitize_map_tool.digitizingCompleted.connect(self._plan_geom_digitized)
+        self.plan_digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
+        self.plan_digitize_map_tool.digitizingCompleted.connect(self._plan_geom_digitized)
 
         self.feature_digitize_map_tool = None
         self.initialize_feature_digitize_map_tool()
@@ -102,6 +102,10 @@ class PlanManager:
             iface.mapCanvas(), list(FEATURE_LAYER_NAME_TO_CLASS_MAP.values())
         )
         self.inspect_plan_feature_tool.edit_feature_requested.connect(self.edit_plan_feature)
+
+        # Initialize lambda service
+        self.lambda_service = LambdaService()
+        self.lambda_service.jsons_received.connect(self.save_plan_jsons)
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         if activate:
@@ -152,8 +156,8 @@ class PlanManager:
         self.set_active_plan(None)
 
         plan_layer.startEditing()
-        self.digitize_map_tool.setLayer(plan_layer)
-        iface.mapCanvas().setMapTool(self.digitize_map_tool)
+        self.plan_digitize_map_tool.setLayer(plan_layer)
+        iface.mapCanvas().setMapTool(self.plan_digitize_map_tool)
 
     def edit_plan(self):
         plan_layer = PlanLayer.get_from_project()
@@ -306,8 +310,6 @@ class PlanManager:
                 QMessageBox.critical(None, "Virhe", "Ei aktiivista kaavaa.")
                 return
 
-            self.lambda_service = LambdaService()
-            self.lambda_service.jsons_received.connect(self.save_plan_jsons)
             self.lambda_service.serialize_plan(plan_id)
 
     def save_plan_jsons(self, plan_json, outline_json):
@@ -341,6 +343,30 @@ class PlanManager:
                 save_regulation_group_as_config(new_regulation_group_form.model)
             else:
                 save_regulation_group(new_regulation_group_form.model)
+
+    def unload(self):
+        # Lambda service
+        self.lambda_service.jsons_received.disconnect(self.save_plan_jsons)
+        self.lambda_service.deleteLater()
+
+        # Feature digitize tool
+        if self.feature_digitize_map_tool:
+            self.feature_digitize_map_tool.digitizingCompleted.disconnect()
+            self.feature_digitize_map_tool.digitizingFinished.disconnect()
+            self.feature_digitize_map_tool.deleteLater()
+
+        # Plan digitize tool
+        self.plan_digitize_map_tool.digitizingCompleted.disconnect(self._plan_geom_digitized)
+        self.plan_digitize_map_tool.deleteLater()
+
+        # Inspect plan feature tool
+        self.inspect_plan_feature_tool.edit_feature_requested.disconnect(self.edit_plan_feature)
+        self.inspect_plan_feature_tool.deleteLater()
+
+        # New feature dock
+        self.new_feature_dock.tool_activated.disconnect(self.add_new_plan_feature)
+        iface.removeDockWidget(self.new_feature_dock)
+        self.new_feature_dock.deleteLater()
 
 
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:

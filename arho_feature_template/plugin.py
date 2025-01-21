@@ -134,7 +134,7 @@ class Plugin:
 
         self.plan_manager.new_feature_dock.visibilityChanged.connect(self.dock_visibility_changed)
 
-        iface.mapCanvas().mapToolSet.connect(self.plan_manager.digitize_map_tool.deactivate)
+        iface.mapCanvas().mapToolSet.connect(self.plan_manager.plan_digitize_map_tool.deactivate)
 
         self.validation_dock = ValidationDock()
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
@@ -248,14 +248,30 @@ class Plugin:
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
+        # Handle signals
+        self.plan_manager.new_feature_dock.visibilityChanged.disconnect()
+        iface.mapCanvas().mapToolSet.disconnect()
+
+        # Handle actions
         for action in self.actions:
             iface.removePluginMenu(Plugin.name, action)
             iface.removeToolBarIcon(action)
-        iface.mainWindow().removeToolBar(self.toolbar)
-        teardown_logger(Plugin.name)
+            action.deleteLater()
+        self.actions.clear()
 
-        self.plan_manager.new_feature_dock.close()
-        self.validation_dock.close()
+        # Handle toolbar
+        iface.mainWindow().removeToolBar(self.toolbar)
+        self.toolbar = None
+
+        # Handle plan manager
+        self.plan_manager.unload()
+
+        # Handle validation dock
+        iface.removeDockWidget(self.validation_dock)
+        self.validation_dock.deleteLater()
+
+        # Handle logger
+        teardown_logger(Plugin.name)
 
     def dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
         self.new_feature_dock_action.setChecked(visible)
