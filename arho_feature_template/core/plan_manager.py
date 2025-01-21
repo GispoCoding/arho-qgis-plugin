@@ -43,6 +43,7 @@ from arho_feature_template.resources.libraries.feature_templates import feature_
 from arho_feature_template.resources.libraries.regulation_groups import regulation_group_library_config_files
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import (
+    LANGUAGE,
     check_layer_changes,
     get_active_plan_id,
     handle_unsaved_changes,
@@ -378,9 +379,9 @@ class PlanManager:
 
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     category_features = list(PlanRegulationGroupTypeLayer.get_features())
-    category_id_to_name: dict[str, str] = {category["id"]: category["name"]["fin"] for category in category_features}
+    category_id_to_name: dict[str, str] = {category["id"]: category["name"][LANGUAGE] for category in category_features}
     category_regulation_group_map: dict[str, list[QgsFeature]] = {
-        feature["name"]["fin"]: [] for feature in category_features
+        feature["name"][LANGUAGE]: [] for feature in category_features
     }
 
     for feat in RegulationGroupLayer.get_features():

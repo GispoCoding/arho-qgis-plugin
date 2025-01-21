@@ -21,6 +21,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
+from arho_feature_template.utils.misc_utils import LANGUAGE
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +76,8 @@ class PlanLayer(AbstractPlanLayer):
             message = "Plan must have a geometry to be added to the layer"
             raise ValueError(message)
 
-        feature["name"] = {"fin": model.name}
-        feature["description"] = {"fin": model.description}
+        feature["name"] = {LANGUAGE: model.name}
+        feature["description"] = {LANGUAGE: model.description}
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
         feature["record_number"] = model.record_number
         feature["producers_plan_identifier"] = model.producers_plan_identifier
@@ -95,8 +96,8 @@ class PlanLayer(AbstractPlanLayer):
         ]
         return Plan(
             geom=feature.geometry(),
-            name=feature["name"]["fin"],
-            description=feature["description"]["fin"],
+            name=feature["name"][LANGUAGE],
+            description=feature["description"][LANGUAGE],
             permanent_plan_identifier=feature["permanent_plan_identifier"],
             record_number=feature["record_number"],
             producers_plan_identifier=feature["producers_plan_identifier"],
@@ -112,6 +113,11 @@ class PlanLayer(AbstractPlanLayer):
             id_=feature["id"],
         )
 
+    @classmethod
+    def get_plan_name(cls, plan_id: str) -> str:
+        attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_id)
+        return attribute_value[LANGUAGE] if attribute_value else "Nimetön"
+
 
 class PlanFeatureLayer(AbstractPlanLayer):
     @classmethod
@@ -122,9 +128,9 @@ class PlanFeatureLayer(AbstractPlanLayer):
 
         feature = cls.initialize_feature_from_model(model)
         feature.setGeometry(model.geom)
-        feature["name"] = {"fin": model.name if model.name else ""}
+        feature["name"] = {LANGUAGE: model.name if model.name else ""}
         feature["type_of_underground_id"] = model.type_of_underground_id
-        feature["description"] = {"fin": model.description if model.description else ""}
+        feature["description"] = {LANGUAGE: model.description if model.description else ""}
         feature["plan_id"] = (
             plan_id
             if plan_id
@@ -143,8 +149,8 @@ class PlanFeatureLayer(AbstractPlanLayer):
             geom=feature.geometry(),
             type_of_underground_id=feature["type_of_underground_id"],
             layer_name=cls.get_from_project().name(),
-            name=feature["name"]["fin"],
-            description=feature["description"]["fin"],
+            name=feature["name"][LANGUAGE],
+            description=feature["description"][LANGUAGE],
             regulation_groups=[
                 RegulationGroupLayer.model_from_feature(feat) for feat in regulation_group_features if feat is not None
             ],
@@ -187,7 +193,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
         feature = cls.initialize_feature_from_model(model)
 
         feature["short_name"] = model.short_name if model.short_name else None
-        feature["name"] = {"fin": model.name}
+        feature["name"] = {LANGUAGE: model.name}
         feature["type_of_plan_regulation_group_id"] = model.type_code_id
         feature["plan_id"] = (
             plan_id
@@ -201,7 +207,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
     def model_from_feature(cls, feature: QgsFeature) -> RegulationGroup:
         return RegulationGroup(
             type_code_id=feature["type_of_plan_regulation_group_id"],
-            name=feature["name"]["fin"],
+            name=feature["name"][LANGUAGE],
             short_name=feature["short_name"],
             color_code=None,
             group_number=None,
@@ -309,9 +315,9 @@ class PlanRegulationLayer(AbstractPlanLayer):
         feature["plan_regulation_group_id"] = model.regulation_group_id_
         feature["type_of_plan_regulation_id"] = model.config.id
         feature["unit"] = model.config.unit
-        feature["text_value"] = {"fin": model.value if isinstance(model.value, str) else ""}
+        feature["text_value"] = {LANGUAGE: model.value if isinstance(model.value, str) else ""}
         feature["numeric_value"] = model.value if isinstance(model.value, Number) else NULL
-        feature["name"] = {"fin": model.topic_tag if model.topic_tag else ""}
+        feature["name"] = {LANGUAGE: model.topic_tag if model.topic_tag else ""}
         feature["id"] = model.id_ if model.id_ else feature["id"]
         # feature["plan_theme_id"]
         # feature["type_of_verbal_plan_regulation_id"]
@@ -331,7 +337,7 @@ class PlanRegulationLayer(AbstractPlanLayer):
         return Regulation(
             config=config,
             # Assuming only either text_value or numeric_value is defined
-            value=feature["text_value"]["fin"] if feature["text_value"]["fin"] else feature["numeric_value"],
+            value=feature["text_value"][LANGUAGE] if feature["text_value"][LANGUAGE] else feature["numeric_value"],
             additional_information=None,
             regulation_number=None,
             files=[],
@@ -365,8 +371,8 @@ class PlanPropositionLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Proposition) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["name"] = {"fin": model.name}
-        feature["text_value"] = {"fin": model.value}
+        feature["name"] = {LANGUAGE: model.name}
+        feature["text_value"] = {LANGUAGE: model.value}
         feature["plan_regulation_group_id"] = model.regulation_group_id_
         feature["ordering"] = model.proposition_number
         feature["plan_theme_id"] = model.theme_id
@@ -377,8 +383,8 @@ class PlanPropositionLayer(AbstractPlanLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Proposition:
         return Proposition(
-            name=feature["name"]["fin"],
-            value=feature["text_value"]["fin"],
+            name=feature["name"][LANGUAGE],
+            value=feature["text_value"][LANGUAGE],
             regulation_group_id_=feature["plan_regulation_group_id"],
             proposition_number=feature["ordering"],
             theme_id=feature["plan_theme_id"],
@@ -386,8 +392,8 @@ class PlanPropositionLayer(AbstractPlanLayer):
         )
 
     @classmethod
-    def propositions_with_group_id(cls, group_id: str) -> list[QgsFeature]:
-        return [feat for feat in cls.get_features() if feat["plan_regulation_group_id"] == group_id]
+    def propositions_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
+        return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
 
 class DocumentLayer(AbstractPlanLayer):

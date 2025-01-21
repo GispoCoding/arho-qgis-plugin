@@ -11,11 +11,9 @@ import yaml
 
 from arho_feature_template.exceptions import ConfigSyntaxError
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.misc_utils import get_layer_by_name, iface
+from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
 
 if TYPE_CHECKING:
-    from typing import Literal
-
     from qgis.core import QgsFeature, QgsGeometry
 
 
@@ -149,7 +147,6 @@ class RegulationLibrary:
         cls,
         config_path: Path = DEFAULT_PLAN_REGULATIONS_CONFIG_PATH,
         type_of_plan_regulations_layer_name="Kaavamääräyslaji",
-        language: Literal["fin", "eng", "swe"] = "fin",
     ) -> RegulationLibrary:
         # Initialize RegulationLibrary and RegulationConfigs from QGIS layer and config file
 
@@ -165,7 +162,7 @@ class RegulationLibrary:
 
         # 3. Initialize regulation configs from layer. Storing them by their ID is handy for adding childs later
         id_to_regulation_map: dict[str, RegulationConfig] = {
-            feature["id"]: RegulationConfig.from_feature(feature, language) for feature in layer.getFeatures()
+            feature["id"]: RegulationConfig.from_feature(feature) for feature in layer.getFeatures()
         }
 
         # 4. Add information from config file (value, unit, category only) and link child regulations
@@ -226,7 +223,7 @@ class RegulationConfig:
 
     # NOTE: Perhaps this ("model_from_feature") should be method of PlanTypeLayer class?
     @classmethod
-    def from_feature(cls, feature: QgsFeature, language: str = "fin") -> RegulationConfig:
+    def from_feature(cls, feature: QgsFeature) -> RegulationConfig:
         """
         Initialize PlanRegulationConfig from QgsFeature.
 
@@ -235,8 +232,8 @@ class RegulationConfig:
         return cls(
             id=feature["id"],
             regulation_code=feature["value"],
-            name=feature["name"][language],
-            description=feature["description"][language],
+            name=feature["name"][LANGUAGE],
+            description=feature["description"][LANGUAGE],
             status=feature["status"],
             level=feature["level"],
             parent_id=feature["parent_id"],

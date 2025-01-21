@@ -89,9 +89,6 @@ class InspectPlanFeatures(QgsMapTool):
         for layer, features in nearby_features.items():
             for feature in features:
                 menu_text = layer.name()
-                # feat_name = feature["name"]["fin"]
-                # if feat_name:
-                #     menu_text += f" — {feat_name}"
                 action = menu.addAction(menu_text)
                 action.triggered.connect(partial(self.edit_feature_requested.emit, feature, layer.name()))
                 action.hovered.connect(partial(self.highlight_feature, feature, layer))

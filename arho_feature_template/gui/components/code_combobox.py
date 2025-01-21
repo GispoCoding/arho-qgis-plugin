@@ -7,6 +7,7 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QComboBox, QTreeWidget, QTreeWidgetItem
 
 from arho_feature_template.exceptions import LayerNotFoundError
+from arho_feature_template.utils.misc_utils import LANGUAGE
 
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.code_layers import (
@@ -33,7 +34,7 @@ class CodeComboBox(QComboBox):
             return
 
         for i, feature in enumerate(layer.getFeatures(), start=1):
-            self.addItem(feature["name"]["fin"])
+            self.addItem(feature["name"][LANGUAGE])
             self.setItemData(i, feature["id"])
 
     def value(self) -> str:
@@ -83,9 +84,9 @@ class HierarchicalCodeComboBox(QComboBox):
             item = QTreeWidgetItem()
             items[code_feature["id"]] = item
 
-            text = code_feature["name"]["fin"]
+            text = code_feature["name"][LANGUAGE]
             item.setText(0, text)
-            description = code_feature["description"]["fin"]
+            description = code_feature["description"][LANGUAGE]
             item.setToolTip(0, description)
             item.setData(0, Qt.UserRole, code_feature["id"])
 
