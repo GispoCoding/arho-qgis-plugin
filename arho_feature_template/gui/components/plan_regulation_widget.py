@@ -24,16 +24,14 @@ from arho_feature_template.gui.components.plan_regulation_input_widgets import (
     MultilineTextInputWidget,
     SinglelineTextInputWidget,
 )
-from arho_feature_template.utils.misc_utils import get_additional_information_name, get_layer_by_name, iface
+from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer
+from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
-
-# TO BE REPLACED
-LANGUAGE = "fin"
 
 
 class RegulationWidget(QWidget, FormClass):  # type: ignore
@@ -218,7 +216,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
         # NOTE: Now info type is the name / readable version when this is triggered by user
         # Might need to refactor this later..
-        name = get_additional_information_name(info_type)
+        name = AdditionalInformationTypeLayer.get_additional_information_name(info_type)
         self._add_widgets(QLabel("Lisätiedonlaji"), SinglelineTextInputWidget(name, False))
 
         # NOTE: Does not support multiple instances of same additional information kind,

@@ -19,9 +19,6 @@ if TYPE_CHECKING:
 ui_path = resources.files(__package__) / "plan_proposition_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
-# TO BE REPLACED
-LANGUAGE = "fin"
-
 
 class PropositionWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan proposition."""

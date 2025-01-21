@@ -9,7 +9,8 @@ from qgis.PyQt.QtCore import QByteArray, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
 from qgis.PyQt.QtWidgets import QMessageBox
 
-from arho_feature_template.utils.misc_utils import get_active_plan_id, get_plan_name, get_settings
+from arho_feature_template.project.layers.plan_layers import PlanLayer
+from arho_feature_template.utils.misc_utils import get_active_plan_id, get_settings
 
 
 class LambdaService(QObject):
@@ -113,7 +114,7 @@ class LambdaService(QObject):
         if plan_json:
             geographical_area = plan_json.get("geographicalArea")
             if geographical_area:
-                outline_name = get_plan_name(plan_id, language="fin")
+                outline_name = PlanLayer.get_plan_name(plan_id)
                 outline_json = {
                     "type": "Feature",
                     "properties": {"name": outline_name},

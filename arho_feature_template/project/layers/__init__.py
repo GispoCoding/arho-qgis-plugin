@@ -59,3 +59,10 @@ class AbstractLayer(ABC):
         request.setFlags(QgsFeatureRequest.NoGeometry)
         for feature in layer.getFeatures(request):
             yield feature[target_attribute]
+
+    @classmethod
+    def get_attribute_value_by_another_attribute_value(
+        cls, target_attribute: str, filter_attribute: str, filter_value: str
+    ) -> Any | None:
+        gen = cls.get_attribute_values_by_another_attribute_value(target_attribute, filter_attribute, filter_value)
+        return next(gen, None)
