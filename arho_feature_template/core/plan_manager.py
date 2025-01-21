@@ -493,9 +493,9 @@ def save_regulation_group_as_config(regulation_group: RegulationGroup):
 
 
 def save_regulation_group_association(regulation_group_id: str, layer_name: str, feature_id: str):
-    feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
-    if not feature:
+    if RegulationGroupAssociationLayer.association_exists(regulation_group_id, layer_name, feature_id):
         return
+    feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
     layer = RegulationGroupAssociationLayer.get_from_project()
 
     _save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavamääräysryhmän assosiaation lisäys")

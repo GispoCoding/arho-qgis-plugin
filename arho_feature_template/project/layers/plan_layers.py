@@ -235,14 +235,6 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         layer = cls.get_from_project()
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
 
-        # Check if association exists to avoid duplicate assocations
-        for feature in cls.get_features_by_attribute_value("plan_regulation_group_id", regulation_group_id):
-            if feature[attribute] == feature_id:
-                return None
-        # for feature in layer.getFeatures():
-        #     if feature["plan_regulation_group_id"] == regulation_group_id and feature[attribute] == feature_id:
-        #         return None
-
         feature = QgsVectorLayerUtils.createFeature(layer)
         feature["plan_regulation_group_id"] = regulation_group_id
 
@@ -252,6 +244,14 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         feature[attribute] = feature_id
 
         return feature
+
+    @classmethod
+    def association_exists(cls, regulation_group_id: str, layer_name: str, feature_id: str):
+        attribute = cls.layer_name_to_attribute_map.get(layer_name)
+        for feature in cls.get_features_by_attribute_value("plan_regulation_group_id", regulation_group_id):
+            if feature[attribute] == feature_id:
+                return True
+        return False
 
     @classmethod
     def get_associations_for_feature(cls, feature_id: str, layer_name: str) -> Generator[QgsFeature]:
