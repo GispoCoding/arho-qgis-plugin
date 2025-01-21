@@ -23,7 +23,7 @@ class InspectPlanFeatures(QgsMapTool):
         self.canvas = canvas
 
         self.layer_classes = layer_classes
-        self.layers = [cls.get_from_project() for cls in layer_classes]
+        self.layers: list[QgsVectorLayer] | None = None
 
         self.highlighted: tuple[QgsFeature, str] | None = None
         self.highlight_rubber_band: QgsRubberBand | None = None
@@ -70,6 +70,11 @@ class InspectPlanFeatures(QgsMapTool):
         request = QgsFeatureRequest()
         request.setFilterRect(tolerance_geom)
         request.setFlags(QgsFeatureRequest.Flag.ExactIntersect)
+
+        # Lazy reading of feature layers to avoid reading them too early
+        if self.layers is None:
+            self.layers = [cls.get_from_project() for cls in self.layer_classes]
+
         with OverrideCursor(Qt.WaitCursor):
             for layer in self.layers:
                 features = list(layer.getFeatures(request))

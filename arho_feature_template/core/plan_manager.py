@@ -81,9 +81,7 @@ class PlanManager:
         self.feature_template_libraries = [
             FeatureTemplateLibrary.from_config_file(file) for file in feature_template_library_config_files()
         ]
-        self.regulation_group_libraries = [
-            RegulationGroupLibrary.from_config_file(file) for file in regulation_group_library_config_files()
-        ]
+        self.regulation_group_libraries = None
 
         # Initialize new feature dock
         self.new_feature_dock = NewFeatureDock(self.feature_template_libraries)
@@ -106,6 +104,14 @@ class PlanManager:
         # Initialize lambda service
         self.lambda_service = LambdaService()
         self.lambda_service.jsons_received.connect(self.save_plan_jsons)
+
+    def get_regulation_group_libraries(self):
+        # Lazy initialization of regulation_group_libraries to avoid reading regulation code layer too early
+        if self.regulation_group_libraries is None:
+            self.regulation_group_libraries = [
+                RegulationGroupLibrary.from_config_file(file) for file in regulation_group_library_config_files()
+            ]
+        return self.regulation_group_libraries
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         if activate:
@@ -171,7 +177,7 @@ class PlanManager:
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
-        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
+        attribute_form = PlanAttributeForm(plan_model, self.get_regulation_group_libraries())
         if attribute_form.exec_():
             feature = save_plan(attribute_form.model)
 
@@ -202,7 +208,7 @@ class PlanManager:
             return
 
         plan_model = Plan(geom=feature.geometry())
-        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
+        attribute_form = PlanAttributeForm(plan_model, self.get_regulation_group_libraries())
         if attribute_form.exec_():
             feature = save_plan(attribute_form.model)
             plan_to_be_activated = feature["id"]
@@ -229,7 +235,7 @@ class PlanManager:
 
         plan_feature.geom = feature.geometry()
         attribute_form = PlanFeatureForm(
-            plan_feature, title, [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
+            plan_feature, title, [*self.get_regulation_group_libraries(), regulation_group_library_from_active_plan()]
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
@@ -241,7 +247,7 @@ class PlanManager:
         # Geom editing handled with basic QGIS vertex editing?
         title = plan_feature.name if plan_feature.name else layer_name
         attribute_form = PlanFeatureForm(
-            plan_feature, title, [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
+            plan_feature, title, [*self.get_regulation_group_libraries(), regulation_group_library_from_active_plan()]
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
