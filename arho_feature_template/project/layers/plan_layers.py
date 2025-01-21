@@ -5,13 +5,13 @@ from abc import abstractmethod
 from numbers import Number
 from string import Template
 from textwrap import dedent
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Generator
 
 from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
 from qgis.utils import iface
 
 from arho_feature_template.core.models import Plan, PlanFeature, Regulation, RegulationGroup, RegulationLibrary
-from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError
+from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
 
@@ -48,7 +48,7 @@ class AbstractPlanLayer(AbstractLayer):
     @classmethod
     def initialize_feature_from_model(cls, model: Any) -> QgsFeature:
         if model.id_ is not None:  # Expects all plan layer models to have 'id_' attribute
-            feature = cls.get_feature_by_id(model.id_)
+            feature = cls.get_feature_by_id(model.id_, no_geometries=False)
             if not feature:
                 raise FeatureNotFoundError(model.id_, cls.name)
         else:
@@ -82,6 +82,10 @@ class PlanLayer(AbstractPlanLayer):
 
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Plan:
+        general_regulation_features = [
+            RegulationGroupLayer.get_feature_by_id(group_id)
+            for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+        ]
         return Plan(
             geom=feature.geometry(),
             name=feature["name"]["fin"],
@@ -94,8 +98,9 @@ class PlanLayer(AbstractPlanLayer):
             lifecycle_status_id=feature["lifecycle_status_id"],
             organisation_id=feature["organisation_id"],
             general_regulations=[
-                RegulationGroupLayer.model_from_feature(RegulationGroupLayer.get_feature_by_id(group_id))
-                for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+                RegulationGroupLayer.model_from_feature(feat)
+                for feat in general_regulation_features
+                if feat is not None
             ],
             id_=feature["id"],
         )
@@ -123,6 +128,10 @@ class PlanFeatureLayer(AbstractPlanLayer):
 
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> PlanFeature:
+        regulation_group_features = [
+            RegulationGroupLayer.get_feature_by_id(group_id)
+            for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+        ]
         return PlanFeature(
             geom=feature.geometry(),
             type_of_underground_id=feature["type_of_underground_id"],
@@ -130,8 +139,7 @@ class PlanFeatureLayer(AbstractPlanLayer):
             name=feature["name"]["fin"],
             description=feature["description"]["fin"],
             regulation_groups=[
-                RegulationGroupLayer.model_from_feature(RegulationGroupLayer.get_feature_by_id(group_id))
-                for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
+                RegulationGroupLayer.model_from_feature(feat) for feat in regulation_group_features if feat is not None
             ],
             plan_id=feature["plan_id"],
             id_=feature["id"],
@@ -228,9 +236,12 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
 
         # Check if association exists to avoid duplicate assocations
-        for feature in layer.getFeatures():
-            if feature["plan_regulation_group_id"] == regulation_group_id and feature[attribute] == feature_id:
+        for feature in cls.get_features_by_attribute_value("plan_regulation_group_id", regulation_group_id):
+            if feature[attribute] == feature_id:
                 return None
+        # for feature in layer.getFeatures():
+        #     if feature["plan_regulation_group_id"] == regulation_group_id and feature[attribute] == feature_id:
+        #         return None
 
         feature = QgsVectorLayerUtils.createFeature(layer)
         feature["plan_regulation_group_id"] = regulation_group_id
@@ -243,16 +254,18 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return feature
 
     @classmethod
-    def get_associations_for_feature(cls, feature_id: str, layer_name: str) -> list[QgsFeature]:
+    def get_associations_for_feature(cls, feature_id: str, layer_name: str) -> Generator[QgsFeature]:
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
-        return [feature for feature in cls.get_features() if feature[attribute] == feature_id]
+        if not attribute:
+            raise LayerNotFoundError(layer_name)
+        return cls.get_features_by_attribute_value(attribute, feature_id)
 
     @classmethod
-    def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> list[str]:
+    def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> Generator[str]:
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
-        return [
-            feature["plan_regulation_group_id"] for feature in cls.get_features() if feature[attribute] == feature_id
-        ]
+        if not attribute:
+            raise LayerNotFoundError(layer_name)
+        return cls.get_attribute_values_by_another_attribute_value("plan_regulation_group_id", attribute, feature_id)
 
     @classmethod
     def get_dangling_associations(
@@ -318,8 +331,8 @@ class PlanRegulationLayer(AbstractPlanLayer):
         )
 
     @classmethod
-    def regulations_with_group_id(cls, group_id: str) -> list[QgsFeature]:
-        return [feat for feat in cls.get_features() if feat["plan_regulation_group_id"] == group_id]
+    def regulations_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
+        return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
 
 class PlanPropositionLayer(AbstractPlanLayer):

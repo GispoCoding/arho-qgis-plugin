@@ -161,7 +161,7 @@ class PlanManager:
             return
 
         active_plan_id = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
-        feature = PlanLayer.get_feature_by_id(active_plan_id)
+        feature = PlanLayer.get_feature_by_id(active_plan_id, no_geometries=False)
         if feature is None:
             iface.messageBar().pushWarning("", "No active/open plan found!")
             return
