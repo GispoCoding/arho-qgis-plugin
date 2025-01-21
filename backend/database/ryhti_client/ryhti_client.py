@@ -3,7 +3,7 @@ import email.utils
 import enum
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type, TypedDict, cast
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -168,7 +168,7 @@ class AWSAPIGatewayResponse(TypedDict):
 
 class Period(TypedDict):
     begin: str
-    end: str
+    end: str | None
 
 
 # Typing for ryhti dicts
@@ -199,12 +199,25 @@ class RyhtiPlanDecision(TypedDict, total=False):
     plans: List[RyhtiPlan]
 
 
+class RyhtiHandlingEvent(TypedDict, total=False):
+    handlingEventKey: str
+    handlingEventType: str
+    eventTime: str
+    cancelled: bool
+
+
+class RyhtiInteractionEvent(TypedDict, total=False):
+    interactionEventKey: str
+    interactionEventType: str
+    eventTime: Period
+
+
 class RyhtiPlanMatterPhase(TypedDict, total=False):
     planMatterPhaseKey: str
     lifeCycleStatus: str
     geographicalArea: Dict
-    handlingEvent: Dict | None
-    interactionEvents: List | None
+    handlingEvent: RyhtiHandlingEvent | None
+    interactionEvents: List[RyhtiInteractionEvent] | None
     planDecision: RyhtiPlanDecision | None
 
 
@@ -411,46 +424,113 @@ class RyhtiClient:
             return multilanguage_dict
         return None
 
-    def get_lifecycle_dates(
-        self, plan_base: base.PlanBase, status_value: str, datetimes: bool = True
-    ) -> Optional[Period]:
+    def get_isoformat_value_with_z(self, datetime_value: datetime.datetime) -> str:
         """
-        Returns the start and end datetimes of a lifecycle status for object, or
-        None if no datetimes are found. Datetimes are isoformatted UTC, but instead
-        of +00:00, Ryhti API requires Z.
+        Returns isoformatted datetime in UTC with Z instead of +00:00.
+        """
+        return datetime_value.isoformat().replace("+00:00", "Z")
 
-        Optionally, only dates instead of datetimes may be returned. Dates must be
-        in the local timezone.
+    def get_date(self, datetime_value: datetime.datetime) -> str:
         """
-        for lifecycle_date in plan_base.lifecycle_dates:
-            if lifecycle_date.lifecycle_status.value == status_value:
-                return {
-                    "begin": (
-                        (
-                            lifecycle_date.starting_at.isoformat().replace(
-                                "+00:00", "Z"
-                            )
-                            if datetimes
-                            else lifecycle_date.starting_at.astimezone(LOCAL_TZ)
-                            .date()
-                            .isoformat()
-                        )
-                        if lifecycle_date.starting_at
-                        else None
-                    ),
-                    "end": (
-                        (
-                            lifecycle_date.ending_at.isoformat().replace("+00:00", "Z")
-                            if datetimes
-                            else lifecycle_date.ending_at.astimezone(LOCAL_TZ)
-                            .date()
-                            .isoformat()
-                        )
-                        if lifecycle_date.ending_at
-                        else None
-                    ),
-                }
-        return None
+        Returns isoformatted date for the given datetime in local timezone.
+        """
+        return datetime_value.astimezone(LOCAL_TZ).date().isoformat()
+
+    def get_periods(
+        self,
+        dates_objects: List[models.LifeCycleDate] | List[models.EventDate],
+        datetimes: bool = True,
+    ) -> List[Period]:
+        """
+        Returns the time periods of given date objects. Optionally, only dates instead
+        of datetimes may be returned.
+        """
+        return [
+            {
+                "begin": self.get_isoformat_value_with_z(dates_object.starting_at)
+                if datetimes
+                else self.get_date(dates_object.starting_at),
+                "end": (
+                    (
+                        self.get_isoformat_value_with_z(dates_object.ending_at)
+                        if datetimes
+                        else self.get_date(dates_object.ending_at)
+                    )
+                    if dates_object.ending_at
+                    else None
+                ),
+            }
+            for dates_object in dates_objects
+        ]
+
+    def get_lifecycle_dates_for_status(
+        self, plan_base: base.PlanBase, status_value: str
+    ) -> List[models.LifeCycleDate]:
+        """
+        Returns the plan lifecycle date objects for the desired status.
+        """
+        return [
+            lifecycle_date
+            for lifecycle_date in plan_base.lifecycle_dates
+            if lifecycle_date.lifecycle_status.value == status_value
+        ]
+
+    def get_lifecycle_periods(
+        self, plan_base: base.PlanBase, status_value: str, datetimes: bool = True
+    ) -> List[Period]:
+        """
+        Returns the start and end datetimes of lifecycle status for object. Optionally,
+        only dates instead of datetimes may be returned.
+
+        Note that for some lifecycle statuses, we may return multiple periods.
+        """
+        lifecycle_dates = self.get_lifecycle_dates_for_status(plan_base, status_value)
+        return self.get_periods(lifecycle_dates, datetimes)
+
+    def get_event_periods(
+        self,
+        lifecycle_date: models.LifeCycleDate,
+        event_class: Type[models.CodeBase],
+        event_value: str,
+        datetimes: bool = True,
+    ) -> List[Period]:
+        """
+        Returns the start and end datetimes of events with desired class and value
+        linked to a lifecycle date object. Optionally, only dates instead of datetimes
+        may be returned.
+
+        Note that if the event occurs multiple times, we may return multiple periods.
+        """
+
+        def class_and_value_match(event_date: models.EventDate) -> bool:
+            return (
+                (
+                    event_class is NameOfPlanCaseDecision
+                    and event_date.decision
+                    and event_date.decision.value == event_value
+                )
+                or (
+                    event_class is TypeOfProcessingEvent
+                    and event_date.processing_event
+                    and event_date.processing_event.value == event_value
+                )
+                or (
+                    event_class is TypeOfInteractionEvent
+                    and event_date.interaction_event
+                    and event_date.interaction_event.value == event_value
+                )
+            )
+
+        event_dates = [
+            date for date in lifecycle_date.event_dates if class_and_value_match(date)
+        ]
+        return self.get_periods(event_dates, datetimes)
+
+    def get_last_period(self, periods: List[Period]) -> Optional[Period]:
+        """
+        Returns the last period in the list, or None if the list is empty.
+        """
+        return periods[-1] if periods else None
 
     def get_plan_recommendation(
         self, plan_recommendation: models.PlanProposition
@@ -466,8 +546,9 @@ class RyhtiClient:
         if plan_recommendation.plan_theme:
             recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
-        recommendation_dict["periodOfValidity"] = self.get_lifecycle_dates(
-            plan_recommendation, self.valid_status_value
+        # we should only have one valid period. If there are several, pick last
+        recommendation_dict["periodOfValidity"] = self.get_last_period(
+            self.get_lifecycle_periods(plan_recommendation, self.valid_status_value)
         )
         recommendation_dict["value"] = plan_recommendation.text_value
         return recommendation_dict
@@ -485,8 +566,9 @@ class RyhtiClient:
         if plan_regulation.name.get("fin"):
             regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
-        regulation_dict["periodOfValidity"] = self.get_lifecycle_dates(
-            plan_regulation, self.valid_status_value
+        # we should only have one valid period. If there are several, pick last
+        regulation_dict["periodOfValidity"] = self.get_last_period(
+            self.get_lifecycle_periods(plan_regulation, self.valid_status_value)
         )
         if plan_regulation.type_of_verbal_plan_regulation:
             regulation_dict["verbalRegulations"] = [
@@ -572,8 +654,9 @@ class RyhtiClient:
         plan_object_dict["name"] = plan_object.name
         plan_object_dict["description"] = plan_object.description
         plan_object_dict["objectNumber"] = plan_object.ordering
-        plan_object_dict["periodOfValidity"] = self.get_lifecycle_dates(
-            plan_object, self.valid_status_value
+        # we should only have one valid period. If there are several, pick last
+        plan_object_dict["periodOfValidity"] = self.get_last_period(
+            self.get_lifecycle_periods(plan_object, self.valid_status_value)
         )
         if plan_object.height_range:
             plan_object_dict["verticalLimit"] = {
@@ -682,11 +765,14 @@ class RyhtiClient:
             "planRegulationGroupRelations"
         ] = self.get_plan_regulation_group_relations(plan_objects)
 
-        # Dates come from plan lifecycle dates.
-        plan_dictionary["periodOfValidity"] = self.get_lifecycle_dates(
-            plan, self.valid_status_value
+        # we should only have one valid period. If there are several, pick last
+        plan_dictionary["periodOfValidity"] = self.get_last_period(
+            self.get_lifecycle_periods(plan, self.valid_status_value)
         )
-        period_of_approval = self.get_lifecycle_dates(plan, self.approved_status_value)
+        # we should only have one approved period. If there are several, pick last
+        period_of_approval = self.get_last_period(
+            self.get_lifecycle_periods(plan, self.approved_status_value)
+        )
         plan_dictionary["approvalDate"] = (
             period_of_approval["begin"] if period_of_approval else None
         )
@@ -829,31 +915,53 @@ class RyhtiClient:
             # Plan must be embedded in decision when POSTing!
             entry["plans"] = [self.plan_dictionaries[plan.id]]
 
-            period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value, datetimes=False
-            )
-            if not period_of_current_status:
+            try:
+                lifecycle_date = self.get_lifecycle_dates_for_status(
+                    plan, plan.lifecycle_status.value
+                )[-1]
+            except IndexError:
                 raise AssertionError(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
-            entry["decisionDate"] = period_of_current_status["begin"]
+            # Decision date will be
+            # 1) decision date if found in database or, if not found,
+            # 2) start of the current status period is used as backup.
+            # TODO: Remove 2) once QGIS makes sure all necessary dates are filled in
+            # manually (or automatically).
+            period_of_decision = self.get_last_period(
+                self.get_event_periods(
+                    lifecycle_date,
+                    NameOfPlanCaseDecision,
+                    decision_value,
+                    datetimes=False,
+                )
+            )
+            period_of_current_status = self.get_periods(
+                [lifecycle_date], datetimes=False
+            )[-1]
+            # Decision has no duration:
+            entry["decisionDate"] = (
+                period_of_decision["begin"]
+                if period_of_decision
+                else period_of_current_status["begin"]
+            )
             entry["dateOfDecision"] = entry["decisionDate"]
 
             decisions.append(entry)
         return decisions
 
-    def get_plan_handling_events(self, plan: models.Plan) -> List[Dict]:
+    def get_plan_handling_events(self, plan: models.Plan) -> List[RyhtiHandlingEvent]:
         """
         Construct a list of Ryhti compatible plan handling events from plan in the local
         database.
         """
-        events: List[Dict] = []
+        events: List[RyhtiHandlingEvent] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
         for event_value in processing_events_by_status.get(
             plan.lifecycle_status.value, []
         ):
-            entry: Dict[str, Any] = dict()
+            entry = RyhtiHandlingEvent()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
@@ -863,32 +971,53 @@ class RyhtiClient:
                 TypeOfProcessingEvent, event_value
             )
 
-            # Handling event time is not time after all. It must be a date :D
-            period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value, datetimes=False
-            )
-            if not period_of_current_status:
+            try:
+                lifecycle_date = self.get_lifecycle_dates_for_status(
+                    plan, plan.lifecycle_status.value
+                )[-1]
+            except IndexError:
                 raise AssertionError(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
-            entry["eventTime"] = period_of_current_status["begin"]
+            # Handling event date will be
+            # 1) handling event date if found in database or, if not found,
+            # 2) start of the current status period is used as backup.
+            # TODO: Remove 2) once QGIS makes sure all necessary dates are filled in
+            # manually (or automatically).
+            period_of_handling_event = self.get_last_period(
+                self.get_event_periods(
+                    lifecycle_date,
+                    TypeOfProcessingEvent,
+                    event_value,
+                    datetimes=False,
+                )
+            )
+            period_of_current_status = self.get_periods(
+                [lifecycle_date], datetimes=False
+            )[-1]
+            # Handling event has no duration:
+            entry["eventTime"] = (
+                period_of_handling_event["begin"]
+                if period_of_handling_event
+                else period_of_current_status["begin"]
+            )
             entry["cancelled"] = False
 
             events.append(entry)
         return events
 
-    def get_interaction_events(self, plan: models.Plan) -> List[Dict]:
+    def get_interaction_events(self, plan: models.Plan) -> List[RyhtiInteractionEvent]:
         """
         Construct a list of Ryhti compatible interaction events from plan in the local
         database.
         """
-        events: List[Dict] = []
+        events: List[RyhtiInteractionEvent] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
         for event_value in interaction_events_by_status.get(
             plan.lifecycle_status.value, []
         ):
-            entry: Dict[str, Any] = dict()
+            entry = RyhtiInteractionEvent()
             # TODO: Let's just have random uuid for now, on the assumption that each
             # phase is only POSTed to ryhti once. If planners need to post and repost
             # the same phase, script needs logic to check if the phase exists in Ryhti
@@ -898,24 +1027,41 @@ class RyhtiClient:
                 TypeOfInteractionEvent, event_value
             )
 
-            period_of_current_status = self.get_lifecycle_dates(
-                plan, plan.lifecycle_status.value
-            )
-            if not period_of_current_status:
+            try:
+                lifecycle_date = self.get_lifecycle_dates_for_status(
+                    plan, plan.lifecycle_status.value
+                )[-1]
+            except IndexError:
                 raise AssertionError(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
-            # Interaction eventTime is a period, not a single date. Nähtävilläoloaika
-            # is 30 days.
-            entry["eventTime"] = {
-                "begin": (period_of_current_status["begin"]),
-                "end": (
-                    datetime.datetime.fromisoformat(period_of_current_status["begin"])
-                    + datetime.timedelta(days=30)
+            # Interaction event period will be
+            # 1) interaction event period if found in database or, if not found,
+            # 2) 30 days at start of the current status period (nähtävilläoloaika) are
+            # used as backup.
+            # TODO: Remove 2) once QGIS makes sure all necessary dates are filled in
+            # manually (or automatically).
+            period_of_interaction_event = self.get_last_period(
+                self.get_event_periods(
+                    lifecycle_date, TypeOfInteractionEvent, event_value
                 )
-                .isoformat()
-                .replace("+00:00", "Z"),
-            }
+            )
+            period_of_current_status = self.get_periods([lifecycle_date])[-1]
+            entry["eventTime"] = (
+                period_of_interaction_event
+                if period_of_interaction_event
+                else {
+                    "begin": (period_of_current_status["begin"]),
+                    "end": (
+                        datetime.datetime.fromisoformat(
+                            period_of_current_status["begin"]
+                        )
+                        + datetime.timedelta(days=30)
+                    )
+                    .isoformat()
+                    .replace("+00:00", "Z"),
+                }
+            )
 
             events.append(entry)
         return events
@@ -985,8 +1131,9 @@ class RyhtiClient:
         # only contains description, and only in one language.
         plan_matter["name"] = plan.name
 
-        dates_of_initiation = self.get_lifecycle_dates(
-            plan, self.pending_status_value, datetimes=False
+        # we should only have one pending period. If there are several, pick last
+        dates_of_initiation = self.get_last_period(
+            self.get_lifecycle_periods(plan, self.pending_status_value, datetimes=False)
         )
         plan_matter["timeOfInitiation"] = (
             dates_of_initiation["begin"] if dates_of_initiation else None

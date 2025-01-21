@@ -674,5 +674,64 @@ class LifeCycleDate(VersionedBase):
     lifecycle_status = relationship(
         "LifeCycleStatus", back_populates="lifecycle_dates", lazy="joined"
     )
+    # Let's add backreference to allow lazy loading from this side.
+    event_dates = relationship(
+        "EventDate", back_populates="lifecycle_date", lazy="joined"
+    )
+
+    starting_at: Mapped[Optional[datetime]]
+    ending_at: Mapped[Optional[datetime]]
+
+
+class EventDate(VersionedBase):
+    """
+    Tapahtuman päivämäärät
+
+    Jokaisessa elinkaaritilassa voi olla tiettyjä tapahtumia. Liitetään tapahtuma
+    sille sallittuun elinkaaritilaan. Tapahtuman päivämäärien tulee olla aina
+    elinkaaritilan päivämäärien välissä.
+    """
+
+    __tablename__ = "event_date"
+
+    lifecycle_date_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.lifecycle_date.id",
+            name="lifecycle_date_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    )
+    decision_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey(
+            "codes.name_of_plan_case_decision.id",
+            name="name_of_plan_case_decision_id_fkey",
+        )
+    )
+    processing_event_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey(
+            "codes.type_of_processing_event.id", name="type_of_processing_event_fkey"
+        )
+    )
+    interaction_event_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey(
+            "codes.type_of_interaction_event.id", name="type_of_interaction_event_fkey"
+        )
+    )
+
+    # Let's load all the codes for objects joined.
+    lifecycle_date = relationship(
+        "LifeCycleDate", back_populates="event_dates", lazy="joined"
+    )
+    decision = relationship(
+        "NameOfPlanCaseDecision", backref="event_dates", lazy="joined"
+    )
+    processing_event = relationship(
+        "TypeOfProcessingEvent", backref="event_dates", lazy="joined"
+    )
+    interaction_event = relationship(
+        "TypeOfInteractionEvent", backref="event_dates", lazy="joined"
+    )
+
     starting_at: Mapped[Optional[datetime]]
     ending_at: Mapped[Optional[datetime]]

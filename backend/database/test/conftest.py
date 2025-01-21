@@ -24,7 +24,7 @@ from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
-hame_count: int = 14  # adjust me when adding tables
+hame_count: int = 15  # adjust me when adding tables
 codes_count: int = 20  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -1281,6 +1281,61 @@ def lifecycle_date_instance(session, code_instance):
     session.commit()
 
 
+@pytest.fixture()
+def decision_date_instance(
+    session,
+    preparation_date_instance: models.LifeCycleDate,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+):
+    instance = models.EventDate(
+        lifecycle_date=preparation_date_instance,
+        decision=participation_plan_presenting_for_public_decision,
+        starting_at=datetime(2024, 2, 5, tzinfo=LOCAL_TZ),
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def processing_event_date_instance(
+    session,
+    preparation_date_instance: models.LifeCycleDate,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+):
+    instance = models.EventDate(
+        lifecycle_date=preparation_date_instance,
+        processing_event=participation_plan_presenting_for_public_event,
+        starting_at=datetime(2024, 2, 15, tzinfo=LOCAL_TZ),
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def interaction_event_date_instance(
+    session,
+    preparation_date_instance: models.LifeCycleDate,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+):
+    instance = models.EventDate(
+        lifecycle_date=preparation_date_instance,
+        interaction_event=presentation_to_the_public_interaction,
+        starting_at=datetime(2024, 2, 15, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 2, 28, tzinfo=LOCAL_TZ),
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
 @pytest.fixture(scope="function")
 def complete_test_plan(
     session: Session,
@@ -1313,6 +1368,9 @@ def complete_test_plan(
     decisionmaker_type: codes.TypeOfDecisionMaker,
     pending_date_instance: models.LifeCycleDate,
     preparation_date_instance: models.LifeCycleDate,
+    decision_date_instance: models.EventDate,
+    processing_event_date_instance: models.EventDate,
+    interaction_event_date_instance: models.EventDate,
 ) -> Iterable[models.Plan]:
     """
     Plan data that might be more or less complete, to be tested and validated with the
@@ -1989,7 +2047,7 @@ def desired_plan_matter_dict(
                 "handlingEvent": {
                     "handlingEventKey": "whatever",
                     "handlingEventType": "http://uri.suomi.fi/codelist/rytj/kaavakastap/code/05",
-                    "eventTime": "2024-02-01",
+                    "eventTime": "2024-02-15",
                     "cancelled": False,
                 },
                 "interactionEvents": [
@@ -1997,16 +2055,16 @@ def desired_plan_matter_dict(
                         "interactionEventKey": "whatever",
                         "interactionEventType": "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji/code/01",
                         "eventTime": {
-                            "begin": "2024-01-31T22:00:00Z",
-                            "end": "2024-03-01T22:00:00Z",
+                            "begin": "2024-02-14T22:00:00Z",
+                            "end": "2024-02-27T22:00:00Z",
                         },
                     },
                 ],
                 "planDecision": {
                     "planDecisionKey": "whatever",
                     "name": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi/code/04",
-                    "decisionDate": "2024-02-01",
-                    "dateOfDecision": "2024-02-01",
+                    "decisionDate": "2024-02-05",
+                    "dateOfDecision": "2024-02-05",
                     "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
                     "plans": [
                         {

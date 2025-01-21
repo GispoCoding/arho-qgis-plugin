@@ -448,3 +448,63 @@ def test_lifecycle_date(
     assert lifecycle_date_instance in plan_instance.lifecycle_dates
     assert lifecycle_date_instance in text_plan_regulation_instance.lifecycle_dates
     assert lifecycle_date_instance in plan_proposition_instance.lifecycle_dates
+
+
+def test_decision_date(
+    session: Session,
+    preparation_date_instance: models.LifeCycleDate,
+    decision_date_instance: models.EventDate,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+):
+    # non-nullable decision date relations
+    assert decision_date_instance.lifecycle_date is preparation_date_instance
+    assert preparation_date_instance.event_dates == [decision_date_instance]
+
+    # nullable decision date relations
+    assert (
+        decision_date_instance.decision
+        == participation_plan_presenting_for_public_decision
+    )
+    assert participation_plan_presenting_for_public_decision.event_dates == [
+        decision_date_instance
+    ]
+
+
+def test_processing_event_date(
+    session: Session,
+    preparation_date_instance: models.LifeCycleDate,
+    processing_event_date_instance: models.EventDate,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+):
+    # non-nullable decision date relations
+    assert processing_event_date_instance.lifecycle_date is preparation_date_instance
+    assert preparation_date_instance.event_dates == [processing_event_date_instance]
+
+    # nullable decision date relations
+    assert (
+        processing_event_date_instance.processing_event
+        == participation_plan_presenting_for_public_event
+    )
+    assert participation_plan_presenting_for_public_event.event_dates == [
+        processing_event_date_instance
+    ]
+
+
+def test_interaction_event_date(
+    session: Session,
+    preparation_date_instance: models.LifeCycleDate,
+    interaction_event_date_instance: models.EventDate,
+    presentation_to_the_public_interaction: codes.TypeOfProcessingEvent,
+):
+    # non-nullable decision date relations
+    assert interaction_event_date_instance.lifecycle_date is preparation_date_instance
+    assert preparation_date_instance.event_dates == [interaction_event_date_instance]
+
+    # nullable decision date relations
+    assert (
+        interaction_event_date_instance.interaction_event
+        == presentation_to_the_public_interaction
+    )
+    assert presentation_to_the_public_interaction.event_dates == [
+        interaction_event_date_instance
+    ]
