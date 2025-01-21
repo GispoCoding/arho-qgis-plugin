@@ -2,8 +2,9 @@ name: Asemakaavan kaavamääräysryhmät (Katja)
 version: 1
 categories:
 
+# NOTE: check category name
   - category_code: aluevaraukset
-    name: Aluevaraukset
+    name: Osoitettavien aluevaraukset
     plan_regulation_groups:
 
     - name: Asuinrakennusten alue
@@ -936,9 +937,9 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 # p. 10 start
-# NOTE: New category, check category_code and name
-  - category_code: aluevarauksetYmparistoltaSilytettavat
-    name: Asemakaavassa osoitettavien ympäristöltään säilytettävien aluevarausten esitystapa
+# NOTE: Check category_code and name
+  - category_code: aluevarauksetYmparistoltaSailytettavat
+    name: Ympäristöltään säilytettävät aluevaraukset
     plan_regulation_groups:
 
     - name: Asuntovaltainen alue, jolla ympäristö säilytetään
@@ -950,10 +951,11 @@ categories:
             - type: paakayttotarkoitus
             - type: sailytettava
 
-# New category
-  - category_code: rakennusala
-    name: Rakennusala
+# NOTE: check category_code and name
+  - category_code: rakennusalat
+    name: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     plan_regulation_groups:
+
 # p. 11 start
     - name: Kunnan tai kaupunginosan raja
       geometry: Alue
@@ -1712,59 +1714,240 @@ categories:
           additional_information:
             - type: osaAlue                                               
 # p. 17 start
-# New category
+# Check if "Kaavamääräykselle annettava arvo" column is needed
+# Check category name
   - category_code: numeerisetJaTekstimuotoiset
-    name: Numeeriset ja tekstimuotoiset
+    name: Määräykset, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     plan_regulation_groups:
 
     - name: Kaupungin- tai kunnanosan numero
       geometry: Alue
       plan_regulations:
         - regulation_code: kaupunginTaiKunnanosanNumero
-          value: Positiivinen kokonaisluku # NOTE: Check   
 
     - name: Kaupungin- tai kunnanosan nimi
       geometry: Alue
       short_name: KAUP
       plan_regulations:
         - regulation_code: kaupunginTaiKunnanosanNimi
-          value: Kieliversioitu teksti # NOTE: Check   
 
     - name: Korttelin numero
       geometry: Alue
       plan_regulations:
         - regulation_code: korttelinNumero
-          value: Positiivinen kokonaisluku # NOTE: Check        
 
-    - name: Rakennusoikeus kuutiometreinä
+    - name: Tontin tai rakennuspaikan numero
       geometry: Alue
       plan_regulations:
-        - regulation_code: sallittuRakennustilavuus
+        - regulation_code: tontinTaiRakennuspaikanNumero
 
-    - name: Luku osoittaa, kuinka suuri osa alueesta tai rakennusalasta tulee jättää rakentamatta
+    - name: Ohjeellisen tontin tai rakennuspaikan numero
       geometry: Alue
       plan_regulations:
-        - regulation_code: valjyysluku
-
-    - name: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
-      geometry: Alue
-      plan_regulations:
-        - regulation_code: maanpaallinenKerroslukuArvovali
-
-    - name: Kattokaltevuus
-      geometry: Alue
-      plan_regulations:
-        - regulation_code: kattokaltevuus
+        - regulation_code: tontinTaiRakennuspaikanNumero
 
     - name: Kadun tai tien nimi
       geometry: Alue
       plan_regulations:
         - regulation_code: kadunTaiTienNimi
 
+    - name: Torin tai katuaukion nimi
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: torinTaiKatuaukionNimi    
+
+    - name: Puiston tai muun yleisen alueen nimi
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: puistonTaiMuunYleisenAlueenNimi                        
+
+    - name: Rakennusoikeus kerrosalaneliömetreinä
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: sallittuKerrosala 
+
+    - name: Rakennusoikeus kuutiometreinä
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: sallittuRakennustilavuus
+
+    - name: Luku osoittaa, kuinka suuren osan alueesta tai rakennusalasta saa käyttää rakentamiseen
+      # NOTE: name change to "Rakentamisen suhde alueen pinta-alaan" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: rakentamisenSuhdeAlueenPintaAlaan    
+
+    - name: Luku osoittaa, kuinka suuri osa alueesta tai rakennusalasta tulee jättää rakentamatta
+      # NOTE: name change to "Väljyysluku" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: valjyysluku
+
+    - name: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman sallitun kerrosluvun
+      # NOTE: name change to "Suurin sallittu maanpäällinen kerrosluku (luku)" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanpaallinenKerroslukuLuku    
+# p. 18
+    - name: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
+      # NOTE: name change to "Maanpäällinen vähimmäis- ja enimmäiskerrosluku (arvoväli)" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanpaallinenKerroslukuArvovali
+
+    - name: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman maan alle sijoitettavan sallitun kerrosluvun
+      # NOTE: name change to "Suurin maan alle sijoitettava sallittu kerrosluku (luku)" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanalainenKerroslukuLuku
+
+    - name: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
+      # NOTE: name change to "Maanalainen vähimmäis- ja enimmäiskerrosluku (arvoväli)" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanalainenKerroslukuArvovali  
+
+    - name: Kansipihan suurin sallittu kerrosluku kansipihalta ylöspäin
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanpaallinenKerroslukuLuku   
+
+    - name: Kansipihan suurin sallittu kerrosluku kansipihalta alaspäin
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanpaallinenKerroslukuLuku  
+
+    - name: Murtoluku roomalaisen numeron edessä osoittaa, kuinka suuren osan rakennuksen suurimman kerroksen alasta saa kellarikerroksessa käyttää kerrosalaan luettavaksi tilaksi
+      # NOTE: name change to ""?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kellarinSallittuOsuusKerrosalasta   
+
+    - name: Murtoluku roomalaisen numeron jäljessä osoittaa, kuinka suuren osan rakennuksen suurimman kerroksen alasta ullakon tasolla saa käyttää kerrosalaan laskettavaksi tilaksi
+      # NOTE: name change to ""?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: ullakonSallittuOsuusKerrosalasta   
+
+    - name: Tehokkuusluku eli kerrosalan suhde tontin/kerrosalan suhde tontin/
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: tehokkuusluku    
+
+    - name: Vihertehokkuus eli kasvillisuuden peittämän pinnan suhde alueen pinta-alaan
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: vihertehokkuus                       
+
+    - name: Kattokaltevuus
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kattokaltevuus
+
+    - name: Maanpinnan likimääräinen korkeusasema
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: maanpinnanKorkeusasema
+
+    - name: Rakennuksen vesikaton ylimmän kohdan korkeusasema
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: vesikatonYlimmanKohdanKorkeusasema    
+
+    - name: Rakennuksen julkisivupinnan ja vesikaton leikkauskohdan ylin korkeusasema
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: julkisivupinnanJaVesikatonLeikkauskohdanKorkeusasema        
+# p. 19        
+    - name: Rakennuksen julkisivun enimmäiskorkeus metreinä
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: julkisivunEnimmaiskorkeus
+
+    - name: Rakennuksen, rakenteiden ja laitteiden ylin korkeusasema
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: rakennustenRakenteidenJaLaitteidenYlinKorkeusasema   
+
+    - name: Rakennuksen, rakenteiden ja laitteiden alin korkeusasema
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: rakennustenRakenteidenJaLaitteidenAlinKorkeusasema     
+
+    - name: Alin painovoimainen viemäröintitaso
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: alinPainovoimainenViemarointitaso
+
+    - name: Kosteudelle alttiiden rakenteiden alin rakentamiskorkeus
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kosteudelleAlttiidenRakenteidenAlinRakentamiskorkeus
+
+    - name: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
+      # NOTE: Change name to "Tuulivoimalan enimmäiskorkeus" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: tuulivoimalanEnimmaiskorkeus    
+
+    - name: Määräys osoittaa, kuinka monta tuulivoimalaa alueelle saa rakentaa
+      # NOTE: Change name to "Tuulivoimaloiden määrä" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: tuulivoimaloidenMaara
+
+    - name: Määräys osoittaa, kuinka monta asuntoa alueelle on rakennettava
+      # NOTE: Change name to "Asuntojen määrä" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: asuntojenMaara
+
+    - name: Määräys osoittaa, kuinka monta pyöräpaikkaa alueelle on rakennettava
+      # NOTE: Change name to "Pyöräpaikkojen määrä" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: pyorapaikkojenMaara    
+
+    - name: Määräys osoittaa, kuinka monta autopaikkaa alueelle on rakennettava
+      # NOTE: Change name to "Autopaikkojen määrä" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: autopaikkojenMaara  
+
+    - name: Määräys osoittaa, kuinka monta kerrosalaneliömetriä kohti on rakennettava yksi pyöräpaikka
+      # NOTE: Change name to "Kerrosneliömäärä yhtä pyöräpaikkaa kohden" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kerrosneliomaaraYhtaPyorapaikkaaKohden
+
+    - name: Määräys osoittaa, kuinka monta kerrosalaneliömetriä kohti on rakennettava yksi autopaikka
+      # NOTE: Change name to "Kerrosneliömäärä yhtä autopaikkaa kohden" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: kerrosneliomaaraYhtaAutopaikkaaKohden   
+
+    - name: Määräys osoittaa, kuinka monta pyöräpaikkaa asuntoa kohti on rakennettava
+      # NOTE: Change name to "Pyöräpaikkojen määrä asuntoa kohden" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: pyorapaikkojenMaaraAsuntoaKohden 
+
+    - name: Määräys osoittaa, kuinka monta autopaikkaa asuntoa kohti on rakennettava
+      # NOTE: Change name to "Autopaikkojen määrä asuntoa kohden" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: autopaikkojenMaaraAsuntoaKohden  
+
+    - name: Määräys osoittaa, että alueelle sijoitettavien rakenteiden ääneneristävyyden tulee olla vähintään 00 dB
+      # NOTE: Change name to "Alueelle sijoitettavien rakenteiden ääneneristavyys vähintään 00 dB" ?
+      geometry: Alue
+      plan_regulations:
+        - regulation_code: aaneneristavyys                    
+
 # p. 20 start
 # New category       
   - category_code: rakennusalanKayttotarkoituksenOsuus # NOTE: Check category code and name
-    name: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevien määräysten esitystapa
+    name: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat määräykset
     plan_regulation_groups:
 
     - name: Käyttötarkoituksen osuus kerrosalasta (%)
@@ -1774,3 +1957,109 @@ categories:
         - regulation_code: asumisenAlue
           additional_information:
             - type: kayttotarkoituksenOsuusKerrosalastaPros
+
+    - name: Käyttötarkoituksen osuus kerrosalasta (k-m 2)
+      geometry: Alue
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: asumisenAlue
+          additional_information:
+            - type: kayttotarkoituksenOsuusKerrosalastaK-m2        
+
+  - category_code: geometrialtaanViivamaisetJaPistemaiset # NOTE: Check category code and name
+    name: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät määräykset
+    plan_regulation_groups:
+
+    - name: Maanalaisiin tiloihin johtava ajoluiska
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: ajoluiska
+
+    - name: Rakennusalan sivu, jota koskee tarkempi määräys
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: rakennusalanSivuJotaKoskeeTarkempiMaarays    
+
+    - name: Rakennusalan sivu, jota koskee tarkempi määräys
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: rakennusalanSivuJotaKoskeeTarkempiMaarays      
+
+    - name: Rakennusalan sivu, johon rakennus on rakennettava kiinni
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: rakennusalanSivuJohonRakennusOnRakennettavaKiinni   
+
+    - name: Rakennuksen sivu, jossa suora uloskäynti porrashuoneista
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: rakennuksenSivuJossaSuoraUloskayntiPorrashuoneista
+
+    - name: Rakennusalan sivu, jonka puoleiseen rakennuksen seinään ei saa sijoittaa ikkunoita
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: ikkunatonSeina
+
+    - name: Rakennuksen harjasuuntaa osoittava viiva
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: rakennuksenHarjanSuunta   
+
+    - name: Istutettava puurivi
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: puuTaiPuurivi
+
+    - name: Istutettava puu
+      geometry: Piste
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: puuTaiPuurivi      
+
+    - name: Säilytettävä puurivi
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: puuTaiPuurivi 
+          additional_information:
+            - type: sailytettava    
+
+    - name: Säilytettävä puu
+      geometry: Piste
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: puuTaiPuurivi 
+          additional_information:
+            - type: sailytettava    
+
+    - name: Ulkoilureitti
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: ulkoiluTaiVirkistysreitti 
+
+    - name: Katualueen rajan osa, jonka kohdalta ei saa järjestää ajoneuvoliittymää
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: kadunOsaJollaOnAjoneuvoliittymakielto    
+
+    - name: Meluesteen tai melusuojauksen likimääräinen sijainti
+      geometry: Viiva
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: melueste   
+
+    - name: Ajoneuvoliittymän likimääräinen sijainti
+      geometry: Piste
+      short_name: # NOTE: Check symbol
+      plan_regulations:
+        - regulation_code: liittyma                                 
