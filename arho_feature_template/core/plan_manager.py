@@ -279,16 +279,16 @@ class PlanManager:
 
     def load_land_use_plan(self):
         """Load an existing land use plan using a dialog selection."""
-        connections = get_existing_database_connection_names()
+        connection_names = get_existing_database_connection_names()
 
-        if not connections:
+        if not connection_names:
             QMessageBox.critical(None, "Error", "No database connections found.")
             return
 
         if not handle_unsaved_changes():
             return
 
-        dialog = LoadPlanDialog(None, connections)
+        dialog = LoadPlanDialog(None, connection_names)
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_id = dialog.get_selected_plan_id()
