@@ -17,6 +17,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.models import Regulation, ValueType
+from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
 from arho_feature_template.gui.components.plan_regulation_input_widgets import (
     DecimalInputWidget,
     IntegerInputWidget,
@@ -24,7 +25,7 @@ from arho_feature_template.gui.components.plan_regulation_input_widgets import (
     MultilineTextInputWidget,
     SinglelineTextInputWidget,
 )
-from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer
+from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, VerbalRegulationType
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
 
 if TYPE_CHECKING:
@@ -67,6 +68,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.file_widgets: list[QgsFileWidget] = []
         self.theme_widget: SinglelineTextInputWidget | None = None
         self.topic_tag_widget: SinglelineTextInputWidget | None = None
+        self.type_of_verbal_regulation_widget: HierarchicalCodeComboBox | None = None
 
         self.expanded = True
         self.plan_regulation_name.setText(self.config.name)
@@ -83,6 +85,12 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         value_type = self.config.value_type
         if value_type:
             self._add_value_input(value_type, self.config.unit, self.regulation.value)
+        if self.config.regulation_code == "sanallinenMaarays":
+            self.type_of_verbal_regulation_widget = HierarchicalCodeComboBox()
+            self.type_of_verbal_regulation_widget.populate_from_code_layer(VerbalRegulationType)
+            self._add_widgets(QLabel("Sanallisen määräyksen laji"), self.type_of_verbal_regulation_widget)
+            if self.regulation.verbal_regulation_type_id is not None:
+                self.type_of_verbal_regulation_widget.set_value(self.regulation.verbal_regulation_type_id)
 
         # Additional information
         if self.regulation.additional_information:
@@ -249,7 +257,6 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.theme_widget = SinglelineTextInputWidget(theme_name, False)
         self._add_widgets(QLabel("Kaavoitusteema"), self.theme_widget)
 
-    # Or e.g. "into_regulation"
     def into_model(self) -> Regulation:
         return Regulation(
             config=self.config,
@@ -261,5 +268,8 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             files=[file.filePath() for file in self.file_widgets],
             theme=self.theme_widget.get_value() if self.theme_widget else None,
             topic_tag=self.topic_tag_widget.get_value() if self.topic_tag_widget else None,
+            verbal_regulation_type_id=self.type_of_verbal_regulation_widget.value()
+            if self.type_of_verbal_regulation_widget
+            else None,
             id_=self.regulation.id_,
         )

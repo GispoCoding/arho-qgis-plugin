@@ -82,15 +82,15 @@ class HierarchicalCodeComboBox(QComboBox):
             item = QTreeWidgetItem()
             items[code_feature["id"]] = item
 
-            text = code_feature["name"][LANGUAGE]
-            item.setText(0, text)
-            description = code_feature["description"][LANGUAGE]
-            item.setToolTip(0, description)
+            item.setText(0, code_feature["name"][LANGUAGE])
+            item.setToolTip(0, code_feature["description"][LANGUAGE])
             item.setData(0, Qt.UserRole, code_feature["id"])
+
+            if code_feature["value"] in layer_type.category_only_codes:
+                item.setFlags(item.flags() & ~Qt.ItemIsSelectable)
 
             if code_feature["level"] == 1:
                 self.tree_widget.addTopLevelItem(item)
-                item.setFlags(item.flags() & ~Qt.ItemIsSelectable)
             else:
                 parent = items[code_feature["parent_id"]]
                 parent.addChild(item)

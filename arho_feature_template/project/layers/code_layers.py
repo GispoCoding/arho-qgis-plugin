@@ -7,11 +7,14 @@ from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.utils.misc_utils import LANGUAGE
 
 
-class AbstractCodeLayer(AbstractLayer): ...
+class AbstractCodeLayer(AbstractLayer):
+    category_only_codes: ClassVar[list[str]] = []
 
 
 class PlanTypeLayer(AbstractCodeLayer):
     name = "Kaavalaji"
+
+    category_only_codes: ClassVar[list[str]] = ["1", "2", "3"]  # "Maakuntakaava", "Asemakaava", "Yleiskaava"
 
 
 class LifeCycleStatusLayer(AbstractCodeLayer):
@@ -32,6 +35,15 @@ class PlanThemeLayer(AbstractCodeLayer):
 
 class AdditionalInformationTypeLayer(AbstractCodeLayer):
     name = "Lisätiedonlaji"
+
+    category_only_codes: ClassVar[list[str]] = [
+        "tyyppi",
+        "hairionTorjuntatarve",
+        "merkittavyys",
+        "eriTahojenTarpeisiinVaraaminen",
+        "ymparistomuutoksenLaji",
+        "rakentamisenOhjaus",
+    ]
 
     @classmethod
     def get_additional_information_name(cls, info_type: str) -> str | None:
@@ -63,10 +75,20 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
 class PlanRegulationTypeLayer(AbstractCodeLayer):
     name = "Kaavamääräyslaji"
 
+    # TODO: Implement. Currently, this is not used and information needed to construct plan regulation codes
+    # is defined in a separate config file
+    category_only_codes: ClassVar[list[str]] = []
+
     @classmethod
     def get_regulation_type_by_id(cls, _id: str) -> str | None:
         attribute_value = cls.get_attribute_value_by_another_attribute_value("value", "id", _id)
         return cast(str, attribute_value) if attribute_value else attribute_value
+
+
+class VerbalRegulationType(AbstractCodeLayer):
+    name = "Sanallisen määräyksen laji"
+
+    category_only_codes: ClassVar[list[str]] = ["maarayksenTyyppi"]
 
 
 code_layers = AbstractCodeLayer.__subclasses__()

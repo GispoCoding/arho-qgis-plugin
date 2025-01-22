@@ -255,11 +255,9 @@ class Regulation:
     files: list[str] = field(default_factory=list)
     theme: str | None = None
     topic_tag: str | None = None
+    verbal_regulation_type_id: str | None = None
     regulation_group_id_: int | None = None
     id_: int | None = None
-    # value_string: str | None
-    # value_number: Number | None
-    # value_number_pair: tuple[Number, Number] | None
 
 
 @dataclass
