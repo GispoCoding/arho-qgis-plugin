@@ -199,8 +199,8 @@ categories:
         - regulation_code: urheiluJaLiikuntaRakennustenAlue
           additional_information:
             - type: paakayttotarkoitus
-            - type: varattuYleiseenKayttoon 
-            
+            - type: varattuYleiseenKayttoon
+
     - name: Huvi- ja viihderakennusten alue
       geometry: Alue
       short_name: PV
@@ -234,7 +234,7 @@ categories:
       plan_regulations:
         - regulation_code: myymalarakennustenAlue
           additional_information:
-            - type: paakayttotarkoitus  
+            - type: paakayttotarkoitus
 
     - name: Myymälärakennusten alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
       geometry: Alue
@@ -259,7 +259,7 @@ categories:
       plan_regulations:
         - regulation_code: toimitilojenAlue
           additional_information:
-            - type: paakayttotarkoitus     
+            - type: paakayttotarkoitus
 
     - name: Teollisuus- ja varastorakennusten alue
       geometry: Alue
@@ -278,7 +278,7 @@ categories:
       plan_regulations:
         - regulation_code: teollisuusalue
           additional_information:
-            - type: paakayttotarkoitus                 
+            - type: paakayttotarkoitus
 
     - name: Teollisuusrakennusten alue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
       geometry: Alue
@@ -316,7 +316,7 @@ categories:
       plan_regulations:
         - regulation_code: virkistysalue
           additional_information:
-            - type: paakayttotarkoitus         
+            - type: paakayttotarkoitus
 
     - name: Puisto
       geometry: Alue
@@ -332,7 +332,7 @@ categories:
       plan_regulations:
         - regulation_code: lahivirkistysalue
           additional_information:
-            - type: paakayttotarkoitus            
+            - type: paakayttotarkoitus
 
     - name: Leikkipuisto
       geometry: Alue
@@ -356,7 +356,7 @@ categories:
       plan_regulations:
         - regulation_code: retkeilyJaUlkoiluAlue
           additional_information:
-            - type: paakayttotarkoitus                            
+            - type: paakayttotarkoitus
 
     - name: Uimaranta-alue
       geometry: Alue
@@ -380,7 +380,7 @@ categories:
       plan_regulations:
         - regulation_code: vapaaAjanAsumisenAlue
           additional_information:
-            - type: paakayttotarkoitus        
+            - type: paakayttotarkoitus
 
     - name: Matkailupalvelujen
       geometry: Alue
@@ -461,7 +461,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: jalankulkualue
 
@@ -471,11 +471,11 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: jalankulkualue
             - type: kayttotarkoituskohdistus
-              value: pyorailyalue  
+              value: pyorailyalue
 
     - name: Jalankululle varattu katu, jolla huoltoajo on sallittu
       geometry: Alue
@@ -483,7 +483,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: jalankulkualue
             - type: kayttotarkoituskohdistus
@@ -495,7 +495,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: jalankulkualue
             - type: tontilleAjoSallittu
@@ -506,7 +506,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: joukkoliikenteenAlue
 
@@ -527,7 +527,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: pihakatu
 
@@ -537,7 +537,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: hidaskatu
 
@@ -547,7 +547,7 @@ categories:
       plan_regulations:
         - regulation_code: katu
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
             - type: kayttotarkoituskohdistus
               value: katuaukioTaiTori
 
@@ -565,7 +565,7 @@ categories:
       plan_regulations:
         - regulation_code: lentoliikenteenAlue
           additional_information:
-            - type: paakayttotarkoitus      
+            - type: paakayttotarkoitus
 
     - name: Satama-alue
       geometry: Alue
@@ -663,7 +663,7 @@ categories:
       plan_regulations:
         - regulation_code: varikko
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
 
       # p. 8
     - name: Erityisalue
@@ -696,8 +696,8 @@ categories:
       plan_regulations:
         - regulation_code: energiahuollonAlue
           additional_information:
-            - type: paakayttotarkoitus 
-            - type: kayttotarkoituskohdistus 
+            - type: paakayttotarkoitus
+            - type: kayttotarkoituskohdistus
               value: tuulivoimalaAlue
 
     - name: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
@@ -706,10 +706,10 @@ categories:
       plan_regulations:
         - regulation_code: energiahuollonAlue
           additional_information:
-            - type: paakayttotarkoitus 
-            - type: kayttotarkoituskohdistus 
-              value: aurinkovoimalaAlue     
-                             
+            - type: paakayttotarkoitus
+            - type: kayttotarkoituskohdistus
+              value: aurinkovoimalaAlue
+
     - name: Jätteenkäsittelyalue
       geometry: Alue
       short_name: EJ
@@ -732,7 +732,7 @@ categories:
       plan_regulations:
         - regulation_code: maaAinestenOttoalue
           additional_information:
-            - type: paakayttotarkoitus 
+            - type: paakayttotarkoitus
 
     - name: Turvetuotannon alue
       geometry: Alue
@@ -822,7 +822,7 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
-      # p. 9            
+      # p. 9
     - name: Rakennussuojelualue
       geometry: Alue
       short_name: SR
@@ -885,7 +885,7 @@ categories:
       plan_regulations:
         - regulation_code: pelto
           additional_information:
-            - type: paakayttotarkoitus                                                                                                                                   
+            - type: paakayttotarkoitus
 
     - name: Maisemallisesti arvokas peltoalue
       geometry: Alue
@@ -912,7 +912,7 @@ categories:
       plan_regulations:
         - regulation_code: maaJaMetsatalousalueJollaErityisiaYmparistoarvoja
           additional_information:
-            - type: paakayttotarkoitus  
+            - type: paakayttotarkoitus
 
     - name: Vesialue
       geometry: Alue
@@ -922,7 +922,7 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
-      # p. 10 
+      # p. 10
   - category_code: aluevarauksetYmparistoltaSailytettavat
     name: Ympäristöltään säilytettävät aluevaraukset
     plan_regulation_groups:
@@ -963,7 +963,7 @@ categories:
       plan_regulations:
         - regulation_code: ohjeellinenRakennuspaikka
           additional_information:
-            - type: osaAlue       
+            - type: osaAlue
 
     - name: Ohjeellinen tontti/rakennuspaikka
       geometry: Alue
@@ -971,7 +971,7 @@ categories:
       plan_regulations:
         - regulation_code: sitovanTonttijaonMukainenTontti
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Rakennusala
       geometry: Alue
@@ -979,7 +979,7 @@ categories:
       plan_regulations:
         - regulation_code: rakennusala
           additional_information:
-            - type: osaAlue                       
+            - type: osaAlue
 
     - name: Auton säilytyspaikan rakennusala
       geometry: Alue
@@ -1044,7 +1044,7 @@ categories:
       plan_regulations:
         - regulation_code: kaupunkiTaiKylakuvallisestiArvokasAlue
           additional_information:
-            - type: osaAlue        
+            - type: osaAlue
 
     - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue muinaisjäännös
       geometry: Alue
@@ -1090,7 +1090,7 @@ categories:
         - regulation_code: maisemallisestiArvokasAlue
           additional_information:
             - type: osaAlue
-            - type: maakunnallinen  
+            - type: maakunnallinen
 
     - name: Paikallisesti arvokas maisema-alue
       geometry: Alue
@@ -1115,7 +1115,7 @@ categories:
       plan_regulations:
         - regulation_code: merkittavaRakennettuKulttuuriymparisto
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
             - type: kansainvalinen
 
     - name: Valtakunnallisesti merkittävä rakennettu kulttuuriympäristö
@@ -1124,8 +1124,8 @@ categories:
       plan_regulations:
         - regulation_code: valtakunnallisestiMerkittavaRakennettuKulttuuriymparisto
           additional_information:
-            - type: osaAlue    
-            - type: valtakunnallinen   
+            - type: osaAlue
+            - type: valtakunnallinen
 
     - name: Maakunnallisesti merkittävä rakennettu kulttuuriympäristö
       geometry: Alue
@@ -1133,8 +1133,8 @@ categories:
       plan_regulations:
         - regulation_code: merkittavaRakennettuKulttuuriymparisto
           additional_information:
-            - type: osaAlue    
-            - type: maakunnallinen           
+            - type: osaAlue
+            - type: maakunnallinen
 
     - name: Paikallisesti merkittävä rakennettu kulttuuriympäristö
       geometry: Alue
@@ -1142,8 +1142,8 @@ categories:
       plan_regulations:
         - regulation_code: merkittavaRakennettuKulttuuriymparisto
           additional_information:
-            - type: osaAlue    
-            - type: paikallinen 
+            - type: osaAlue
+            - type: paikallinen
 
     - name: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä
       geometry: Alue
@@ -1151,15 +1151,15 @@ categories:
       plan_regulations:
         - regulation_code: muuArkeologinenKohde
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Valtakunnallisesti merkittävä arkeologinen kohde
       short_name: vark
       plan_regulations:
         - regulation_code: valtakunnallisestiMerkittavaArkeologinenKohde
           additional_information:
-            - type: osaAlue      
-            - type: valtakunnallinen  
+            - type: osaAlue
+            - type: valtakunnallinen
 
       # p. 13
     - name: Arvokas harjualue tai muu geologinen muodostuma
@@ -1168,7 +1168,7 @@ categories:
       plan_regulations:
         - regulation_code: arvokasGeologinenMuodostuma
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Tärkeä veden hankintaan soveltuva pohjavesialue
       geometry: Alue
@@ -1192,7 +1192,7 @@ categories:
       plan_regulations:
         - regulation_code: luonnonMonimuotoisuudenKannaltaErityisenTarkeaAlue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: UNESCO:n maailmanperintökohde
       geometry: Alue
@@ -1200,7 +1200,7 @@ categories:
       plan_regulations:
         - regulation_code: unesconMaailmanperintokohde
           additional_information:
-            - type: osaAlue         
+            - type: osaAlue
 
     - name: Kansallinen kaupunkipuisto
       geometry: Alue
@@ -1208,7 +1208,7 @@ categories:
       plan_regulations:
         - regulation_code: kansallinenKaupunkipuisto
           additional_information:
-            - type: osaAlue         
+            - type: osaAlue
 
     - name: Kehittämisalue
       geometry: Alue
@@ -1216,7 +1216,7 @@ categories:
       plan_regulations:
         - regulation_code: kehittamisalue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Alue, jolle määrätään asemakaavassa määräaikainen kielto rakennuksen rakentamiseksi
       geometry: Alue
@@ -1224,7 +1224,7 @@ categories:
       plan_regulations:
         - regulation_code: maaraAikainenKieltoRakennuksenRakentamiseksi
           additional_information:
-            - type: osaAlue       
+            - type: osaAlue
 
     - name: Tuulivoimaloiden alue
       geometry: Alue
@@ -1232,7 +1232,7 @@ categories:
       plan_regulations:
         - regulation_code: tuulivoimalaAlue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Aurinkovoimaloiden alue
       geometry: Alue
@@ -1240,15 +1240,15 @@ categories:
       plan_regulations:
         - regulation_code: aurinkovoimalaAlue
           additional_information:
-            - type: osaAlue      
-             
+            - type: osaAlue
+
     - name: Ympäristöhäiriöalue
       geometry: Alue
       short_name: häiriö
       plan_regulations:
         - regulation_code: ymparistohairioalue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Melualue
       geometry: Alue
@@ -1256,7 +1256,7 @@ categories:
       plan_regulations:
         - regulation_code: melualue
           additional_information:
-            - type: osaAlue     
+            - type: osaAlue
 
     - name: Tärinäalue
       geometry: Alue
@@ -1264,7 +1264,7 @@ categories:
       plan_regulations:
         - regulation_code: tarinaAlue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Radonriskialue
       geometry: Alue
@@ -1272,7 +1272,7 @@ categories:
       plan_regulations:
         - regulation_code: radonriskialue
           additional_information:
-            - type: osaAlue         
+            - type: osaAlue
 
     - name: Pilaantunut maa-alue
       geometry: Alue
@@ -1280,7 +1280,7 @@ categories:
       plan_regulations:
         - regulation_code: pilaantunutMaaAlue
           additional_information:
-            - type: osaAlue       
+            - type: osaAlue
 
     - name: Vaara-alue
       geometry: Alue
@@ -1288,7 +1288,7 @@ categories:
       plan_regulations:
         - regulation_code: vaaraAlue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Tulvariskialue
       geometry: Alue
@@ -1296,7 +1296,7 @@ categories:
       plan_regulations:
         - regulation_code: tulvariskialue
           additional_information:
-            - type: osaAlue 
+            - type: osaAlue
 
     - name: Suojavyöhyke
       geometry: Alue
@@ -1304,7 +1304,7 @@ categories:
       plan_regulations:
         - regulation_code: suojavyohyke
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Konsultointivyöhyke
       geometry: Alue
@@ -1312,7 +1312,7 @@ categories:
       plan_regulations:
         - regulation_code: konsultointivyohyke
           additional_information:
-            - type: osaAlue        
+            - type: osaAlue
 
     - name: Suojeltava alueen osa
       geometry: Alue
@@ -1320,16 +1320,16 @@ categories:
       plan_regulations:
         - regulation_code: suojelualue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
-      # p. 14           
+      # p. 14
     - name: Alueen osa, jolla sijaitsee luonnonsuojelulain mukainen luonnonsuojelualue tai -kohde
       geometry: Alue
       short_name: sl
       plan_regulations:
         - regulation_code: luonnonsuojelualue
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Suojeltu rakennus, jota ei saa purkaa
       geometry: Alue
@@ -1337,7 +1337,7 @@ categories:
       plan_regulations:
         - regulation_code: rakennussuojelualue
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
       geometry: Alue
@@ -1345,8 +1345,8 @@ categories:
       plan_regulations:
         - regulation_code: rakennussuojelualue
           additional_information:
-            - type: osaAlue  
-            - type: kansainvalinen  
+            - type: osaAlue
+            - type: kansainvalinen
 
     - name: Valtakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
       geometry: Alue
@@ -1354,7 +1354,7 @@ categories:
       plan_regulations:
         - regulation_code: rakennussuojelualue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
             - type: valtakunnallinen
 
     - name: Maakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
@@ -1363,7 +1363,7 @@ categories:
       plan_regulations:
         - regulation_code: rakennussuojelualue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
             - type: maakunnallinen
 
     - name: Paikallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
@@ -1372,7 +1372,7 @@ categories:
       plan_regulations:
         - regulation_code: rakennussuojelualue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
             - type: paikallinen
 
     - name: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
@@ -1381,7 +1381,7 @@ categories:
       plan_regulations:
         - regulation_code: rakennusperinnonSuojelemisestaAnnetunLainNojallaSuojeltuRakennus
           additional_information:
-            - type: osaAlue 
+            - type: osaAlue
 
     - name: Alueen osa, jolla sijaitsee muinaismuistolailla rauhoitettu kiinteä muinaisjäännös
       geometry: Alue
@@ -1389,7 +1389,7 @@ categories:
       plan_regulations:
         - regulation_code: muinaismuistoalue
           additional_information:
-            - type: osaAlue      
+            - type: osaAlue
 
     - name: Valtion omistamien rakennusten suojelusta annetun asetuksen nojalla suojeltu rakennus, jota ei saa purkaa
       geometry: Alue
@@ -1397,7 +1397,7 @@ categories:
       plan_regulations:
         - regulation_code: valtionOmistamienRakennustenSuojelustaAnnetunAsetuksenNojallaSuojeltuRakennus
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Kirkkolain nojalla suojeltu kirkollinen rakennus
       geometry: Alue
@@ -1405,7 +1405,7 @@ categories:
       plan_regulations:
         - regulation_code: suojeltuKirkollinenRakennus
           additional_information:
-            - type: osaAlue 
+            - type: osaAlue
 
     - name: Ortodoksisesta kirkosta annetun lain nojalla suojeltu kirkko tai rukoushuone
       geometry: Alue
@@ -1413,7 +1413,7 @@ categories:
       plan_regulations:
         - regulation_code: suojeltuOrtodoksinenKirkkoTaiRukoushuone
           additional_information:
-            - type: osaAlue 
+            - type: osaAlue
 
     - name: Ekologisen kompensaation alue
       geometry: Alue
@@ -1421,7 +1421,7 @@ categories:
       plan_regulations:
         - regulation_code: ekologisenKompensaationAlue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Hulevesien hallintaan tarkoitettu alue
       geometry: Alue
@@ -1429,7 +1429,7 @@ categories:
       plan_regulations:
         - regulation_code: hulevesienHallintaAlue
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Maa-ainesten vastaanotto- tai läjitysalue
       geometry: Alue
@@ -1437,7 +1437,7 @@ categories:
       plan_regulations:
         - regulation_code: maaAinestenVastaanottoTaiLajitysAlue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Maanalainen tila
       geometry: Alue
@@ -1445,8 +1445,8 @@ categories:
       plan_regulations:
         - regulation_code: rakennusala
           additional_information:
-            - type: osaAlue    
-            - type: maanalainenTila  
+            - type: osaAlue
+            - type: maanalainenTila
 
     - name: Maanalainen pysäköintilaitos
       geometry: Alue
@@ -1454,8 +1454,8 @@ categories:
       plan_regulations:
         - regulation_code: pysakointilaitostenAlue
           additional_information:
-            - type: osaAlue    
-            - type: maanalainenTila   
+            - type: osaAlue
+            - type: maanalainenTila
 
       # p. 15
     - name: Maanalainen yleinen pysäköintilaitos
@@ -1464,9 +1464,9 @@ categories:
       plan_regulations:
         - regulation_code: pysakointilaitostenAlue
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
             - type: maanalainenTila
-            - type: varattuYleiseenKayttoon 
+            - type: varattuYleiseenKayttoon
 
     - name: Liikennetunneli
       geometry: Alue
@@ -1474,7 +1474,7 @@ categories:
       plan_regulations:
         - regulation_code: liikennetunneli
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Maanalainen liikennetunneli
       geometry: Alue
@@ -1482,8 +1482,8 @@ categories:
       plan_regulations:
         - regulation_code: liikennetunneli
           additional_information:
-            - type: osaAlue   
-            - type: maanalainenTila    
+            - type: osaAlue
+            - type: maanalainenTila
 
     - name: Alue, jolle saa sijoittaa polttoaineen jakeluaseman
       geometry: Alue
@@ -1491,7 +1491,7 @@ categories:
       plan_regulations:
         - regulation_code: uloke
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Uloke
       geometry: Alue
@@ -1499,15 +1499,15 @@ categories:
       plan_regulations:
         - regulation_code: polttoaineenJakeluasema
           additional_information:
-            - type: osaAlue 
-            
+            - type: osaAlue
+
     - name: Rakennukseen jätettävä kulkuaukko
       geometry: Alue
       short_name: # NOTE: Check symbol
       plan_regulations:
         - regulation_code: rakennukseenJatettavaKulkuaukko
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Valokatteinen tila
       geometry: Alue
@@ -1515,7 +1515,7 @@ categories:
       plan_regulations:
         - regulation_code: valokatteinenTila
           additional_information:
-            - type: osaAlue 
+            - type: osaAlue
 
     - name: Leikki- ja oleskelualueeksi varattu alueen osa
       geometry: Alue
@@ -1523,7 +1523,7 @@ categories:
       plan_regulations:
         - regulation_code: leikkiJaOleskelualue
           additional_information:
-            - type: osaAlue    
+            - type: osaAlue
 
     - name: Istutettava alueen osa
       geometry: Alue
@@ -1531,7 +1531,7 @@ categories:
       plan_regulations:
         - regulation_code: istutettavaAlue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Ajoyhteys
       geometry: Alue
@@ -1539,7 +1539,7 @@ categories:
       plan_regulations:
         - regulation_code: ajoyhteys
           additional_information:
-            - type: osaAlue 
+            - type: osaAlue
 
     - name: Eritasoristeys
       geometry: Alue
@@ -1547,7 +1547,7 @@ categories:
       plan_regulations:
         - regulation_code: eritasoristeys
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Alueen sisäiselle huoltoliikenteelle varattu alueen osa
       geometry: Alue
@@ -1555,8 +1555,8 @@ categories:
       plan_regulations:
         - regulation_code: huoltoajoalue
           additional_information:
-            - type: osaAlue   
-            - type: varattuAlueenSisaiseenKayttoon    
+            - type: osaAlue
+            - type: varattuAlueenSisaiseenKayttoon
 
     - name: Alueen sisäiselle jalankululle varattu alueen osa
       geometry: Alue
@@ -1564,8 +1564,8 @@ categories:
       plan_regulations:
         - regulation_code: jalankulkualue
           additional_information:
-            - type: osaAlue   
-            - type: varattuAlueenSisaiseenKayttoon     
+            - type: osaAlue
+            - type: varattuAlueenSisaiseenKayttoon
 
     - name: Yleiselle jalankululle varattu alueen osa
       geometry: Alue
@@ -1573,7 +1573,7 @@ categories:
       plan_regulations:
         - regulation_code: jalankulkualue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
             - type: varattuYleiseenKayttoon
 
     - name: Yleiselle pyöräilylle varattu alueen osa
@@ -1582,8 +1582,8 @@ categories:
       plan_regulations:
         - regulation_code: pyorailyalue
           additional_information:
-            - type: osaAlue   
-            - type: varattuYleiseenKayttoon   
+            - type: osaAlue
+            - type: varattuYleiseenKayttoon
 
     - name: Yleiselle jalankululle ja pyöräilylle varattu alueen osa
       geometry: Alue
@@ -1591,12 +1591,12 @@ categories:
       plan_regulations:
         - regulation_code: jalankulkualue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
             - type: varattuYleiseenKayttoon
         - regulation_code: pyorailyalue
           additional_information:
-            - type: osaAlue   
-            - type: varattuYleiseenKayttoon    
+            - type: osaAlue
+            - type: varattuYleiseenKayttoon
 
       # p. 16
     - name: Maantien suoja-alueeksi varattu alueen osa
@@ -1605,7 +1605,7 @@ categories:
       plan_regulations:
         - regulation_code: maantienSuojaAlue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Maantien näkemäalueeksi varattu alueen osa
       geometry: Alue
@@ -1613,7 +1613,7 @@ categories:
       plan_regulations:
         - regulation_code: maantienNakemaAlue
           additional_information:
-            - type: osaAlue      
+            - type: osaAlue
 
     - name: Rautatien suoja-alueeksi varattu alueen osa
       geometry: Alue
@@ -1621,7 +1621,7 @@ categories:
       plan_regulations:
         - regulation_code: rautatienSuojaAlue
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Rautatien näkemäalueeksi varattu alueen osa
       geometry: Alue
@@ -1629,7 +1629,7 @@ categories:
       plan_regulations:
         - regulation_code: rautatienNakemaAlue
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Alikulku
       geometry: Alue
@@ -1637,7 +1637,7 @@ categories:
       plan_regulations:
         - regulation_code: alikulku
           additional_information:
-            - type: osaAlue     
+            - type: osaAlue
 
     - name: Ylikulku
       geometry: Alue
@@ -1645,7 +1645,7 @@ categories:
       plan_regulations:
         - regulation_code: ylikulku
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Alueen osa, jolla sijaitsee tai jolle on rakennettava melueste
       geometry: Alue
@@ -1653,7 +1653,7 @@ categories:
       plan_regulations:
         - regulation_code: melueste
           additional_information:
-            - type: osaAlue   
+            - type: osaAlue
 
     - name: Pysäköimispaikka
       geometry: Alue
@@ -1661,7 +1661,7 @@ categories:
       plan_regulations:
         - regulation_code: pysakoinninAlue
           additional_information:
-            - type: osaAlue       
+            - type: osaAlue
 
     - name: Pysäkki
       geometry: Alue
@@ -1669,7 +1669,7 @@ categories:
       plan_regulations:
         - regulation_code: pysakki
           additional_information:
-            - type: osaAlue  
+            - type: osaAlue
 
     - name: Johtoa varten varattu alueen osa
       geometry: Alue
@@ -1677,7 +1677,7 @@ categories:
       plan_regulations:
         - regulation_code: JohtoPutkiTaiLinja
           additional_information:
-            - type: osaAlue       
+            - type: osaAlue
 
       # p. 17
   - category_code: numeerisetJaTekstimuotoiset
@@ -1717,17 +1717,17 @@ categories:
     - name: Torin tai katuaukion nimi
       geometry: Alue
       plan_regulations:
-        - regulation_code: torinTaiKatuaukionNimi    
+        - regulation_code: torinTaiKatuaukionNimi
 
     - name: Puiston tai muun yleisen alueen nimi
       geometry: Alue
       plan_regulations:
-        - regulation_code: puistonTaiMuunYleisenAlueenNimi                        
+        - regulation_code: puistonTaiMuunYleisenAlueenNimi
 
     - name: Rakennusoikeus kerrosalaneliömetreinä
       geometry: Alue
       plan_regulations:
-        - regulation_code: sallittuKerrosala 
+        - regulation_code: sallittuKerrosala
 
     - name: Rakennusoikeus kuutiometreinä
       geometry: Alue
@@ -1738,7 +1738,7 @@ categories:
       geometry: Alue
       description: Luku osoittaa, kuinka suuren osan alueesta tai rakennusalasta saa käyttää rakentamiseen
       plan_regulations:
-        - regulation_code: rakentamisenSuhdeAlueenPintaAlaan    
+        - regulation_code: rakentamisenSuhdeAlueenPintaAlaan
 
     - name: Väljyysluku
       geometry: Alue
@@ -1750,7 +1750,7 @@ categories:
       geometry: Alue
       descrption: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman sallitun kerrosluvun
       plan_regulations:
-        - regulation_code: maanpaallinenKerroslukuLuku    
+        - regulation_code: maanpaallinenKerroslukuLuku
 
       # p. 18
     - name: Maanpäällinen vähimmäis- ja enimmäiskerrosluku (arvoväli)
@@ -1769,41 +1769,41 @@ categories:
       geometry: Alue
       description: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
       plan_regulations:
-        - regulation_code: maanalainenKerroslukuArvovali  
+        - regulation_code: maanalainenKerroslukuArvovali
 
     - name: Kansipihan suurin sallittu kerrosluku kansipihalta ylöspäin
       geometry: Alue
       plan_regulations:
-        - regulation_code: maanpaallinenKerroslukuLuku   
+        - regulation_code: maanpaallinenKerroslukuLuku
 
     - name: Kansipihan suurin sallittu kerrosluku kansipihalta alaspäin
       geometry: Alue
       plan_regulations:
-        - regulation_code: maanpaallinenKerroslukuLuku  
+        - regulation_code: maanpaallinenKerroslukuLuku
 
     - name: Kellarin sallittu osuus kerrosalasta
       geometry: Alue
       description: Murtoluku roomalaisen numeron edessä osoittaa, kuinka suuren osan rakennuksen suurimman kerroksen alasta saa kellarikerroksessa käyttää kerrosalaan luettavaksi tilaksi
       plan_regulations:
-        - regulation_code: kellarinSallittuOsuusKerrosalasta   
+        - regulation_code: kellarinSallittuOsuusKerrosalasta
 
     - name: Ullakon sallittu osuus kerrosalasta
       geometry: Alue
       description: Murtoluku roomalaisen numeron jäljessä osoittaa, kuinka suuren osan rakennuksen suurimman kerroksen alasta ullakon tasolla saa käyttää kerrosalaan laskettavaksi tilaksi
       plan_regulations:
-        - regulation_code: ullakonSallittuOsuusKerrosalasta   
+        - regulation_code: ullakonSallittuOsuusKerrosalasta
 
     - name: Tehokkuusluku
       geometry: Alue
       description: Tehokkuusluku eli kerrosalan suhde tontin/kerrosalan suhde tontin/rakennuspaikan pinta-alaan
       plan_regulations:
-        - regulation_code: tehokkuusluku    
+        - regulation_code: tehokkuusluku
 
     - name: Vihertehokkuus
       geometry: Alue
       description: Vihertehokkuus eli kasvillisuuden peittämän pinnan suhde alueen pinta-alaan
       plan_regulations:
-        - regulation_code: vihertehokkuus                       
+        - regulation_code: vihertehokkuus
 
     - name: Kattokaltevuus
       geometry: Alue
@@ -1818,14 +1818,14 @@ categories:
     - name: Rakennuksen vesikaton ylimmän kohdan korkeusasema
       geometry: Alue
       plan_regulations:
-        - regulation_code: vesikatonYlimmanKohdanKorkeusasema    
+        - regulation_code: vesikatonYlimmanKohdanKorkeusasema
 
     - name: Rakennuksen julkisivupinnan ja vesikaton leikkauskohdan ylin korkeusasema
       geometry: Alue
       plan_regulations:
-        - regulation_code: julkisivupinnanJaVesikatonLeikkauskohdanKorkeusasema   
+        - regulation_code: julkisivupinnanJaVesikatonLeikkauskohdanKorkeusasema
 
-      # p. 19        
+      # p. 19
     - name: Rakennuksen julkisivun enimmäiskorkeus metreinä
       geometry: Alue
       plan_regulations:
@@ -1834,12 +1834,12 @@ categories:
     - name: Rakennuksen, rakenteiden ja laitteiden ylin korkeusasema
       geometry: Alue
       plan_regulations:
-        - regulation_code: rakennustenRakenteidenJaLaitteidenYlinKorkeusasema   
+        - regulation_code: rakennustenRakenteidenJaLaitteidenYlinKorkeusasema
 
     - name: Rakennuksen, rakenteiden ja laitteiden alin korkeusasema
       geometry: Alue
       plan_regulations:
-        - regulation_code: rakennustenRakenteidenJaLaitteidenAlinKorkeusasema     
+        - regulation_code: rakennustenRakenteidenJaLaitteidenAlinKorkeusasema
 
     - name: Alin painovoimainen viemäröintitaso
       geometry: Alue
@@ -1855,7 +1855,7 @@ categories:
       geometry: Alue
       description: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
       plan_regulations:
-        - regulation_code: tuulivoimalanEnimmaiskorkeus    
+        - regulation_code: tuulivoimalanEnimmaiskorkeus
 
     - name: Tuulivoimaloiden määrä
       geometry: Alue
@@ -1873,13 +1873,13 @@ categories:
       geometry: Alue
       description: Määräys osoittaa, kuinka monta pyöräpaikkaa alueelle on rakennettava
       plan_regulations:
-        - regulation_code: pyorapaikkojenMaara    
+        - regulation_code: pyorapaikkojenMaara
 
     - name: Autopaikkojen määrä
       geometry: Alue
       descrpition: ääräys osoittaa, kuinka monta autopaikkaa alueelle on rakennettava
       plan_regulations:
-        - regulation_code: autopaikkojenMaara  
+        - regulation_code: autopaikkojenMaara
 
     - name: Kerrosneliömäärä yhtä pyöräpaikkaa kohden
       geometry: Alue
@@ -1891,27 +1891,27 @@ categories:
       geometry: Alue
       description: Määräys osoittaa, kuinka monta kerrosalaneliömetriä kohti on rakennettava yksi autopaikka
       plan_regulations:
-        - regulation_code: kerrosneliomaaraYhtaAutopaikkaaKohden   
+        - regulation_code: kerrosneliomaaraYhtaAutopaikkaaKohden
 
     - name: Pyöräpaikkojen määrä asuntoa kohden
       geometry: Alue
       description: Määräys osoittaa, kuinka monta pyöräpaikkaa asuntoa kohti on rakennettava
       plan_regulations:
-        - regulation_code: pyorapaikkojenMaaraAsuntoaKohden 
+        - regulation_code: pyorapaikkojenMaaraAsuntoaKohden
 
     - name: Autopaikkojen määrä asuntoa kohden
       geometry: Alue
       description: Määräys osoittaa, kuinka monta autopaikkaa asuntoa kohti on rakennettava
       plan_regulations:
-        - regulation_code: autopaikkojenMaaraAsuntoaKohden  
+        - regulation_code: autopaikkojenMaaraAsuntoaKohden
 
     - name: Alueelle sijoitettavien rakenteiden ääneneristavyys vähintään 00 dB
       geometry: Alue
       description: Määräys osoittaa, että alueelle sijoitettavien rakenteiden ääneneristävyyden tulee olla vähintään 00 dB
       plan_regulations:
-        - regulation_code: aaneneristavyys                    
+        - regulation_code: aaneneristavyys
 
-      # p. 20    
+      # p. 20
   - category_code: rakennusalanKayttotarkoituksenOsuus
     name: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     plan_regulation_groups:
@@ -1932,16 +1932,16 @@ categories:
       plan_regulations:
         - regulation_code: asumisenAlue
           additional_information:
-            - type: kayttotarkoituksenOsuusKerrosalastaK-m2  
+            - type: kayttotarkoituksenOsuusKerrosalastaK-m2
 
     - name: Rakennusalalle sallittu kerrostilavuuden prosenttiosuus (%) asuinhuoneistoja varten
       geometry: Alue
       short_name: # NOTE: Check symbol
-      description: Määräys osoittaa, kuinka monta prosenttia rakennusalalle sallitusta kerrostilavuudesta saadaan käyttää asuinhuoneistoja varten 
+      description: Määräys osoittaa, kuinka monta prosenttia rakennusalalle sallitusta kerrostilavuudesta saadaan käyttää asuinhuoneistoja varten
       plan_regulations:
         - regulation_code: asumisenAlue
           additional_information:
-            - type: kayttotarkoituksenOsuusRakennustilavuudestaPros   
+            - type: kayttotarkoituksenOsuusRakennustilavuudestaPros
 
     - name: Rakennusalalle sallittu kerrostilavuuden kuutiometrimäärä (k-m3) asuinhuoneistoja varten
       geometry: Alue
@@ -1951,7 +1951,7 @@ categories:
         - regulation_code: asumisenAlue
           additional_information:
             - type: kayttotarkoituksenOsuusRakennustilavuudestaK-m3
-            
+
     - name: Rakennusalalle sallittu kerrosalan prosenttiosuus (%) myymälätiloja varten
       geometry: Alue
       short_name: # NOTE: Check symbol
@@ -1968,7 +1968,7 @@ categories:
       plan_regulations:
         - regulation_code: myymalarakennustenAlue
           additional_information:
-            - type: kayttotarkoituksenOsuusKerrosalastaK-m2   
+            - type: kayttotarkoituksenOsuusKerrosalastaK-m2
 
     - name: Rakennusalalle sallittu kerrostilavuuden prosenttiosuus (%) myymälätiloja varten
       geometry: Alue
@@ -1977,7 +1977,7 @@ categories:
       plan_regulations:
         - regulation_code: myymalarakennustenAlue
           additional_information:
-            - type: kayttotarkoituksenOsuusRakennustilavuudestaPros   
+            - type: kayttotarkoituksenOsuusRakennustilavuudestaPros
 
     - name: Rakennusalalle sallittu kerrostilavuuden kuutiometrimäärä (k-m3) myymälätiloja varten
       geometry: Alue
@@ -2003,13 +2003,13 @@ categories:
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: rakennusalanSivuJotaKoskeeTarkempiMaarays    
+        - regulation_code: rakennusalanSivuJotaKoskeeTarkempiMaarays
 
     - name: Rakennusalan sivu, johon rakennus on rakennettava kiinni
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: rakennusalanSivuJohonRakennusOnRakennettavaKiinni   
+        - regulation_code: rakennusalanSivuJohonRakennusOnRakennettavaKiinni
 
     - name: Rakennuksen sivu, jossa suora uloskäynti porrashuoneista
       geometry: Viiva
@@ -2027,7 +2027,7 @@ categories:
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: rakennuksenHarjanSuunta   
+        - regulation_code: rakennuksenHarjanSuunta
 
     - name: Istutettava puurivi
       geometry: Viiva
@@ -2039,44 +2039,44 @@ categories:
       geometry: Piste
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: puuTaiPuurivi      
+        - regulation_code: puuTaiPuurivi
 
     - name: Säilytettävä puurivi
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: puuTaiPuurivi 
+        - regulation_code: puuTaiPuurivi
           additional_information:
-            - type: sailytettava    
+            - type: sailytettava
 
     - name: Säilytettävä puu
       geometry: Piste
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: puuTaiPuurivi 
+        - regulation_code: puuTaiPuurivi
           additional_information:
-            - type: sailytettava    
+            - type: sailytettava
 
     - name: Ulkoilureitti
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: ulkoiluTaiVirkistysReitti 
+        - regulation_code: ulkoiluTaiVirkistysReitti
 
     - name: Katualueen rajan osa, jonka kohdalta ei saa järjestää ajoneuvoliittymää
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: kadunOsaJollaOnAjoneuvoliittymakielto    
+        - regulation_code: kadunOsaJollaOnAjoneuvoliittymakielto
 
     - name: Meluesteen tai melusuojauksen likimääräinen sijainti
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: melueste   
+        - regulation_code: melueste
 
     - name: Ajoneuvoliittymän likimääräinen sijainti
       geometry: Piste
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: liittyma                                 
+        - regulation_code: liittyma
