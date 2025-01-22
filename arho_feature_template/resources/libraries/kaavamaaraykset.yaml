@@ -177,6 +177,10 @@ plan_regulations:
     value_type: desimaali
     unit: m
 
+  - regulation_code: kosteudelleAlttiidenRakenteidenAlinRakentamiskorkeus
+    value_type: desimaali
+    unit: m
+
   - regulation_code: tuulivoimalanEnimmaiskorkeus
     value_type: positiivinen kokonaisluku
     unit: m
