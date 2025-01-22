@@ -220,17 +220,6 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
-    - name: Liike- ja toimistorakennusten alue
-      geometry: Alue
-      short_name: K
-      plan_regulations:
-        - regulation_code: liikerakennustenAlue
-          additional_information:
-            - type: paakayttotarkoitus
-        - regulation_code: toimistorakennustenAlue
-          additional_information:
-            - type: paakayttotarkoitus
-
     - name: Liikerakennusten alue
       geometry: Alue
       short_name: KL
@@ -365,7 +354,7 @@ categories:
       geometry: Alue
       short_name: VR
       plan_regulations:
-        - regulation_code: retkeilyJaUlkoilualue
+        - regulation_code: retkeilyJaUlkoiluAlue
           additional_information:
             - type: paakayttotarkoitus                            
 
@@ -809,7 +798,7 @@ categories:
           additional_information:
             - type: paakayttotarkoitus
 
-    - name: Suojaviheralue
+    - name: Suojelualue
       geometry: Alue
       short_name: S
       plan_regulations:
@@ -829,7 +818,7 @@ categories:
       geometry: Alue
       short_name: SM
       plan_regulations:
-        - regulation_code: muinaismuistoalue
+        - regulation_code: muinaismuistoAlue
           additional_information:
             - type: paakayttotarkoitus
 
@@ -854,7 +843,7 @@ categories:
       geometry: Alue
       short_name: M
       plan_regulations:
-        - regulation_code: maaJaMetsatalousalue
+        - regulation_code: maaJaMetsatalousAlue
           additional_information:
             - type: paakayttotarkoitus
 
@@ -886,7 +875,7 @@ categories:
       geometry: Alue
       short_name: MP
       plan_regulations:
-        - regulation_code: puutarhaJaKasvihuonealue
+        - regulation_code: puutarhaJaKasvihuoneAlue
           additional_information:
             - type: paakayttotarkoitus
 
@@ -921,7 +910,7 @@ categories:
       geometry: Alue
       short_name: MY
       plan_regulations:
-        - regulation_code: maaJaMetsatalousAlueJollaErityisiaYmparistoarvoja
+        - regulation_code: maaJaMetsatalousalueJollaErityisiaYmparistoarvoja
           additional_information:
             - type: paakayttotarkoitus  
 
@@ -1350,14 +1339,6 @@ categories:
           additional_information:
             - type: osaAlue    
 
-    - name: Suojeltu rakennus, jota ei saa purkaa
-      geometry: Alue
-      short_name: sr
-      plan_regulations:
-        - regulation_code: rakennussuojelualue
-          additional_information:
-            - type: osaAlue    
-
     - name: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
       geometry: Alue
       short_name: kvSR
@@ -1454,7 +1435,7 @@ categories:
       geometry: Alue
       short_name: läji
       plan_regulations:
-        - regulation_code: maaAinestenVastaanottoTaiLajitysalue
+        - regulation_code: maaAinestenVastaanottoTaiLajitysAlue
           additional_information:
             - type: osaAlue   
 
@@ -1694,7 +1675,7 @@ categories:
       geometry: Alue
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: johtoPutkiTaiLinja
+        - regulation_code: JohtoPutkiTaiLinja
           additional_information:
             - type: osaAlue       
 
@@ -2002,6 +1983,7 @@ categories:
       geometry: Alue
       short_name: # NOTE: Check symbol
       description: Määräys osoittaa, kuinka monta kuutiometriä rakennusalalle sallitusta kerrostilavuudesta saadaan käyttää myymälätiloja varten
+      plan_regulations:
         - regulation_code: myymalarakennustenAlue
           additional_information:
             - type: kayttotarkoituksenOsuusRakennustilavuudestaK-m3
@@ -2079,7 +2061,7 @@ categories:
       geometry: Viiva
       short_name: # NOTE: Check symbol
       plan_regulations:
-        - regulation_code: ulkoiluTaiVirkistysreitti 
+        - regulation_code: ulkoiluTaiVirkistysReitti 
 
     - name: Katualueen rajan osa, jonka kohdalta ei saa järjestää ajoneuvoliittymää
       geometry: Viiva
