@@ -1387,7 +1387,7 @@ categories:
       geometry: Alue
       short_name: sm
       plan_regulations:
-        - regulation_code: muinaismuistoalue
+        - regulation_code: muinaismuistoAlue
           additional_information:
             - type: osaAlue
 
