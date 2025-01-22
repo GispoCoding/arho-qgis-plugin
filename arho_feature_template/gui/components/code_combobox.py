@@ -48,8 +48,6 @@ class CodeComboBox(QComboBox):
         index = self.findData(value)
         if index != -1:
             self.setCurrentIndex(index)
-        else:
-            self.setCurrentIndex(0)  # Set selection to NULL if item with `value` was not found
 
 
 class HierarchicalCodeComboBox(QComboBox):
@@ -120,7 +118,6 @@ class HierarchicalCodeComboBox(QComboBox):
     def set_value(self, value: str | None) -> None:
         # Set selection to NULL if `value` is None
         if value is None:
-            self.setCurrentIndex(self.null_index)
             return
 
         # Loop top level tree items
@@ -137,5 +134,3 @@ class HierarchicalCodeComboBox(QComboBox):
                 self.setCurrentIndex(idx.row())
                 self.setRootModelIndex(self.null_index.parent())
                 return
-
-        self.setCurrentIndex(self.null_index)  # Set selection to NULL if item with `value` was not found
