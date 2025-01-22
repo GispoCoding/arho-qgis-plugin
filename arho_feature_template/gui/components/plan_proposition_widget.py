@@ -60,8 +60,10 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
 
         self.name.setText(proposition.name)
         self.text_input.setText(proposition.value)
-        self._add_theme(proposition.theme_id)
-        self._add_proposition_number(proposition.proposition_number)
+        if proposition.theme_id:
+            self._add_theme(proposition.theme_id)
+        if proposition.proposition_number:
+            self._add_proposition_number(proposition.proposition_number)
 
     def _add_widgets(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)
