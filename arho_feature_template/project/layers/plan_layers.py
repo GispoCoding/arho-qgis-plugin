@@ -70,12 +70,12 @@ class PlanLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from_model(cls, model: Plan) -> QgsFeature:
-        feature = cls.initialize_feature_from_model(model)
-
         if not model.geom:
             message = "Plan must have a geometry to be added to the layer"
             raise ValueError(message)
 
+        feature = cls.initialize_feature_from_model(model)
+        feature.setGeometry(model.geom)
         feature["name"] = {LANGUAGE: model.name}
         feature["description"] = {LANGUAGE: model.description}
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
