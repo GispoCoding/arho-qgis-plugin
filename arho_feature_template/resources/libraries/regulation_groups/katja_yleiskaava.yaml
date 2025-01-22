@@ -378,7 +378,7 @@ categories:
             additional_information:
               - type: paakayttotarkoitus
               - type: kayttotarkoituskohdistus
-                value: Tuulivoimala-alue
+                value: tuulivoimalaAlue
 
       - name: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
         geometry: [Alue, Piste]
@@ -388,7 +388,7 @@ categories:
             additional_information:
               - type: paakayttotarkoitus
               - type: kayttotarkoituskohdistus
-                value: Aurinkovoimala-alue
+                value: aurinkovoimalaAlue
 
       - name: Jätteenkäsittelyalue
         geometry: [Alue, Piste]
@@ -602,7 +602,7 @@ categories:
               - type: paakayttotarkoitus
 
   - category_code: ymparistonmuuutosAluevaraukset
-    name: Ympäristön muutosta koskevien määräysten vaikutus yleiskaavan aluevarauksen esitystapaan
+    name: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     plan_regulation_groups:
 
       - name: Olemassa oleva asuntovaltainen alue
@@ -669,7 +669,7 @@ categories:
               - type: eheytettavaTaiTiivistettava
 
   - category_code: osa-alueet
-    name: Osa-alueet
+    name: Erityisominaisuudet ja muut osa-alueet
     plan_regulation_groups:
 
       - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
@@ -963,7 +963,7 @@ categories:
           - regulation_code: suojelualue
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Puu tai puurivi
+                value: puuTaiPuurivi
 
       - name: Pysäkki
         geometry: Piste
@@ -984,7 +984,7 @@ categories:
           - regulation_code: raideliikenteenAsemaTaiSeisake
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Metro
+                value: metro
 
       - name: Liittymä
         geometry: Piste
@@ -1023,7 +1023,7 @@ categories:
           - regulation_code: alikulku
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Jalankulkualue
+                value: jalankulkualue
 
       - name: Ylikulku
         geometry: Piste
@@ -1038,7 +1038,7 @@ categories:
           - regulation_code: ylikulku
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Jalankulkualue
+                value: jalankulkualue
 
       - name: Konsultointivyöhyke
         geometry: Alue
@@ -1237,7 +1237,7 @@ categories:
               - type: osaAlue
 
   - category_code: kehittämisperiaatteet
-    name: Kehittämisperiaatteet
+    name: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     plan_regulation_groups:
 
       - name: Kaupunkikehittämisvyöhyke
@@ -1266,9 +1266,9 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Matkailupalvelujen alue
+                value: matkailupalvelujenAlue
               - type: kayttotarkoituskohdistus
-                value: Virkistysalue
+                value: virkistysalue
           - regulation_code: sanallinenMaarays
 
       - name: Matkailun kehittämisvyöhyke
@@ -1279,7 +1279,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Matkailupalvelujen alue
+                value: matkailupalvelujenAlue
           - regulation_code: sanallinenMaarays
 
       - name: Virkistyksen kehittämisvyöhyke
@@ -1290,7 +1290,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Virkistysalue
+                value: virkistysalue
           - regulation_code: sanallinenMaarays
 
       - name: Vähittäiskaupan kehittämisvyöhyke
@@ -1301,7 +1301,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Vähittäiskaupan suuryksikkö
+                value: vahittaiskaupanSuuryksikko
           - regulation_code: sanallinenMaarays
 
       - name: Ekologinen kehittämisvyöhyke
@@ -1330,7 +1330,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Energiahuollon alue
+                value: energiahuollonAlue
           - regulation_code: sanallinenMaarays
 
       - name: Kaupan palveluiden kehittämisvyöhyke
@@ -1341,7 +1341,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Palvelujen alue
+                value: palvelujenAlue
           - regulation_code: sanallinenMaarays
 
       - name: Liikenteen kehittämisvyöhyke
@@ -1352,7 +1352,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Liikennealue
+                value: liikennealue
           - regulation_code: sanallinenMaarays
 
       - name: Keskustatoimintojen kehittämisvyöhyke
@@ -1363,7 +1363,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Keskustatoimintojen alue
+                value: keskustatoimintojenAlue
           - regulation_code: sanallinenMaarays
 
       - name: Teollisuustoimintojen kehittämisvyöhyke
@@ -1374,7 +1374,7 @@ categories:
             additional_information:
               - type: osaAlue
               - type: kayttotarkoituskohdistus
-                value: Teollisuusalue
+                value: teollisuusalue
           - regulation_code: sanallinenMaarays
 
       - name: Logistiikkatoimintojen kehittämisvyöhyke
@@ -1413,7 +1413,7 @@ categories:
           - regulation_code: sanallinenMaarays
 
   - category_code: viivat
-    name: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Geometrialtaan viivamaiset kaavakohteet ja niihin liittyvät määräykset)
+    name: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     plan_regulation_groups:
 
       - name: Nykyinen tie
@@ -1517,11 +1517,11 @@ categories:
           - regulation_code: maantie
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Joukkoliikenteen alue
+                value: joukkoliikenteenAlue
           - regulation_code: katu
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Joukkoliikenteen alue
+                value: joukkoliikenteenAlue
 
       - name: Joukkoliikenteelle varattu katu
         geometry: Viiva
@@ -1530,7 +1530,7 @@ categories:
           - regulation_code: katu
             additional_information:
               - type: kayttotarkoituskohdistus
-                value: Joukkoliikenteen alue
+                value: joukkoliikenteenAlue
 
       - name: Rautatie
         geometry: Viiva
@@ -1767,7 +1767,7 @@ categories:
               - type: yhteystarve
 
   - category_code: muutLinjaukset
-    name: Muita yleiskaavassa osoitettavia linjauksia koskevat kaavamääräykset
+    name: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     plan_regulation_groups:
 
       - name: Viheryhteys
@@ -1879,39 +1879,34 @@ categories:
               - type: yhteystarve
 
   - category_code: numeerisetJaTekstimuotoiset
-    name: Yleiskaavan määräykset, joille annetaan numeerinen tai tekstimuotoinen arvo
+    name: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     plan_regulation_groups:
 
       - name: Kaupungin- tai kunnanosan nimi
         geometry: Alue
-        short_name: KAUP
         plan_regulations:
           - regulation_code: kaupunginTaiKunnanosanNimi
-            value: Kieliversioitu teksti
 
-      - name: Tuulivoimalan enimmäiskorkeus #Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
+      - name: Tuulivoimalan enimmäiskorkeus
         geometry: Alue
-        short_name: tv 00m
+        description: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
         plan_regulations:
           - regulation_code: tuulivoimalanEnimmaiskorkeus
-            value: Positiivinen kokonaisluku (m)
 
-      - name: Tuulivoimaloiden määrä # Määräys osoittaa kuinka monta tuulivoimalaa alueelle saa rakentaa
+      - name: Tuulivoimaloiden määrä
         geometry: Alue
-        short_name: tv00
+        description: Määräys osoittaa kuinka monta tuulivoimalaa alueelle saa rakentaa
         plan_regulations:
           - regulation_code: tuulivoimaloidenMaara
-            value: Positiivinen kokonaisluku
 
-      - name: Rakennuspaikkojen määrä #Määräys osoittaa kuinka monta rakennuspaikkaa alueelle saa rakentaa
+      - name: Rakennuspaikkojen määrä
         geometry: Alue
-        short_name: rak00
+        description: Määräys osoittaa kuinka monta rakennuspaikkaa alueelle saa rakentaa
         plan_regulations:
           - regulation_code: rakennuspaikkojenMaara
-            value: Positiivinen kokonaisluku
 
   - category_code: rakennuspaikka
-    name: Yleiskaavan rakennuspaikkaa koskevat määräykset
+    name: Rakennuspaikkaa koskevat kaavamääräysryhmät
     plan_regulation_groups:
 
       - name: Rakennuspaikka
