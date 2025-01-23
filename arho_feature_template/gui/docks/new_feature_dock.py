@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from importlib import resources
 from typing import TYPE_CHECKING
 
@@ -21,7 +23,7 @@ DockClass, _ = uic.loadUiType(ui_path)
 class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     tool_activated = pyqtSignal()
 
-    def __init__(self, feature_template_libraries: list):
+    def __init__(self):
         super().__init__()
         self.setupUi(self)
 
@@ -41,11 +43,8 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_feature_type: str | None = None
         self.active_feature_layer: str | None = None
         self.active_template: PlanFeature | None = None
-        self.feature_template_libraries: list[FeatureTemplateLibrary] = feature_template_libraries
-        self.library_selection.addItems([library.name for library in self.feature_template_libraries])
+        self.feature_template_libraries: list[FeatureTemplateLibrary] | None = None
         self.library_selection.currentIndexChanged.connect(self.set_active_feature_template_library)
-        if len(self.feature_template_libraries) > 0:
-            self.set_active_feature_template_library(0)
 
         self.template_list.setSelectionMode(self.template_list.SingleSelection)
         self.search_box.valueChanged.connect(self.filter_plan_feature_templates)
@@ -53,6 +52,12 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         # NOTE: If user moves selection with arrow keys, this is not registered currently
         self.template_list.clicked.connect(self.on_template_item_clicked)
         self.new_feature_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
+
+    def initialize_feature_template_libraries(self, feature_template_libraries: list[FeatureTemplateLibrary]):
+        self.feature_template_libraries = feature_template_libraries
+        self.library_selection.clear()
+        self.library_selection.addItems([library.name for library in self.feature_template_libraries])
+        self.set_active_feature_template_library(0)
 
     def on_active_feature_type_changed(self, feature_name: str, layer_name: str):
         self.active_feature_type = feature_name if feature_name else None
@@ -100,9 +105,10 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.template_list.clearSelection()
 
     def set_active_feature_template_library(self, index: int) -> None:
-        self.template_list.clear()
-        library = self.feature_template_libraries[index]
-        for feature_template in library.feature_templates:
-            item = QListWidgetItem(feature_template.name)
-            item.setData(Qt.UserRole, feature_template)
-            self.template_list.addItem(item)
+        if self.feature_template_libraries and len(self.feature_template_libraries) > 0:
+            self.template_list.clear()
+            library = self.feature_template_libraries[index]
+            for feature_template in library.feature_templates:
+                item = QListWidgetItem(feature_template.name)
+                item.setData(Qt.UserRole, feature_template)
+                self.template_list.addItem(item)

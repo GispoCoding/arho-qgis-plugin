@@ -127,27 +127,30 @@ class Plugin:
     def initGui(self) -> None:  # noqa N802
         # plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
         # load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
-        self.plan_manager = PlanManager()
-
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
-        self.plan_manager.new_feature_dock.setUserVisible(False)
-
-        self.plan_manager.new_feature_dock.visibilityChanged.connect(self.dock_visibility_changed)
-
-        iface.mapCanvas().mapToolSet.connect(self.plan_manager.plan_digitize_map_tool.deactivate)
-
-        self.validation_dock = ValidationDock()
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
-        self.validation_dock.setUserVisible(False)
-
-        self.validation_dock.visibilityChanged.connect(self.validation_dock_visibility_changed)
-
         # icons to consider:
         # icon=QgsApplication.getThemeIcon("mActionStreamingDigitize.svg"),
         # icon=QgsApplication.getThemeIcon("mIconGeometryCollectionLayer.svg"),
         # icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
 
-        # Add main plugin action to the toolbar
+        self.plan_manager = PlanManager()
+
+        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
+        self.plan_manager.new_feature_dock.setUserVisible(False)
+        self.plan_manager.new_feature_dock.visibilityChanged.connect(self.dock_visibility_changed)
+
+        self.validation_dock = ValidationDock()
+        iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
+        self.validation_dock.setUserVisible(False)
+        self.validation_dock.visibilityChanged.connect(self.validation_dock_visibility_changed)
+
+        iface.mapCanvas().mapToolSet.connect(self.plan_manager.plan_digitize_map_tool.deactivate)
+
+        # Try initializing the plugin immediately in case the project is already open
+        self.plan_manager.initialize_from_project()
+
+        # (Re)initialize whenever a project is opened
+        iface.projectRead.connect(self.plan_manager.initialize_from_project)
+
         self.new_land_use_plan_action = self.add_action(
             text="Luo kaava",
             icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
@@ -251,6 +254,7 @@ class Plugin:
         # Handle signals
         self.plan_manager.new_feature_dock.visibilityChanged.disconnect()
         iface.mapCanvas().mapToolSet.disconnect()
+        iface.projectRead.disconnect()
 
         # Handle actions
         for action in self.actions:

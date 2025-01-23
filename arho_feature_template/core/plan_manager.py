@@ -24,7 +24,7 @@ from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
-from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
+from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, code_layers
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LandUsePointLayer,
@@ -79,14 +79,11 @@ class PlanManager:
         self.json_plan_path = None
         self.json_plan_outline_path = None
 
-        # Initialize libraries
-        self.feature_template_libraries = [
-            FeatureTemplateLibrary.from_config_file(file) for file in feature_template_library_config_files()
-        ]
-        self.regulation_group_libraries = None
+        self.feature_template_libraries = []
+        self.regulation_group_libraries = []
 
         # Initialize new feature dock
-        self.new_feature_dock = NewFeatureDock(self.feature_template_libraries)
+        self.new_feature_dock = NewFeatureDock()
         self.new_feature_dock.tool_activated.connect(self.add_new_plan_feature)
         self.new_feature_dock.hide()
 
@@ -107,13 +104,36 @@ class PlanManager:
         self.lambda_service = LambdaService()
         self.lambda_service.jsons_received.connect(self.save_plan_jsons)
 
-    def get_regulation_group_libraries(self):
-        # Lazy initialization of regulation_group_libraries to avoid reading regulation code layer too early
-        if self.regulation_group_libraries is None:
-            self.regulation_group_libraries = [
-                RegulationGroupLibrary.from_config_file(file) for file in regulation_group_library_config_files()
-            ]
-        return self.regulation_group_libraries
+    def initialize_from_project(self):
+        # # If project is not open, don't try to initialize
+        # # NOTE: QgsProject.instance(), QgsProject().fileInfo() and QgsProject().fileIName()
+        # # don't seem to work as indicators whether a project is open?
+        # if not QgsProject.instance() or not QgsProject().fileInfo():
+        #     return
+        self.initialize_libraries()
+
+    def check_required_layers(self):
+        missing_layers = []
+        for layer in code_layers + plan_layers:
+            if not layer.exists():
+                missing_layers.append(layer.name)  # noqa: PERF401
+        if len(missing_layers) > 0:  # noqa: SIM103
+            # iface.messageBar().pushWarning("", f"Project is missing required layers: {', '.join(missing_layers)}")
+            return False
+        return True
+
+    def initialize_libraries(self):
+        if not self.check_required_layers():
+            return
+
+        self.regulation_group_libraries = [
+            RegulationGroupLibrary.from_config_file(file) for file in regulation_group_library_config_files()
+        ]
+        self.feature_template_libraries = [
+            FeatureTemplateLibrary.from_config_file(file, self.regulation_group_libraries)
+            for file in feature_template_library_config_files()
+        ]
+        self.new_feature_dock.initialize_feature_template_libraries(self.feature_template_libraries)
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         if activate:
@@ -179,7 +199,7 @@ class PlanManager:
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
-        attribute_form = PlanAttributeForm(plan_model, self.get_regulation_group_libraries())
+        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
             feature = save_plan(attribute_form.model)
 
@@ -210,7 +230,7 @@ class PlanManager:
             return
 
         plan_model = Plan(geom=feature.geometry())
-        attribute_form = PlanAttributeForm(plan_model, self.get_regulation_group_libraries())
+        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
             feature = save_plan(attribute_form.model)
             plan_to_be_activated = feature["id"]
@@ -237,7 +257,7 @@ class PlanManager:
 
         plan_feature.geom = feature.geometry()
         attribute_form = PlanFeatureForm(
-            plan_feature, title, [*self.get_regulation_group_libraries(), regulation_group_library_from_active_plan()]
+            plan_feature, title, [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
@@ -249,7 +269,7 @@ class PlanManager:
         # Geom editing handled with basic QGIS vertex editing?
         title = plan_feature.name if plan_feature.name else layer_name
         attribute_form = PlanFeatureForm(
-            plan_feature, title, [*self.get_regulation_group_libraries(), regulation_group_library_from_active_plan()]
+            plan_feature, title, [*self.regulation_group_libraries, regulation_group_library_from_active_plan()]
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)

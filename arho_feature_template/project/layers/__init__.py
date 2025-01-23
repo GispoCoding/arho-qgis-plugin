@@ -3,16 +3,28 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Generator
 
-from qgis.core import QgsFeatureRequest
+from qgis.core import QgsFeatureRequest, QgsProject, QgsVectorLayer
 
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature, QgsFeatureIterator, QgsVectorLayer
+    from qgis.core import QgsFeature, QgsFeatureIterator
 
 
 class AbstractLayer(ABC):
     name: ClassVar[str]
+
+    @classmethod
+    def exists(cls) -> bool:
+        project = QgsProject.instance()
+        if not project:
+            return False
+
+        layers = project.mapLayersByName(cls.name)
+        if not layers:
+            return False
+
+        return bool([layer for layer in layers if isinstance(layer, QgsVectorLayer)])
 
     @classmethod
     def get_from_project(cls) -> QgsVectorLayer:
