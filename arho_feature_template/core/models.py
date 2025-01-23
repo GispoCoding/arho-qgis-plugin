@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import yaml
 
 from arho_feature_template.exceptions import ConfigSyntaxError
+from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
 
@@ -45,7 +46,20 @@ class FeatureTemplateLibrary:
     feature_templates: list[PlanFeature]
 
     @classmethod
-    def from_config_file(cls, config_fp: Path) -> FeatureTemplateLibrary:
+    def find_matching_group_config(cls, group_name: str, regulation_group_libraries: list[RegulationGroupLibrary]):
+        for library in regulation_group_libraries:
+            for category in library.regulation_group_categories:
+                for group in category.regulation_groups:
+                    if group.name == group_name:
+                        return group
+        return None
+
+    @classmethod
+    def from_config_file(
+        cls, config_fp: Path, regulation_group_libraries: list[RegulationGroupLibrary]
+    ) -> FeatureTemplateLibrary:
+        get_underground_id = UndergroundTypeLayer.get_attribute_value_by_another_attribute_value
+
         with config_fp.open(encoding="utf-8") as f:
             data = yaml.safe_load(f)
             try:
@@ -56,11 +70,19 @@ class FeatureTemplateLibrary:
                     feature_templates=[
                         PlanFeature(
                             geom=None,
-                            type_of_underground_id=feature_data.get("type_of_underground"),  # Need ID conversion?
+                            type_of_underground_id=(
+                                get_underground_id("id", "value", feature_data.get("type_of_underground"))
+                                if feature_data.get("type_of_underground")
+                                else None
+                            ),
                             layer_name=feature_data.get("layer_name"),
                             name=feature_data.get("name"),
                             description=feature_data.get("description"),
-                            regulation_groups=[],  # feature_data.get("regulation_groups"),  # Handle regulation group creaton
+                            regulation_groups=[
+                                group
+                                for group_name in feature_data.get("regulation_groups", [])
+                                if (group := cls.find_matching_group_config(group_name, regulation_group_libraries))
+                            ],
                             plan_id=None,
                             id_=None,
                         )

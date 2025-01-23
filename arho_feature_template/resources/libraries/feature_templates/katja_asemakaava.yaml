@@ -16,6 +16,8 @@ feature_templates:
 
   - name: Asuin-, liike- ja toimistorakennusten alue
     layer_name: Aluevaraus
+    regulation_groups:
+      - Asuin-, liike- ja toimistorakennusten alue
 
   - name: Sitovan tonttijaon mukainen tontti
     layer_name: Osa-alue
