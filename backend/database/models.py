@@ -469,6 +469,7 @@ class PlanRegulation(PlanBase):
     text_value: Mapped[language_str]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
     ordering: Mapped[Optional[int]]
+    subject_identifiers: Mapped[Optional[List[str]]]
 
 
 class PlanProposition(PlanBase):

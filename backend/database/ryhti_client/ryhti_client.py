@@ -563,8 +563,7 @@ class RyhtiClient:
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
         if plan_regulation.plan_theme:
             regulation_dict["planThemes"] = [plan_regulation.plan_theme.uri]
-        if plan_regulation.name.get("fin"):
-            regulation_dict["subjectIdentifiers"] = [plan_regulation.name["fin"]]
+        regulation_dict["subjectIdentifiers"] = plan_regulation.subject_identifiers
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
         # we should only have one valid period. If there are several, pick last
         regulation_dict["periodOfValidity"] = self.get_last_period(

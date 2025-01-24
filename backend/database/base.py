@@ -14,7 +14,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.sql import func
-from sqlalchemy.types import TIMESTAMP
+from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP
 from typing_extensions import Annotated
 
 PROJECT_SRID = 3067
@@ -28,6 +28,7 @@ class Base(DeclarativeBase):
     type_annotation_map = {
         uuid.UUID: UUID(as_uuid=False),
         dict[str, str]: JSONB,
+        List[str]: ARRAY(TEXT),
         MultiLineString: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
         MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
         MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),

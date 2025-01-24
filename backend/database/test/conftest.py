@@ -1068,7 +1068,7 @@ def empty_value_plan_regulation_instance(
     plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
-        name={"fin": "test_regulation"},
+        subject_identifiers=["#test_regulation"],
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
@@ -1089,7 +1089,7 @@ def numeric_plan_regulation_instance(
     plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
-        name={"fin": "test_regulation"},
+        subject_identifiers=["#test_regulation"],
         numeric_value=1.0,
         unit="m",
         lifecycle_status=preparation_status_instance,
@@ -1112,7 +1112,7 @@ def text_plan_regulation_instance(
     plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
-        name={"fin": "test_regulation"},
+        subject_identifiers=["#test_regulation"],
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
@@ -1134,7 +1134,7 @@ def point_text_plan_regulation_instance(
     point_plan_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
-        name={"fin": "test_regulation"},
+        subject_identifiers=["#test_regulation"],
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
@@ -1162,7 +1162,7 @@ def verbal_plan_regulation_instance(
     they differ from text regulations otherwise, though.
     """
     instance = models.PlanRegulation(
-        name={"fin": "test_regulation"},
+        subject_identifiers=["#test_regulation"],
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_verbal_instance,
@@ -1185,7 +1185,7 @@ def general_plan_regulation_instance(
     general_regulation_group_instance,
 ):
     instance = models.PlanRegulation(
-        name={"fin": "general_regulation"},
+        subject_identifiers=["#test_regulation"],
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
@@ -1728,11 +1728,7 @@ def desired_plan_dict(
                             "dataType": "LocalizedText",
                             "text": general_plan_regulation_instance.text_value,
                         },
-                        "subjectIdentifiers": [
-                            general_plan_regulation_instance.name[
-                                "fin"
-                            ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
+                        "subjectIdentifiers": general_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
@@ -1816,11 +1812,7 @@ def desired_plan_dict(
                             "dataType": "LocalizedText",
                             "text": point_text_plan_regulation_instance.text_value,
                         },
-                        "subjectIdentifiers": [
-                            point_text_plan_regulation_instance.name[
-                                "fin"
-                            ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
+                        "subjectIdentifiers": point_text_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
@@ -1850,11 +1842,7 @@ def desired_plan_dict(
                         "planRegulationKey": empty_value_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
-                        "subjectIdentifiers": [
-                            empty_value_plan_regulation_instance.name[
-                                "fin"
-                            ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
+                        "subjectIdentifiers": empty_value_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
@@ -1879,11 +1867,7 @@ def desired_plan_dict(
                             "number": numeric_plan_regulation_instance.numeric_value,
                             "unitOfMeasure": numeric_plan_regulation_instance.unit,
                         },
-                        "subjectIdentifiers": [
-                            numeric_plan_regulation_instance.name[
-                                "fin"
-                            ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
+                        "subjectIdentifiers": numeric_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
@@ -1907,11 +1891,7 @@ def desired_plan_dict(
                             "dataType": "LocalizedText",
                             "text": text_plan_regulation_instance.text_value,
                         },
-                        "subjectIdentifiers": [
-                            text_plan_regulation_instance.name[
-                                "fin"
-                            ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
+                        "subjectIdentifiers": text_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
@@ -1933,11 +1913,7 @@ def desired_plan_dict(
                             "dataType": "LocalizedText",
                             "text": verbal_plan_regulation_instance.text_value,
                         },
-                        "subjectIdentifiers": [
-                            verbal_plan_regulation_instance.name[
-                                "fin"
-                            ]  # TODO: onko asiasana aina yksikielinen??
-                        ],
+                        "subjectIdentifiers": verbal_plan_regulation_instance.subject_identifiers,
                         "verbalRegulations": [
                             "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/perustaminen"
                         ],
