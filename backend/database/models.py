@@ -118,8 +118,8 @@ class Plan(PlanBase):
 
     permanent_plan_identifier: Mapped[Optional[str]]
     producers_plan_identifier: Mapped[Optional[str]]
-    name: Mapped[language_str]
-    description: Mapped[language_str]
+    name: Mapped[Optional[language_str]]
+    description: Mapped[Optional[language_str]]
     scale: Mapped[Optional[int]]
     matter_management_identifier: Mapped[Optional[str]]
     record_number: Mapped[Optional[str]]
@@ -208,8 +208,8 @@ class PlanRegulationGroup(VersionedBase):
         VersionedBase.__table_args__,
     )
 
-    short_name: Mapped[str] = mapped_column(nullable=True)
-    name: Mapped[language_str]
+    short_name: Mapped[Optional[str]]
+    name: Mapped[Optional[language_str]]
 
     plan_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
@@ -466,8 +466,8 @@ class PlanRegulation(PlanBase):
     )
 
     numeric_range: Mapped[numeric_range]
-    unit: Mapped[str] = mapped_column(nullable=True)
-    text_value: Mapped[language_str]
+    unit: Mapped[Optional[str]]
+    text_value: Mapped[Optional[language_str]]
     numeric_value: Mapped[float] = mapped_column(nullable=True)
     ordering: Mapped[Optional[int]]
     subject_identifiers: Mapped[Optional[List[str]]]
@@ -503,7 +503,7 @@ class PlanProposition(PlanBase):
     )
     # Let's load all the codes for objects joined.
     plan_theme = relationship("PlanTheme", backref="plan_propositions", lazy="joined")
-    text_value: Mapped[language_str]
+    text_value: Mapped[Optional[language_str]]
     ordering: Mapped[Optional[int]]
 
 
@@ -526,7 +526,7 @@ class SourceData(VersionedBase):
         "TypeOfSourceData", backref="source_data", lazy="joined"
     )
     plan = relationship("Plan", backref="source_data")
-    name: Mapped[language_str]
+    name: Mapped[Optional[language_str]]
     additional_information_uri: Mapped[str]
     detachment_date: Mapped[datetime]
 
@@ -538,7 +538,7 @@ class Organisation(VersionedBase):
 
     __tablename__ = "organisation"
 
-    name: Mapped[language_str]
+    name: Mapped[Optional[language_str]]
     business_id: Mapped[str]
     municipality_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("codes.municipality.id", name="municipality_id_fkey")
@@ -600,7 +600,7 @@ class Document(VersionedBase):
     language = relationship("Language", backref="documents", lazy="joined")
 
     permanent_document_identifier: Mapped[Optional[uuid.UUID]]  # e.g. diaarinumero
-    name: Mapped[language_str]
+    name: Mapped[Optional[language_str]]
     exported_at: Mapped[Optional[datetime]]
     # Ryhti key for the latest file version that was uploaded:
     exported_file_key: Mapped[Optional[uuid.UUID]]

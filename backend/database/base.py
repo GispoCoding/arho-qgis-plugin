@@ -44,9 +44,7 @@ uuid_pk = Annotated[
     uuid.UUID, mapped_column(primary_key=True, server_default=func.gen_random_uuid())
 ]
 unique_str = Annotated[str, mapped_column(unique=True, index=True)]
-language_str = Annotated[
-    dict[str, str], mapped_column(server_default='{"fin": "", "swe": "", "eng": ""}')
-]
+language_str = dict[str, str]
 numeric_range = Annotated[Range[float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 
@@ -84,8 +82,8 @@ class CodeBase(VersionedBase):
 
     value: Mapped[unique_str]
     short_name: Mapped[str] = mapped_column(server_default="", index=True)
-    name: Mapped[language_str]
-    description: Mapped[language_str]
+    name: Mapped[Optional[language_str]]
+    description: Mapped[Optional[language_str]]
     # Let's import code status too. This tells our importer if the koodisto is final,
     # or if the code can be deleted and/or moved.
     status: Mapped[str]
@@ -167,8 +165,8 @@ class PlanObjectBase(PlanBase):
             PlanBase.__table_args__,
         )
 
-    name: Mapped[language_str]
-    description: Mapped[language_str]
+    name: Mapped[Optional[language_str]]
+    description: Mapped[Optional[language_str]]
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]
     height_unit: Mapped[str] = mapped_column(nullable=True)

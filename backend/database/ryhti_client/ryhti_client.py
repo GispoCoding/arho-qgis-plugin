@@ -413,17 +413,6 @@ class RyhtiClient:
             "geometry": json.loads(to_geojson(shape)),
         }
 
-    def get_multilanguage_value(
-        self, multilanguage_dict: models.language_str
-    ) -> Optional[models.language_str]:
-        """
-        Returns multilanguage value if any language field is filled, or None if all
-        language fields are empty.
-        """
-        if any(value for value in multilanguage_dict.values()):
-            return multilanguage_dict
-        return None
-
     def get_isoformat_value_with_z(self, datetime_value: datetime.datetime) -> str:
         """
         Returns isoformatted datetime in UTC with Z instead of +00:00.
@@ -595,7 +584,7 @@ class RyhtiClient:
         # TODO: support code values, if regulation itself needs code values.
         # Probably code value would have to be saved as string in database,
         # they depend on the code list.
-        text_value = self.get_multilanguage_value(plan_regulation.text_value)
+        text_value = plan_regulation.text_value
         if text_value:
             regulation_dict["value"] = {
                 "dataType": "LocalizedText",
