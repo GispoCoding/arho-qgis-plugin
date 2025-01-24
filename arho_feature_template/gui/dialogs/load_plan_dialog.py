@@ -57,7 +57,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
     search_line_edit: QLineEdit
     button_box: QDialogButtonBox
 
-    ID_COLUMN = 4
+    # ID_COLUMN = 4
 
     def __init__(self, parent, connection_names: list[str]):
         super().__init__(parent)
@@ -79,14 +79,14 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         self.plan_table_view.setSelectionBehavior(QTableView.SelectRows)
 
         self.model = QStandardItemModel()
-        self.model.setColumnCount(5)
+        self.model.setColumnCount(4)
         self.model.setHorizontalHeaderLabels(
             [
                 "Nimi",
-                "Tuottajan kaavatunnus",
                 "Kaavalaji",
                 "Kaavan elinkaaren tila",
-                "ID",
+                "Tuottajan kaavatunnus",
+                # "ID",
             ]
         )
 
@@ -97,9 +97,9 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         # self.plan_table_view.setSortingEnabled(True)
 
         header = self.plan_table_view.horizontalHeader()
-        for i in range(4):
+        for i in range(3):
             header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.Stretch)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
 
         # Show plans for the first connections by default
         # NOTE: Could be changed to the previously used connection if/when plugin can remember it
@@ -124,12 +124,13 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
             self.model.appendRow(
                 [
                     QStandardItem(name or ""),
-                    QStandardItem(producers_plan_identifier or ""),
                     QStandardItem(plan_type or ""),
                     QStandardItem(lifecycle_status or ""),
-                    QStandardItem(id_ or ""),
+                    QStandardItem(producers_plan_identifier or ""),
+                    # QStandardItem(id_ or ""),
                 ]
             )
+            self.model.item(i, 0).setData(id_, Qt.UserRole)
             if active_plan_id == id_:
                 row_to_select = i
 
@@ -191,7 +192,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         selection = self.plan_table_view.selectionModel().selectedRows()
         if selection:
             selected_row = selection[0].row()
-            self._selected_plan_id = self.plan_table_view.model().index(selected_row, self.ID_COLUMN).data()
+            self._selected_plan_id = self.plan_table_view.model().index(selected_row, 0).data(Qt.UserRole)
             self.button_box.button(QDialogButtonBox.Ok).setEnabled(True)
         else:
             self._selected_plan_id = None
