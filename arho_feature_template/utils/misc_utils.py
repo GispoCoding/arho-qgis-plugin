@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+from contextlib import suppress
 from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings, pyqtBoundSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import iface
 
@@ -97,3 +98,13 @@ def get_settings():
     proxy_port = settings.value("proxy_port", "5443")
     lambda_url = settings.value("lambda_url", "https://t5w26iqnsf.execute-api.eu-central-1.amazonaws.com/v0/ryhti")
     return proxy_host, proxy_port, lambda_url
+
+
+def disconnect_signal(signal: pyqtBoundSignal) -> None:
+    """
+    Disconnects all existing connections of a given signal.
+
+    If no connections are defined for the signal, ignores the raised error silently.
+    """
+    with suppress(TypeError):
+        signal.disconnect()

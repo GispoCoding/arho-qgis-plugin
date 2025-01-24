@@ -294,10 +294,10 @@ class Proposition:
 
 @dataclass
 class RegulationGroup:
-    type_code_id: str | None
-    name: str | None
-    short_name: str | None
-    color_code: str | None
+    type_code_id: str | None = None
+    name: str | None = None
+    short_name: str | None = None
+    color_code: str | None = None
     group_number: int | None = None
     regulations: list[Regulation] = field(default_factory=list)
     propositions: list[Proposition] = field(default_factory=list)
