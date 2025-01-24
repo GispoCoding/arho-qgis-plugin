@@ -26,14 +26,14 @@ if TYPE_CHECKING:
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
-ui_path = resources.files(__package__) / "new_plan_regulation_group_form.ui"
+ui_path = resources.files(__package__) / "plan_regulation_group_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
+class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
     """Form to create a new plan regulation group."""
 
-    def __init__(self):
+    def __init__(self, regulation_group: RegulationGroup):
         super().__init__()
         self.setupUi(self)
 
@@ -56,6 +56,12 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.button_box: QDialogButtonBox
 
         # INIT
+        self.regulation_group = regulation_group
+        self.regulation_widgets: list[RegulationWidget] = []
+        self.proposition_widgets: list[PropositionWidget] = []
+        self.save_as_config = False
+
+        # Initialize regulation library
         self.regulations_selection_widget = TreeWithSearchWidget()
         self.regulations_tree_layout.insertWidget(1, self.regulations_selection_widget)
         self.regulations_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_regulation)
@@ -64,14 +70,25 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             self._initalize_regulation_from_config(config)
 
         self.type_of_regulation_group.populate_from_code_layer(PlanRegulationGroupTypeLayer)
-        self.type_of_regulation_group.removeItem(0)  # Remove NULL from combobox as underground data is required
-        self.button_box.accepted.connect(self._on_ok_clicked)
-        self.add_proposition_btn.clicked.connect(self.add_proposition)
+        self.type_of_regulation_group.removeItem(0)  # Remove NULL from selections
+
+        self.add_proposition_btn.clicked.connect(self.add_new_proposition)
         self.add_proposition_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
-        self.regulation_widgets: list[RegulationWidget] = []
-        self.proposition_widgets: list[PropositionWidget] = []
-        self.save_as_config = False
+        self.button_box.accepted.connect(self._on_ok_clicked)
+
+        # Initialize from model
+        self.name.setText(self.regulation_group.name if self.regulation_group.name else "")
+        self.short_name.setText(self.regulation_group.short_name if self.regulation_group.short_name else "")
+        self.group_number.setValue(self.regulation_group.group_number if self.regulation_group.group_number else 0)
+        self.color_code.setText(self.regulation_group.color_code if self.regulation_group.color_code else "")
+        self.type_of_regulation_group.set_value(self.regulation_group.type_code_id)
+
+        for regulation in self.regulation_group.regulations:
+            self.add_regulation(regulation)
+
+        for proposition in self.regulation_group.propositions:
+            self.add_proposition(proposition)
 
     def _initalize_regulation_from_config(self, config: RegulationConfig, parent: QTreeWidgetItem | None = None):
         item = self.regulations_selection_widget.add_item_to_tree(config.name, config, parent)
@@ -88,10 +105,10 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         config: RegulationConfig = item.data(column, Qt.UserRole)  # Retrieve the associated config
         if config.category_only:
             return
-        self.add_regulation(config)
-
-    def add_regulation(self, config: RegulationConfig):
         regulation = Regulation(config=config)
+        self.add_regulation(regulation)
+
+    def add_regulation(self, regulation: Regulation):
         widget = RegulationWidget(regulation, parent=self.regulations_scroll_area_contents)
         widget.delete_signal.connect(self.delete_regulation)
         index = self.regulations_layout.count() - 1
@@ -104,8 +121,11 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.regulation_widgets.remove(regulation_widget)
         regulation_widget.deleteLater()
 
-    def add_proposition(self):
+    def add_new_proposition(self):
         proposition = Proposition(name="", value="")
+        self.add_proposition(proposition)
+
+    def add_proposition(self, proposition: Proposition):
         widget = PropositionWidget(proposition, parent=self.propositions_scroll_contents)
         widget.delete_signal.connect(self.delete_proposition)
         self.propositions_layout.insertWidget(1, widget)
@@ -126,7 +146,7 @@ class NewPlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             group_number=self.group_number.value() if self.group_number.value() > 0 else None,
             regulations=[widget.into_model() for widget in self.regulation_widgets],
             propositions=[widget.into_model() for widget in self.proposition_widgets],
-            id_=None,
+            id_=self.regulation_group.id_,
         )
 
     def _on_ok_clicked(self):

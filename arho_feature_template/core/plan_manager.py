@@ -13,16 +13,18 @@ from arho_feature_template.core.models import (
     FeatureTemplateLibrary,
     Plan,
     PlanFeature,
+    RegulationGroup,
     RegulationGroupCategory,
     RegulationGroupLibrary,
 )
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
-from arho_feature_template.gui.dialogs.new_plan_regulation_group_form import NewPlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
+from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
+from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, code_layers
 from arho_feature_template.project.layers.plan_layers import (
@@ -53,7 +55,7 @@ from arho_feature_template.utils.misc_utils import (
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
-    from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
+    from arho_feature_template.core.models import Proposition, Regulation
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +88,15 @@ class PlanManager:
         self.new_feature_dock = NewFeatureDock()
         self.new_feature_dock.tool_activated.connect(self.add_new_plan_feature)
         self.new_feature_dock.hide()
+
+        # Initialize regulation groups dock
+        self.regulation_groups_dock = RegulationGroupsDock()
+        self.regulation_groups_dock.new_regulation_group_requested.connect(self.create_new_regulation_group)
+        self.regulation_groups_dock.edit_regulation_group_requested.connect(self.edit_regulation_group)
+        self.regulation_groups_dock.delete_regulation_group_requested.connect(self.delete_regulation_group)
+        if get_active_plan_id():
+            self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
+        self.regulation_groups_dock.hide()
 
         # Initialize digitize tools
         self.plan_digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
@@ -134,6 +145,25 @@ class PlanManager:
             for file in feature_template_library_config_files()
         ]
         self.new_feature_dock.initialize_feature_template_libraries(self.feature_template_libraries)
+
+    def create_new_regulation_group(self):
+        self._open_regulation_group_form(RegulationGroup())
+
+    def edit_regulation_group(self, regulation_group: RegulationGroup):
+        self._open_regulation_group_form(regulation_group)
+
+    def _open_regulation_group_form(self, regulation_group: RegulationGroup):
+        regulation_group_form = PlanRegulationGroupForm(regulation_group)
+        if regulation_group_form.exec_():
+            if regulation_group_form.save_as_config is True:
+                save_regulation_group_as_config(regulation_group_form.model)
+            else:
+                save_regulation_group(regulation_group_form.model)
+            self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
+
+    def delete_regulation_group(self, group: RegulationGroup):
+        delete_regulation_group(group)
+        self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         if activate:
@@ -202,6 +232,7 @@ class PlanManager:
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
             feature = save_plan(attribute_form.model)
+            self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
 
     def add_new_plan_feature(self):
         if not handle_unsaved_changes():
@@ -261,6 +292,7 @@ class PlanManager:
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
+            self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP[layer_name]
@@ -273,6 +305,7 @@ class PlanManager:
         )
         if attribute_form.exec_():
             save_plan_feature(attribute_form.model)
+            self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
 
     def set_active_plan(self, plan_id: str | None):
         """Update the project layers based on the selected land use plan.
@@ -296,6 +329,9 @@ class PlanManager:
 
         if previously_in_edit_mode:
             plan_layer.startEditing()
+
+        # Update regulation group dock
+        self.regulation_groups_dock.initialize_regulation_groups(regulation_group_library_from_active_plan())
 
     def load_land_use_plan(self):
         """Load an existing land use plan using a dialog selection."""
@@ -364,14 +400,6 @@ class PlanManager:
             "Kaava ja sen ulkoraja tallennettu onnistuneesti.",
         )
 
-    def create_new_regulation_group(self):
-        new_regulation_group_form = NewPlanRegulationGroupForm()
-        if new_regulation_group_form.exec_():
-            if new_regulation_group_form.save_as_config is True:
-                save_regulation_group_as_config(new_regulation_group_form.model)
-            else:
-                save_regulation_group(new_regulation_group_form.model)
-
     def unload(self):
         # Lambda service
         self.lambda_service.jsons_received.disconnect(self.save_plan_jsons)
@@ -395,6 +423,13 @@ class PlanManager:
         self.new_feature_dock.tool_activated.disconnect(self.add_new_plan_feature)
         iface.removeDockWidget(self.new_feature_dock)
         self.new_feature_dock.deleteLater()
+
+        # Regulation group dock
+        self.regulation_groups_dock.new_regulation_group_requested.disconnect()
+        self.regulation_groups_dock.edit_regulation_group_requested.disconnect()
+        self.regulation_groups_dock.delete_regulation_group_requested.disconnect()
+        iface.removeDockWidget(self.regulation_groups_dock)
+        self.regulation_groups_dock.deleteLater()
 
 
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
@@ -548,6 +583,30 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     return feature
 
 
+def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None):
+    if regulation_group.id_ is None:
+        return
+
+    feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
+    layer = RegulationGroupLayer.get_from_project()
+
+    # Handle regulations
+    for regulation in regulation_group.regulations:
+        delete_regulation(regulation)
+
+    # Handle propositions
+    for proposition in regulation_group.propositions:
+        delete_proposition(proposition)
+
+    _delete_feature(feature, layer, "Kaavamääräysryhmän poisto")
+
+    # Handle assocations
+    associations = RegulationGroupAssociationLayer.get_associations_for_regulation_group(str(regulation_group.id_))
+    association_layer = RegulationGroupAssociationLayer.get_from_project()
+    for association in associations:
+        _delete_feature(association, association_layer, "Kaavamääräysryhmän assosiaation poisto")
+
+
 def save_regulation_group_as_config(regulation_group: RegulationGroup):
     pass
 
@@ -575,6 +634,13 @@ def save_regulation(regulation: Regulation) -> QgsFeature:
     return feature
 
 
+def delete_regulation(regulation: Regulation):
+    feature = PlanRegulationLayer.feature_from_model(regulation)
+    layer = PlanRegulationLayer.get_from_project()
+
+    _delete_feature(feature, layer, "Kaavamääräyksen poisto")
+
+
 def save_proposition(proposition: Proposition) -> QgsFeature:
     feature = PlanPropositionLayer.feature_from_model(proposition)
     layer = PlanPropositionLayer.get_from_project()
@@ -587,3 +653,10 @@ def save_proposition(proposition: Proposition) -> QgsFeature:
     )
 
     return feature
+
+
+def delete_proposition(proposition: Proposition):
+    feature = PlanPropositionLayer.feature_from_model(proposition)
+    layer = PlanPropositionLayer.get_from_project()
+
+    _delete_feature(feature, layer, "Kaavasuosituksen poisto")

@@ -278,6 +278,10 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return cls.get_features_by_attribute_value(attribute, feature_id)
 
     @classmethod
+    def get_associations_for_regulation_group(cls, group_id: str) -> Generator[QgsFeature]:
+        return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
+
+    @classmethod
     def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> Generator[str]:
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
         if not attribute:
@@ -285,7 +289,7 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return cls.get_attribute_values_by_another_attribute_value("plan_regulation_group_id", attribute, feature_id)
 
     @classmethod
-    def get_dangling_associations(
+    def get_dangling_associations(  # by_feature
         cls, groups: list[RegulationGroup], feature_id: str, layer_name: str
     ) -> list[QgsFeature]:
         associations = RegulationGroupAssociationLayer.get_associations_for_feature(feature_id, layer_name)

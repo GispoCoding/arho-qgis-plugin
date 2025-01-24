@@ -136,7 +136,8 @@ class Plugin:
 
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
         self.plan_manager.new_feature_dock.setUserVisible(False)
-        self.plan_manager.new_feature_dock.visibilityChanged.connect(self.dock_visibility_changed)
+
+        self.plan_manager.new_feature_dock.visibilityChanged.connect(self.new_feature_dock_visibility_changed)
 
         self.validation_dock = ValidationDock()
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
@@ -145,11 +146,23 @@ class Plugin:
 
         iface.mapCanvas().mapToolSet.connect(self.plan_manager.plan_digitize_map_tool.deactivate)
 
+        # Regulation groups dock
+        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.regulation_groups_dock)
+        self.plan_manager.regulation_groups_dock.setUserVisible(False)
+        self.plan_manager.regulation_groups_dock.visibilityChanged.connect(
+            self.regulation_groups_dock_visibility_changed
+        )
+
         # Try initializing the plugin immediately in case the project is already open
         self.plan_manager.initialize_from_project()
 
         # (Re)initialize whenever a project is opened
         iface.projectRead.connect(self.plan_manager.initialize_from_project)
+
+        # icons to consider:
+        # icon=QgsApplication.getThemeIcon("mActionStreamingDigitize.svg"),
+        # icon=QgsApplication.getThemeIcon("mIconGeometryCollectionLayer.svg"),
+        # icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
 
         self.new_land_use_plan_action = self.add_action(
             text="Luo kaava",
@@ -198,10 +211,19 @@ class Plugin:
             add_to_toolbar=True,
         )
 
-        self.new_plan_regulation_group = self.add_action(
-            text="Luo kaavamääräysryhmä",
+        # self.new_plan_regulation_group = self.add_action(
+        #     text="Luo kaavamääräysryhmä",
+        #     icon=QgsApplication.getThemeIcon("mActionAddManualTable.svg"),
+        #     triggered_callback=self.open_plan_regulation_group_form,
+        #     add_to_menu=True,
+        #     add_to_toolbar=True,
+        # )
+
+        self.regulation_groups_dock_action = self.add_action(
+            text="Hallitse kaavamääräysryhmiä",
             icon=QgsApplication.getThemeIcon("mActionAddManualTable.svg"),
-            triggered_callback=self.open_plan_regulation_group_form,
+            toggled_callback=self.toggle_regulation_groups_dock,
+            checkable=True,
             add_to_menu=True,
             add_to_toolbar=True,
         )
@@ -277,11 +299,17 @@ class Plugin:
         # Handle logger
         teardown_logger(Plugin.name)
 
-    def dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
+    def new_feature_dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
         self.new_feature_dock_action.setChecked(visible)
 
     def toggle_new_feature_dock(self, show: bool) -> None:  # noqa: FBT001
         self.plan_manager.new_feature_dock.setUserVisible(show)
+
+    def regulation_groups_dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
+        self.regulation_groups_dock_action.setChecked(visible)
+
+    def toggle_regulation_groups_dock(self, show: bool) -> None:  # noqa: FBT001
+        self.plan_manager.regulation_groups_dock.setUserVisible(show)
 
     def validation_dock_visibility_changed(self, visible: bool) -> None:  # noqa: FBT001
         self.validation_dock_action.setChecked(visible)
@@ -289,5 +317,5 @@ class Plugin:
     def toggle_validation_dock(self, show: bool) -> None:  # noqa: FBT001
         self.validation_dock.setUserVisible(show)
 
-    def open_plan_regulation_group_form(self):
-        self.plan_manager.create_new_regulation_group()
+    # def open_plan_regulation_group_form(self):
+    #     self.plan_manager.create_new_regulation_group()
