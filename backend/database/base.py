@@ -121,7 +121,6 @@ class PlanBase(VersionedBase):
 
     __abstract__ = True
 
-    name: Mapped[language_str]
     # Let's have exported at field for all plan data, because some of them may be
     # exported and others added after the plan has last been exported? This will
     # require finding all the exported objects in the database after export is done,
@@ -168,6 +167,7 @@ class PlanObjectBase(PlanBase):
             PlanBase.__table_args__,
         )
 
+    name: Mapped[language_str]
     description: Mapped[language_str]
     source_data_object: Mapped[str] = mapped_column(nullable=True)
     height_range: Mapped[numeric_range]

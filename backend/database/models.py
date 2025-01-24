@@ -118,6 +118,7 @@ class Plan(PlanBase):
 
     permanent_plan_identifier: Mapped[Optional[str]]
     producers_plan_identifier: Mapped[Optional[str]]
+    name: Mapped[language_str]
     description: Mapped[language_str]
     scale: Mapped[Optional[int]]
     matter_management_identifier: Mapped[Optional[str]]
