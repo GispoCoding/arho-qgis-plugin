@@ -17,10 +17,20 @@ from triggers import (
     generate_new_lifecycle_date_triggers,
     generate_new_lifecycle_status_triggers,
     generate_update_lifecycle_status_triggers,
+)
+from validation import (
     generate_validate_polygon_geometry_triggers,
     trg_prevent_land_use_area_overlaps,
+    trg_validate_event_date,
+    trg_validate_event_date_inside_status_date,
+    trg_validate_event_type,
+    trg_validate_lifecycle_date,
     trg_validate_line_geometry,
     trgfunc_prevent_land_use_area_overlaps,
+    trgfunc_validate_event_date,
+    trgfunc_validate_event_date_inside_status_date,
+    trgfunc_validate_event_type,
+    trgfunc_validate_lifecycle_date,
     trgfunc_validate_line_geometry,
 )
 
@@ -64,6 +74,14 @@ imported_functions = (
     + [trgfunc_validate_line_geometry]
     + [trgfunc_prevent_land_use_area_overlaps]
     + [trg_prevent_land_use_area_overlaps]
+    + [trgfunc_validate_lifecycle_date]
+    + [trg_validate_lifecycle_date]
+    + [trgfunc_validate_event_date]
+    + [trg_validate_event_date]
+    + [trgfunc_validate_event_date_inside_status_date]
+    + [trg_validate_event_date_inside_status_date]
+    + [trgfunc_validate_event_type]
+    + [trg_validate_event_type]
 )
 
 register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])

@@ -13,5 +13,6 @@ COPY database/base.py ${LAMBDA_TASK_ROOT}/base.py
 COPY database/codes.py ${LAMBDA_TASK_ROOT}/codes.py
 COPY database/models.py ${LAMBDA_TASK_ROOT}/models.py
 COPY database/triggers.py ${LAMBDA_TASK_ROOT}/triggers.py
+COPY database/validation.py ${LAMBDA_TASK_ROOT}/validation.py
 
 CMD [ "db_manager.handler" ]

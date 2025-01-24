@@ -679,7 +679,7 @@ class LifeCycleDate(VersionedBase):
         "EventDate", back_populates="lifecycle_date", lazy="joined"
     )
 
-    starting_at: Mapped[Optional[datetime]]
+    starting_at: Mapped[datetime]
     ending_at: Mapped[Optional[datetime]]
 
 
@@ -733,5 +733,5 @@ class EventDate(VersionedBase):
         "TypeOfInteractionEvent", backref="event_dates", lazy="joined"
     )
 
-    starting_at: Mapped[Optional[datetime]]
+    starting_at: Mapped[datetime]
     ending_at: Mapped[Optional[datetime]]

@@ -16,80 +16,80 @@ lifecycle_status_response = {
     "meta": {"code": 200, "from": 0, "resultCount": 2, "totalResults": 2},
     "results": [
         {
-            "id": "18d6ba57-ac81-4e51-9efe-f5edaa60d1cd",
-            "codeValue": "01",
-            "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/01",
-            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/01",
-            "status": "DRAFT",
-            "order": 1,
+            "id": "476c165b-373d-46fb-b81d-e1d8fbd198bd",
+            "codeValue": "02",
+            "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/02",
+            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/02",
+            "status": "VALID",
+            "order": 2,
             "hierarchyLevel": 1,
-            "created": "2023-03-28T13:48:49.500Z",
-            "modified": "2023-11-29T14:12:44.614Z",
-            "statusModified": "2023-03-28T13:48:49.500Z",
+            "created": "2023-03-28T13:48:49.519Z",
+            "modified": "2023-11-29T14:12:44.634Z",
+            "statusModified": "2023-03-28T13:48:49.519Z",
             "prefLabel": {
-                "en": "Planning initiative",
-                "fi": "Kaavoitusaloite",
-                "sv": "Planläggningsinitiativ",
+                "en": "Pending",
+                "fi": "Vireilletullut",
+                "sv": "Blivit anhängigt",
             },
             "description": {
-                "en": "A planning initiative newly pending in a municipality or region.",
-                "fi": "Kuntaan tai maakuntaan saapunut kaavoitusaloite.",
-                "sv": "Ett initiativ om planläggning som inkommit till kommunen eller landskapet.",
+                "en": "The plan has become pending through public notice or its status as pending has been announced in connection with a planning review.",
+                "fi": "Kaava on kuulutettu vireille tai vireille tulosta on ilmoitettu kaavoituskatsauksen yhteydessä.",
+                "sv": "Planen har kungjorts anhängig eller anhängiggörandet har meddelats i samband med planläggningsöversikten.",
             },
             "codeScheme": {
                 "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari",
                 "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari",
             },
-            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/01/members/",
+            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/02/members/",
         },
         {
-            "id": "6fd4835d-f58f-425e-a262-c5d1af83c229",
-            "codeValue": "13",
-            "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/13",
-            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/13",
-            "status": "DRAFT",
-            "order": 13,
+            "id": "5c3c5719-2c09-43f2-b0fb-1d6b36812419",
+            "codeValue": "03",
+            "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/03",
+            "status": "VALID",
+            "order": 3,
             "hierarchyLevel": 1,
-            "created": "2023-03-28T13:48:49.583Z",
-            "modified": "2023-11-29T14:12:44.742Z",
-            "statusModified": "2023-03-28T13:48:49.583Z",
-            "prefLabel": {"en": "Valid", "fi": "Voimassa", "sv": "Giltig"},
+            "created": "2023-03-28T13:48:49.526Z",
+            "modified": "2023-11-29T14:12:44.644Z",
+            "statusModified": "2023-03-28T13:48:49.526Z",
+            "prefLabel": {"en": "Preparation", "fi": "Valmistelu", "sv": "Beredning"},
             "description": {
-                "en": "The plan has been announced as valid.",
-                "fi": "Kaava on kuulutettu voimaan.",
-                "sv": "Planen har börjat gälla genom kungörelse.",
+                "en": "A phase of plan preparation, during which the participation and assessment scheme are drawn up and interested parties are given the opportunity to express their opinion on the preparation material of the plan.",
+                "fi": "Kaavan laatimisen vaihe, jossa laaditaan osallistumis- ja arviointisuunnitelma ja osallisille annetaan mahdollisuus esittää mielipiteensä kaavan valmisteluaineistosta.",
+                "sv": "Skede av utarbetandet av en plan där en plan för deltagande och bedömning utarbetas och parterna ges möjlighet att uttrycka sina åsikter om beredningsmaterialet rörande planen.",
             },
             "codeScheme": {
                 "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari",
                 "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari",
             },
-            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/13/members/",
+            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/03/members/",
         },
     ],
 }
 
 additional_lifecycle_status = {
-    "id": "476c165b-373d-46fb-b81d-e1d8fbd198bd",
-    "codeValue": "02",
-    "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/02",
-    "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/02",
-    "status": "DRAFT",
-    "order": 2,
+    "id": "9d0f3cf3-9653-4eea-8289-cc09b9ffa6e5",
+    "codeValue": "04",
+    "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/04",
+    "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/04",
+    "status": "VALID",
+    "order": 4,
     "hierarchyLevel": 1,
-    "created": "2023-03-28T13:48:49.519Z",
-    "modified": "2023-11-29T14:12:44.634Z",
-    "statusModified": "2023-03-28T13:48:49.519Z",
-    "prefLabel": {"en": "Pending", "fi": "Vireilletullut", "sv": "Blivit anhängigt"},
+    "created": "2023-03-28T13:48:49.532Z",
+    "modified": "2023-11-29T14:12:44.653Z",
+    "statusModified": "2023-03-28T13:48:49.532Z",
+    "prefLabel": {"en": "Plan proposal", "fi": "Kaavaehdotus", "sv": "Planförslag"},
     "description": {
-        "en": "The plan has become pending through public notice or its status as pending has been announced in connection with a planning review.",
-        "fi": "Kaava on kuulutettu vireille tai vireille tulosta on ilmoitettu kaavoituskatsauksen yhteydessä.",
-        "sv": "Planen har kungjorts anhängig eller anhängiggörandet har meddelats i samband med planläggningsöversikten.",
+        "en": "A phase of plan preparation, during which the plan proposal is presented to the public, people can submit written complaints and opinions are requested.",
+        "fi": "Kaavan laatimisen vaihe, jonka aikana kaavaehdotus asetetaan julkisesti nähtäville ja siitä voi tehdä kirjallisen muistutuksen ja siitä pyydetään lausuntoja.",
+        "sv": "Skede av utarbetandet av en plan under vilken planförslaget läggs fram offentligt och skriftliga anmärkningar kan inlämnas samt utlåtanden begärs om det.",
     },
     "codeScheme": {
         "uri": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari",
         "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari",
     },
-    "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/02/members/",
+    "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavaelinkaari/codes/04/members/",
 }
 
 changed_lifecycle_status_response = deepcopy(lifecycle_status_response)
@@ -344,6 +344,39 @@ type_of_additional_information_response = {
     ],
 }
 
+name_of_plan_case_decision_response = {
+    "meta": {"code": 200, "from": 0, "resultCount": 1, "totalResults": 1},
+    "results": [
+        {
+            "id": "326b10a9-a5b7-4b69-9ee1-5990d8f27474",
+            "codeValue": "04",
+            "uri": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi/code/04",
+            "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavpaatnimi/codes/04",
+            "status": "DRAFT",
+            "order": 4,
+            "hierarchyLevel": 1,
+            "created": "2023-03-27T16:16:15.862Z",
+            "modified": "2023-11-29T14:26:52.247Z",
+            "statusModified": "2023-03-27T16:16:15.862Z",
+            "prefLabel": {
+                "en": "Presenting the participation and assessment scheme to the public",
+                "fi": "Osallistumis- ja arviointisuunnitelman nähtäville asettaminen",
+                "sv": "Planen för deltagande och bedömning läggs fram offentligt",
+            },
+            "description": {
+                "en": "Decision to present the plan’s participation and assessment scheme to the public.",
+                "fi": "Päätös kaavan osallistumis- ja arviointisuunnitelman nähtäville asettamisesta.",
+                "sv": "Beslut om offentligt framläggande av planen för deltagande och bedömning.",
+            },
+            "codeScheme": {
+                "uri": "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi",
+                "url": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavpaatnimi",
+            },
+            "membersUrl": "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries/rytj/codeschemes/kaavpaatnimi/codes/04/members/",
+        }
+    ],
+}
+
 
 def get_url(cls: Type[codes.CodeBase]) -> str:
     code_registry, name = cls.code_list_uri.rsplit("/", 2)[-2:None]
@@ -376,7 +409,10 @@ def mock_koodistot(requests_mock) -> None:
     requests_mock.get(get_url(codes.RetentionTime), text="")
     requests_mock.get(get_url(codes.Language), text="")
     requests_mock.get(get_url(codes.TypeOfInteractionEvent), text="")
-    requests_mock.get(get_url(codes.NameOfPlanCaseDecision), text="")
+    requests_mock.get(
+        get_url(codes.NameOfPlanCaseDecision),
+        text=json.dumps(name_of_plan_case_decision_response),
+    )
     requests_mock.get(get_url(codes.TypeOfProcessingEvent), text="")
     requests_mock.get(get_url(codes.TypeOfDecisionMaker), text="")
 
@@ -405,6 +441,7 @@ def koodistot_data(mock_koodistot, loader):
     # data should contain the mock data and be empty for other tables
     print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 2
+    assert len(data[codes.NameOfPlanCaseDecision]) == 1
     assert len(data[codes.TypeOfPlanRegulation]) == 4
     assert len(data[codes.PlanType]) == 0
     # data should also contain the local codes
@@ -421,6 +458,7 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     # data should contain the mock data and be empty for other tables
     print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 3
+    assert len(data[codes.NameOfPlanCaseDecision]) == 1
     assert len(data[codes.TypeOfPlanRegulation]) == 4
     assert len(data[codes.PlanType]) == 0
     # data should also contain the local codes
@@ -430,19 +468,23 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     return data
 
 
-def test_get_aloite(loader, koodistot_data):
+def test_get_vireilletullut(loader, koodistot_data):
     """
     Check that remote code is imported
     """
-    code = loader.get_object(koodistot_data[codes.LifeCycleStatus][0])
-    assert code["id"]
-    assert code["value"] == "01"
-    assert "short_name" not in code.keys()
-    assert code["name"]["fin"] == "Kaavoitusaloite"
-    assert (
-        code["description"]["fin"] == "Kuntaan tai maakuntaan saapunut kaavoitusaloite."
+    code = loader.get_object(
+        codes.LifeCycleStatus,
+        koodistot_data[codes.LifeCycleStatus]["02"],
     )
-    assert code["status"] == "DRAFT"
+    assert code["id"]
+    assert code["value"] == "02"
+    assert "short_name" not in code.keys()
+    assert code["name"]["fin"] == "Vireilletullut"
+    assert (
+        code["description"]["fin"]
+        == "Kaava on kuulutettu vireille tai vireille tulosta on ilmoitettu kaavoituskatsauksen yhteydessä."
+    )
+    assert code["status"] == "VALID"
     assert code["level"] == 1
     assert "parent_id" not in code.keys()
 
@@ -451,7 +493,10 @@ def test_get_asumisen_alue(loader, koodistot_data):
     """
     Check that remote code with children is imported
     """
-    code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulation][0])
+    code = loader.get_object(
+        codes.TypeOfPlanRegulation,
+        koodistot_data[codes.TypeOfPlanRegulation]["asumisenAlue"],
+    )
     assert code["id"] == "15934bd8-419b-420b-9b1d-b12608bdf27a"
     assert code["value"] == "asumisenAlue"
     assert code["short_name"] == "A"
@@ -469,7 +514,10 @@ def test_get_asuinpientaloalue(loader, koodistot_data):
     """
     Check that remote code with parent and children is imported
     """
-    code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulation][1])
+    code = loader.get_object(
+        codes.TypeOfPlanRegulation,
+        koodistot_data[codes.TypeOfPlanRegulation]["asuinpientaloalue"],
+    )
     assert code["id"] == "e6f03e18-f292-4068-b6a6-b9e52206accc"
     assert code["value"] == "asuinpientaloalue"
     assert code["short_name"] == "AP"
@@ -487,7 +535,10 @@ def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data):
     """
     Check that remote code with parent is imported
     """
-    code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulation][2])
+    code = loader.get_object(
+        codes.TypeOfPlanRegulation,
+        koodistot_data[codes.TypeOfPlanRegulation]["erillistenAsuinpientalojenAlue"],
+    )
     assert code["id"] == "ba9a86d5-6944-4bc4-a86c-87a78c0cdc2a"
     assert code["value"] == "erillistenAsuinpientalojenAlue"
     assert code["short_name"] == "AO"
@@ -505,7 +556,12 @@ def test_get_yleismaaraysryhma(loader, koodistot_data):
     """
     Check that local code is imported
     """
-    code = loader.get_object(koodistot_data[codes.TypeOfPlanRegulationGroup][0])
+    code = loader.get_object(
+        codes.TypeOfPlanRegulation,
+        koodistot_data[codes.TypeOfPlanRegulationGroup][
+            codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
+        ],
+    )
     assert code["value"] == codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
     assert "short_name" not in code.keys()
     assert (
@@ -522,7 +578,12 @@ def test_get_kayttotarkoitus(loader, koodistot_data):
     """
     Check that local code with remote children is imported
     """
-    code = loader.get_object(koodistot_data[codes.TypeOfAdditionalInformation][2])
+    code = loader.get_object(
+        codes.TypeOfAdditionalInformation,
+        koodistot_data[codes.TypeOfAdditionalInformation][
+            codes.TypeOfAdditionalInformation.local_codes[0]["value"]
+        ],
+    )
     assert code["value"] == codes.TypeOfAdditionalInformation.local_codes[0]["value"]
     assert "short_name" not in code.keys()
     assert (
@@ -539,7 +600,10 @@ def test_get_paakayttotarkoitus(loader, koodistot_data):
     """
     Check that remote code with local parent is imported
     """
-    code = loader.get_object(koodistot_data[codes.TypeOfAdditionalInformation][1])
+    code = loader.get_object(
+        codes.TypeOfAdditionalInformation,
+        koodistot_data[codes.TypeOfAdditionalInformation]["paakayttotarkoitus"],
+    )
     assert code["id"] == "19f05f06-b18f-4d06-917a-2041204266b1"
     assert code["value"] == "paakayttotarkoitus"
     assert "short_name" not in code.keys()
@@ -587,6 +651,11 @@ def assert_data_is_imported(main_db_params):
         with conn.cursor() as cur:
             cur.execute(f"SELECT count(*) FROM codes.lifecycle_status")
             assert cur.fetchone()[0] == 2
+            cur.execute(f"SELECT count(*) FROM codes.name_of_plan_case_decision")
+            assert cur.fetchone()[0] == 1
+            # Relationship between decision and status should also be created
+            cur.execute(f"SELECT count(*) FROM codes.allowed_events")
+            assert cur.fetchone()[0] == 1
             cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation")
             assert cur.fetchone()[0] == 4
             cur.execute(f"SELECT count(*) FROM codes.plan_type")
@@ -606,6 +675,11 @@ def assert_changed_data_is_imported(main_db_params):
         with conn.cursor() as cur:
             cur.execute(f"SELECT count(*) FROM codes.lifecycle_status")
             assert cur.fetchone()[0] == 3
+            cur.execute(f"SELECT count(*) FROM codes.name_of_plan_case_decision")
+            assert cur.fetchone()[0] == 1
+            # Relationship between decision and status should also be created
+            cur.execute(f"SELECT count(*) FROM codes.allowed_events")
+            assert cur.fetchone()[0] == 1
             cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation")
             assert cur.fetchone()[0] == 4
             cur.execute(f"SELECT count(*) FROM codes.plan_type")

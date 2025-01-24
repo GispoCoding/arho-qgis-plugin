@@ -1,9 +1,53 @@
-from typing import Type
+from typing import List, Type
 
 from geoalchemy2 import Geometry
-from models import CodeBase
-from sqlalchemy import Column
-from sqlalchemy.orm import Session, relationship
+from models import Base, CodeBase
+from sqlalchemy import Column, ForeignKey, Table, Uuid
+from sqlalchemy.orm import Mapped, Session, relationship
+from sqlalchemy.sql import func
+
+allowed_events = Table(
+    "allowed_events",
+    Base.metadata,
+    Column("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column(
+        "lifecycle_status_id",
+        ForeignKey(
+            "codes.lifecycle_status.id",
+            name="lifecycle_status_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "name_of_plan_case_decision_id",
+        ForeignKey(
+            "codes.name_of_plan_case_decision.id",
+            name="name_of_plan_case_decision_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "type_of_processing_event_id",
+        ForeignKey(
+            "codes.type_of_processing_event.id",
+            name="type_of_processing_event_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "type_of_interaction_event_id",
+        ForeignKey(
+            "codes.type_of_interaction_event.id",
+            name="type_of_interaction_event_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    schema="codes",
+)
 
 
 class LifeCycleStatus(CodeBase):
@@ -16,6 +60,19 @@ class LifeCycleStatus(CodeBase):
 
     lifecycle_dates = relationship(
         "LifeCycleDate", back_populates="lifecycle_status", cascade="delete"
+    )
+    allowed_interaction_events: Mapped[List["TypeOfInteractionEvent"]] = relationship(
+        secondary="codes.allowed_events", back_populates="allowed_statuses"
+    )
+    allowed_decisions: Mapped[List["NameOfPlanCaseDecision"]] = relationship(
+        secondary="codes.allowed_events",
+        back_populates="allowed_statuses",
+        overlaps="allowed_interaction_events",
+    )
+    allowed_processing_events: Mapped[List["TypeOfProcessingEvent"]] = relationship(
+        secondary="codes.allowed_events",
+        back_populates="allowed_statuses",
+        overlaps="allowed_decisions,allowed_interaction_events",
     )
 
 
@@ -212,58 +269,6 @@ class Language(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/ryhtikielet"
 
 
-class TypeOfInteractionEvent(CodeBase):
-    """
-    Vuorovaikutustapahtuman laji (kaava)
-    """
-
-    __tablename__ = "type_of_interaction_event"
-    code_list_uri = (
-        "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji"
-    )
-
-
-class NameOfPlanCaseDecision(CodeBase):
-    """
-    Kaava-asian päätöksen nimi
-    """
-
-    __tablename__ = "name_of_plan_case_decision"
-    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi"
-
-
-class TypeOfProcessingEvent(CodeBase):
-    """
-    Käsittelytapahtuman laji
-    """
-
-    __tablename__ = "type_of_processing_event"
-    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
-
-
-class TypeOfDecisionMaker(CodeBase):
-    """
-    Päätöksentekijän laji
-    """
-
-    __tablename__ = "type_of_decision_maker"
-    code_list_uri = "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija"
-
-
-def get_code(session: Session, code_class: Type[CodeBase], value: str) -> CodeBase:
-    """
-    Get code object by value.
-    """
-    return session.query(code_class).filter_by(value=value).first()
-
-
-def get_code_uri(code_class: Type[CodeBase], value: str) -> str:
-    """
-    Get code URI by value, without querying the database.
-    """
-    return code_class(value=value).uri
-
-
 decisions_by_status = {
     # Some lifecycle statuses require decisions, some don't.
     # Plan decision code depends on lifecycle status:
@@ -322,6 +327,76 @@ interaction_events_by_status = {
         "02",
     ],  # lifecycle/req-codelist-regionalplan-iteractioneventtype-lifecycle-05
 }
+
+
+class TypeOfInteractionEvent(CodeBase):
+    """
+    Vuorovaikutustapahtuman laji (kaava)
+    """
+
+    __tablename__ = "type_of_interaction_event"
+    code_list_uri = (
+        "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji"
+    )
+    allowed_status_dict = interaction_events_by_status
+    allowed_statuses: Mapped[List["LifeCycleStatus"]] = relationship(
+        secondary="codes.allowed_events",
+        back_populates="allowed_interaction_events",
+        overlaps="allowed_decisions,allowed_processing_events",
+    )
+
+
+class NameOfPlanCaseDecision(CodeBase):
+    """
+    Kaava-asian päätöksen nimi
+    """
+
+    __tablename__ = "name_of_plan_case_decision"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi"
+    allowed_status_dict = decisions_by_status
+    allowed_statuses: Mapped[List["LifeCycleStatus"]] = relationship(
+        secondary="codes.allowed_events",
+        back_populates="allowed_decisions",
+        overlaps="allowed_interaction_events,allowed_processing_events,allowed_statuses",  # noqa
+    )
+
+
+class TypeOfProcessingEvent(CodeBase):
+    """
+    Käsittelytapahtuman laji
+    """
+
+    __tablename__ = "type_of_processing_event"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
+    allowed_status_dict = processing_events_by_status
+    allowed_statuses: Mapped[List["LifeCycleStatus"]] = relationship(
+        secondary="codes.allowed_events",
+        back_populates="allowed_processing_events",
+        overlaps="allowed_interaction_events,allowed_decisions,allowed_statuses",
+    )
+
+
+class TypeOfDecisionMaker(CodeBase):
+    """
+    Päätöksentekijän laji
+    """
+
+    __tablename__ = "type_of_decision_maker"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija"
+
+
+def get_code(session: Session, code_class: Type[CodeBase], value: str) -> CodeBase:
+    """
+    Get code object by value.
+    """
+    return session.query(code_class).filter_by(value=value).first()
+
+
+def get_code_uri(code_class: Type[CodeBase], value: str) -> str:
+    """
+    Get code URI by value, without querying the database.
+    """
+    return code_class(value=value).uri
 
 
 decisionmaker_by_status = {

@@ -77,12 +77,14 @@ class KoodistotLoader:
         LOGGER.info("Loader initialized with code classes:")
         LOGGER.info(self.koodistot)
 
-    def get_code_registry_data(self, koodisto: Type[codes.CodeBase]) -> List[Dict]:
+    def get_code_registry_data(self, koodisto: Type[codes.CodeBase]) -> Dict[str, Dict]:
         """
         Get code registry codes for given koodisto, or empty list if not present.
+        Index returned codes by code value. Also, order returned codes by hierarchy
+        level to ease dependent code creation.
         """
         if not koodisto.code_list_uri:
-            return []
+            return dict()
         code_registry, name = koodisto.code_list_uri.rsplit("/", 2)[-2:None]
         LOGGER.info(koodisto.code_list_uri)
         LOGGER.info(code_registry)
@@ -92,30 +94,45 @@ class KoodistotLoader:
         r = requests.get(url, headers=self.HEADERS)
         r.raise_for_status()
         try:
-            return r.json()["results"]
+            result_list: List[Dict] = r.json()["results"]
+            # Order external codes by hierarchyLevel
+            result_dict = {
+                item["codeValue"]: item
+                for item in sorted(result_list, key=lambda item: item["hierarchyLevel"])
+            }
+            return result_dict
         except (KeyError, requests.exceptions.JSONDecodeError):
             LOGGER.warning(f"{koodisto} response did not contain data")
-            return []
+            return dict()
 
-    def get_objects(self) -> Dict[Type[codes.CodeBase], List[Dict]]:
+    def get_objects(self) -> Dict[Type[codes.CodeBase], Dict[str, Dict]]:
         """
-        Gets all koodistot data, divided by table and ordered by code level.
+        Gets all koodistot data, divided by table and code value, ordered by code level.
         """
         data = dict()
         for koodisto in self.koodistot:
             # Fetch external codes
             data[koodisto] = self.get_code_registry_data(koodisto)
-            # Order external codes by hierarchyLevel
-            data[koodisto].sort(key=lambda element: element["hierarchyLevel"])
             # Add local codes with status to distinguish them from other codes
-            local_codes = [dict(code, status="LOCAL") for code in koodisto.local_codes]
-            data[koodisto] += local_codes
+            local_codes = {
+                code["value"]: dict(code, status="LOCAL")
+                for code in koodisto.local_codes
+            }
+            data[koodisto] |= local_codes
         return data
 
-    def get_object(self, element: Dict) -> Optional[Dict]:
+    def get_object(
+        self,
+        code_class: Type[codes.CodeBase],
+        element: Dict,
+        all_objects: Optional[Dict[Type[codes.CodeBase], Dict[str, Dict]]] = None,
+    ) -> Optional[Dict]:
         """
         Returns database-ready dict of object to import, or None if the data
         was invalid.
+
+        Optionally, you may include the dict containing all objects, to allow
+        creating relationships between different classes of code objects.
         """
         # local codes are already in database-ready format
         if element["status"] == "LOCAL":
@@ -141,6 +158,22 @@ class KoodistotLoader:
         parent = element.get("broaderCode", None)
         if parent:
             code_dict["parent_id"] = parent["id"]
+
+        # Some code classes may have relationships to *other* code classes. In this
+        # case, we don't have the sqlalchemy objects created yet. However, we *do*
+        # know the ids of the objects to be created, so we can provide a list
+        # of the related ids that should be linked to this object, to be processed
+        # later. Any relationships must be hardcoded here.
+        if hasattr(code_class, "allowed_status_dict") and all_objects:
+            statuses_with_code = [
+                key
+                for key, values in code_class.allowed_status_dict.items()
+                if code_dict["value"] in values
+            ]
+            code_dict["allowed_status_ids"] = [
+                all_objects[codes.LifeCycleStatus][value]["id"]
+                for value in statuses_with_code
+            ]
         return code_dict
 
     def update_remote_children_of_local_parents(
@@ -166,6 +199,7 @@ class KoodistotLoader:
         code_class: Type[codes.CodeBase],
         incoming: Dict[str, Any],
         session: Session,
+        saved_objects: Optional[Dict[str, codes.CodeBase]] = None,
     ) -> codes.CodeBase:
         """
         Find object based on its unique fields, or create new object. Update fields
@@ -173,6 +207,9 @@ class KoodistotLoader:
 
         However, do *not* try to update uuids. They may have references to them already,
         so we cannot set uuids, even if they are the same as before.
+
+        Optionally, you may include the dict containing all saved objects, to allow
+        creating relationships between different classes of code objects.
         """
         columns = code_class.__table__.columns
         unique_keys = set(column.key for column in columns if column.unique)
@@ -184,6 +221,16 @@ class KoodistotLoader:
         values = {
             key: incoming[key] for key in set(incoming.keys()).intersection(column_keys)
         }
+
+        # Some code classes may have relationships to *other* code classes.
+        # Relationships are stored in separate tables, so they will not be present in
+        # the columns. Instead, we must provide the related objects to the relationship.
+        # Any relationship names must be hardcoded here.
+        if "allowed_status_ids" in incoming.keys() and saved_objects:
+            values["allowed_statuses"] = [
+                saved_objects[id] for id in incoming["allowed_status_ids"]
+            ]
+
         if instance:
             # go figure, if we have the instance (and don't want to do the update right
             # now) sqlalchemy has no way of supplying attribute dict to be updated.
@@ -205,32 +252,32 @@ class KoodistotLoader:
             print(instance.children)
         return instance
 
-    def save_objects(self, objects: Dict[Type[codes.CodeBase], List[dict]]) -> str:
+    def save_objects(self, objects: Dict[Type[codes.CodeBase], Dict[str, dict]]) -> str:
         """
         Save all objects in the objects dict, grouped by object class.
         """
-        successful_actions = 0
+        saved_objects: Dict[str, codes.CodeBase] = dict()
         with self.Session() as session:
             for code_class, class_codes in objects.items():
                 LOGGER.info(f"Importing codes to {code_class}...")
-                for i, element in enumerate(class_codes):
+                for i, element in enumerate(class_codes.values()):
                     if i % 10 == 0:
                         LOGGER.info(
                             f"{100 * float(i) / len(class_codes)}% - {i}/{len(class_codes)}"  # noqa
                         )
-                    code = self.get_object(element)
+                    code = self.get_object(code_class, element, objects)
                     if code is not None:
                         succeeded = self.update_or_create_object(
-                            code_class, code, session
+                            code_class, code, session, saved_objects
                         )
                         if succeeded:
-                            successful_actions += 1
+                            saved_objects[succeeded.id] = succeeded
                         else:
                             LOGGER.debug(f"Could not save code data {element}")
                     else:
                         LOGGER.debug(f"Invalid code data {element}")
             session.commit()
-        msg = f"{successful_actions} inserted or updated. 0 deleted."
+        msg = f"{len(saved_objects)} inserted or updated. 0 deleted."
         LOGGER.info(msg)
         return msg
 

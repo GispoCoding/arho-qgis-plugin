@@ -25,7 +25,7 @@ from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 15  # adjust me when adding tables
-codes_count: int = 20  # adjust me when adding tables
+codes_count: int = 21  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 
@@ -407,6 +407,10 @@ def assert_database_is_alright(
             f"SELECT * FROM pg_indexes WHERE schemaname = 'codes' AND tablename = '{table_name}';"
         )
         indexes = cur.fetchall()
+        cur.execute(
+            f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'codes' AND table_name = '{table_name}';"
+        )
+        columns = [column for (column,) in cur]
         assert (
             "codes",
             table_name,
@@ -414,34 +418,38 @@ def assert_database_is_alright(
             None,
             f"CREATE UNIQUE INDEX {table_name}_pkey ON codes.{table_name} USING btree (id)",
         ) in indexes
-        assert (
-            "codes",
-            table_name,
-            f"ix_codes_{table_name}_level",
-            None,
-            f"CREATE INDEX ix_codes_{table_name}_level ON codes.{table_name} USING btree (level)",
-        ) in indexes
-        assert (
-            "codes",
-            table_name,
-            f"ix_codes_{table_name}_parent_id",
-            None,
-            f"CREATE INDEX ix_codes_{table_name}_parent_id ON codes.{table_name} USING btree (parent_id)",
-        ) in indexes
-        assert (
-            "codes",
-            table_name,
-            f"ix_codes_{table_name}_short_name",
-            None,
-            f"CREATE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",
-        ) in indexes
-        assert (
-            "codes",
-            table_name,
-            f"ix_codes_{table_name}_value",
-            None,
-            f"CREATE UNIQUE INDEX ix_codes_{table_name}_value ON codes.{table_name} USING btree (value)",
-        ) in indexes
+        if "level" in columns:
+            assert (
+                "codes",
+                table_name,
+                f"ix_codes_{table_name}_level",
+                None,
+                f"CREATE INDEX ix_codes_{table_name}_level ON codes.{table_name} USING btree (level)",
+            ) in indexes
+        if "parent" in columns:
+            assert (
+                "codes",
+                table_name,
+                f"ix_codes_{table_name}_parent_id",
+                None,
+                f"CREATE INDEX ix_codes_{table_name}_parent_id ON codes.{table_name} USING btree (parent_id)",
+            ) in indexes
+        if "short_name" in columns:
+            assert (
+                "codes",
+                table_name,
+                f"ix_codes_{table_name}_short_name",
+                None,
+                f"CREATE INDEX ix_codes_{table_name}_short_name ON codes.{table_name} USING btree (short_name)",
+            ) in indexes
+        if "value" in columns:
+            assert (
+                "codes",
+                table_name,
+                f"ix_codes_{table_name}_value",
+                None,
+                f"CREATE UNIQUE INDEX ix_codes_{table_name}_value ON codes.{table_name} USING btree (value)",
+            ) in indexes
 
     # TODO: Check materialized views once we have any
     # cur.execute(
@@ -1273,7 +1281,11 @@ def plan_map_instance(
 
 @pytest.fixture()
 def lifecycle_date_instance(session, code_instance):
-    instance = models.LifeCycleDate(lifecycle_status=code_instance)
+    instance = models.LifeCycleDate(
+        lifecycle_status=code_instance,
+        starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2025, 1, 1, tzinfo=LOCAL_TZ),
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1432,6 +1444,7 @@ def pending_date_instance(
         plan=plan_instance,
         lifecycle_status=pending_status_instance,
         starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1448,6 +1461,7 @@ def preparation_date_instance(
         plan=plan_instance,
         lifecycle_status=preparation_status_instance,
         starting_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1474,6 +1488,7 @@ def approved_date_instance(
         plan=plan_instance,
         lifecycle_status=approved_status_instance,
         starting_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
     )
     session.add(instance)
     session.commit()
@@ -1510,9 +1525,11 @@ def valid_date_instance(
 
 @pytest.fixture()
 def participation_plan_presenting_for_public_decision(
-    session,
+    session, preparation_status_instance
 ):
-    instance = codes.NameOfPlanCaseDecision(value="04", status="LOCAL")
+    instance = codes.NameOfPlanCaseDecision(
+        value="04", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1521,10 +1538,10 @@ def participation_plan_presenting_for_public_decision(
 
 
 @pytest.fixture()
-def plan_material_presenting_for_public_decision(
-    session,
-):
-    instance = codes.NameOfPlanCaseDecision(value="05", status="LOCAL")
+def plan_material_presenting_for_public_decision(session, preparation_status_instance):
+    instance = codes.NameOfPlanCaseDecision(
+        value="05", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1533,10 +1550,10 @@ def plan_material_presenting_for_public_decision(
 
 
 @pytest.fixture()
-def draft_plan_presenting_for_public_decision(
-    session,
-):
-    instance = codes.NameOfPlanCaseDecision(value="06", status="LOCAL")
+def draft_plan_presenting_for_public_decision(session, preparation_status_instance):
+    instance = codes.NameOfPlanCaseDecision(
+        value="06", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1546,9 +1563,11 @@ def draft_plan_presenting_for_public_decision(
 
 @pytest.fixture()
 def plan_proposal_sending_out_for_opinions_decision(
-    session,
+    session, plan_proposal_status_instance
 ):
-    instance = codes.NameOfPlanCaseDecision(value="07", status="LOCAL")
+    instance = codes.NameOfPlanCaseDecision(
+        value="07", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1558,9 +1577,11 @@ def plan_proposal_sending_out_for_opinions_decision(
 
 @pytest.fixture()
 def plan_proposal_presenting_for_public_decision(
-    session,
+    session, plan_proposal_status_instance
 ):
-    instance = codes.NameOfPlanCaseDecision(value="08", status="LOCAL")
+    instance = codes.NameOfPlanCaseDecision(
+        value="08", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1570,9 +1591,11 @@ def plan_proposal_presenting_for_public_decision(
 
 @pytest.fixture()
 def participation_plan_presenting_for_public_event(
-    session,
+    session, preparation_status_instance
 ):
-    instance = codes.TypeOfProcessingEvent(value="05", status="LOCAL")
+    instance = codes.TypeOfProcessingEvent(
+        value="05", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1581,10 +1604,10 @@ def participation_plan_presenting_for_public_event(
 
 
 @pytest.fixture()
-def plan_material_presenting_for_public_event(
-    session,
-):
-    instance = codes.TypeOfProcessingEvent(value="06", status="LOCAL")
+def plan_material_presenting_for_public_event(session, preparation_status_instance):
+    instance = codes.TypeOfProcessingEvent(
+        value="06", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1593,10 +1616,10 @@ def plan_material_presenting_for_public_event(
 
 
 @pytest.fixture()
-def plan_proposal_presenting_for_public_event(
-    session,
-):
-    instance = codes.TypeOfProcessingEvent(value="07", status="LOCAL")
+def plan_proposal_presenting_for_public_event(session, plan_proposal_status_instance):
+    instance = codes.TypeOfProcessingEvent(
+        value="07", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1605,10 +1628,10 @@ def plan_proposal_presenting_for_public_event(
 
 
 @pytest.fixture()
-def plan_proposal_requesting_for_opinions_event(
-    session,
-):
-    instance = codes.TypeOfProcessingEvent(value="08", status="LOCAL")
+def plan_proposal_requesting_for_opinions_event(session, plan_proposal_status_instance):
+    instance = codes.TypeOfProcessingEvent(
+        value="08", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
     session.add(instance)
     session.commit()
     yield instance
@@ -1618,9 +1641,13 @@ def plan_proposal_requesting_for_opinions_event(
 
 @pytest.fixture()
 def presentation_to_the_public_interaction(
-    session,
+    session, preparation_status_instance, plan_proposal_status_instance
 ):
-    instance = codes.TypeOfInteractionEvent(value="01", status="LOCAL")
+    instance = codes.TypeOfInteractionEvent(
+        value="01",
+        status="LOCAL",
+        allowed_statuses=[preparation_status_instance, plan_proposal_status_instance],
+    )
     session.add(instance)
     session.commit()
     yield instance
