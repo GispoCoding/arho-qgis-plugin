@@ -6,12 +6,14 @@ from typing import TYPE_CHECKING
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QWidget
 
 from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
+from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLabel, QLineEdit, QPushButton
@@ -23,9 +25,10 @@ FormClass, _ = uic.loadUiType(ui_path)
 class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan regulation group."""
 
+    open_as_form_signal = pyqtSignal(QWidget)
     delete_signal = pyqtSignal(QWidget)
 
-    def __init__(self, regulation_group_data: RegulationGroup, layer_name: str):
+    def __init__(self, regulation_group: RegulationGroup, layer_name: str):
         super().__init__()
         self.setupUi(self)
 
@@ -34,23 +37,35 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.name: QLineEdit
         self.short_name: QLineEdit
         self.short_name_label: QLabel
+        self.edit_btn: QPushButton
         self.del_btn: QPushButton
         self.regulation_group_details_layout: QFormLayout
 
         # INIT
-        self.regulation_group_data = regulation_group_data
-        self.regulation_widgets: list[RegulationWidget] = [
-            self.add_regulation_widget(regulation) for regulation in self.regulation_group_data.regulations
-        ]
-        self.proposition_widgets: list[PropositionWidget] = [
-            self.add_proposition_widget(proposition) for proposition in self.regulation_group_data.propositions
-        ]
+        self.regulation_widgets: list[RegulationWidget] = []
+        self.proposition_widgets: list[PropositionWidget] = []
 
-        regulation_group_data.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
-        self.name.setText(self.regulation_group_data.name if self.regulation_group_data.name else "")
-        self.short_name.setText(self.regulation_group_data.short_name if self.regulation_group_data.short_name else "")
+        regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
+        self.from_model(regulation_group)
+
+        self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
+        self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
+
+    def from_model(self, regulation_group: RegulationGroup):
+        self.regulation_group = regulation_group
+
+        self.name.setText(regulation_group.name if regulation_group.name else "")
+        self.short_name.setText(regulation_group.short_name if regulation_group.short_name else "")
+
+        # Remove existing child widgets if reinitializing
+        for widget in self.regulation_widgets:
+            self.delete_regulation_widget(widget)
+        for widget in self.proposition_widgets:
+            self.delete_proposition_widget(widget)
+        self.regulation_widgets = [self.add_regulation_widget(reg) for reg in regulation_group.regulations]
+        self.proposition_widgets = [self.add_proposition_widget(prop) for prop in regulation_group.propositions]
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
         widget = RegulationWidget(regulation=regulation, parent=self.frame)
@@ -76,11 +91,11 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     def into_model(self) -> RegulationGroup:
         return RegulationGroup(
-            type_code_id=self.regulation_group_data.type_code_id,
+            type_code_id=self.regulation_group.type_code_id,
             name=self.name.text(),
             short_name=None if not self.short_name.text() else self.short_name.text(),
-            color_code=self.regulation_group_data.color_code,
+            color_code=self.regulation_group.color_code,
             regulations=[widget.into_model() for widget in self.regulation_widgets],
             propositions=[widget.into_model() for widget in self.proposition_widgets],
-            id_=self.regulation_group_data.id_,
+            id_=self.regulation_group.id_,
         )

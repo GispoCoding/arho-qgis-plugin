@@ -19,11 +19,13 @@ from qgis.PyQt.QtWidgets import (
 from arho_feature_template.core.models import Plan, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
+from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     OrganisationLayer,
     PlanTypeLayer,
 )
+from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QTextEdit, QVBoxLayout, QWidget
@@ -132,12 +134,20 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
         regulation_group_widget = RegulationGroupWidget(regulation_group, layer_name="Kaava")
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
+        regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         self._remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(regulation_group_widget)
         self.regulation_group_widgets.append(regulation_group_widget)
         self._add_spacer()
 
+    def open_plan_regulation_group_form(self, regulation_group_widget: RegulationGroupWidget):
+        group_as_form = PlanRegulationGroupForm(regulation_group_widget.into_model())
+        if group_as_form.exec_():
+            regulation_group_widget.from_model(group_as_form.model)
+
     def remove_plan_regulation_group(self, regulation_group_widget: RegulationGroupWidget):
+        disconnect_signal(regulation_group_widget.delete_signal)
+        disconnect_signal(regulation_group_widget.open_as_form_signal)
         self.plan_regulation_group_scrollarea_contents.layout().removeWidget(regulation_group_widget)
         self.regulation_group_widgets.remove(regulation_group_widget)
         regulation_group_widget.deleteLater()
