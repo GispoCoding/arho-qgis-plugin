@@ -69,6 +69,28 @@
          </spacer>
         </item>
         <item>
+         <widget class="QPushButton" name="edit_btn">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Muokkaa kaavamääräysryhmää</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="del_btn">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -81,6 +103,9 @@
             <width>30</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>Poista kaavamääräysryhmä</string>
           </property>
           <property name="text">
            <string/>
