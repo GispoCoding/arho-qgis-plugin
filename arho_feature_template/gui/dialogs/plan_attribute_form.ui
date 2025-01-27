@@ -16,7 +16,7 @@
   <property name="windowTitle">
    <string>Kaava</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="sizePolicy">
@@ -26,7 +26,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="general_info_tab">
       <attribute name="title">
@@ -148,7 +148,7 @@
              <item row="5" column="0">
               <widget class="QLabel" name="elinkaarenTilaLabel">
                <property name="text">
-                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Elinkaaren tila:</string>
+                <string>Elinkaaren tila*:</string>
                </property>
                <property name="buddy">
                 <cstring>lifecycle_status_combo_box</cstring>
@@ -165,7 +165,7 @@
              <item row="3" column="0">
               <widget class="QLabel" name="label_5">
                <property name="text">
-                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Organisaatio:</string>
+                <string>Organisaatio*:</string>
                </property>
               </widget>
              </item>
