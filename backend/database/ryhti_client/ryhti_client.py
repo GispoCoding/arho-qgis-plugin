@@ -597,6 +597,18 @@ class RyhtiClient:
                 "number": plan_regulation.numeric_value,
                 "unitOfMeasure": plan_regulation.unit,
             }
+        elif plan_regulation.numeric_range_min or plan_regulation.numeric_range_max:
+            regulation_dict["value"] = {
+                "dataType": "positiveNumericRange"
+                if (
+                    plan_regulation.numeric_range_min
+                    and plan_regulation.numeric_range_min >= 0
+                )
+                else "numericRange",
+                "minimumValue": plan_regulation.numeric_range_min,
+                "maximumValue": plan_regulation.numeric_range_max,
+                "unitOfMeasure": plan_regulation.unit,
+            }
         return regulation_dict
 
     def get_plan_regulation_group(
@@ -646,12 +658,12 @@ class RyhtiClient:
         plan_object_dict["periodOfValidity"] = self.get_last_period(
             self.get_lifecycle_periods(plan_object, self.valid_status_value)
         )
-        if plan_object.height_range:
+        if plan_object.height_min or plan_object.height_max:
             plan_object_dict["verticalLimit"] = {
                 "dataType": "decimalRange",
                 # we have to use simplejson because numbers are Decimal
-                "minimumValue": plan_object.height_range.lower,
-                "maximumValue": plan_object.height_range.upper,
+                "minimumValue": plan_object.height_min,
+                "maximumValue": plan_object.height_max,
                 "unitOfMeasure": plan_object.height_unit,
             }
         return plan_object_dict

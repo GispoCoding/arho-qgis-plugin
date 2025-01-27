@@ -21,7 +21,6 @@ from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, shape
-from sqlalchemy.dialects.postgresql import Range
 from sqlalchemy.orm import Session, sessionmaker
 
 hame_count: int = 15  # adjust me when adding tables
@@ -589,6 +588,18 @@ def type_of_plan_regulation_instance(session):
 
 
 @pytest.fixture()
+def type_of_plan_regulation_number_of_stories_instance(session):
+    instance = codes.TypeOfPlanRegulation(
+        value="maanpaallinenKerroslukuArvovali", status="LOCAL"
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def type_of_plan_regulation_verbal_instance(session):
     instance = codes.TypeOfPlanRegulation(value="sanallinenMaarays", status="LOCAL")
     session.add(instance)
@@ -876,7 +887,8 @@ def land_use_area_instance(
         ),
         name={"fin": "test_land_use_area"},
         description={"fin": "test_land_use_area"},
-        height_range=Range(0.0, 1.0),
+        height_min=0.0,
+        height_max=1.0,
         height_unit="m",
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
@@ -1105,6 +1117,29 @@ def numeric_plan_regulation_instance(
 
 
 @pytest.fixture(scope="function")
+def numeric_range_plan_regulation_instance(
+    session,
+    preparation_status_instance,
+    type_of_plan_regulation_number_of_stories_instance,
+    plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        numeric_range_min=2,
+        numeric_range_max=3,
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_number_of_stories_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=3,
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture(scope="function")
 def text_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -1117,7 +1152,7 @@ def text_plan_regulation_instance(
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=3,
+        ordering=4,
     )
     session.add(instance)
     session.commit()
@@ -1168,7 +1203,7 @@ def verbal_plan_regulation_instance(
         type_of_plan_regulation=type_of_plan_regulation_verbal_instance,
         type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
-        ordering=4,
+        ordering=5,
     )
     session.add(instance)
     session.commit()
@@ -1362,6 +1397,7 @@ def complete_test_plan(
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
+    numeric_range_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
@@ -1408,6 +1444,8 @@ def complete_test_plan(
     numeric_plan_regulation_instance.intended_use = (
         type_of_additional_information_instance
     )
+    numeric_range_plan_regulation_instance.plan_theme = plan_theme_instance
+    # numeric range cannot be used with intended use regulation type
     verbal_plan_regulation_instance.plan_theme = plan_theme_instance
     verbal_plan_regulation_instance.intended_use = (
         type_of_additional_information_instance
@@ -1677,6 +1715,7 @@ def desired_plan_dict(
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
+    numeric_range_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
@@ -1776,8 +1815,8 @@ def desired_plan_dict(
                 "objectNumber": land_use_area_instance.ordering,
                 "verticalLimit": {
                     "dataType": "decimalRange",
-                    "minimumValue": land_use_area_instance.height_range.lower,
-                    "maximumValue": land_use_area_instance.height_range.upper,
+                    "minimumValue": land_use_area_instance.height_min,
+                    "maximumValue": land_use_area_instance.height_max,
                     "unitOfMeasure": land_use_area_instance.height_unit,
                 },
                 "periodOfValidity": None,
@@ -1879,6 +1918,28 @@ def desired_plan_dict(
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
                             numeric_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                    {
+                        "planRegulationKey": numeric_range_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpaallinenKerroslukuArvovali",
+                        "value": {
+                            "dataType": "positiveNumericRange",
+                            "minimumValue": numeric_range_plan_regulation_instance.numeric_range_min,
+                            "maximumValue": numeric_range_plan_regulation_instance.numeric_range_max,
+                            "unitOfMeasure": numeric_range_plan_regulation_instance.unit,
+                        },
+                        "subjectIdentifiers": numeric_range_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            numeric_range_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,

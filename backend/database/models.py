@@ -10,7 +10,6 @@ from base import (  # noqa
     PlanObjectBase,
     VersionedBase,
     language_str,
-    numeric_range,
     timestamp,
 )
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
@@ -465,10 +464,11 @@ class PlanRegulation(PlanBase):
         lazy="joined",
     )
 
-    numeric_range: Mapped[numeric_range]
-    unit: Mapped[Optional[str]]
     text_value: Mapped[Optional[language_str]]
-    numeric_value: Mapped[float] = mapped_column(nullable=True)
+    numeric_value: Mapped[Optional[float]]
+    numeric_range_min: Mapped[Optional[int]]
+    numeric_range_max: Mapped[Optional[int]]
+    unit: Mapped[Optional[str]]
     ordering: Mapped[Optional[int]]
     subject_identifiers: Mapped[Optional[List[str]]]
 

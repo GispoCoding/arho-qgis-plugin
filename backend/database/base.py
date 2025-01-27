@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey, Index
-from sqlalchemy.dialects.postgresql import JSONB, NUMRANGE, UUID, Range
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -32,7 +32,6 @@ class Base(DeclarativeBase):
         MultiLineString: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
         MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
         MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),
-        Range[float]: NUMRANGE,
         datetime: TIMESTAMP(timezone=True),
     }
 
@@ -45,7 +44,6 @@ uuid_pk = Annotated[
 ]
 unique_str = Annotated[str, mapped_column(unique=True, index=True)]
 language_str = dict[str, str]
-numeric_range = Annotated[Range[float], mapped_column(nullable=True)]
 timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 
 metadata = Base.metadata
@@ -167,9 +165,10 @@ class PlanObjectBase(PlanBase):
 
     name: Mapped[Optional[language_str]]
     description: Mapped[Optional[language_str]]
-    source_data_object: Mapped[str] = mapped_column(nullable=True)
-    height_range: Mapped[numeric_range]
-    height_unit: Mapped[str] = mapped_column(nullable=True)
+    source_data_object: Mapped[Optional[str]]
+    height_min: Mapped[Optional[float]]
+    height_max: Mapped[Optional[float]]
+    height_unit: Mapped[Optional[str]]
     ordering: Mapped[Optional[int]]
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),

@@ -408,6 +408,7 @@ def valid_plan_in_preparation(
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
+    numeric_range_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
@@ -420,6 +421,7 @@ def valid_plan_in_preparation(
     """
     session.add(point_text_plan_regulation_instance)
     session.add(numeric_plan_regulation_instance)
+    session.add(numeric_range_plan_regulation_instance)
     session.add(verbal_plan_regulation_instance)
     session.add(general_plan_regulation_instance)
 
