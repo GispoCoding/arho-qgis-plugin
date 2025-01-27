@@ -2,7 +2,7 @@ import io
 import json
 import logging
 import os
-import shutil
+import tempfile
 import time
 import zipfile
 from typing import Dict, Optional, TypedDict
@@ -66,41 +66,40 @@ class MMLLoader:
         """
         session = requests.Session()
 
-        output_dir = "geom_data"
-        os.makedirs(output_dir, exist_ok=True)
+        with tempfile.TemporaryDirectory() as output_dir:
+            year = str(self.payload["inputs"]["yearInput"])  # type: ignore
+            size = str(self.payload["inputs"]["dataSetInput"]).split("_")[-1]  # type: ignore # noqa
 
-        year = str(self.payload["inputs"]["yearInput"])  # type: ignore
-        size = str(self.payload["inputs"]["dataSetInput"]).split("_")[-1]  # type: ignore # noqa
+            url = f"{self.api_base}/execution?api-key={self.api_key}"
+            LOGGER.info(f"Starting OGC API process on {self.api_base}/execution")
+            r = session.post(url, headers=self.HEADERS, json=self.payload)
+            r.raise_for_status()
+            id_job = r.json()["jobID"]
+            url_results = (
+                f"{self.job_api_base}{id_job}/TietoaKuntajaosta_{year}_{size}.zip"
+            )
 
-        url = f"{self.api_base}/execution?api-key={self.api_key}"
-        LOGGER.info(f"Starting OGC API process on {self.api_base}/execution")
-        r = session.post(url, headers=self.HEADERS, json=self.payload)
-        r.raise_for_status()
-        id_job = r.json()["jobID"]
-        url_results = f"{self.job_api_base}{id_job}/TietoaKuntajaosta_{year}_{size}.zip"
+            max_retries = 100
+            attempts = 0
+            while attempts < max_retries:
+                try:
+                    r = session.get(url_results)
+                    r.raise_for_status()
+                    break
+                except requests.exceptions.HTTPError:
+                    time.sleep(3)
+                attempts += 1
+                if attempts == max_retries:
+                    raise requests.exceptions.RetryError(
+                        f"Maximum retry limit of {max_retries} reached."
+                    )
 
-        max_retries = 100
-        attempts = 0
-        while attempts < max_retries:
-            try:
-                r = session.get(url_results)
-                r.raise_for_status()
-                break
-            except requests.exceptions.HTTPError:
-                time.sleep(3)
-            attempts += 1
-            if attempts == max_retries:
-                raise requests.exceptions.RetryError(
-                    f"Maximum retry limit of {max_retries} reached."
-                )
+            zip_data = io.BytesIO(r.content)
 
-        zip_data = io.BytesIO(r.content)
+            with zipfile.ZipFile(zip_data, "r") as zip_ref:
+                zip_ref.extractall(output_dir)
 
-        with zipfile.ZipFile(zip_data, "r") as zip_ref:
-            zip_ref.extractall(output_dir)
-
-        geoms = self.parse_gml(output_dir, year, size)
-        shutil.rmtree(output_dir)
+            geoms = self.parse_gml(output_dir, year, size)
 
         return geoms
 
