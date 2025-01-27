@@ -85,6 +85,26 @@ docker network ls --format {{.Name}} |grep pytest | awk '{print $1}' | xargs -I 
 <!-- 8. To update the [database documentation](./backend/databasemodel/dbdoc/README.md) to reflect the changes, install [tbls](https://github.com/k1LoW/tbls) and run `tbls doc --force`. -->
 8. Commit your changes and the new revision file in [alembic versions dir](./database/migrations/versions).
 
+#### Adding a new table
+
+Alembic(_utils) is not able to create a new table and triggers for the table in a same migration. Because this project creates some triggers automatically for versioned tables that needs to be disabled temoprarily.
+
+1. Add a model for new table.
+2. Add a temporary exception for the trigger creation in the [triggers.py](database/triggers.py) in the block that defines the hame tables as following (the last line):
+```python
+# All hame tables
+hame_tables = [
+    klass.__tablename__
+    for _, klass in inspect.getmembers(models, inspect.isclass)
+    if inspect.getmodule(klass) == models
+    and klass.__tablename__ != "<new table name>"
+]
+```
+3. Run `make revision name="add a new table"` to create a migration file for table creation.
+4. Apply the migrations by running `make test-migrate-db`
+5. Remove the temporary exception
+6. Run `make revision name="add triggers"` to create a migration file for trigger creation.
+
 ### Adding requirements
 
 To add new requirements:
