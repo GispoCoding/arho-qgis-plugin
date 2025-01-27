@@ -178,7 +178,6 @@ def test_plan_regulation(
     plan_regulation_group_instance: models.PlanRegulationGroup,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
-    type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
     plan_theme_instance: codes.PlanTheme,
 ):
     # non-nullable plan regulation relations
@@ -209,51 +208,8 @@ def test_plan_regulation(
         type_of_verbal_plan_regulation_instance
     )
     text_plan_regulation_instance.plan_theme = plan_theme_instance
-    # All eight additional information regulations are nullable
-    # Käyttötarkoitus
-    assert text_plan_regulation_instance.intended_use is None
-    assert type_of_additional_information_instance.intended_use_plan_regulations == []
-    text_plan_regulation_instance.intended_use = type_of_additional_information_instance
-    # Olemassaolo
-    assert text_plan_regulation_instance.existence is None
-    assert type_of_additional_information_instance.existence_plan_regulations == []
-    text_plan_regulation_instance.existence = type_of_additional_information_instance
-    # Tyyppi (lisätiedon laji)
-    assert text_plan_regulation_instance.regulation_type_additional_information is None
-    assert type_of_additional_information_instance.type_plan_regulations == []
-    text_plan_regulation_instance.regulation_type_additional_information = (
-        type_of_additional_information_instance
-    )
-    # Merkittävyys
-    assert text_plan_regulation_instance.significance is None
-    assert type_of_additional_information_instance.significance_plan_regulations == []
-    text_plan_regulation_instance.significance = type_of_additional_information_instance
-    # Eri tahojen tarpeisiin varaus
-    assert text_plan_regulation_instance.reservation is None
-    assert type_of_additional_information_instance.reservation_plan_regulations == []
-    text_plan_regulation_instance.reservation = type_of_additional_information_instance
-    # Kehittäminen
-    assert text_plan_regulation_instance.development is None
-    assert type_of_additional_information_instance.development_plan_regulations == []
-    text_plan_regulation_instance.development = type_of_additional_information_instance
-    # Häiriön torjuntatarve
-    assert text_plan_regulation_instance.disturbance_prevention is None
-    assert (
-        type_of_additional_information_instance.disturbance_prevention_plan_regulations
-        == []
-    )
-    text_plan_regulation_instance.disturbance_prevention = (
-        type_of_additional_information_instance
-    )
-    # Rakentamisen ohjaus
-    assert text_plan_regulation_instance.construction_control is None
-    assert (
-        type_of_additional_information_instance.construction_control_plan_regulations
-        == []
-    )
-    text_plan_regulation_instance.construction_control = (
-        type_of_additional_information_instance
-    )
+
+    assert text_plan_regulation_instance.additional_information == []
 
     session.flush()
 
@@ -266,72 +222,25 @@ def test_plan_regulation(
     ]
     assert text_plan_regulation_instance.plan_theme is plan_theme_instance
     assert plan_theme_instance.plan_regulations == [text_plan_regulation_instance]
-    # Käyttötarkoitus
+
+
+def test_additional_information(
+    main_use_additional_information_instance: models.AdditionalInformation,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
+    type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+):
     assert (
-        text_plan_regulation_instance.intended_use
-        is type_of_additional_information_instance
+        main_use_additional_information_instance.type_of_additional_information
+        is type_of_main_use_additional_information_instance
     )
-    assert type_of_additional_information_instance.intended_use_plan_regulations == [
-        text_plan_regulation_instance
+    assert (
+        main_use_additional_information_instance.plan_regulation
+        is empty_value_plan_regulation_instance
+    )
+
+    assert empty_value_plan_regulation_instance.additional_information == [
+        main_use_additional_information_instance
     ]
-    # Olemassaolo
-    assert (
-        text_plan_regulation_instance.existence
-        is type_of_additional_information_instance
-    )
-    assert type_of_additional_information_instance.existence_plan_regulations == [
-        text_plan_regulation_instance
-    ]
-    # Tyyppi (lisätiedon laji)
-    assert (
-        text_plan_regulation_instance.regulation_type_additional_information
-        is type_of_additional_information_instance
-    )
-    assert type_of_additional_information_instance.type_plan_regulations == [
-        text_plan_regulation_instance
-    ]
-    # Merkittävyys
-    assert (
-        text_plan_regulation_instance.significance
-        is type_of_additional_information_instance
-    )
-    assert type_of_additional_information_instance.significance_plan_regulations == [
-        text_plan_regulation_instance
-    ]
-    # Eri tahojen tarpeisiin varaus
-    assert (
-        text_plan_regulation_instance.reservation
-        is type_of_additional_information_instance
-    )
-    assert type_of_additional_information_instance.reservation_plan_regulations == [
-        text_plan_regulation_instance
-    ]
-    # Kehittäminen
-    assert (
-        text_plan_regulation_instance.development
-        is type_of_additional_information_instance
-    )
-    assert type_of_additional_information_instance.development_plan_regulations == [
-        text_plan_regulation_instance
-    ]
-    # Häiriön torjuntatarve
-    assert (
-        text_plan_regulation_instance.disturbance_prevention
-        is type_of_additional_information_instance
-    )
-    assert (
-        type_of_additional_information_instance.disturbance_prevention_plan_regulations
-        == [text_plan_regulation_instance]
-    )
-    # Rakentamisen ohjaus
-    assert (
-        text_plan_regulation_instance.construction_control
-        is type_of_additional_information_instance
-    )
-    assert (
-        type_of_additional_information_instance.disturbance_prevention_plan_regulations
-        == [text_plan_regulation_instance]
-    )
 
 
 def test_plan_proposition(

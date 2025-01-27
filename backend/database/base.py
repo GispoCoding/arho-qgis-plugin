@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from enums import AttributeValueDataType
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey, Index
@@ -15,6 +16,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.sql import func
 from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP
+from sqlalchemy.types import Enum as SQLAlchemyEnum
 from typing_extensions import Annotated
 
 PROJECT_SRID = 3067
@@ -169,6 +171,7 @@ class PlanObjectBase(PlanBase):
     height_min: Mapped[Optional[float]]
     height_max: Mapped[Optional[float]]
     height_unit: Mapped[Optional[str]]
+    height_reference_point: Mapped[Optional[str]]
     ordering: Mapped[Optional[int]]
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
@@ -204,3 +207,28 @@ class PlanObjectBase(PlanBase):
             ),
             lazy="joined",
         )
+
+
+class AttributeValueMixin:
+    """Common attributes for property values"""
+
+    value_data_type: Mapped[Optional[AttributeValueDataType]] = mapped_column(
+        SQLAlchemyEnum(
+            AttributeValueDataType, values_callable=lambda e: [x.value for x in e]
+        ),
+    )
+
+    numeric_value: Mapped[Optional[float]]
+    numeric_range_min: Mapped[Optional[float]]
+    numeric_range_max: Mapped[Optional[float]]
+
+    unit: Mapped[Optional[str]]
+
+    text_value: Mapped[Optional[language_str]]
+    text_syntax: Mapped[Optional[str]]
+
+    code_list: Mapped[Optional[str]]
+    code_value: Mapped[Optional[str]]
+    code_title: Mapped[Optional[language_str]]
+
+    height_reference_point: Mapped[Optional[str]]

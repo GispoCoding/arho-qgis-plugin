@@ -24,6 +24,7 @@ from codes import (
     processing_events_by_status,
 )
 from db_helper import DatabaseHelper, User
+from enums import AttributeValueDataType
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
@@ -542,6 +543,69 @@ class RyhtiClient:
         recommendation_dict["value"] = plan_recommendation.text_value
         return recommendation_dict
 
+    def get_attribute_value(self, attribute_value: base.AttributeValueMixin) -> Dict:
+        value = {"dataType": attribute_value.value_data_type.value}
+        if attribute_value.value_data_type is AttributeValueDataType.CODE:
+            value["code"] = attribute_value.code_value
+            value["codeList"] = attribute_value.code_list
+            value["title"] = attribute_value.code_title
+        elif attribute_value.value_data_type in (
+            AttributeValueDataType.NUMERIC,
+            AttributeValueDataType.POSITIVE_NUMERIC,
+            AttributeValueDataType.SPOT_ELEVATION,
+        ):
+            value["number"] = int(attribute_value.numeric_value)
+            value["unitOfMeasure"] = attribute_value.unit
+        elif attribute_value.value_data_type in (
+            AttributeValueDataType.NUMERIC_RANGE,
+            AttributeValueDataType.POSITIVE_NUMERIC_RANGE,
+        ):
+            value["minimumValue"] = int(attribute_value.numeric_range_min)
+            value["maximumValue"] = int(attribute_value.numeric_range_max)
+            value["unitOfMeasure"] = attribute_value.unit
+        elif attribute_value.value_data_type in (
+            AttributeValueDataType.DECIMAL,
+            AttributeValueDataType.POSITIVE_DECIMAL,
+        ):
+            value["number"] = attribute_value.numeric_value
+            value["unitOfMeasure"] = attribute_value.unit
+        elif attribute_value.value_data_type in (
+            AttributeValueDataType.DECIMAL_RANGE,
+            AttributeValueDataType.POSITIVE_DECIMAL_RANGE,
+        ):
+            value["minimumValue"] = attribute_value.numeric_range_min
+            value["maximumValue"] = attribute_value.numeric_range_max
+            value["unitOfMeasure"] = attribute_value.unit
+        elif attribute_value.value_data_type is AttributeValueDataType.IDENTIFIER:
+            pass  # TODO: implement identifier values
+        elif attribute_value.value_data_type in (
+            AttributeValueDataType.LOCALIZED_TEXT,
+            AttributeValueDataType.TEXT,
+        ):
+            value["text"] = attribute_value.text_value
+            if attribute_value.text_syntax:
+                value["syntax"] = attribute_value.text_syntax
+        elif attribute_value.value_data_type in (
+            AttributeValueDataType.TIME_PERIOD,
+            AttributeValueDataType.TIME_PERIOD_DATE_ONLY,
+        ):
+            pass  # TODO: implement time period and time period date only values
+
+        return value
+
+    def get_additional_information(
+        self, additional_information: models.AdditionalInformation
+    ) -> Dict:
+        additional_information_dict = {
+            "type": additional_information.type_of_additional_information.uri
+        }
+        if additional_information.value_data_type is not None:
+            additional_information_dict["value"] = self.get_attribute_value(
+                additional_information
+            )
+
+        return additional_information_dict
+
     def get_plan_regulation(self, plan_regulation: models.PlanRegulation) -> Dict:
         """
         Construct a dict of Ryhti compatible plan regulation.
@@ -564,51 +628,14 @@ class RyhtiClient:
             ]
         # Additional informations may contain multiple additional info
         # code values.
-        regulation_dict["additionalInformations"] = []
-        for code_value in [
-            plan_regulation.intended_use,
-            plan_regulation.existence,
-            plan_regulation.regulation_type_additional_information,
-            plan_regulation.significance,
-            plan_regulation.reservation,
-            plan_regulation.development,
-            plan_regulation.disturbance_prevention,
-            plan_regulation.construction_control,
-        ]:
-            if code_value:
-                regulation_dict["additionalInformations"].append(
-                    {"type": code_value.uri}
-                )
+        regulation_dict["additionalInformations"] = [
+            self.get_additional_information(ai)
+            for ai in plan_regulation.additional_information
+        ]
 
-        # Regulation itself may only have one type of value.
-        # TODO: support code values, if regulation itself needs code values.
-        # Probably code value would have to be saved as string in database,
-        # they depend on the code list.
-        text_value = plan_regulation.text_value
-        if text_value:
-            regulation_dict["value"] = {
-                "dataType": "LocalizedText",
-                "text": text_value,
-            }
-        elif plan_regulation.numeric_value:
-            regulation_dict["value"] = {
-                "dataType": "decimal",
-                # we have to use simplejson because numbers are Decimal
-                "number": plan_regulation.numeric_value,
-                "unitOfMeasure": plan_regulation.unit,
-            }
-        elif plan_regulation.numeric_range_min or plan_regulation.numeric_range_max:
-            regulation_dict["value"] = {
-                "dataType": "positiveNumericRange"
-                if (
-                    plan_regulation.numeric_range_min
-                    and plan_regulation.numeric_range_min >= 0
-                )
-                else "numericRange",
-                "minimumValue": plan_regulation.numeric_range_min,
-                "maximumValue": plan_regulation.numeric_range_max,
-                "unitOfMeasure": plan_regulation.unit,
-            }
+        if plan_regulation.value_data_type is not None:
+            regulation_dict["value"] = self.get_attribute_value(plan_regulation)
+
         return regulation_dict
 
     def get_plan_regulation_group(
@@ -660,7 +687,7 @@ class RyhtiClient:
         )
         if plan_object.height_min or plan_object.height_max:
             plan_object_dict["verticalLimit"] = {
-                "dataType": "decimalRange",
+                "dataType": "DecimalRange",
                 # we have to use simplejson because numbers are Decimal
                 "minimumValue": plan_object.height_min,
                 "maximumValue": plan_object.height_max,

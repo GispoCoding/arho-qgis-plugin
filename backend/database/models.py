@@ -4,6 +4,7 @@ from typing import List, Optional
 
 # we have to import CodeBase in codes.py from here to allow two-way relationships
 from base import (  # noqa
+    AttributeValueMixin,
     Base,
     CodeBase,
     PlanBase,
@@ -299,7 +300,35 @@ class PlanRegulationGroup(VersionedBase):
     )
 
 
-class PlanRegulation(PlanBase):
+class AdditionalInformation(VersionedBase, AttributeValueMixin):
+    """Kaavamääräyksen lisätieto"""
+
+    __tablename__ = "additional_information"
+
+    plan_regulation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+        ),
+        index=True,
+    )
+    type_additional_information_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="type_additional_information_id_fkey",
+        ),
+        index=True,
+    )
+
+    plan_regulation: Mapped["PlanRegulation"] = relationship(
+        "PlanRegulation", back_populates="additional_information"
+    )
+    type_of_additional_information = relationship(
+        "TypeOfAdditionalInformation", lazy="joined"
+    )
+
+
+class PlanRegulation(PlanBase, AttributeValueMixin):
     """
     Kaavamääräys
     """
@@ -350,125 +379,10 @@ class PlanRegulation(PlanBase):
     # Let's load all the codes for objects joined.
     plan_theme = relationship("PlanTheme", backref="plan_regulations", lazy="joined")
 
-    # Käyttötarkoitus
-    intended_use_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="intended_use_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Olemassaolo
-    existence_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="existence_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Tyyppi
-    regulation_type_additional_information_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="regulation_type_additional_information_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Merkittävyys
-    significance_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="significance_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Eri tahojen tarpeisiin varaus
-    reservation_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="reservation_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Kehittäminen
-    development_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="development_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Häiriöntorjuntatarve
-    disturbance_prevention_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="disturbance_prevention_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Rakentamisen ohjaus
-    construction_control_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_additional_information.id",
-            name="construction_control_id_fkey",
-        ),
-        nullable=True,
-    )
-    # Let's load all the codes for objects joined.
-    intended_use = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[intended_use_id],
-        backref="intended_use_plan_regulations",
-        lazy="joined",
-    )
-    existence = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[existence_id],
-        backref="existence_plan_regulations",
-        lazy="joined",
-    )
-    regulation_type_additional_information = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[regulation_type_additional_information_id],
-        backref="type_plan_regulations",
-        lazy="joined",
-    )
-    significance = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[significance_id],
-        backref="significance_plan_regulations",
-        lazy="joined",
-    )
-    reservation = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[reservation_id],
-        backref="reservation_plan_regulations",
-        lazy="joined",
-    )
-    development = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[development_id],
-        backref="development_plan_regulations",
-        lazy="joined",
-    )
-    disturbance_prevention = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[disturbance_prevention_id],
-        backref="disturbance_prevention_plan_regulations",
-        lazy="joined",
-    )
-    construction_control = relationship(
-        "TypeOfAdditionalInformation",
-        foreign_keys=[construction_control_id],
-        backref="construction_control_plan_regulations",
-        lazy="joined",
+    additional_information: Mapped[list[AdditionalInformation]] = relationship(
+        "AdditionalInformation", back_populates="plan_regulation", lazy="joined"
     )
 
-    text_value: Mapped[Optional[language_str]]
-    numeric_value: Mapped[Optional[float]]
-    numeric_range_min: Mapped[Optional[int]]
-    numeric_range_max: Mapped[Optional[int]]
-    unit: Mapped[Optional[str]]
     ordering: Mapped[Optional[int]]
     subject_identifiers: Mapped[Optional[List[str]]]
 

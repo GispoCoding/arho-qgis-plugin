@@ -3,7 +3,7 @@ import time
 import timeit
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional
+from typing import Callable, Iterable, List, Mapping, Optional
 from zoneinfo import ZoneInfo
 
 import codes
@@ -19,11 +19,12 @@ from base import PROJECT_SRID
 from db_helper import DatabaseHelper, User
 from db_manager import db_manager
 from dotenv import load_dotenv
+from enums import AttributeValueDataType
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.orm import Session, sessionmaker
 
-hame_count: int = 15  # adjust me when adding tables
+hame_count: int = 16  # adjust me when adding tables
 codes_count: int = 21  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -637,6 +638,18 @@ def type_of_additional_information_instance(session):
 
 
 @pytest.fixture()
+def type_of_main_use_additional_information_instance(session):
+    instance = codes.TypeOfAdditionalInformation(
+        value="paakayttotarkoitus", status="LOCAL"
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def type_of_source_data_instance(session):
     instance = codes.TypeOfSourceData(value="test", status="LOCAL")
     session.add(instance)
@@ -1107,7 +1120,8 @@ def numeric_plan_regulation_instance(
 ):
     instance = models.PlanRegulation(
         subject_identifiers=["#test_regulation"],
-        numeric_value=1.0,
+        value_data_type=AttributeValueDataType.NUMERIC,
+        numeric_value=1,
         unit="m",
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
@@ -1130,6 +1144,7 @@ def numeric_range_plan_regulation_instance(
 ):
     instance = models.PlanRegulation(
         subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.NUMERIC_RANGE,
         numeric_range_min=2,
         numeric_range_max=3,
         lifecycle_status=preparation_status_instance,
@@ -1153,10 +1168,12 @@ def text_plan_regulation_instance(
 ):
     instance = models.PlanRegulation(
         subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
         plan_regulation_group=plan_regulation_group_instance,
+        additional_information=[],
         ordering=4,
     )
     session.add(instance)
@@ -1175,6 +1192,7 @@ def point_text_plan_regulation_instance(
 ):
     instance = models.PlanRegulation(
         subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
@@ -1203,6 +1221,7 @@ def verbal_plan_regulation_instance(
     """
     instance = models.PlanRegulation(
         subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_verbal_instance,
@@ -1226,6 +1245,7 @@ def general_plan_regulation_instance(
 ):
     instance = models.PlanRegulation(
         subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_instance,
@@ -1388,6 +1408,47 @@ def interaction_event_date_instance(
     session.commit()
 
 
+@pytest.fixture()
+def main_use_additional_information_instance(
+    session,
+    type_of_main_use_additional_information_instance,
+    empty_value_plan_regulation_instance,
+):
+    instance = models.AdditionalInformation(
+        plan_regulation=empty_value_plan_regulation_instance,
+        type_of_additional_information=type_of_main_use_additional_information_instance,
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture
+def make_additional_information_instance_for_plan_regulation(session: Session):
+    created_instances = []
+
+    def _make_additional_information_instance_for_plan_regulation(
+        plan_regulation: models.PlanRegulation,
+        type_of_additional_information: codes.TypeOfAdditionalInformation,
+    ):
+        instance = models.AdditionalInformation(
+            plan_regulation=plan_regulation,
+            type_of_additional_information=type_of_additional_information,
+        )
+        session.add(instance)
+        session.commit()
+        created_instances.append(instance)
+        return instance
+
+    yield _make_additional_information_instance_for_plan_regulation
+
+    for instance in created_instances:
+        session.delete(instance)
+    session.commit()
+
+
 @pytest.fixture(scope="function")
 def complete_test_plan(
     session: Session,
@@ -1407,7 +1468,11 @@ def complete_test_plan(
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     plan_theme_instance: codes.PlanTheme,
-    type_of_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    make_additional_information_instance_for_plan_regulation: Callable[
+        [models.PlanRegulation, codes.TypeOfAdditionalInformation],
+        models.AdditionalInformation,
+    ],
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
@@ -1436,29 +1501,58 @@ def complete_test_plan(
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
     empty_value_plan_regulation_instance.plan_theme = plan_theme_instance
-    empty_value_plan_regulation_instance.intended_use = (
-        type_of_additional_information_instance
+
+    empty_value_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            empty_value_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
     )
+
     text_plan_regulation_instance.plan_theme = plan_theme_instance
-    text_plan_regulation_instance.intended_use = type_of_additional_information_instance
+    text_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            text_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
+    )
+
     point_text_plan_regulation_instance.plan_theme = plan_theme_instance
-    point_text_plan_regulation_instance.intended_use = (
-        type_of_additional_information_instance
+    point_text_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            point_text_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
     )
+
     numeric_plan_regulation_instance.plan_theme = plan_theme_instance
-    numeric_plan_regulation_instance.intended_use = (
-        type_of_additional_information_instance
+    numeric_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            numeric_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
     )
+
     numeric_range_plan_regulation_instance.plan_theme = plan_theme_instance
     # numeric range cannot be used with intended use regulation type
+
     verbal_plan_regulation_instance.plan_theme = plan_theme_instance
-    verbal_plan_regulation_instance.intended_use = (
-        type_of_additional_information_instance
+    verbal_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            verbal_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
     )
+
+    # Does general plan regulation need additional information?
     general_plan_regulation_instance.plan_theme = plan_theme_instance
-    general_plan_regulation_instance.intended_use = (
-        type_of_additional_information_instance
+    general_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            general_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
     )
+
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
     yield plan_instance
@@ -1819,7 +1913,7 @@ def desired_plan_dict(
                 "description": land_use_area_instance.description,
                 "objectNumber": land_use_area_instance.ordering,
                 "verticalLimit": {
-                    "dataType": "decimalRange",
+                    "dataType": "DecimalRange",
                     "minimumValue": land_use_area_instance.height_min,
                     "maximumValue": land_use_area_instance.height_max,
                     "unitOfMeasure": land_use_area_instance.height_unit,
@@ -1907,8 +2001,10 @@ def desired_plan_dict(
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
                         "value": {
-                            "dataType": "decimal",
-                            "number": numeric_plan_regulation_instance.numeric_value,
+                            "dataType": "Numeric",
+                            "number": int(
+                                numeric_plan_regulation_instance.numeric_value
+                            ),
                             "unitOfMeasure": numeric_plan_regulation_instance.unit,
                         },
                         "subjectIdentifiers": numeric_plan_regulation_instance.subject_identifiers,
@@ -1932,9 +2028,13 @@ def desired_plan_dict(
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpaallinenKerroslukuArvovali",
                         "value": {
-                            "dataType": "positiveNumericRange",
-                            "minimumValue": numeric_range_plan_regulation_instance.numeric_range_min,
-                            "maximumValue": numeric_range_plan_regulation_instance.numeric_range_max,
+                            "dataType": "NumericRange",
+                            "minimumValue": int(
+                                numeric_range_plan_regulation_instance.numeric_range_min
+                            ),
+                            "maximumValue": int(
+                                numeric_range_plan_regulation_instance.numeric_range_max
+                            ),
                             "unitOfMeasure": numeric_range_plan_regulation_instance.unit,
                         },
                         "subjectIdentifiers": numeric_range_plan_regulation_instance.subject_identifiers,
