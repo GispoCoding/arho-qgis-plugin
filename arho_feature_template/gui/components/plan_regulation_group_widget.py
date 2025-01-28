@@ -6,17 +6,18 @@ from typing import TYPE_CHECKING
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QWidget
+from qgis.PyQt.QtGui import QIcon, QPixmap
+from qgis.PyQt.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
 from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
+from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLabel, QLineEdit, QPushButton
+    from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
 
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -42,11 +43,14 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.regulation_group_details_layout: QFormLayout
 
         # INIT
+        self.frame.setObjectName("frame")  # Set unique name to avoid style cascading
         self.regulation_widgets: list[RegulationWidget] = []
         self.proposition_widgets: list[PropositionWidget] = []
+        self.link_label_icon: QLabel | None = None
+        self.link_label_text: QLabel | None = None
 
-        regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
         self.from_model(regulation_group)
+        self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
 
         self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
@@ -68,6 +72,12 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.add_regulation_widget(regulation)
         for proposition in regulation_group.propositions:
             self.add_proposition_widget(proposition)
+
+        if regulation_group.id_:
+            # Remove existing indicators if reinitializing
+            self.unset_existing_regulation_group_style()
+            # Set indicators that the regulation group exists in the plan already
+            self.set_existing_regulation_group_style()
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
         widget = RegulationWidget(regulation=regulation, parent=self.frame)
@@ -92,6 +102,44 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.frame.layout().removeWidget(proposition_widget)
         self.proposition_widgets.remove(proposition_widget)
         proposition_widget.deleteLater()
+
+    def set_existing_regulation_group_style(self):
+        tooltip = (
+            "Kaavamääräysryhmä on tallennettu kaavaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin "
+            "kaavakohteisiin, joille ryhmä on lisätty."
+        )
+        layout = QHBoxLayout()
+
+        self.link_label_icon = QLabel()
+        self.link_label_icon.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.link_label_icon.setPixmap(QPixmap(resources_path("icons", "linked_img_small.png")))
+        self.link_label_icon.setToolTip(tooltip)
+        layout.addWidget(self.link_label_icon)
+
+        self.link_label_text = QLabel()
+        self.link_label_text.setObjectName("text_label")  # Set unique name to avoid style cascading
+        feat_count = len(
+            list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(self.regulation_group.id_))
+        )
+        self.link_label_text.setText(f"Kaavamääräysryhmä on käytössä {feat_count} kaavakohteella")
+        self.link_label_text.setStyleSheet("#text_label { color: #4b8db2; }")
+        self.link_label_text.setToolTip(tooltip)
+        layout.addWidget(self.link_label_text)
+
+        self.frame.layout().insertLayout(1, layout)
+
+        self.setStyleSheet("#frame { border: 2px solid #4b8db2; }")
+
+    def unset_existing_regulation_group_style(self):
+        if self.link_label_icon:
+            self.link_label_icon.deleteLater()
+            self.link_label_icon = None
+
+        if self.link_label_text:
+            self.link_label_text.deleteLater()
+            self.link_label_text = None
+
+        self.setStyleSheet("")
 
     def into_model(self) -> RegulationGroup:
         return RegulationGroup(

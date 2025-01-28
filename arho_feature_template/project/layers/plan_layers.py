@@ -326,7 +326,7 @@ class PlanRegulationLayer(AbstractPlanLayer):
         feature["unit"] = model.config.unit
         feature["text_value"] = {LANGUAGE: model.value if isinstance(model.value, str) else ""}
         feature["numeric_value"] = model.value if isinstance(model.value, Number) else NULL
-        feature["name"] = {LANGUAGE: model.topic_tag if model.topic_tag else ""}
+        # feature["name"] = {LANGUAGE: model.topic_tag if model.topic_tag else ""}
         feature["type_of_verbal_plan_regulation_id"] = model.verbal_regulation_type_id
         feature["id"] = model.id_ if model.id_ else feature["id"]
         # feature["plan_theme_id"]
