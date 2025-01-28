@@ -3,6 +3,7 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING
 
+from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
@@ -16,7 +17,8 @@ from qgis.PyQt.QtWidgets import (
     QTreeWidgetItem,
 )
 
-from arho_feature_template.core.models import Plan, RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.gui.components.plan_document_widget import DocumentWidget
 from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
@@ -28,7 +30,7 @@ from arho_feature_template.project.layers.code_layers import (
 from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QTextEdit, QVBoxLayout, QWidget
+    from qgis.PyQt.QtWidgets import QComboBox, QLineEdit, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
 
@@ -50,6 +52,10 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     plan_regulation_group_scrollarea_contents: QWidget
     plan_regulation_group_libraries_combobox: QComboBox
     regulation_groups_tree_layout: QVBoxLayout
+
+    documents_scroll_contents: QWidget
+    documents_layout: QVBoxLayout
+    add_document_btn: QPushButton
 
     button_box: QDialogButtonBox
 
@@ -96,6 +102,13 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         for regulation_group in plan.general_regulations:
             self.add_plan_regulation_group(regulation_group)
+
+        self.document_widgets: list[DocumentWidget] = []
+        for document in plan.documents:
+            self.add_document(document)
+
+        self.add_document_btn.clicked.connect(self.add_new_document)
+        self.add_document_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
         self.button_box.accepted.connect(self._on_ok_clicked)
@@ -161,6 +174,21 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
                     group_definition.name, group_definition, category_item
                 )
 
+    def add_new_document(self):
+        self.add_document(Document())
+
+    def add_document(self, document: Document):
+        widget = DocumentWidget(document, parent=self.documents_scroll_contents)
+        widget.delete_signal.connect(self.delete_document)
+        self.documents_layout.insertWidget(1, widget)
+        self.document_widgets.append(widget)
+
+    def delete_document(self, document_widget: DocumentWidget):
+        document_widget.delete_signal.disconnect()
+        self.documents_layout.removeWidget(document_widget)
+        self.document_widgets.remove(document_widget)
+        document_widget.deleteLater()
+
     # ---
 
     def into_model(self) -> Plan:
@@ -176,6 +204,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             matter_management_identifier=self.matter_management_identifier_line_edit.text() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),
             general_regulations=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
+            documents=[document_widget.into_model() for document_widget in self.document_widgets],
             geom=self.plan.geom,
         )
 

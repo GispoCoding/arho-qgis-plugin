@@ -91,4 +91,34 @@ class VerbalRegulationType(AbstractCodeLayer):
     category_only_codes: ClassVar[list[str]] = ["maarayksenTyyppi"]
 
 
+class CategoryOfPublicityLayer(AbstractCodeLayer):
+    name = "Julkisuusluokka"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+class TypeOfDocumentLayer(AbstractCodeLayer):
+    name = "Asiakirjatyyppi"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+class LanguageLayer(AbstractCodeLayer):
+    name = "Kieli"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+class PersonalDataContentLayer(AbstractCodeLayer):
+    name = "Henkilötietosisältö"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+class RetentionTimeLayer(AbstractCodeLayer):
+    name = "Säilytysaika"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
 code_layers = AbstractCodeLayer.__subclasses__()
