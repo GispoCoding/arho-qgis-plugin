@@ -10,6 +10,7 @@ from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
+    Document,
     FeatureTemplateLibrary,
     Plan,
     PlanFeature,
@@ -28,6 +29,7 @@ from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGro
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, code_layers
 from arho_feature_template.project.layers.plan_layers import (
+    DocumentLayer,
     LandUseAreaLayer,
     LandUsePointLayer,
     LineLayer,
@@ -514,6 +516,11 @@ def save_plan(plan: Plan) -> QgsFeature:
             regulation_group_feature = save_regulation_group(regulation_group, plan_id)
             save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id)
 
+    # Save documents
+    for document in plan.documents:
+        document.plan_id = feature["id"]
+        save_document(document)
+
     return feature
 
 
@@ -660,3 +667,17 @@ def delete_proposition(proposition: Proposition):
     layer = PlanPropositionLayer.get_from_project()
 
     _delete_feature(feature, layer, "Kaavasuosituksen poisto")
+
+
+def save_document(document: Document) -> QgsFeature:
+    feature = DocumentLayer.feature_from_model(document)
+    layer = DocumentLayer.get_from_project()
+
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=document.id_,
+        edit_text="Asiakirjan lisäys" if document.id_ is None else "Asiakirjan muokkaus",
+    )
+
+    return feature

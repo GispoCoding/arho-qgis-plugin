@@ -15,6 +15,8 @@ from arho_feature_template.qgis_plugin_tools.tools.resources import resources_pa
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from qgis.core import QgsFeature, QgsGeometry
 
 
@@ -255,7 +257,7 @@ class RegulationConfig:
             id=feature["id"],
             regulation_code=feature["value"],
             name=feature["name"][LANGUAGE],
-            description=feature["description"][LANGUAGE],
+            description=feature["description"][LANGUAGE] if feature["description"] else "",
             status=feature["status"],
             level=feature["level"],
             parent_id=feature["parent_id"],
@@ -370,5 +372,26 @@ class Plan:
     producers_plan_identifier: str | None = None
     organisation_id: str | None = None
     general_regulations: list[RegulationGroup] = field(default_factory=list)
+    documents: list[Document] = field(default_factory=list)
     geom: QgsGeometry | None = None
+    id_: int | None = None
+
+
+@dataclass
+class Document:
+    name: str | None = None
+    url: str | None = None
+    type_of_document_id: str | None = None
+    decision: bool | None = None
+    # permanent_document_identifier: str | None = None
+    category_of_publicity_id: str | None = None
+    personal_data_content_id: str | None = None
+    retention_time_id: str | None = None
+    language_id: str | None = None
+    document_date: datetime | None = None
+    # exported_at: str | None = None
+    # exported_file_key:
+    confirmation_date: datetime | None = None
+    arrival_date: datetime | None = None
+    plan_id: int | None = None
     id_: int | None = None

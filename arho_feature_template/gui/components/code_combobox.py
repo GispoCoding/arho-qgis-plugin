@@ -83,7 +83,12 @@ class HierarchicalCodeComboBox(QComboBox):
             items[code_feature["id"]] = item
 
             item.setText(0, code_feature["name"][LANGUAGE])
-            item.setToolTip(0, code_feature["description"][LANGUAGE])
+            item.setToolTip(
+                0,
+                code_feature["description"][LANGUAGE]
+                if code_feature["description"]
+                else code_feature["name"][LANGUAGE],
+            )
             item.setData(0, Qt.UserRole, code_feature["id"])
 
             if code_feature["value"] in layer_type.category_only_codes:

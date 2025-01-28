@@ -11,6 +11,7 @@ from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, Q
 from qgis.utils import iface
 
 from arho_feature_template.core.models import (
+    Document,
     Plan,
     PlanFeature,
     Proposition,
@@ -109,6 +110,10 @@ class PlanLayer(AbstractPlanLayer):
                 RegulationGroupLayer.model_from_feature(feat)
                 for feat in general_regulation_features
                 if feat is not None
+            ],
+            documents=[
+                DocumentLayer.model_from_feature(feat)
+                for feat in DocumentLayer.get_features_by_attribute_value("plan_id", feature["id"])
             ],
             id_=feature["id"],
         )
@@ -404,6 +409,44 @@ class PlanPropositionLayer(AbstractPlanLayer):
 class DocumentLayer(AbstractPlanLayer):
     name = "Asiakirjat"
     filter_template = Template("plan_id = '$plan_id'")
+
+    @classmethod
+    def feature_from_model(cls, model: Document) -> QgsFeature:
+        feature = cls.initialize_feature_from_model(model)
+
+        feature["name"] = {LANGUAGE: model.name}
+        feature["url"] = model.url
+        feature["type_of_document_id"] = model.type_of_document_id
+        feature["decision"] = model.decision
+        feature["category_of_publicity_id"] = model.category_of_publicity_id
+        feature["personal_data_content_id"] = model.personal_data_content_id
+        feature["retention_time_id"] = model.retention_time_id
+        feature["language_id"] = model.language_id
+        feature["document_date"] = model.document_date
+        feature["arrival_date"] = model.arrival_date
+        feature["confirmation_date"] = model.confirmation_date
+        feature["plan_id"] = model.plan_id
+        feature["id"] = model.id_ if model.id_ else feature["id"]
+
+        return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> Document:
+        return Document(
+            name=feature["name"][LANGUAGE],
+            url=feature["url"],
+            type_of_document_id=feature["type_of_document_id"],
+            decision=feature["decision"],
+            category_of_publicity_id=feature["category_of_publicity_id"],
+            personal_data_content_id=feature["personal_data_content_id"],
+            retention_time_id=feature["retention_time_id"],
+            language_id=feature["language_id"],
+            document_date=feature["document_date"],
+            arrival_date=feature["arrival_date"],
+            confirmation_date=feature["confirmation_date"],
+            plan_id=feature["plan_id"],
+            id_=feature["id"],
+        )
 
 
 class SourceDataLayer(AbstractPlanLayer):

@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>plan_document</class>
+ <widget class="QWidget" name="plan_document">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>488</width>
+    <height>327</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QLabel" name="label_7">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Asiakirja</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="add_field_btn">
+       <property name="toolTip">
+        <string>Muu tieto</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="del_btn">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>30</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QFormLayout" name="form_layout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Nimi</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLineEdit" name="name">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="expand_hide_btn">
+         <property name="text">
+          <string>Laajenna</string>
+         </property>
+         <property name="autoRaise">
+          <bool>false</bool>
+         </property>
+         <property name="arrowType">
+          <enum>Qt::UpArrow</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="url_label">
+       <property name="text">
+        <string>URL</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="url"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="document_type_label">
+       <property name="text">
+        <string>Tyyppi</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="CodeComboBox" name="document_type"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="publicity_label">
+       <property name="text">
+        <string>Julkisuusluokka</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="CodeComboBox" name="publicity"/>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="language_label">
+       <property name="text">
+        <string>Kieli</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="CodeComboBox" name="language"/>
+     </item>
+     <item row="5" column="1">
+      <widget class="HierarchicalCodeComboBox" name="retention_time"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="CodeComboBox" name="personal_data_content"/>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="decision_label">
+       <property name="text">
+        <string>Päätös</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QCheckBox" name="decision">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string> </string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="personal_data_content_label">
+       <property name="text">
+        <string>Henkilötietosisältö</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="retention_time_label">
+       <property name="text">
+        <string>Säilytysaika</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QgsDateTimeEdit" name="document_date">
+       <property name="displayFormat">
+        <string>d.M.yyyy</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="document_date_label">
+       <property name="text">
+        <string>Asiakirjan päivämäärä</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsDateTimeEdit</class>
+   <extends>QDateTimeEdit</extends>
+   <header>qgsdatetimeedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>CodeComboBox</class>
+   <extends>QComboBox</extends>
+   <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>HierarchicalCodeComboBox</class>
+   <extends>QComboBox</extends>
+   <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
