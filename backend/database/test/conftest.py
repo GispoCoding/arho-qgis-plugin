@@ -2035,7 +2035,7 @@ def desired_plan_dict(
                             "maximumValue": int(
                                 numeric_range_plan_regulation_instance.numeric_range_max
                             ),
-                            "unitOfMeasure": numeric_range_plan_regulation_instance.unit,
+                            # "unitOfMeasure": numeric_range_plan_regulation_instance.unit,  #  floor range does not have unit
                         },
                         "subjectIdentifiers": numeric_range_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [],
