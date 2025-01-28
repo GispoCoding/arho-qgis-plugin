@@ -2278,7 +2278,9 @@ def assert_lists_equal(
         elif isinstance(item1, list):
             assert_lists_equal(item1, item2, ignore_keys=ignore_keys, path=current_path)
         else:
-            assert item1 == item2, f"Items differ at {current_path}"
+            assert (
+                type(item1) is type(item2) and item1 == item2
+            ), f"Items differ at {current_path}"
 
 
 def assert_dicts_equal(
@@ -2306,4 +2308,6 @@ def assert_dicts_equal(
                     dict2[key], value, ignore_keys=ignore_keys, path=current_path
                 )
             else:
-                assert dict2[key] == value, f"Items differ at {current_path}"
+                assert (
+                    type(dict2[key]) is type(value) and dict2[key] == value
+                ), f"Items differ at {current_path}"
