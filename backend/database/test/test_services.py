@@ -296,10 +296,9 @@ def test_get_single_plan(get_single_plan, main_db_params):
 
 
 @pytest.fixture()
-def validate_invalid_plans(ryhti_client_url, complete_test_plan, another_test_plan):
+def validate_all_plans(ryhti_client_url, complete_test_plan, another_test_plan):
     """
-    Validate invalid Ryhti plans against the Ryhti API. Complete test plan is not yet a
-    valid plan, because it contains test code values.
+    Validate valid and invalid Ryhti plans against the Ryhti API.
 
     An invalid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors returned in the payload.
@@ -313,23 +312,23 @@ def validate_invalid_plans(ryhti_client_url, complete_test_plan, another_test_pl
     assert body["title"] == "Plan and plan matter validations run."
     assert (
         body["details"][complete_test_plan.id]
-        == f"Validation FAILED for {complete_test_plan.id}."
+        == f"Plan matter validation successful for {complete_test_plan.id}!"
     )
     assert (
         body["details"][another_test_plan.id]
         == f"Validation FAILED for {another_test_plan.id}."
     )
-    # Our invalid plan is not valid, because it has certain invalid code combinations
-    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 422
-    assert body["ryhti_responses"][complete_test_plan.id]["errors"]
+    # Our test plan is valid
+    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 200
+    assert not body["ryhti_responses"][complete_test_plan.id]["errors"]
     # Another test plan contains nothing really
     assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
     assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
-def test_validate_invalid_plans(validate_invalid_plans, main_db_params):
+def test_validate_all_plans(validate_all_plans, main_db_params):
     """
-    Test the whole lambda endpoint with invalid plans
+    Test the whole lambda endpoint with valid and invalid plans
     """
     conn = psycopg2.connect(**main_db_params)
     try:
@@ -340,23 +339,24 @@ def test_validate_invalid_plans(validate_invalid_plans, main_db_params):
             assert errors
             validation_date, errors = cur.fetchone()
             assert validation_date
-            assert errors
+            assert errors == "Kaava-asia on validi ja sen voi viedä Ryhtiin."
     finally:
         conn.close()
 
 
 @pytest.fixture()
-def validate_single_plan(ryhti_client_url, complete_test_plan, another_test_plan):
+def validate_single_invalid_plan(
+    ryhti_client_url, complete_test_plan, another_test_plan
+):
     """
-    Validate an invalid Ryhti plan against the Ryhti API. Complete test plan is not yet a
-    valid plan, because it contains test code values.
+    Validate an invalid Ryhti plan against the Ryhti API.
 
     An invalid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors returned in the payload.
     """
     payload = {
         "action": "validate_plans",
-        "plan_uuid": complete_test_plan.id,
+        "plan_uuid": another_test_plan.id,
         "save_json": True,
     }
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
@@ -368,16 +368,15 @@ def validate_single_plan(ryhti_client_url, complete_test_plan, another_test_plan
     # Check that other plan is NOT reported validated
     assert len(body["details"]) == 1
     assert (
-        body["details"][complete_test_plan.id]
-        == f"Validation FAILED for {complete_test_plan.id}."
+        body["details"][another_test_plan.id]
+        == f"Validation FAILED for {another_test_plan.id}."
     )
     assert len(body["ryhti_responses"]) == 1
-    # our invalid plan is not valid, because it has certain invalid code combinations
-    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 422
-    assert body["ryhti_responses"][complete_test_plan.id]["errors"]
+    assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
+    assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
-def test_validate_single_plan(validate_single_plan, main_db_params):
+def test_validate_single_invalid_plan(validate_single_invalid_plan, main_db_params):
     """
     Test the whole lambda endpoint with an invalid plan
     """
@@ -399,52 +398,7 @@ def test_validate_single_plan(validate_single_plan, main_db_params):
 
 
 @pytest.fixture()
-def valid_plan_in_preparation(
-    session: Session,
-    complete_test_plan: models.Plan,
-    land_use_area_instance: models.LandUseArea,
-    land_use_point_instance: models.LandUsePoint,
-    empty_value_plan_regulation_instance: models.PlanRegulation,
-    text_plan_regulation_instance: models.PlanRegulation,
-    point_text_plan_regulation_instance: models.PlanRegulation,
-    numeric_plan_regulation_instance: models.PlanRegulation,
-    numeric_range_plan_regulation_instance: models.PlanRegulation,
-    verbal_plan_regulation_instance: models.PlanRegulation,
-    general_plan_regulation_instance: models.PlanRegulation,
-    plan_proposition_instance: models.PlanProposition,
-):
-    """
-    Valid Ryhti plan in preparation phase.
-
-    Complete test plan is not yet quite valid. Fulfil some validation rules regarding
-    code values.
-    """
-    session.add(point_text_plan_regulation_instance)
-    session.add(numeric_plan_regulation_instance)
-    session.add(numeric_range_plan_regulation_instance)
-    session.add(verbal_plan_regulation_instance)
-    session.add(general_plan_regulation_instance)
-
-    # General and verbal regulation type may *not* be intended use regulation!
-    verbal_plan_regulation_instance.intended_use = None
-    general_plan_regulation_instance.intended_use = None
-    # Also, points cannot have intended use at the moment, though they should
-    # be able to, they have detached houses type after all.
-    point_text_plan_regulation_instance.intended_use = None
-
-    # Numeric plan regulations are actually not allowed in maakuntakaava. So let's
-    # put in a text value instead:
-    numeric_plan_regulation_instance.numeric_value = None
-    numeric_plan_regulation_instance.text_value = {
-        "fin": "Olisimme kovasti halunneet tähän numeerisen määräyksen."
-    }
-
-    session.commit()
-    return complete_test_plan
-
-
-@pytest.fixture()
-def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparation):
+def validate_valid_plan_in_preparation(ryhti_client_url, complete_test_plan):
     """
     Validate a valid Ryhti plan against the Ryhti API. This guarantees that the Ryhti
     plan is formed according to spec and passes open Ryhti API validation.
@@ -469,12 +423,12 @@ def validate_valid_plan_in_preparation(ryhti_client_url, valid_plan_in_preparati
     body = data["body"]
     assert body["title"] == "Plan and plan matter validations run."
     assert (
-        body["details"][valid_plan_in_preparation.id]
-        == f"Plan matter validation successful for {valid_plan_in_preparation.id}!"
+        body["details"][complete_test_plan.id]
+        == f"Plan matter validation successful for {complete_test_plan.id}!"
     )
-    assert body["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 200
-    assert body["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
-    assert not body["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 200
+    assert body["ryhti_responses"][complete_test_plan.id]["warnings"]
+    assert not body["ryhti_responses"][complete_test_plan.id]["errors"]
 
 
 def test_validate_valid_plan_matter_in_preparation(
@@ -503,9 +457,7 @@ def test_validate_valid_plan_matter_in_preparation(
 
 
 @pytest.fixture()
-def post_plans_in_preparation(
-    ryhti_client_url, valid_plan_in_preparation, another_test_plan
-):
+def post_plans_in_preparation(ryhti_client_url, complete_test_plan, another_test_plan):
     """
     Validate and POST all valid plans to the mock X-Road API. As earlier, plans are first
     validated with public API, and valid plan matters validated with mock X-Road API.
@@ -525,17 +477,17 @@ def post_plans_in_preparation(
         == "Plan and plan matter validations run. Valid marked plan matters POSTed."
     )
     assert (
-        body["details"][valid_plan_in_preparation.id]
-        == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
+        body["details"][complete_test_plan.id]
+        == f"Plan matter or plan matter phase POST successful for {complete_test_plan.id}!"
     )
     assert (
         body["details"][another_test_plan.id]
         == f"Validation FAILED for {another_test_plan.id}."
     )
     # Valid plan was posted
-    assert body["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
-    assert body["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
-    assert not body["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 201
+    assert body["ryhti_responses"][complete_test_plan.id]["warnings"]
+    assert not body["ryhti_responses"][complete_test_plan.id]["errors"]
     # Another plan was invalid and not posted
     assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
     assert not body["ryhti_responses"][another_test_plan.id]["warnings"]
@@ -591,7 +543,7 @@ def test_post_plans_in_preparation(post_plans_in_preparation, main_db_params):
 
 @pytest.fixture()
 def post_valid_plan_in_preparation(
-    ryhti_client_url, valid_plan_in_preparation, another_test_plan
+    ryhti_client_url, complete_test_plan, another_test_plan
 ):
     """
     Validate and POST single valid plan to the mock X-Road API. As earlier, the plan is first
@@ -603,7 +555,7 @@ def post_valid_plan_in_preparation(
     """
     payload = {
         "action": "post_plans",
-        "plan_uuid": valid_plan_in_preparation.id,
+        "plan_uuid": complete_test_plan.id,
         "save_json": True,
     }
     r = requests.post(ryhti_client_url, data=json.dumps(payload))
@@ -618,13 +570,13 @@ def post_valid_plan_in_preparation(
     # Check that other plan is NOT reported exported
     assert len(body["details"]) == 1
     assert (
-        body["details"][valid_plan_in_preparation.id]
-        == f"Plan matter or plan matter phase POST successful for {valid_plan_in_preparation.id}!"
+        body["details"][complete_test_plan.id]
+        == f"Plan matter or plan matter phase POST successful for {complete_test_plan.id}!"
     )
     assert len(body["ryhti_responses"]) == 1
-    assert body["ryhti_responses"][valid_plan_in_preparation.id]["status"] == 201
-    assert body["ryhti_responses"][valid_plan_in_preparation.id]["warnings"]
-    assert not body["ryhti_responses"][valid_plan_in_preparation.id]["errors"]
+    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 201
+    assert body["ryhti_responses"][complete_test_plan.id]["warnings"]
+    assert not body["ryhti_responses"][complete_test_plan.id]["errors"]
 
 
 def test_post_valid_plan_matter_in_preparation(
