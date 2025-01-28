@@ -21,8 +21,8 @@ pytest:
 	cd database; pytest
 
 pytest-fail:
-	docker-compose -f docker-compose.dev.yml down -v
-	docker-compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
+	docker compose -f docker-compose.dev.yml down -v
+	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
 	cd database; pytest --maxfail=1
 
 rebuild:
