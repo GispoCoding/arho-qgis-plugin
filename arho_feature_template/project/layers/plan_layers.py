@@ -381,7 +381,6 @@ class PlanPropositionLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Proposition) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["name"] = {LANGUAGE: model.name}
         feature["text_value"] = {LANGUAGE: model.value}
         feature["plan_regulation_group_id"] = model.regulation_group_id_
         feature["ordering"] = model.proposition_number
@@ -393,7 +392,6 @@ class PlanPropositionLayer(AbstractPlanLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Proposition:
         return Proposition(
-            name=feature["name"][LANGUAGE],
             value=feature["text_value"][LANGUAGE],
             regulation_group_id_=feature["plan_regulation_group_id"],
             proposition_number=feature["ordering"],

@@ -122,7 +122,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         regulation_widget.deleteLater()
 
     def add_new_proposition(self):
-        proposition = Proposition(name="", value="")
+        proposition = Proposition(value="")
         self.add_proposition(proposition)
 
     def add_proposition(self, proposition: Proposition):
