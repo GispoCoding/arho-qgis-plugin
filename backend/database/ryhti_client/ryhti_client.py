@@ -550,6 +550,8 @@ class RyhtiClient:
             if attribute_value.value_data_type in (
                 AttributeValueDataType.NUMERIC,
                 AttributeValueDataType.POSITIVE_NUMERIC,
+                AttributeValueDataType.NUMERIC_RANGE,
+                AttributeValueDataType.POSITIVE_NUMERIC_RANGE,
                 AttributeValueDataType.SPOT_ELEVATION,
             ):
                 return int(number)
