@@ -33,6 +33,7 @@ FormClass, _ = uic.loadUiType(ui_path)
 class DocumentWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan document."""
 
+    document_edited = pyqtSignal()
     delete_signal = pyqtSignal(QWidget)
 
     def __init__(self, document: Document, parent=None):
@@ -73,6 +74,13 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.retention_time.populate_from_code_layer(RetentionTimeLayer)
         self.personal_data_content.populate_from_code_layer(PersonalDataContentLayer)
 
+        self.name.textChanged.connect(self.document_edited.emit)
+        self.document_type.currentIndexChanged.connect(self.document_edited.emit)
+        self.publicity.currentIndexChanged.connect(self.document_edited.emit)
+        self.language.currentIndexChanged.connect(self.document_edited.emit)
+        self.retention_time.currentIndexChanged.connect(self.document_edited.emit)
+        self.personal_data_content.currentIndexChanged.connect(self.document_edited.emit)
+
         # List of widgets for hiding / showing
         self.widgets: list[tuple[QLabel, QWidget]] = [
             (self.url_label, self.url),
@@ -112,6 +120,16 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
             self._add_arrival_date(document.arrival_date)
         if document.confirmation_date:
             self._add_confirmation_date(document.confirmation_date)
+
+    def is_ok(self) -> bool:
+        return (
+            self.name.text() != ""
+            and self.document_type.value() is not None
+            and self.publicity.value() is not None
+            and self.language.value() is not None
+            and self.retention_time.value() is not None
+            and self.personal_data_content.value() is not None
+        )
 
     def _add_widgets(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)

@@ -122,6 +122,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             and self.plan_type_combo_box.value() is not None
             and self.organisation_combo_box.value() is not None
             and self.lifecycle_status_combo_box.value() is not None
+            and all(document_widget.is_ok() for document_widget in self.document_widgets)
         ):
             ok_button.setEnabled(True)
         else:
@@ -176,18 +177,22 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     def add_new_document(self):
         self.add_document(Document())
+        self._check_required_fields()
 
     def add_document(self, document: Document):
         widget = DocumentWidget(document, parent=self.documents_scroll_contents)
         widget.delete_signal.connect(self.delete_document)
+        widget.document_edited.connect(self._check_required_fields)
         self.documents_layout.insertWidget(1, widget)
         self.document_widgets.append(widget)
 
     def delete_document(self, document_widget: DocumentWidget):
         document_widget.delete_signal.disconnect()
+        document_widget.document_edited.disconnect()
         self.documents_layout.removeWidget(document_widget)
         self.document_widgets.remove(document_widget)
         document_widget.deleteLater()
+        self._check_required_fields()
 
     # ---
 

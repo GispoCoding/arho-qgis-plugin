@@ -446,6 +446,15 @@ class DocumentLayer(AbstractPlanLayer):
             id_=feature["id"],
         )
 
+    @classmethod
+    def get_documents_to_delete(cls, documents: list[Document], plan: Plan) -> list[QgsFeature]:
+        updated_document_ids = [doc.id_ for doc in documents]
+        return [
+            doc
+            for doc in cls.get_features_by_attribute_value("plan_id", str(plan.id_))
+            if doc["id"] not in updated_document_ids
+        ]
+
 
 class SourceDataLayer(AbstractPlanLayer):
     name = "Lähtötietoaineistot"
