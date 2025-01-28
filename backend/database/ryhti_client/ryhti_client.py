@@ -548,34 +548,51 @@ class RyhtiClient:
         if attribute_value.value_data_type is AttributeValueDataType.CODE:
             value["code"] = attribute_value.code_value
             value["codeList"] = attribute_value.code_list
-            value["title"] = attribute_value.code_title
+            if attribute_value.code_title:
+                value["title"] = attribute_value.code_title
         elif attribute_value.value_data_type in (
             AttributeValueDataType.NUMERIC,
             AttributeValueDataType.POSITIVE_NUMERIC,
             AttributeValueDataType.SPOT_ELEVATION,
         ):
-            value["number"] = int(attribute_value.numeric_value)
-            value["unitOfMeasure"] = attribute_value.unit
+            value["number"] = (
+                int(attribute_value.numeric_value)
+                if attribute_value.numeric_value is not None
+                else None
+            )
+            if attribute_value.unit:
+                value["unitOfMeasure"] = attribute_value.unit
         elif attribute_value.value_data_type in (
             AttributeValueDataType.NUMERIC_RANGE,
             AttributeValueDataType.POSITIVE_NUMERIC_RANGE,
         ):
-            value["minimumValue"] = int(attribute_value.numeric_range_min)
-            value["maximumValue"] = int(attribute_value.numeric_range_max)
-            value["unitOfMeasure"] = attribute_value.unit
+            value["minimumValue"] = (
+                int(attribute_value.numeric_range_min)
+                if attribute_value.numeric_range_min is not None
+                else None
+            )
+            value["maximumValue"] = (
+                int(attribute_value.numeric_range_max)
+                if attribute_value.numeric_range_max is not None
+                else None
+            )
+            if attribute_value.unit:
+                value["unitOfMeasure"] = attribute_value.unit
         elif attribute_value.value_data_type in (
             AttributeValueDataType.DECIMAL,
             AttributeValueDataType.POSITIVE_DECIMAL,
         ):
             value["number"] = attribute_value.numeric_value
-            value["unitOfMeasure"] = attribute_value.unit
+            if attribute_value.unit:
+                value["unitOfMeasure"] = attribute_value.unit
         elif attribute_value.value_data_type in (
             AttributeValueDataType.DECIMAL_RANGE,
             AttributeValueDataType.POSITIVE_DECIMAL_RANGE,
         ):
             value["minimumValue"] = attribute_value.numeric_range_min
             value["maximumValue"] = attribute_value.numeric_range_max
-            value["unitOfMeasure"] = attribute_value.unit
+            if attribute_value.unit:
+                value["unitOfMeasure"] = attribute_value.unit
         elif attribute_value.value_data_type is AttributeValueDataType.IDENTIFIER:
             pass  # TODO: implement identifier values
         elif attribute_value.value_data_type in (
