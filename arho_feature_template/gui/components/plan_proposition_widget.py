@@ -14,7 +14,7 @@ from arho_feature_template.gui.components.plan_regulation_input_widgets import I
 from arho_feature_template.project.layers.code_layers import PlanThemeLayer
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QLineEdit, QPushButton
+    from qgis.PyQt.QtWidgets import QPushButton
 
 ui_path = resources.files(__package__) / "plan_proposition_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -30,7 +30,6 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        self.name: QLineEdit
         self.value_label: QLabel
         self.text_input: QTextEdit
         self.add_field_btn: QPushButton
@@ -58,7 +57,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.expanded = True
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
-        self.name.setText(proposition.name)
+        # self.name.setText(proposition.name)
         self.text_input.setText(proposition.value)
         if proposition.theme_id:
             self._add_theme(proposition.theme_id)
@@ -103,7 +102,6 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
 
     def into_model(self) -> Proposition:
         return Proposition(
-            name=self.name.text(),
             value=self.text_input.toPlainText(),
             theme_id=self.theme_widget.value() if self.theme_widget else None,
             proposition_number=self.proposition_number_widget.get_value() if self.proposition_number_widget else None,

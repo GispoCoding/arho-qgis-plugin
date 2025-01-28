@@ -286,7 +286,6 @@ class Regulation:
 
 @dataclass
 class Proposition:
-    name: str
     value: str
     theme_id: str | None = None
     proposition_number: int | None = None
