@@ -178,7 +178,7 @@ resource "aws_lambda_function" "mml_loader" {
       DB_MAIN_NAME        = var.hame_db_name
       DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
-      DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
+      DB_SECRET_ADMIN_ARN    = aws_secretsmanager_secret.hame-db-admin.arn
       MML_APIKEY          = var.mml_apikey
     }
   }

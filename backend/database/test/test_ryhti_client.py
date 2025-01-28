@@ -341,7 +341,7 @@ def mock_xroad_ryhti_update_existing_plan_matter(
 
 @pytest.fixture(scope="function")
 def client_with_plan_data(
-    connection_string: str, complete_test_plan: models.Plan
+    rw_connection_string: str, complete_test_plan: models.Plan
 ) -> RyhtiClient:
     """
     Return RyhtiClient that has plan data read in.
@@ -353,7 +353,7 @@ def client_with_plan_data(
     """
     # Let's mock production x-road with gispo organization client here.
     client = RyhtiClient(
-        connection_string,
+        rw_connection_string,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_instance="FI",
@@ -370,7 +370,7 @@ def client_with_plan_data(
 @pytest.fixture(scope="function")
 def client_with_plan_data_in_proposal_phase(
     session: Session,
-    connection_string: str,
+    rw_connection_string: str,
     complete_test_plan: models.Plan,
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> RyhtiClient:
@@ -391,7 +391,7 @@ def client_with_plan_data_in_proposal_phase(
 
     # Let's mock production x-road with gispo organization client here.
     client = RyhtiClient(
-        connection_string,
+        rw_connection_string,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_instance="FI",

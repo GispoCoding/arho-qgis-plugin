@@ -16,7 +16,7 @@ from alembic.config import Config
 from alembic.operations import ops
 from alembic.script import ScriptDirectory
 from base import PROJECT_SRID
-from db_helper import DatabaseHelper
+from db_helper import DatabaseHelper, User
 from db_manager import db_manager
 from dotenv import load_dotenv
 from geoalchemy2.shape import from_shape
@@ -474,13 +474,18 @@ def assert_database_is_alright(
 
 
 @pytest.fixture(scope="module")
-def connection_string(hame_database_created) -> str:
-    return DatabaseHelper().get_connection_string()
+def admin_connection_string(hame_database_created) -> str:
+    return DatabaseHelper(user=User.ADMIN).get_connection_string()
 
 
 @pytest.fixture(scope="module")
-def session(connection_string):
-    engine = sqlalchemy.create_engine(connection_string)
+def rw_connection_string(hame_database_created) -> str:
+    return DatabaseHelper(user=User.READ_WRITE).get_connection_string()
+
+
+@pytest.fixture(scope="module")
+def session(admin_connection_string):
+    engine = sqlalchemy.create_engine(admin_connection_string)
     session = sessionmaker(bind=engine)
     yield session()
 

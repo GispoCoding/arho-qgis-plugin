@@ -427,9 +427,9 @@ def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
 
 
 @pytest.fixture(scope="module")
-def loader(connection_string) -> KoodistotLoader:
+def loader(admin_connection_string) -> KoodistotLoader:
     return KoodistotLoader(
-        connection_string,
+        admin_connection_string,
         api_url="http://mock.url",
     )
 
@@ -699,7 +699,7 @@ def test_save_objects(loader, koodistot_data, main_db_params):
 
 
 def test_save_changed_objects(
-    changed_koodistot_data, connection_string, main_db_params
+    changed_koodistot_data, admin_connection_string, main_db_params
 ):
     # The database is already populated in the first test. Because
     # connection string (and therefore hame_database_created)
@@ -707,7 +707,7 @@ def test_save_changed_objects(
     assert_data_is_imported(main_db_params)
     # check that a new loader adds one object to the database
     loader = KoodistotLoader(
-        connection_string,
+        admin_connection_string,
         api_url="http://mock.url",
     )
     loader.save_objects(changed_koodistot_data)

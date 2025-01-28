@@ -205,7 +205,7 @@ class MMLLoader:
 def handler(event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
-    db_helper = DatabaseHelper(user=User.READ_WRITE)
+    db_helper = DatabaseHelper(user=User.ADMIN)
     api_key = os.environ.get("MML_APIKEY")
     if not api_key:
         raise ValueError(

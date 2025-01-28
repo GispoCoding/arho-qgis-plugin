@@ -47,11 +47,11 @@ def mock_mml(requests_mock):
 
 @pytest.fixture()
 def loader(
-    connection_string: str,
+    admin_connection_string: str,
     municipality_instance: codes.Municipality,
     administrative_region_instance: codes.AdministrativeRegion,
 ) -> MMLLoader:
-    return MMLLoader(connection_string, api_key="mock_apikey")
+    return MMLLoader(admin_connection_string, api_key="mock_apikey")
 
 
 def test_get_geometries(mock_mml: Callable, loader: MMLLoader):

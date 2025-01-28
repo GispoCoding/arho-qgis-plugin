@@ -13,6 +13,26 @@ class User(enum.Enum):
     READ = "DB_SECRET_R_ARN"
 
 
+env_credentials = {
+    User.SU: {
+        "username": os.environ.get("SU_USER"),
+        "password": os.environ.get("SU_USER_PW"),
+    },
+    User.ADMIN: {
+        "username": os.environ.get("ADMIN_USER"),
+        "password": os.environ.get("ADMIN_USER_PW"),
+    },
+    User.READ_WRITE: {
+        "username": os.environ.get("RW_USER"),
+        "password": os.environ.get("RW_USER_PW"),
+    },
+    User.READ: {
+        "username": os.environ.get("R_USER"),
+        "password": os.environ.get("R_USER_PW"),
+    },
+}
+
+
 class Db(enum.Enum):
     MAINTENANCE = 1
     MAIN = 2
@@ -26,14 +46,14 @@ class DatabaseHelper:
         If user is not specified, requires that the lambda function has *all* user
         privileges and secrets specified in lambda function os.environ.
         """
+        # if user is not specified, iterate through all users
+        users: List | Type[User] = [user] if user else User
         if os.environ.get("READ_FROM_AWS", "1") == "1":
             session = boto3.session.Session()
             client = session.client(
                 service_name="secretsmanager",
                 region_name=os.environ.get("AWS_REGION_NAME"),
             )
-            # if user is not specified, iterate through all users
-            users: List | Type[User] = [user] if user else User
             self._users = {
                 user: json.loads(
                     client.get_secret_value(SecretId=os.environ[user.value])[
@@ -43,24 +63,7 @@ class DatabaseHelper:
                 for user in users
             }
         else:
-            self._users = {
-                User.SU: {
-                    "username": os.environ.get("SU_USER"),
-                    "password": os.environ.get("SU_USER_PW"),
-                },
-                User.ADMIN: {
-                    "username": os.environ.get("ADMIN_USER"),
-                    "password": os.environ.get("ADMIN_USER_PW"),
-                },
-                User.READ_WRITE: {
-                    "username": os.environ.get("RW_USER"),
-                    "password": os.environ.get("RW_USER_PW"),
-                },
-                User.READ: {
-                    "username": os.environ.get("R_USER"),
-                    "password": os.environ.get("R_USER_PW"),
-                },
-            }
+            self._users = {user: env_credentials[user] for user in users}
         self._dbs = {
             Db.MAIN: os.environ["DB_MAIN_NAME"],
             Db.MAINTENANCE: os.environ["DB_MAINTENANCE_NAME"],
