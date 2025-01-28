@@ -498,10 +498,11 @@ def save_plan(plan: Plan) -> QgsFeature:
         edit_text="Kaavan muokkaus" if editing else "Kaavan luominen",
     )
 
-    # Check for deleted general regulations
+    plan_id = feature["id"]
     if editing:
+        # Check for deleted general regulations
         for association in RegulationGroupAssociationLayer.get_dangling_associations(
-            plan.general_regulations, feature["id"], PlanLayer.name
+            plan.general_regulations, plan_id, PlanLayer.name
         ):
             _delete_feature(
                 association,
@@ -509,16 +510,20 @@ def save_plan(plan: Plan) -> QgsFeature:
                 "Kaavamääräysryhmän assosiaation poisto",
             )
 
+        # Check for documents to be deleted
+        doc_layer = DocumentLayer.get_from_project()
+        for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan):
+            _delete_feature(doc_feature, doc_layer, "Asiakirjan poisto")
+
     # Save general regulations
     if plan.general_regulations:
         for regulation_group in plan.general_regulations:
-            plan_id = feature["id"]
             regulation_group_feature = save_regulation_group(regulation_group, plan_id)
             save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id)
 
     # Save documents
     for document in plan.documents:
-        document.plan_id = feature["id"]
+        document.plan_id = plan_id
         save_document(document)
 
     return feature
