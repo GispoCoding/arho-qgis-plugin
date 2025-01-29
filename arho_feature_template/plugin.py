@@ -13,7 +13,7 @@ from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
-from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name
+from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
 
 if TYPE_CHECKING:
     from qgis.gui import QgisInterface
@@ -125,13 +125,6 @@ class Plugin:
         return action
 
     def initGui(self) -> None:  # noqa N802
-        # plan_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/city.png")  # A placeholder icon
-        # load_icon_path = os.path.join(PLUGIN_PATH, "resources/icons/folder.png")  # A placeholder icon
-        # icons to consider:
-        # icon=QgsApplication.getThemeIcon("mActionStreamingDigitize.svg"),
-        # icon=QgsApplication.getThemeIcon("mIconGeometryCollectionLayer.svg"),
-        # icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
-
         self.plan_manager = PlanManager()
 
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
@@ -159,14 +152,10 @@ class Plugin:
         # (Re)initialize whenever a project is opened
         iface.projectRead.connect(self.plan_manager.initialize_from_project)
 
-        # icons to consider:
-        # icon=QgsApplication.getThemeIcon("mActionStreamingDigitize.svg"),
-        # icon=QgsApplication.getThemeIcon("mIconGeometryCollectionLayer.svg"),
-        # icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
-
         self.new_land_use_plan_action = self.add_action(
             text="Luo kaava",
-            icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
+            # icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
             triggered_callback=self.add_new_plan,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -175,7 +164,8 @@ class Plugin:
 
         self.load_land_use_plan_action = self.add_action(
             text="Avaa kaava",
-            icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "avaa_kaava4.svg")),
             triggered_callback=self.load_existing_land_use_plan,
             parent=iface.mainWindow(),
             add_to_menu=True,
@@ -186,6 +176,7 @@ class Plugin:
         self.edit_land_use_plan_action = self.add_action(
             text="Muokkaa kaavaa",
             # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
             triggered_callback=self.plan_manager.edit_plan,
             parent=iface.mainWindow(),
             add_to_menu=True,
@@ -195,8 +186,27 @@ class Plugin:
 
         self.new_feature_dock_action = self.add_action(
             text="Luo kaavakohde",
-            icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
+            # icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "luo_kaavakohde.svg")),
             toggled_callback=self.toggle_new_feature_dock,
+            checkable=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+        )
+
+        self.identify_plan_features_action = self.add_action(
+            text="Muokkaa kaavakohdetta",
+            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavakohdetta1.svg")),
+            toggled_callback=self.plan_manager.toggle_identify_plan_features,
+            add_to_menu=False,
+            add_to_toolbar=True,
+            checkable=True,
+        )
+
+        self.regulation_groups_dock_action = self.add_action(
+            text="Hallitse kaavamääräysryhmiä",
+            icon=QgsApplication.getThemeIcon("mActionOpenTable.svg"),
+            toggled_callback=self.toggle_regulation_groups_dock,
             checkable=True,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -204,25 +214,9 @@ class Plugin:
 
         self.validation_dock_action = self.add_action(
             text="Validointi",
-            icon=QgsApplication.getThemeIcon("mActionEditNodesItem.svg"),
+            # icon=QgsApplication.getThemeIcon("mActionEditNodesItem.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "kaavan_validointi2.svg")),
             toggled_callback=self.toggle_validation_dock,
-            checkable=True,
-            add_to_menu=True,
-            add_to_toolbar=True,
-        )
-
-        # self.new_plan_regulation_group = self.add_action(
-        #     text="Luo kaavamääräysryhmä",
-        #     icon=QgsApplication.getThemeIcon("mActionAddManualTable.svg"),
-        #     triggered_callback=self.open_plan_regulation_group_form,
-        #     add_to_menu=True,
-        #     add_to_toolbar=True,
-        # )
-
-        self.regulation_groups_dock_action = self.add_action(
-            text="Hallitse kaavamääräysryhmiä",
-            icon=QgsApplication.getThemeIcon("mActionAddManualTable.svg"),
-            toggled_callback=self.toggle_regulation_groups_dock,
             checkable=True,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -230,7 +224,8 @@ class Plugin:
 
         self.serialize_plan_action = self.add_action(
             text="Tallenna kaava JSON",
-            icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
+            # icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
             triggered_callback=self.serialize_plan,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -245,13 +240,6 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
-        self.identify_plan_features_action = self.add_action(
-            text="Muokkaa kohteita",
-            toggled_callback=self.plan_manager.toggle_identify_plan_features,
-            add_to_menu=False,
-            add_to_toolbar=True,
-            checkable=True,
-        )
         self.plan_manager.inspect_plan_feature_tool.deactivated.connect(
             lambda: self.identify_plan_features_action.setChecked(False)
         )
@@ -316,6 +304,3 @@ class Plugin:
 
     def toggle_validation_dock(self, show: bool) -> None:  # noqa: FBT001
         self.validation_dock.setUserVisible(show)
-
-    # def open_plan_regulation_group_form(self):
-    #     self.plan_manager.create_new_regulation_group()
