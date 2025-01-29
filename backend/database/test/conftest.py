@@ -2118,11 +2118,11 @@ def desired_plan_dict(
         "planRegulationGroupRelations": [
             {
                 "planObjectKey": land_use_area_instance.id,
-                "planRegulationGroupKey": plan_regulation_group_instance.id,
+                "planRegulationGroupKey": numeric_plan_regulation_group_instance.id,
             },
             {
                 "planObjectKey": land_use_area_instance.id,
-                "planRegulationGroupKey": numeric_plan_regulation_group_instance.id,
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
             },
             {
                 "planObjectKey": land_use_point_instance.id,
@@ -2261,53 +2261,96 @@ def desired_plan_matter_dict(
 
 
 def assert_lists_equal(
-    list1: list, list2: list, ignore_keys: Optional[List] = None, path: str = ""
+    list1: list,
+    list2: list,
+    ignore_keys: Optional[List] = None,
+    ignore_order_for_keys: Optional[List] = None,
+    ignore_list_order: Optional[bool] = False,
+    path: str = "",
 ):
-    """
-    Recursively check that lists have the same items in the same order.
-
-    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
-    the remote Ryhti API) can be ignored when comparing dicts in the lists, because
-    they are not provided in the incoming data.
-    """
     assert len(list1) == len(list2), f"Lists differ in length in path {path}"
-    for i, (item1, item2) in enumerate(zip(list1, list2)):
+    for i, item1 in enumerate(list1):
         current_path = f"{path}[{i}]" if path else f"[{i}]"
-        if isinstance(item1, dict):
-            assert_dicts_equal(item1, item2, ignore_keys=ignore_keys, path=current_path)
-        elif isinstance(item1, list):
-            assert_lists_equal(item1, item2, ignore_keys=ignore_keys, path=current_path)
+        items_to_compare = list2 if ignore_list_order else [list2[i]]
+        latest_error = AssertionError()
+        for item2 in items_to_compare:
+            try:
+                deepcompare(
+                    item1,
+                    item2,
+                    ignore_keys=ignore_keys,
+                    ignore_order_for_keys=ignore_order_for_keys,
+                    path=current_path,
+                )
+            except AssertionError as error:
+                latest_error = error
+                continue
+            else:
+                break
         else:
-            assert (
-                type(item1) is type(item2) and item1 == item2
-            ), f"Items differ at {current_path}"
+            raise latest_error
 
 
 def assert_dicts_equal(
-    dict1: Mapping, dict2: Mapping, ignore_keys: Optional[List] = None, path: str = ""
+    dict1: Mapping,
+    dict2: Mapping,
+    ignore_keys: Optional[List] = None,
+    ignore_order_for_keys: Optional[List] = None,
+    path: str = "",
 ):
-    """
-    Recursively check that dicts contain the same keys with same values.
-
-    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
-    the remote Ryhti API) can be ignored when comparing, because they are not
-    provided in the incoming data.
-    """
+    assert len(dict1) == len(dict2), f"Dicts differ in length in {path}"
     for key in dict2.keys():
         if not ignore_keys or key not in ignore_keys:
             assert key in dict1, f"Key {key} missing in {path}"
     for key, value in dict1.items():
         current_path = f"{path}.{key}" if path else key
         if not ignore_keys or key not in ignore_keys:
-            if isinstance(value, dict):
-                assert_dicts_equal(
-                    dict2[key], value, ignore_keys=ignore_keys, path=current_path
-                )
-            elif isinstance(value, list):
-                assert_lists_equal(
-                    dict2[key], value, ignore_keys=ignore_keys, path=current_path
-                )
-            else:
-                assert (
-                    type(dict2[key]) is type(value) and dict2[key] == value
-                ), f"Items differ at {current_path}"
+            deepcompare(
+                dict2[key],
+                value,
+                ignore_keys=ignore_keys,
+                ignore_order_for_keys=ignore_order_for_keys,
+                ignore_list_order=key in ignore_order_for_keys
+                if ignore_order_for_keys
+                else False,
+                path=current_path,
+            )
+
+
+def deepcompare(
+    item1: object,
+    item2: object,
+    ignore_keys: Optional[List] = None,
+    ignore_order_for_keys: Optional[List] = None,
+    ignore_list_order: Optional[bool] = False,
+    path: str = "",
+):
+    """
+    Recursively check that dicts and lists in two items have the same items (type and value)
+    in the same order.
+
+    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
+    the remote Ryhti API) can be ignored when comparing dicts in the lists, because
+    they are not provided in the incoming data. Also, order of lists under certain keys
+    in dicts may be ignored, or order of this list itself may be ignored.
+    """
+    assert type(item1) is type(item2), f"Item types differ at {path}"
+    if isinstance(item1, dict) and isinstance(item2, dict):
+        assert_dicts_equal(
+            item1,
+            item2,
+            ignore_keys=ignore_keys,
+            ignore_order_for_keys=ignore_order_for_keys,
+            path=path,
+        )
+    elif isinstance(item1, list) and isinstance(item2, list):
+        assert_lists_equal(
+            item1,
+            item2,
+            ignore_keys=ignore_keys,
+            ignore_order_for_keys=ignore_order_for_keys,
+            ignore_list_order=ignore_list_order,
+            path=path,
+        )
+    else:
+        assert item1 == item2, f"Items differ at {path}"

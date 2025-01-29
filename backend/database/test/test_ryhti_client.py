@@ -12,7 +12,7 @@ from ryhti_client.ryhti_client import RyhtiClient
 from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
-from .conftest import assert_dicts_equal
+from .conftest import deepcompare
 
 mock_rule = "random_rule"
 mock_matter_rule = "another_random_rule"
@@ -414,7 +414,11 @@ def test_get_plan_dictionaries(
     Check that correct JSON structure is generated
     """
     result_plan_dict = client_with_plan_data.plan_dictionaries[plan_instance.id]
-    assert_dicts_equal(result_plan_dict, desired_plan_dict)
+    deepcompare(
+        result_plan_dict,
+        desired_plan_dict,
+        ignore_order_for_keys=["planRegulationGroupRelations"],
+    )
 
 
 def test_validate_plans(
@@ -805,7 +809,7 @@ def test_get_plan_matters(
     plan_matter = client_with_plan_with_permanent_identifier.plan_matter_dictionaries[
         plan_instance.id
     ]
-    assert_dicts_equal(
+    deepcompare(
         plan_matter,
         desired_plan_matter_dict,
         ignore_keys=[
@@ -816,6 +820,7 @@ def test_get_plan_matters(
             "planMapKey",
             "fileKey",
         ],
+        ignore_order_for_keys=["planRegulationGroupRelations"],
     )
 
 

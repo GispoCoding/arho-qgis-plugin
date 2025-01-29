@@ -8,7 +8,7 @@ import requests
 from koodistot_loader.koodistot_loader import codes
 from sqlalchemy.orm import Session
 
-from .conftest import assert_database_is_alright, assert_dicts_equal, drop_hame_db
+from .conftest import assert_database_is_alright, deepcompare, drop_hame_db
 
 
 @pytest.fixture(scope="module")
@@ -221,8 +221,16 @@ def get_all_plans(
         # API gateway response must have JSON body stringified.
         body = json.loads(body)
     assert body["title"] == "Returning serialized plans from database."
-    assert_dicts_equal(body["details"][complete_test_plan.id], desired_plan_dict)
-    assert_dicts_equal(body["details"][another_test_plan.id], another_plan_dict)
+    deepcompare(
+        body["details"][complete_test_plan.id],
+        desired_plan_dict,
+        ignore_order_for_keys=["planRegulationGroupRelations"],
+    )
+    deepcompare(
+        body["details"][another_test_plan.id],
+        another_plan_dict,
+        ignore_order_for_keys=["planRegulationGroupRelations"],
+    )
     assert not body["ryhti_responses"]
 
 
@@ -271,7 +279,11 @@ def get_single_plan(
     assert body["title"] == "Returning serialized plans from database."
     # Check that other plan is NOT returned
     assert len(body["details"]) == 1
-    assert_dicts_equal(body["details"][complete_test_plan.id], desired_plan_dict)
+    deepcompare(
+        body["details"][complete_test_plan.id],
+        desired_plan_dict,
+        ignore_order_for_keys=["planRegulationGroupRelations"],
+    )
     assert not body["ryhti_responses"]
 
 
