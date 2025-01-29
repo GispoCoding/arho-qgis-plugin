@@ -573,20 +573,36 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
     layer = RegulationGroupLayer.get_from_project()
 
+    editing = regulation_group.id_ is not None
     _save_feature(
         feature=feature,
         layer=layer,
         id_=regulation_group.id_,
-        edit_text="Kaavamääräysryhmän lisäys" if regulation_group.id_ is None else "Kaavamääräysryhmän muokkaus",
+        edit_text="Kaavamääräysryhmän muokkaus" if editing else "Kaavamääräysryhmän lisäys",
     )
 
-    # Handle regulations
+    if editing:
+        # Check for regulations to be deleted
+        regulation_layer = PlanRegulationLayer.get_from_project()
+        for reg_feature in PlanRegulationLayer.get_regulations_to_delete(
+            regulation_group.regulations, regulation_group
+        ):
+            _delete_feature(reg_feature, regulation_layer, "Kaavamääräyksen poisto")
+
+        # Check for propositions to be deleted
+        proposition_layer = PlanPropositionLayer.get_from_project()
+        for prop_feature in PlanPropositionLayer.get_propositions_to_delete(
+            regulation_group.propositions, regulation_group
+        ):
+            _delete_feature(prop_feature, proposition_layer, "Kaavasuosituksen poisto")
+
+    # Save regulations
     if regulation_group.regulations:
         for regulation in regulation_group.regulations:
             regulation.regulation_group_id_ = feature["id"]  # Updating regulation group ID
             save_regulation(regulation)
 
-    # Handle propositions
+    # Save propositions
     if regulation_group.propositions:
         for proposition in regulation_group.propositions:
             proposition.regulation_group_id_ = feature["id"]  # Updating regulation group ID
@@ -602,13 +618,13 @@ def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | No
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
     layer = RegulationGroupLayer.get_from_project()
 
-    # # Handle regulations
-    # for regulation in regulation_group.regulations:
-    #     delete_regulation(regulation)
+    # Delete regulations
+    for regulation in regulation_group.regulations:
+        delete_regulation(regulation)
 
-    # # Handle propositions
-    # for proposition in regulation_group.propositions:
-    #     delete_proposition(proposition)
+    # Delete propositions
+    for proposition in regulation_group.propositions:
+        delete_proposition(proposition)
 
     _delete_feature(feature, layer, "Kaavamääräysryhmän poisto")
 
