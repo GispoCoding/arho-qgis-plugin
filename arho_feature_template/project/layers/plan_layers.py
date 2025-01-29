@@ -361,6 +361,17 @@ class PlanRegulationLayer(AbstractPlanLayer):
     def regulations_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
+    @classmethod
+    def get_regulations_to_delete(
+        cls, regulations: list[Regulation], regulation_group: RegulationGroup
+    ) -> list[QgsFeature]:
+        updated_regulation_ids = [regulation.id_ for regulation in regulations]
+        return [
+            reg
+            for reg in cls.get_features_by_attribute_value("plan_regulation_group_id", str(regulation_group.id_))
+            if reg["id"] not in updated_regulation_ids
+        ]
+
 
 class PlanPropositionLayer(AbstractPlanLayer):
     name = "Kaavasuositus"
@@ -402,6 +413,17 @@ class PlanPropositionLayer(AbstractPlanLayer):
     @classmethod
     def propositions_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
+
+    @classmethod
+    def get_propositions_to_delete(
+        cls, propositions: list[Proposition], regulation_group: RegulationGroup
+    ) -> list[QgsFeature]:
+        updated_proposition_ids = [proposition.id_ for proposition in propositions]
+        return [
+            prop
+            for prop in cls.get_features_by_attribute_value("plan_regulation_group_id", str(regulation_group.id_))
+            if prop["id"] not in updated_proposition_ids
+        ]
 
 
 class DocumentLayer(AbstractPlanLayer):
