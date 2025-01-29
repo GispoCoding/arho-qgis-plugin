@@ -616,6 +616,18 @@ def type_of_plan_regulation_number_of_stories_instance(session):
 
 
 @pytest.fixture()
+def type_of_plan_regulation_ground_elevation_instance(session):
+    instance = codes.TypeOfPlanRegulation(
+        value="maanpinnanKorkeusasema", status="LOCAL"
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def type_of_plan_regulation_verbal_instance(session):
     instance = codes.TypeOfPlanRegulation(value="sanallinenMaarays", status="LOCAL")
     session.add(instance)
@@ -880,6 +892,7 @@ def land_use_area_instance(
     plan_instance,
     plan_regulation_group_instance,
     numeric_plan_regulation_group_instance,
+    decimal_plan_regulation_group_instance,
 ):
     instance = models.LandUseArea(
         geom=from_shape(
@@ -913,6 +926,7 @@ def land_use_area_instance(
         plan_regulation_groups=[
             plan_regulation_group_instance,
             numeric_plan_regulation_group_instance,
+            decimal_plan_regulation_group_instance,
         ],
     )
     session.add(instance)
@@ -1076,6 +1090,24 @@ def numeric_plan_regulation_group_instance(
 
 
 @pytest.fixture(scope="function")
+def decimal_plan_regulation_group_instance(
+    session, plan_instance, type_of_plan_regulation_group_instance
+):
+    instance = models.PlanRegulationGroup(
+        short_name="D",
+        plan=plan_instance,
+        ordering=4,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_decimal_plan_regulation_group"},
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture(scope="function")
 def point_plan_regulation_group_instance(
     session, plan_instance, type_of_plan_regulation_group_instance
 ):
@@ -1148,6 +1180,30 @@ def numeric_plan_regulation_instance(
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_allowed_area_instance,
         plan_regulation_group=numeric_plan_regulation_group_instance,
+        ordering=1,
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture(scope="function")
+def decimal_plan_regulation_instance(
+    session,
+    preparation_status_instance,
+    type_of_plan_regulation_ground_elevation_instance,
+    decimal_plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.DECIMAL,
+        numeric_value=1.0,
+        unit="m",
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_ground_elevation_instance,
+        plan_regulation_group=decimal_plan_regulation_group_instance,
         ordering=1,
     )
     session.add(instance)
@@ -1480,12 +1536,14 @@ def complete_test_plan(
     land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
+    decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
+    decimal_plan_regulation_instance: models.PlanRegulation,
     numeric_range_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
@@ -1534,6 +1592,9 @@ def complete_test_plan(
 
     numeric_plan_regulation_instance.plan_theme = plan_theme_instance
     # allowed area numeric value cannot be used with intended use regulation type
+
+    decimal_plan_regulation_instance.plan_theme = plan_theme_instance
+    # elevation decimal value cannot be used with intended use regulation type
 
     text_plan_regulation_instance.plan_theme = plan_theme_instance
     # text value plan regulation may have intended use
@@ -1812,12 +1873,14 @@ def desired_plan_dict(
     land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
+    decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
+    decimal_plan_regulation_instance: models.PlanRegulation,
     numeric_range_plan_regulation_instance: models.PlanRegulation,
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
@@ -2114,11 +2177,46 @@ def desired_plan_dict(
                 "groupNumber": numeric_plan_regulation_group_instance.ordering,
                 "colorNumber": "#FFFFFF",
             },
+            {
+                "planRegulationGroupKey": decimal_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": decimal_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": decimal_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpinnanKorkeusasema",
+                        "value": {
+                            "dataType": "Decimal",
+                            "number": decimal_plan_regulation_instance.numeric_value,
+                            "unitOfMeasure": decimal_plan_regulation_instance.unit,
+                        },
+                        "subjectIdentifiers": decimal_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            decimal_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": decimal_plan_regulation_group_instance.short_name,
+                "groupNumber": decimal_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
         ],
         "planRegulationGroupRelations": [
             {
                 "planObjectKey": land_use_area_instance.id,
                 "planRegulationGroupKey": numeric_plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "planRegulationGroupKey": decimal_plan_regulation_group_instance.id,
             },
             {
                 "planObjectKey": land_use_area_instance.id,
