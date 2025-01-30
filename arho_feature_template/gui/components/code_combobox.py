@@ -102,9 +102,16 @@ class HierarchicalCodeComboBox(QComboBox):
 
         self.tree_widget.expandAll()
 
-    def value(self) -> str:
-        item = self.tree_widget.selectedItems()[0]
-        return item.data(0, Qt.UserRole)
+    def value(self) -> str | None:
+        """Return the value of the current item.
+
+        Currently might be None, if the current item is not selectable."""
+
+        selected = self.tree_widget.selectedItems()  # TODO: Find a way to get the current item even if not selectable
+        if selected:  # current item might not be selectable
+            item = selected[0]
+            return item.data(0, Qt.UserRole)
+        return None
 
     def _find_item_recursive(self, item: QTreeWidgetItem, value: str) -> QTreeWidgetItem:
         """Recursively try to find item with given value and return the item if found."""
