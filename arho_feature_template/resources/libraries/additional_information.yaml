@@ -1,0 +1,27 @@
+version: 1
+additional_information:
+  - code: poisluettavaKayttotarkoitus
+    data_type: Code
+  - code: kerroksetJotaMaaraysKoskee
+    data_type: NumericRange
+  - code: kayttotarkoituskohdistus
+    data_type: Code
+  - code: kayttotarkoituksenOsuusKerrosalastaK-m2
+    data_type: PositiveNumeric
+    unit: k-m2
+  - code: kayttotarkoituksenOsuusKerrosalastaPros
+    data_type: PositiveNumeric
+    unit: "%"
+  - code: kayttotarkoituksenOsuusRakennustilavuudestaK-m3
+    data_type: PositiveNumeric
+    unit: m3
+  - code: kayttotarkoituksenOsuusRakennustilavuudestaPros
+    data_type: PositiveNumeric
+    unit: "%"
+  - code: kayttotarkoituksenOsuusMaapintaAlasta
+    data_type: PositiveNumeric
+    unit: "%"
+  - code: rakennusluvanPeruste
+    data_type: Code
+  - code: autopaikkojenSijoittuminenSallittu
+    data_type: PositiveNumeric
