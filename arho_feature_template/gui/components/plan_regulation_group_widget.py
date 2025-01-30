@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
@@ -9,7 +9,7 @@ from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
-from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
+from arho_feature_template.core.models import PlanFeature, Proposition, Regulation, RegulationGroup
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
@@ -29,7 +29,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     open_as_form_signal = pyqtSignal(QWidget)
     delete_signal = pyqtSignal(QWidget)
 
-    def __init__(self, regulation_group: RegulationGroup, layer_name: str):
+    def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanFeature):
         super().__init__()
         self.setupUi(self)
 
@@ -49,8 +49,10 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.link_label_icon: QLabel | None = None
         self.link_label_text: QLabel | None = None
 
+        self.plan_feature = plan_feature
+        self.layer_name = cast(str, plan_feature.layer_name)
         self.from_model(regulation_group)
-        self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
+        self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
 
         self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
@@ -73,11 +75,18 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         for proposition in regulation_group.propositions:
             self.add_proposition_widget(proposition)
 
+        # Remove existing indicators if reinitializing
+        self.unset_existing_regulation_group_style()
+
         if regulation_group.id_:
-            # Remove existing indicators if reinitializing
-            self.unset_existing_regulation_group_style()
-            # Set indicators that the regulation group exists in the plan already
-            self.set_existing_regulation_group_style()
+            other_linked_features_count = len(
+                RegulationGroupAssociationLayer.get_associations_for_regulation_group_exclude_feature(
+                    cast(str, regulation_group.id_), cast(str, self.plan_feature.id_), self.layer_name
+                )
+            )
+            if other_linked_features_count > 0:
+                # Set indicators that regulation group exists in the plan already and is assigned for other features
+                self.set_existing_regulation_group_style(other_linked_features_count)
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
         widget = RegulationWidget(regulation=regulation, parent=self.frame)
@@ -103,7 +112,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.proposition_widgets.remove(proposition_widget)
         proposition_widget.deleteLater()
 
-    def set_existing_regulation_group_style(self):
+    def set_existing_regulation_group_style(self, other_linked_features_count: int):
         tooltip = (
             "Kaavamääräysryhmä on tallennettu kaavaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin "
             "kaavakohteisiin, joille ryhmä on lisätty."
@@ -118,10 +127,10 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         self.link_label_text = QLabel()
         self.link_label_text.setObjectName("text_label")  # Set unique name to avoid style cascading
-        feat_count = len(
-            list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(self.regulation_group.id_))
+        self.link_label_text.setText(
+            f"Kaavamääräysryhmä on käytössä myös {other_linked_features_count} toisella kaavakohteella"
         )
-        self.link_label_text.setText(f"Kaavamääräysryhmä on käytössä {feat_count} kaavakohteella")
+        self.link_label_text.setWordWrap(True)
         self.link_label_text.setStyleSheet("#text_label { color: #4b8db2; }")
         self.link_label_text.setToolTip(tooltip)
         layout.addWidget(self.link_label_text)
