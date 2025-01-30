@@ -148,11 +148,11 @@ categories:
           - regulation_code: teollisuusalue
             additional_information:
               - type: paakayttotarkoitus
-              - type: vaarallistenKemikaalienValmistusJaVarastointiSallittu
+              - type: VaarallistenKemikaalienValmistusJaVarastointiSallittu
           - regulation_code: varastoalue
             additional_information:
               - type: paakayttotarkoitus
-              - type: vaarallistenKemikaalienValmistusJaVarastointiSallittu
+              - type: VaarallistenKemikaalienValmistusJaVarastointiSallittu
 
       - name: Virkistysalue
         geometry: [Alue, Piste]
