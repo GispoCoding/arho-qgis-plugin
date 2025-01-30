@@ -461,7 +461,7 @@ categories:
             additional_information:
               - type: paakayttotarkoitus
               - type: kayttotarkoituskohdistus
-                code_code_value: jalankulkualue
+                code_value: jalankulkualue
 
       - name: Jalankululle ja pyöräilylle varattu katu
         geometry: Alue
