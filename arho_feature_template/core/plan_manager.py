@@ -681,9 +681,19 @@ def save_additional_information(additional_information: AdditionalInformation) -
     return feature
 
 
+def delete_additional_information(additional_information: AdditionalInformation):
+    feature = AdditionalInformationLayer.feature_from_model(additional_information)
+    layer = AdditionalInformationLayer.get_from_project()
+
+    _delete_feature(feature, layer, "Lisätiedon poisto")
+
+
 def delete_regulation(regulation: Regulation):
     feature = PlanRegulationLayer.feature_from_model(regulation)
     layer = PlanRegulationLayer.get_from_project()
+
+    for ai in regulation.additional_information:
+        delete_additional_information(ai)
 
     _delete_feature(feature, layer, "Kaavamääräyksen poisto")
 
