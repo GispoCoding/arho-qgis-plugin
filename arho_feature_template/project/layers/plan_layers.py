@@ -559,6 +559,7 @@ class AdditionalInformationLayer(AbstractPlanLayer):
     def model_from_feature(cls, feature: QgsFeature) -> AdditionalInformation:
         return AdditionalInformation(
             config=AdditionalInformationConfigLibrary.get_config_by_id(feature["type_additional_information_id"]),
+            id_=feature["id"],
             plan_regulation_id=feature["plan_regulation_id"],
             type_additional_information_id=feature["type_additional_information_id"],
             value=attribute_value_model_from_feature(feature),
