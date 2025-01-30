@@ -461,7 +461,7 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     )
 
 
-def _save_feature(feature: QgsFeature, layer: QgsVectorLayer, id_: int | None, edit_text: str = ""):
+def _save_feature(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = ""):
     if not layer.isEditable():
         layer.startEditing()
     layer.beginEditCommand(edit_text)
@@ -599,13 +599,13 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     # Save regulations
     if regulation_group.regulations:
         for regulation in regulation_group.regulations:
-            regulation.regulation_group_id_ = feature["id"]  # Updating regulation group ID
+            regulation.regulation_group_id = feature["id"]  # Updating regulation group ID
             save_regulation(regulation)
 
     # Save propositions
     if regulation_group.propositions:
         for proposition in regulation_group.propositions:
-            proposition.regulation_group_id_ = feature["id"]  # Updating regulation group ID
+            proposition.regulation_group_id = feature["id"]  # Updating regulation group ID
             save_proposition(proposition)
 
     return feature
