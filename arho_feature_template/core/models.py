@@ -280,8 +280,8 @@ class Regulation:
     theme: str | None = None
     topic_tag: str | None = None
     verbal_regulation_type_id: str | None = None
-    regulation_group_id_: int | None = None
-    id_: int | None = None
+    regulation_group_id: str | None = None
+    id_: str | None = None
 
 
 @dataclass
@@ -289,8 +289,8 @@ class Proposition:
     value: str
     theme_id: str | None = None
     proposition_number: int | None = None
-    regulation_group_id_: int | None = None
-    id_: int | None = None
+    regulation_group_id: str | None = None
+    id_: str | None = None
 
 
 @dataclass
@@ -302,7 +302,7 @@ class RegulationGroup:
     group_number: int | None = None
     regulations: list[Regulation] = field(default_factory=list)
     propositions: list[Proposition] = field(default_factory=list)
-    id_: int | None = None
+    id_: str | None = None
 
     @classmethod
     def from_config_data(cls, data: dict) -> RegulationGroup:
@@ -323,7 +323,7 @@ class RegulationGroup:
                         files=reg_data.get("files") if reg_data.get("files") else [],
                         theme=reg_data.get("theme"),
                         topic_tag=reg_data.get("topic_tag"),
-                        regulation_group_id_=None,
+                        regulation_group_id=None,
                         id_=None,
                     )
                 )
@@ -351,7 +351,7 @@ class PlanFeature:
     description: str | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list)
     plan_id: int | None = None
-    id_: int | None = None
+    id_: str | None = None
 
     @classmethod
     def from_config_data(cls, data: dict) -> PlanFeature:
@@ -373,7 +373,7 @@ class Plan:
     general_regulations: list[RegulationGroup] = field(default_factory=list)
     documents: list[Document] = field(default_factory=list)
     geom: QgsGeometry | None = None
-    id_: int | None = None
+    id_: str | None = None
 
 
 @dataclass
@@ -393,4 +393,4 @@ class Document:
     confirmation_date: datetime | None = None
     arrival_date: datetime | None = None
     plan_id: int | None = None
-    id_: int | None = None
+    id_: str | None = None

@@ -332,7 +332,7 @@ class PlanRegulationLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Regulation) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["plan_regulation_group_id"] = model.regulation_group_id_
+        feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["type_of_plan_regulation_id"] = model.config.id
         feature["unit"] = model.config.unit
         feature["text_value"] = {LANGUAGE: model.value if isinstance(model.value, str) else ""}
@@ -363,7 +363,7 @@ class PlanRegulationLayer(AbstractPlanLayer):
             files=[],
             theme=None,
             topic_tag=None,
-            regulation_group_id_=feature["plan_regulation_group_id"],
+            regulation_group_id=feature["plan_regulation_group_id"],
             verbal_regulation_type_id=feature["type_of_verbal_plan_regulation_id"],
             id_=feature["id"],
         )
@@ -404,7 +404,7 @@ class PlanPropositionLayer(AbstractPlanLayer):
         feature = cls.initialize_feature_from_model(model)
 
         feature["text_value"] = {LANGUAGE: model.value}
-        feature["plan_regulation_group_id"] = model.regulation_group_id_
+        feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["ordering"] = model.proposition_number
         feature["plan_theme_id"] = model.theme_id
         feature["id"] = model.id_ if model.id_ else feature["id"]
@@ -415,7 +415,7 @@ class PlanPropositionLayer(AbstractPlanLayer):
     def model_from_feature(cls, feature: QgsFeature) -> Proposition:
         return Proposition(
             value=feature["text_value"][LANGUAGE],
-            regulation_group_id_=feature["plan_regulation_group_id"],
+            regulation_group_id=feature["plan_regulation_group_id"],
             proposition_number=feature["ordering"],
             theme_id=feature["plan_theme_id"],
             id_=feature["id"],
