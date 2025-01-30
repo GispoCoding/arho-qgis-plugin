@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import enum
 import logging
 import os
 from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import yaml
 
 from arho_feature_template.exceptions import ConfigSyntaxError
-from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
+from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, UndergroundTypeLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
 
@@ -23,14 +23,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 DEFAULT_PLAN_REGULATIONS_CONFIG_PATH = Path(os.path.join(resources_path(), "libraries", "kaavamaaraykset.yaml"))
+ADDITIONAL_INFORMATION_CONFIG_PATH = Path(os.path.join(resources_path(), "libraries", "additional_information.yaml"))
 
 
-class ValueType(Enum):
-    DECIMAL = "desimaali"
-    POSITIVE_DECIMAL = "positiivinen desimaali"
-    POSITIVE_INTEGER = "positiivinen kokonaisluku"
-    POSITIVE_INTEGER_RANGE = "positiivinen kokonaisluku arvoväli"
-    VERSIONED_TEXT = "kieliversioitu teksti"
+class AttributeValueDataType(enum.StrEnum):
+    LOCALIZED_TEXT = "LocalizedText"
+    TEXT = "Text"
+    NUMERIC = "Numeric"
+    NUMERIC_RANGE = "NumericRange"
+    POSITIVE_NUMERIC = "PositiveNumeric"
+    POSITIVE_NUMERIC_RANGE = "PositiveNumericRange"
+    DECIMAL = "Decimal"
+    DECIMAL_RANGE = "DecimalRange"
+    POSITIVE_DECIMAL = "PositiveDecimal"
+    POSITIVE_DECIMAL_RANGE = "PositiveDecimalRange"
+    CODE = "Code"
+    IDENTIFIER = "Identifier"
+    SPOT_ELEVATION = "SpotElevation"
+    TIME_PERIOD = "TimePeriod"
+    TIME_PERIOD_DATE_ONLY = "TimePeriodDateOnly"
 
 
 class TemplateSyntaxError(Exception):
@@ -198,8 +209,10 @@ class RegulationLibrary:
                 data = regulation_data.get(regulation_config.regulation_code)
                 if data:
                     regulation_config.category_only = data.get("category_only", False)
-                    regulation_config.value_type = ValueType(data["value_type"]) if "value_type" in data else None
-                    regulation_config.unit = data["unit"] if "unit" in data else None
+                    regulation_config.default_value = AttributeValue(
+                        value_data_type=(AttributeValueDataType(data["value_type"]) if "value_type" in data else None),
+                        unit=data["unit"] if "unit" in data else None,
+                    )
 
                 # Top-level, add to list
                 if not regulation_config.parent_id:
@@ -242,8 +255,7 @@ class RegulationConfig:
 
     # Data from config file
     category_only: bool = False
-    value_type: ValueType | None = None
-    unit: str | None = None
+    default_value: AttributeValue | None = None
 
     # NOTE: Perhaps this ("model_from_feature") should be method of PlanTypeLayer class?
     @classmethod
@@ -271,10 +283,144 @@ class RegulationConfig:
 
 
 @dataclass
+class AdditionalInformationConfig:
+    # From layer
+    id: str
+    additional_information_type: str
+    name: str
+    description: str
+    status: str
+    level: int
+    parent_id: str | None
+
+    children: list[str] = field(default_factory=list)
+
+    # From config file
+    default_value: AttributeValue | None = None
+
+
+@dataclass
+class AdditionalInformationConfigLibrary:
+    version: str
+    configs: dict[str, AdditionalInformationConfig] = field(default_factory=dict)
+    top_level_codes: list[str] = field(default_factory=list)
+
+    _id_to_configs: dict[str, AdditionalInformationConfig] = field(default_factory=dict)
+    _instance: AdditionalInformationConfigLibrary | None = None
+
+    @classmethod
+    def get_instance(cls) -> AdditionalInformationConfigLibrary:
+        """Get the singleton instance, if initialized."""
+        if cls._instance is None:
+            cls._instance = cls.initialize(ADDITIONAL_INFORMATION_CONFIG_PATH)
+        return cls._instance
+
+    @classmethod
+    def initialize(cls, config_fp: Path = ADDITIONAL_INFORMATION_CONFIG_PATH) -> AdditionalInformationConfigLibrary:
+        with config_fp.open(encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+            if data.get("version") != 1:
+                msg = "Version must be 1"
+                raise ConfigSyntaxError(msg)
+            config_file_configs = {
+                ai_config_data["code"]: ai_config_data for ai_config_data in data["additional_information"]
+            }
+
+        code_to_configs: dict[str, AdditionalInformationConfig] = {}
+        id_to_cofigs: dict[str, AdditionalInformationConfig] = {}
+        for feature in AdditionalInformationTypeLayer.get_features():
+            ai_code = feature["value"]
+            congig_file_config = config_file_configs.get(ai_code)
+
+            default_value = (
+                AttributeValue(
+                    value_data_type=AttributeValueDataType(congig_file_config["data_type"]),
+                    unit=congig_file_config.get("unit"),
+                )
+                if congig_file_config is not None
+                else None
+            )
+
+            ai_config = AdditionalInformationConfig(
+                id=feature["id"],
+                additional_information_type=ai_code,
+                name=feature["name"].get(LANGUAGE) if feature["name"] else None,
+                description=feature["description"].get(LANGUAGE) if feature["description"] else None,
+                status=feature["status"],
+                level=feature["level"],
+                parent_id=feature["parent_id"],
+                default_value=default_value,
+            )
+            code_to_configs[ai_code] = ai_config
+            id_to_cofigs[feature["id"]] = ai_config
+
+        top_level_codes = []
+        for ai_config in code_to_configs.values():
+            if ai_config.parent_id:
+                id_to_cofigs[ai_config.parent_id].children.append(ai_config.additional_information_type)
+            else:
+                top_level_codes.append(ai_config.additional_information_type)
+
+        return cls(
+            version=data["version"],
+            configs=code_to_configs,
+            top_level_codes=top_level_codes,
+            _id_to_configs=id_to_cofigs,
+        )
+
+    @classmethod
+    def get_config_by_code(cls, code: str) -> AdditionalInformationConfig:
+        """Get a regulation by it's regulation code.
+
+        Raises a KeyError if code not exists.
+        """
+        return cls.get_instance().configs[code]
+
+    @classmethod
+    def get_config_by_id(cls, id_: str) -> AdditionalInformationConfig:
+        """Get a regulation by it's regulation code.
+
+        Raises a KeyError if code not exists.
+        """
+
+        return cls.get_instance()._id_to_configs[id_]  # noqa: SLF001
+
+
+@dataclass
+class AttributeValue:
+    value_data_type: AttributeValueDataType | None = None
+
+    numeric_value: int | float | None = None
+    numeric_range_min: int | float | None = None
+    numeric_range_max: int | float | None = None
+
+    unit: str | None = None
+
+    text_value: str | None = None
+    text_syntax: str | None = None
+
+    code_list: str | None = None
+    code_value: str | None = None
+    code_title: str | None = None
+
+    height_reference_point: str | None = None
+
+
+@dataclass
+class AdditionalInformation:
+    config: AdditionalInformationConfig  # includes code and unit among other needed data for saving feature
+
+    id_: str | None = None
+    plan_regulation_id: str | None = None
+    type_additional_information_id: str | None = None
+    value: AttributeValue | None = None
+
+
+@dataclass
 class Regulation:
     config: RegulationConfig  # includes regulation_code and unit among other needed data for saving feature
-    value: str | float | int | tuple[int, int] | None = None
-    additional_information: dict[str, str | float | int | None] | None = None
+    value: AttributeValue | None = None
+    additional_information: list[AdditionalInformation] = field(default_factory=list)
     regulation_number: int | None = None
     files: list[str] = field(default_factory=list)
     theme: str | None = None
@@ -304,6 +450,32 @@ class RegulationGroup:
     propositions: list[Proposition] = field(default_factory=list)
     id_: str | None = None
 
+    @staticmethod
+    def _additional_information_model_from_config(info_data: dict) -> AdditionalInformation:
+        ai_config = AdditionalInformationConfigLibrary.get_config_by_code(info_data["type"])
+        return AdditionalInformation(
+            config=ai_config,
+            value=AttributeValue(
+                value_data_type=info_data.get(
+                    "value_data_type",
+                    ai_config.default_value.value_data_type if ai_config.default_value is not None else None,
+                ),
+                numeric_value=info_data.get("numeric_value"),
+                numeric_range_min=info_data.get("numeric_range_min"),
+                numeric_range_max=info_data.get("numeric_range_max"),
+                unit=info_data.get(
+                    "unit",
+                    ai_config.default_value.unit if ai_config.default_value is not None else None,
+                ),
+                text_value=info_data.get("text_value"),
+                text_syntax=info_data.get("text_syntax"),
+                code_list=info_data.get("code_list"),
+                code_value=info_data.get("code_value"),
+                code_title=info_data.get("code_title"),
+                height_reference_point=info_data.get("height_reference_point"),
+            ),
+        )
+
     @classmethod
     def from_config_data(cls, data: dict) -> RegulationGroup:
         regulations = []
@@ -311,14 +483,14 @@ class RegulationGroup:
             reg_code = reg_data["regulation_code"]
             config = RegulationLibrary.get_regulation_by_code(reg_code)
             if config:
-                info_data = reg_data.get("additional_information")
                 regulations.append(
                     Regulation(
                         config=config,
                         value=reg_data.get("value"),
-                        additional_information={info["type"]: info.get("value") for info in info_data}
-                        if info_data
-                        else None,
+                        additional_information=[
+                            cls._additional_information_model_from_config(info)
+                            for info in reg_data.get("additional_information", [])
+                        ],
                         regulation_number=reg_data.get("regulation_number"),
                         files=reg_data.get("files") if reg_data.get("files") else [],
                         theme=reg_data.get("theme"),

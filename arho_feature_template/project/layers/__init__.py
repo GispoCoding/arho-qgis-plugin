@@ -8,7 +8,7 @@ from qgis.core import QgsFeatureRequest, QgsProject, QgsVectorLayer
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature, QgsFeatureIterator
+    from qgis.core import QgsFeature
 
 
 class AbstractLayer(ABC):
@@ -31,7 +31,7 @@ class AbstractLayer(ABC):
         return get_vector_layer_from_project(cls.name)
 
     @classmethod
-    def get_features(cls) -> QgsFeatureIterator:
+    def get_features(cls):
         return cls.get_from_project().getFeatures()
 
     @classmethod

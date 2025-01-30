@@ -10,6 +10,7 @@ from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
+    AdditionalInformation,
     Document,
     FeatureTemplateLibrary,
     Plan,
@@ -29,6 +30,7 @@ from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGro
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, code_layers
 from arho_feature_template.project.layers.plan_layers import (
+    AdditionalInformationLayer,
     DocumentLayer,
     LandUseAreaLayer,
     LandUsePointLayer,
@@ -649,16 +651,33 @@ def save_regulation_group_association(regulation_group_id: str, layer_name: str,
 
 
 def save_regulation(regulation: Regulation) -> QgsFeature:
-    feature = PlanRegulationLayer.feature_from_model(regulation)
+    regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
     layer = PlanRegulationLayer.get_from_project()
 
     _save_feature(
-        feature=feature,
+        feature=regulation_feature,
         layer=layer,
         id_=regulation.id_,
         edit_text="Kaavamääräyksen lisäys" if regulation.id_ is None else "Kaavamääräyksen muokkaus",
     )
 
+    for additional_information in regulation.additional_information:
+        additional_information.plan_regulation_id = regulation_feature["id"]
+        save_additional_information(additional_information)
+
+    return regulation_feature
+
+
+def save_additional_information(additional_information: AdditionalInformation) -> QgsFeature:
+    feature = AdditionalInformationLayer.feature_from_model(additional_information)
+    layer = AdditionalInformationLayer.get_from_project()
+
+    _save_feature(
+        feature=feature,
+        layer=layer,
+        id_=additional_information.id_,
+        edit_text="Lisätiedon lisäys" if additional_information.id_ is None else "Lisätiedon muokkaus",
+    )
     return feature
 
 
