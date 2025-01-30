@@ -6,7 +6,17 @@ from typing import TYPE_CHECKING
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QTextBrowser, QTreeWidgetItem, QVBoxLayout
+from qgis.PyQt.QtGui import QPixmap
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QTextBrowser,
+    QTreeWidgetItem,
+    QVBoxLayout,
+)
 
 from arho_feature_template.core.models import (
     Proposition,
@@ -19,6 +29,8 @@ from arho_feature_template.gui.components.plan_proposition_widget import Proposi
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
+from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
+from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 if TYPE_CHECKING:
     from qgis.gui import QgsSpinBox
@@ -48,6 +60,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.regulations_scroll_area_contents: QWidget
         self.regulations_layout: QBoxLayout
         self.regulation_info: QTextBrowser
+
+        self.regulation_group_info_tab: QWidget
 
         self.propositions_layout: QVBoxLayout
         self.propositions_scroll_contents: QWidget
@@ -89,6 +103,36 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
         for proposition in self.regulation_group.propositions:
             self.add_proposition(proposition)
+
+        if self.regulation_group.id_:
+            feat_count = len(
+                list(
+                    RegulationGroupAssociationLayer.get_associations_for_regulation_group(
+                        str(self.regulation_group.id_)
+                    )
+                )
+            )
+            tooltip = (
+                "Kaavamääräysryhmä on tallennettu kaavaan. Ryhmän tietojen muokkaaminen vaikuttaa "
+                "kaavakohteisiin, joille ryhmä on lisätty."
+            )
+            layout = QHBoxLayout()
+
+            self.link_label_icon = QLabel()
+            self.link_label_icon.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            self.link_label_icon.setPixmap(QPixmap(resources_path("icons", "linked_img_small.png")))
+            self.link_label_icon.setToolTip(tooltip)
+            layout.addWidget(self.link_label_icon)
+
+            self.link_label_text = QLabel()
+            self.link_label_text.setObjectName("text_label")  # Set unique name to avoid style cascading
+            self.link_label_text.setText(f"Kaavamääräysryhmä on käytössä yhteensä {feat_count} kaavakohteella")
+            self.link_label_text.setWordWrap(True)
+            self.link_label_text.setStyleSheet("#text_label { color: #4b8db2; }")
+            self.link_label_text.setToolTip(tooltip)
+            layout.addWidget(self.link_label_text)
+
+            self.regulation_group_info_tab.layout().insertLayout(1, layout)
 
     def _initalize_regulation_from_config(self, config: RegulationConfig, parent: QTreeWidgetItem | None = None):
         item = self.regulations_selection_widget.add_item_to_tree(config.name, config, parent)

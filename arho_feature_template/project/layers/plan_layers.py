@@ -287,6 +287,17 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
     @classmethod
+    def get_associations_for_regulation_group_exclude_feature(
+        cls, group_id: str, excluded_feature_id: str, excluded_feature_layer_name: str
+    ) -> list[QgsFeature]:
+        attribute = RegulationGroupAssociationLayer.layer_name_to_attribute_map.get(excluded_feature_layer_name)
+        return [
+            association
+            for association in cls.get_associations_for_regulation_group(group_id)
+            if association[attribute] != excluded_feature_id
+        ]
+
+    @classmethod
     def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> Generator[str]:
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
         if not attribute:
