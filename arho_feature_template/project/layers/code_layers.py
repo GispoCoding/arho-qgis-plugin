@@ -48,7 +48,7 @@ class AdditionalInformationTypeLayer(AbstractCodeLayer):
     @classmethod
     def get_additional_information_name(cls, info_type: str) -> str | None:
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "value", info_type)
-        return cast(str, attribute_value[LANGUAGE]) if attribute_value else None
+        return cast(str, attribute_value.get(LANGUAGE)) if attribute_value else None
 
 
 class PlanRegulationGroupTypeLayer(AbstractCodeLayer):

@@ -268,8 +268,8 @@ class RegulationConfig:
         return cls(
             id=feature["id"],
             regulation_code=feature["value"],
-            name=feature["name"][LANGUAGE],
-            description=feature["description"][LANGUAGE] if feature["description"] else "",
+            name=feature["name"].get(LANGUAGE) if feature["name"] else None,
+            description=feature["description"].get(LANGUAGE) if feature["description"] else None,
             status=feature["status"],
             level=feature["level"],
             parent_id=feature["parent_id"],
