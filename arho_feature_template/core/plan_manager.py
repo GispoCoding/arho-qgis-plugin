@@ -529,8 +529,8 @@ def save_plan(plan: Plan) -> QgsFeature:
     return feature
 
 
-def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> QgsFeature:
-    layer_name = plan_feature.layer_name
+def save_plan_feature(plan_model: PlanFeature, plan_id: str | None = None) -> QgsFeature:
+    layer_name = plan_model.layer_name
     if not layer_name:
         msg = "Cannot save plan feature without a target layer"
         raise ValueError(msg)
@@ -539,21 +539,21 @@ def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> 
         msg = f"Could not find plan feature layer class for layer name {layer_name}"
         raise ValueError(msg)
 
-    feature = layer_class.feature_from_model(plan_feature, plan_id)
+    plan_feature = layer_class.feature_from_model(plan_model, plan_id)
     layer = layer_class.get_from_project()
 
-    editing = plan_feature.id_ is not None
+    editing = plan_model.id_ is not None
     _save_feature(
-        feature=feature,
+        feature=plan_feature,
         layer=layer,
-        id_=plan_feature.id_,
+        id_=plan_model.id_,
         edit_text="Kaavakohteen muokkaus" if editing else "Kaavakohteen lisäys",
     )
 
     # Check for deleted regulation groups
     if editing:
         for association in RegulationGroupAssociationLayer.get_dangling_associations(
-            plan_feature.regulation_groups, feature["id"], layer_name
+            plan_model.regulation_groups, plan_feature["id"], layer_name
         ):
             _delete_feature(
                 association,
@@ -562,11 +562,11 @@ def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> 
             )
 
     # Save regulation groups
-    for group in plan_feature.regulation_groups:
+    for group in plan_model.regulation_groups:
         regulation_group_feature = save_regulation_group(group)
-        save_regulation_group_association(regulation_group_feature["id"], layer_name, feature["id"])
+        save_regulation_group_association(regulation_group_feature["id"], layer_name, plan_feature["id"])
 
-    return feature
+    return plan_feature
 
 
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> QgsFeature:
