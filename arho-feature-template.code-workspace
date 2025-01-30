@@ -29,6 +29,9 @@
         "yaml.schemas": {
             "./arho_feature_template/resources/template_libraries/schema/template_library.schema.json": [
                 "**/template_libraries/*.yaml"
+            ],
+            "./arho_feature_template/resources/libraries/feature_templates/schema/lisatiedonlaji.schema.json": [
+                "**/libraries/additional_information.yaml"
             ]
         }
     },
@@ -55,7 +58,7 @@
                 "pathMappings": [
                     {
                         "localRoot": "${workspaceFolder}/arho_feature_template",
-                        "remoteRoot": "${env:APPDATA}/QGIS/QGIS3/profiles/default/python/plugins/arho_feature_template"
+                        "remoteRoot": "${env:APPDATA}/QGIS/QGIS3/profiles/arho-dev/python/plugins/arho_feature_template"
                     }
                 ]
             },
