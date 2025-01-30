@@ -1,18 +1,16 @@
 name: Yleiskaavan kaavamääräysryhmät (Katja)
 version: 1
 categories:
-
   - category_code: aluevaraukset
     name: Aluevaraukset
     plan_regulation_groups:
-
       - name: Asuntoalue
         geometry: [Alue, Piste]
         short_name: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
-            - type: paakayttotarkoitus
+              - type: paakayttotarkoitus
 
       - name: Kerrostalovaltainen asuntoalue
         geometry: [Alue, Piste]
@@ -192,7 +190,7 @@ categories:
         plan_regulations:
           - regulation_code: uimaranta
             additional_information:
-                  - type: paakayttotarkoitus
+              - type: paakayttotarkoitus
 
       - name: Vapaa-ajan asumisen ja matkailun alue
         geometry: [Alue, Piste]
@@ -604,7 +602,6 @@ categories:
   - category_code: ymparistonmuuutosAluevaraukset
     name: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     plan_regulation_groups:
-
       - name: Olemassa oleva asuntovaltainen alue
         geometry: [Alue, Piste]
         short_name: A
@@ -671,7 +668,6 @@ categories:
   - category_code: osa-alueet
     name: Erityisominaisuudet ja muut osa-alueet
     plan_regulation_groups:
-
       - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
         geometry: [Alue, Piste]
         short_name: kyma
@@ -1239,7 +1235,6 @@ categories:
   - category_code: kehittämisperiaatteet
     name: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     plan_regulation_groups:
-
       - name: Kaupunkikehittämisvyöhyke
         geometry: Alue
         short_name: kk
@@ -1415,7 +1410,6 @@ categories:
   - category_code: viivat
     name: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     plan_regulation_groups:
-
       - name: Nykyinen tie
         geometry: Viiva
         short_name: # NOTE: check symbol p. 38
@@ -1626,7 +1620,6 @@ categories:
   - category_code: ymparistonmuuutosLiikennemuodot
     name: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     plan_regulation_groups:
-
       - name: Nykyinen tie
         geometry: Viiva
         short_name: # NOTE: check symbol p. 41
@@ -1769,7 +1762,6 @@ categories:
   - category_code: muutLinjaukset
     name: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     plan_regulation_groups:
-
       - name: Viheryhteys
         geometry: Viiva
         short_name: # NOTE: check symbol p. 42
@@ -1881,7 +1873,6 @@ categories:
   - category_code: numeerisetJaTekstimuotoiset
     name: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     plan_regulation_groups:
-
       - name: Kaupungin- tai kunnanosan nimi
         geometry: Alue
         plan_regulations:
@@ -1908,7 +1899,6 @@ categories:
   - category_code: rakennuspaikka
     name: Rakennuspaikkaa koskevat kaavamääräysryhmät
     plan_regulation_groups:
-
       - name: Rakennuspaikka
         geometry: Piste
         short_name: # NOTE: check symbol p. 44
