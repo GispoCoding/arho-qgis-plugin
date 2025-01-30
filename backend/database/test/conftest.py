@@ -7,6 +7,7 @@ from typing import Callable, Iterable, List, Mapping, Optional
 from zoneinfo import ZoneInfo
 
 import codes
+import enums
 import models
 import psycopg2
 import pytest
@@ -651,6 +652,18 @@ def type_of_verbal_plan_regulation_instance(session):
 def type_of_main_use_additional_information_instance(session):
     instance = codes.TypeOfAdditionalInformation(
         value="paakayttotarkoitus", status="LOCAL"
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def type_of_proportion_of_intended_use_additional_information_instance(session):
+    instance = codes.TypeOfAdditionalInformation(
+        value="kayttotarkoituksenOsuusKerrosalastaK-m2", status="LOCAL"
     )
     session.add(instance)
     session.commit()
@@ -1503,6 +1516,26 @@ def main_use_additional_information_instance(
     session.commit()
 
 
+@pytest.fixture()
+def proportion_of_intended_use_additional_information_instance(
+    session,
+    type_of_proportion_of_intended_use_additional_information_instance,
+    empty_value_plan_regulation_instance,
+):
+    instance = models.AdditionalInformation(
+        plan_regulation=empty_value_plan_regulation_instance,
+        type_of_additional_information=type_of_proportion_of_intended_use_additional_information_instance,
+        value_data_type=enums.AttributeValueDataType.POSITIVE_NUMERIC,
+        numeric_value=2500,
+        unit="k-m2",
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
 @pytest.fixture
 def make_additional_information_instance_for_plan_regulation(session: Session):
     created_instances = []
@@ -1548,8 +1581,10 @@ def complete_test_plan(
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
+    proportion_of_intended_use_additional_information_instance: models.AdditionalInformation,
     plan_theme_instance: codes.PlanTheme,
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     make_additional_information_instance_for_plan_regulation: Callable[
         [models.PlanRegulation, codes.TypeOfAdditionalInformation],
         models.AdditionalInformation,
@@ -1588,6 +1623,10 @@ def complete_test_plan(
             empty_value_plan_regulation_instance,
             type_of_main_use_additional_information_instance,
         )
+    )
+    # empty value plan regulation may have proportion of intended use
+    empty_value_plan_regulation_instance.additional_information.append(
+        proportion_of_intended_use_additional_information_instance
     )
 
     numeric_plan_regulation_instance.plan_theme = plan_theme_instance
@@ -2043,7 +2082,15 @@ def desired_plan_dict(
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
-                            }
+                            },
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituksenOsuusKerrosalastaK-m2",
+                                "value": {
+                                    "dataType": "PositiveNumeric",
+                                    "number": 2500,
+                                    "unitOfMeasure": "k-m2",
+                                },
+                            },
                         ],
                         "planThemes": [
                             "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",

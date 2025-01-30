@@ -417,7 +417,10 @@ def test_get_plan_dictionaries(
     deepcompare(
         result_plan_dict,
         desired_plan_dict,
-        ignore_order_for_keys=["planRegulationGroupRelations"],
+        ignore_order_for_keys=[
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
     )
 
 
@@ -820,7 +823,10 @@ def test_get_plan_matters(
             "planMapKey",
             "fileKey",
         ],
-        ignore_order_for_keys=["planRegulationGroupRelations"],
+        ignore_order_for_keys=[
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
     )
 
 

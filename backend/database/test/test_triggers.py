@@ -441,11 +441,13 @@ def test_update_lifecycle_status_triggers(
     assert plan_instance.general_plan_regulation_groups == [
         general_regulation_group_instance
     ]
-    assert land_use_area_instance.plan_regulation_groups == [
-        numeric_plan_regulation_group_instance,
-        decimal_plan_regulation_group_instance,
-        plan_regulation_group_instance,
-    ]
+    assert set(land_use_area_instance.plan_regulation_groups) == set(
+        [
+            numeric_plan_regulation_group_instance,
+            decimal_plan_regulation_group_instance,
+            plan_regulation_group_instance,
+        ]
+    )
     assert other_area_instance.plan_regulation_groups == [
         plan_regulation_group_instance
     ]

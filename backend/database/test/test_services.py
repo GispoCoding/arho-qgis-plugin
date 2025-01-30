@@ -224,12 +224,18 @@ def get_all_plans(
     deepcompare(
         body["details"][complete_test_plan.id],
         desired_plan_dict,
-        ignore_order_for_keys=["planRegulationGroupRelations"],
+        ignore_order_for_keys=[
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
     )
     deepcompare(
         body["details"][another_test_plan.id],
         another_plan_dict,
-        ignore_order_for_keys=["planRegulationGroupRelations"],
+        ignore_order_for_keys=[
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
     )
     assert not body["ryhti_responses"]
 
@@ -282,7 +288,10 @@ def get_single_plan(
     deepcompare(
         body["details"][complete_test_plan.id],
         desired_plan_dict,
-        ignore_order_for_keys=["planRegulationGroupRelations"],
+        ignore_order_for_keys=[
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
     )
     assert not body["ryhti_responses"]
 
