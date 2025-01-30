@@ -1,0 +1,118 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://gispocoding.com/featuretemplate/lisatiedonlaji.schema.json",
+    "title": "Kaavamääräyksen lisätiedon konfiguraatio",
+    "type": "object",
+    "required": [
+        "version",
+        "additional_information"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "version": {
+            "description": "The version of the template library syntax used in the file",
+            "type": "integer"
+        },
+        "additional_information": {
+            "description": "The list of configuations of additiona information objects",
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/additional_information_object"
+            }
+        }
+    },
+    "$defs": {
+        "additional_information_object": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "code": {
+                    "description": "Kaavamääräyksen lisätiedon laji",
+                    "enum": [
+                        "tyyppi",
+                        "hairionTorjuntatarve",
+                        "merkittavyys",
+                        "eriTahojenTarpeisiinVaraaminen",
+                        "ymparistomuutoksenLaji",
+                        "rakentamisenOhjaus",
+                        "valiaikainenMaarays",
+                        "vaihtoehtoinen",
+                        "ohjeellinenSijainti",
+                        "ehdottomastiNoudatettava",
+                        "poisluettavaKayttotarkoitus",
+                        "meluntorjuntatarve",
+                        "ymparistoTaiMaisemavaurionKorjaustarve",
+                        "terveyshaitanPoistamistarve",
+                        "kansainvalinen",
+                        "valtakunnallinen",
+                        "maakunnallinen",
+                        "seudullinen",
+                        "alueellinen",
+                        "paikallinen",
+                        "varattuKunnanKayttoon",
+                        "varattuValtionKayttoon",
+                        "varattuYleiseenKayttoon",
+                        "varattuYksityiseenKayttoon",
+                        "varattuAlueenSisaiseenKayttoon",
+                        "kayttotarkoituksenOsuusMaapintaAlasta",
+                        "kerroksetJotaMaaraysKoskee",
+                        "kayttotarkoituskohdistus",
+                        "kayttotarkoituksenOsuusKerrosalastaK-m2",
+                        "kayttotarkoituksenOsuusKerrosalastaPros",
+                        "kayttotarkoituksenOsuusRakennustilavuudestaK-m3",
+                        "kayttotarkoituksenOsuusRakennustilavuudestaPros",
+                        "rakennusluvanPeruste",
+                        "rakentamistapaohjeHuomioitava",
+                        "sitovaTonttijakoLaadittava",
+                        "tontilleAjoSallittu",
+                        "VaarallistenKemikaalienValmistusJaVarastointiSallittu",
+                        "ymparistoAsettaaToiminnanLaadulleErityisiaVaatimuksia",
+                        "melunLahde",
+                        "autopaikkojenSijoittuminenSallittu",
+                        "maanalainenTila",
+                        "kayttotarkoitus",
+                        "yhteystarve",
+                        "paakayttotarkoitus",
+                        "osaAlue",
+                        "olemassaolo",
+                        "olemassaOleva",
+                        "sailytettava",
+                        "uusi",
+                        "olennaisestiMuuttuva",
+                        "kehittaminen",
+                        "eheytettavaTaiTiivistettava",
+                        "reservialue",
+                        "merkittavastiParannettava",
+                        "kehitettava"
+                    ]
+                },
+                "data_type": {
+                    "enum": [
+                        "LocalizedText",
+                        "Text",
+                        "Numeric",
+                        "NumericRange",
+                        "PositiveNumeric",
+                        "PositiveNumericRange",
+                        "Decimal",
+                        "DecimalRange",
+                        "PositiveDecimal",
+                        "PositiveDecimalRange",
+                        "Code",
+                        "Identifier",
+                        "SpotElevation",
+                        "TimePeriod",
+                        "TimePeriodDateOnly"
+                    ]
+                },
+                "unit": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "code",
+                "data_type"
+            ]
+        }
+    }
+}
