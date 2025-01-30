@@ -1,6 +1,5 @@
 version: 1
 plan_regulations:
-
   # Asumisen alue (valmis)
 
   # Taajamatoiminnan alue (valmis)
@@ -14,7 +13,7 @@ plan_regulations:
     category_only: true
 
   - regulation_code: vihertehokkuus
-    value_type: positiivinen desimaali
+    value_type: PositiveDecimal
     unit: m2/m2
 
   # Maa- ja metsätalousalue (valmis)
@@ -68,121 +67,121 @@ plan_regulations:
     category_only: true
 
   - regulation_code: kadunTaiTienNimi
-    value_type: kieliversioitu teksti
+    value_type: LocalizedText
 
   - regulation_code: torinTaiKatuaukionNimi
-    value_type: kieliversioitu teksti
+    value_type: LocalizedText
 
   - regulation_code: puistonTaiMuunYleisenAlueenNimi
-    value_type: kieliversioitu teksti
+    value_type: LocalizedText
 
   - regulation_code: kaupunginTaiKunnanosanNimi
-    value_type: kieliversioitu teksti
+    value_type: LocalizedText
 
   # Aluetunnukset (valmis)
   - regulation_code: aluetunnukset
     category_only: true
 
   - regulation_code: korttelinNumero
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: tontinTaiRakennuspaikanNumero
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: kaupunginTaiKunnanosanNumero
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   # Rakentamisen määrä (valmis)
   - regulation_code: rakentamisenMaara
     category_only: true
 
   - regulation_code: sallittuKerrosala
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: k-m2
 
   - regulation_code: sallittuRakennustilavuus
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: m3
 
   - regulation_code: tehokkuusluku
-    value_type: positiivinen desimaali
+    value_type: PositiveDecimal
     unit: k-m2/m2
 
   - regulation_code: rakentamisenSuhdeAlueenPintaAlaan
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: prosentti
 
   - regulation_code: valjyysluku
-    value_type: positiivinen desimaali
+    value_type: PositiveDecimal
     unit: m2/k-m2
 
   - regulation_code: maanpaallinenKerroslukuLuku
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: maanpaallinenKerroslukuArvovali
-    value_type: positiivinen kokonaisluku arvoväli
+    value_type: PositiveNumericRange
 
   - regulation_code: maanalainenKerroslukuLuku
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: maanalainenKerroslukuArvovali
-    value_type: positiivinen kokonaisluku arvoväli
+    value_type: PositiveNumericRange
 
   - regulation_code: kellarinSallittuOsuusKerrosalasta
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: prosentti
 
   - regulation_code: ullakonSallittuOsuusKerrosalasta
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: prosentti
 
   - regulation_code: asuntojenMaara
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: rakennuspaikkojenMaara
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: tuulivoimaloidenMaara
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   # Korkeusasema (valmis)
   - regulation_code: korkeusasema
     category_only: true
 
   - regulation_code: maanpinnanKorkeusasema
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: vesikatonYlimmanKohdanKorkeusasema
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: julkisivupinnanJaVesikatonLeikkauskohdanKorkeusasema
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: julkisivunEnimmaiskorkeus
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: rakennustenRakenteidenJaLaitteidenYlinKorkeusasema
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: alinPainovoimainenViemarointitaso
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: rakennustenRakenteidenJaLaitteidenAlinKorkeusasema
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: kosteudelleAlttiidenRakenteidenAlinRakentamiskorkeus
-    value_type: desimaali
+    value_type: Decimal
     unit: m
 
   - regulation_code: tuulivoimalanEnimmaiskorkeus
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: m
 
   # Rakentamisen tapa (valmis)
@@ -190,11 +189,11 @@ plan_regulations:
     category_only: true
 
   - regulation_code: kattokaltevuus
-    value_type: desimaali
+    value_type: Decimal
     unit: °
 
   - regulation_code: aaneneristavyys
-    value_type: positiivinen desimaali
+    value_type: PositiveDecimal
     unit: dB
 
   # Liikenteen suureet (valmis)
@@ -205,25 +204,25 @@ plan_regulations:
     category_only: true
 
   - regulation_code: autopaikkojenMaara
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: autopaikkojenMaaraAsuntoaKohden
-    value_type: positiivinen desimaali
+    value_type: PositiveDecimal
 
   - regulation_code: kerrosneliomaaraYhtaAutopaikkaaKohden
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: k-m2
 
   - regulation_code: pyorapaikkojenMaara
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
 
   - regulation_code: pyorapaikkojenMaaraAsuntoaKohden
-    value_type: positiivinen desimaali
+    value_type: PositiveDecimal
 
   - regulation_code: kerrosneliomaaraYhtaPyorapaikkaaKohden
-    value_type: positiivinen kokonaisluku
+    value_type: PositiveNumeric
     unit: k-m2
 
   # Sanallinen määräys
   - regulation_code: sanallinenMaarays
-    value_type: kieliversioitu teksti
+    value_type: LocalizedText

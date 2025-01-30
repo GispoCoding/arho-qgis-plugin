@@ -10,7 +10,7 @@ from qgis.PyQt.QtWidgets import QFormLayout, QLabel, QMenu, QTextEdit, QToolButt
 
 from arho_feature_template.core.models import Proposition
 from arho_feature_template.gui.components.code_combobox import CodeComboBox
-from arho_feature_template.gui.components.plan_regulation_input_widgets import IntegerInputWidget
+from arho_feature_template.gui.components.value_input_widgets import IntegerInputWidget
 from arho_feature_template.project.layers.code_layers import PlanThemeLayer
 
 if TYPE_CHECKING:

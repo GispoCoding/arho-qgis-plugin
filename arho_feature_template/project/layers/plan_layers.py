@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import logging
 from abc import abstractmethod
-from numbers import Number
 from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator
 
-from qgis.core import NULL, QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
+from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
 from qgis.utils import iface
 
 from arho_feature_template.core.models import (
+    AdditionalInformation,
+    AdditionalInformationConfigLibrary,
+    AttributeValue,
     Document,
     Plan,
     PlanFeature,
@@ -22,7 +24,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
-from arho_feature_template.utils.misc_utils import LANGUAGE
+from arho_feature_template.utils.misc_utils import LANGUAGE, get_active_plan_id
 
 logger = logging.getLogger(__name__)
 
@@ -136,11 +138,7 @@ class PlanFeatureLayer(AbstractPlanLayer):
         feature["name"] = {LANGUAGE: model.name if model.name else ""}
         feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = {LANGUAGE: model.description if model.description else ""}
-        feature["plan_id"] = (
-            plan_id
-            if plan_id
-            else QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
-        )
+        feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
 
         return feature
 
@@ -313,6 +311,38 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return [assoc for assoc in associations if assoc["plan_regulation_group_id"] not in updated_group_ids]
 
 
+def attribute_value_model_from_feature(feature: QgsFeature) -> AttributeValue:
+    return AttributeValue(
+        value_data_type=feature["value_data_type"],
+        numeric_value=feature["numeric_value"],
+        numeric_range_min=feature["numeric_range_min"],
+        numeric_range_max=feature["numeric_range_max"],
+        unit=feature["unit"],
+        text_value=feature["text_value"].get(LANGUAGE) if feature["text_value"] else None,
+        text_syntax=feature["text_syntax"],
+        code_list=feature["code_list"],
+        code_value=feature["code_value"],
+        code_title=feature["code_title"].get(LANGUAGE) if feature["code_title"] else None,
+        height_reference_point=feature["height_reference_point"],
+    )
+
+
+def update_feature_from_attribute_value_model(value: AttributeValue | None, feature: QgsFeature):
+    if value is None:
+        return
+    feature["value_data_type"] = str(value.value_data_type) if value.value_data_type is not None else None
+    feature["numeric_value"] = value.numeric_value
+    feature["numeric_range_min"] = value.numeric_range_min
+    feature["numeric_range_max"] = value.numeric_range_max
+    feature["unit"] = value.unit
+    feature["text_value"] = {LANGUAGE: value.text_value} if value.text_value is not None else None
+    feature["text_syntax"] = value.text_syntax
+    feature["code_list"] = value.code_list
+    feature["code_value"] = value.code_value
+    feature["code_title"] = {LANGUAGE: value.code_title} if value.code_title is not None else None
+    feature["height_reference_point"] = value.height_reference_point
+
+
 class PlanRegulationLayer(AbstractPlanLayer):
     name = "Kaavamääräys"
     filter_template = Template(
@@ -334,13 +364,11 @@ class PlanRegulationLayer(AbstractPlanLayer):
 
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["type_of_plan_regulation_id"] = model.config.id
-        feature["unit"] = model.config.unit
-        feature["text_value"] = {LANGUAGE: model.value if isinstance(model.value, str) else ""}
-        feature["numeric_value"] = model.value if isinstance(model.value, Number) else NULL
-        # feature["name"] = {LANGUAGE: model.topic_tag if model.topic_tag else ""}
+
+        feature["subject_identifiers"] = model.topic_tag.split(",") if model.topic_tag else None
         feature["type_of_verbal_plan_regulation_id"] = model.verbal_regulation_type_id
-        feature["id"] = model.id_ if model.id_ else feature["id"]
-        # feature["plan_theme_id"]
+
+        update_feature_from_attribute_value_model(model.value, feature)
 
         return feature
 
@@ -356,9 +384,13 @@ class PlanRegulationLayer(AbstractPlanLayer):
             raise ValueError(msg)
         return Regulation(
             config=config,
-            # Assuming only either text_value or numeric_value is defined
-            value=feature["text_value"][LANGUAGE] if feature["text_value"][LANGUAGE] else feature["numeric_value"],
-            additional_information=None,
+            value=attribute_value_model_from_feature(feature),
+            additional_information=[
+                AdditionalInformationLayer.model_from_feature(ai_feat)
+                for ai_feat in AdditionalInformationLayer.get_features_by_attribute_value(
+                    "plan_regulation_id", feature["id"]
+                )
+            ],
             regulation_number=None,
             files=[],
             theme=None,
@@ -492,6 +524,45 @@ class DocumentLayer(AbstractPlanLayer):
 class SourceDataLayer(AbstractPlanLayer):
     name = "Lähtötietoaineistot"
     filter_template = Template("plan_id = '$plan_id'")
+
+
+class AdditionalInformationLayer(AbstractPlanLayer):
+    name = "Kaavamääräyksen lisätiedot"
+    filter_template = Template(
+        dedent(
+            """\
+            EXISTS (
+                SELECT 1
+                FROM
+                    hame.plan_regulation_group prg
+                    JOIN hame.plan_regulation pr
+                        ON (prg.id = pr.plan_regulation_group_id)
+                WHERE
+                    hame.additional_information.plan_regulation_id = pr.id
+                    AND prg.plan_id = '$plan_id'
+            )"""
+        )
+    )
+
+    @classmethod
+    def feature_from_model(cls, model: AdditionalInformation) -> QgsFeature:
+        feature = cls.initialize_feature_from_model(model)
+
+        feature["plan_regulation_id"] = model.plan_regulation_id
+        feature["type_additional_information_id"] = model.config.id
+
+        update_feature_from_attribute_value_model(model.value, feature)
+
+        return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> AdditionalInformation:
+        return AdditionalInformation(
+            config=AdditionalInformationConfigLibrary.get_config_by_id(feature["type_additional_information_id"]),
+            plan_regulation_id=feature["plan_regulation_id"],
+            type_additional_information_id=feature["type_additional_information_id"],
+            value=attribute_value_model_from_feature(feature),
+        )
 
 
 plan_layers = AbstractPlanLayer.__subclasses__()
