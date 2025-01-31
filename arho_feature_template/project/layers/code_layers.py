@@ -58,8 +58,8 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
         "Kaava": "generalRegulations",
         "Aluevaraus": "landUseRegulations",
         "Osa-alue": "otherAreaRegulations",
-        "Viiva": "lineRegulations",
-        "Muu piste": "otherPointRegulations",
+        "Viivat": "lineRegulations",
+        "Muut pisteet": "otherPointRegulations",
         "Maankäytön kohteet": "landUseRegulations",
     }
 
