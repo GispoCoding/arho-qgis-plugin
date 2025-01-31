@@ -185,7 +185,8 @@ class ValueWidgetManager:
             )
 
         elif self.value_data_type == AttributeValueDataType.LOCALIZED_TEXT:
-            self.value_widget = MultilineTextInputWidget(default_value=default_value.text_value, editable=True)
+            text_value = value.text_value or default_value.text_value
+            self.value_widget = MultilineTextInputWidget(default_value=text_value, editable=True)
 
         elif self.value_data_type == AttributeValueDataType.CODE:
             self.value_widget = CodeInputWidget(
