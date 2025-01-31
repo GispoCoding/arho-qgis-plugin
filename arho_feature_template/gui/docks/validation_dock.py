@@ -63,7 +63,8 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         for error_data in validation_json.values():
             if not isinstance(error_data, dict):
                 continue
-            errors = error_data.get("errors", [])
+
+            errors = error_data.get("errors") or []
             for error in errors:
                 self.validation_result_tree_view.add_error(
                     error.get("ruleId", ""),
@@ -71,7 +72,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     error.get("message", ""),
                 )
 
-            warnings = error_data.get("warnings", [])
+            warnings = error_data.get("warnings") or []
             for warning in warnings:
                 self.validation_result_tree_view.add_warning(
                     warning.get("ruleId", ""),
