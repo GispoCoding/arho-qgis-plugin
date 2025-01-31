@@ -330,7 +330,7 @@ def attribute_value_model_from_feature(feature: QgsFeature) -> AttributeValue:
 def update_feature_from_attribute_value_model(value: AttributeValue | None, feature: QgsFeature):
     if value is None:
         return
-    feature["value_data_type"] = str(value.value_data_type) if value.value_data_type is not None else None
+    feature["value_data_type"] = value.value_data_type.value if value.value_data_type is not None else None
     feature["numeric_value"] = value.numeric_value
     feature["numeric_range_min"] = value.numeric_range_min
     feature["numeric_range_max"] = value.numeric_range_max

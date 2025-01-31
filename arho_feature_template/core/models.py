@@ -26,7 +26,7 @@ DEFAULT_PLAN_REGULATIONS_CONFIG_PATH = Path(os.path.join(resources_path(), "libr
 ADDITIONAL_INFORMATION_CONFIG_PATH = Path(os.path.join(resources_path(), "libraries", "additional_information.yaml"))
 
 
-class AttributeValueDataType(enum.StrEnum):
+class AttributeValueDataType(str, enum.Enum):
     LOCALIZED_TEXT = "LocalizedText"
     TEXT = "Text"
     NUMERIC = "Numeric"
