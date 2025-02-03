@@ -6,7 +6,7 @@ from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator
 
-from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
+from qgis.core import QgsFeature, QgsVectorLayerUtils
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -197,11 +197,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
         feature["short_name"] = model.short_name if model.short_name else None
         feature["name"] = {LANGUAGE: model.name if model.name else None}
         feature["type_of_plan_regulation_group_id"] = model.type_code_id
-        feature["plan_id"] = (
-            plan_id
-            if plan_id
-            else QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
-        )
+        feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
         feature["id"] = model.id_ if model.id_ else feature["id"]
         return feature
 

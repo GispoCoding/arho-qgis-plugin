@@ -4,7 +4,7 @@ import json
 import logging
 from typing import TYPE_CHECKING
 
-from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer, QgsWkbTypes
+from qgis.core import QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 
@@ -55,6 +55,7 @@ from arho_feature_template.utils.misc_utils import (
     get_active_plan_id,
     handle_unsaved_changes,
     iface,
+    set_active_plan_id,
 )
 
 if TYPE_CHECKING:
@@ -227,8 +228,7 @@ class PlanManager:
         if not plan_layer:
             return
 
-        active_plan_id = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
-        feature = PlanLayer.get_feature_by_id(active_plan_id, no_geometries=False)
+        feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         if feature is None:
             iface.messageBar().pushWarning("", "No active/open plan found!")
             return
@@ -328,7 +328,7 @@ class PlanManager:
         if previously_in_edit_mode:
             plan_layer.rollBack()
 
-        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "active_plan_id", plan_id)
+        set_active_plan_id(plan_id)
         for layer in plan_layers:
             layer.apply_filter(plan_id)
 
