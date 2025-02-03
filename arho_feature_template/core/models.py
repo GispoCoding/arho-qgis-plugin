@@ -562,6 +562,9 @@ class PlanFeature:
         # TODO: Implement
         return cls(**data)
 
+    def describe(self) -> str:
+        return f"{self.name} " if self.name else ""
+
 
 @dataclass
 class Plan:
