@@ -51,10 +51,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.selected_group = None
 
-    def connect_buttons(self):
+    def _disconnect_buttons(self):
         disconnect_signal(self.new_btn.clicked)
         disconnect_signal(self.edit_btn.clicked)
         disconnect_signal(self.delete_btn.clicked)
+
+    def connect_buttons(self):
+        self._disconnect_buttons()
 
         self.new_btn.clicked.connect(self.new_regulation_group_requested.emit)
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
@@ -123,3 +126,10 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             # Clear selection if the selected template was filtered
             if self.selected_group and self.selected_group is regulation_group and item.isHidden():
                 self.regulation_group_list.clearSelection()
+
+    def unload(self):
+        self._disconnect_buttons()
+
+        disconnect_signal(self.new_regulation_group_requested)
+        disconnect_signal(self.edit_regulation_group_requested)
+        disconnect_signal(self.delete_regulation_group_requested)

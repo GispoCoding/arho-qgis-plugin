@@ -10,6 +10,8 @@ from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QMenu
 from qgis.utils import OverrideCursor
 
+from arho_feature_template.utils.misc_utils import disconnect_signal
+
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.plan_layers import PlanFeatureLayer
 
@@ -27,6 +29,7 @@ class InspectPlanFeatures(QgsMapTool):
 
         self.highlighted: tuple[QgsFeature, str] | None = None
         self.highlight_rubber_band: QgsRubberBand | None = None
+        self.check_menu_selections_timer: QTimer | None = None
 
     def activate(self):
         super().activate()
@@ -110,6 +113,11 @@ class InspectPlanFeatures(QgsMapTool):
         self.check_menu_selections_timer.start(100)  # 0.1 seconds interval
 
     def _destroy_timer(self):
-        self.check_menu_selections_timer.timeout.disconnect()
-        self.check_menu_selections_timer.deleteLater()
-        self.check_menu_selections_timer = None
+        if self.check_menu_selections_timer:
+            self.check_menu_selections_timer.timeout.disconnect()
+            self.check_menu_selections_timer.deleteLater()
+            self.check_menu_selections_timer = None
+
+    def unload(self):
+        self.close_menu()
+        disconnect_signal(self.edit_feature_requested)

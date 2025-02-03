@@ -51,6 +51,7 @@ from arho_feature_template.utils.db_utils import get_existing_database_connectio
 from arho_feature_template.utils.misc_utils import (
     LANGUAGE,
     check_layer_changes,
+    disconnect_signal,
     get_active_plan_id,
     handle_unsaved_changes,
     iface,
@@ -405,33 +406,34 @@ class PlanManager:
         )
 
     def unload(self):
+        # Set pan map tool as active (to deactivate our custom tools to avoid errors)
+        iface.actionPan().trigger()
+
         # Lambda service
-        self.lambda_service.jsons_received.disconnect(self.save_plan_jsons)
+        disconnect_signal(self.lambda_service.jsons_received)
         self.lambda_service.deleteLater()
 
         # Feature digitize tool
         if self.feature_digitize_map_tool:
-            self.feature_digitize_map_tool.digitizingCompleted.disconnect()
-            self.feature_digitize_map_tool.digitizingFinished.disconnect()
+            disconnect_signal(self.feature_digitize_map_tool.digitizingCompleted)
+            disconnect_signal(self.feature_digitize_map_tool.digitizingFinished)
             self.feature_digitize_map_tool.deleteLater()
 
         # Plan digitize tool
-        self.plan_digitize_map_tool.digitizingCompleted.disconnect(self._plan_geom_digitized)
+        disconnect_signal(self.plan_digitize_map_tool.digitizingCompleted)
         self.plan_digitize_map_tool.deleteLater()
 
         # Inspect plan feature tool
-        self.inspect_plan_feature_tool.edit_feature_requested.disconnect(self.edit_plan_feature)
+        self.inspect_plan_feature_tool.unload()
         self.inspect_plan_feature_tool.deleteLater()
 
         # New feature dock
-        self.new_feature_dock.tool_activated.disconnect(self.add_new_plan_feature)
+        disconnect_signal(self.new_feature_dock.tool_activated)
         iface.removeDockWidget(self.new_feature_dock)
         self.new_feature_dock.deleteLater()
 
         # Regulation group dock
-        self.regulation_groups_dock.new_regulation_group_requested.disconnect()
-        self.regulation_groups_dock.edit_regulation_group_requested.disconnect()
-        self.regulation_groups_dock.delete_regulation_group_requested.disconnect()
+        self.regulation_groups_dock.unload()
         iface.removeDockWidget(self.regulation_groups_dock)
         self.regulation_groups_dock.deleteLater()
 
