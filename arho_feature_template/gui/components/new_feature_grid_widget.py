@@ -56,14 +56,11 @@ class NewFeatureGridWidget(QListWidget):
         self.setFixedHeight(new_height)
 
     def handle_button_click(self, btn: FeatureButton):
-        # Clear other button selections
-        self.clear_selections(btn)
+        self.clear_selections(exclude=btn)
 
         # Map button texts to layer names
-        if btn.isChecked():
-            self.active_feature_type_changed.emit(btn.text(), FEATURE_TYPE_TO_LAYER_NAME[btn.text()])
-        else:
-            self.active_feature_type_changed.emit("", "")
+        btn.setChecked(True)
+        self.active_feature_type_changed.emit(btn.text(), FEATURE_TYPE_TO_LAYER_NAME[btn.text()])
 
     def clear_selections(self, exclude: FeatureButton | None = None):
         for btn in self.buttons.values():
