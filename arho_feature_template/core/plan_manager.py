@@ -494,19 +494,18 @@ def save_plan(plan: Plan) -> QgsFeature:
     feature = PlanLayer.feature_from_model(plan)
     layer = PlanLayer.get_from_project()
 
-    editing = plan.id_ is not None
     _save_feature(
         feature=feature,
         layer=layer,
         id_=plan.id_,
-        edit_text="Kaavan muokkaus" if editing else "Kaavan luominen",
+        edit_text="Kaavan muokkaus" if plan.id_ is not None else "Kaavan luominen",
     )
 
     plan_id = feature["id"]
-    if editing:
+    if plan.id_ is not None:
         # Check for deleted general regulations
         for association in RegulationGroupAssociationLayer.get_dangling_associations(
-            plan.general_regulations, plan_id, PlanLayer.name
+            plan.general_regulations, plan.id_, PlanLayer.name
         ):
             _delete_feature(
                 association,
@@ -516,7 +515,7 @@ def save_plan(plan: Plan) -> QgsFeature:
 
         # Check for documents to be deleted
         doc_layer = DocumentLayer.get_from_project()
-        for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan):
+        for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan.id_):
             _delete_feature(doc_feature, doc_layer, "Asiakirjan poisto")
 
     # Save general regulations
@@ -577,26 +576,25 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
     layer = RegulationGroupLayer.get_from_project()
 
-    editing = regulation_group.id_ is not None
     _save_feature(
         feature=feature,
         layer=layer,
         id_=regulation_group.id_,
-        edit_text="Kaavamääräysryhmän muokkaus" if editing else "Kaavamääräysryhmän lisäys",
+        edit_text="Kaavamääräysryhmän muokkaus" if regulation_group.id_ is not None else "Kaavamääräysryhmän lisäys",
     )
 
-    if editing:
+    if regulation_group.id_ is not None:
         # Check for regulations to be deleted
         regulation_layer = PlanRegulationLayer.get_from_project()
         for reg_feature in PlanRegulationLayer.get_regulations_to_delete(
-            regulation_group.regulations, regulation_group
+            regulation_group.regulations, regulation_group.id_
         ):
             _delete_feature(reg_feature, regulation_layer, "Kaavamääräyksen poisto")
 
         # Check for propositions to be deleted
         proposition_layer = PlanPropositionLayer.get_from_project()
         for prop_feature in PlanPropositionLayer.get_propositions_to_delete(
-            regulation_group.propositions, regulation_group
+            regulation_group.propositions, regulation_group.id_
         ):
             _delete_feature(prop_feature, proposition_layer, "Kaavasuosituksen poisto")
 

@@ -106,11 +106,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
         if self.regulation_group.id_:
             feat_count = len(
-                list(
-                    RegulationGroupAssociationLayer.get_associations_for_regulation_group(
-                        str(self.regulation_group.id_)
-                    )
-                )
+                list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(self.regulation_group.id_))
             )
             tooltip = (
                 "Kaavamääräysryhmä on tallennettu kaavaan. Ryhmän tietojen muokkaaminen vaikuttaa "
