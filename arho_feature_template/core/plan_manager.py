@@ -161,7 +161,7 @@ class PlanManager:
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group)
         if regulation_group_form.exec_():
-            if regulation_group_form.save_as_config is True:
+            if regulation_group_form.save_as_config:
                 save_regulation_group_as_config(regulation_group_form.model)
             else:
                 save_regulation_group(regulation_group_form.model)
@@ -191,8 +191,8 @@ class PlanManager:
 
         # Disconnect signals first to not trigger them unwantedly
         if self.feature_digitize_map_tool:
-            self.feature_digitize_map_tool.digitizingCompleted.disconnect()
-            self.feature_digitize_map_tool.digitizingFinished.disconnect()
+            disconnect_signal(self.feature_digitize_map_tool.digitizingCompleted)
+            disconnect_signal(self.feature_digitize_map_tool.digitizingFinished)
 
         # Reinitialize and reconnect signals
         self.feature_digitize_map_tool = PlanFeatureDigitizeMapTool(mode)

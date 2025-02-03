@@ -13,7 +13,7 @@ from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
-from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 
 class Plugin:
@@ -257,7 +257,7 @@ class Plugin:
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
         # Handle signals
-        self.plan_manager.new_feature_dock.visibilityChanged.disconnect()
+        disconnect_signal(self.plan_manager.new_feature_dock.visibilityChanged)
         iface.mapCanvas().mapToolSet.disconnect()
         iface.projectRead.disconnect()
 
