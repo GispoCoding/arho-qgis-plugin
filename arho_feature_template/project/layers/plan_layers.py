@@ -7,7 +7,6 @@ from textwrap import dedent
 from typing import Any, ClassVar, Generator
 
 from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsProject, QgsVectorLayerUtils
-from qgis.utils import iface
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -24,7 +23,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
-from arho_feature_template.utils.misc_utils import LANGUAGE, get_active_plan_id
+from arho_feature_template.utils.misc_utils import LANGUAGE, get_active_plan_id, iface
 
 logger = logging.getLogger(__name__)
 
