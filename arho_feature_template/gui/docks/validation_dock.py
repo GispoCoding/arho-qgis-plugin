@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING
 
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
-from qgis.utils import iface
 
 from arho_feature_template.core.lambda_service import LambdaService
-from arho_feature_template.utils.misc_utils import get_active_plan_id
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QProgressBar, QPushButton
