@@ -404,13 +404,11 @@ class PlanRegulationLayer(AbstractPlanLayer):
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
     @classmethod
-    def get_regulations_to_delete(
-        cls, regulations: list[Regulation], regulation_group: RegulationGroup
-    ) -> list[QgsFeature]:
+    def get_regulations_to_delete(cls, regulations: list[Regulation], group_id: str) -> list[QgsFeature]:
         updated_regulation_ids = [regulation.id_ for regulation in regulations]
         return [
             reg
-            for reg in cls.get_features_by_attribute_value("plan_regulation_group_id", str(regulation_group.id_))
+            for reg in cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
             if reg["id"] not in updated_regulation_ids
         ]
 
@@ -457,13 +455,11 @@ class PlanPropositionLayer(AbstractPlanLayer):
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
     @classmethod
-    def get_propositions_to_delete(
-        cls, propositions: list[Proposition], regulation_group: RegulationGroup
-    ) -> list[QgsFeature]:
+    def get_propositions_to_delete(cls, propositions: list[Proposition], group_id: str) -> list[QgsFeature]:
         updated_proposition_ids = [proposition.id_ for proposition in propositions]
         return [
             prop
-            for prop in cls.get_features_by_attribute_value("plan_regulation_group_id", str(regulation_group.id_))
+            for prop in cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
             if prop["id"] not in updated_proposition_ids
         ]
 
@@ -511,11 +507,11 @@ class DocumentLayer(AbstractPlanLayer):
         )
 
     @classmethod
-    def get_documents_to_delete(cls, documents: list[Document], plan: Plan) -> list[QgsFeature]:
+    def get_documents_to_delete(cls, documents: list[Document], plan_id: str) -> list[QgsFeature]:
         updated_document_ids = [doc.id_ for doc in documents]
         return [
             doc
-            for doc in cls.get_features_by_attribute_value("plan_id", str(plan.id_))
+            for doc in cls.get_features_by_attribute_value("plan_id", plan_id)
             if doc["id"] not in updated_document_ids
         ]
 

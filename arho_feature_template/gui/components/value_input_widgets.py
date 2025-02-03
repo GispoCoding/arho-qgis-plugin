@@ -38,7 +38,7 @@ def initialize_text_input_widget(
     editable: bool,  # noqa: FBT001
 ):
     if default_value:
-        widget.setText(str(default_value))
+        widget.setText(default_value)
 
     if not editable:
         widget.setReadOnly(True)

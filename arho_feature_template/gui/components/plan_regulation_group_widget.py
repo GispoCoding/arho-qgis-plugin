@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
@@ -10,6 +10,7 @@ from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
 from arho_feature_template.core.models import PlanFeature, Proposition, Regulation, RegulationGroup
+from arho_feature_template.exceptions import LayerNameNotFoundError
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
@@ -50,7 +51,11 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.link_label_text: QLabel | None = None
 
         self.plan_feature = plan_feature
-        self.layer_name = cast(str, plan_feature.layer_name)
+        if not plan_feature.layer_name:
+            msg = "Layer name not found when creating regulation group widget!"
+            raise LayerNameNotFoundError(msg)
+        self.layer_name = plan_feature.layer_name
+
         self.from_model(regulation_group)
         self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
 
@@ -79,11 +84,16 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.unset_existing_regulation_group_style()
 
         if regulation_group.id_:
-            other_linked_features_count = len(
-                RegulationGroupAssociationLayer.get_associations_for_regulation_group_exclude_feature(
-                    cast(str, regulation_group.id_), cast(str, self.plan_feature.id_), self.layer_name
+            if self.plan_feature.id_ is None:
+                other_linked_features_count = len(
+                    list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(regulation_group.id_))
                 )
-            )
+            else:
+                other_linked_features_count = len(
+                    RegulationGroupAssociationLayer.get_associations_for_regulation_group_exclude_feature(
+                        regulation_group.id_, self.plan_feature.id_, self.layer_name
+                    )
+                )
             if other_linked_features_count > 0:
                 # Set indicators that regulation group exists in the plan already and is assigned for other features
                 self.set_existing_regulation_group_style(other_linked_features_count)
