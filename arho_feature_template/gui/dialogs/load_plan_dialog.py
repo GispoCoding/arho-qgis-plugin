@@ -18,7 +18,7 @@ from qgis.PyQt.QtWidgets import (
     QTableView,
 )
 
-from arho_feature_template.core.exceptions import UnexpectedNoneError
+from arho_feature_template.exceptions import UnexpectedNoneError
 from arho_feature_template.utils.misc_utils import get_active_plan_id
 
 ui_path = resources.files(__package__) / "load_plan_dialog.ui"
