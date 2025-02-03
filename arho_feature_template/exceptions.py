@@ -39,3 +39,7 @@ class UninitializedError(Exception):
 class FeatureNotFoundError(Exception):
     def __init__(self, id_: str, layer_name: str):
         super().__init__(f"Feature with ID '{id_}' not found for layer {layer_name}")
+
+
+class UnexpectedNoneError(Exception):
+    """Internal QGIS errors that should not be happened"""
