@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - "main"
-      - "vsl"
 
 jobs:
   check-skip-deploy:
@@ -31,27 +30,14 @@ jobs:
           echo "skip-deploy=$SKIP_DEPLOY" >> $GITHUB_OUTPUT
           echo "skip-deploy: $SKIP_DEPLOY"
 
-  define-environment:
+  build-and-deploy-lambdas-and-database:
     runs-on: ubuntu-latest
     needs: check-skip-deploy
     if: ${{ needs.check-skip-deploy.outputs.skip-deploy == 'false' }}
-    outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
-    steps:
-      - name: Set environment
-        id: set-env
-        run: |
-          if [ "${{ github.ref }}" = "refs/heads/vsl" ]; then
-            ENVIRONMENT=vsl-test
-          else
-            ENVIRONMENT=arho-test
-          fi
-          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
-
-  build-and-deploy-lambda-functions:
-    runs-on: ubuntu-latest
-    needs: define-environment
-    environment: ${{ needs.define-environment.outputs.environment }}
+    strategy:
+      matrix:
+        environment: [vsl-test, arho-test]
+    environment: ${{ matrix.environment }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

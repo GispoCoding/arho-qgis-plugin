@@ -32,4 +32,3 @@ jobs:
         working-directory: database
         env:
           SYKE_APIKEY: ${{ secrets.SYKE_APIKEY }}
-          MML_APIKEY: ${{ secrets.MML_APIKEY }}
