@@ -225,6 +225,7 @@ def get_all_plans(
         body["details"][complete_test_plan.id],
         desired_plan_dict,
         ignore_order_for_keys=[
+            "planRegulationGroups",
             "planRegulationGroupRelations",
             "additionalInformations",
         ],
@@ -233,6 +234,7 @@ def get_all_plans(
         body["details"][another_test_plan.id],
         another_plan_dict,
         ignore_order_for_keys=[
+            "planRegulationGroups",
             "planRegulationGroupRelations",
             "additionalInformations",
         ],
@@ -289,6 +291,7 @@ def get_single_plan(
         body["details"][complete_test_plan.id],
         desired_plan_dict,
         ignore_order_for_keys=[
+            "planRegulationGroups",
             "planRegulationGroupRelations",
             "additionalInformations",
         ],

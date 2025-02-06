@@ -498,6 +498,9 @@ def rollback_after(session: Session):
     session.rollback()
 
 
+# Code fixtures
+
+
 @pytest.fixture()
 def code_instance(session):
     instance = codes.LifeCycleStatus(value="test", status="LOCAL")
@@ -639,6 +642,16 @@ def type_of_plan_regulation_verbal_instance(session):
 
 
 @pytest.fixture()
+def type_of_plan_regulation_street_instance(session):
+    instance = codes.TypeOfPlanRegulation(value="katu", status="LOCAL")
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
 def type_of_verbal_plan_regulation_instance(session):
     instance = codes.TypeOfVerbalPlanRegulation(value="perustaminen", status="LOCAL")
     session.add(instance)
@@ -664,6 +677,18 @@ def type_of_main_use_additional_information_instance(session):
 def type_of_proportion_of_intended_use_additional_information_instance(session):
     instance = codes.TypeOfAdditionalInformation(
         value="kayttotarkoituksenOsuusKerrosalastaK-m2", status="LOCAL"
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture()
+def type_of_intended_use_allocation_additional_information_instance(session):
+    instance = codes.TypeOfAdditionalInformation(
+        value="kayttotarkoituskohdistus", status="LOCAL"
     )
     session.add(instance)
     session.commit()
@@ -772,6 +797,9 @@ def plan_theme_instance(session):
     session.commit()
 
 
+# Plan fixtures
+
+
 @pytest.fixture(scope="function")
 def plan_instance(
     session,
@@ -872,6 +900,9 @@ def another_plan_instance(
     session.commit()
 
 
+# Organisation fixtures
+
+
 @pytest.fixture()
 def organisation_instance(session, administrative_region_instance):
     instance = models.Organisation(
@@ -897,6 +928,9 @@ def another_organisation_instance(session, another_administrative_region_instanc
     session.commit()
 
 
+# Plan object fixtures
+
+
 @pytest.fixture(scope="function")
 def land_use_area_instance(
     session,
@@ -916,8 +950,8 @@ def land_use_area_instance(
                         [
                             [
                                 [381849.834412134019658, 6677967.973336197435856],
-                                [381849.834412134019658, 6680613.389312859624624],
-                                [386378.427863708813675, 6680613.389312859624624],
+                                [381849.834412134019658, 6680000.0],
+                                [386378.427863708813675, 6680000.0],
                                 [386378.427863708813675, 6677967.973336197435856],
                                 [381849.834412134019658, 6677967.973336197435856],
                             ]
@@ -933,6 +967,7 @@ def land_use_area_instance(
         height_min=0.0,
         height_max=1.0,
         height_unit="m",
+        ordering=1,
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
@@ -941,6 +976,55 @@ def land_use_area_instance(
             numeric_plan_regulation_group_instance,
             decimal_plan_regulation_group_instance,
         ],
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+# This land use area is used to test land use regulations with additional information with
+# code values, i.e. käyttötarkoituskohdistus.
+@pytest.fixture(scope="function")
+def pedestrian_street_instance(
+    session,
+    preparation_status_instance,
+    type_of_underground_instance,
+    plan_instance,
+    pedestrian_plan_regulation_group_instance,
+):
+    instance = models.LandUseArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6680000.0],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6680000.0],
+                                [381849.834412134019658, 6680000.0],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        name={"fin": "test_pedestrian_street"},
+        description={"fin": "test_pedestrian_street"},
+        height_min=0.0,
+        height_max=1.0,
+        height_unit="m",
+        ordering=2,
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[pedestrian_plan_regulation_group_instance],
     )
     session.add(instance)
     session.commit()
@@ -1064,6 +1148,9 @@ def other_point_instance(
     session.commit()
 
 
+# Plan regulation fixtures
+
+
 @pytest.fixture(scope="function")
 def plan_regulation_group_instance(
     session, plan_instance, type_of_plan_regulation_group_instance
@@ -1121,6 +1208,24 @@ def decimal_plan_regulation_group_instance(
 
 
 @pytest.fixture(scope="function")
+def pedestrian_plan_regulation_group_instance(
+    session, plan_instance, type_of_plan_regulation_group_instance
+):
+    instance = models.PlanRegulationGroup(
+        short_name="jk/pp",
+        plan=plan_instance,
+        ordering=5,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_pedestrian_plan_regulation_group"},
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture(scope="function")
 def point_plan_regulation_group_instance(
     session, plan_instance, type_of_plan_regulation_group_instance
 ):
@@ -1145,7 +1250,7 @@ def general_regulation_group_instance(
     instance = models.PlanRegulationGroup(
         short_name="Y",
         plan=plan_instance,
-        ordering=1,
+        ordering=6,
         type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
         name={"fin": "test_general_regulation_group"},
     )
@@ -1275,6 +1380,27 @@ def text_plan_regulation_instance(
 
 
 @pytest.fixture(scope="function")
+def pedestrian_street_plan_regulation_instance(
+    session,
+    preparation_status_instance,
+    type_of_plan_regulation_street_instance,
+    pedestrian_plan_regulation_group_instance,
+):
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_street_instance,
+        plan_regulation_group=pedestrian_plan_regulation_group_instance,
+        ordering=1,
+    )
+    session.add(instance)
+    session.commit()
+    yield instance
+    session.delete(instance)
+    session.commit()
+
+
+@pytest.fixture(scope="function")
 def point_text_plan_regulation_instance(
     session,
     preparation_status_instance,
@@ -1366,6 +1492,9 @@ def plan_proposition_instance(
     session.commit()
 
 
+# Source data fixtures
+
+
 @pytest.fixture(scope="function")
 def source_data_instance(session, plan_instance, type_of_source_data_instance):
     instance = models.SourceData(
@@ -1380,6 +1509,8 @@ def source_data_instance(session, plan_instance, type_of_source_data_instance):
     session.delete(instance)
     session.commit()
 
+
+# Document fixtures
 
 # @pytest.fixture(scope="function")
 # def document_instance(
@@ -1428,6 +1559,9 @@ def plan_map_instance(
     yield instance
     session.delete(instance)
     session.commit()
+
+
+# Date fixtures
 
 
 @pytest.fixture()
@@ -1499,6 +1633,9 @@ def interaction_event_date_instance(
     session.commit()
 
 
+# Additional information fixtures
+
+
 @pytest.fixture()
 def main_use_additional_information_instance(
     session,
@@ -1560,20 +1697,26 @@ def make_additional_information_instance_for_plan_regulation(session: Session):
     session.commit()
 
 
+# Complete fixtures
+
+
 @pytest.fixture(scope="function")
 def complete_test_plan(
     session: Session,
     plan_map_instance: models.Document,
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
+    pedestrian_street_instance: models.LandUseArea,
     land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
+    pedestrian_street_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     decimal_plan_regulation_instance: models.PlanRegulation,
@@ -1585,6 +1728,7 @@ def complete_test_plan(
     plan_theme_instance: codes.PlanTheme,
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_intended_use_allocation_additional_information_instance: codes.TypeOfAdditionalInformation,
     make_additional_information_instance_for_plan_regulation: Callable[
         [models.PlanRegulation, codes.TypeOfAdditionalInformation],
         models.AdditionalInformation,
@@ -1655,6 +1799,58 @@ def complete_test_plan(
 
     general_plan_regulation_instance.plan_theme = plan_theme_instance
     # general plan regulation cannot be used with intended use regulation type
+
+    pedestrian_street_plan_regulation_instance.plan_theme = plan_theme_instance
+    # pedestrian street must have intended use *and* two intended use allocations
+    # (käyttötarkoituskohdistus):
+    pedestrian_street_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_for_plan_regulation(
+            pedestrian_street_plan_regulation_instance,
+            type_of_main_use_additional_information_instance,
+        )
+    )
+    pedestrian_intended_use_allocation = (
+        make_additional_information_instance_for_plan_regulation(
+            pedestrian_street_plan_regulation_instance,
+            type_of_intended_use_allocation_additional_information_instance,
+        )
+    )
+    pedestrian_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
+    pedestrian_intended_use_allocation.code_list = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+    )
+    pedestrian_intended_use_allocation.code_value = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/jalankulkualue"
+    )
+    pedestrian_intended_use_allocation.code_title = {
+        "eng": "Pedestrian area",
+        "fin": "Jalankulkualue",
+        "swe": "Fotgångarområde",
+    }
+    pedestrian_street_plan_regulation_instance.additional_information.append(
+        pedestrian_intended_use_allocation
+    )
+    cycling_intended_use_allocation = (
+        make_additional_information_instance_for_plan_regulation(
+            pedestrian_street_plan_regulation_instance,
+            type_of_intended_use_allocation_additional_information_instance,
+        )
+    )
+    cycling_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
+    cycling_intended_use_allocation.code_list = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+    )
+    cycling_intended_use_allocation.code_value = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/pyorailyalue"
+    )
+    cycling_intended_use_allocation.code_title = {
+        "eng": "Cycling area",
+        "fin": "Pyöräilyalue",
+        "swe": "Cykelområde",
+    }
+    pedestrian_street_plan_regulation_instance.additional_information.append(
+        cycling_intended_use_allocation
+    )
 
     plan_proposition_instance.plan_theme = plan_theme_instance
     session.commit()
@@ -1909,14 +2105,17 @@ def decisionmaker_type(session):
 def desired_plan_dict(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
+    pedestrian_street_instance: models.LandUseArea,
     land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
+    pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
+    pedestrian_street_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     decimal_plan_regulation_instance: models.PlanRegulation,
@@ -2003,8 +2202,8 @@ def desired_plan_dict(
                         "coordinates": [
                             [
                                 [381849.834412134019658, 6677967.973336197435856],
-                                [381849.834412134019658, 6680613.389312859624624],
-                                [386378.427863708813675, 6680613.389312859624624],
+                                [381849.834412134019658, 6680000.0],
+                                [386378.427863708813675, 6680000.0],
                                 [386378.427863708813675, 6677967.973336197435856],
                                 [381849.834412134019658, 6677967.973336197435856],
                             ]
@@ -2019,6 +2218,36 @@ def desired_plan_dict(
                     "minimumValue": land_use_area_instance.height_min,
                     "maximumValue": land_use_area_instance.height_max,
                     "unitOfMeasure": land_use_area_instance.height_unit,
+                },
+                "periodOfValidity": None,
+            },
+            {
+                "planObjectKey": pedestrian_street_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [381849.834412134019658, 6680000.0],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6680000.0],
+                                [381849.834412134019658, 6680000.0],
+                            ]
+                        ],
+                    },
+                },
+                "name": pedestrian_street_instance.name,
+                "description": pedestrian_street_instance.description,
+                "objectNumber": pedestrian_street_instance.ordering,
+                "verticalLimit": {
+                    "dataType": "DecimalRange",
+                    "minimumValue": pedestrian_street_instance.height_min,
+                    "maximumValue": pedestrian_street_instance.height_max,
+                    "unitOfMeasure": pedestrian_street_instance.height_unit,
                 },
                 "periodOfValidity": None,
             },
@@ -2039,6 +2268,8 @@ def desired_plan_dict(
                 "periodOfValidity": None,
             },
         ],
+        # groups will not be in order by object, because we join all the group ids together to find
+        # common groups across all objects:
         "planRegulationGroups": [
             {
                 "planRegulationGroupKey": point_plan_regulation_group_instance.id,
@@ -2255,6 +2486,62 @@ def desired_plan_dict(
                 "groupNumber": decimal_plan_regulation_group_instance.ordering,
                 "colorNumber": "#FFFFFF",
             },
+            {
+                "planRegulationGroupKey": pedestrian_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": pedestrian_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": pedestrian_street_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/katu",
+                        "subjectIdentifiers": pedestrian_street_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            },
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituskohdistus",
+                                "value": {
+                                    "dataType": "Code",
+                                    "code": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/jalankulkualue",
+                                    "codeList": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                                    "title": {
+                                        "eng": "Pedestrian area",
+                                        "fin": "Jalankulkualue",
+                                        "swe": "Fotgångarområde",
+                                    },
+                                },
+                            },
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituskohdistus",
+                                "value": {
+                                    "dataType": "Code",
+                                    "code": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/pyorailyalue",
+                                    "codeList": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                                    "title": {
+                                        "eng": "Cycling area",
+                                        "fin": "Pyöräilyalue",
+                                        "swe": "Cykelområde",
+                                    },
+                                },
+                            },
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            pedestrian_street_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": pedestrian_plan_regulation_group_instance.short_name,
+                "groupNumber": pedestrian_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
         ],
         "planRegulationGroupRelations": [
             {
@@ -2268,6 +2555,10 @@ def desired_plan_dict(
             {
                 "planObjectKey": land_use_area_instance.id,
                 "planRegulationGroupKey": plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": pedestrian_street_instance.id,
+                "planRegulationGroupKey": pedestrian_plan_regulation_group_instance.id,
             },
             {
                 "planObjectKey": land_use_point_instance.id,
@@ -2417,7 +2708,8 @@ def assert_lists_equal(
     for i, item1 in enumerate(list1):
         current_path = f"{path}[{i}]" if path else f"[{i}]"
         items_to_compare = list2 if ignore_list_order else [list2[i]]
-        latest_error = AssertionError()
+        deepest_error = AssertionError()
+        error_depth = 0
         for item2 in items_to_compare:
             try:
                 deepcompare(
@@ -2428,12 +2720,16 @@ def assert_lists_equal(
                     path=current_path,
                 )
             except AssertionError as error:
-                latest_error = error
+                # Now this is a hack if I ever saw one:
+                depth = str(error).count(".")
+                if depth > error_depth:
+                    deepest_error = error
+                    error_depth = depth
                 continue
             else:
                 break
         else:
-            raise latest_error
+            raise deepest_error
 
 
 def assert_dicts_equal(

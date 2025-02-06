@@ -192,7 +192,7 @@ class PlanObjectBase(PlanBase):
     # class reference in abstract base class, with backreference to class name:
     @declared_attr
     def plan(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship("Plan", backref=f"{cls.__tablename__}s")
+        return relationship("Plan", back_populates=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
     @declared_attr

@@ -115,6 +115,20 @@ class Plan(PlanBase):
     documents = relationship(
         "Document", back_populates="plan", lazy="joined", cascade="delete"
     )
+    # Load plan objects ordered
+    land_use_areas = relationship(
+        "LandUseArea", order_by="LandUseArea.ordering", back_populates="plan"
+    )
+    other_areas = relationship(
+        "OtherArea", order_by="OtherArea.ordering", back_populates="plan"
+    )
+    lines = relationship("Line", order_by="Line.ordering", back_populates="plan")
+    land_use_points = relationship(
+        "LandUsePoint", order_by="LandUsePoint.ordering", back_populates="plan"
+    )
+    other_points = relationship(
+        "OtherPoint", order_by="OtherPoint.ordering", back_populates="plan"
+    )
 
     permanent_plan_identifier: Mapped[Optional[str]]
     producers_plan_identifier: Mapped[Optional[str]]

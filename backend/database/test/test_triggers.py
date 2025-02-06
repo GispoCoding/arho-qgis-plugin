@@ -42,11 +42,11 @@ def test_modified_at_triggers(
 
     # Edit tables to fire the triggers
     plan_instance.exported_at = datetime.now()
-    land_use_area_instance.ordering = 1
-    other_area_instance.ordering = 1
-    line_instance.ordering = 1
-    land_use_point_instance.ordering = 1
-    other_point_instance.ordering = 1
+    land_use_area_instance.height_unit = "blah"
+    other_area_instance.height_unit = "blah"
+    line_instance.height_unit = "blah"
+    land_use_point_instance.height_unit = "blah"
+    other_point_instance.height_unit = "blah"
     plan_regulation_group_instance.short_name = "foo"
     text_plan_regulation_instance.text_value = "foo"
     plan_proposition_instance.text_value = "foo"
