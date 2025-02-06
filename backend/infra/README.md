@@ -1,4 +1,4 @@
-# Hame infra
+# ARHO-Ryhti infra
 
 ![diagram of AWS resources and their connections to software and APIs](architecture.svg)
 
@@ -54,6 +54,8 @@ terraform apply --var-file hame-dev.tfvars.json
 
 Please verify that the reported changes are desired, and respond `yes` to apply the changes to infrastructure.
 
+Remember to commit any changes you made to the terraform configuration, or if you changed any variables, by `sops -e hame-dev.tfvars.json > hame-dev.tfvars.enc.json` and committing the encrypted file.
+
 ### Adding ssh tunneling users
 
 The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. They are defined in the `hame-dev.tfvars.json` `bastion_ec2_tunnel_public_keys` field.
@@ -70,11 +72,12 @@ This recreates the bastion server with new user data and new IP and updates the 
 
 ## Configuring new instances
 
-1. To create a new instance of hame-ryhti, copy [hame.tfvars.sample.json](hame.tfvars.sample.json) to a new file called `hame-your-deployment.tfvars.json`.
-2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `hame-your-deployment.tfvars.json`. Fill credentials in Github secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY`.
-3. Change the values in `hame-your-deployment.tfvars.json` as required
+1. To create a new instance of ARHO-Ryhti, copy [arho.tfvars.sample.json](arho.tfvars.sample.json) to a new file called `your-deployment.tfvars.json`.
+2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in Github secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY`.
+3. Change the values in `your-deployment.tfvars.json` as required
 4. Create zip packages for the lambda functions by running `make build-lambda -C ..` (this
    has to be done only once since github actions can be configured to update functions).
+5. Remember to encrypt your variables with `sops` to create `your-deployment.tfvars.enc.json` and commit the encrypted file. The encryption key to allow decrypting the file is safely stored in AWS.
 
 ## Deploying instances
 
@@ -82,14 +85,14 @@ To launch new instances, run the following commands:
 
 ```shell
 terraform init
-terraform apply --var-file hame-your-deployment.tfvars.json
+terraform apply --var-file your-deployment.tfvars.json
 ```
 
 Note: Setting up the instances takes a couple of minutes.
 
 ### Configuring X-Road (Suomi.fi Palveluväylä) access
 
-A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your Hame-Ryhti instance to Suomi.fi Palveluväylä to transfer official plan data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
+A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your ARHO-Ryhti instance to Suomi.fi Palveluväylä to transfer official plan data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
 
 This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä, as well as a separate permit to connect to the Ryhti X-Road APIs once your X-Road server works. Follow the steps below:
 
@@ -97,11 +100,11 @@ This is because you need to apply for a separate permit for your subsystem to be
    - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`, e.g. `ryhti-vsl-client`. Set the client name as your terraform variable `x-road_subdomain`.
    - a proper domain name for your x-road server. This can be set using the terraform variables `AWS_HOSTED_DOMAIN` and `x-road_host`. The complete domain name for your X-road server will be `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`. Note that if you have multiple x-road environments (e.g. test and production) for the *same* organization, the subdomain will be the same (as the x-road client name will be the same in test and production). The host name should uniquely determine your x-road server instance as test or production instance for that organization.
 When your application is accepted, you are provided with the configuration anchor file needed later.
-2. Create an SSH key and add the public key to `bastion_ec2_tunnel_public_keys` in `hame-your-deployment.tfvars.json`.
-3. Fill in the desired admin username and password in `x-road_secrets`, your desired  `x-road_db_password` (password for x-road database) and your desired `x-road_token_pin` (for accessing authentication tokens), in `hame-your-deployment.tfvars.json`.
-4. Apply the variables to AWS with `terraform apply --var-file hame-your-deployment.tfvars.json`.
-5. Check the private IP address of your `hame-your-deployment-x-road_securityserver` service task under your AWS Elastic Container Service `hame-your-deployment-x-road_securityserver` cluster in your AWS web console.
-6. Open an SSH tunnel to the X-Road server admin interface (e.g. `ssh -N -L4001:<private-ip>:4000 -i "~/.ssh/hame-ec2-tunnel.pem" ec2-user@hame-your-deployment.<bastion_subdomain>.<aws_hosted_domain>`, where `hame-ec2-tunnel.pem` contains your SSH key created in step 2, and `bastion_subdomain` and `aws_hosted_domain` are the settings in your `hame-your-deployment.tfvars.json`).
+2. Create an SSH key and add the public key to `bastion_ec2_tunnel_public_keys` in `your-deployment.tfvars.json`.
+3. Fill in the desired admin username and password in `x-road_secrets`, your desired  `x-road_db_password` (password for x-road database) and your desired `x-road_token_pin` (for accessing authentication tokens), in `your-deployment.tfvars.json`.
+4. Apply the variables to AWS with `terraform apply --var-file your-deployment.tfvars.json`.
+5. Check the private IP address of your `your-deployment-x-road_securityserver` service task under your AWS Elastic Container Service `your-deployment-x-road_securityserver` cluster in your AWS web console.
+6. Open an SSH tunnel to the X-Road server admin interface (e.g. `ssh -N -L4001:<private-ip>:4000 -i "~/.ssh/arho-ec2-tunnel.pem" ec2-user@your-deployment.<bastion_subdomain>.<aws_hosted_domain>`, where `arho-ec2-tunnel.pem` contains your SSH key created in step 2, and `bastion_subdomain` and `aws_hosted_domain` are the settings in your `your-deployment.tfvars.json`).
 7. Point your web browser to [https://localhost:4001](https://localhost:4001). The connection
 must be HTTPS, and you must ignore the warning about invalid SSL certificate: the hostname is localhost instead of the server IP because of the SSH tunneling, and the certificate does not know that.
 8. Log in to the [https://localhost:4001](https://localhost:4001) admin interface with your x-road secrets that you selected in step 3.
@@ -138,11 +141,11 @@ When the port is opened, you may try out the [Palveluväylän testipalvelut](htt
 curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'accept: application/json'  -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0245437-2/TestService/rest-test/random
 ```
 
-, filling in all the variables from your `hame-your-deployment.tfvars.json`, and it should return JSON containing a random number.
+, filling in all the variables from your `your-deployment.tfvars.json`, and it should return JSON containing a random number.
 
 *Don't forget to remove any added port openings for production use, since we don't want to allow SSH server users to directly connect to X-Road, bypassing our client.*
 
-15. Once you are properly connected to X-road, to get permission to access [X-Road Ryhti APIs](https://liityntakatalogi.test.suomi.fi/dataset/ryhti-syke-service/resource/8c7b68d4-0699-46c1-b639-9d80db6cb8c6), your organization must fill in an application with SYKE: [Tiedon tallentamisen rajapintapalvelut](https://ryhti.syke.fi/palvelut/tiedon-tallentamisen-rajapintapalvelut/). For API application, you need the public static IP of your X-Road server (`xroad_ip_address` in terraform output), as well as the full domain name of your X-Road server (`${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`). SYKE will give you a Ryhti client id and secret, which you must fill in as variables `syke_xroad_client_id` and `syke_xroad_client_secret` in your `hame-your-deployment.tfvars.json`file and deploy them.
+15. Once you are properly connected to X-road, to get permission to access [X-Road Ryhti APIs](https://liityntakatalogi.test.suomi.fi/dataset/ryhti-syke-service/resource/8c7b68d4-0699-46c1-b639-9d80db6cb8c6), your organization must fill in an application with SYKE: [Tiedon tallentamisen rajapintapalvelut](https://ryhti.syke.fi/palvelut/tiedon-tallentamisen-rajapintapalvelut/). For API application, you need the public static IP of your X-Road server (`xroad_ip_address` in terraform output), as well as the full domain name of your X-Road server (`${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`). SYKE will give you a Ryhti client id and secret, which you must fill in as variables `syke_xroad_client_id` and `syke_xroad_client_secret` in your `your-deployment.tfvars.json`file and deploy them.
 
 16. After SYKE have allowed access from your public IP, similarly to step 14, you must temporarily open the port 8080 if you want to test connecting to the SYKE Ryhti X-Road API from the SSH server with
 
@@ -150,7 +153,7 @@ curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_su
 curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Status/health
 ```
 
-, filling in all the variables from your `hame-your-deployment.tfvars.json` again. The API should respond with `401 Unauthorized`, because you haven't authenticated yet. Try out authenticating with
+, filling in all the variables from your `your-deployment.tfvars.json` again. The API should respond with `401 Unauthorized`, because you haven't authenticated yet. Try out authenticating with
 
 ```
 curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -d '"${var.syke_xroad_client_secret}"' -i -X POST http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Authenticate?clientId=${var.syke_xroad_client_id}
@@ -170,7 +173,7 @@ Congratulations! You now have access to X-Road Ryhti APIs!
 
 ## Teardown of instances
 
-Shut down and destroy the instances with `terraform destroy --var-file hame-your-deployment.tfvars.json`
+Shut down and destroy the instances with `terraform destroy --var-file your-deployment.tfvars.json`
 
 ## Manual interactions
 
