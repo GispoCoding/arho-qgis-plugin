@@ -29,6 +29,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.lambda_service = LambdaService()
         self.lambda_service.validation_received.connect(self.list_validation_errors)
+        self.lambda_service.validation_failed.connect(self.enable_validation)
         self.validate_button.clicked.connect(self.validate)
 
     def validate(self):
@@ -48,15 +49,25 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.lambda_service.validate_plan(active_plan_id)
 
+    def enable_validation(self):
+        """Hide progress bar and re-enable the button"""
+        self.progress_bar.setVisible(False)
+        self.validate_button.setEnabled(True)
+        self.validation_result_tree_view.expandAll()
+        self.validation_result_tree_view.resizeColumnToContents(0)
+
     def list_validation_errors(self, validation_json):
         """Slot for listing validation errors and warnings."""
-        if not validation_json:
-            iface.messageBar().pushMessage("Virhe", "Validaatio json puuttuu.", level=1)
-            return
 
         if not validation_json:
-            # If no errors or warnings, display a message and exit
+            iface.messageBar().pushMessage("Virhe", "Validaatio json puuttuu.", level=1)
+            self.enable_validation()
+            return
+
+        # If no errors or warnings, display a message and exit
+        if not any(validation_json.values()):
             iface.messageBar().pushMessage("Virhe", "Ei virheitä havaittu.", level=1)
+            self.enable_validation()
             return
 
         for error_data in validation_json.values():
@@ -79,8 +90,5 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     warning.get("message", ""),
                 )
 
-        # Hide progress bar and re-enable the button
-        self.progress_bar.setVisible(False)
-        self.validate_button.setEnabled(True)
-        self.validation_result_tree_view.expandAll()
-        self.validation_result_tree_view.resizeColumnToContents(0)
+        # Always enable validation at the end
+        self.enable_validation()
