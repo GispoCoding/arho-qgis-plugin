@@ -18,7 +18,7 @@
     <item>
      <widget class="QPushButton" name="validate_button">
       <property name="text">
-       <string>Validoi aktiivinen kaava</string>
+       <string>Validoi kaava</string>
       </property>
      </widget>
     </item>
