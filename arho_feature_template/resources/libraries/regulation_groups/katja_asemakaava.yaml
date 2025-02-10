@@ -957,7 +957,7 @@ categories:
         geometry: Alue
         short_name: # NOTE: Check symbol
         plan_regulations:
-          - regulation_code: ohjeellinenRakennuspaikka
+          - regulation_code: sitovanTonttijaonMukainenTontti
             additional_information:
               - type: osaAlue
 
@@ -965,7 +965,7 @@ categories:
         geometry: Alue
         short_name: # NOTE: Check symbol
         plan_regulations:
-          - regulation_code: sitovanTonttijaonMukainenTontti
+          - regulation_code: ohjeellinenRakennuspaikka
             additional_information:
               - type: osaAlue
 
