@@ -1743,7 +1743,7 @@ categories:
 
       - name: Suurin sallittu maanpäällinen kerrosluku (luku)
         geometry: Alue
-        descrption: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman sallitun kerrosluvun
+        description: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman sallitun kerrosluvun
         plan_regulations:
           - regulation_code: maanpaallinenKerroslukuLuku
 
@@ -1872,7 +1872,7 @@ categories:
 
       - name: Autopaikkojen määrä
         geometry: Alue
-        descrpition: ääräys osoittaa, kuinka monta autopaikkaa alueelle on rakennettava
+        description: ääräys osoittaa, kuinka monta autopaikkaa alueelle on rakennettava
         plan_regulations:
           - regulation_code: autopaikkojenMaara
 
