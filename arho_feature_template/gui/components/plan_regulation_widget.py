@@ -16,6 +16,7 @@ from arho_feature_template.core.models import (
 )
 from arho_feature_template.gui.components.additional_information_widget import AdditionalInformationWidget
 from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
+from arho_feature_template.gui.components.required_field_label import RequiredFieldLabel
 from arho_feature_template.gui.components.value_input_widgets import (
     IntegerInputWidget,
     SinglelineTextInputWidget,
@@ -84,12 +85,12 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
     def _init_widgets(self):
         # Value input
         if self.config.default_value:
-            self._add_widget(QLabel("Arvo"), self.value_widget_manager.value_widget)
+            self._add_widget(RequiredFieldLabel("Arvo"), self.value_widget_manager.value_widget)
 
         if self.config.regulation_code == "sanallinenMaarays":
             self.type_of_verbal_regulation_widget = HierarchicalCodeComboBox()
             self.type_of_verbal_regulation_widget.populate_from_code_layer(VerbalRegulationType)
-            self._add_widget(QLabel("Sanallisen määräyksen laji"), self.type_of_verbal_regulation_widget)
+            self._add_widget(RequiredFieldLabel("Sanallisen määräyksen laji"), self.type_of_verbal_regulation_widget)
             if self.regulation.verbal_regulation_type_id is not None:
                 self.type_of_verbal_regulation_widget.set_value(self.regulation.verbal_regulation_type_id)
 
