@@ -134,7 +134,7 @@
            </font>
           </property>
           <property name="text">
-           <string>Nimi</string>
+           <string>Otsikko:</string>
           </property>
          </widget>
         </item>

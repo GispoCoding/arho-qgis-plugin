@@ -79,7 +79,7 @@
      <item row="0" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Nimi</string>
+        <string>Nimi:</string>
        </property>
       </widget>
      </item>
@@ -116,7 +116,7 @@
      <item row="1" column="0">
       <widget class="QLabel" name="url_label">
        <property name="text">
-        <string>URL</string>
+        <string>URL:</string>
        </property>
       </widget>
      </item>
@@ -126,7 +126,7 @@
      <item row="2" column="0">
       <widget class="QLabel" name="document_type_label">
        <property name="text">
-        <string>Tyyppi</string>
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Tyyppi:</string>
        </property>
       </widget>
      </item>
@@ -136,7 +136,7 @@
      <item row="3" column="0">
       <widget class="QLabel" name="publicity_label">
        <property name="text">
-        <string>Julkisuusluokka</string>
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Julkisuusluokka:</string>
        </property>
       </widget>
      </item>
@@ -146,7 +146,7 @@
      <item row="4" column="0">
       <widget class="QLabel" name="language_label">
        <property name="text">
-        <string>Kieli</string>
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Kieli:</string>
        </property>
       </widget>
      </item>
@@ -162,7 +162,7 @@
      <item row="8" column="0">
       <widget class="QLabel" name="decision_label">
        <property name="text">
-        <string>Päätös</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Päätös:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -175,21 +175,21 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string> </string>
+        <string/>
        </property>
       </widget>
      </item>
      <item row="6" column="0">
       <widget class="QLabel" name="personal_data_content_label">
        <property name="text">
-        <string>Henkilötietosisältö</string>
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Henkilötietosisältö:</string>
        </property>
       </widget>
      </item>
      <item row="5" column="0">
       <widget class="QLabel" name="retention_time_label">
        <property name="text">
-        <string>Säilytysaika</string>
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Säilytysaika:</string>
        </property>
       </widget>
      </item>
@@ -203,7 +203,7 @@
      <item row="7" column="0">
       <widget class="QLabel" name="document_date_label">
        <property name="text">
-        <string>Asiakirjan päivämäärä</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Asiakirjan päivämäärä:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>

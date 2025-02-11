@@ -26,7 +26,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="feature_name_label">
         <property name="text">
-         <string>Nimi</string>
+         <string>Nimi:</string>
         </property>
        </widget>
       </item>
@@ -36,7 +36,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="feature_description_label">
         <property name="text">
-         <string>Kuvaus</string>
+         <string>Kuvaus:</string>
         </property>
        </widget>
       </item>
@@ -53,7 +53,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="feature_underground_label">
         <property name="text">
-         <string>Maanalaisuus</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Maanalaisuus:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
