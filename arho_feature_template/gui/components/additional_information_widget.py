@@ -15,6 +15,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.models import AdditionalInformation
+from arho_feature_template.gui.components.required_field_label import RequiredFieldLabel
 from arho_feature_template.gui.components.value_input_widgets import (
     ValueWidgetManager,
 )
@@ -72,7 +73,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
                 if self.value_widget_manager.value_widget is not None
                 else QLabel("Syötekenttää tälle tyypille ei ole vielä toteutettu")
             )
-            self._add_widget(QLabel("Arvo"), widget)
+            self._add_widget(RequiredFieldLabel("Arvo"), widget)
 
     def _add_widget(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)
