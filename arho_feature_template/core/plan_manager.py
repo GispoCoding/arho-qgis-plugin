@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from qgis.core import QgsProject, QgsVectorLayer, QgsWkbTypes
@@ -439,15 +440,21 @@ class PlanManager:
 
 
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
-    category_features = list(PlanRegulationGroupTypeLayer.get_features())
-    category_id_to_name: dict[str, str] = {category["id"]: category["name"][LANGUAGE] for category in category_features}
-    category_regulation_group_map: dict[str, list[QgsFeature]] = {
-        feature["name"][LANGUAGE]: [] for feature in category_features
+    id_of_general_regulation_group_type = PlanRegulationGroupTypeLayer.get_attribute_value_by_another_attribute_value(
+        "id", "value", "generalRegulations"
+    )
+    category_id_to_name: dict[str, str] = {
+        category["id"]: category["name"][LANGUAGE] for category in PlanRegulationGroupTypeLayer.get_features()
     }
 
+    regulation_groups_by_category = defaultdict(list)
     for feat in RegulationGroupLayer.get_features():
-        name = category_id_to_name[feat["type_of_plan_regulation_group_id"]]
-        category_regulation_group_map[name].append(feat)
+        if feat["type_of_plan_regulation_group_id"] == id_of_general_regulation_group_type:
+            # Exclude general regulations from the library
+            continue
+        category_name = category_id_to_name[feat["type_of_plan_regulation_group_id"]]
+        regulation_groups_by_category[category_name].append(feat)
+
     return RegulationGroupLibrary(
         name="Käytössä olevat kaavamääräysryhmät",
         version=None,
@@ -456,11 +463,9 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
             RegulationGroupCategory(
                 category_code=None,
                 name=category_name,
-                regulation_groups=[
-                    RegulationGroupLayer.model_from_feature(feat) for feat in category_regulation_groups
-                ],
+                regulation_groups=[RegulationGroupLayer.model_from_feature(feat) for feat in regulation_groups],
             )
-            for category_name, category_regulation_groups in category_regulation_group_map.items()
+            for category_name, regulation_groups in regulation_groups_by_category.items()
         ],
     )
 
