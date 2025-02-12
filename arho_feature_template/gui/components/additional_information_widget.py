@@ -73,7 +73,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
                 if self.value_widget_manager.value_widget is not None
                 else QLabel("Syötekenttää tälle tyypille ei ole vielä toteutettu")
             )
-            self._add_widget(RequiredFieldLabel("Arvo"), widget)
+            self._add_widget(RequiredFieldLabel("Arvo:"), widget)
 
     def _add_widget(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)
