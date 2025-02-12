@@ -68,8 +68,10 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
         regulation_group_type = cls.LAYER_NAME_TO_REGULATION_GROUP_TYPE_MAP.get(layer_name)
         if not regulation_group_type:
             raise LayerNameNotFoundError(layer_name)
-        attribute_value = cls.get_attribute_value_by_another_attribute_value("id", "value", regulation_group_type)
-        return cast(str, attribute_value) if attribute_value else attribute_value
+        regulation_type_id = cls.get_attribute_value_by_another_attribute_value("id", "value", regulation_group_type)
+        if regulation_type_id:
+            return cast(str, regulation_type_id)
+        return None
 
 
 class PlanRegulationTypeLayer(AbstractCodeLayer):
