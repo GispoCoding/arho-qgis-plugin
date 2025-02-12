@@ -94,6 +94,68 @@ def test_modified_at_triggers(
     )
 
 
+def test_new_object_add_lifecycle_date_triggers(
+    plan_instance: models.Plan,
+    text_plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    line_instance: models.Line,
+    land_use_point_instance: models.LandUsePoint,
+    other_point_instance: models.OtherPoint,
+):
+    assert plan_instance.lifecycle_dates
+    lifecycle_date = next(iter(plan_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == plan_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert text_plan_regulation_instance.lifecycle_status
+    lifecycle_date = next(iter(text_plan_regulation_instance.lifecycle_dates))
+    assert (
+        lifecycle_date.lifecycle_status
+        == text_plan_regulation_instance.lifecycle_status
+    )
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert plan_proposition_instance.lifecycle_dates
+    lifecycle_date = next(iter(plan_proposition_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == plan_proposition_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert land_use_area_instance.lifecycle_dates
+    lifecycle_date = next(iter(land_use_area_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == land_use_area_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert other_area_instance.lifecycle_dates
+    lifecycle_date = next(iter(other_area_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == other_area_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert line_instance.lifecycle_dates
+    lifecycle_date = next(iter(line_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == line_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert land_use_point_instance.lifecycle_dates
+    lifecycle_date = next(iter(land_use_point_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == land_use_point_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+    assert other_point_instance.lifecycle_dates
+    lifecycle_date = next(iter(other_point_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == other_point_instance.lifecycle_status
+    assert lifecycle_date.starting_at
+    assert not lifecycle_date.ending_at
+
+
 def test_new_lifecycle_date_triggers(
     session: Session,
     plan_instance: models.Plan,

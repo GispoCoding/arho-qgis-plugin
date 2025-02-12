@@ -16,6 +16,7 @@ from triggers import (
     generate_modified_at_triggers,
     generate_new_lifecycle_date_triggers,
     generate_new_lifecycle_status_triggers,
+    generate_new_object_add_lifecycle_date_triggers,
     generate_update_lifecycle_status_triggers,
 )
 from validation import (
@@ -35,6 +36,12 @@ from validation import (
 )
 
 modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
+
+(
+    new_object_add_lifecycle_date_trgs,
+    new_object_add_lifecycle_date_trgfuncs,
+) = generate_new_object_add_lifecycle_date_triggers()
+
 (
     new_lifecycle_date_trgs,
     new_lifecycle_date_trgfuncs,
@@ -57,19 +64,21 @@ add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_tri
     validate_polygon_geometry_trgfuncs,
 ) = generate_validate_polygon_geometry_triggers()
 
-imported_functions = (
-    modified_at_trgs
-    + modified_at_trgfuncs
-    + new_lifecycle_date_trgs
+imported_triggers = (
+    modified_at_trgfuncs
+    + modified_at_trgs
+    + new_object_add_lifecycle_date_trgfuncs
+    + new_object_add_lifecycle_date_trgs
     + new_lifecycle_date_trgfuncs
-    + update_lifecycle_status_trgs
+    + new_lifecycle_date_trgs
     + update_lifecycle_status_trgfuncs
-    + new_lifecycle_status_trgs
+    + update_lifecycle_status_trgs
     + new_lifecycle_status_trgfuncs
-    + add_plan_id_fkey_trgs
+    + new_lifecycle_status_trgs
     + add_plan_id_fkey_trgfuncs
-    + validate_polygon_geometry_trgs
+    + add_plan_id_fkey_trgs
     + validate_polygon_geometry_trgfuncs
+    + validate_polygon_geometry_trgs
     + [trg_validate_line_geometry]
     + [trgfunc_validate_line_geometry]
     + [trgfunc_prevent_land_use_area_overlaps]
@@ -84,7 +93,7 @@ imported_functions = (
     + [trg_validate_event_type]
 )
 
-register_entities(entities=imported_functions, entity_types=[PGTrigger, PGFunction])
+register_entities(entities=imported_triggers, entity_types=[PGTrigger, PGFunction])
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -345,13 +345,13 @@ def test_lifecycle_date(
     assert code_instance.lifecycle_dates == [lifecycle_date_instance]
     # nullable lifecycle date relations
     assert lifecycle_date_instance.plan is None
-    assert plan_instance.lifecycle_dates == []
+    assert lifecycle_date_instance not in plan_instance.lifecycle_dates
     lifecycle_date_instance.plan = plan_instance
     assert lifecycle_date_instance.plan_regulation is None
-    assert text_plan_regulation_instance.lifecycle_dates == []
+    assert lifecycle_date_instance not in text_plan_regulation_instance.lifecycle_dates
     lifecycle_date_instance.plan_regulation = text_plan_regulation_instance
     assert lifecycle_date_instance.plan_proposition is None
-    assert plan_proposition_instance.lifecycle_dates == []
+    assert lifecycle_date_instance not in plan_proposition_instance.lifecycle_dates
     lifecycle_date_instance.plan_proposition = plan_proposition_instance
     session.flush()
 

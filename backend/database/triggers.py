@@ -19,8 +19,6 @@ tables_with_lifecycle_date = [
 ]
 
 # Regulations and propositions link to plan via plan regulation group
-# or via plan regulation group *and* plan object, so lifecycle state
-# will have to be updated in a slightly more convoluted fashion.
 plan_regulation_tables = ["plan_regulation", "plan_proposition"]
 
 # All plan objects also have lifecycle status and link directly to plan
@@ -69,44 +67,38 @@ def generate_modified_at_triggers():
     return trgs, [trgfunc]
 
 
-def generate_new_lifecycle_date_triggers():
+def generate_new_object_add_lifecycle_date_triggers():
     trgs = []
-    trgfuncs = []
-    for table in tables_with_lifecycle_date:
-        trgfunc_signature = f"trgfunc_{table}_new_lifecycle_date()"
-        trgfunc_definition = f"""
-        RETURNS TRIGGER AS $$
-        BEGIN
+    trgfunc_signature = "trgfunc_new_object_add_lifecycle_date()"
+    trgfunc_definition = """
+    RETURNS TRIGGER AS $$
+    BEGIN
+        EXECUTE format(
+            $query$
             INSERT INTO hame.lifecycle_date
-                (lifecycle_status_id, {table}_id, starting_at)
+                (lifecycle_status_id, %I, starting_at)
             VALUES
-                (NEW.lifecycle_status_id, NEW.id, CURRENT_TIMESTAMP);
-
-            UPDATE hame.lifecycle_date
-            SET ending_at=CURRENT_TIMESTAMP
-            WHERE {table}_id=NEW.id
-                AND ending_at IS NULL
-                AND lifecycle_status_id=OLD.lifecycle_status_id;
-            RETURN NEW;
-        END;
-        $$ language 'plpgsql'
+                ($1, $2, CURRENT_TIMESTAMP)
+            $query$,
+            TG_TABLE_NAME || '_id'
+        ) USING NEW.lifecycle_status_id, NEW.id;
+        RETURN NEW;
+    END;
+    $$ language 'plpgsql'
         """
+    trgfunc = PGFunction(
+        schema="hame",
+        signature=trgfunc_signature,
+        definition=trgfunc_definition,
+    )
 
-        trg_signature = f"trg_{table}_new_lifecycle_date"
+    for table in tables_with_lifecycle_date:
+        trg_signature = f"trg_new_{table}_add_lifecycle_date"
         trg_definition = f"""
-        BEFORE UPDATE ON {table}
+        AFTER INSERT ON {table}
         FOR EACH ROW
-        WHEN (NEW.lifecycle_status_id <> OLD.lifecycle_status_id)
         EXECUTE FUNCTION hame.{trgfunc_signature}
         """
-
-        trgfunc = PGFunction(
-            schema="hame",
-            signature=trgfunc_signature,
-            definition=trgfunc_definition,
-        )
-        trgfuncs.append(trgfunc)
-
         trg = PGTrigger(
             schema="hame",
             signature=trg_signature,
@@ -116,7 +108,62 @@ def generate_new_lifecycle_date_triggers():
         )
         trgs.append(trg)
 
-    return trgs, trgfuncs
+    return trgs, [trgfunc]
+
+
+def generate_new_lifecycle_date_triggers():
+    trgs = []
+    trgfunc_signature = "trgfunc_new_lifecycle_date()"
+    trgfunc_definition = """
+    RETURNS TRIGGER AS $$
+    BEGIN
+        EXECUTE format(
+            $query$
+            INSERT INTO hame.lifecycle_date
+                (lifecycle_status_id, %I, starting_at)
+            VALUES
+                ($1, $2, CURRENT_TIMESTAMP)
+            $query$,
+            TG_TABLE_NAME || '_id'
+        ) USING NEW.lifecycle_status_id, NEW.id;
+        EXECUTE format(
+            $query$
+            UPDATE hame.lifecycle_date
+            SET ending_at=CURRENT_TIMESTAMP
+            WHERE %I = $1
+                AND ending_at IS NULL
+                AND lifecycle_status_id = $2
+            $query$,
+            TG_TABLE_NAME || '_id'
+        ) USING NEW.id, OLD.lifecycle_status_id;
+        RETURN NEW;
+    END;
+    $$ language 'plpgsql'
+    """
+    trgfunc = PGFunction(
+        schema="hame",
+        signature=trgfunc_signature,
+        definition=trgfunc_definition,
+    )
+
+    for table in tables_with_lifecycle_date:
+        trg_signature = f"trg_{table}_new_lifecycle_date"
+        trg_definition = f"""
+        BEFORE UPDATE ON {table}
+        FOR EACH ROW
+        WHEN (NEW.lifecycle_status_id <> OLD.lifecycle_status_id)
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+        trg = PGTrigger(
+            schema="hame",
+            signature=trg_signature,
+            on_entity=f"hame.{table}",
+            is_constraint=False,
+            definition=trg_definition,
+        )
+        trgs.append(trg)
+
+    return trgs, [trgfunc]
 
 
 def generate_update_lifecycle_status_triggers():
@@ -211,9 +258,8 @@ def generate_update_lifecycle_status_triggers():
 def generate_new_lifecycle_status_triggers():
     trgs = []
     trgfuncs = []
-    for object_table in plan_object_tables:
-        trgfunc_signature = f"trgfunc_{object_table}_new_lifecycle_status()"
-        trgfunc_definition = """
+    trgfunc_signature = "trgfunc_plan_object_new_lifecycle_status()"
+    trgfunc_definition = """
         RETURNS TRIGGER AS $$
         BEGIN
             NEW.lifecycle_status_id = (
@@ -222,8 +268,13 @@ def generate_new_lifecycle_status_triggers():
             RETURN NEW;
         END;
         $$ language 'plpgsql'
-        """
+    """
+    trgfunc = PGFunction(
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+    )
+    trgfuncs.append(trgfunc)
 
+    for object_table in plan_object_tables:
         trg_signature = f"trg_{object_table}_new_lifecycle_status"
         trg_definition = f"""
         BEFORE INSERT ON {object_table}
@@ -231,12 +282,6 @@ def generate_new_lifecycle_status_triggers():
         WHEN (NEW.plan_id IS NOT NULL)
         EXECUTE FUNCTION hame.{trgfunc_signature}
         """
-
-        trgfunc = PGFunction(
-            schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
-        )
-        trgfuncs.append(trgfunc)
-
         trg = PGTrigger(
             schema="hame",
             signature=trg_signature,
@@ -247,37 +292,34 @@ def generate_new_lifecycle_status_triggers():
         trgs.append(trg)
 
     # Set the life cycle status of the new regulation to the same as the plan
+    trgfunc_signature = "trgfunc_plan_regulation_new_lifecycle_status()"
+    trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.lifecycle_status_id = (
+                SELECT p.lifecycle_status_id
+                FROM
+                    hame.plan p
+                    JOIN hame.plan_regulation_group prg
+                        ON p.id = prg.plan_id
+                WHERE prg.id = NEW.plan_regulation_group_id
+            );
+            RETURN NEW;
+        END;
+        $$ language 'plpgsql'
+    """
+    trgfunc = PGFunction(
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+    )
+    trgfuncs.append(trgfunc)
+
     for regulation_table in plan_regulation_tables:
-        trgfunc_signature = f"trgfunc_{regulation_table}_plan_new_lifecycle_status()"
-
-        trgfunc_definition = """
-            RETURNS TRIGGER AS $$
-            BEGIN
-                NEW.lifecycle_status_id = (
-                    SELECT p.lifecycle_status_id
-                    FROM
-                        hame.plan p
-                        JOIN hame.plan_regulation_group prg
-                            ON p.id = prg.plan_id
-                    WHERE prg.id = NEW.plan_regulation_group_id
-                );
-                RETURN NEW;
-            END;
-            $$ language 'plpgsql'
-        """
-
-        trg_signature = f"trg_{regulation_table}_plan_new_lifecycle_status"
+        trg_signature = f"trg_{regulation_table}_new_lifecycle_status"
         trg_definition = f"""
             BEFORE INSERT ON hame.{regulation_table}
             FOR EACH ROW
             EXECUTE FUNCTION hame.{trgfunc_signature}
         """
-
-        trgfunc = PGFunction(
-            schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
-        )
-        trgfuncs.append(trgfunc)
-
         trg = PGTrigger(
             schema="hame",
             signature=trg_signature,
