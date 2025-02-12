@@ -7,13 +7,13 @@ update-lambda: update-db-manager update-koodistot-loader update-ryhti-client upd
 
 update-db-manager:
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-	docker tag hame-ryhti-db_manager:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
+	docker tag arho-ryhti-db_manager:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
 	aws lambda update-function-code --function-name $(prefix)-db_manager --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
 
 update-koodistot-loader:
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-	docker tag hame-ryhti-koodistot_loader:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
+	docker tag arho-ryhti-koodistot_loader:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 	aws lambda update-function-code --function-name $(prefix)-koodistot_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 
@@ -21,7 +21,7 @@ update-koodistot-loader:
 ## Also, we have to wait until update is complete to publish the new version.
 update-ryhti-client:
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-	docker tag hame-ryhti-ryhti_client:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
+	docker tag arho-ryhti-ryhti_client:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
 	aws lambda update-function-code --function-name $(prefix)-ryhti_client --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
 	while aws lambda get-function --function-name $(prefix)-ryhti_client --query "Configuration.LastUpdateStatus" | grep "InProgress" ; do sleep 1; echo "Waiting for AWS to complete function update..."; done
@@ -30,7 +30,7 @@ update-ryhti-client:
 
 update-mml-loader:
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
-	docker tag hame-ryhti-mml_loader:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
+	docker tag arho-ryhti-mml_loader:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
 	aws lambda update-function-code --function-name $(prefix)-mml_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
 
