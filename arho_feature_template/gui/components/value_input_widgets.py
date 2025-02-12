@@ -132,9 +132,9 @@ class CodeInputWidget(QWidget):
         self.code_value_widget = SinglelineTextInputWidget(default_value=code_value, editable=True)
 
         layout = QFormLayout()
-        layout.addRow("Otsikko", self.title_widget)
-        layout.addRow("Koodisto", self.code_list_widget)
-        layout.addRow("Koodiarvo", self.code_value_widget)
+        layout.addRow("Otsikko:", self.title_widget)
+        layout.addRow("Koodisto:", self.code_list_widget)
+        layout.addRow('<span style="color: red;">*</span> Koodiarvo:', self.code_value_widget)
         self.setLayout(layout)
 
     def get_value(self) -> tuple[str | None, str | None, str | None]:
