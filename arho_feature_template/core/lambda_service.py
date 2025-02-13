@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from http import HTTPStatus
-from typing import cast
+from typing import Callable, cast
 
 from qgis.PyQt.QtCore import QByteArray, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
@@ -58,13 +58,28 @@ class LambdaService(QObject):
         match = re.match(r"^https://.*execute-api.*amazonaws\.com.*$", self.lambda_url)
         return bool(match)
 
+    def _get_response_handler(self, action: str) -> Callable[[dict], None]:
+        handlers = {
+            self.ACTION_GET_PLANS: self._process_json_reply,
+            self.ACTION_VALIDATE_PLANS: self._process_validation_reply,
+        }
+        return handlers[action]
+
+    def _get_error_handler(self, action: str) -> Callable[[], None]:
+        handlers = {
+            self.ACTION_GET_PLANS: lambda: None,
+            self.ACTION_VALIDATE_PLANS: self._handle_validation_error,
+        }
+        return handlers[action]
+
     def _handle_reply(self, reply: QNetworkReply):
         action = reply.request().attribute(LambdaService.ActionAttribute)
+        response_handler = self._get_response_handler(action)
+        error_handler = self._get_error_handler(action)
         if reply.error() != QNetworkReply.NoError:
             error = reply.errorString()
             QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
-            if action == self.ACTION_VALIDATE_PLANS:
-                self.validation_failed.emit()
+            error_handler()
             reply.deleteLater()
             return
 
@@ -77,8 +92,7 @@ class LambdaService(QObject):
                 if int(response_json.get("statusCode", 0)) != HTTPStatus.OK:
                     error = response_json["body"] if "body" in response_json else response_json["errorMessage"]
                     QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
-                    if action == self.ACTION_VALIDATE_PLANS:
-                        self.validation_failed.emit()
+                    error_handler()
                     reply.deleteLater()
                     return
                 body = response_json["body"]
@@ -87,16 +101,14 @@ class LambdaService(QObject):
 
         except (json.JSONDecodeError, KeyError) as e:
             QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {e}")
-            if action == self.ACTION_VALIDATE_PLANS:
-                self.validation_failed.emit()
+            error_handler()
             return
         finally:
             reply.deleteLater()
+        response_handler(body)
 
-        if action == self.ACTION_GET_PLANS:
-            self._process_json_reply(body)
-        elif action == self.ACTION_VALIDATE_PLANS:
-            self._process_validation_reply(body)
+    def _handle_validation_error(self):
+        self.validation_failed.emit()
 
     def _process_validation_reply(self, response_json: dict):
         """Processes the validation reply from the lambda and emits a signal."""
