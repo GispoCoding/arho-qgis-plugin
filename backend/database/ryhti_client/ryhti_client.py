@@ -185,7 +185,7 @@ class RyhtiPlan(TypedDict, total=False):
     otherPlanMaterials: List
     planReport: Dict | None
     generalRegulationGroups: List[Dict]
-    planDescription: str
+    planDescription: str | None
     planObjects: List
     planRegulationGroups: List
     planRegulationGroupRelations: List
@@ -778,7 +778,10 @@ class RyhtiClient:
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         # For reasons unknown, Ryhti does not allow multilanguage description.
-        plan_dictionary["planDescription"] = plan.description.get("fin")
+        plan_description = (
+            plan.description.get("fin") if isinstance(plan.description, dict) else None
+        )
+        plan_dictionary["planDescription"] = plan_description
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
