@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from contextlib import suppress
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
 from qgis.PyQt.QtCore import QSettings, pyqtBoundSignal
@@ -113,3 +113,18 @@ def disconnect_signal(signal: pyqtBoundSignal) -> None:
     """
     with suppress(TypeError):
         signal.disconnect()
+
+
+def serialize_localized_text(text: str | None) -> dict[str, str] | None:
+    if isinstance(text, str):
+        text = text.strip()
+    if text:
+        return {LANGUAGE: text}
+    return None
+
+
+def deserialize_localized_text(text_value: dict[str, str] | None | Any) -> str | None:
+    text = None
+    if isinstance(text_value, dict):
+        text = text_value.get(LANGUAGE)
+    return text

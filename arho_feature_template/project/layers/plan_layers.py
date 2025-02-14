@@ -23,7 +23,12 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
-from arho_feature_template.utils.misc_utils import LANGUAGE, get_active_plan_id, iface
+from arho_feature_template.utils.misc_utils import (
+    deserialize_localized_text,
+    get_active_plan_id,
+    iface,
+    serialize_localized_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +83,8 @@ class PlanLayer(AbstractPlanLayer):
 
         feature = cls.initialize_feature_from_model(model)
         feature.setGeometry(model.geom)
-        feature["name"] = {LANGUAGE: model.name if model.name else None}
-        feature["description"] = {LANGUAGE: model.description if model.description else None}
+        feature["name"] = serialize_localized_text(model.name)
+        feature["description"] = serialize_localized_text(model.description)
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
         feature["record_number"] = model.record_number
         feature["producers_plan_identifier"] = model.producers_plan_identifier
@@ -98,8 +103,8 @@ class PlanLayer(AbstractPlanLayer):
         ]
         return Plan(
             geom=feature.geometry(),
-            name=feature["name"].get(LANGUAGE) if feature["name"] else None,
-            description=feature["description"].get(LANGUAGE) if feature["description"] else None,
+            name=deserialize_localized_text(feature["name"]),
+            description=deserialize_localized_text(feature["description"]),
             permanent_plan_identifier=feature["permanent_plan_identifier"],
             record_number=feature["record_number"],
             producers_plan_identifier=feature["producers_plan_identifier"],
@@ -122,7 +127,9 @@ class PlanLayer(AbstractPlanLayer):
     @classmethod
     def get_plan_name(cls, plan_id: str) -> str:
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_id)
-        return attribute_value.get(LANGUAGE, "Nimetön") if attribute_value else "Nimetön"
+        name = deserialize_localized_text(attribute_value)
+
+        return name or "Nimetön"
 
 
 class PlanFeatureLayer(AbstractPlanLayer):
@@ -134,9 +141,9 @@ class PlanFeatureLayer(AbstractPlanLayer):
 
         feature = cls.initialize_feature_from_model(model)
         feature.setGeometry(model.geom)
-        feature["name"] = {LANGUAGE: model.name if model.name else None}
+        feature["name"] = serialize_localized_text(model.name)
         feature["type_of_underground_id"] = model.type_of_underground_id
-        feature["description"] = {LANGUAGE: model.description if model.description else None}
+        feature["description"] = serialize_localized_text(model.description)
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
 
         return feature
@@ -151,8 +158,8 @@ class PlanFeatureLayer(AbstractPlanLayer):
             geom=feature.geometry(),
             type_of_underground_id=feature["type_of_underground_id"],
             layer_name=cls.get_from_project().name(),
-            name=feature["name"].get(LANGUAGE) if feature["name"] else None,
-            description=feature["description"].get(LANGUAGE),
+            name=deserialize_localized_text(feature["name"]),
+            description=deserialize_localized_text(feature["description"]),
             regulation_groups=[
                 RegulationGroupLayer.model_from_feature(feat) for feat in regulation_group_features if feat is not None
             ],
@@ -195,7 +202,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
         feature = cls.initialize_feature_from_model(model)
 
         feature["short_name"] = model.short_name if model.short_name else None
-        feature["name"] = {LANGUAGE: model.name if model.name else None}
+        feature["name"] = serialize_localized_text(model.name)
         feature["type_of_plan_regulation_group_id"] = model.type_code_id
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
         feature["id"] = model.id_ if model.id_ else feature["id"]
@@ -205,7 +212,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
     def model_from_feature(cls, feature: QgsFeature) -> RegulationGroup:
         return RegulationGroup(
             type_code_id=feature["type_of_plan_regulation_group_id"],
-            name=feature["name"].get(LANGUAGE) if feature["name"] else None,
+            name=deserialize_localized_text(feature["name"]),
             short_name=feature["short_name"],
             color_code=None,
             group_number=None,
@@ -313,11 +320,11 @@ def attribute_value_model_from_feature(feature: QgsFeature) -> AttributeValue:
         numeric_range_min=feature["numeric_range_min"],
         numeric_range_max=feature["numeric_range_max"],
         unit=feature["unit"],
-        text_value=feature["text_value"].get(LANGUAGE) if feature["text_value"] else None,
+        text_value=deserialize_localized_text(feature["text_value"]),
         text_syntax=feature["text_syntax"],
         code_list=feature["code_list"],
         code_value=feature["code_value"],
-        code_title=feature["code_title"].get(LANGUAGE) if feature["code_title"] else None,
+        code_title=deserialize_localized_text(feature["code_title"]),
         height_reference_point=feature["height_reference_point"],
     )
 
@@ -330,11 +337,11 @@ def update_feature_from_attribute_value_model(value: AttributeValue | None, feat
     feature["numeric_range_min"] = value.numeric_range_min
     feature["numeric_range_max"] = value.numeric_range_max
     feature["unit"] = value.unit
-    feature["text_value"] = {LANGUAGE: value.text_value if value.text_value else None}
+    feature["text_value"] = serialize_localized_text(value.text_value)
     feature["text_syntax"] = value.text_syntax
     feature["code_list"] = value.code_list
     feature["code_value"] = value.code_value
-    feature["code_title"] = {LANGUAGE: value.code_title if value.code_title else None}
+    feature["code_title"] = serialize_localized_text(value.code_title)
     feature["height_reference_point"] = value.height_reference_point
 
 
@@ -428,7 +435,7 @@ class PlanPropositionLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Proposition) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["text_value"] = {LANGUAGE: model.value if model.value else None}
+        feature["text_value"] = serialize_localized_text(model.value)
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["ordering"] = model.proposition_number
         feature["plan_theme_id"] = model.theme_id
@@ -438,8 +445,12 @@ class PlanPropositionLayer(AbstractPlanLayer):
 
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Proposition:
+        proposition_value = deserialize_localized_text(feature["text_value"])
+        if not proposition_value:
+            msg = "Proposition value cannot be empty."
+            raise ValueError(msg)
         return Proposition(
-            value=feature["text_value"].get(LANGUAGE) if feature["text_value"] else None,
+            value=proposition_value,
             regulation_group_id=feature["plan_regulation_group_id"],
             proposition_number=feature["ordering"],
             theme_id=feature["plan_theme_id"],
@@ -468,7 +479,7 @@ class DocumentLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Document) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["name"] = {LANGUAGE: model.name if model.name else None}
+        feature["name"] = serialize_localized_text(model.name)
         feature["url"] = model.url
         feature["type_of_document_id"] = model.type_of_document_id
         feature["decision"] = model.decision
@@ -487,7 +498,7 @@ class DocumentLayer(AbstractPlanLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Document:
         return Document(
-            name=feature["name"].get(LANGUAGE) if feature["name"] else None,
+            name=deserialize_localized_text(feature["name"]),
             url=feature["url"],
             type_of_document_id=feature["type_of_document_id"],
             decision=feature["decision"],

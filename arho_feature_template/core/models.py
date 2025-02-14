@@ -12,7 +12,7 @@ import yaml
 from arho_feature_template.exceptions import ConfigSyntaxError
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, UndergroundTypeLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name, iface
+from arho_feature_template.utils.misc_utils import deserialize_localized_text, get_layer_by_name, iface
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -246,8 +246,8 @@ class RegulationConfig:
 
     id: str
     regulation_code: str
-    name: str
-    description: str
+    name: str | None
+    description: str | None
     status: str
     level: int
     parent_id: str | None
@@ -268,8 +268,8 @@ class RegulationConfig:
         return cls(
             id=feature["id"],
             regulation_code=feature["value"],
-            name=feature["name"].get(LANGUAGE) if feature["name"] else None,
-            description=feature["description"].get(LANGUAGE) if feature["description"] else None,
+            name=deserialize_localized_text(feature["name"]),
+            description=deserialize_localized_text(feature["description"]),
             status=feature["status"],
             level=feature["level"],
             parent_id=feature["parent_id"],
@@ -287,8 +287,8 @@ class AdditionalInformationConfig:
     # From layer
     id: str
     additional_information_type: str
-    name: str
-    description: str
+    name: str | None
+    description: str | None
     status: str
     level: int
     parent_id: str | None
@@ -344,8 +344,8 @@ class AdditionalInformationConfigLibrary:
             ai_config = AdditionalInformationConfig(
                 id=feature["id"],
                 additional_information_type=ai_code,
-                name=feature["name"].get(LANGUAGE) if feature["name"] else None,
-                description=feature["description"].get(LANGUAGE) if feature["description"] else None,
+                name=deserialize_localized_text(feature["name"]),
+                description=deserialize_localized_text(feature["description"]),
                 status=feature["status"],
                 level=feature["level"],
                 parent_id=feature["parent_id"],
