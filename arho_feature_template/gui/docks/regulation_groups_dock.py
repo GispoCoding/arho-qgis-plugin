@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from importlib import resources
 from typing import TYPE_CHECKING
 
@@ -20,6 +22,14 @@ DockClass, _ = uic.loadUiType(ui_path)
 
 
 class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
+    search_box: QgsFilterLineEdit
+    regulation_group_list: QListWidget
+    dockWidgetContents: QWidget  # noqa: N815
+
+    new_btn: QPushButton
+    delete_btn: QPushButton
+    edit_btn: QPushButton
+
     new_regulation_group_requested = pyqtSignal()
     edit_regulation_group_requested = pyqtSignal(RegulationGroup)
     delete_regulation_group_requested = pyqtSignal(RegulationGroup)
@@ -27,15 +37,6 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-
-        # TYPES
-        self.search_box: QgsFilterLineEdit
-        self.regulation_group_list: QListWidget
-        self.dockWidgetContents: QWidget
-
-        self.new_btn: QPushButton
-        self.delete_btn: QPushButton
-        self.edit_btn: QPushButton
 
         self.new_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.delete_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
@@ -115,7 +116,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             if response == QMessageBox.Yes:
                 self.delete_regulation_group_requested.emit(self.selected_group)
 
-    def filter_regulation_groups(self):
+    def filter_regulation_groups(self) -> None:
         search_text = self.search_box.value().lower()
 
         for index in range(self.regulation_group_list.count()):
