@@ -118,6 +118,8 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
             for child_code in top_level_config.children:
                 config = ai_config_library.get_config_by_code(child_code)
+                if not config.name:
+                    continue
                 _add_action(top_level_code, config.additional_information_type, config.name)
 
         # Create main menu for btn and add submenus

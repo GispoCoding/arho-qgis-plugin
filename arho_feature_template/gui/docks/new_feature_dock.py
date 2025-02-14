@@ -21,18 +21,17 @@ DockClass, _ = uic.loadUiType(ui_path)
 
 
 class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
+    library_selection: QComboBox
+    search_box: QgsFilterLineEdit
+    template_list: QListWidget
+    txt_tip: QLabel
+    dockWidgetContents: QWidget  # noqa: N815
+
     tool_activated = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setupUi(self)
-
-        # TYPES
-        self.library_selection: QComboBox
-        self.search_box: QgsFilterLineEdit
-        self.template_list: QListWidget
-        self.txt_tip: QLabel
-        self.dockWidgetContents: QWidget
 
         # INIT
         # 1. New feature grid
@@ -66,7 +65,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         if self.active_feature_type:
             self.tool_activated.emit()
 
-    def filter_plan_feature_templates(self):
+    def filter_plan_feature_templates(self) -> None:
         # Consider both search text and active plan feature type
         search_text = self.search_box.value().lower()
 
