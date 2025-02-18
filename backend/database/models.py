@@ -256,6 +256,8 @@ class PlanRegulationGroup(VersionedBase):
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanRegulation.ordering",  # list regulations in right order
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     # Let's add backreference to allow lazy loading from this side. Unit tests
@@ -270,6 +272,8 @@ class PlanRegulationGroup(VersionedBase):
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanProposition.ordering",  # list propositions in right order
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     land_use_areas: Mapped[List["LandUseArea"]] = relationship(
@@ -360,7 +364,9 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
 
     plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
-            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            ondelete="CASCADE",
         )
     )
 
@@ -419,7 +425,9 @@ class PlanProposition(PlanBase):
 
     plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
-            "hame.plan_regulation_group.id", name="plan_regulation_group_id_fkey"
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            ondelete="CASCADE",
         )
     )
     plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
