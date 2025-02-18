@@ -177,6 +177,7 @@ class RyhtiPlan(TypedDict, total=False):
     planKey: str
     lifeCycleStatus: str
     scale: int
+    legalEffectOfLocalMasterPlans: List | None
     geographicalArea: Dict
     periodOfValidity: Period | None
     approvalDate: str | None
@@ -778,6 +779,11 @@ class RyhtiClient:
         # Let's have all the code values preloaded joined from db.
         # It makes this super easy:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
+        plan_dictionary["legalEffectOfLocalMasterPlans"] = (
+            [effect.uri for effect in plan.legal_effects_of_master_plan]
+            if plan.legal_effects_of_master_plan
+            else None
+        )
         plan_dictionary["scale"] = plan.scale
         plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
         # For reasons unknown, Ryhti does not allow multilanguage description.

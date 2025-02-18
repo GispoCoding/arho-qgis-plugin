@@ -270,6 +270,15 @@ class Language(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/ryhtikielet"
 
 
+class LegalEffectsOfMasterPlan(CodeBase):
+    """
+    Yleiskaavan oikeusvaikutukset
+    """
+
+    __tablename__ = "legal_effects_of_master_plan"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK"
+
+
 decisions_by_status = {
     # Some lifecycle statuses require decisions, some don't.
     # Plan decision code depends on lifecycle status:

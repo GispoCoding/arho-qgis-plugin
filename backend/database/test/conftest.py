@@ -25,8 +25,8 @@ from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.orm import Session, sessionmaker
 
-hame_count: int = 17  # adjust me when adding tables
-codes_count: int = 21  # adjust me when adding tables
+hame_count: int = 18  # adjust me when adding tables
+codes_count: int = 22  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
 
@@ -686,6 +686,12 @@ def retention_time_permanent_instance(temp_session_feature):
 @pytest.fixture()
 def language_finnish_instance(temp_session_feature):
     instance = codes.Language(value="fi", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def legal_effects_of_master_plan_without_legal_effects_instance(temp_session_feature):
+    instance = codes.LegalEffectsOfMasterPlan(value="2", status="LOCAL")
     return temp_session_feature(instance)
 
 
@@ -1515,6 +1521,7 @@ def complete_test_plan(
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
     proportion_of_intended_use_additional_information_instance: models.AdditionalInformation,
+    legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
     plan_theme_instance: codes.PlanTheme,
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
@@ -1550,6 +1557,10 @@ def complete_test_plan(
     """
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
+    plan_instance.legal_effects_of_master_plan.append(
+        legal_effects_of_master_plan_without_legal_effects_instance
+    )
+
     empty_value_plan_regulation_instance.plan_theme = plan_theme_instance
     # empty value plan regulation may have intended use
     empty_value_plan_regulation_instance.additional_information.append(
@@ -1831,7 +1842,7 @@ def decisionmaker_type(temp_session_feature):
 
 @pytest.fixture(scope="function")
 def desired_plan_dict(
-    plan_instance: models.Plan,
+    complete_test_plan: models.Plan,
     land_use_area_instance: models.LandUseArea,
     pedestrian_street_instance: models.LandUseArea,
     land_use_point_instance: models.LandUsePoint,
@@ -1851,7 +1862,6 @@ def desired_plan_dict(
     verbal_plan_regulation_instance: models.PlanRegulation,
     general_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
-    pending_date_instance: models.LifeCycleDate,
 ) -> dict:
     """
     Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
@@ -1861,9 +1871,12 @@ def desired_plan_dict(
     """
 
     return {
-        "planKey": plan_instance.id,
+        "planKey": complete_test_plan.id,
         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
-        "scale": plan_instance.scale,
+        "legalEffectOfLocalMasterPlans": [
+            "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/2"
+        ],
+        "scale": complete_test_plan.scale,
         "geographicalArea": {
             "srid": str(PROJECT_SRID),
             "geometry": {
@@ -1915,7 +1928,7 @@ def desired_plan_dict(
                 "planRecommendations": [],
             }
         ],
-        "planDescription": plan_instance.description[
+        "planDescription": complete_test_plan.description[
             "fin"
         ],  # TODO: should this be a single language string? why?
         "planObjects": [
@@ -2304,6 +2317,7 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
     return {
         "planKey": another_plan_instance.id,
         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+        "legalEffectOfLocalMasterPlans": None,
         "scale": another_plan_instance.scale,
         "geographicalArea": {
             "srid": str(PROJECT_SRID),
@@ -2339,20 +2353,7 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
 
 @pytest.fixture(scope="function")
 def desired_plan_matter_dict(
-    session: Session,
-    desired_plan_dict: dict,
-    plan_instance: models.Plan,
-    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-    plan_proposal_sending_out_for_opinions_decision: codes.NameOfPlanCaseDecision,
-    plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
-    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
-    plan_proposal_presenting_for_public_event: codes.TypeOfProcessingEvent,
-    plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
-    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
-    decisionmaker_type: codes.TypeOfDecisionMaker,
+    desired_plan_dict: dict, complete_test_plan: models.Plan
 ) -> dict:
     """
     Plan matter dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Palveluväylä/Kaavoitus%20OpenApi.json
@@ -2366,10 +2367,10 @@ def desired_plan_matter_dict(
     return {
         "permanentPlanIdentifier": "MK-123456",
         "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/11",
-        "name": plan_instance.name,
+        "name": complete_test_plan.name,
         "timeOfInitiation": "2024-01-01",
-        "description": plan_instance.description,
-        "producerPlanIdentifier": plan_instance.producers_plan_identifier,
+        "description": complete_test_plan.description,
+        "producerPlanIdentifier": complete_test_plan.producers_plan_identifier,
         "caseIdentifiers": [],
         "recordNumbers": [],
         "administrativeAreaIdentifiers": ["01"],

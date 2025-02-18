@@ -31,11 +31,13 @@ def test_codes(
 
 
 def test_plan(
+    session: Session,
     plan_instance: models.Plan,
     preparation_status_instance: codes.LifeCycleStatus,
     organisation_instance: models.Organisation,
     general_regulation_group_instance: models.PlanRegulationGroup,
     plan_type_instance: codes.PlanType,
+    legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
 ):
     # non-nullable plan relations
     assert plan_instance.lifecycle_status is preparation_status_instance
@@ -51,9 +53,20 @@ def test_plan(
     assert plan_instance.general_plan_regulation_groups == [
         general_regulation_group_instance
     ]
-
     # General regulation group belongs to the plan
     assert general_regulation_group_instance.plan == plan_instance
+    plan_instance.legal_effects_of_master_plan.append(
+        legal_effects_of_master_plan_without_legal_effects_instance
+    )
+    session.flush()
+    session.refresh(plan_instance)
+    session.refresh(legal_effects_of_master_plan_without_legal_effects_instance)
+    assert plan_instance.legal_effects_of_master_plan == [
+        legal_effects_of_master_plan_without_legal_effects_instance
+    ]
+    assert legal_effects_of_master_plan_without_legal_effects_instance.plans == [
+        plan_instance
+    ]
 
 
 def test_land_use_area(

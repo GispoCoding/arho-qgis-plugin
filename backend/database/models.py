@@ -92,6 +92,30 @@ regulation_group_association = Table(
 )
 
 
+legal_effects_association = Table(
+    "legal_effects_association",
+    Base.metadata,
+    Column(
+        "plan_id",
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
+        primary_key=True,
+        # indexed by the primary key
+    ),
+    Column(
+        "legal_effects_of_master_plan_id",
+        ForeignKey(
+            "codes.legal_effects_of_master_plan.id",
+            name="legal_effects_of_master_plan_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+        # use separate index because not the leftmost column of the primary key
+        index=True,
+    ),
+    schema="hame",
+)
+
+
 class Plan(PlanBase):
     """
     Maakuntakaava, compatible with Ryhti 2.0 specification
@@ -152,6 +176,12 @@ class Plan(PlanBase):
             "general_plan_regulation_groups,land_use_areas,other_areas,"
             "land_use_points,lines,plan_regulation_groups"
         ),
+    )
+    legal_effects_of_master_plan = relationship(
+        "LegalEffectsOfMasterPlan",
+        secondary=legal_effects_association,
+        lazy="joined",
+        backref="plans",
     )
 
 
