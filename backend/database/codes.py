@@ -59,7 +59,8 @@ class LifeCycleStatus(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
     lifecycle_dates = relationship(
-        "LifeCycleDate", back_populates="lifecycle_status", cascade="delete"
+        "LifeCycleDate",
+        back_populates="lifecycle_status",
     )
     allowed_interaction_events: Mapped[List["TypeOfInteractionEvent"]] = relationship(
         secondary="codes.allowed_events", back_populates="allowed_statuses"

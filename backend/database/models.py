@@ -551,7 +551,6 @@ class LifeCycleDate(VersionedBase):
         ForeignKey(
             "codes.lifecycle_status.id",
             name="plan_lifecycle_status_id_fkey",
-            ondelete="CASCADE",
         ),
         index=True,
     )
