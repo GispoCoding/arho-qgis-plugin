@@ -141,7 +141,11 @@ class PlanBase(VersionedBase):
     @declared_attr
     def lifecycle_dates(cls):  # noqa
         return relationship(
-            "LifeCycleDate", back_populates=f"{cls.__tablename__}", lazy="joined"
+            "LifeCycleDate",
+            back_populates=f"{cls.__tablename__}",
+            lazy="joined",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
         )
 
 

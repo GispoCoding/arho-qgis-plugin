@@ -555,28 +555,42 @@ class LifeCycleDate(VersionedBase):
         index=True,
     )
     plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey")
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE")
     )
     land_use_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.land_use_area.id", name="land_use_area_id_fkey")
+        ForeignKey(
+            "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
+        )
     )
     other_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.other_area.id", name="other_area_id_fkey")
+        ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE")
     )
     line_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.line.id", name="line_id_fkey")
+        ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE")
     )
     land_use_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.land_use_point.id", name="land_use_point_id_fkey")
+        ForeignKey(
+            "hame.land_use_point.id", name="land_use_point_id_fkey", ondelete="CASCADE"
+        )
     )
     other_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.other_point.id", name="other_point_id_fkey")
+        ForeignKey(
+            "hame.other_point.id", name="other_point_id_fkey", ondelete="CASCADE"
+        )
     )
     plan_regulation_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.plan_regulation.id", name="plan_regulation_id_fkey")
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        )
     )
     plan_proposition_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.plan_proposition.id", name="plan_proposition_id_fkey")
+        ForeignKey(
+            "hame.plan_proposition.id",
+            name="plan_proposition_id_fkey",
+            ondelete="CASCADE",
+        )
     )
 
     plan: Mapped[Optional["Plan"]] = relationship(back_populates="lifecycle_dates")
@@ -605,7 +619,11 @@ class LifeCycleDate(VersionedBase):
     )
     # Let's add backreference to allow lazy loading from this side.
     event_dates = relationship(
-        "EventDate", back_populates="lifecycle_date", lazy="joined"
+        "EventDate",
+        back_populates="lifecycle_date",
+        lazy="joined",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     starting_at: Mapped[datetime]
