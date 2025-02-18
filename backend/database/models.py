@@ -327,6 +327,7 @@ class AdditionalInformation(VersionedBase, AttributeValueMixin):
         ForeignKey(
             "hame.plan_regulation.id",
             name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
         ),
         index=True,
     )
@@ -400,7 +401,11 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
     plan_theme = relationship("PlanTheme", backref="plan_regulations", lazy="joined")
 
     additional_information: Mapped[list[AdditionalInformation]] = relationship(
-        "AdditionalInformation", back_populates="plan_regulation", lazy="joined"
+        "AdditionalInformation",
+        back_populates="plan_regulation",
+        lazy="joined",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     ordering: Mapped[Optional[int]]
