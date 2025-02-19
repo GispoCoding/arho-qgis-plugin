@@ -511,6 +511,12 @@ def temp_session_feature(session: Session):
     yield add_instance
 
     for instance in reversed(created_instances):
+        if instance not in session:
+            # Already deleted
+            continue
+        # Refresh to update collections changed by cascade deletes done by db.
+        # Without this, sqlalchemy tries to delete things already deleted and gives warnings.
+        session.refresh(instance)
         session.delete(instance)
         session.flush()  # flush to delete in right order
     session.commit()
