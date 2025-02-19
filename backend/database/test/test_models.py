@@ -1,5 +1,8 @@
 import codes
 import models
+import pytest
+from psycopg2 import sql
+from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
 """Tests that check all relationships in sqlalchemy classes are defined correctly.
@@ -421,3 +424,195 @@ def test_interaction_event_date(
     assert presentation_to_the_public_interaction.event_dates == [
         interaction_event_date_instance
     ]
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        pytest.param("land_use_area_instance", id="land_use_area"),
+        pytest.param("land_use_point_instance", id="land_use_point"),
+        pytest.param("line_instance", id="line"),
+        pytest.param("other_point_instance", id="other_point"),
+        pytest.param("other_area_instance", id="other_area"),
+        pytest.param("plan_proposition_instance", id="plan_proposition"),
+        pytest.param("empty_value_plan_regulation_instance", id="plan_regulation"),
+    ],
+)
+def test_cascade_delete_of_lifecycle_dates_using_orm(
+    session: Session, request: pytest.FixtureRequest, fixture_name: str
+):
+    """Test that deleting a plan object cascades to the lifecycle date when using ORM.
+    This makes sure that the cascade options are configured correctly in the SqlAlchemy models.
+    """
+
+    plan_base_object = request.getfixturevalue(fixture_name)
+    assert len(plan_base_object.lifecycle_dates) == 1
+    lifecycle_date = plan_base_object.lifecycle_dates[0]
+    session.delete(plan_base_object)
+    session.commit()
+
+    assert inspect(lifecycle_date).was_deleted
+
+
+@pytest.mark.parametrize(
+    ["parent_fixture_name", "child_fixture_name", "child_collection_name"],
+    [
+        pytest.param(
+            "plan_regulation_group_instance",
+            "empty_value_plan_regulation_instance",
+            "plan_regulations",
+            id="plan_regulation",
+        ),
+        pytest.param(
+            "plan_regulation_group_instance",
+            "plan_proposition_instance",
+            "plan_propositions",
+            id="plan_proposition",
+        ),
+        pytest.param(
+            "empty_value_plan_regulation_instance",
+            "main_use_additional_information_instance",
+            "additional_information",
+            id="additional_information",
+        ),
+    ],
+)
+def test_cascade_delete_using_orm(
+    session: Session,
+    request: pytest.FixtureRequest,
+    parent_fixture_name: str,
+    child_fixture_name: str,
+    child_collection_name: str,
+):
+    """Test that deleting a parent object cascades to the child table when using ORM.
+    This makes sure that the cascade options are configured correctly in the SqlAlchemy models.
+    """
+
+    parent_object = request.getfixturevalue(parent_fixture_name)
+    child_object = request.getfixturevalue(child_fixture_name)
+
+    assert len(getattr(parent_object, child_collection_name)) == 1
+
+    session.delete(parent_object)
+    session.commit()
+
+    assert inspect(child_object).was_deleted
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        pytest.param("land_use_area_instance", id="land_use_area"),
+        pytest.param("land_use_point_instance", id="land_use_point"),
+        pytest.param("line_instance", id="line"),
+        pytest.param("other_point_instance", id="other_point"),
+        pytest.param("other_area_instance", id="other_area"),
+        pytest.param("plan_proposition_instance", id="plan_proposition"),
+        pytest.param("empty_value_plan_regulation_instance", id="plan_regulation"),
+    ],
+)
+def test_cascade_delete_of_lifecycle_dates_using_db(
+    session: Session, request: pytest.FixtureRequest, fixture_name: str
+):
+    """Test that deleting a plan object cascades to the lifecycle date when using raw SQL.
+    This makes sure that the ON DELETE cascade options are configured correctly for the foreign keys in the database.
+    """
+
+    plan_base_object = request.getfixturevalue(fixture_name)
+    lifecycle_object = plan_base_object.lifecycle_dates[0]
+
+    connection = session.connection().connection
+    cur = connection.cursor()
+
+    def lifecycle_date_exists():
+        cur.execute(
+            sql.SQL("SELECT EXISTS (SELECT id FROM {table} WHERE id=%s)").format(
+                table=sql.Identifier(
+                    lifecycle_object.__table__.schema, lifecycle_object.__table__.name
+                )
+            ),
+            (lifecycle_object.id,),
+        )
+        return cur.fetchone()[0]
+
+    def delete_plan_base_object():
+        cur.execute(
+            sql.SQL("DELETE FROM {table} WHERE id=%s").format(
+                table=sql.Identifier(
+                    plan_base_object.__table__.schema, plan_base_object.__table__.name
+                )
+            ),
+            (plan_base_object.id,),
+        )
+
+    assert lifecycle_date_exists()
+    delete_plan_base_object()
+    assert not lifecycle_date_exists()
+
+    cur.close()
+    connection.rollback()
+
+
+@pytest.mark.parametrize(
+    ["parent_fixture_name", "child_fixture_name"],
+    [
+        pytest.param(
+            "plan_regulation_group_instance",
+            "empty_value_plan_regulation_instance",
+            id="plan_regulation",
+        ),
+        pytest.param(
+            "plan_regulation_group_instance",
+            "plan_proposition_instance",
+            id="plan_proposition",
+        ),
+        pytest.param(
+            "empty_value_plan_regulation_instance",
+            "main_use_additional_information_instance",
+            id="additional_information",
+        ),
+    ],
+)
+def test_cascade_delete_using_db(
+    session: Session,
+    request: pytest.FixtureRequest,
+    parent_fixture_name: str,
+    child_fixture_name: str,
+):
+    """Test that deleting a parent object cascades to the child table when using raw SQL.
+    This makes sure that the ON DELETE cascade options are configured correctly for the foreign keys in the database.
+    """
+
+    parent_object = request.getfixturevalue(parent_fixture_name)
+    child_object = request.getfixturevalue(child_fixture_name)
+
+    connection = session.connection().connection
+    cur = connection.cursor()
+
+    def child_object_exists():
+        cur.execute(
+            sql.SQL("SELECT EXISTS (SELECT id FROM {table} WHERE id=%s)").format(
+                table=sql.Identifier(
+                    child_object.__table__.schema, child_object.__table__.name
+                )
+            ),
+            (child_object.id,),
+        )
+        return cur.fetchone()[0]
+
+    def delete_parent_object():
+        cur.execute(
+            sql.SQL("DELETE FROM {table} WHERE id=%s").format(
+                table=sql.Identifier(
+                    parent_object.__table__.schema, parent_object.__table__.name
+                )
+            ),
+            (parent_object.id,),
+        )
+
+    assert child_object_exists()
+    delete_parent_object()
+    assert not child_object_exists()
+
+    cur.close()
+    connection.rollback()
