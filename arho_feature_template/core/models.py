@@ -515,6 +515,9 @@ class RegulationGroup:
             id_=None,
         )
 
+    def __str__(self):
+        return " - ".join(part for part in (self.short_name, self.name) if part)
+
 
 @dataclass
 class LifeCycle:

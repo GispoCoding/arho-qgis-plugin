@@ -74,16 +74,9 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.selected_group = None
 
     def add_regulation_group_to_list(self, group: RegulationGroup):
-        short_name = group.short_name if group.short_name else ""
-        name = group.name if group.name else ""
-        if short_name and name:
-            text = f"{short_name} - {name}"
-        elif short_name:
-            text = short_name
-        else:
-            text = name
+        text = str(group)
         item = QListWidgetItem(text)
-        item.setToolTip(name)
+        item.setToolTip(text)
         item.setData(Qt.UserRole, group)
         self.regulation_group_list.addItem(item)
 

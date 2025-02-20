@@ -129,10 +129,8 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         library = self.regulation_group_libraries[i]
         for category in library.regulation_group_categories:
             category_item = self.regulation_groups_selection_widget.add_item_to_tree(category.name)
-            for group_definition in category.regulation_groups:
-                _ = self.regulation_groups_selection_widget.add_item_to_tree(
-                    group_definition.name, group_definition, category_item
-                )
+            for group in category.regulation_groups:
+                _ = self.regulation_groups_selection_widget.add_item_to_tree(str(group), group, category_item)
 
     def into_model(self) -> PlanFeature:
         return PlanFeature(
