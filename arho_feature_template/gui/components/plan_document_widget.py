@@ -123,8 +123,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
 
     def is_ok(self) -> bool:
         return (
-            self.name.text() != ""
-            and self.document_type.value() is not None
+            self.document_type.value() is not None
             and self.publicity.value() is not None
             and self.language.value() is not None
             and self.retention_time.value() is not None
