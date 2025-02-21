@@ -73,7 +73,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.show_regulation_group_library(0)
 
         self.feature_type_of_underground.populate_from_code_layer(UndergroundTypeLayer)
-        self.feature_type_of_underground.removeItem(0)  # Remove NULL from combobox as underground data is required
+        self.feature_type_of_underground.remove_item_by_text("NULL")
         self.feature_type_of_underground.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
         # Initialize attributes from template

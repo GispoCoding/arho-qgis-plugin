@@ -84,8 +84,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             self._initalize_regulation_from_config(config)
 
         self.type_of_regulation_group.populate_from_code_layer(PlanRegulationGroupTypeLayer)
-        self.type_of_regulation_group.removeItem(0)  # Remove NULL from selections
-        self.type_of_regulation_group.removeItem(0)  # Remove Yleismääräykset from selections
+        self.type_of_regulation_group.remove_item_by_text("NULL")
+        self.type_of_regulation_group.remove_item_by_text("Yleismääräykset")
 
         self.add_proposition_btn.clicked.connect(self.add_new_proposition)
         self.add_proposition_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
