@@ -146,6 +146,15 @@ class RegulationGroupLibrary:
                 ],
             )
 
+    def get_short_names(self) -> set[str]:
+        """Returns set of non-empty short names (letter codes) of regulation groups part of the library."""
+        return {
+            regulation_group.short_name
+            for category in self.regulation_group_categories
+            for regulation_group in category.regulation_groups
+            if regulation_group.short_name
+        }
+
 
 @dataclass
 class RegulationLibrary:
