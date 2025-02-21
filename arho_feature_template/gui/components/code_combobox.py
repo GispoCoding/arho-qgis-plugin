@@ -49,6 +49,11 @@ class CodeComboBox(QComboBox):
         if index != -1:
             self.setCurrentIndex(index)
 
+    def remove_item_by_text(self, text: str):
+        index = self.findText(text)
+        if index != -1:
+            self.removeItem(index)
+
 
 class HierarchicalCodeComboBox(QComboBox):
     def __init__(self, parent=None):
