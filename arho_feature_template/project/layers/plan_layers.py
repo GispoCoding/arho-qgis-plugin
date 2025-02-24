@@ -4,7 +4,7 @@ import logging
 from abc import abstractmethod
 from string import Template
 from textwrap import dedent
-from typing import Any, ClassVar, Generator
+from typing import Any, ClassVar, Generator, cast
 
 from qgis.core import QgsFeature, QgsVectorLayerUtils
 
@@ -23,7 +23,7 @@ from arho_feature_template.core.models import (
 )
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
-from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
+from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer, PlanTypeLayer
 from arho_feature_template.utils.misc_utils import (
     deserialize_localized_text,
     get_active_plan_id,
@@ -138,6 +138,14 @@ class PlanLayer(AbstractPlanLayer):
         name = deserialize_localized_text(attribute_value)
 
         return name or "Nimetön"
+
+    @classmethod
+    def get_plan_type_name(cls, plan_id: str) -> str | None:
+        type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_id)
+        if type_id is None:
+            return None
+        attribute_value = PlanTypeLayer.get_attribute_value_by_another_attribute_value("name", "id", cast(str, type_id))
+        return deserialize_localized_text(attribute_value)
 
 
 class PlanFeatureLayer(AbstractPlanLayer):

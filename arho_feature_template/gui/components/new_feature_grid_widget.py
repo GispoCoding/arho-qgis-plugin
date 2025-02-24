@@ -4,7 +4,7 @@ from qgis.PyQt.QtCore import QSize, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QPalette
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QPushButton
 
-FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Maankäytön\nkohde", "Muu piste"]
+FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Maankäytön kohde", "Muu piste"]
 FEATURE_TYPE_TO_LAYER_NAME = {
     "Viiva": "Viivat",
     "Osa-alue": "Osa-alue",
@@ -31,7 +31,15 @@ class NewFeatureGridWidget(QListWidget):
         self.setHorizontalScrollMode(self.ScrollPerPixel)
         self.setVerticalScrollMode(self.ScrollPerPixel)
 
-        self.buttons = {feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES}
+        self.initialize_buttons()
+
+    def initialize_buttons(self, exclude: list | None = None):
+        self.clear()
+
+        exclude = exclude if exclude else []
+        self.buttons = {
+            feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES if feature_type not in exclude
+        }
         for btn in self.buttons.values():
             self.add_button(btn)
             btn.clicked.connect(lambda _, button=btn: self.handle_button_click(button))
@@ -72,6 +80,6 @@ class NewFeatureGridWidget(QListWidget):
 class FeatureButton(QPushButton):
     def __init__(self, text: str):
         super().__init__()
-        self.setText(text)
+        self.setText(text.replace(" ", "\n"))
         self.setFixedSize(FEATURE_BUTTON_WIDTH, FEATURE_BUTTON_HEIGHT)
         self.setCheckable(True)
