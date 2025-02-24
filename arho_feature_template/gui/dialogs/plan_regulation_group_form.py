@@ -135,6 +135,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             layout.addWidget(self.link_label_text)
 
             self.regulation_group_info_tab.layout().insertLayout(1, layout)
+            self.setWindowTitle("Muokkaa kaavamääräysryhmää")
 
     def _initalize_regulation_from_config(self, config: RegulationConfig, parent: QTreeWidgetItem | None = None):
         item = self.regulations_selection_widget.add_item_to_tree(config.name, config, parent)
