@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Callable
 
 from qgis.core import QgsApplication
@@ -42,6 +43,17 @@ class Plugin:
 
         self.toolbar = iface.addToolBar("ARHO Toolbar")
         self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.check_timezone_variable()
+
+    def check_timezone_variable(self):
+        """Check if PGTZ environment variable is correctly set."""
+
+        if os.environ.get("PGTZ") != "Europe/Helsinki":
+            iface.messageBar().pushWarning(
+                "Varoitus",
+                "Ympäristömuuttuja PGTZ ei ole asetettu arvoon 'Europe/Helsinki'.\n"
+                "Tämä voi johtaa väärään aikavyöhykkeeseen tallennettuihin kellonaikoihin.",
+            )
 
     def add_action(
         self,
