@@ -60,6 +60,7 @@ from arho_feature_template.utils.misc_utils import (
     handle_unsaved_changes,
     iface,
     set_active_plan_id,
+    use_wait_cursor,
 )
 
 if TYPE_CHECKING:
@@ -533,6 +534,7 @@ def _delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str
     return layer.commitChanges(stopEditing=False)
 
 
+@use_wait_cursor
 def save_plan(plan: Plan) -> QgsFeature | None:
     feature = PlanLayer.feature_from_model(plan)
     layer = PlanLayer.get_from_project()
@@ -586,6 +588,7 @@ def save_plan(plan: Plan) -> QgsFeature | None:
     return feature
 
 
+@use_wait_cursor
 def save_plan_feature(plan_model: PlanFeature, plan_id: str | None = None) -> QgsFeature | None:
     layer_name = plan_model.layer_name
     if not layer_name:
@@ -631,6 +634,7 @@ def save_plan_feature(plan_model: PlanFeature, plan_id: str | None = None) -> Qg
     return plan_feature
 
 
+@use_wait_cursor
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> QgsFeature | None:
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
     layer = RegulationGroupLayer.get_from_project()
@@ -676,6 +680,7 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     return feature
 
 
+@use_wait_cursor
 def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> bool:
     if regulation_group.id_ is None:
         iface.messageBar().pushCritical("", "Kaavamääräysryhmän poistaminen epäonnistui (ei IDtä).")

@@ -5,9 +5,9 @@ from contextlib import suppress
 from typing import TYPE_CHECKING, Any, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
-from qgis.PyQt.QtCore import QSettings, pyqtBoundSignal
+from qgis.PyQt.QtCore import QSettings, Qt, pyqtBoundSignal
 from qgis.PyQt.QtWidgets import QMessageBox
-from qgis.utils import iface
+from qgis.utils import OverrideCursor, iface
 
 if TYPE_CHECKING:
     from qgis.core import QgsMapLayer
@@ -128,3 +128,11 @@ def deserialize_localized_text(text_value: dict[str, str] | None | Any) -> str |
     if isinstance(text_value, dict):
         text = text_value.get(LANGUAGE)
     return text
+
+
+def use_wait_cursor(func):
+    def wrapper(*args, **kwargs):
+        with OverrideCursor(Qt.WaitCursor):
+            return func(*args, **kwargs)
+
+    return wrapper
