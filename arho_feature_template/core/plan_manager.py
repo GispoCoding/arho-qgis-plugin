@@ -162,14 +162,12 @@ class PlanManager:
     def create_new_regulation_group(self):
         new_group = self._open_regulation_group_form(RegulationGroup())
         if new_group:
-            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmä {str(new_group)} luotiin onnistuneesti.")
+            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmä {new_group!s} luotiin onnistuneesti.")
 
     def edit_regulation_group(self, regulation_group: RegulationGroup):
         edited_group = self._open_regulation_group_form(regulation_group)
         if edited_group:
-            iface.messageBar().pushSuccess(
-                None, f"Kaavamääräysryhmää {str(edited_group)} muokattiin onnistuneesti."
-            )
+            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmää {edited_group!s} muokattiin onnistuneesti.")
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
@@ -188,7 +186,7 @@ class PlanManager:
 
     def delete_regulation_group(self, group: RegulationGroup):
         if delete_regulation_group(group):
-            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmä {str(group)} poistettiin onnistuneesti.")
+            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmä {group!s} poistettiin onnistuneesti.")
             self.update_active_plan_regulation_group_library()
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
@@ -339,7 +337,7 @@ class PlanManager:
             plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model):
-            iface.messageBar().pushSuccess("", f"Kaavakohde {str(attribute_form.model)} luotiin onnistuneesti.")
+            iface.messageBar().pushSuccess("", f"Kaavakohde {attribute_form.model!s} luotiin onnistuneesti.")
             self.update_active_plan_regulation_group_library()
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
@@ -351,9 +349,7 @@ class PlanManager:
             plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model):
-            iface.messageBar().pushSuccess(
-                "", f"Kaavakohdetta {str(attribute_form.model)} muokattiin onnistuneesti."
-            )
+            iface.messageBar().pushSuccess("", f"Kaavakohdetta {attribute_form.model!s} muokattiin onnistuneesti.")
             self.update_active_plan_regulation_group_library()
 
     def set_active_plan(self, plan_id: str | None):
@@ -562,29 +558,25 @@ def save_plan(plan: Plan) -> QgsFeature | None:
                 "Kaavamääräysryhmän assosiaation poisto",
             ):
                 iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
-                return None
 
         # Check for documents to be deleted
         doc_layer = DocumentLayer.get_from_project()
         for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan.id_):
             if not _delete_feature(doc_feature, doc_layer, "Asiakirjan poisto"):
                 iface.messageBar().pushCritical("", "Asiakirjan poistaminen epäonnistui.")
-                return None
 
     # Save general regulations
     if plan.general_regulations:
         for regulation_group in plan.general_regulations:
             regulation_group_feature = save_regulation_group(regulation_group, plan_id)
             if regulation_group_feature is None:
-                return None
-            if not save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id):
-                return None
+                continue  # Skip association saving if saving regulation group failed
+            save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id)
 
     # Save documents
     for document in plan.documents:
         document.plan_id = plan_id
-        if save_document(document) is None:
-            return None
+        save_document(document)
 
     # Save lifecycles
     for lifecycle in plan.lifecycles:
@@ -628,15 +620,13 @@ def save_plan_feature(plan_model: PlanFeature, plan_id: str | None = None) -> Qg
                 "Kaavamääräysryhmän assosiaation poisto",
             ):
                 iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
-                return None
 
     # Save regulation groups
     for group in plan_model.regulation_groups:
         regulation_group_feature = save_regulation_group(group)
         if regulation_group_feature is None:
-            return None
-        if not save_regulation_group_association(regulation_group_feature["id"], layer_name, plan_feature["id"]):
-            return None
+            continue  # Skip association saving if saving regulation group failed
+        save_regulation_group_association(regulation_group_feature["id"], layer_name, plan_feature["id"])
 
     return plan_feature
 
@@ -662,7 +652,6 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
         ):
             if not _delete_feature(reg_feature, regulation_layer, "Kaavamääräyksen poisto"):
                 iface.messageBar().pushCritical("", "Kaavamääräyksen poistaminen epäonnistui.")
-                return None
 
         # Check for propositions to be deleted
         proposition_layer = PlanPropositionLayer.get_from_project()
@@ -671,21 +660,18 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
         ):
             if not _delete_feature(prop_feature, proposition_layer, "Kaavasuosituksen poisto"):
                 iface.messageBar().pushCritical("", "Kaavasuosituksen poistaminen epäonnistui.")
-                return None
 
     # Save regulations
     if regulation_group.regulations:
         for regulation in regulation_group.regulations:
             regulation.regulation_group_id = feature["id"]  # Updating regulation group ID
-            if save_regulation(regulation) is None:
-                return None
+            save_regulation(regulation)
 
     # Save propositions
     if regulation_group.propositions:
         for proposition in regulation_group.propositions:
             proposition.regulation_group_id = feature["id"]  # Updating regulation group ID
-            if save_proposition(proposition) is None:
-                return None
+            save_proposition(proposition)
 
     return feature
 
@@ -733,8 +719,7 @@ def save_regulation(regulation: Regulation) -> QgsFeature | None:
 
     for additional_information in regulation.additional_information:
         additional_information.plan_regulation_id = regulation_feature["id"]
-        if save_additional_information(additional_information) is None:
-            return None
+        save_additional_information(additional_information)
 
     return regulation_feature
 
@@ -816,15 +801,17 @@ def save_document(document: Document) -> QgsFeature | None:
     return feature
 
 
-def save_lifecycle(lifecycle: LifeCycle) -> QgsFeature:
-    """Save a LifeCycle object to the layer."""
+def save_lifecycle(lifecycle: LifeCycle) -> QgsFeature | None:
     feature = LifeCycleLayer.feature_from_model(lifecycle)
     layer = LifeCycleLayer.get_from_project()
 
-    _save_feature(
+    if not _save_feature(
         feature=feature,
         layer=layer,
         id_=lifecycle.id_,
         edit_text="Elinkaaren lisäys" if lifecycle.id_ is None else "Elinkaaren muokkaus",
-    )
+    ):
+        iface.messageBar().pushCritical("", "Elinkaaren tallentaminen epäonnistui.")
+        return None
+
     return feature
