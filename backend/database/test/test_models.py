@@ -207,23 +207,22 @@ def test_plan_regulation(
         text_plan_regulation_instance
     ]
     # nullable plan regulation relations
-    assert text_plan_regulation_instance.type_of_verbal_plan_regulation is None
+    assert text_plan_regulation_instance.types_of_verbal_plan_regulations == []
     assert type_of_verbal_plan_regulation_instance.plan_regulations == []
     assert text_plan_regulation_instance.plan_theme is None
     assert plan_theme_instance.plan_regulations == []
-    text_plan_regulation_instance.type_of_verbal_plan_regulation = (
+    text_plan_regulation_instance.types_of_verbal_plan_regulations = [
         type_of_verbal_plan_regulation_instance
-    )
+    ]
     text_plan_regulation_instance.plan_theme = plan_theme_instance
 
     assert text_plan_regulation_instance.additional_information == []
 
     session.flush()
 
-    assert (
-        text_plan_regulation_instance.type_of_verbal_plan_regulation
-        is type_of_verbal_plan_regulation_instance
-    )
+    assert text_plan_regulation_instance.types_of_verbal_plan_regulations == [
+        type_of_verbal_plan_regulation_instance
+    ]
     assert type_of_verbal_plan_regulation_instance.plan_regulations == [
         text_plan_regulation_instance
     ]

@@ -25,7 +25,7 @@ from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.orm import Session, sessionmaker
 
-hame_count: int = 16  # adjust me when adding tables
+hame_count: int = 17  # adjust me when adding tables
 codes_count: int = 21  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -1274,7 +1274,7 @@ def verbal_plan_regulation_instance(
         text_value={"fin": "test_value"},
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_verbal_instance,
-        type_of_verbal_plan_regulation=type_of_verbal_plan_regulation_instance,
+        types_of_verbal_plan_regulations=[type_of_verbal_plan_regulation_instance],
         plan_regulation_group=plan_regulation_group_instance,
         ordering=5,
     )

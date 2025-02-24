@@ -347,6 +347,32 @@ class AdditionalInformation(VersionedBase, AttributeValueMixin):
     )
 
 
+type_of_verbal_regulation_association = Table(
+    "type_of_verbal_regulation_association",
+    Base.metadata,
+    Column(
+        "plan_regulation_id",
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+    ),
+    Column(
+        "type_of_verbal_plan_regulation_id",
+        ForeignKey(
+            "codes.type_of_verbal_plan_regulation.id",
+            name="type_of_verbal_plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+        index=True,
+    ),
+    schema="hame",
+)
+
+
 class PlanRegulation(PlanBase, AttributeValueMixin):
     """
     Kaavamääräys
@@ -376,13 +402,6 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
             "codes.type_of_plan_regulation.id", name="type_of_plan_regulation_id_fkey"
         )
     )
-    type_of_verbal_plan_regulation_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.type_of_verbal_plan_regulation.id",
-            name="type_of_verbal_plan_regulation_id_fkey",
-        ),
-        nullable=True,
-    )
     plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("codes.plan_theme.id", name="plan_theme_id_fkey")
     )
@@ -394,8 +413,11 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
         "TypeOfPlanRegulation", backref="plan_regulations", lazy="joined"
     )
     # Let's load all the codes for objects joined.
-    type_of_verbal_plan_regulation = relationship(
-        "TypeOfVerbalPlanRegulation", backref="plan_regulations", lazy="joined"
+    types_of_verbal_plan_regulations = relationship(
+        "TypeOfVerbalPlanRegulation",
+        secondary=type_of_verbal_regulation_association,
+        backref="plan_regulations",
+        lazy="joined",
     )
     # Let's load all the codes for objects joined.
     plan_theme = relationship("PlanTheme", backref="plan_regulations", lazy="joined")

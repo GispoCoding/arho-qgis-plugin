@@ -636,10 +636,13 @@ class RyhtiClient:
         regulation_dict["periodOfValidity"] = self.get_last_period(
             self.get_lifecycle_periods(plan_regulation, self.valid_status_value)
         )
-        if plan_regulation.type_of_verbal_plan_regulation:
+
+        if plan_regulation.types_of_verbal_plan_regulations:
             regulation_dict["verbalRegulations"] = [
-                plan_regulation.type_of_verbal_plan_regulation.uri
+                type_code.uri
+                for type_code in plan_regulation.types_of_verbal_plan_regulations
             ]
+
         # Additional informations may contain multiple additional info
         # code values.
         regulation_dict["additionalInformations"] = [
