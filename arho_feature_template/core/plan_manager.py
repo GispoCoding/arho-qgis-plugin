@@ -168,12 +168,6 @@ class PlanManager:
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
 
-        # Dynamically rename form title.
-        if regulation_group == RegulationGroup():
-            regulation_group_form.setWindowTitle("Luo kaavamääräysryhmä")
-        else:
-            regulation_group_form.setWindowTitle("Muokkaa kaavamääräysryhmää")
-
         if regulation_group_form.exec_():
             if regulation_group_form.save_as_config:
                 save_regulation_group_as_config(regulation_group_form.model)
