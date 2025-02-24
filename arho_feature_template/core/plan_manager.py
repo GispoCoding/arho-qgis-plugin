@@ -362,6 +362,7 @@ class PlanManager:
         if previously_in_edit_mode:
             plan_layer.startEditing()
 
+        self.new_feature_dock.set_plan(plan_id)
         self.update_active_plan_regulation_group_library()
 
     def load_land_use_plan(self):
