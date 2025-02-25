@@ -60,7 +60,7 @@ def upgrade() -> None:
     conn = op.get_bind()
     existing = select(
         regulation_table.c.id, regulation_table.c.type_of_verbal_plan_regulation_id
-    )
+    ).where(regulation_table.c.type_of_verbal_plan_regulation_id.is_not(None))
     insert_stmt = insert(new_association_table).from_select(
         ["plan_regulation_id", "type_of_verbal_plan_regulation_id"], existing
     )
