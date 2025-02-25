@@ -97,7 +97,6 @@ class FeatureTemplateLibrary:
                                 for group_name in feature_data.get("regulation_groups", [])
                                 if (group := cls.find_matching_group_config(group_name, regulation_group_libraries))
                             ],
-                            lifecycles=[],
                             plan_id=None,
                             id_=None,
                         )
@@ -553,7 +552,6 @@ class PlanFeature:
     name: str | None = None
     description: str | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list)
-    lifecycles: list[LifeCycle] = field(default_factory=list)
     plan_id: int | None = None
     id_: str | None = None
 
