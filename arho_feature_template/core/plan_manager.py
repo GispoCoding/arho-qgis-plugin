@@ -672,7 +672,11 @@ def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | No
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
     layer = RegulationGroupLayer.get_from_project()
 
-    _delete_feature(feature, layer, "Kaavamääräysryhmän poisto")
+    if not _delete_feature(feature, layer, "Kaavamääräysryhmän poisto"):
+        iface.messageBar().pushCritical("", "Kaavamääräysryhmän poistaminen epäonnistui.")
+        return False
+
+    return True
 
 
 def save_regulation_group_as_config(regulation_group: RegulationGroup):
@@ -743,7 +747,11 @@ def delete_regulation(regulation: Regulation) -> bool:
     feature = PlanRegulationLayer.feature_from_model(regulation)
     layer = PlanRegulationLayer.get_from_project()
 
-    _delete_feature(feature, layer, "Kaavamääräyksen poisto")
+    if not _delete_feature(feature, layer, "Kaavamääräyksen poisto"):
+        iface.messageBar().pushCritical("", "Lisätiedon poistaminen epäonnistui.")
+        return False
+
+    return True
 
 
 def save_proposition(proposition: Proposition) -> QgsFeature | None:
