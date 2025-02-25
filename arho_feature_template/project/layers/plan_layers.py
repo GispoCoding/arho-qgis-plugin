@@ -162,7 +162,6 @@ class PlanFeatureLayer(AbstractPlanLayer):
             RegulationGroupLayer.get_feature_by_id(group_id)
             for group_id in RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name)
         ]
-        plan_lifecycle_features = [LifeCycleLayer.get_features_by_plan_id(feature["id"])]
 
         return PlanFeature(
             geom=feature.geometry(),
@@ -172,9 +171,6 @@ class PlanFeatureLayer(AbstractPlanLayer):
             description=deserialize_localized_text(feature["description"]),
             regulation_groups=[
                 RegulationGroupLayer.model_from_feature(feat) for feat in regulation_group_features if feat is not None
-            ],
-            lifecycles=[
-                LifeCycleLayer.model_from_feature(feat) for feat in plan_lifecycle_features if feat is not None
             ],
             plan_id=feature["plan_id"],
             id_=feature["id"],
