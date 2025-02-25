@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from contextlib import suppress
+from functools import wraps
 from typing import TYPE_CHECKING, Any, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
@@ -131,6 +132,7 @@ def deserialize_localized_text(text_value: dict[str, str] | None | Any) -> str |
 
 
 def use_wait_cursor(func):
+    @wraps(func)
     def wrapper(*args, **kwargs):
         with OverrideCursor(Qt.WaitCursor):
             return func(*args, **kwargs)
