@@ -146,7 +146,13 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def _check_short_name(self) -> bool:
         short_name = self.short_name.text()
-        if short_name and short_name in self.existing_group_short_names:
+
+        if not short_name:
+            return True
+        if (
+            not (self.regulation_group.id_ and short_name == self.regulation_group.short_name)
+            and short_name in self.existing_group_short_names
+        ):
             msg = f"Kaavamääräysryhmä lyhyellä nimellä '<b>{short_name}</b>' on jo olemassa."
             QMessageBox.critical(self, "Virhe", msg)
             return False

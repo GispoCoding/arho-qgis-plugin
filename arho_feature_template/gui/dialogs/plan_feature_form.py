@@ -114,7 +114,12 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
             if not short_name:
                 continue
 
-            if short_name in self.existing_group_short_names:
+            if (
+                not (
+                    reg_group_widget.regulation_group.id_ and short_name == reg_group_widget.regulation_group.short_name
+                )
+                and short_name in self.existing_group_short_names
+            ):
                 existing_names.add(short_name)
             if short_name in seen_names:
                 duplicate_names.add(short_name)
