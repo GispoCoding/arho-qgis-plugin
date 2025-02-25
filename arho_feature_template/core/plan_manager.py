@@ -161,14 +161,10 @@ class PlanManager:
         self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
 
     def create_new_regulation_group(self):
-        new_group = self._open_regulation_group_form(RegulationGroup())
-        if new_group:
-            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmä {new_group!s} luotiin onnistuneesti.")
+        self._open_regulation_group_form(RegulationGroup())
 
     def edit_regulation_group(self, regulation_group: RegulationGroup):
-        edited_group = self._open_regulation_group_form(regulation_group)
-        if edited_group:
-            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmää {edited_group!s} muokattiin onnistuneesti.")
+        self._open_regulation_group_form(regulation_group)
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
@@ -187,7 +183,6 @@ class PlanManager:
 
     def delete_regulation_group(self, group: RegulationGroup):
         if delete_regulation_group(group):
-            iface.messageBar().pushSuccess(None, f"Kaavamääräysryhmä {group!s} poistettiin onnistuneesti.")
             self.update_active_plan_regulation_group_library()
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
@@ -257,9 +252,6 @@ class PlanManager:
         if attribute_form.exec_():
             feature = save_plan(attribute_form.model)
             if feature:
-                iface.messageBar().pushSuccess(
-                    "", f"Kaavan {attribute_form.model.name} tietoja muokattiin onnistuneesti."
-                )
                 self.update_active_plan_regulation_group_library()
 
     def edit_lifecycles(self):
@@ -307,11 +299,7 @@ class PlanManager:
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
             feat = save_plan(attribute_form.model)
-            if feat:
-                iface.messageBar().pushSuccess("", f"Kaava {attribute_form.model.name} luotiin onnistuneesti.")
-                plan_to_be_activated = feat["id"]
-            else:
-                plan_to_be_activated = self.previous_active_plan_id
+            plan_to_be_activated = feat["id"] if feat else self.previous_active_plan_id
         else:
             plan_to_be_activated = self.previous_active_plan_id
 
@@ -338,7 +326,6 @@ class PlanManager:
             plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model):
-            iface.messageBar().pushSuccess("", f"Kaavakohde {attribute_form.model!s} luotiin onnistuneesti.")
             self.update_active_plan_regulation_group_library()
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
@@ -350,7 +337,6 @@ class PlanManager:
             plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model):
-            iface.messageBar().pushSuccess("", f"Kaavakohdetta {attribute_form.model!s} muokattiin onnistuneesti.")
             self.update_active_plan_regulation_group_library()
 
     def set_active_plan(self, plan_id: str | None):
@@ -393,12 +379,9 @@ class PlanManager:
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_id = dialog.get_selected_plan_id()
-            selected_plan_name = dialog.get_selected_plan_name()
             self.commit_all_editable_layers()
 
             self.set_active_plan(selected_plan_id)
-
-            iface.messageBar().pushSuccess("", f"Kaava {selected_plan_name} avattiin onnistuneesti.")
 
     def commit_all_editable_layers(self):
         """Commit all changes in any editable layers."""
@@ -438,7 +421,7 @@ class PlanManager:
         with open(self.json_plan_outline_path, "w", encoding="utf-8") as outline_file:
             json.dump(outline_json, outline_file, ensure_ascii=False, indent=2)
 
-        iface.messageBar().pushSuccess("", "Kaava ja sen ulkoraja tallennettu onnistuneesti.")
+        iface.messageBar().pushSuccess("", "Kaava ja kaavan ulkoraja tallennettu.")
 
     def unload(self):
         # Set pan map tool as active (to deactivate our custom tools to avoid errors)
