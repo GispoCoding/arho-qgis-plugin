@@ -18,12 +18,12 @@ test-ryhti-validate:
 pytest:
 	docker compose -f docker-compose.dev.yml down -v
 	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
-	cd database; pytest
+	pytest
 
 pytest-fail:
 	docker compose -f docker-compose.dev.yml down -v
 	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
-	cd database; pytest --maxfail=1
+	pytest --maxfail=1
 
 rebuild:
 	docker compose -f docker-compose.dev.yml down -v

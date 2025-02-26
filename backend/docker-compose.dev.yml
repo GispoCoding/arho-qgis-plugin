@@ -97,4 +97,4 @@ services:
         - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
         - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/initializerJson.json
       volumes:
-        - ./database/test/test_services_mock_xroad.json:/config/initializerJson.json:Z
+        - ./test/test_services_mock_xroad.json:/config/initializerJson.json:Z

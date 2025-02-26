@@ -38,7 +38,7 @@ LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
 @pytest.fixture(scope="session", autouse=True)
 def set_env():
-    dotenv_file = Path(__file__).parent.parent.parent / ".env"
+    dotenv_file = Path(__file__).parent.parent / ".env"
     assert dotenv_file.exists()
     load_dotenv(str(dotenv_file))
     db_manager.SCHEMA_FILES_PATH = str(Path(__file__).parent.parent)
@@ -79,7 +79,7 @@ def main_db_params_with_root_user():
 
 @pytest.fixture(scope="session")
 def docker_compose_file(pytestconfig):
-    compose_file = Path(__file__).parent.parent.parent / "docker-compose.dev.yml"
+    compose_file = Path(__file__).parent.parent / "docker-compose.dev.yml"
     assert compose_file.exists()
     return str(compose_file)
 

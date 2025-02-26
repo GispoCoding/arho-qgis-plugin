@@ -7,8 +7,9 @@ import requests
 from sqlalchemy.orm import Session
 
 from database import models
-from database.test.conftest import assert_database_is_alright, deepcompare, drop_hame_db
 from lambdas.koodistot_loader.koodistot_loader import codes
+
+from .conftest import assert_database_is_alright, deepcompare, drop_hame_db
 
 
 @pytest.fixture(scope="module")

@@ -14,4 +14,4 @@ extend-ignore =
 per-file-ignores =
     # long urls in test fixtures cannot be avoided, and we want them to be on one line for
     # legibility reasons.
-    database/test/conftest.py:E501
+    test/conftest.py:E501
