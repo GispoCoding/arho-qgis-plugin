@@ -341,7 +341,7 @@ def mock_xroad_ryhti_update_existing_plan_matter(
 
 @pytest.fixture(scope="function")
 def client_with_plan_data(
-    rw_connection_string: str, complete_test_plan: models.Plan
+    session: Session, rw_connection_string: str, complete_test_plan: models.Plan
 ) -> RyhtiClient:
     """
     Return RyhtiClient that has plan data read in.
@@ -373,6 +373,7 @@ def client_with_plan_data_in_proposal_phase(
     rw_connection_string: str,
     complete_test_plan: models.Plan,
     plan_proposal_status_instance: codes.LifeCycleStatus,
+    plan_proposal_date_instance: models.LifeCycleDate,
 ) -> RyhtiClient:
     """
     Return RyhtiClient that has plan data in proposal phase read in.
@@ -387,6 +388,11 @@ def client_with_plan_data_in_proposal_phase(
     session.add(complete_test_plan)
     session.add(plan_proposal_status_instance)
     complete_test_plan.lifecycle_status = plan_proposal_status_instance
+    session.commit()
+    # Delete the new additional date for proposal phase that just appeared. Our fixture already
+    # has a proposal date.
+    session.refresh(complete_test_plan)
+    session.delete(complete_test_plan.lifecycle_dates[2])
     session.commit()
 
     # Let's mock production x-road with gispo organization client here.

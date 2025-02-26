@@ -146,6 +146,7 @@ class PlanBase(VersionedBase):
             lazy="joined",
             cascade="all, delete-orphan",
             passive_deletes=True,
+            order_by="LifeCycleDate.starting_at",
         )
 
 

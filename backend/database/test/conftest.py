@@ -538,6 +538,12 @@ def another_code_instance(temp_session_feature):
 
 
 @pytest.fixture()
+def pending_status_instance(temp_session_feature):
+    instance = codes.LifeCycleStatus(value="02", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
 def preparation_status_instance(temp_session_feature):
     instance = codes.LifeCycleStatus(value="03", status="LOCAL")
     return temp_session_feature(instance)
@@ -546,6 +552,18 @@ def preparation_status_instance(temp_session_feature):
 @pytest.fixture()
 def plan_proposal_status_instance(temp_session_feature):
     instance = codes.LifeCycleStatus(value="04", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def approved_status_instance(temp_session_feature):
+    instance = codes.LifeCycleStatus(value="06", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def valid_status_instance(temp_session_feature):
+    instance = codes.LifeCycleStatus(value="13", status="LOCAL")
     return temp_session_feature(instance)
 
 
@@ -1394,6 +1412,70 @@ def lifecycle_date_instance(temp_session_feature, code_instance):
     return temp_session_feature(instance)
 
 
+@pytest.fixture(scope="function")
+def pending_date_instance(
+    temp_session_feature, plan_instance, pending_status_instance
+) -> Iterable[models.LifeCycleDate]:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=pending_status_instance,
+        starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def preparation_date_instance(
+    temp_session_feature, plan_instance, preparation_status_instance
+) -> Iterable[models.LifeCycleDate]:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=preparation_status_instance,
+        starting_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def plan_proposal_date_instance(
+    temp_session_feature, plan_instance, plan_proposal_status_instance
+) -> Iterable[models.LifeCycleDate]:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=plan_proposal_status_instance,
+        starting_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 5, 1, tzinfo=LOCAL_TZ),
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def approved_date_instance(
+    temp_session_feature, plan_instance, approved_status_instance
+) -> Iterable[models.LifeCycleDate]:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=approved_status_instance,
+        starting_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
+        ending_at=datetime(2024, 5, 1, tzinfo=LOCAL_TZ),
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def valid_date_instance(
+    temp_session_feature, plan_instance, valid_status_instance
+) -> Iterable[models.LifeCycleDate]:
+    instance = models.LifeCycleDate(
+        plan=plan_instance,
+        lifecycle_status=valid_status_instance,
+        starting_at=datetime(2024, 5, 1, tzinfo=LOCAL_TZ),
+    )
+    return temp_session_feature(instance)
+
+
 @pytest.fixture()
 def decision_date_instance(
     temp_session_feature,
@@ -1555,6 +1637,11 @@ def complete_test_plan(
     linked to the plan in the database) to be committed to the database, and some
     dates for the plan lifecycle statuses to be set.
     """
+    # In tests, we need known dates for the phases. Plan has a trigger-generated additional
+    # date for the preparation phase that we must delete before testing.
+    session.delete(plan_instance.lifecycle_dates[2])
+    session.commit()
+
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
     plan_instance.legal_effects_of_master_plan.append(
@@ -1661,75 +1748,6 @@ def complete_test_plan(
 @pytest.fixture()
 def another_test_plan(session, another_plan_instance):
     yield another_plan_instance
-
-
-@pytest.fixture()
-def pending_status_instance(temp_session_feature):
-    instance = codes.LifeCycleStatus(value="02", status="LOCAL")
-    return temp_session_feature(instance)
-
-
-@pytest.fixture(scope="function")
-def pending_date_instance(
-    temp_session_feature, plan_instance, pending_status_instance
-) -> Iterable[models.LifeCycleDate]:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=pending_status_instance,
-        starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture(scope="function")
-def preparation_date_instance(
-    temp_session_feature, plan_instance, preparation_status_instance
-) -> Iterable[models.LifeCycleDate]:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=preparation_status_instance,
-        starting_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture()
-def approved_status_instance(temp_session_feature):
-    instance = codes.LifeCycleStatus(value="06", status="LOCAL")
-    return temp_session_feature(instance)
-
-
-@pytest.fixture(scope="function")
-def approved_date_instance(
-    temp_session_feature, plan_instance, approved_status_instance
-) -> Iterable[models.LifeCycleDate]:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=approved_status_instance,
-        starting_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture()
-def valid_status_instance(temp_session_feature):
-    instance = codes.LifeCycleStatus(value="13", status="LOCAL")
-    return temp_session_feature(instance)
-
-
-@pytest.fixture(scope="function")
-def valid_date_instance(
-    temp_session_feature, plan_instance, valid_status_instance
-) -> Iterable[models.LifeCycleDate]:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=valid_status_instance,
-        starting_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
 
 
 @pytest.fixture()
