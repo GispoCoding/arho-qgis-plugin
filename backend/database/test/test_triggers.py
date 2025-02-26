@@ -1,10 +1,10 @@
 from datetime import datetime
 
-import codes
-import models
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, shape
 from sqlalchemy.orm import Session
+
+from database import codes, models
 
 
 def test_modified_at_triggers(

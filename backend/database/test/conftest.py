@@ -6,9 +6,6 @@ from pathlib import Path
 from typing import Callable, Iterable, List, Mapping, Optional
 from zoneinfo import ZoneInfo
 
-import codes
-import enums
-import models
 import psycopg2
 import pytest
 import sqlalchemy
@@ -16,14 +13,15 @@ from alembic import command
 from alembic.config import Config
 from alembic.operations import ops
 from alembic.script import ScriptDirectory
-from base import PROJECT_SRID
-from db_helper import DatabaseHelper, User
 from dotenv import load_dotenv
-from enums import AttributeValueDataType
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.orm import Session, sessionmaker
 
+from database import codes, enums, models
+from database.base import PROJECT_SRID
+from database.db_helper import DatabaseHelper, User
+from database.enums import AttributeValueDataType
 from lambdas.db_manager import db_manager
 
 hame_count: int = 18  # adjust me when adding tables

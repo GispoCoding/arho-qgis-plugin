@@ -5,13 +5,13 @@ from alembic import context
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import register_entities
-from base import Base
+from sqlalchemy import create_engine
 
 # *ALL* sqlalchemy models have to be imported so that alembic detects all tables
-from codes import *  # noqa
-from models import *  # noqa
-from sqlalchemy import create_engine
-from triggers import (
+from database.base import Base
+from database.codes import *  # noqa
+from database.models import *  # noqa
+from database.triggers import (
     generate_add_plan_id_fkey_triggers,
     generate_modified_at_triggers,
     generate_new_lifecycle_date_triggers,
@@ -19,7 +19,7 @@ from triggers import (
     generate_new_object_add_lifecycle_date_triggers,
     generate_update_lifecycle_status_triggers,
 )
-from validation import (
+from database.validation import (
     generate_validate_polygon_geometry_triggers,
     trg_prevent_land_use_area_overlaps,
     trg_validate_event_date,

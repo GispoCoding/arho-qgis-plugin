@@ -1,10 +1,11 @@
 from typing import List, Type
 
 from geoalchemy2 import Geometry
-from models import Base, CodeBase
 from sqlalchemy import Column, ForeignKey, Table, Uuid
 from sqlalchemy.orm import Mapped, Session, relationship
 from sqlalchemy.sql import func
+
+from database.models import Base, CodeBase
 
 allowed_events = Table(
     "allowed_events",

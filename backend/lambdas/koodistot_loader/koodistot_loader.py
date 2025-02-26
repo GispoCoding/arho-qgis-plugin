@@ -3,11 +3,12 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Type, TypedDict
 
-import codes
 import requests
-from db_helper import DatabaseHelper, User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+from database import codes
+from database.db_helper import DatabaseHelper, User
 
 """
 Koodistot.suomi.fi client for populating all code tables, adapted from

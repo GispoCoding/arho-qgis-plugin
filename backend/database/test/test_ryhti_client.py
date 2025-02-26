@@ -4,16 +4,14 @@ import re
 from typing import Callable
 from uuid import uuid4
 
-import codes
-import models
 import pytest
 from requests_mock.request import _RequestObjectProxy
 from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
+from database import codes, models
+from database.test.conftest import deepcompare
 from lambdas.ryhti_client.ryhti_client import RyhtiClient
-
-from .conftest import deepcompare
 
 mock_rule = "random_rule"
 mock_matter_rule = "another_random_rule"

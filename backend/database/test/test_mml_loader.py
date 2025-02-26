@@ -1,11 +1,11 @@
 import os
 from typing import Callable
 
-import codes
 import pytest
 from requests_mock.request import _RequestObjectProxy
 from sqlalchemy.orm import Session
 
+from database import codes
 from lambdas.mml_loader.mml_loader import MMLLoader
 
 

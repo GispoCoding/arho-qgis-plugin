@@ -1,9 +1,9 @@
-import codes
-import models
 import pytest
 from psycopg2 import sql
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
+
+from database import codes, models
 
 """Tests that check all relationships in sqlalchemy classes are defined correctly.
 This caused a lot of trouble with koodistot loader.

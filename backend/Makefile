@@ -34,6 +34,4 @@ build-lambda:
 	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
 
 revision:
-	cd database; \
 	alembic revision --autogenerate -m "$(name)"; \
-	cd ..

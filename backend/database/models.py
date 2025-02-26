@@ -2,8 +2,13 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
+from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import func
+
 # we have to import CodeBase in codes.py from here to allow two-way relationships
-from base import (  # noqa
+from database.base import (  # noqa
     AttributeValueMixin,
     Base,
     CodeBase,
@@ -13,10 +18,6 @@ from base import (  # noqa
     language_str,
     timestamp,
 )
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
-from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
 
 regulation_group_association = Table(
     "regulation_group_association",

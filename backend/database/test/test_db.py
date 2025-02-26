@@ -2,7 +2,7 @@ import os
 
 import psycopg2
 
-from .conftest import assert_database_is_alright, hame_count
+from database.test.conftest import assert_database_is_alright, hame_count
 
 
 def test_database_creation(main_db_params_with_root_user, hame_database_created):

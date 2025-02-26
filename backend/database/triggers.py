@@ -1,8 +1,9 @@
 import inspect
 
-import models
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
+
+from database import models
 
 # All hame tables
 hame_tables = [

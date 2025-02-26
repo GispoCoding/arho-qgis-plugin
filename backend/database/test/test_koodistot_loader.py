@@ -6,12 +6,9 @@ from typing import Type
 import psycopg2
 import pytest
 
-from lambdas.koodistot_loader.koodistot_loader import (
-    DatabaseHelper,
-    KoodistotLoader,
-    codes,
-    get_code_list_url,
-)
+from database import codes
+from database.db_helper import DatabaseHelper
+from lambdas.koodistot_loader.koodistot_loader import KoodistotLoader, get_code_list_url
 
 lifecycle_status_response = {
     "meta": {"code": 200, "from": 0, "resultCount": 2, "totalResults": 2},

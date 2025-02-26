@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from enums import AttributeValueDataType
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import ForeignKey, Index
@@ -18,6 +17,8 @@ from sqlalchemy.sql import func
 from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP
 from sqlalchemy.types import Enum as SQLAlchemyEnum
 from typing_extensions import Annotated
+
+from database.enums import AttributeValueDataType
 
 PROJECT_SRID = 3067
 
