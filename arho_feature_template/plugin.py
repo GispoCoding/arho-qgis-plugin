@@ -8,6 +8,7 @@ from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QWidget
 
+from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
@@ -220,6 +221,16 @@ class Plugin:
             add_to_toolbar=True,
         )
 
+        self.edit_lifecycles_action = self.add_action(
+            text="Kaavan elinkaaret",
+            icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
+            # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
+            triggered_callback=self.edit_lifecycles,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Muokkaa kaavan elinkaaria",
+        )
+
         self.serialize_plan_action = self.add_action(
             text="Tallenna kaava JSON",
             # icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
@@ -230,14 +241,13 @@ class Plugin:
             status_tip="Tallenna aktiivinen kaava JSON muodossa",
         )
 
-        self.edit_lifecycles_action = self.add_action(
-            text="Kaavan elinkaaret",
-            icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
-            # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.edit_lifecycles,
+        self.create_geotiff_action = self.add_action(
+            text="Tallenna kaavakartta",
+            icon=QgsApplication.getThemeIcon("mActionAddRasterLayer.svg"),
+            triggered_callback=self.create_geotiff,
             add_to_menu=True,
             add_to_toolbar=True,
-            status_tip="Muokkaa kaavan elinkaaria",
+            status_tip="Tallenna aktiivinen kaava geotiff muodossa",
         )
 
         self.plugin_settings_action = self.add_action(
@@ -279,6 +289,11 @@ class Plugin:
     def edit_lifecycles(self):
         """Edit lifecycles of currently active plan."""
         self.plan_manager.edit_lifecycles()
+
+    def create_geotiff(self):
+        """Create geotiff from currently active plan."""
+        geotiff_creator = GeoTiffCreator()
+        geotiff_creator.select_output_file()
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
