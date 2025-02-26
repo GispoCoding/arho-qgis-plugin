@@ -5,7 +5,8 @@ from typing import Type
 
 import psycopg2
 import pytest
-from koodistot_loader.koodistot_loader import (
+
+from lambdas.koodistot_loader.koodistot_loader import (
     DatabaseHelper,
     KoodistotLoader,
     codes,

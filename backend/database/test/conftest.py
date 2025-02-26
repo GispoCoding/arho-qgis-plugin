@@ -18,12 +18,13 @@ from alembic.operations import ops
 from alembic.script import ScriptDirectory
 from base import PROJECT_SRID
 from db_helper import DatabaseHelper, User
-from db_manager import db_manager
 from dotenv import load_dotenv
 from enums import AttributeValueDataType
 from geoalchemy2.shape import from_shape
 from shapely.geometry import MultiLineString, MultiPoint, shape
 from sqlalchemy.orm import Session, sessionmaker
+
+from lambdas.db_manager import db_manager
 
 hame_count: int = 18  # adjust me when adding tables
 codes_count: int = 22  # adjust me when adding tables

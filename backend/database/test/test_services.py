@@ -5,8 +5,9 @@ import models
 import psycopg2
 import pytest
 import requests
-from koodistot_loader.koodistot_loader import codes
 from sqlalchemy.orm import Session
+
+from lambdas.koodistot_loader.koodistot_loader import codes
 
 from .conftest import assert_database_is_alright, deepcompare, drop_hame_db
 
