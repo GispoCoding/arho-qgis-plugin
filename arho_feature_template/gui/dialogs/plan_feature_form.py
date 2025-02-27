@@ -109,39 +109,42 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         existing_names = set()
         duplicate_names = set()
 
-        for reg_group_widget in self.regulation_group_widgets:
-            short_name = reg_group_widget.short_name.text()
-            if not short_name:
-                continue
+        def _is_existing_model_with_unmodified_short_name(model: RegulationGroup, short_name: str) -> bool:
+            return bool(model.id_ and short_name == model.short_name)
 
-            if (
-                not (
-                    reg_group_widget.regulation_group.id_ and short_name == reg_group_widget.regulation_group.short_name
-                )
-                and short_name in self.existing_group_short_names
-            ):
-                existing_names.add(short_name)
-            if short_name in seen_names:
-                duplicate_names.add(short_name)
-            seen_names.add(short_name)
-
-        def format_names(names, last_item_conjucation: str = "ja"):
+        def _format_names(names, last_item_conjucation: str = "ja") -> str:
             names = list(names)
             formatted_names = ", ".join(f"'<b>{name}</b>'" for name in names[:-1])
             formatted_names += f" {last_item_conjucation} " if len(names) > 1 else ""
             formatted_names += f"'<b>{names[-1]}</b>'" if names else ""
             return formatted_names
 
+        for reg_group_widget in self.regulation_group_widgets:
+            short_name = reg_group_widget.short_name.text()
+            if not short_name:
+                continue
+
+            if (
+                not _is_existing_model_with_unmodified_short_name(reg_group_widget.regulation_group, short_name)
+                and short_name in self.existing_group_short_names
+            ):
+                existing_names.add(short_name)
+
+            if short_name in seen_names:
+                duplicate_names.add(short_name)
+
+            seen_names.add(short_name)
+
         if existing_names:
             if len(existing_names) == 1:
-                msg = f"Kaavamääräysryhmä lyhyellä nimellä {format_names(existing_names)} on jo olemassa."
+                msg = f"Kaavamääräysryhmä lyhyellä nimellä {_format_names(existing_names)} on jo olemassa."
             else:
-                msg = f"Kaavamääräysryhmät lyhyillä nimillä {format_names(existing_names)} ovat jo olemassa."
+                msg = f"Kaavamääräysryhmät lyhyillä nimillä {_format_names(existing_names)} ovat jo olemassa."
             QMessageBox.critical(self, "Virhe", msg)
             return False
 
         if duplicate_names:
-            msg = f"Lomakkeella on useita kaavamääräysryhmiä, joilla on lyhyt nimi {format_names(duplicate_names, 'tai')}."
+            msg = f"Lomakkeella on useita kaavamääräysryhmiä, joilla on lyhyt nimi {_format_names(duplicate_names, 'tai')}."
             QMessageBox.critical(self, "Virhe", msg)
             return False
 
