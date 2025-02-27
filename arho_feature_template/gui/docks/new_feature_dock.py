@@ -61,7 +61,14 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
     def set_plan(self, plan_id: str):
         regional_plan_type_names = ["Kokonaismaakuntakaava", "Vaihemaakuntakaava"]
-        if PlanLayer.get_plan_type_name(plan_id) not in regional_plan_type_names:
+        general_plan_type_names = [
+            "Yleiskaava",
+            "Vaiheyleiskaava",
+            "Osayleiskaava",
+            "Kuntien yhteinen yleiskaava",
+            "Maanalainen yleiskaava",
+        ]
+        if PlanLayer.get_plan_type_name(plan_id) not in regional_plan_type_names + general_plan_type_names:
             self.new_feature_grid.initialize_buttons(exclude=["Maankäytön kohde"])
         else:
             self.new_feature_grid.initialize_buttons()
