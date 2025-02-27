@@ -253,6 +253,7 @@ class PlanManager:
             feature = save_plan(attribute_form.model)
             if feature:
                 self.update_active_plan_regulation_group_library()
+                self.new_feature_dock.set_plan(feature["id"])  # Update feature dock in case plan type changed
 
     def edit_lifecycles(self):
         plan_layer = PlanLayer.get_from_project()

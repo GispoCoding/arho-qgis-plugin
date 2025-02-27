@@ -36,7 +36,7 @@ class NewFeatureGridWidget(QListWidget):
     def initialize_buttons(self, exclude: list | None = None):
         self.clear()
 
-        exclude = exclude if exclude else []
+        exclude = exclude or []
         self.buttons = {
             feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES if feature_type not in exclude
         }
