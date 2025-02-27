@@ -147,10 +147,13 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
     def _check_short_name(self) -> bool:
         short_name = self.short_name.text()
 
+        def _is_existing_model_with_unmodified_short_name(model: RegulationGroup, short_name: str) -> bool:
+            return bool(model.id_ and short_name == model.short_name)
+
         if not short_name:
             return True
         if (
-            not (self.regulation_group.id_ and short_name == self.regulation_group.short_name)
+            not _is_existing_model_with_unmodified_short_name(self.regulation_group, short_name)
             and short_name in self.existing_group_short_names
         ):
             msg = f"Kaavamääräysryhmä lyhyellä nimellä '<b>{short_name}</b>' on jo olemassa."
