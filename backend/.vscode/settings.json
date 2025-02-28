@@ -1,0 +1,6 @@
+{
+    // Prevent VS Code from automatically loading .env files into environment variables.
+    // This avoids overriding variables defined in .env.test.
+    // Ensures running tests in VS Code behaves like running them in a normal shell.
+    "python.envFile": ""
+}

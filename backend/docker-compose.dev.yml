@@ -5,7 +5,7 @@ services:
   db:
     image: postgis/postgis:13-master
     ports:
-      - "5434:5432"
+      - ${DB_INSTANCE_PORT:-5434}:5432
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
@@ -25,7 +25,7 @@ services:
       - DB_INSTANCE_PORT=5432
       - READ_FROM_AWS=0
     ports:
-      - "8081:8080"
+      - ${DB_MANAGER_PORT:-8081}:8080
     depends_on:
       - db
     volumes:
@@ -44,7 +44,7 @@ services:
       - DB_INSTANCE_PORT=5432
       - READ_FROM_AWS=0
     ports:
-      - "8082:8080"
+      - ${KOODISTOT_LOADER_PORT:-8082}:8080
     depends_on:
       - db
     volumes:
@@ -70,7 +70,7 @@ services:
       - XROAD_SYKE_CLIENT_ID=test-id
       - XROAD_SYKE_CLIENT_SECRET=test-secret
     ports:
-      - "8083:8080"
+      - ${RYHTI_CLIENT_PORT:-8083}:8080
     depends_on:
       - db
       - mock_xroad
@@ -91,7 +91,7 @@ services:
       - READ_FROM_AWS=0
       - MML_APIKEY
     ports:
-      - "8085:8080"
+      - ${MML_LOADER_PORT:-8085}:8080
     depends_on:
       - db
     volumes:
@@ -101,7 +101,7 @@ services:
   mock_xroad:
     image: mockserver/mockserver:latest
     ports:
-      - 8443:1080
+      - ${MOCK_SERVER_PORT:-8443}:1080
     environment:
       - MOCKSERVER_WATCH_INITIALIZATION_JSON="true"
       - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties

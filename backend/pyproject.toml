@@ -6,3 +6,7 @@ profile = "black"
 pythonpath = [
   "."
 ]
+env_files = [
+    ".env.test",
+    ".env"
+]
