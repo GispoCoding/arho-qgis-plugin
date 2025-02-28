@@ -15,20 +15,17 @@ test-ryhti-validate:
 	@echo "Validating database contents with Ryhti API..."
 	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "validate_plans"}'
 
-pytest:
-	docker compose -f docker-compose.dev.yml down -v
-	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
-	pytest
-
 pytest-fail:
-	docker compose -f docker-compose.dev.yml down -v
-	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client
 	pytest --maxfail=1
 
-rebuild:
-	docker compose -f docker-compose.dev.yml down -v
-	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
+up:
 	docker compose -f docker-compose.dev.yml up -d
+
+stop:
+	docker compose -f docker-compose.dev.yml stop
+
+down:
+	docker compose -f docker-compose.dev.yml down -v
 
 build-lambda:
 	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader

@@ -1,3 +1,6 @@
+volumes:
+  postgis-data:
+
 services:
   db:
     image: postgis/postgis:13-master
@@ -7,6 +10,8 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_DB=postgres
+    volumes:
+      - postgis-data:/var/lib/postgresql/data
     command: ["postgres", "-c", "log_statement=all"]
 
   db_manager:
@@ -24,7 +29,9 @@ services:
     depends_on:
       - db
     volumes:
-      - ./lambdas/db_manager/db_manager.py:/var/task/app.py
+      - ./lambdas/db_manager/db_manager.py:/var/task/db_manager.py
+      - ./database:/var/task/database
+      - ./migrations:/var/task/migrations
 
   koodistot_loader:
     build:
@@ -41,7 +48,8 @@ services:
     depends_on:
       - db
     volumes:
-      - ./lambdas/koodistot_loader/koodistot_loader.py:/var/task/app.py
+      - ./lambdas/koodistot_loader/koodistot_loader.py:/var/task/koodistot_loader.py
+      - ./database:/var/task/database
 
   ryhti_client:
     build:
@@ -67,8 +75,9 @@ services:
       - db
       - mock_xroad
     volumes:
-      - ./lambdas/ryhti_client/ryhti_client.py:/var/task/app.py
       - ./ryhti_debug:/var/task/ryhti_debug
+      - ./lambdas/ryhti_client/ryhti_client.py:/var/task/ryhti_client.py
+      - ./database:/var/task/database
 
   mml_loader:
     build:
@@ -86,15 +95,16 @@ services:
     depends_on:
       - db
     volumes:
-      - ./lambdas/mml_loader/mml_loader.py:/var/task/app.py
+      - ./lambdas/mml_loader/mml_loader.py:/var/task/mml_loader.py
+      - ./database:/var/task/database
 
   mock_xroad:
-      image: mockserver/mockserver:latest
-      ports:
-        - 8443:1080
-      environment:
-        - MOCKSERVER_WATCH_INITIALIZATION_JSON="true"
-        - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
-        - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/initializerJson.json
-      volumes:
-        - ./test/test_services_mock_xroad.json:/config/initializerJson.json:Z
+    image: mockserver/mockserver:latest
+    ports:
+      - 8443:1080
+    environment:
+      - MOCKSERVER_WATCH_INITIALIZATION_JSON="true"
+      - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
+      - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/initializerJson.json
+    volumes:
+      - ./test/test_services_mock_xroad.json:/config/initializerJson.json:Z
