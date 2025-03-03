@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable
 from qgis.core import QgsApplication
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QWidget
+from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
@@ -175,6 +175,12 @@ class Plugin:
             status_tip="Lataa/avaa kaava",
         )
 
+        self.edit_plan_tool_button = QToolButton()
+        self.edit_plan_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.edit_plan_tool_button.setMenu(QMenu())
+        self.edit_plan_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
+        self.edit_plan_tool_action = self.toolbar.addWidget(self.edit_plan_tool_button)
+
         self.edit_land_use_plan_action = self.add_action(
             text="Muokkaa kaavaa",
             # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
@@ -182,9 +188,22 @@ class Plugin:
             triggered_callback=self.plan_manager.edit_plan,
             parent=iface.mainWindow(),
             add_to_menu=True,
-            add_to_toolbar=True,
+            add_to_toolbar=False,
             status_tip="Muokkaa aktiivisen kaavan tietoja",
         )
+        self.edit_plan_tool_button.menu().addAction(self.edit_land_use_plan_action)
+        self.edit_plan_tool_button.setDefaultAction(self.edit_land_use_plan_action)
+
+        self.edit_lifecycles_action = self.add_action(
+            text="Muokkaa kaavan elinkaarien päivämääriä",
+            icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
+            # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
+            triggered_callback=self.edit_lifecycles,
+            add_to_menu=True,
+            add_to_toolbar=False,
+            status_tip="Muokkaa kaavan elinkaarien päivämääriä",
+        )
+        self.edit_plan_tool_button.menu().addAction(self.edit_lifecycles_action)
 
         self.new_feature_dock_action = self.add_action(
             text="Luo kaavakohde",
@@ -219,16 +238,6 @@ class Plugin:
             triggered_callback=lambda _: self.toggle_dock_visibility(self.validation_dock),
             add_to_menu=True,
             add_to_toolbar=True,
-        )
-
-        self.edit_lifecycles_action = self.add_action(
-            text="Kaavan elinkaaret",
-            icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
-            # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.edit_lifecycles,
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Muokkaa kaavan elinkaaria",
         )
 
         self.serialize_plan_action = self.add_action(
