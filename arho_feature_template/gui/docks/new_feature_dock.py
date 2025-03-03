@@ -76,6 +76,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     def on_active_feature_type_changed(self, feature_name: str, layer_name: str):
         self.active_feature_type = feature_name if feature_name else None
         self.active_feature_layer = layer_name if layer_name else None
+        self.clear_template_selection()
         self.filter_plan_feature_templates()
         if self.active_feature_type:
             self.tool_activated.emit()
@@ -115,6 +116,9 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     def deactivate_and_clear_selections(self):
         self.on_active_feature_type_changed("", "")
         self.new_feature_grid.clear_selections()
+        self.clear_template_selection()
+
+    def clear_template_selection(self):
         self.active_template = None
         self.template_list.clearSelection()
 
