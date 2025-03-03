@@ -47,6 +47,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanRegulationLayer,
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
+    TypeOfVerbalRegulationAssociationLayer,
     plan_layers,
 )
 from arho_feature_template.resources.libraries.feature_templates import feature_template_library_config_files
@@ -700,20 +701,55 @@ def save_regulation(regulation: Regulation) -> QgsFeature | None:
     regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
     layer = PlanRegulationLayer.get_from_project()
 
+    editing = regulation.id_ is not None
     if not _save_feature(
         feature=regulation_feature,
         layer=layer,
         id_=regulation.id_,
-        edit_text="Kaavamääräyksen lisäys" if regulation.id_ is None else "Kaavamääräyksen muokkaus",
+        edit_text="Kaavamääräyksen muokkaus" if editing else "Kaavamääräyksen lisäys",
     ):
         iface.messageBar().pushCritical("", "Kaavamääräyksen tallentaminen epäonnistui.")
         return None
 
+    reg_id = regulation_feature["id"]
+
+    # Check for deleted verbal regulation types
+    if editing:
+        for association in TypeOfVerbalRegulationAssociationLayer.get_dangling_associations(
+            reg_id, regulation.verbal_regulation_type_ids
+        ):
+            if not _delete_feature(
+                association,
+                TypeOfVerbalRegulationAssociationLayer.get_from_project(),
+                "Sanallisen kaavamääräyksen lajin assosiaation poisto",
+            ):
+                iface.messageBar().pushCritical(
+                    "", "Sanallisen kaavamääräyksen lajin assosiaation poistaminen epäonnistui."
+                )
+
     for additional_information in regulation.additional_information:
-        additional_information.plan_regulation_id = regulation_feature["id"]
+        additional_information.plan_regulation_id = reg_id
         save_additional_information(additional_information)
 
+    for verbal_regulation_type_id in regulation.verbal_regulation_type_ids:
+        save_type_of_verbal_regulation_association(reg_id, verbal_regulation_type_id)
+
     return regulation_feature
+
+
+def save_type_of_verbal_regulation_association(regulation_id: str, verbal_regulation_type_id: str) -> bool:
+    if TypeOfVerbalRegulationAssociationLayer.association_exists(regulation_id, verbal_regulation_type_id):
+        return True
+    feature = TypeOfVerbalRegulationAssociationLayer.feature_from(regulation_id, verbal_regulation_type_id)
+    layer = TypeOfVerbalRegulationAssociationLayer.get_from_project()
+
+    if not _save_feature(
+        feature=feature, layer=layer, id_=None, edit_text="Sanallisen kaavamääräyksen lajin assosiaation lisäys"
+    ):
+        iface.messageBar().pushCritical("", "Sanallisen kaavamääräyksen lajin assosiaation tallentaminen epäonnistui.")
+        return False
+
+    return True
 
 
 def save_additional_information(additional_information: AdditionalInformation) -> QgsFeature | None:
