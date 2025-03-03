@@ -2,10 +2,22 @@ from __future__ import annotations
 
 import logging
 
+from qgis.core import QgsApplication
 from qgis.gui import QgsDoubleSpinBox, QgsSpinBox
-from qgis.PyQt.QtWidgets import QFormLayout, QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QTextEdit, QWidget
+from qgis.PyQt.QtWidgets import (
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSizePolicy,
+    QTextEdit,
+    QWidget,
+)
 
 from arho_feature_template.core.models import AttributeValue, AttributeValueDataType
+from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
+from arho_feature_template.project.layers.code_layers import VerbalRegulationType
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +154,44 @@ class CodeInputWidget(QWidget):
         code_list = self.code_list_widget.get_value()
         code_value = self.code_value_widget.get_value()
         return (title if title else None, code_list if code_list else None, code_value if code_value else None)
+
+
+class TypeOfVerbalRegulationWidget(QWidget):
+    def __init__(
+        self,
+        with_add_btn: bool = False,  # noqa: FBT001, FBT002
+        with_del_btn: bool = False,  # noqa: FBT001, FBT002
+        parent=None,
+    ):
+        super().__init__(parent)
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.input_widget = HierarchicalCodeComboBox()
+        self.input_widget.populate_from_code_layer(VerbalRegulationType)
+        layout.addWidget(self.input_widget)
+
+        self.add_btn: QPushButton | None = None
+        if with_add_btn:
+            self.add_btn = QPushButton()
+            self.add_btn.setMaximumWidth(30)
+            self.add_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
+            layout.addWidget(self.add_btn)
+
+        self.del_btn: QPushButton | None = None
+        if with_del_btn:
+            self.del_btn = QPushButton()
+            self.del_btn.setMaximumWidth(30)
+            self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
+            layout.addWidget(self.del_btn)
+
+        self.setLayout(layout)
+
+    def set_value(self, value: str | None):
+        self.input_widget.set_value(value)
+
+    def get_value(self) -> str | None:
+        return self.input_widget.value()
 
 
 class ValueWidgetManager:
