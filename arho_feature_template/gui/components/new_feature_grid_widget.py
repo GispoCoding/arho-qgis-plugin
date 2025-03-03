@@ -10,7 +10,7 @@ FEATURE_TYPE_TO_LAYER_NAME = {
     "Osa-alue": "Osa-alue",
     "Aluevaraus": "Aluevaraus",
     "Maankäytön\nkohde": "Maankäytön kohteet",
-    "Muu piste": "Muut pisteet",
+    "Muu\npiste": "Muut pisteet",
 }
 
 FEATURE_BUTTON_WIDTH = 90
