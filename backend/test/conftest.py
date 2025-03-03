@@ -637,6 +637,12 @@ def type_of_plan_regulation_street_instance(temp_session_feature):
 
 
 @pytest.fixture()
+def type_of_plan_regulation_construction_area_instance(temp_session_feature):
+    instance = codes.TypeOfPlanRegulation(value="rakennusala", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
 def type_of_verbal_plan_regulation_instance(temp_session_feature):
     instance = codes.TypeOfVerbalPlanRegulation(value="perustaminen", status="LOCAL")
     return temp_session_feature(instance)
@@ -657,6 +663,14 @@ def type_of_proportion_of_intended_use_additional_information_instance(
     instance = codes.TypeOfAdditionalInformation(
         value="kayttotarkoituksenOsuusKerrosalastaK-m2", status="LOCAL"
     )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_sub_area_additional_information_instance(
+    temp_session_feature,
+):
+    instance = codes.TypeOfAdditionalInformation(value="osaAlue", status="LOCAL")
     return temp_session_feature(instance)
 
 
@@ -966,11 +980,11 @@ def other_area_instance(
                     "coordinates": [
                         [
                             [
-                                [381849.834412134019658, 6677967.973336197435856],
-                                [381849.834412134019658, 6680613.389312859624624],
-                                [386378.427863708813675, 6680613.389312859624624],
-                                [386378.427863708813675, 6677967.973336197435856],
-                                [381849.834412134019658, 6677967.973336197435856],
+                                [382953, 6678582],
+                                [382953, 6679385],
+                                [383825, 6679385],
+                                [383825, 6678582],
+                                [382953, 6678582],
                             ]
                         ]
                     ],
@@ -1160,6 +1174,33 @@ def empty_value_plan_regulation_instance(
         ordering=1,
     )
     return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def construction_area_plan_regulation_instance(
+    session: Session,
+    temp_session_feature,
+    preparation_status_instance,
+    plan_regulation_group_instance,
+    type_of_plan_regulation_construction_area_instance,
+    make_additional_information_instance_for_plan_regulation,
+    type_of_sub_area_additional_information_instance,
+):
+    instance = models.PlanRegulation(
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_construction_area_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=2,
+    )
+    instance = temp_session_feature(instance)
+    additional_information = make_additional_information_instance_for_plan_regulation(
+        plan_regulation=instance,
+        type_of_additional_information=type_of_sub_area_additional_information_instance,
+    )
+    session.add(additional_information)
+    session.commit()
+    session.refresh(instance)
+    return instance
 
 
 @pytest.fixture(scope="function")
