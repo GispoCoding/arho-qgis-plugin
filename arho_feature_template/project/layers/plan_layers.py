@@ -429,7 +429,21 @@ class PlanRegulationLayer(AbstractPlanLayer):
 
 class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
     name = "Sanallisten kaavamääräyksien lajien assosiaatiot"
-    filter_template = None
+    filter_template = Template(
+        dedent(
+            """\
+            EXISTS (
+                SELECT 1
+                FROM
+                    hame.plan_regulation_group prg
+                    JOIN hame.plan_regulation pr
+                        ON (prg.id = pr.plan_regulation_group_id)
+                WHERE
+                    hame.type_of_verbal_regulation_association.plan_regulation_id = pr.id
+                    AND prg.plan_id = '$plan_id'
+            )"""
+        )
+    )
 
     @classmethod
     def feature_from(cls, regulation_id: str, type_of_verbal_regulation_id: str) -> QgsFeature | None:
