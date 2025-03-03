@@ -435,7 +435,7 @@ class Regulation:
     files: list[str] = field(default_factory=list)
     theme: str | None = None
     topic_tag: str | None = None
-    verbal_regulation_type_id: str | None = None
+    verbal_regulation_type_ids: list[str] = field(default_factory=list)
     regulation_group_id: str | None = None
     id_: str | None = None
 

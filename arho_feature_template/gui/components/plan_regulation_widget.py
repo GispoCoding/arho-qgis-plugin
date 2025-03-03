@@ -1,13 +1,23 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import cast
 
 from qgis.core import QgsApplication
 from qgis.gui import QgsFileWidget
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
-from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLabel, QLineEdit, QMenu, QToolButton, QVBoxLayout, QWidget
+from qgis.PyQt.QtWidgets import (
+    QFormLayout,
+    QFrame,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QPushButton,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -15,18 +25,14 @@ from arho_feature_template.core.models import (
     Regulation,
 )
 from arho_feature_template.gui.components.additional_information_widget import AdditionalInformationWidget
-from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
 from arho_feature_template.gui.components.required_field_label import RequiredFieldLabel
 from arho_feature_template.gui.components.value_input_widgets import (
     IntegerInputWidget,
     SinglelineTextInputWidget,
+    TypeOfVerbalRegulationWidget,
     ValueWidgetManager,
 )
-from arho_feature_template.project.layers.code_layers import VerbalRegulationType
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name
-
-if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QPushButton
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -69,7 +75,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.file_widgets: list[QgsFileWidget] = []
         self.theme_widget: SinglelineTextInputWidget | None = None
         self.topic_tag_widget: SinglelineTextInputWidget | None = None
-        self.type_of_verbal_regulation_widget: HierarchicalCodeComboBox | None = None
+        self.type_of_verbal_regulation_widgets: list[TypeOfVerbalRegulationWidget] = []
 
         self.expanded = True
         self.additional_information_frame.hide()
@@ -88,11 +94,10 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             self._add_widget(RequiredFieldLabel("Arvo"), self.value_widget_manager.value_widget)
 
         if self.config.regulation_code == "sanallinenMaarays":
-            self.type_of_verbal_regulation_widget = HierarchicalCodeComboBox()
-            self.type_of_verbal_regulation_widget.populate_from_code_layer(VerbalRegulationType)
-            self._add_widget(RequiredFieldLabel("Sanallisen määräyksen laji"), self.type_of_verbal_regulation_widget)
-            if self.regulation.verbal_regulation_type_id is not None:
-                self.type_of_verbal_regulation_widget.set_value(self.regulation.verbal_regulation_type_id)
+            for type_id in self.regulation.verbal_regulation_type_ids:
+                self._add_type_of_verbal_regulation(type_id)
+            if len(self.type_of_verbal_regulation_widgets) == 0:
+                self._add_type_of_verbal_regulation()
 
         # Additional information
         for info in self.regulation.additional_information:
@@ -197,7 +202,31 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.theme_widget = SinglelineTextInputWidget(theme_name, False)
         self._add_widget(QLabel("Kaavoitusteema"), self.theme_widget)
 
+    def _add_type_of_verbal_regulation(self, type_id: str | None = None):
+        if len(self.type_of_verbal_regulation_widgets) == 0:
+            widget = TypeOfVerbalRegulationWidget(with_add_btn=True)
+            btn = cast(QPushButton, widget.add_btn)
+            btn.clicked.connect(self._add_type_of_verbal_regulation)
+        else:
+            widget = TypeOfVerbalRegulationWidget(with_del_btn=True)
+            btn = cast(QPushButton, widget.del_btn)
+            btn.clicked.connect(lambda: self._delete_type_of_verbal_regulation(widget))
+
+        if type_id:
+            widget.set_value(type_id)
+
+        self.type_of_verbal_regulation_widgets.append(widget)
+        self._add_widget(RequiredFieldLabel("Sanallisen määräyksen laji"), widget)
+
+    def _delete_type_of_verbal_regulation(self, widget_to_delete: TypeOfVerbalRegulationWidget):
+        self.type_of_verbal_regulation_widgets.remove(widget_to_delete)
+        for label, widget in self.widgets:
+            if widget is widget_to_delete:
+                widget.deleteLater()
+                label.deleteLater()
+
     def into_model(self) -> Regulation:
+        verbal_regulation_type_ids = [widget.get_value() for widget in self.type_of_verbal_regulation_widgets]
         return Regulation(
             config=self.config,
             value=self.value_widget_manager.into_model() if self.value_widget_manager else None,
@@ -206,8 +235,6 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             files=[file.filePath() for file in self.file_widgets],
             theme=self.theme_widget.get_value() if self.theme_widget else None,
             topic_tag=self.topic_tag_widget.get_value() if self.topic_tag_widget else None,
-            verbal_regulation_type_id=self.type_of_verbal_regulation_widget.value()
-            if self.type_of_verbal_regulation_widget
-            else None,
+            verbal_regulation_type_ids=[value for value in verbal_regulation_type_ids if value is not None],
             id_=self.regulation.id_,
         )

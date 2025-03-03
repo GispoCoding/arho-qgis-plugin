@@ -385,7 +385,6 @@ class PlanRegulationLayer(AbstractPlanLayer):
         feature["type_of_plan_regulation_id"] = model.config.id
 
         feature["subject_identifiers"] = model.topic_tag.split(",") if model.topic_tag else None
-        feature["type_of_verbal_plan_regulation_id"] = model.verbal_regulation_type_id
 
         update_feature_from_attribute_value_model(model.value, feature)
 
@@ -401,6 +400,7 @@ class PlanRegulationLayer(AbstractPlanLayer):
         if not config:
             msg = f"Regulation config not found for {regulation_code}"
             raise ValueError(msg)
+
         return Regulation(
             config=config,
             value=attribute_value_model_from_feature(feature),
@@ -415,7 +415,9 @@ class PlanRegulationLayer(AbstractPlanLayer):
             theme=None,
             topic_tag=None,
             regulation_group_id=feature["plan_regulation_group_id"],
-            verbal_regulation_type_id=feature["type_of_verbal_plan_regulation_id"],
+            verbal_regulation_type_ids=(
+                list(TypeOfVerbalRegulationAssociationLayer.get_verbal_type_ids_for_regulation(feature["id"]))
+            ),
             id_=feature["id"],
         )
 
@@ -431,6 +433,42 @@ class PlanRegulationLayer(AbstractPlanLayer):
             for reg in cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
             if reg["id"] not in updated_regulation_ids
         ]
+
+
+class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
+    name = "Sanallisten kaavamääräyksien lajien assosiaatiot"
+    filter_template = None
+
+    @classmethod
+    def feature_from(cls, regulation_id: str, type_of_verbal_regulation_id: str) -> QgsFeature | None:
+        layer = cls.get_from_project()
+
+        feature = QgsVectorLayerUtils.createFeature(layer)
+        feature["plan_regulation_id"] = regulation_id
+        feature["type_of_verbal_plan_regulation_id"] = type_of_verbal_regulation_id
+        return feature
+
+    @classmethod
+    def association_exists(cls, regulation_id: str, type_of_verbal_regulation_id: str) -> bool:
+        for feature in cls.get_features_by_attribute_value("plan_regulation_id", regulation_id):
+            if feature["type_of_verbal_plan_regulation_id"] == type_of_verbal_regulation_id:
+                return True
+        return False
+
+    @classmethod
+    def get_associations_for_regulation(cls, regulation_id: str) -> Generator[QgsFeature]:
+        return cls.get_features_by_attribute_value("plan_regulation_id", regulation_id)
+
+    @classmethod
+    def get_verbal_type_ids_for_regulation(cls, regulation_id: str) -> Generator[QgsFeature]:
+        return cls.get_attribute_values_by_another_attribute_value(
+            "type_of_verbal_plan_regulation_id", "plan_regulation_id", regulation_id
+        )
+
+    @classmethod
+    def get_dangling_associations(cls, regulation_id: str, updated_type_ids: list[str]) -> list[QgsFeature]:
+        associations = cls.get_associations_for_regulation(regulation_id)
+        return [assoc for assoc in associations if assoc["type_of_verbal_plan_regulation_id"] not in updated_type_ids]
 
 
 class PlanPropositionLayer(AbstractPlanLayer):
