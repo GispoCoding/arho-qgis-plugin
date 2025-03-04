@@ -15,6 +15,14 @@ class PlanTypeLayer(AbstractCodeLayer):
     name = "Kaavalaji"
 
     category_only_codes: ClassVar[list[str]] = ["1", "2", "3"]  # "Maakuntakaava", "Asemakaava", "Yleiskaava"
+    general_plan_type_values: ClassVar[list[int]] = [2, 21, 22, 23, 24, 25]
+
+    @classmethod
+    def is_general_plan_type(cls, _id: str | None) -> bool:
+        if _id is None:
+            return False
+        attribute_value = cls.get_attribute_value_by_another_attribute_value("value", "id", _id)
+        return int(attribute_value) in cls.general_plan_type_values if attribute_value is not None else False
 
 
 class LifeCycleStatusLayer(AbstractCodeLayer):
@@ -119,6 +127,12 @@ class PersonalDataContentLayer(AbstractCodeLayer):
 
 class RetentionTimeLayer(AbstractCodeLayer):
     name = "Säilytysaika"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+class LegalEffectsLayer(AbstractCodeLayer):
+    name = "Yleiskaavan oikeusvaikutus"
 
     category_only_codes: ClassVar[list[str]] = []
 

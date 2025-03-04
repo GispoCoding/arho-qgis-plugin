@@ -578,6 +578,7 @@ class Plan:
     organisation_id: str | None = None
     general_regulations: list[RegulationGroup] = field(default_factory=list)
     documents: list[Document] = field(default_factory=list)
+    legal_effect_ids: list[str] = field(default_factory=list)
     geom: QgsGeometry | None = None
     id_: str | None = None
 
