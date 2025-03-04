@@ -226,3 +226,27 @@ plan_regulations:
   # Sanallinen määräys
   - regulation_code: sanallinenMaarays
     value_type: LocalizedText
+
+  - regulation_code: rakentamisrajoitusYleiskaava
+    value_type: LocalizedText
+
+  - regulation_code: rakentamisrajoitusMaakuntakaava
+    value_type: LocalizedText
+
+  - regulation_code: maaraAikainenRakentamisrajoitus
+    value_type: LocalizedText
+
+  - regulation_code: toimenpiderajoitus
+    value_type: LocalizedText
+
+  - regulation_code: maaraAikainenKieltoRakennuksenRakentamiseksi
+    value_type: LocalizedText
+
+  - regulation_code: suunnittelumaarays
+    value_type: LocalizedText
+
+  - regulation_code: rakentamismaarays
+    value_type: LocalizedText
+
+  - regulation_code: suojelumaarays
+    value_type: LocalizedText
