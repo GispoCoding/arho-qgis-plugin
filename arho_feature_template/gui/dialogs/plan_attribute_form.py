@@ -1,23 +1,18 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import (
-    QDialog,
-    QDialogButtonBox,
-    QLineEdit,
-    QPushButton,
-    QTextEdit,
-)
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLabel, QLineEdit, QPushButton, QTextEdit
 
 from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.components.general_regulation_group_widget import GeneralRegulationGroupWidget
 
 # from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.gui.components.plan_document_widget import DocumentWidget
+from arho_feature_template.gui.components.value_input_widgets import LegalEffectWidget
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     OrganisationLayer,
@@ -26,7 +21,7 @@ from arho_feature_template.project.layers.code_layers import (
 from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QLineEdit, QPushButton, QTextEdit, QVBoxLayout
+    from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
 
@@ -61,6 +56,8 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.setupUi(self)
 
+        self.general_data_layout: QFormLayout
+
         self.plan = plan
         self.lifecycle_models = plan.lifecycles
 
@@ -87,10 +84,12 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.name_line_edit.textChanged.connect(self._check_required_fields)
         self.organisation_combo_box.currentIndexChanged.connect(self._check_required_fields)
         self.plan_type_combo_box.currentIndexChanged.connect(self._check_required_fields)
+        self.plan_type_combo_box.currentIndexChanged.connect(self._update_legal_effect_widgets_visibility)
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         self.scroll_area_spacer = None
         self.regulation_group_widgets: list[GeneralRegulationGroupWidget] = []
+        self.legal_effect_widgets: list[tuple[QLabel, LegalEffectWidget]] = []
         # self.regulation_groups_selection_widget = TreeWithSearchWidget()
         # self.regulation_groups_tree_layout.insertWidget(2, self.regulation_groups_selection_widget)
         # for library in regulation_group_libraries:
@@ -105,6 +104,12 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         for document in plan.documents:
             self.add_document(document)
 
+        # Legal effects
+        for legal_effect_id in plan.legal_effect_ids:
+            self.add_legal_effect_widget(legal_effect_id)
+        if len(self.legal_effect_widgets) == 0:
+            self.add_legal_effect_widget()
+
         self.add_general_regulation_group_btn.clicked.connect(self.add_new_regulation_group)
         self.add_general_regulation_group_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
@@ -115,6 +120,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         self._check_required_fields()
+        self._update_legal_effect_widgets_visibility()
 
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
@@ -128,6 +134,53 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             ok_button.setEnabled(True)
         else:
             ok_button.setEnabled(False)
+
+    def _update_legal_effect_widgets_visibility(self):
+        plan_type_id = self.plan_type_combo_box.value()
+        if PlanTypeLayer.is_general_plan_type(plan_type_id):
+            self._show_legal_effect_widgets()
+        else:
+            self._hide_legal_effect_widgets()
+
+    def _show_legal_effect_widgets(self):
+        for label, widget in self.legal_effect_widgets:
+            label.show()
+            widget.show()
+
+    def _hide_legal_effect_widgets(self):
+        for label, widget in self.legal_effect_widgets:
+            label.hide()
+            widget.hide()
+
+    def add_legal_effect_widget(self, legal_effect_id: str | None = None):
+        """
+        Adds a legal effect widget to the form.
+
+        If no legal widgets exist yet, includes an "add" button, otherwise a
+        "delete" button.
+        """
+        if len(self.legal_effect_widgets) == 0:
+            widget = LegalEffectWidget(with_add_btn=True)
+            btn = cast(QPushButton, widget.add_btn)
+            btn.clicked.connect(self.add_legal_effect_widget)
+        else:
+            widget = LegalEffectWidget(with_del_btn=True)
+            btn = cast(QPushButton, widget.del_btn)
+            btn.clicked.connect(lambda: self.delete_legal_effect_widget(widget))
+
+        if legal_effect_id:
+            widget.set_value(legal_effect_id)
+
+        label = QLabel("Oikeusvaikutus")
+        self.legal_effect_widgets.append((label, widget))
+        self.general_data_layout.addRow(label, widget)
+
+    def delete_legal_effect_widget(self, widget_to_delete: LegalEffectWidget):
+        for i, (label, widget) in enumerate(self.legal_effect_widgets):
+            if widget is widget_to_delete:
+                self.legal_effect_widgets.pop(i)
+                widget.deleteLater()
+                label.deleteLater()
 
     # --- COPIED FROM PLAN FEATURE FORM ---
 
@@ -190,6 +243,11 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     # ---
 
     def into_model(self) -> Plan:
+        if PlanTypeLayer.is_general_plan_type(self.plan_type_combo_box.value()):
+            legal_effect_ids = [legal_effect_widget[1].get_value() for legal_effect_widget in self.legal_effect_widgets]
+        else:
+            legal_effect_ids = []
+
         return Plan(
             id_=self.plan.id_,
             name=self.name_line_edit.text(),
@@ -202,6 +260,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             matter_management_identifier=self.matter_management_identifier_line_edit.text() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),
             general_regulations=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
+            legal_effect_ids=[value for value in legal_effect_ids if value is not None],
             documents=[document_widget.into_model() for document_widget in self.document_widgets],
             geom=self.plan.geom,
         )

@@ -120,6 +120,7 @@ class PlanLayer(AbstractPlanLayer):
                 for feat in general_regulation_features
                 if feat is not None
             ],
+            legal_effect_ids=list(LegalEffectAssociationLayer.get_legal_effect_ids_for_plan(feature["id"])),
             documents=[
                 DocumentLayer.model_from_feature(feat)
                 for feat in DocumentLayer.get_features_by_attribute_value("plan_id", feature["id"])
@@ -483,6 +484,44 @@ class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
     def get_dangling_associations(cls, regulation_id: str, updated_type_ids: list[str]) -> list[QgsFeature]:
         associations = cls.get_associations_for_regulation(regulation_id)
         return [assoc for assoc in associations if assoc["type_of_verbal_plan_regulation_id"] not in updated_type_ids]
+
+
+class LegalEffectAssociationLayer(AbstractPlanLayer):
+    name = "Yleiskaavan oikeusvaikutusten assosiaatiot"
+    filter_template = None
+
+    @classmethod
+    def feature_from(cls, plan_id: str, legal_effect_id: str) -> QgsFeature | None:
+        layer = cls.get_from_project()
+
+        feature = QgsVectorLayerUtils.createFeature(layer)
+        feature["plan_id"] = plan_id
+        feature["legal_effects_of_master_plan_id"] = legal_effect_id
+        return feature
+
+    @classmethod
+    def association_exists(cls, plan_id: str, legal_effect_id: str) -> bool:
+        for feature in cls.get_features_by_attribute_value("plan_id", plan_id):
+            if feature["legal_effects_of_master_plan_id"] == legal_effect_id:
+                return True
+        return False
+
+    @classmethod
+    def get_associations_for_plan(cls, plan_id: str) -> Generator[QgsFeature]:
+        return cls.get_features_by_attribute_value("plan_id", plan_id)
+
+    @classmethod
+    def get_legal_effect_ids_for_plan(cls, plan_id: str) -> Generator[QgsFeature]:
+        return cls.get_attribute_values_by_another_attribute_value(
+            "legal_effects_of_master_plan_id", "plan_id", plan_id
+        )
+
+    @classmethod
+    def get_dangling_associations(cls, plan_id: str, updated_legal_effect_ids: list[str]) -> list[QgsFeature]:
+        associations = cls.get_associations_for_plan(plan_id)
+        return [
+            assoc for assoc in associations if assoc["legal_effects_of_master_plan_id"] not in updated_legal_effect_ids
+        ]
 
 
 class PlanPropositionLayer(AbstractPlanLayer):

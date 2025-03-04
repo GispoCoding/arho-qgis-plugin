@@ -37,6 +37,7 @@ from arho_feature_template.project.layers.plan_layers import (
     DocumentLayer,
     LandUseAreaLayer,
     LandUsePointLayer,
+    LegalEffectAssociationLayer,
     LifeCycleLayer,
     LineLayer,
     OtherAreaLayer,
@@ -547,6 +548,15 @@ def save_plan(plan: Plan) -> QgsFeature | None:
             ):
                 iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
 
+        # Check for deleted legal effects
+        for association in LegalEffectAssociationLayer.get_dangling_associations(plan_id, plan.legal_effect_ids):
+            if not _delete_feature(
+                association,
+                LegalEffectAssociationLayer.get_from_project(),
+                "Oikeusvaikutuksen assosiaation poisto",
+            ):
+                iface.messageBar().pushCritical("", "Oikeusvaikutuksen assosiaation poistaminen epäonnistui.")
+
         # Check for documents to be deleted
         doc_layer = DocumentLayer.get_from_project()
         for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan.id_):
@@ -560,6 +570,10 @@ def save_plan(plan: Plan) -> QgsFeature | None:
             if regulation_group_feature is None:
                 continue  # Skip association saving if saving regulation group failed
             save_regulation_group_association(regulation_group_feature["id"], PlanLayer.name, plan_id)
+
+    # Save legal effect associations
+    for legal_effect_id in plan.legal_effect_ids:
+        save_legal_effect_association(plan_id, legal_effect_id)
 
     # Save documents
     for document in plan.documents:
@@ -749,6 +763,19 @@ def save_type_of_verbal_regulation_association(regulation_id: str, verbal_regula
         feature=feature, layer=layer, id_=None, edit_text="Sanallisen kaavamääräyksen lajin assosiaation lisäys"
     ):
         iface.messageBar().pushCritical("", "Sanallisen kaavamääräyksen lajin assosiaation tallentaminen epäonnistui.")
+        return False
+
+    return True
+
+
+def save_legal_effect_association(plan_id: str, legal_effect_id: str) -> bool:
+    if LegalEffectAssociationLayer.association_exists(plan_id, legal_effect_id):
+        return True
+    feature = LegalEffectAssociationLayer.feature_from(plan_id, legal_effect_id)
+    layer = LegalEffectAssociationLayer.get_from_project()
+
+    if not _save_feature(feature=feature, layer=layer, id_=None, edit_text="Oikeusvaikutuksen assosiaation lisäys"):
+        iface.messageBar().pushCritical("", "Oikeusvaikutuksen assosiaation tallentaminen epäonnistui.")
         return False
 
     return True
