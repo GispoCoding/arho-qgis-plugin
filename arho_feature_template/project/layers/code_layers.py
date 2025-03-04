@@ -88,6 +88,17 @@ class PlanRegulationTypeLayer(AbstractCodeLayer):
     # TODO: Implement. Currently, this is not used and information needed to construct plan regulation codes
     # is defined in a separate config file
     category_only_codes: ClassVar[list[str]] = []
+    verbal_regulation_codes: ClassVar[list[str]] = [
+        "sanallinenMaarays",
+        "rakentamisrajoitusYleiskaava",
+        "rakentamisrajoitusMaakuntakaava",
+        "maaraAikainenRakentamisrajoitus",
+        "toimenpiderajoitus",
+        "maaraAikainenKieltoRakennuksenRakentamiseksi",
+        "suunnittelumaarays",
+        "rakentamismaarays",
+        "suojelumaarays",
+    ]
 
     @classmethod
     def get_regulation_type_by_id(cls, _id: str) -> str | None:

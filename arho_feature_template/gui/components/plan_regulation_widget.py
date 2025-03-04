@@ -32,6 +32,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     TypeOfVerbalRegulationWidget,
     ValueWidgetManager,
 )
+from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_layer_by_name
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
@@ -93,7 +94,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         if self.config.default_value:
             self._add_widget(RequiredFieldLabel("Arvo"), self.value_widget_manager.value_widget)
 
-        if self.config.regulation_code == "sanallinenMaarays":
+        if self.config.regulation_code in PlanRegulationTypeLayer.verbal_regulation_codes:
             for type_id in self.regulation.verbal_regulation_type_ids:
                 self._add_type_of_verbal_regulation(type_id)
             if len(self.type_of_verbal_regulation_widgets) == 0:
