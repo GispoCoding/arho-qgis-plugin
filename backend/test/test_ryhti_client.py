@@ -340,42 +340,14 @@ def mock_xroad_ryhti_update_existing_plan_matter(
 
 
 @pytest.fixture(scope="function")
-def ryhti_client(session: Session, rw_connection_string: str) -> RyhtiClient:
-    """
-    Return RyhtiClient that has plan data read in.
-
-    We have to create the plan data in the database before returning the client, because the client
-    reads plans from the database when initializing. Also, let's cache plan dictionaries in the
-    client like done in handler method, so all methods depending on data being serialized already
-    will work as expected.
-    """
-    # Let's mock production x-road with gispo organization client here.
-    client = RyhtiClient(
-        rw_connection_string,
-        public_api_url="http://mock.url",
-        xroad_server_address="http://mock2.url",
-        xroad_instance="FI",
-        xroad_member_class="COM",
-        xroad_member_code="2455538-5",
-        xroad_member_client_name="ryhti-gispo-client",
-        xroad_syke_client_id="test-id",
-        xroad_syke_client_secret="test-secret",
-    )
-
-    return client
-
-
-@pytest.fixture(scope="function")
-def client_with_plan_data(
+def ryhti_client(
     session: Session, rw_connection_string: str, complete_test_plan: models.Plan
 ) -> RyhtiClient:
     """
     Return RyhtiClient that has plan data read in.
 
-    We have to create the plan data in the database before returning the client, because the client
-    reads plans from the database when initializing. Also, let's cache plan dictionaries in the
-    client like done in handler method, so all methods depending on data being serialized already
-    will work as expected.
+    Plan data must exist in the database before we return the client, because the client
+    reads plans from the database when initializing.
     """
     # Let's mock production x-road with gispo organization client here.
     client = RyhtiClient(
@@ -389,8 +361,48 @@ def client_with_plan_data(
         xroad_syke_client_id="test-id",
         xroad_syke_client_secret="test-secret",
     )
-    client.plan_dictionaries = client.get_plan_dictionaries()
+
     return client
+
+
+def test_related_land_use_area(
+    complete_test_plan: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    ryhti_client: RyhtiClient,
+):
+    """
+    Test that the land use area that contains the other area of type 'rakennusala'
+    is added to the related plan objects list.
+    """
+
+    plan_dict = ryhti_client.get_plan_dictionaries()[complete_test_plan.id]
+    other_area_in_dict = next(
+        (
+            plan_object
+            for plan_object in plan_dict["planObjects"]
+            if plan_object["planObjectKey"] == other_area_instance.id
+        ),
+        None,
+    )
+
+    assert other_area_in_dict
+
+    assert other_area_in_dict["relatedPlanObjectKeys"] == [land_use_area_instance.id]
+
+
+@pytest.fixture(scope="function")
+def client_with_plan_data(
+    ryhti_client: RyhtiClient,
+) -> RyhtiClient:
+    """
+    Return RyhtiClient that has plan data read in and serialized.
+
+    Let's cache plan dictionaries in the client like done in handler method, so all methods depending
+    on data being serialized already will work as expected.
+    """
+    ryhti_client.plan_dictionaries = ryhti_client.get_plan_dictionaries()
+    return ryhti_client
 
 
 @pytest.fixture(scope="function")
@@ -1065,27 +1077,3 @@ def test_save_update_existing_matter_phase_post_responses(
     assert plan_instance.exported_at
     assert not plan_instance.to_be_exported
     assert plan_instance.validation_errors == "Kaava-asian vaihe on päivitetty Ryhtiin."
-
-
-def test_related_land_use_area(
-    plan_instance: models.Plan,
-    land_use_area_instance: models.LandUseArea,
-    other_area_instance: models.OtherArea,
-    construction_area_plan_regulation_instance: models.PlanRegulation,
-    ryhti_client: RyhtiClient,
-):
-    """Test that the land use area that contains the other area of type 'rakennusala' is added to the related plan objects list."""
-
-    plan_dict = ryhti_client.get_plan_dictionaries()[plan_instance.id]
-    other_area_in_dict = next(
-        (
-            plan_object
-            for plan_object in plan_dict["planObjects"]
-            if plan_object["planObjectKey"] == other_area_instance.id
-        ),
-        None,
-    )
-
-    assert other_area_in_dict
-
-    assert other_area_in_dict["relatedPlanObjectKeys"] == [land_use_area_instance.id]
