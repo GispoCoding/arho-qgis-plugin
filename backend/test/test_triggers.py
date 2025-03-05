@@ -437,6 +437,7 @@ def test_update_lifecycle_status_triggers(
     session: Session,
     plan_instance: models.Plan,
     plan_regulation_group_instance: models.PlanRegulationGroup,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
@@ -447,6 +448,7 @@ def test_update_lifecycle_status_triggers(
     land_use_point_instance: models.LandUsePoint,
     other_point_instance: models.OtherPoint,
     empty_value_plan_regulation_instance: models.PlanRegulation,
+    construction_area_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     decimal_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
@@ -511,7 +513,7 @@ def test_update_lifecycle_status_triggers(
         ]
     )
     assert other_area_instance.plan_regulation_groups == [
-        plan_regulation_group_instance
+        construction_area_plan_regulation_group_instance
     ]
     assert line_instance.plan_regulation_groups == [plan_regulation_group_instance]
     assert land_use_point_instance.plan_regulation_groups == [
@@ -530,6 +532,7 @@ def test_update_lifecycle_status_triggers(
     session.refresh(land_use_point_instance)
     session.refresh(other_point_instance)
     session.refresh(empty_value_plan_regulation_instance)
+    session.refresh(construction_area_plan_regulation_instance)
     session.refresh(numeric_plan_regulation_instance)
     session.refresh(decimal_plan_regulation_instance)
     session.refresh(text_plan_regulation_instance)
@@ -545,6 +548,10 @@ def test_update_lifecycle_status_triggers(
     assert other_point_instance.lifecycle_status == another_code_instance
     assert (
         empty_value_plan_regulation_instance.lifecycle_status == another_code_instance
+    )
+    assert (
+        construction_area_plan_regulation_instance.lifecycle_status
+        == another_code_instance
     )
     assert numeric_plan_regulation_instance.lifecycle_status == another_code_instance
     assert decimal_plan_regulation_instance.lifecycle_status == another_code_instance

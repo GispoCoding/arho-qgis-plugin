@@ -99,7 +99,7 @@ def test_other_area(
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
 ):
     # non-nullable plan object relations
     assert other_area_instance.lifecycle_status is preparation_status_instance
@@ -109,9 +109,11 @@ def test_other_area(
     assert other_area_instance.plan is plan_instance
     assert plan_instance.other_areas == [other_area_instance]
     assert other_area_instance.plan_regulation_groups == [
-        plan_regulation_group_instance
+        construction_area_plan_regulation_group_instance
     ]
-    assert plan_regulation_group_instance.other_areas == [other_area_instance]
+    assert construction_area_plan_regulation_group_instance.other_areas == [
+        other_area_instance
+    ]
 
 
 def test_line(

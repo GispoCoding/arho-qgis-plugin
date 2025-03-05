@@ -970,7 +970,7 @@ def other_area_instance(
     preparation_status_instance,
     type_of_underground_instance,
     plan_instance,
-    plan_regulation_group_instance,
+    construction_area_plan_regulation_group_instance,
 ):
     instance = models.OtherArea(
         geom=from_shape(
@@ -996,7 +996,7 @@ def other_area_instance(
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
-        plan_regulation_groups=[plan_regulation_group_instance],
+        plan_regulation_groups=[construction_area_plan_regulation_group_instance],
     )
     return temp_session_feature(instance)
 
@@ -1076,6 +1076,21 @@ def plan_regulation_group_instance(
         ordering=2,
         type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
         name={"fin": "test_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+# Construction area must have its own plan regulation group
+@pytest.fixture(scope="function")
+def construction_area_plan_regulation_group_instance(
+    temp_session_feature, plan_instance, type_of_plan_regulation_group_instance
+):
+    instance = models.PlanRegulationGroup(
+        short_name="R",
+        plan=plan_instance,
+        ordering=6,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_construction_area_plan_regulation_group"},
     )
     return temp_session_feature(instance)
 
@@ -1181,7 +1196,7 @@ def construction_area_plan_regulation_instance(
     session: Session,
     temp_session_feature,
     preparation_status_instance,
-    plan_regulation_group_instance,
+    construction_area_plan_regulation_group_instance,
     type_of_plan_regulation_construction_area_instance,
     make_additional_information_instance_for_plan_regulation,
     type_of_sub_area_additional_information_instance,
@@ -1189,8 +1204,8 @@ def construction_area_plan_regulation_instance(
     instance = models.PlanRegulation(
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_construction_area_instance,
-        plan_regulation_group=plan_regulation_group_instance,
-        ordering=2,
+        plan_regulation_group=construction_area_plan_regulation_group_instance,
+        ordering=1,
     )
     instance = temp_session_feature(instance)
     additional_information = make_additional_information_instance_for_plan_regulation(
@@ -1625,9 +1640,11 @@ def complete_test_plan(
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
     pedestrian_street_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
     land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
@@ -1635,6 +1652,7 @@ def complete_test_plan(
     empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     pedestrian_street_plan_regulation_instance: models.PlanRegulation,
+    construction_area_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     decimal_plan_regulation_instance: models.PlanRegulation,
@@ -1903,16 +1921,19 @@ def desired_plan_dict(
     complete_test_plan: models.Plan,
     land_use_area_instance: models.LandUseArea,
     pedestrian_street_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
     land_use_point_instance: models.LandUsePoint,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
     pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
     general_regulation_group_instance: models.PlanRegulationGroup,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     text_plan_regulation_instance: models.PlanRegulation,
     pedestrian_street_plan_regulation_instance: models.PlanRegulation,
+    construction_area_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
     decimal_plan_regulation_instance: models.PlanRegulation,
@@ -2048,6 +2069,31 @@ def desired_plan_dict(
                     "maximumValue": pedestrian_street_instance.height_max,
                     "unitOfMeasure": pedestrian_street_instance.height_unit,
                 },
+                "periodOfValidity": None,
+            },
+            {
+                "planObjectKey": other_area_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [382953.0, 6678582.0],
+                                [382953.0, 6679385.0],
+                                [383825.0, 6679385.0],
+                                [383825.0, 6678582.0],
+                                [382953.0, 6678582.0],
+                            ]
+                        ],
+                    },
+                },
+                "name": other_area_instance.name,
+                "description": other_area_instance.description,
+                "objectNumber": None,
+                "relatedPlanObjectKeys": [land_use_area_instance.id],
                 "periodOfValidity": None,
             },
             {
@@ -2341,6 +2387,33 @@ def desired_plan_dict(
                 "groupNumber": pedestrian_plan_regulation_group_instance.ordering,
                 "colorNumber": "#FFFFFF",
             },
+            {
+                "planRegulationGroupKey": construction_area_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": construction_area_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": construction_area_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/rakennusala",
+                        "subjectIdentifiers": construction_area_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/osaAlue"
+                            }
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            construction_area_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                        "periodOfValidity": None,
+                    },
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": construction_area_plan_regulation_group_instance.short_name,
+                "groupNumber": construction_area_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
         ],
         "planRegulationGroupRelations": [
             {
@@ -2354,6 +2427,10 @@ def desired_plan_dict(
             {
                 "planObjectKey": land_use_area_instance.id,
                 "planRegulationGroupKey": plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": other_area_instance.id,
+                "planRegulationGroupKey": construction_area_plan_regulation_group_instance.id,
             },
             {
                 "planObjectKey": pedestrian_street_instance.id,
@@ -2508,7 +2585,7 @@ def assert_lists_equal(
                 )
             except AssertionError as error:
                 # Now this is a hack if I ever saw one:
-                depth = str(error).count(".")
+                depth = str(error).count(".") + str(error).count("[")
                 if depth > error_depth:
                     deepest_error = error
                     error_depth = depth
@@ -2526,7 +2603,9 @@ def assert_dicts_equal(
     ignore_order_for_keys: Optional[List] = None,
     path: str = "",
 ):
-    assert len(dict1) == len(dict2), f"Dicts differ in length in {path}"
+    assert len(dict1) == len(
+        dict2
+    ), f"Dicts differ in length in {path}. Dict1 keys: {dict1.keys()}. Dict2 keys: {dict2.keys()}"
     for key in dict2.keys():
         if not ignore_keys or key not in ignore_keys:
             assert key in dict1, f"Key {key} missing in {path}"
