@@ -1198,23 +1198,20 @@ def construction_area_plan_regulation_instance(
     preparation_status_instance,
     construction_area_plan_regulation_group_instance,
     type_of_plan_regulation_construction_area_instance,
-    make_additional_information_instance_for_plan_regulation,
+    make_additional_information_instance_of_type,
     type_of_sub_area_additional_information_instance,
 ):
+    sub_area_additional_information = make_additional_information_instance_of_type(
+        type_of_sub_area_additional_information_instance
+    )
     instance = models.PlanRegulation(
         lifecycle_status=preparation_status_instance,
         type_of_plan_regulation=type_of_plan_regulation_construction_area_instance,
         plan_regulation_group=construction_area_plan_regulation_group_instance,
+        additional_information=[sub_area_additional_information],
         ordering=1,
     )
     instance = temp_session_feature(instance)
-    additional_information = make_additional_information_instance_for_plan_regulation(
-        plan_regulation=instance,
-        type_of_additional_information=type_of_sub_area_additional_information_instance,
-    )
-    session.add(additional_information)
-    session.commit()
-    session.refresh(instance)
     return instance
 
 
@@ -1607,26 +1604,23 @@ def proportion_of_intended_use_additional_information_instance(
 
 
 @pytest.fixture
-def make_additional_information_instance_for_plan_regulation(session: Session):
+def make_additional_information_instance_of_type(session: Session):
     created_instances = []
 
-    def _make_additional_information_instance_for_plan_regulation(
-        plan_regulation: models.PlanRegulation,
+    def _make_additional_information_instance_of_type(
         type_of_additional_information: codes.TypeOfAdditionalInformation,
     ):
         instance = models.AdditionalInformation(
-            plan_regulation=plan_regulation,
             type_of_additional_information=type_of_additional_information,
         )
-        session.add(instance)
-        session.commit()
         created_instances.append(instance)
         return instance
 
-    yield _make_additional_information_instance_for_plan_regulation
+    yield _make_additional_information_instance_of_type
 
     for instance in created_instances:
-        session.delete(instance)
+        if instance in session:
+            session.delete(instance)
     session.commit()
 
 
@@ -1666,8 +1660,8 @@ def complete_test_plan(
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     type_of_intended_use_allocation_additional_information_instance: codes.TypeOfAdditionalInformation,
-    make_additional_information_instance_for_plan_regulation: Callable[
-        [models.PlanRegulation, codes.TypeOfAdditionalInformation],
+    make_additional_information_instance_of_type: Callable[
+        [codes.TypeOfAdditionalInformation],
         models.AdditionalInformation,
     ],
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
@@ -1709,8 +1703,7 @@ def complete_test_plan(
     empty_value_plan_regulation_instance.plan_theme = plan_theme_instance
     # empty value plan regulation may have intended use
     empty_value_plan_regulation_instance.additional_information.append(
-        make_additional_information_instance_for_plan_regulation(
-            empty_value_plan_regulation_instance,
+        make_additional_information_instance_of_type(
             type_of_main_use_additional_information_instance,
         )
     )
@@ -1728,8 +1721,7 @@ def complete_test_plan(
     text_plan_regulation_instance.plan_theme = plan_theme_instance
     # text value plan regulation may have intended use
     text_plan_regulation_instance.additional_information.append(
-        make_additional_information_instance_for_plan_regulation(
-            text_plan_regulation_instance,
+        make_additional_information_instance_of_type(
             type_of_main_use_additional_information_instance,
         )
     )
@@ -1750,16 +1742,12 @@ def complete_test_plan(
     # pedestrian street must have intended use *and* two intended use allocations
     # (käyttötarkoituskohdistus):
     pedestrian_street_plan_regulation_instance.additional_information.append(
-        make_additional_information_instance_for_plan_regulation(
-            pedestrian_street_plan_regulation_instance,
+        make_additional_information_instance_of_type(
             type_of_main_use_additional_information_instance,
         )
     )
-    pedestrian_intended_use_allocation = (
-        make_additional_information_instance_for_plan_regulation(
-            pedestrian_street_plan_regulation_instance,
-            type_of_intended_use_allocation_additional_information_instance,
-        )
+    pedestrian_intended_use_allocation = make_additional_information_instance_of_type(
+        type_of_intended_use_allocation_additional_information_instance,
     )
     pedestrian_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
     pedestrian_intended_use_allocation.code_list = (
@@ -1776,11 +1764,8 @@ def complete_test_plan(
     pedestrian_street_plan_regulation_instance.additional_information.append(
         pedestrian_intended_use_allocation
     )
-    cycling_intended_use_allocation = (
-        make_additional_information_instance_for_plan_regulation(
-            pedestrian_street_plan_regulation_instance,
-            type_of_intended_use_allocation_additional_information_instance,
-        )
+    cycling_intended_use_allocation = make_additional_information_instance_of_type(
+        type_of_intended_use_allocation_additional_information_instance,
     )
     cycling_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
     cycling_intended_use_allocation.code_list = (
