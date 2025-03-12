@@ -65,6 +65,32 @@ class AdditionalInformation:
     type_additional_information_id: str | None = None
     value: AttributeValue | None = None
 
+    @staticmethod
+    def from_config_data(data: dict) -> AdditionalInformation:
+        ai_config = libraries.AdditionalInformationConfigLibrary.get_config_by_code(data["type"])
+        return AdditionalInformation(
+            config=ai_config,
+            value=AttributeValue(
+                value_data_type=data.get(
+                    "value_data_type",
+                    ai_config.default_value.value_data_type if ai_config.default_value is not None else None,
+                ),
+                numeric_value=data.get("numeric_value"),
+                numeric_range_min=data.get("numeric_range_min"),
+                numeric_range_max=data.get("numeric_range_max"),
+                unit=data.get(
+                    "unit",
+                    ai_config.default_value.unit if ai_config.default_value is not None else None,
+                ),
+                text_value=data.get("text_value"),
+                text_syntax=data.get("text_syntax"),
+                code_list=data.get("code_list"),
+                code_value=data.get("code_value"),
+                code_title=data.get("code_title"),
+                height_reference_point=data.get("height_reference_point"),
+            ),
+        )
+
 
 @dataclass
 class Regulation:
@@ -100,32 +126,6 @@ class RegulationGroup:
     propositions: list[Proposition] = field(default_factory=list)
     id_: str | None = None
 
-    @staticmethod
-    def _additional_information_model_from_config(info_data: dict) -> AdditionalInformation:
-        ai_config = libraries.AdditionalInformationConfigLibrary.get_config_by_code(info_data["type"])
-        return AdditionalInformation(
-            config=ai_config,
-            value=AttributeValue(
-                value_data_type=info_data.get(
-                    "value_data_type",
-                    ai_config.default_value.value_data_type if ai_config.default_value is not None else None,
-                ),
-                numeric_value=info_data.get("numeric_value"),
-                numeric_range_min=info_data.get("numeric_range_min"),
-                numeric_range_max=info_data.get("numeric_range_max"),
-                unit=info_data.get(
-                    "unit",
-                    ai_config.default_value.unit if ai_config.default_value is not None else None,
-                ),
-                text_value=info_data.get("text_value"),
-                text_syntax=info_data.get("text_syntax"),
-                code_list=info_data.get("code_list"),
-                code_value=info_data.get("code_value"),
-                code_title=info_data.get("code_title"),
-                height_reference_point=info_data.get("height_reference_point"),
-            ),
-        )
-
     @classmethod
     def from_config_data(cls, data: dict) -> RegulationGroup:
         regulations = []
@@ -138,8 +138,8 @@ class RegulationGroup:
                         config=config,
                         value=reg_data.get("value"),
                         additional_information=[
-                            cls._additional_information_model_from_config(info)
-                            for info in reg_data.get("additional_information", [])
+                            AdditionalInformation.from_config_data(info_data)
+                            for info_data in reg_data.get("additional_information", [])
                         ],
                         regulation_number=reg_data.get("regulation_number"),
                         files=reg_data.get("files") if reg_data.get("files") else [],
