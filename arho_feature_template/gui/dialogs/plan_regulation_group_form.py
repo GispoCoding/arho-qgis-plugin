@@ -19,13 +19,11 @@ from qgis.PyQt.QtWidgets import (
     QVBoxLayout,
 )
 
+from arho_feature_template.core.libraries import RegulationConfig, RegulationGroupLibrary, RegulationLibrary
 from arho_feature_template.core.models import (
     Proposition,
     Regulation,
-    RegulationConfig,
     RegulationGroup,
-    RegulationGroupLibrary,
-    RegulationLibrary,
 )
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget

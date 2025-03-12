@@ -29,7 +29,7 @@ from arho_feature_template.utils.misc_utils import disconnect_signal
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QVBoxLayout, QWidget
 
-    from arho_feature_template.core.models import RegulationGroupLibrary
+    from arho_feature_template.core.libraries import RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_feature_form.ui"

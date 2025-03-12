@@ -7,7 +7,7 @@ from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLabel, QLineEdit, QPushButton, QTextEdit
 
-from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.core.models import Document, Plan, RegulationGroup
 from arho_feature_template.gui.components.general_regulation_group_widget import GeneralRegulationGroupWidget
 
 # from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
@@ -23,6 +23,7 @@ from arho_feature_template.utils.misc_utils import disconnect_signal
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
 
+    from arho_feature_template.core.libraries import RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
 
 ui_path = resources.files(__package__) / "plan_attribute_form.ui"

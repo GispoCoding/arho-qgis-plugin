@@ -15,7 +15,8 @@ if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QComboBox, QLabel, QWidget
 
-    from arho_feature_template.core.models import FeatureTemplateLibrary, PlanFeature
+    from arho_feature_template.core.libraries import FeatureTemplateLibrary
+    from arho_feature_template.core.models import PlanFeature
 
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)

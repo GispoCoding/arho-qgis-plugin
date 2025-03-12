@@ -19,9 +19,9 @@ from qgis.PyQt.QtWidgets import (
     QWidget,
 )
 
+from arho_feature_template.core.libraries import AdditionalInformationConfigLibrary
 from arho_feature_template.core.models import (
     AdditionalInformation,
-    AdditionalInformationConfigLibrary,
     Regulation,
 )
 from arho_feature_template.gui.components.additional_information_widget import AdditionalInformationWidget

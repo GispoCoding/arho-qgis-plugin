@@ -8,7 +8,8 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import QMenu, QWidget
 
-from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup, RegulationLibrary
+from arho_feature_template.core.libraries import RegulationLibrary
+from arho_feature_template.core.models import Proposition, Regulation, RegulationGroup
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer

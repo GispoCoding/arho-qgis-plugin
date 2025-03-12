@@ -10,16 +10,14 @@ from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtWidgets import QDialog
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.core.libraries import FeatureTemplateLibrary, RegulationGroupCategory, RegulationGroupLibrary
 from arho_feature_template.core.models import (
     AdditionalInformation,
     Document,
-    FeatureTemplateLibrary,
     LifeCycle,
     Plan,
     PlanFeature,
     RegulationGroup,
-    RegulationGroupCategory,
-    RegulationGroupLibrary,
 )
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.lifecycle_editor import LifecycleEditor

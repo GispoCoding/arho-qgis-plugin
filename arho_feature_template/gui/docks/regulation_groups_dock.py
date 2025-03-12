@@ -9,12 +9,14 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QMessageBox, QPushButton
 
-from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.core.models import RegulationGroup
 from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QWidget
+
+    from arho_feature_template.core.libraries import RegulationGroupLibrary
 
 
 ui_path = resources.files(__package__) / "regulation_groups_dock.ui"

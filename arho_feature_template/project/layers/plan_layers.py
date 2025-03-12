@@ -8,9 +8,9 @@ from typing import Any, ClassVar, Generator, cast
 
 from qgis.core import QgsFeature, QgsVectorLayerUtils
 
+from arho_feature_template.core.libraries import AdditionalInformationConfigLibrary, RegulationLibrary
 from arho_feature_template.core.models import (
     AdditionalInformation,
-    AdditionalInformationConfigLibrary,
     AttributeValue,
     Document,
     LifeCycle,
@@ -19,7 +19,6 @@ from arho_feature_template.core.models import (
     Proposition,
     Regulation,
     RegulationGroup,
-    RegulationLibrary,
 )
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
