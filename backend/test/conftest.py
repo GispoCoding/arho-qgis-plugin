@@ -24,7 +24,7 @@ from database.db_helper import DatabaseHelper, User
 from database.enums import AttributeValueDataType
 from lambdas.db_manager import db_manager
 
-hame_count: int = 18  # adjust me when adding tables
+hame_count: int = 19  # adjust me when adding tables
 codes_count: int = 22  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -1773,7 +1773,7 @@ def complete_test_plan(
         legal_effects_of_master_plan_without_legal_effects_instance
     )
 
-    empty_value_plan_regulation_instance.plan_theme = plan_theme_instance
+    empty_value_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # empty value plan regulation may have intended use
     empty_value_plan_regulation_instance.additional_information.append(
         make_additional_information_instance_of_type(
@@ -1785,13 +1785,13 @@ def complete_test_plan(
         proportion_of_intended_use_additional_information_instance
     )
 
-    numeric_plan_regulation_instance.plan_theme = plan_theme_instance
+    numeric_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # allowed area numeric value cannot be used with intended use regulation type
 
-    decimal_plan_regulation_instance.plan_theme = plan_theme_instance
+    decimal_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # elevation decimal value cannot be used with intended use regulation type
 
-    text_plan_regulation_instance.plan_theme = plan_theme_instance
+    text_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # text value plan regulation may have intended use
     text_plan_regulation_instance.additional_information.append(
         make_additional_information_instance_of_type(
@@ -1799,19 +1799,19 @@ def complete_test_plan(
         )
     )
 
-    point_text_plan_regulation_instance.plan_theme = plan_theme_instance
+    point_text_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # point cannot *currently* be used with intended use regulation type
 
-    numeric_range_plan_regulation_instance.plan_theme = plan_theme_instance
+    numeric_range_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # numeric range cannot be used with intended use regulation type
 
-    verbal_plan_regulation_instance.plan_theme = plan_theme_instance
+    verbal_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # verbal plan regulation cannot be used with intended use regulation type
 
-    general_plan_regulation_instance.plan_theme = plan_theme_instance
+    general_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # general plan regulation cannot be used with intended use regulation type
 
-    pedestrian_street_plan_regulation_instance.plan_theme = plan_theme_instance
+    pedestrian_street_plan_regulation_instance.plan_themes.append(plan_theme_instance)
     # pedestrian street must have intended use *and* two intended use allocations
     # (käyttötarkoituskohdistus):
     pedestrian_street_plan_regulation_instance.additional_information.append(
@@ -1856,7 +1856,7 @@ def complete_test_plan(
         cycling_intended_use_allocation
     )
 
-    plan_proposition_instance.plan_theme = plan_theme_instance
+    plan_proposition_instance.plan_themes.append(plan_theme_instance)
     session.commit()
     yield plan_instance
 

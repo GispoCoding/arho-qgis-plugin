@@ -540,8 +540,10 @@ class RyhtiClient:
         recommendation_dict[
             "lifeCycleStatus"
         ] = plan_recommendation.lifecycle_status.uri
-        if plan_recommendation.plan_theme:
-            recommendation_dict["planThemes"] = [plan_recommendation.plan_theme.uri]
+        if plan_recommendation.plan_themes:
+            recommendation_dict["planThemes"] = [
+                plan_theme.uri for plan_theme in plan_recommendation.plan_themes
+            ]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
         # we should only have one valid period. If there are several, pick last
         recommendation_dict["periodOfValidity"] = self.get_last_period(
@@ -635,8 +637,10 @@ class RyhtiClient:
         regulation_dict["planRegulationKey"] = plan_regulation.id
         regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
-        if plan_regulation.plan_theme:
-            regulation_dict["planThemes"] = [plan_regulation.plan_theme.uri]
+        if plan_regulation.plan_themes:
+            regulation_dict["planThemes"] = [
+                plan_theme.uri for plan_theme in plan_regulation.plan_themes
+            ]
         regulation_dict["subjectIdentifiers"] = plan_regulation.subject_identifiers
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
         # we should only have one valid period. If there are several, pick last

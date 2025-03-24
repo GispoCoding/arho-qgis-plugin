@@ -224,12 +224,12 @@ def test_plan_regulation(
     # nullable plan regulation relations
     assert text_plan_regulation_instance.types_of_verbal_plan_regulations == []
     assert type_of_verbal_plan_regulation_instance.plan_regulations == []
-    assert text_plan_regulation_instance.plan_theme is None
+    assert text_plan_regulation_instance.plan_themes == []
     assert plan_theme_instance.plan_regulations == []
     text_plan_regulation_instance.types_of_verbal_plan_regulations = [
         type_of_verbal_plan_regulation_instance
     ]
-    text_plan_regulation_instance.plan_theme = plan_theme_instance
+    text_plan_regulation_instance.plan_themes = [plan_theme_instance]
 
     assert text_plan_regulation_instance.additional_information == []
 
@@ -241,7 +241,7 @@ def test_plan_regulation(
     assert type_of_verbal_plan_regulation_instance.plan_regulations == [
         text_plan_regulation_instance
     ]
-    assert text_plan_regulation_instance.plan_theme is plan_theme_instance
+    assert text_plan_regulation_instance.plan_themes == [plan_theme_instance]
     assert plan_theme_instance.plan_regulations == [text_plan_regulation_instance]
 
 
@@ -282,13 +282,13 @@ def test_plan_proposition(
         plan_proposition_instance
     ]
     # nullable plan proposition relations
-    assert plan_proposition_instance.plan_theme is None
+    assert plan_proposition_instance.plan_themes == []
     assert plan_theme_instance.plan_propositions == []
-    plan_proposition_instance.plan_theme = plan_theme_instance
+    plan_proposition_instance.plan_themes = [plan_theme_instance]
 
     session.flush()
 
-    assert plan_proposition_instance.plan_theme is plan_theme_instance
+    assert plan_proposition_instance.plan_themes == [plan_theme_instance]
     assert plan_theme_instance.plan_propositions == [plan_proposition_instance]
 
 

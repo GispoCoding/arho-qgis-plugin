@@ -117,6 +117,42 @@ legal_effects_association = Table(
 )
 
 
+plan_theme_association = Table(
+    "plan_theme_association",
+    Base.metadata,
+    Column("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column(
+        "plan_regulation_id",
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "plan_proposition_id",
+        ForeignKey(
+            "hame.plan_proposition.id",
+            name="plan_proposition_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column(
+        "plan_theme_id",
+        ForeignKey(
+            "codes.plan_theme.id",
+            name="plan_theme_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+        nullable=False,
+    ),
+    schema="hame",
+)
+
+
 class Plan(PlanBase):
     """
     Maakuntakaava, compatible with Ryhti 2.0 specification
@@ -432,9 +468,7 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
             "codes.type_of_plan_regulation.id", name="type_of_plan_regulation_id_fkey"
         )
     )
-    plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("codes.plan_theme.id", name="plan_theme_id_fkey")
-    )
+
     plan_regulation_group: Mapped[PlanRegulationGroup] = relationship(
         "PlanRegulationGroup", back_populates="plan_regulations"
     )
@@ -449,8 +483,12 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
         backref="plan_regulations",
         lazy="joined",
     )
-    # Let's load all the codes for objects joined.
-    plan_theme = relationship("PlanTheme", backref="plan_regulations", lazy="joined")
+    plan_themes = relationship(
+        "PlanTheme",
+        secondary=plan_theme_association,
+        backref="plan_regulations",
+        lazy="joined",
+    )
 
     additional_information: Mapped[list[AdditionalInformation]] = relationship(
         "AdditionalInformation",
@@ -487,15 +525,17 @@ class PlanProposition(PlanBase):
             ondelete="CASCADE",
         )
     )
-    plan_theme_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("codes.plan_theme.id", name="plan_theme_id_fkey")
-    )
 
     plan_regulation_group = relationship(
         "PlanRegulationGroup", back_populates="plan_propositions"
     )
     # Let's load all the codes for objects joined.
-    plan_theme = relationship("PlanTheme", backref="plan_propositions", lazy="joined")
+    plan_themes = relationship(
+        "PlanTheme",
+        secondary=plan_theme_association,
+        backref="plan_propositions",
+        lazy="joined",
+    )
     text_value: Mapped[Optional[language_str]]
     ordering: Mapped[Optional[int]]
 
