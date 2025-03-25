@@ -1413,16 +1413,27 @@ class RyhtiClient:
                             params=post_parameters,
                             headers=upload_headers,
                         )
-                        post_response.raise_for_status()
-                        LOGGER.info(f"Posted file {post_response.json()}")
-                        responses[plan.id].append(
-                            RyhtiResponse(
-                                status=201,
-                                detail=post_response.json(),
-                                errors=None,
-                                warnings=None,
+                        if post_response.status_code == 201:
+                            LOGGER.info(f"Posted file {post_response.json()}")
+                            responses[plan.id].append(
+                                RyhtiResponse(
+                                    status=201,
+                                    detail=post_response.json(),
+                                    errors=None,
+                                    warnings=None,
+                                )
                             )
-                        )
+                        else:
+                            LOGGER.warning(f"Could not upload file {file_name}!")
+                            LOGGER.warning(post_response.json())
+                            responses[plan.id].append(
+                                RyhtiResponse(
+                                    status=post_response.status_code,
+                                    detail=f"Could not upload file {file_name}!",
+                                    errors=post_response.json(),
+                                    warnings=None,
+                                )
+                            )
                     else:
                         LOGGER.warning("Could not fetch file! Please check file URL.")
                         responses[plan.id].append(
