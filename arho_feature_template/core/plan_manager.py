@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from qgis.core import QgsProject, QgsVectorLayer, QgsWkbTypes
+from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
@@ -84,10 +84,10 @@ class PlanManager(QObject):
     plan_unset = pyqtSignal()
     project_loaded = pyqtSignal()
     project_cleared = pyqtSignal()
+    plan_identifier_set = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
-
         self.json_plan_path = None
         self.json_plan_outline_path = None
 
@@ -122,6 +122,9 @@ class PlanManager(QObject):
 
         # Initialize lambda service
         self.lambda_service = LambdaService()
+        self.lambda_service.plan_identifier_received.connect(
+            lambda value: self.set_permanent_identifier(value["identifier"])
+        )
         self.lambda_service.jsons_received.connect(self.save_plan_jsons)
 
     def initialize_from_project(self):
@@ -236,6 +239,7 @@ class PlanManager(QObject):
         self.previously_editable = plan_layer.isEditable()
 
         self.set_active_plan(None)
+        self.set_permanent_identifier(None)
 
         plan_layer.startEditing()
         self.plan_digitize_map_tool.setLayer(plan_layer)
@@ -414,6 +418,19 @@ class PlanManager(QObject):
             self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
 
             self.lambda_service.serialize_plan(plan_id)
+
+    def get_permanent_plan_identifier(self):
+        """Gets the permanent plan identifier for the active plan."""
+        plan_id = get_active_plan_id()
+        if not plan_id:
+            iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
+            return
+
+        self.lambda_service.get_permanent_identifier(plan_id)
+
+    def set_permanent_identifier(self, identifier):
+        QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "permanent_identifier", identifier)
+        self.plan_identifier_set.emit(identifier)
 
     def save_plan_jsons(self, plan_json, outline_json):
         """This slot saves the plan and outline JSONs to files."""
