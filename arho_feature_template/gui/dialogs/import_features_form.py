@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator
 
 from qgis.core import (
     QgsFeature,
     QgsFeatureIterator,
     QgsFeatureRequest,
     QgsFieldProxyModel,
+    QgsMapLayerProxyModel,
     QgsVectorLayer,
 )
 from qgis.PyQt import uic
@@ -33,7 +34,7 @@ ui_path = resources.files(__package__) / "import_features_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class ImportFeaturesForm(QDialog, FormClass):
+class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
     def __init__(self, active_plan_regulation_groups_library: RegulationGroupLibrary):
         super().__init__()
         self.setupUi(self)
@@ -61,13 +62,16 @@ class ImportFeaturesForm(QDialog, FormClass):
         # Source layer initialization
         # Exclude all project layers from valid source layers
         # NOTE: Some project layers are not included in either `plan_layers` or `code_layers`?
-        self.source_layer_selection.setLayer(iface.activeLayer())
+        self.source_layer_selection.setFilters(QgsMapLayerProxyModel.VectorLayer)
         excluded_layers = [layer.get_from_project() for layer in plan_layers + code_layers]
         self.source_layer_selection.setExceptedLayerList(excluded_layers)
+        if type(iface.activeLayer()) is QgsVectorLayer:
+            self.source_layer_selection.setLayer(iface.activeLayer())
         self.source_layer_selection.layerChanged.connect(self._on_layer_selections_changed)
 
         # Target layer initialization
         # Set only plan feature layers as valid target layers
+        self.target_layer_selection.setFilters(QgsMapLayerProxyModel.VectorLayer)
         self.target_layer_selection.clear()
         self.target_layer_selection.setAdditionalLayers(layer.get_from_project() for layer in plan_feature_layers)
         self.target_layer_selection.setCurrentIndex(0)
@@ -103,8 +107,10 @@ class ImportFeaturesForm(QDialog, FormClass):
 
     def _on_layer_selections_changed(self, _: QgsVectorLayer):
         self.source_layer: QgsVectorLayer = self.source_layer_selection.currentLayer()
-        self.source_layer_name: str = self.source_layer.name()
         self.target_layer: QgsVectorLayer = self.target_layer_selection.currentLayer()
+        if not self.source_layer:
+            return
+        self.source_layer_name: str = self.source_layer.name()
         self.target_layer_name: str = self.target_layer.name()
 
         self.filter_expression.setLayer(self.source_layer)
@@ -158,29 +164,17 @@ class ImportFeaturesForm(QDialog, FormClass):
 
         self.progress_bar.setValue(100)
 
-    def get_source_features(self, source_layer: QgsVectorLayer) -> QgsFeatureIterator | list[QgsFeature]:
+    def get_source_features(self, source_layer: QgsVectorLayer) -> Generator[QgsFeature, None, None]:
+        request = QgsFeatureRequest()
         expression_text = self.filter_expression.currentText()
+        if expression_text:
+            request.setFilterExpression(expression_text)
 
-        # Case 1: Both selection and expression
-        if self.selected_features_only.isChecked() and expression_text:
-            selected_features = source_layer.selectedFeatures()
-            request = QgsFeatureRequest().setFilterExpression(expression_text)
-            source_features = [feat for feat in source_layer.getFeatures(request) if feat in selected_features]
-
-        # Case 2: Only selection
-        elif self.selected_features_only.isChecked():
-            source_features = source_layer.selectedFeatures()
-
-        # Case 3: Only expression
-        elif expression_text:
-            request = QgsFeatureRequest().setFilterExpression(expression_text)
-            source_features = source_layer.getFeatures(request)
-
-        # Case 4: No expression or selection
-        else:
-            source_features = source_layer.getFeatures()
-
-        return source_features
+        return (
+            feat
+            for feat in source_layer.getFeatures(request)
+            if not self.selected_features_only.isChecked() or feat in source_layer.selectedFeatures()
+        )
 
     def create_plan_features(self, source_features: QgsFeatureIterator | list[QgsFeature]) -> list[QgsFeature]:
         type_of_underground_id = self.feature_type_of_underground_selection.value()
