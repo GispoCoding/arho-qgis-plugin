@@ -63,3 +63,6 @@ jobs:
 
       - name: Update dev database
         run: make prefix=${{ vars.INFRA_PREFIX }} migrate-db -C infra
+
+      - name: Update any added koodistot
+        run: make prefix=${{ vars.INFRA_PREFIX }} load-koodistot -C infra

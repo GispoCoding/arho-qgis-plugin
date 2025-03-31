@@ -99,13 +99,6 @@ class TypeOfPlanRegulation(CodeBase):
 class TypeOfAdditionalInformation(CodeBase):
     """
     Kaavamääräyksen lisätiedon laji
-
-    HAME-Ryhti-tietomallissa tämän koodiston arvot jaetaan useaan monivalintakenttään,
-    joista jokaisesta käyttäjä voi valita yhden koodin.
-
-    Toteutetaan kentät niin, että jokaisessa on filtteri, joka tarkistaa sopivan
-    koodistoarvon. Tietokantaan voi tallentaa vain arvon jolla on oikea parent. Ainakin
-    osissa kentistä tämä toimii sellaisenaan, koska arvot on RYTJ:ssä ryhmitelty oikein.
     """
 
     # Let's use a shortish table name, since the long name creates indexes that have
@@ -114,38 +107,6 @@ class TypeOfAdditionalInformation(CodeBase):
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji"
     )
-    local_codes = [
-        {
-            "value": "kayttotarkoitus",
-            "name": {"fin": "Käyttötarkoitus"},
-            "child_values": [
-                "paakayttotarkoitus",
-                "osaAlue",
-                "poisluettavaKayttotarkoitus",
-                "yhteystarve",
-            ],
-        },
-        {
-            "value": "olemassaolo",
-            "name": {"fin": "Olemassaolo"},
-            "child_values": [
-                "olemassaOleva",
-                "sailytettava",
-                "uusi",
-                "olennaisestiMuuttuva",
-            ],
-        },
-        {
-            "value": "kehittaminen",
-            "name": {"fin": "Kehittäminen"},
-            "child_values": [
-                "reservialue",
-                "kehitettava",
-                "merkittavastiParannettava",
-                "eheytettavaTaiTiivistettava",
-            ],
-        },
-    ]
 
 
 class TypeOfVerbalPlanRegulation(CodeBase):

@@ -1,7 +1,7 @@
 import json
 import logging
 from copy import deepcopy
-from typing import Type
+from typing import Iterator, Type
 
 import psycopg2
 import pytest
@@ -443,10 +443,9 @@ def koodistot_data(mock_koodistot, loader):
     assert len(data[codes.NameOfPlanCaseDecision]) == 1
     assert len(data[codes.TypeOfPlanRegulation]) == 4
     assert len(data[codes.PlanType]) == 0
+    assert len(data[codes.TypeOfAdditionalInformation]) == 2
     # data should also contain the local codes
     assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
-    # for mixed local and remote codes, the data should contain both
-    assert len(data[codes.TypeOfAdditionalInformation]) == 5
     return data
 
 
@@ -460,10 +459,9 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     assert len(data[codes.NameOfPlanCaseDecision]) == 1
     assert len(data[codes.TypeOfPlanRegulation]) == 4
     assert len(data[codes.PlanType]) == 0
+    assert len(data[codes.TypeOfAdditionalInformation]) == 2
     # data should also contain the local codes
     assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
-    # for mixed local and remote codes, the data should contain both
-    assert len(data[codes.TypeOfAdditionalInformation]) == 5
     return data
 
 
@@ -573,13 +571,95 @@ def test_get_yleismaaraysryhma(loader, koodistot_data):
     assert "parent_id" not in code.keys()
 
 
-def test_get_kayttotarkoitus(loader, koodistot_data):
+@pytest.fixture(scope="module")
+def custom_code_loader(admin_connection_string) -> Iterator[KoodistotLoader]:
     """
-    Check that local code with remote children is imported
+    Use monkey patched local codes for testing local custom codes with
+    remote children. At the moment, no local custom codes with remote
+    children are used in production.
     """
-    code = loader.get_object(
+    codes.TypeOfAdditionalInformation.local_codes = [
+        {
+            "value": "kayttotarkoitus",
+            "name": {"fin": "Käyttötarkoitus"},
+            "child_values": [
+                "paakayttotarkoitus",
+                "osaAlue",
+                "poisluettavaKayttotarkoitus",
+                "yhteystarve",
+            ],
+        },
+        {
+            "value": "olemassaolo",
+            "name": {"fin": "Olemassaolo"},
+            "child_values": [
+                "olemassaOleva",
+                "sailytettava",
+                "uusi",
+                "olennaisestiMuuttuva",
+            ],
+        },
+        {
+            "value": "kehittaminen",
+            "name": {"fin": "Kehittäminen"},
+            "child_values": [
+                "reservialue",
+                "kehitettava",
+                "merkittavastiParannettava",
+                "eheytettavaTaiTiivistettava",
+            ],
+        },
+    ]
+    yield KoodistotLoader(
+        admin_connection_string,
+        api_url="http://mock.url",
+    )
+    # we have to remove local codes after the test so that they aren't found
+    # in other tests that import the codes module
+    codes.TypeOfAdditionalInformation.local_codes = []
+
+
+@pytest.fixture()
+def custom_koodistot_data(mock_koodistot, custom_code_loader):
+    data = custom_code_loader.get_objects()
+    assert len(data) == 21  # this must be changed if new code lists with uri are added
+    # data should contain the mock data and be empty for other tables
+    print(data[codes.LifeCycleStatus])
+    assert len(data[codes.LifeCycleStatus]) == 2
+    assert len(data[codes.NameOfPlanCaseDecision]) == 1
+    assert len(data[codes.TypeOfPlanRegulation]) == 4
+    assert len(data[codes.PlanType]) == 0
+    # data should also contain the local codes
+    assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
+    # patched class should have both local and remote codes
+    assert len(data[codes.TypeOfAdditionalInformation]) == 5
+    return data
+
+
+@pytest.fixture()
+def changed_custom_koodistot_data(changed_mock_koodistot, custom_code_loader):
+    data = custom_code_loader.get_objects()
+    assert len(data) == 21  # this must be changed if new code lists with uri are added
+    # data should contain the mock data and be empty for other tables
+    print(data[codes.LifeCycleStatus])
+    assert len(data[codes.LifeCycleStatus]) == 3
+    assert len(data[codes.NameOfPlanCaseDecision]) == 1
+    assert len(data[codes.TypeOfPlanRegulation]) == 4
+    assert len(data[codes.PlanType]) == 0
+    # data should also contain the local codes
+    assert len(data[codes.TypeOfPlanRegulationGroup]) == 5
+    # patched class should have both local and remote codes
+    assert len(data[codes.TypeOfAdditionalInformation]) == 5
+    return data
+
+
+def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data):
+    """
+    Check that custom local code with remote children is imported
+    """
+    code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
-        koodistot_data[codes.TypeOfAdditionalInformation][
+        custom_koodistot_data[codes.TypeOfAdditionalInformation][
             codes.TypeOfAdditionalInformation.local_codes[0]["value"]
         ],
     )
@@ -595,13 +675,13 @@ def test_get_kayttotarkoitus(loader, koodistot_data):
     assert "parent_id" not in code.keys()
 
 
-def test_get_paakayttotarkoitus(loader, koodistot_data):
+def test_get_custom_paakayttotarkoitus(custom_code_loader, custom_koodistot_data):
     """
-    Check that remote code with local parent is imported
+    Check that remote code with custom local parent is imported
     """
-    code = loader.get_object(
+    code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
-        koodistot_data[codes.TypeOfAdditionalInformation]["paakayttotarkoitus"],
+        custom_koodistot_data[codes.TypeOfAdditionalInformation]["paakayttotarkoitus"],
     )
     assert code["id"] == "19f05f06-b18f-4d06-917a-2041204266b1"
     assert code["value"] == "paakayttotarkoitus"
@@ -692,13 +772,15 @@ def assert_changed_data_is_imported(main_db_params):
         conn.close()
 
 
-def test_save_objects(loader, koodistot_data, main_db_params):
-    loader.save_objects(koodistot_data)
+def test_save_objects(custom_code_loader, custom_koodistot_data, main_db_params):
+    custom_code_loader.save_objects(custom_koodistot_data)
     assert_data_is_imported(main_db_params)
 
 
 def test_save_changed_objects(
-    changed_koodistot_data, admin_connection_string, main_db_params
+    changed_custom_koodistot_data,
+    admin_connection_string,
+    main_db_params,
 ):
     # The database is already populated in the first test. Because
     # connection string (and therefore hame_database_created)
@@ -709,5 +791,5 @@ def test_save_changed_objects(
         admin_connection_string,
         api_url="http://mock.url",
     )
-    loader.save_objects(changed_koodistot_data)
+    loader.save_objects(changed_custom_koodistot_data)
     assert_changed_data_is_imported(main_db_params)
