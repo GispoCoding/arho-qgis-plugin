@@ -95,6 +95,8 @@ requests==2.32.3
     #   requests-mock
 requests-mock==1.12.1
     # via -r requirements-dev.in
+types-requests==2.32.0.20250328
+    # via -r requirements-dev.in
 types-simplejson==3.19.0.20241221
     # via -r requirements-dev.in
 typing-extensions==4.12.2
@@ -105,5 +107,6 @@ urllib3==2.3.0
     # via
     #   -c /Users/riku/repos/hame-ryhti/requirements.txt
     #   requests
+    #   types-requests
 virtualenv==20.29.1
     # via pre-commit

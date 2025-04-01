@@ -11,4 +11,5 @@ pytest-dotenv
 python-dotenv
 pytest-docker
 requests-mock
+types-requests
 types-simplejson

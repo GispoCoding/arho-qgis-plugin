@@ -12,6 +12,7 @@ import requests
 import simplejson as json  # type: ignore
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
+from requests_toolbelt.multipart.encoder import MultipartEncoder
 from shapely import to_geojson
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Query, sessionmaker
@@ -1391,15 +1392,14 @@ class RyhtiClient:
                     # and then uploading:
                     file_request = requests.get(document.url, stream=True)
                     if file_request.status_code == 200:
+                        file_request.raw.decode_content = True
                         file_name = document.url.split("/")[-1]
                         file_type = file_request.headers["Content-Type"]
-                        files = {
-                            "file": (
-                                file_name,
-                                file_request.raw,
-                                file_type,
-                            )
-                        }
+                        encoded_data = MultipartEncoder(
+                            fields={
+                                "file": (file_name, file_request.raw, file_type),
+                            }
+                        )
                         # TODO: get coordinate system from file. Maybe not easy
                         # if just streaming it thru.
                         post_parameters = (
@@ -1409,7 +1409,7 @@ class RyhtiClient:
                         )
                         post_response = requests.post(
                             file_endpoint,
-                            files=files,
+                            data=encoded_data,
                             params=post_parameters,
                             headers=upload_headers,
                         )
