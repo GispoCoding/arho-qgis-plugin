@@ -588,7 +588,7 @@ class Document:
     name: str | None = None
     url: str | None = None
     type_of_document_id: str | None = None
-    decision: bool | None = None
+    accessibility: bool = False
     # permanent_document_identifier: str | None = None
     category_of_publicity_id: str | None = None
     personal_data_content_id: str | None = None

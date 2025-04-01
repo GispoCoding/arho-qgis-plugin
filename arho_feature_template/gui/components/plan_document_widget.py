@@ -48,8 +48,8 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.document_type_label: QLabel
         self.publicity: CodeComboBox
         self.publicity_label: QLabel
-        self.decision: QCheckBox
-        self.decision_label: QLabel
+        self.accessibility: QCheckBox
+        self.accessibility_label: QLabel
         self.language: CodeComboBox
         self.language_label: QLabel
         self.retention_time: HierarchicalCodeComboBox
@@ -86,7 +86,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
             (self.url_label, self.url),
             (self.document_type_label, self.document_type),
             (self.publicity_label, self.publicity),
-            (self.decision_label, self.decision),
+            (self.accessibility_label, self.accessibility),
             (self.language_label, self.language),
             (self.retention_time_label, self.retention_time),
             (self.personal_data_content_label, self.personal_data_content),
@@ -111,7 +111,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.url.setText(document.url)
         self.document_type.set_value(document.type_of_document_id)
         self.publicity.set_value(document.category_of_publicity_id)
-        self.decision.setChecked(document.decision is True)
+        self.accessibility.setChecked(document.accessibility is True)
         if document.language_id:
             self.language.set_value(document.language_id)
         self.retention_time.set_value(document.retention_time_id)
@@ -174,7 +174,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
             name=self.name.text(),
             url=self.url.text(),
             type_of_document_id=self.document_type.value(),
-            decision=self.decision.isChecked(),
+            accessibility=self.accessibility.isChecked(),
             category_of_publicity_id=self.publicity.value(),
             personal_data_content_id=self.personal_data_content.value(),
             retention_time_id=self.retention_time.value(),
