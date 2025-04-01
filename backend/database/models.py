@@ -593,14 +593,14 @@ class Document(VersionedBase):
     retention_time = relationship("RetentionTime", backref="documents", lazy="joined")
     language = relationship("Language", backref="documents", lazy="joined")
 
-    permanent_document_identifier: Mapped[Optional[uuid.UUID]]  # e.g. diaarinumero
+    permanent_document_identifier: Mapped[Optional[str]]  # e.g. diaarinumero
     name: Mapped[Optional[language_str]]
     exported_at: Mapped[Optional[datetime]]
     # Ryhti key for the latest file version that was uploaded:
     exported_file_key: Mapped[Optional[uuid.UUID]]
     arrival_date: Mapped[Optional[datetime]]
     confirmation_date: Mapped[Optional[datetime]]
-    decision: Mapped[bool]
+    accessibility: Mapped[bool] = mapped_column(default=False)
     decision_date: Mapped[Optional[datetime]]
     document_date: Mapped[datetime]
     url: Mapped[Optional[str]]

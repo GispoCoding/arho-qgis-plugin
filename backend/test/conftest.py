@@ -697,6 +697,24 @@ def type_of_document_plan_map_instance(temp_session_feature):
 
 
 @pytest.fixture()
+def type_of_document_oas_instance(temp_session_feature):
+    instance = codes.TypeOfDocument(value="14", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_document_plan_description_instance(temp_session_feature):
+    instance = codes.TypeOfDocument(value="06", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_document_other_instance(temp_session_feature):
+    instance = codes.TypeOfDocument(value="99", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
 def category_of_publicity_public_instance(temp_session_feature):
     instance = codes.CategoryOfPublicity(value="1", status="LOCAL")
     return temp_session_feature(instance)
@@ -1406,24 +1424,79 @@ def source_data_instance(
 
 # Document fixtures
 
-# @pytest.fixture(scope="function")
-# def document_instance(
-#     session, type_of_document_instance, category_of_publicity_instance, plan_instance
-# ):
-#     instance = models.Document(
-#         name="Testidokumentti",
-#         type_of_document=type_of_document_instance,
-#         personal_details="Testihenkilö",
-#         publicity=category_of_publicity_instance,
-#         language="fin",
-#         decision=False,
-#         plan=plan_instance,
-#     )
-#     session.add(instance)
-#     session.commit()
-#     yield instance
-#     session.delete(instance)
-#     session.commit()
+
+@pytest.fixture(scope="function")
+def document_instance(
+    temp_session_feature,
+    plan_instance,
+    type_of_document_oas_instance,
+    category_of_publicity_public_instance,
+    personal_data_content_no_personal_data_instance,
+    retention_time_permanent_instance,
+    language_finnish_instance,
+):
+    instance = models.Document(
+        name={"fin": "Osallistumis- ja arviointisuunnitelma"},
+        type_of_document=type_of_document_oas_instance,
+        permanent_document_identifier="HEL 2024-016009",
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def plan_report_instance(
+    temp_session_feature,
+    plan_instance,
+    type_of_document_plan_description_instance,
+    category_of_publicity_public_instance,
+    personal_data_content_no_personal_data_instance,
+    retention_time_permanent_instance,
+    language_finnish_instance,
+):
+    instance = models.Document(
+        name={"fin": "Kaavaselostus"},
+        type_of_document=type_of_document_plan_description_instance,
+        permanent_document_identifier="HEL 2024-016009",
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture(scope="function")
+def other_document_instance(
+    temp_session_feature,
+    plan_instance,
+    type_of_document_other_instance,
+    category_of_publicity_public_instance,
+    personal_data_content_no_personal_data_instance,
+    retention_time_permanent_instance,
+    language_finnish_instance,
+):
+    instance = models.Document(
+        name={"fin": "Muu asiakirja"},
+        type_of_document=type_of_document_other_instance,
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    )
+    return temp_session_feature(instance)
 
 
 @pytest.fixture(scope="function")
@@ -1444,7 +1517,6 @@ def plan_map_instance(
         retention_time=retention_time_permanent_instance,
         language=language_finnish_instance,
         document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
-        decision=False,
         plan=plan_instance,
         url="https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
     )
@@ -1630,6 +1702,9 @@ def make_additional_information_instance_of_type(session: Session):
 @pytest.fixture(scope="function")
 def complete_test_plan(
     session: Session,
+    document_instance: models.Document,
+    plan_report_instance: models.Document,
+    other_document_instance: models.Document,
     plan_map_instance: models.Document,
     plan_instance: models.Plan,
     land_use_area_instance: models.LandUseArea,
@@ -2524,7 +2599,7 @@ def desired_plan_matter_dict(
                     "typeOfDecisionMaker": "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija/code/01",
                     "plans": [
                         {
-                            # Maps must be added to the valid plan inside plan matter
+                            # Documents must be added to the valid plan inside plan matter
                             **desired_plan_dict,
                             "planMaps": [
                                 {
@@ -2534,6 +2609,58 @@ def desired_plan_matter_dict(
                                     },
                                     "fileKey": "whatever else",
                                     "coordinateSystem": "3067",
+                                }
+                            ],
+                            "planAnnexes": [
+                                {
+                                    "attachmentDocumentKey": "whatever",
+                                    "name": {
+                                        "fin": "Osallistumis- ja arviointisuunnitelma",
+                                    },
+                                    "fileKey": "whatever else",
+                                    "documentIdentifier": "HEL 2024-016009",
+                                    "personalDataContent": "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto/code/1",
+                                    "categoryOfPublicity": "http://uri.suomi.fi/codelist/rytj/julkisuus/code/1",
+                                    "retentionTime": "http://uri.suomi.fi/codelist/rytj/sailytysaika/code/01",
+                                    "languages": [
+                                        "http://uri.suomi.fi/codelist/rytj/ryhtikielet/code/fi"
+                                    ],
+                                    "accessibility": False,
+                                    "documentDate": "2024-01-01",
+                                    "typeOfAttachment": "http://uri.suomi.fi/codelist/rytj/RY_AsiakirjanLaji_YKAK/code/14",
+                                }
+                            ],
+                            "planReport": {
+                                "planReportKey": "whatever",
+                                "attachmentDocuments": [
+                                    {
+                                        "attachmentDocumentKey": "whatever",
+                                        "name": {
+                                            "fin": "Kaavaselostus",
+                                        },
+                                        "fileKey": "whatever else",
+                                        "documentIdentifier": "HEL 2024-016009",
+                                        "personalDataContent": "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto/code/1",
+                                        "categoryOfPublicity": "http://uri.suomi.fi/codelist/rytj/julkisuus/code/1",
+                                        "retentionTime": "http://uri.suomi.fi/codelist/rytj/sailytysaika/code/01",
+                                        "languages": [
+                                            "http://uri.suomi.fi/codelist/rytj/ryhtikielet/code/fi"
+                                        ],
+                                        "accessibility": False,
+                                        "documentDate": "2024-01-01",
+                                        "typeOfAttachment": "http://uri.suomi.fi/codelist/rytj/RY_AsiakirjanLaji_YKAK/code/06",
+                                    }
+                                ],
+                            },
+                            "otherPlanMaterials": [
+                                {
+                                    "otherPlanMaterialKey": "whatever",
+                                    "name": {
+                                        "fin": "Muu asiakirja",
+                                    },
+                                    "fileKey": "whatever else",
+                                    "personalDataContent": "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto/code/1",
+                                    "categoryOfPublicity": "http://uri.suomi.fi/codelist/rytj/julkisuus/code/1",
                                 }
                             ],
                         }

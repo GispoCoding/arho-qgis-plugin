@@ -937,8 +937,9 @@ class RyhtiClient:
         attachment_document["retentionTime"] = document.retention_time.uri
         attachment_document["languages"] = [document.language.uri]
         attachment_document["fileKey"] = document.exported_file_key
-        attachment_document["documentDate"] = document.document_date
-        attachment_document["arrivedDate"] = document.arrival_date
+        attachment_document["documentDate"] = self.get_date(document.document_date)
+        if document.arrival_date:
+            attachment_document["arrivedDate"] = self.get_date(document.arrival_date)
         attachment_document["typeOfAttachment"] = document.type_of_document.uri
         return attachment_document
 
@@ -950,7 +951,6 @@ class RyhtiClient:
         other_plan_material["otherPlanMaterialKey"] = document.id
         other_plan_material["name"] = document.name
         other_plan_material["fileKey"] = document.exported_file_key
-        other_plan_material["otherPlanMaterialLink"] = document.url
         other_plan_material["personalDataContent"] = document.personal_data_content.uri
         other_plan_material["categoryOfPublicity"] = document.category_of_publicity.uri
         return other_plan_material
