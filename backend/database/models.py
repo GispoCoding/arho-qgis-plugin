@@ -600,7 +600,7 @@ class Document(VersionedBase):
     exported_file_key: Mapped[Optional[uuid.UUID]]
     arrival_date: Mapped[Optional[datetime]]
     confirmation_date: Mapped[Optional[datetime]]
-    accessibility: Mapped[bool] = mapped_column(default=False)
+    accessibility: Mapped[bool] = mapped_column(default=False, server_default="0")
     decision_date: Mapped[Optional[datetime]]
     document_date: Mapped[datetime]
     url: Mapped[Optional[str]]
