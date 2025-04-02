@@ -1034,9 +1034,11 @@ class RyhtiClient:
                     plan, plan.lifecycle_status.value
                 )[-1]
             except IndexError:
-                raise AssertionError(
+                # If we have an old plan with no phase data, we cannot add decisions.
+                LOGGER.warning(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
+                continue
             # Decision date will be
             # 1) decision date if found in database or, if not found,
             # 2) start of the current status period is used as backup.
@@ -1090,9 +1092,11 @@ class RyhtiClient:
                     plan, plan.lifecycle_status.value
                 )[-1]
             except IndexError:
-                raise AssertionError(
+                # If we have an old plan with no phase data, we cannot add any events.
+                LOGGER.warning(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
+                continue
             # Handling event date will be
             # 1) handling event date if found in database or, if not found,
             # 2) start of the current status period is used as backup.
@@ -1146,9 +1150,11 @@ class RyhtiClient:
                     plan, plan.lifecycle_status.value
                 )[-1]
             except IndexError:
-                raise AssertionError(
+                # If we have an old plan with no phase data, we cannot add any events.
+                LOGGER.warning(
                     "Error in plan! Current lifecycle status is missing start date."
                 )
+                continue
             # Interaction event period will be
             # 1) interaction event period if found in database or, if not found,
             # 2) 30 days at start of the current status period (nähtävilläoloaika) are
