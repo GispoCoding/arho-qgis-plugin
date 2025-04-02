@@ -1493,6 +1493,16 @@ class RyhtiClient:
                         "detail": None,
                         "warnings": None,
                     }
+                elif response.status_code == 400:
+                    LOGGER.info(
+                        "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa
+                    )
+                    responses[plan.id] = {
+                        "status": 400,
+                        "errors": response.json(),
+                        "detail": None,
+                        "warnings": None,
+                    }
                 else:
                     response.raise_for_status()
                     LOGGER.info(f"Received identifier {response.json()}")
