@@ -255,7 +255,9 @@ decisions_by_status = {
         "05",
         "06",
     ],  # lifecycle/req-codelist-plandecision-name-codevalue-preparation
-    "04": ["07", "08"],  # lifecycle/req-codelist-plandecision-name-codevalue-proposal
+    "04": [
+        "08"
+    ],  # lifecycle__req_codelist_plandecision_name_codevalue_changed_proposal_reversed  # noqa
     "05": ["07", "09"],  # lifecycle/req-codelist-regionalplan-decisionname-lifecycle-05
     "06": [
         "11A"
