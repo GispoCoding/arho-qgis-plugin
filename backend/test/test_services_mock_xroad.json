@@ -41,7 +41,6 @@
             ],
             "headers": {
                 "Accept": "application/json",
-                "Content-Type": "multipart/form-data",
                 "X-Road-Client": "FI-TEST/COM/2455538-5/ryhti-gispo-client",
                 "Authorization": "Bearer test-token"
             }

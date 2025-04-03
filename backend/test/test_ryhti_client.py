@@ -5,6 +5,7 @@ from typing import Callable, cast
 from uuid import uuid4
 
 import pytest
+from requests import PreparedRequest
 from requests_mock.request import _RequestObjectProxy
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 from simplejson import JSONEncoder
@@ -145,19 +146,15 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
 
 @pytest.fixture()
 def mock_xroad_ryhti_fileupload(requests_mock) -> None:
-    def match_request_body(request: _RequestObjectProxy):
-        # Looks like we cannot match streamed content. Trying to match mock request content here results in
-        # some kind of race condition or lock on reading from the content, probably mock-requests does not
-        # expect us to empty the streaming body by reading from it, so it gets stuck on reading the request.
-        # So let's just check that the request has the correct metadata. For streaming requests,
-        # multipartencoder is saved as request body.
-        body: MultipartEncoder = request.body
+    def match_request_body(request: PreparedRequest):
+        # Check that the file is uploaded:
+        assert "multipart/form-data; boundary=" in request.headers["Content-Type"]
         return (
-            body.fields["file"][0] == "dummy.pdf"
-            and body.fields["file"][2] == "application/pdf"
+            b'Content-Disposition: form-data; name="file"; filename="GeogToWGS84GeoKey5.tif"'
+            in cast(bytes, request.body)
         ) or (
-            body.fields["file"][0] == "GeogToWGS84GeoKey5.tif"
-            and body.fields["file"][2] == "image/tiff"
+            b'Content-Disposition: form-data; name="file"; filename="dummy.pdf"'
+            in cast(bytes, request.body)
         )
 
     requests_mock.post(
@@ -168,7 +165,6 @@ def mock_xroad_ryhti_fileupload(requests_mock) -> None:
             "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
-            "Content-type": "multipart/form-data",
         },
         additional_matcher=match_request_body,
         status_code=201,
