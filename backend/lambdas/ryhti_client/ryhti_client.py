@@ -1407,7 +1407,6 @@ class RyhtiClient:
                     # and then uploading:
                     file_request = requests.get(document.url, stream=True)
                     if file_request.status_code == 200:
-                        file_request.raw.decode_content = True
                         file_name = document.url.split("/")[-1]
                         file_type = file_request.headers["Content-Type"]
                         # Stream file instead of reading it to memory
