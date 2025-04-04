@@ -1388,6 +1388,7 @@ class RyhtiClient:
                         and document.exported_file_etag == etag
                     ) or (
                         document.exported_at
+                        and last_modified
                         and document.exported_at
                         > email.utils.parsedate_to_datetime(last_modified)
                     ):
