@@ -1380,8 +1380,12 @@ class RyhtiClient:
                     # No need to upload if document hasn't changed
                     headers = requests.head(document.url).headers
                     print(headers)
-                    last_modified = headers["Last-Modified"]
+                    etag = headers.get("ETag")
+                    last_modified = headers.get("Last-Modified")
                     if (
+                        document.exported_file_etag
+                        and document.exported_file_etag == etag
+                    ) or (
                         document.exported_at
                         and document.exported_at
                         > email.utils.parsedate_to_datetime(last_modified)

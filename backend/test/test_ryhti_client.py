@@ -740,6 +740,7 @@ def test_upload_unchanged_plan_documents(
     """
     old_exported_at = plan_instance.documents[0].exported_at
     old_file_key = plan_instance.documents[0].exported_file_key
+    old_file_etag = plan_instance.documents[0].exported_file_etag
     reupload_responses = (
         authenticated_client_with_valid_plan_and_documents.upload_plan_documents()
     )
@@ -755,6 +756,7 @@ def test_upload_unchanged_plan_documents(
     session.refresh(plan_instance.documents[0])
     assert plan_instance.documents[0].exported_at == old_exported_at
     assert plan_instance.documents[0].exported_file_key == old_file_key
+    assert plan_instance.documents[0].exported_file_etag == old_file_etag
 
 
 def test_set_permanent_plan_identifiers_in_wrong_region(

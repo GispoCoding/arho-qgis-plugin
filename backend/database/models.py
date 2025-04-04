@@ -598,6 +598,8 @@ class Document(VersionedBase):
     exported_at: Mapped[Optional[datetime]]
     # Ryhti key for the latest file version that was uploaded:
     exported_file_key: Mapped[Optional[uuid.UUID]]
+    # Entity tag header for the latest file version that was uploaded:
+    exported_file_etag: Mapped[Optional[str]]
     arrival_date: Mapped[Optional[datetime]]
     confirmation_date: Mapped[Optional[datetime]]
     accessibility: Mapped[bool] = mapped_column(default=False, server_default="0")
