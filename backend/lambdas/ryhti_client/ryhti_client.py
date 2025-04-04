@@ -1378,12 +1378,13 @@ class RyhtiClient:
             for document in plan.documents:
                 if document.url:
                     # No need to upload if document hasn't changed
+                    headers = requests.head(document.url).headers
+                    print(headers)
+                    last_modified = headers["Last-Modified"]
                     if (
                         document.exported_at
                         and document.exported_at
-                        > email.utils.parsedate_to_datetime(
-                            requests.head(document.url).headers["Last-Modified"]
-                        )
+                        > email.utils.parsedate_to_datetime(last_modified)
                     ):
                         LOGGER.info("File unchanged since last upload.")
                         responses[plan.id].append(
