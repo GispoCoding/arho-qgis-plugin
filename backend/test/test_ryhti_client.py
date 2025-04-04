@@ -80,18 +80,12 @@ def mock_public_map_document(requests_mock):
         requests_mock.get(
             "https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
             body=plan_map,
-            headers={
-                "Content-type": "image/tiff",
-                "Last-Modified": "Mon, 01 Jan 2024 00:00:00 GMT",
-            },
+            headers={"Content-type": "image/tiff", "ETag": "same old file"},
             status_code=200,
         )
         requests_mock.head(
             "https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
-            headers={
-                "Content-type": "image/tiff",
-                "Last-Modified": "Mon, 01 Jan 2024 00:00:00 GMT",
-            },
+            headers={"Content-type": "image/tiff", "ETag": "same old file"},
             status_code=200,
         )
         yield
@@ -107,18 +101,12 @@ def mock_public_attachment_document(requests_mock):
         requests_mock.get(
             "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
             body=plan_attachment,
-            headers={
-                "Content-type": "application/pdf",
-                "Last-Modified": "Mon, 01 Jan 2024 00:00:00 GMT",
-            },
+            headers={"Content-type": "application/pdf", "ETag": "same old file"},
             status_code=200,
         )
         requests_mock.head(
             "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-            headers={
-                "Content-type": "application/pdf",
-                "Last-Modified": "Mon, 01 Jan 2024 00:00:00 GMT",
-            },
+            headers={"Content-type": "application/pdf", "ETag": "same old file"},
             status_code=200,
         )
         yield
@@ -673,6 +661,7 @@ def test_set_plan_documents(
     session.refresh(plan_instance.documents[0])
     assert plan_instance.documents[0].exported_at
     assert plan_instance.documents[0].exported_file_key
+    assert plan_instance.documents[0].exported_file_etag
 
 
 @pytest.fixture()
@@ -747,6 +736,9 @@ def test_upload_unchanged_plan_documents(
     old_exported_at = plan_instance.documents[0].exported_at
     old_file_key = plan_instance.documents[0].exported_file_key
     old_file_etag = plan_instance.documents[0].exported_file_etag
+    assert old_exported_at
+    assert old_file_key
+    assert old_file_etag
     reupload_responses = (
         authenticated_client_with_valid_plan_and_documents.upload_plan_documents()
     )

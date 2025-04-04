@@ -1398,7 +1398,8 @@ class RyhtiClient:
                                 status=None,
                                 detail="File unchanged since last upload.",
                                 errors=None,
-                                warnings=None,
+                                # Let's just piggyback the etag in the response.
+                                warnings={"ETag": etag},
                             )
                         )
                         continue
@@ -1436,7 +1437,8 @@ class RyhtiClient:
                                     status=201,
                                     detail=post_response.json(),
                                     errors=None,
-                                    warnings=None,
+                                    # Let's just piggyback the etag in the response.
+                                    warnings={"ETag": etag},
                                 )
                             )
                         else:
@@ -1832,8 +1834,8 @@ class RyhtiClient:
 
     def set_plan_documents(self, responses: Dict[str, List[RyhtiResponse]]):
         """
-        Save uploaded plan document keys and export times to the database. Also,
-        append document data to the plan dictionaries.
+        Save uploaded plan document keys, export times and etags to the database.
+        Also, append document data to the plan dictionaries.
         """
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
@@ -1847,6 +1849,11 @@ class RyhtiClient:
                     if document_response["status"] == 201:
                         document.exported_file_key = document_response["detail"]
                         document.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
+                        # Save the etag of the uploaded file, piggybacked in response
+                        if document_response["warnings"]:
+                            document.exported_file_etag = document_response["warnings"][
+                                "ETag"
+                            ]
                     # We can only serialize the document after it has been uploaded
                     self.add_document_to_plan_dict(
                         document, self.plan_dictionaries[plan_id]
