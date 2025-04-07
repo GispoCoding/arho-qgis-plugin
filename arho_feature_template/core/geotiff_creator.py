@@ -125,7 +125,13 @@ class GeoTiffCreator:
             ds,
             outputSRS="EPSG:3067",
             format="GTiff",
-            creationOptions=["COMPRESS=LZW", "TILED=YES"],
+            outputType=gdal.GDT_Byte,
+            bandList=[1, 2, 3],
+            creationOptions={
+                "COMPRESS=LZW",
+                "TILED=YES",
+                "BIGTIFF=IF_SAFER",
+            },
         )
 
         iface.messageBar().pushSuccess("", f"GeoTIFF tallennettu polkuun: {geotiff_path}")
