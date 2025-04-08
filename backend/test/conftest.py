@@ -2608,7 +2608,7 @@ def desired_plan_matter_dict(
                                         "fin": "Kaavakartta",
                                     },
                                     "fileKey": "whatever else",
-                                    "coordinateSystem": "3067",
+                                    "coordinateSystem": "http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG3067",
                                 }
                             ],
                             "planAnnexes": [

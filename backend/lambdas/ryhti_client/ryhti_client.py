@@ -918,7 +918,9 @@ class RyhtiClient:
         plan_map["name"] = document.name
         plan_map["fileKey"] = document.exported_file_key
         # TODO: Take the coordinate system from the actual file?
-        plan_map["coordinateSystem"] = str(base.PROJECT_SRID)
+        plan_map[
+            "coordinateSystem"
+        ] = f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{str(base.PROJECT_SRID)}"  # noqa
         return plan_map
 
     def get_plan_attachment_document(self, document: models.Document) -> Dict:
