@@ -168,7 +168,6 @@ class Plan(PlanBase):
     # models, not just one field or one table in database.
     validated_at: Mapped[Optional[datetime]]
     validation_errors: Mapped[Optional[dict[str, str]]]
-    to_be_exported: Mapped[bool] = mapped_column(server_default="f")
 
     general_plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
         secondary=regulation_group_association,
