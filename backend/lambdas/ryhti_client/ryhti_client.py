@@ -84,6 +84,7 @@ class Action(enum.Enum):
     GET_PLANS = "get_plans"
     VALIDATE_PLANS = "validate_plans"
     GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
+    GET_PLAN_MATTERS = "get_plan_matters"
     VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     POST_PLAN_MATTERS = "post_plan_matters"
 
@@ -2160,6 +2161,21 @@ def handler(
                 body=ResponseBody(
                     title=response_title,
                     details=cast(dict, client.plan_dictionaries),
+                    ryhti_responses={},
+                ),
+            )
+
+        if event_type is Action.GET_PLAN_MATTERS:
+            # just return the JSON to the user
+            LOGGER.info("Formatting plan matter data...")
+            plan_matters = client.get_plan_matters()
+            response_title = "Returning serialized plan matters from database."
+            LOGGER.info(response_title)
+            lambda_response = Response(
+                statusCode=200,
+                body=ResponseBody(
+                    title=response_title,
+                    details=cast(dict, plan_matters),
                     ryhti_responses={},
                 ),
             )

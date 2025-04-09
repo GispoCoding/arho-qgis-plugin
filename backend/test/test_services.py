@@ -477,6 +477,82 @@ def test_get_permanent_plan_identifier(get_permanent_plan_identifier, main_db_pa
 
 
 @pytest.fixture()
+def get_single_plan_matter(
+    ryhti_client_url, complete_test_plan, another_test_plan, desired_plan_matter_dict
+):
+    """
+    Get single plan matter JSON from lambda by id. Another plan in the database should
+    not be serialized.
+
+    Getting plan matter should make lambda return http 200 OK (to indicate that
+    serialization has been run successfully), with the ryhti_responses dict empty, and
+    details dict containing the serialized plan matter.
+
+    Formatting plan matter requires that a plan has a permanent identifier.
+    """
+    payload = {
+        "action": "get_permanent_plan_identifiers",
+        "plan_uuid": complete_test_plan.id,
+        "save_json": True,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    # now the plan has permanent identifier, we can proceed:
+    payload = {
+        "action": "get_plan_matters",
+        "plan_uuid": complete_test_plan.id,
+        "save_json": True,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    body = data["body"]
+    assert body["title"] == "Returning serialized plan matters from database."
+    # Check that other plan matter is NOT returned
+    assert len(body["details"]) == 1
+    deepcompare(
+        body["details"][complete_test_plan.id],
+        desired_plan_matter_dict,
+        ignore_keys=[
+            "planMatterPhaseKey",
+            "handlingEventKey",
+            "interactionEventKey",
+            "planDecisionKey",
+            "planMaps",  # currently, we do not upload documents when getting plan matter json
+            "planAnnexes",  # currently, we do not upload documents when getting plan matter json
+            "planReport",  # currently, we do not upload documents when getting plan matter json
+            "otherPlanMaterials",  # currently, we do not upload documents when getting plan matter json
+            "fileKey",
+        ],
+        ignore_order_for_keys=[
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
+    )
+    assert not body["ryhti_responses"]
+
+
+def test_get_single_plan_matter(get_single_plan_matter, main_db_params):
+    """
+    Test the whole lambda endpoint with single_plan_matter
+    """
+    # getting plan JSON from lambda should not run validations
+    conn = psycopg2.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            # Check that plans are NOT validated
+            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
+            validation_date, errors = cur.fetchone()
+            assert not validation_date
+            assert not errors
+    finally:
+        conn.close()
+
+
+@pytest.fixture()
 def validate_valid_plan_matter_in_preparation(ryhti_client_url, complete_test_plan):
     """
     Validate a valid Ryhti plan and plan matter against the Ryhti API. This guarantees
