@@ -128,9 +128,9 @@ class GeoTiffCreator:
             outputType=gdal.GDT_Byte,
             bandList=[1, 2, 3],
             creationOptions={
-                "COMPRESS=LZW",
-                "TILED=YES",
-                "BIGTIFF=IF_SAFER",
+                "COMPRESS": "LZW",
+                "TILED": "YES",
+                "BIGTIFF": "IF_SAFER",
             },
         )
 
