@@ -1304,8 +1304,6 @@ class RyhtiClient:
         """
         plan_matters = dict()
         for plan in self.plans.values():
-            if not plan.permanent_plan_identifier:
-                continue
             plan_matters[plan.id] = self.get_plan_matter(plan)
         return plan_matters
 
@@ -1562,6 +1560,9 @@ class RyhtiClient:
         responses: Dict[str, RyhtiResponse] = dict()
         for plan_id, plan_matter in self.plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
+            if not permanent_id:
+                LOGGER.info("Plan has no permanent id, cannot validate plan matter.")
+                continue
             plan_matter_validation_endpoint = (
                 self.xroad_server_address
                 + self.xroad_api_path
@@ -1678,6 +1679,9 @@ class RyhtiClient:
         responses: Dict[str, RyhtiResponse] = dict()
         for plan_id, plan_matter in self.plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
+            if not permanent_id:
+                LOGGER.info("Plan has no permanent id, cannot post plan matter.")
+                continue
             plan_matter_endpoint = (
                 self.xroad_server_address
                 + self.xroad_api_path
