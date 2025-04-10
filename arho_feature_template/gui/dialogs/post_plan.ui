@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>581</width>
-    <height>365</height>
+    <width>407</width>
+    <height>84</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -26,16 +26,6 @@
    <bool>false</bool>
   </property>
   <layout class="QVBoxLayout" name="mainLayout">
-   <item>
-    <widget class="QTreeView" name="validationResultTreeView">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="visible">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
    <item>
     <widget class="QProgressBar" name="progressBar">
      <property name="minimum">
@@ -66,28 +56,6 @@
         </size>
        </property>
       </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="exportButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>50</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="layoutDirection">
-        <enum>Qt::RightToLeft</enum>
-       </property>
-       <property name="text">
-        <string>Vie kaava</string>
-       </property>
-      </widget>
      </item>
      <item>
       <widget class="QDialogButtonBox" name="dialogButtonBox">
