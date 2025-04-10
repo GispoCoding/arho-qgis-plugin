@@ -1753,6 +1753,7 @@ class RyhtiClient:
                     "Updating phase..."
                 )
                 # Use existing phase id:
+                local_phase["planMatterPhaseKey"] = current_phase["planMatterPhaseKey"]
                 plan_matter_phase_endpoint = (
                     plan_matter_endpoint
                     + "/phase/"

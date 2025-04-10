@@ -309,6 +309,7 @@ def mock_xroad_ryhti_update_existing_plan_matter(
     )
     # Existing phase may be updated.
     requests_mock.put(
+        # *Only* path used by the existing phase is valid. Check that we use an existing path when updating a phase.
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456/phase/third_phase_test",
         json={
             "key": "string",
