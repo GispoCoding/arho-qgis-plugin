@@ -6,19 +6,37 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>269</width>
+    <width>445</width>
     <height>362</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Validaation tulokset</string>
+   <string>Validointi</string>
   </property>
   <widget class="QWidget" name="dockWidgetContents">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QPushButton" name="validate_button">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="validate_button">
+        <property name="text">
+         <string>Validoi kaava</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="validate_plan_matter_button">
+        <property name="text">
+         <string>Validoi kaava-asia</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QLabel" name="validation_label">
       <property name="text">
-       <string>Validoi kaava</string>
+       <string>Kaavan validointivirheet:</string>
       </property>
      </widget>
     </item>
