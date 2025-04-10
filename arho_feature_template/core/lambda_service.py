@@ -22,6 +22,7 @@ class LambdaService(QObject):
 
     ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.User + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
+    ACTION_VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     ACTION_GET_PLANS = "get_plans"
     ACTION_POST_PLAN_MATTERS = "post_plan_matters"
     ACTION_GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
@@ -36,6 +37,9 @@ class LambdaService(QObject):
 
     def validate_plan(self, plan_id: str):
         self._send_request(action=self.ACTION_VALIDATE_PLANS, plan_id=plan_id)
+
+    def validate_plan_matter(self, plan_id: str):
+        self._send_request(action=self.ACTION_VALIDATE_PLAN_MATTERS, plan_id=plan_id)
 
     def post_plan_matter(self, plan_id: str):
         self._send_request(action=self.ACTION_POST_PLAN_MATTERS, plan_id=plan_id)
@@ -74,6 +78,7 @@ class LambdaService(QObject):
         handlers = {
             self.ACTION_GET_PLANS: self._process_json_reply,
             self.ACTION_VALIDATE_PLANS: self._process_validation_reply,
+            self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_reply,
             self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_reply,
             self.ACTION_GET_PERMANENT_IDENTIFIERS: self._process_identifier_reply,
         }
@@ -83,6 +88,7 @@ class LambdaService(QObject):
         handlers = {
             self.ACTION_GET_PLANS: lambda: None,
             self.ACTION_VALIDATE_PLANS: self._handle_validation_error,
+            self.ACTION_VALIDATE_PLAN_MATTERS: self._handle_validation_error,
             self.ACTION_POST_PLAN_MATTERS: lambda: None,
             self.ACTION_GET_PERMANENT_IDENTIFIERS: lambda: None,
         }

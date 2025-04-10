@@ -3,6 +3,7 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING
 
+from qgis.core import QgsExpressionContextUtils, QgsProject
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
 
@@ -10,7 +11,7 @@ from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QProgressBar, QPushButton
+    from qgis.PyQt.QtWidgets import QLabel, QProgressBar, QPushButton
 
     from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
 
@@ -22,6 +23,8 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
     progress_bar: QProgressBar
     validation_result_tree_view: ValidationTreeView
     validate_button: QPushButton
+    validate_plan_matter_button: QPushButton
+    validation_label: QLabel
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -30,10 +33,24 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.lambda_service = LambdaService()
         self.lambda_service.validation_received.connect(self.list_validation_errors)
         self.lambda_service.validation_failed.connect(self.enable_validation)
-        self.validate_button.clicked.connect(self.validate)
+        self.validate_button.clicked.connect(self.validate_plan)
+        self.validate_plan_matter_button.clicked.connect(self.validate_plan_matter)
 
-    def validate(self):
+        self.enable_validation()
+
+    def on_permanent_identifier_set(self, identifier: str | None):
+        """Enable the validate plan matter button when a valid permanent identifier is received."""
+        if identifier:
+            self.validate_plan_matter_button.setEnabled(True)
+            self.validate_plan_matter_button.setToolTip("Lähetä liitteet Ryhtiin ja validoi kaava-asia")
+        else:
+            self.validate_plan_matter_button.setEnabled(False)
+            self.validate_plan_matter_button.setToolTip("Hae ensin pysyvä kaavatunnus")
+
+    def validate_plan(self):
         """Handles the button press to trigger the validation process."""
+
+        self.validation_label.setText("Kaavan validointivirheet:")
 
         # Clear the existing errors from the list view
         self.validation_result_tree_view.clear_errors()
@@ -43,16 +60,50 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavaa.", level=3)
             return
 
-        # Disable button and show progress bar
+        # Disable buttons and show progress bar
         self.validate_button.setEnabled(False)
+        self.validate_plan_matter_button.setEnabled(False)
         self.progress_bar.setVisible(True)
 
         self.lambda_service.validate_plan(active_plan_id)
+
+    def validate_plan_matter(self):
+        """Handles the button press to trigger the plan matter validation process."""
+
+        self.validation_label.setText("Kaava-asian validointivirheet:")
+
+        # Clear the existing errors from the list view
+        self.validation_result_tree_view.clear_errors()
+
+        active_plan_id = get_active_plan_id()
+        if not active_plan_id:
+            iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavaa-asiaa.", level=3)
+            return
+
+        # Disable buttons and show progress bar
+        self.validate_plan_matter_button.setEnabled(False)
+        self.validate_button.setEnabled(False)
+        self.progress_bar.setVisible(True)
+
+        self.lambda_service.validate_plan_matter(active_plan_id)
 
     def enable_validation(self):
         """Hide progress bar and re-enable the button"""
         self.progress_bar.setVisible(False)
         self.validate_button.setEnabled(True)
+
+        # Retrieve the permanent_identifier from project variables
+        permanent_identifier = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable(
+            "permanent_identifier"
+        )
+
+        # Check if validate_plan_matter_button should be enabled
+        if permanent_identifier:
+            self.validate_plan_matter_button.setEnabled(True)
+        else:
+            self.validate_plan_matter_button.setEnabled(False)
+
+        # Ensure the validation results are visible and properly resized
         self.validation_result_tree_view.expandAll()
         self.validation_result_tree_view.resizeColumnToContents(0)
 
