@@ -8,7 +8,6 @@ from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
-from arho_feature_template.core.event_bus import EventBus
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
@@ -295,8 +294,8 @@ class Plugin:
         self.plan_manager.inspect_plan_feature_tool.deactivated.connect(
             lambda: self.identify_plan_features_action.setChecked(False)
         )
-        EventBus.instance().signals.plan_set.connect(self.on_active_plan_set)
-        EventBus.instance().signals.plan_unset.connect(self.on_active_plan_unset)
+        self.plan_manager.plan_set.connect(self.on_active_plan_set)
+        self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
 
         self.check_timezone_variable()
 

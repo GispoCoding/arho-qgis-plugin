@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 
 from qgis.core import QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
+from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
 
-from arho_feature_template.core.event_bus import EventBus
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -79,8 +79,13 @@ class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature):
         super().__init__(iface.mapCanvas(), iface.cadDockWidget(), mode)
 
 
-class PlanManager:
+class PlanManager(QObject):
+    plan_set = pyqtSignal()
+    plan_unset = pyqtSignal()
+
     def __init__(self):
+        super().__init__()
+
         self.json_plan_path = None
         self.json_plan_outline_path = None
 
@@ -355,9 +360,9 @@ class PlanManager:
 
         set_active_plan_id(plan_id)
         if plan_id:
-            EventBus.instance().signals.plan_set.emit()
+            self.plan_set.emit()
         else:
-            EventBus.instance().signals.plan_unset.emit()
+            self.plan_unset.emit()
 
         for layer in plan_layers:
             layer.apply_filter(plan_id)
