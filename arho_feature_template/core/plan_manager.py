@@ -82,6 +82,8 @@ class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature):
 class PlanManager(QObject):
     plan_set = pyqtSignal()
     plan_unset = pyqtSignal()
+    project_loaded = pyqtSignal()
+    project_cleared = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -432,6 +434,17 @@ class PlanManager(QObject):
             json.dump(outline_json, outline_file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava ja kaavan ulkoraja tallennettu.")
+
+    def on_project_loaded(self):
+        self.initialize_from_project()
+
+        if self.check_required_layers():
+            QgsProject.instance().cleared.connect(self.project_cleared)
+            self.project_loaded.emit()
+
+            active_plan = next(PlanLayer.get_features(), None)
+            if active_plan:
+                self.set_active_plan(active_plan["id"])
 
     def unload(self):
         # Set pan map tool as active (to deactivate our custom tools to avoid errors)
