@@ -147,12 +147,6 @@ class Plugin:
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.regulation_groups_dock)
 
-        # Try initializing the plugin immediately in case the project is already open
-        self.plan_manager.initialize_from_project()
-
-        # (Re)initialize whenever a project is opened
-        iface.projectRead.connect(self.plan_manager.initialize_from_project)
-
         # Actions
         self.new_land_use_plan_action = self.add_action(
             text="Luo kaava",
@@ -276,7 +270,8 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
-        self.context_specific_actions = [
+        self.project_depending_actions = [self.new_land_use_plan_action, self.load_land_use_plan_action]
+        self.plan_depending_actions = [
             self.edit_land_use_plan_action,
             self.edit_lifecycles_action,
             self.new_feature_dock_action,
@@ -287,8 +282,12 @@ class Plugin:
             self.create_geotiff_action,
             self.import_features_action,
         ]
+
         # Initially actions are disabled because no plan is selected
         self.on_active_plan_unset()
+        # Check if project opened and if not disable actions
+        if not self.plan_manager.check_required_layers():
+            self.on_project_cleared()
 
         # Connect signals
         self.plan_manager.inspect_plan_feature_tool.deactivated.connect(
@@ -296,6 +295,13 @@ class Plugin:
         )
         self.plan_manager.plan_set.connect(self.on_active_plan_set)
         self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
+        self.plan_manager.project_loaded.connect(self.on_project_loaded)
+        self.plan_manager.project_cleared.connect(self.on_project_cleared)
+
+        # (Re)initialize whenever a project is opened
+        iface.projectRead.connect(self.plan_manager.on_project_loaded)
+        # Try initializing the plugin immediately in case the project is already open
+        self.plan_manager.on_project_loaded()
 
         self.check_timezone_variable()
 
@@ -331,11 +337,21 @@ class Plugin:
         geotiff_creator.select_output_file()
 
     def on_active_plan_set(self):
-        for action in self.context_specific_actions:
+        for action in self.plan_depending_actions:
             action.setEnabled(True)
 
     def on_active_plan_unset(self):
-        for action in self.context_specific_actions:
+        for action in self.plan_depending_actions:
+            action.setEnabled(False)
+
+    def on_project_loaded(self):
+        for action in self.project_depending_actions:
+            action.setEnabled(True)
+
+    def on_project_cleared(self):
+        for action in self.project_depending_actions:
+            action.setEnabled(False)
+        for action in self.plan_depending_actions:
             action.setEnabled(False)
 
     def unload(self) -> None:
