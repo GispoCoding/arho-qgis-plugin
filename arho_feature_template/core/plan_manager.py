@@ -386,7 +386,8 @@ class PlanManager(QObject):
                 identifier = None
 
             self.set_permanent_identifier(identifier)
-        zoom_to_layer(plan_layer)
+
+            zoom_to_layer(plan_layer)
 
     def load_land_use_plan(self):
         """Load an existing land use plan using a dialog selection."""
@@ -464,12 +465,17 @@ class PlanManager(QObject):
         self.initialize_from_project()
 
         if self.check_required_layers():
-            QgsProject.instance().cleared.connect(self.project_cleared)
+            QgsProject.instance().cleared.connect(self.on_project_cleared)
             self.project_loaded.emit()
 
             active_plan = next(PlanLayer.get_features(), None)
             if active_plan:
                 self.set_active_plan(active_plan["id"])
+
+    def on_project_cleared(self):
+        QgsProject.instance().cleared.disconnect(self.on_project_cleared)
+
+        self.project_cleared.emit()
 
     def unload(self):
         # Set pan map tool as active (to deactivate our custom tools to avoid errors)

@@ -1,34 +1,38 @@
 from __future__ import annotations
 
 from importlib import resources
+from typing import TYPE_CHECKING
 
 from qgis.core import Qgis
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QTimer
-from qgis.PyQt.QtWidgets import QDialog, QMessageBox, QProgressBar, QVBoxLayout
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFrame, QLabel, QMessageBox, QProgressBar
 
 from arho_feature_template.core.lambda_service import LambdaService
-from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+
+if TYPE_CHECKING:
+    from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
 
 # Load the UI file
 ui_path = resources.files(__package__) / "post_plan.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class PostPlan(QDialog, FormClass):  # type: ignore
+class PostPlanDialog(QDialog, FormClass):  # type: ignore
+    validation_error_frame: QFrame
+    validation_label: QLabel
+    validation_result_tree_view: ValidationTreeView
+    progress_bar: QProgressBar
+    dialogButtonBox: QDialogButtonBox  # noqa: N815
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setupUi(self)
 
-        self.validation_result_tree_view = ValidationTreeView(self)
-        self.mainLayout: QVBoxLayout = self.findChild(QVBoxLayout, "mainLayout")
-        self.mainLayout.insertWidget(0, self.validation_result_tree_view)
-
-        self.validation_result_tree_view.hide()
-        self.progress_bar: QProgressBar = self.progressBar
-        self.progress_bar.setRange(0, 0)
+        self.validation_error_frame.hide()
         self.progress_bar.hide()
+        self.adjustSize()
 
         self.dialogButtonBox.rejected.connect(self.reject)
 
@@ -53,7 +57,6 @@ class PostPlan(QDialog, FormClass):  # type: ignore
     def update_message_list(self, post_json):
         self.progress_bar.hide()
         self.validation_result_tree_view.clear_errors()
-        self.validation_result_tree_view.hide()
 
         if not post_json:
             QMessageBox.critical(self, "Virhe", "Lambda palautti tyhjän vastauksen.")
@@ -83,10 +86,11 @@ class PostPlan(QDialog, FormClass):  # type: ignore
 
         # If the response includes errors or warnings, show validation_result_tree_view.
         if errors_found or warnings_found:
-            self.validation_result_tree_view.show()
+            if success_found and warnings_found and not errors_found:
+                self.validation_label.setText("Kaava-asia vietiin Ryhtiin, mutta se sisälsi varoituksia:")
+            self.validation_error_frame.show()
             self.validation_result_tree_view.expandAll()
             self.validation_result_tree_view.resizeColumnToContents(0)
-            self.resize(self.width(), 300)
         else:
             self.accept()
 
