@@ -19,6 +19,7 @@ class LambdaService(QObject):
     validation_failed = pyqtSignal()
     plan_matter_received = pyqtSignal(dict)
     plan_identifier_received = pyqtSignal(dict)
+
     ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.User + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
     ACTION_GET_PLANS = "get_plans"
@@ -82,7 +83,7 @@ class LambdaService(QObject):
         handlers = {
             self.ACTION_GET_PLANS: lambda: None,
             self.ACTION_VALIDATE_PLANS: self._handle_validation_error,
-            self.ACTION_POST_PLAN_MATTERS: self._handle_validation_error,  # check if new handler needed.
+            self.ACTION_POST_PLAN_MATTERS: lambda: None,
             self.ACTION_GET_PERMANENT_IDENTIFIERS: lambda: None,
         }
         return handlers[action]

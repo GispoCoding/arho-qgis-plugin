@@ -11,7 +11,7 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
-from arho_feature_template.gui.dialogs.post_plan import PostPlan
+from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
@@ -141,7 +141,6 @@ class Plugin:
         # Plan manager
         self.plan_manager = PlanManager()
         iface.mapCanvas().mapToolSet.connect(self.plan_manager.plan_digitize_map_tool.deactivate)
-        self.plan_manager.plan_identifier_set.connect(self.update_plan_buttons)
 
         # Docks
         self.validation_dock = ValidationDock()
@@ -277,7 +276,7 @@ class Plugin:
         self.get_permanent_identifier_action = self.add_action(
             text="Hae pysyvä kaavatunnus",
             # icon=QgsApplication.getThemeIcon(""),
-            triggered_callback=self.get_permanent_identifier,
+            triggered_callback=self.plan_manager.get_permanent_plan_identifier,
             add_to_menu=True,
             add_to_toolbar=True,
             status_tip="Hae kaavalle pysyvä kaavatunnus",
@@ -303,6 +302,8 @@ class Plugin:
             self.serialize_plan_action,
             self.create_geotiff_action,
             self.import_features_action,
+            self.get_permanent_identifier_action,
+            self.post_plan_matter_action,
         ]
 
         # Initially actions are disabled because no plan is selected
@@ -319,6 +320,7 @@ class Plugin:
         self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
         self.plan_manager.project_loaded.connect(self.on_project_loaded)
         self.plan_manager.project_cleared.connect(self.on_project_cleared)
+        self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
 
         # (Re)initialize whenever a project is opened
         iface.projectRead.connect(self.plan_manager.on_project_loaded)
@@ -360,21 +362,25 @@ class Plugin:
 
     def post_plan_matter(self):
         """Exports plan matter to Ryhti."""
-        dialog = PostPlan()
+        dialog = PostPlanDialog()
         dialog.exec_()
 
-    def get_permanent_identifier(self):
-        """Gets the permanent plan identifier for active plan."""
-        self.plan_manager.get_permanent_plan_identifier()
-
-    def update_plan_buttons(self):
+    def update_ryhti_buttons(self):
         """Update the UI buttons based on whether the active plan has a permanent identifier."""
-        has_permanent_identifier = (
-            QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("permanent_identifier") is not None
+        permanent_identifier = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable(
+            "permanent_identifier"
         )
 
-        self.get_permanent_identifier_action.setEnabled(not has_permanent_identifier)
-        self.post_plan_matter_action.setEnabled(has_permanent_identifier)
+        if permanent_identifier:
+            self.get_permanent_identifier_action.setEnabled(False)
+            self.get_permanent_identifier_action.setToolTip(f"Pysyvä kaavatunnus: {permanent_identifier}")
+            self.post_plan_matter_action.setEnabled(True)
+            self.post_plan_matter_action.setToolTip("Vie kaava-asia Ryhtiin")
+        else:
+            self.post_plan_matter_action.setEnabled(False)
+            self.post_plan_matter_action.setToolTip("Hae kaavalle ensin pysyvä kaavatunnus")
+            self.get_permanent_identifier_action.setEnabled(True)
+            self.get_permanent_identifier_action.setToolTip("Hae pysyvä kaavatunnus")
 
     def on_active_plan_set(self):
         for action in self.plan_depending_actions:
