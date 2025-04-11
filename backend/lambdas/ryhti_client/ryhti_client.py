@@ -1514,23 +1514,21 @@ class RyhtiClient:
                 LOGGER.info(response.headers)
                 LOGGER.info(response.text)
                 if response.status_code == 401:
-                    LOGGER.info(
-                        "No permission to get plan identifier in this region or municipality!"  # noqa
-                    )
+                    detail = "No permission to get plan identifier in this region or municipality!"  # noqa
+                    LOGGER.info(detail)
                     responses[plan.id] = {
                         "status": 401,
                         "errors": response.json(),
-                        "detail": None,
+                        "detail": detail,
                         "warnings": None,
                     }
                 elif response.status_code == 400:
-                    LOGGER.info(
-                        "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa
-                    )
+                    detail = "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa
+                    LOGGER.info(detail)
                     responses[plan.id] = {
                         "status": 400,
                         "errors": response.json(),
-                        "detail": None,
+                        "detail": detail,
                         "warnings": None,
                     }
                 else:
@@ -1895,6 +1893,8 @@ class RyhtiClient:
                     details[
                         plan_id
                     ] = "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
+                elif response["status"] == 400:
+                    details[plan_id] = "Kaavalta puuttuu tuottajan kaavatunnus."
             session.commit()
         return Response(
             statusCode=200,
