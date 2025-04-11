@@ -60,7 +60,6 @@ from arho_feature_template.utils.misc_utils import (
     iface,
     set_active_plan_id,
     use_wait_cursor,
-    zoom_to_layer,
 )
 
 if TYPE_CHECKING:
@@ -387,7 +386,16 @@ class PlanManager(QObject):
 
             self.set_permanent_identifier(identifier)
 
-            zoom_to_layer(plan_layer)
+            self.zoom_to_active_plan()
+
+    def zoom_to_active_plan(self):
+        """Zoom to the active plan layer."""
+        active_plan_feature = next(PlanLayer.get_features(), None)
+        if active_plan_feature:
+            bounding_box = active_plan_feature.geometry().boundingBox()
+            canvas = iface.mapCanvas()
+            canvas.zoomToFeatureExtent(bounding_box.buffered(50))
+            canvas.refresh()
 
     def load_land_use_plan(self):
         """Load an existing land use plan using a dialog selection."""
