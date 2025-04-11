@@ -8,7 +8,7 @@ from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox, QProgressBar, QVBoxLayout
 
 from arho_feature_template.core.lambda_service import LambdaService
-from arho_feature_template.gui.docks.validation_tree_view import ValidationTreeView
+from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 # Load the UI file

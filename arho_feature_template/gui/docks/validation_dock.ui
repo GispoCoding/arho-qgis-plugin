@@ -45,7 +45,7 @@
   <customwidget>
    <class>ValidationTreeView</class>
    <extends>QTreeView</extends>
-   <header>arho_feature_template.gui.docks.validation_tree_view</header>
+   <header>arho_feature_template.gui.components.validation_tree_view</header>
   </customwidget>
  </customwidgets>
  <resources/>

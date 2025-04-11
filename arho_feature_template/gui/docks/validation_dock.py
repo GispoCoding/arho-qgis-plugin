@@ -12,7 +12,7 @@ from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QProgressBar, QPushButton
 
-    from arho_feature_template.gui.docks.validation_tree_view import ValidationTreeView
+    from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
 
 ui_path = resources.files(__package__) / "validation_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
