@@ -5,16 +5,23 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from osgeo import gdal
-from qgis.core import QgsFeature, QgsMapRendererParallelJob, QgsMapSettings, QgsMapSettingsUtils, QgsProject
+from qgis.core import (
+    QgsCoordinateReferenceSystem,
+    QgsFeature,
+    QgsMapRendererParallelJob,
+    QgsMapSettings,
+    QgsMapSettingsUtils,
+    QgsProject,
+)
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QSize, Qt
+from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtGui import QColor
-from qgis.PyQt.QtWidgets import QApplication, QDialog, QDialogButtonBox
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox
 
 from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
 )
-from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface, use_wait_cursor
 
 if TYPE_CHECKING:
     from qgis.gui import QgsDoubleSpinBox, QgsFileWidget, QgsProjectionSelectionWidget
@@ -49,7 +56,7 @@ class CreateGeotiffForm(QDialog, FormClass):  # type: ignore
 
         self.crs_selection.setCrs(QgsProject.instance().crs())  # Default to project CRS
 
-    def _check_required_fields(self, _) -> None:
+    def _check_required_fields(self, _):
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
         if (
             self.filepath_selection.filePath() != ""
@@ -60,7 +67,7 @@ class CreateGeotiffForm(QDialog, FormClass):  # type: ignore
         else:
             ok_button.setEnabled(False)
 
-    def get_plan_feature(self) -> QgsFeature | None:
+    def _get_plan_feature(self) -> QgsFeature | None:
         plan_layer = PlanLayer.get_from_project()
 
         if not plan_layer:
@@ -75,19 +82,9 @@ class CreateGeotiffForm(QDialog, FormClass):  # type: ignore
 
         return feature
 
-    def create_geotiff(self):
-        """Creates a GeoTIFF from the active plan layer."""
-        plan_feat = self.get_plan_feature()
-        if not plan_feat:
-            return
-
-        # Inputs
-        fp = self.filepath_selection.filePath()
-        pixel_size = self.pixel_size_selection.value()
-        crs = self.crs_selection.crs()
-
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-
+    def _prepare_map_settings(
+        self, plan_feat: QgsFeature, pixel_size: float, crs: QgsCoordinateReferenceSystem
+    ) -> QgsMapSettings:
         # Set buffered bounding box
         bbox = plan_feat.geometry().boundingBox()
         buffer_percentage = 0.1
@@ -98,13 +95,12 @@ class CreateGeotiffForm(QDialog, FormClass):  # type: ignore
         # Rendering settings
         settings = QgsMapSettings()
         layer_tree = QgsProject.instance().layerTreeRoot()
+        visible_layers = [layer for layer in layer_tree.layerOrder() if layer_tree.findLayer(layer).isVisible()]
 
-        # Filter only visible layers
-        layers = [layer for layer in layer_tree.layerOrder() if layer_tree.findLayer(layer).isVisible()]
-
-        settings.setLayers(layers)
+        settings.setLayers(visible_layers)
         settings.setDestinationCrs(crs)
         settings.setBackgroundColor(QColor(255, 255, 255))
+
         width = int(buffered_bbox.width() / pixel_size) * pixel_size
         height = int(buffered_bbox.height() / pixel_size) * pixel_size
         buffered_bbox.setXMinimum(int(buffered_bbox.xMinimum()))
@@ -118,59 +114,63 @@ class CreateGeotiffForm(QDialog, FormClass):  # type: ignore
         pixels_y = int(buffered_bbox.height() / pixel_size)
         settings.setOutputSize(QSize(pixels_x, pixels_y))
 
-        render = QgsMapRendererParallelJob(settings)
+        return settings
 
-        def finished():
-            try:
-                img = render.renderedImage()
+    def _on_render_finished(self, render: QgsMapRendererParallelJob, output_path: str):
+        img_path = output_path.replace(".tif", ".png")
+        pgw_path = img_path.replace(".png", ".pgw")
 
-                # Save the image as PNG temporarily
-                image_path = fp.replace(".tif", ".png")
-                img.save(image_path, "PNG")
+        settings = render.mapSettings()
 
-                # Generate the World File (.pgw)
-                pgw_content = QgsMapSettingsUtils.worldFileContent(settings)
-                pgw_path = image_path.replace(".png", ".pgw")
-                with open(pgw_path, "w") as f:
-                    f.write(pgw_content)
+        try:
+            img = render.renderedImage()
+            img.save(img_path, "PNG")
 
-                # Convert PNG to GeoTIFF
-                self._create_geotiff_from_png(image_path, fp)
+            with open(pgw_path, "w") as f:
+                f.write(QgsMapSettingsUtils.worldFileContent(settings))
 
-                # Delete temporary PNG
-                if os.path.exists(image_path):
-                    os.remove(image_path)
+            self._create_geotiff_from_png(settings.destinationCrs(), img_path, output_path)
+            iface.messageBar().pushSuccess("", f"Kaavakartta tallennettu polkuun: {output_path}")
+        except Exception as e:  # noqa: BLE001
+            iface.messageBar().pushCritical("", f"Kaavakartan tallentaminen epäonnistui: {e}.")
+        finally:
+            for tmp_file in [img_path, pgw_path]:
+                if os.path.exists(tmp_file):
+                    os.remove(tmp_file)
 
-                # Delete temporary World File (.pgw)
-                if os.path.exists(pgw_path):
-                    os.remove(pgw_path)
-            finally:
-                QApplication.restoreOverrideCursor()
-
-        render.finished.connect(finished)
-        render.start()
-
-    def _create_geotiff_from_png(self, image_path, geotiff_path):
+    def _create_geotiff_from_png(self, crs: QgsCoordinateReferenceSystem, image_path: str, geotiff_path: str):
         """Convert the rendered PNG to GeoTIFF."""
-
         ds = gdal.Open(image_path)
 
         # Convert the PNG to GeoTIFF
         gdal.Translate(
             geotiff_path,
             ds,
-            outputSRS="EPSG:3067",
+            outputSRS=crs.authid(),
             format="GTiff",
             outputType=gdal.GDT_Byte,
             bandList=[1, 2, 3],
-            creationOptions={
-                "COMPRESS": "LZW",
-                "TILED": "YES",
-                "BIGTIFF": "IF_SAFER",
-            },
+            creationOptions=["COMPRESS=LZW", "TILED=YES", "BIGTIFF=IF_SAFER"],
         )
 
-        iface.messageBar().pushSuccess("", f"GeoTIFF tallennettu polkuun: {geotiff_path}")
+    @use_wait_cursor
+    def create_geotiff(self):
+        """Creates a GeoTIFF from the active plan layer."""
+        # Get plan feature
+        plan_feat = self._get_plan_feature()
+        if not plan_feat:
+            return
+
+        # Read inputs
+        output_path = self.filepath_selection.filePath()
+        pixel_size = self.pixel_size_selection.value()
+        crs = self.crs_selection.crs()
+
+        # Render plan
+        settings = self._prepare_map_settings(plan_feat, pixel_size, crs)
+        render = QgsMapRendererParallelJob(settings)
+        render.finished.connect(lambda: self._on_render_finished(render, output_path))
+        render.start()
 
     def _on_ok_clicked(self):
         self.create_geotiff()
