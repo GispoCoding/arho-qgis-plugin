@@ -82,7 +82,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Poista kaavamääräys</string>
+        <string>Poista lisätieto</string>
        </property>
        <property name="text">
         <string/>
@@ -101,24 +101,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLineEdit" name="type_of_additional_information_name"/>
-       </item>
-       <item>
-        <widget class="QToolButton" name="expand_hide_btn">
-         <property name="text">
-          <string>Laajenna</string>
-         </property>
-         <property name="autoRaise">
-          <bool>false</bool>
-         </property>
-         <property name="arrowType">
-          <enum>Qt::UpArrow</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="QLineEdit" name="type_of_additional_information_name"/>
      </item>
     </layout>
    </item>
