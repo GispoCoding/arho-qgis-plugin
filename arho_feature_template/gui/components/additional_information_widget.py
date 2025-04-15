@@ -5,12 +5,11 @@ from typing import TYPE_CHECKING
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt, pyqtSignal
+from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QFormLayout,
     QLabel,
     QLineEdit,
-    QToolButton,
     QWidget,
 )
 
@@ -34,7 +33,6 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
     type_of_additional_information_name: QLineEdit
     form_layout: QFormLayout
     del_btn: QPushButton
-    expand_hide_btn: QToolButton
 
     delete_signal = pyqtSignal(QWidget)
 
@@ -58,13 +56,10 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
         # List of widgets for hiding / showing
         self.widgets: list[tuple[QLabel, QWidget]] = []
 
-        self.expanded = True
-
         self.type_of_additional_information_name.setText(self.config.name)
         self.type_of_additional_information_name.setReadOnly(True)
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
-        self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
         if self.value_widget_manager is not None:
             widget = (
@@ -77,25 +72,6 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
     def _add_widget(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)
         self.widgets.append((label, widget))
-        if not self.expanded:
-            self._on_expand_hide_btn_clicked()
-
-    def _on_expand_hide_btn_clicked(self):
-        if self.expanded:
-            for label, value_widget in self.widgets:
-                # self.form_layout.removeWidget(label)
-                label.hide()
-                # self.form_layout.removeWidget(value_widget)
-                value_widget.hide()
-            self.expand_hide_btn.setArrowType(Qt.ArrowType.DownArrow)
-            self.expanded = False
-        else:
-            for label, value_widget in self.widgets:
-                # self.form_layout.addRow(label, value_widget)
-                label.show()
-                value_widget.show()
-            self.expand_hide_btn.setArrowType(Qt.ArrowType.UpArrow)
-            self.expanded = True
 
     def into_model(self) -> AdditionalInformation:
         return AdditionalInformation(
