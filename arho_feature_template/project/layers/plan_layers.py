@@ -675,6 +675,17 @@ class AdditionalInformationLayer(AbstractPlanLayer):
             value=attribute_value_model_from_feature(feature),
         )
 
+    @classmethod
+    def get_additional_information_to_delete(
+        cls, additional_infos: list[AdditionalInformation], regulation_id: str
+    ) -> list[QgsFeature]:
+        updated_info_ids = [info.id_ for info in additional_infos]
+        return [
+            info
+            for info in cls.get_features_by_attribute_value("plan_regulation_id", regulation_id)
+            if info["id"] not in updated_info_ids
+        ]
+
 
 class LifeCycleLayer(AbstractPlanLayer):
     name = "Elinkaaren päiväykset"

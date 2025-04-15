@@ -178,12 +178,17 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
     def _add_additional_info(self, additional_information: AdditionalInformation):
         widget = AdditionalInformationWidget(additional_information, self)
-        widget.delete_signal.connect(lambda widget: self.additional_information_widgets.remove(widget))  ####
+        widget.delete_signal.connect(self._delete_additional_info)
 
         self.additional_information_frame.show()
 
         self.additional_information_widgets.append(widget)
         self.additional_information_layout.addWidget(widget)
+
+    def _delete_additional_info(self, info_widget: AdditionalInformationWidget):
+        self.additional_information_layout.removeWidget(info_widget)
+        self.additional_information_widgets.remove(info_widget)
+        info_widget.deleteLater()
 
     def _add_regulation_number(self):
         if not self.regulation_number_widget:
