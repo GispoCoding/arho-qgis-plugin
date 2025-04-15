@@ -787,8 +787,16 @@ def save_regulation(regulation: Regulation) -> QgsFeature | None:
 
     reg_id = regulation_feature["id"]
 
-    # Check for deleted verbal regulation types
     if editing:
+        # Check for additional information to be deleted
+        info_layer = AdditionalInformationLayer.get_from_project()
+        for info_feature in AdditionalInformationLayer.get_additional_information_to_delete(
+            regulation.additional_information, reg_id
+        ):
+            if not _delete_feature(info_feature, info_layer, "Lisätiedon poisto"):
+                iface.messageBar().pushCritical("", "Liätiedon poistaminen epäonnistui.")
+
+        # Check for verbal regulation types to be deleted
         for association in TypeOfVerbalRegulationAssociationLayer.get_dangling_associations(
             reg_id, regulation.verbal_regulation_type_ids
         ):

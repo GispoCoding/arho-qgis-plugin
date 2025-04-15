@@ -63,7 +63,6 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
         self.type_of_additional_information_name.setText(self.config.name)
         self.type_of_additional_information_name.setReadOnly(True)
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
-        self.del_btn.setDisabled(True)  # TODO: Implement delete
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
