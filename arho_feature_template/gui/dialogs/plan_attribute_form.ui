@@ -180,7 +180,7 @@
               <string>Muut tunnukset</string>
              </property>
              <property name="collapsed">
-              <bool>true</bool>
+              <bool>false</bool>
              </property>
              <layout class="QFormLayout" name="formLayout_2">
               <item row="0" column="0">
@@ -197,12 +197,25 @@
                <widget class="QLineEdit" name="record_number_line_edit"/>
               </item>
               <item row="1" column="1">
-               <widget class="QLineEdit" name="producers_plan_identifier_line_edit"/>
+               <widget class="QLineEdit" name="producers_plan_identifier_line_edit">
+                <property name="toolTip">
+                 <string>Tuottajan kaavatunnus vaaditaan kaava-asian muodostamiseen ja pysyvän kaavatunnuksen hakemiseen.</string>
+                </property>
+                <property name="whatsThis">
+                 <string/>
+                </property>
+               </widget>
               </item>
               <item row="1" column="0">
                <widget class="QLabel" name="label_3">
+                <property name="toolTip">
+                 <string>Tuottajan kaavatunnus vaaditaan kaava-asian muodostamiseen ja pysyvän kaavatunnuksen hakemiseen.</string>
+                </property>
+                <property name="whatsThis">
+                 <string/>
+                </property>
                 <property name="text">
-                 <string>Tuottajan kaavatunnus:</string>
+                 <string>&lt;span style=&quot;color: #FF7518;&quot;&gt;*&lt;/span&gt; Tuottajan kaavatunnus:</string>
                 </property>
                 <property name="buddy">
                  <cstring>producers_plan_identifier_line_edit</cstring>
@@ -246,8 +259,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>193</width>
-            <height>49</height>
+            <width>831</width>
+            <height>562</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="regulations_layout">
@@ -301,8 +314,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>119</width>
-            <height>49</height>
+            <width>831</width>
+            <height>562</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="documents_layout">

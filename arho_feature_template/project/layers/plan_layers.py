@@ -148,6 +148,13 @@ class PlanLayer(AbstractPlanLayer):
         attribute_value = PlanTypeLayer.get_attribute_value_by_another_attribute_value("name", "id", cast(str, type_id))
         return deserialize_localized_text(attribute_value)
 
+    @classmethod
+    def get_plan_producers_plan_identifier(cls, plan_id: str) -> str | None:
+        producers_id = cls.get_attribute_value_by_another_attribute_value("producers_plan_identifier", "id", plan_id)
+        if producers_id is None:
+            return None
+        return cast(str, producers_id)
+
 
 class PlanFeatureLayer(AbstractPlanLayer):
     @classmethod

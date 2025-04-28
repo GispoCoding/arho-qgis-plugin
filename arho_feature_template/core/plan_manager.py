@@ -442,6 +442,12 @@ class PlanManager(QObject):
         if not plan_id:
             iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
             return
+        if not PlanLayer.get_plan_producers_plan_identifier(plan_id):
+            iface.messageBar().pushCritical(
+                "VIRHE",
+                "Kaavalta puuttuu tuottajan kaavatunnus, joka vaaditaan pysyvän kaavatunnuksen hakemista varten.",
+            )
+            return
 
         self.lambda_service.get_permanent_identifier(plan_id)
 
