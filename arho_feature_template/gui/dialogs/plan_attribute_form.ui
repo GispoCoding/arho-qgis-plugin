@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>873</width>
-    <height>662</height>
+    <width>820</width>
+    <height>655</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -61,8 +61,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>831</width>
-            <height>562</height>
+            <width>778</width>
+            <height>555</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -123,10 +123,26 @@
              </item>
              <item row="2" column="1">
               <widget class="QTextEdit" name="description_text_edit">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>125</height>
+                </size>
+               </property>
                <property name="toolTip">
                 <string>Kaava-asian kuvaus</string>
                </property>
               </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Organisaatio:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="CodeComboBox" name="organisation_combo_box"/>
              </item>
              <item row="4" column="0">
               <widget class="QLabel" name="tyyppiLabel">
@@ -161,16 +177,6 @@
                 <string>Kaavan elinkaaren tila</string>
                </property>
               </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Organisaatio:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="CodeComboBox" name="organisation_combo_box"/>
              </item>
             </layout>
            </item>
@@ -238,6 +244,19 @@
              </layout>
             </widget>
            </item>
+           <item>
+            <spacer name="verticalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>20</width>
+               <height>40</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
           </layout>
          </widget>
         </widget>
@@ -259,8 +278,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>831</width>
-            <height>562</height>
+            <width>193</width>
+            <height>49</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="regulations_layout">
@@ -314,8 +333,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>831</width>
-            <height>562</height>
+            <width>119</width>
+            <height>49</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="documents_layout">
@@ -390,10 +409,6 @@
   <tabstop>description_text_edit</tabstop>
   <tabstop>plan_type_combo_box</tabstop>
   <tabstop>lifecycle_status_combo_box</tabstop>
-  <tabstop>mGroupBox</tabstop>
-  <tabstop>record_number_line_edit</tabstop>
-  <tabstop>producers_plan_identifier_line_edit</tabstop>
-  <tabstop>matter_management_identifier_line_edit</tabstop>
  </tabstops>
  <resources/>
  <connections>

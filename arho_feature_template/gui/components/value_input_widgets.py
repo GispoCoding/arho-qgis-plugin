@@ -129,6 +129,7 @@ class MultilineTextInputWidget(QTextEdit):
     ):
         super().__init__()
         initialize_text_input_widget(self, default_value, editable)
+        self.setMaximumHeight(75)
 
     def get_value(self) -> str | None:
         text = self.toPlainText()

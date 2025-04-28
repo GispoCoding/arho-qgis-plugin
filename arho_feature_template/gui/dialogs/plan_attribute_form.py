@@ -171,7 +171,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         if legal_effect_id:
             widget.set_value(legal_effect_id)
 
-        label = QLabel("Oikeusvaikutus")
+        label = QLabel("Oikeusvaikutus:")
         self.legal_effect_widgets.append((label, widget))
         self.general_data_layout.addRow(label, widget)
 
