@@ -589,7 +589,7 @@ class Document:
     url: str | None = None
     type_of_document_id: str | None = None
     accessibility: bool = False
-    # permanent_document_identifier: str | None = None
+    identifier: str | None = None
     category_of_publicity_id: str | None = None
     personal_data_content_id: str | None = None
     retention_time_id: str | None = None
