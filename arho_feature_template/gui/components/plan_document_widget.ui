@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>488</width>
-    <height>327</height>
+    <height>352</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -123,50 +123,50 @@
      <item row="1" column="1">
       <widget class="QLineEdit" name="url"/>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="document_type_label">
        <property name="text">
         <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Tyyppi:</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="3" column="1">
       <widget class="CodeComboBox" name="document_type"/>
      </item>
-     <item row="3" column="0">
+     <item row="4" column="0">
       <widget class="QLabel" name="publicity_label">
        <property name="text">
         <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Julkisuusluokka:</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="4" column="1">
       <widget class="CodeComboBox" name="publicity"/>
      </item>
-     <item row="4" column="0">
+     <item row="5" column="0">
       <widget class="QLabel" name="language_label">
        <property name="text">
         <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Kieli:</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="CodeComboBox" name="language"/>
      </item>
-     <item row="5" column="1">
+     <item row="6" column="1">
       <widget class="HierarchicalCodeComboBox" name="retention_time"/>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="CodeComboBox" name="personal_data_content"/>
      </item>
-     <item row="8" column="0">
+     <item row="9" column="0">
       <widget class="QLabel" name="accessibility_label">
        <property name="text">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Saavutettavuus:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="9" column="1">
       <widget class="QCheckBox" name="accessibility">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -179,33 +179,43 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0">
+     <item row="7" column="0">
       <widget class="QLabel" name="personal_data_content_label">
        <property name="text">
         <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Henkilötietosisältö:</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="6" column="0">
       <widget class="QLabel" name="retention_time_label">
        <property name="text">
         <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Säilytysaika:</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="8" column="1">
       <widget class="QgsDateTimeEdit" name="document_date">
        <property name="displayFormat">
         <string>d.M.yyyy</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="document_date_label">
        <property name="text">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Asiakirjan päivämäärä:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="identifier_label">
+       <property name="text">
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Tunnus:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="identifier"/>
      </item>
     </layout>
    </item>

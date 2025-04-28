@@ -44,6 +44,8 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.name: QLineEdit
         self.url: QLineEdit
         self.url_label: QLabel
+        self.identifier_label: QLabel
+        self.identifier: QLineEdit
         self.document_type: CodeComboBox
         self.document_type_label: QLabel
         self.publicity: CodeComboBox
@@ -75,6 +77,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.personal_data_content.populate_from_code_layer(PersonalDataContentLayer)
 
         self.name.textChanged.connect(self.document_edited.emit)
+        self.identifier.textChanged.connect(self.document_edited.emit)
         self.document_type.currentIndexChanged.connect(self.document_edited.emit)
         self.publicity.currentIndexChanged.connect(self.document_edited.emit)
         self.language.currentIndexChanged.connect(self.document_edited.emit)
@@ -84,6 +87,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         # List of widgets for hiding / showing
         self.widgets: list[tuple[QLabel, QWidget]] = [
             (self.url_label, self.url),
+            (self.identifier_label, self.identifier),
             (self.document_type_label, self.document_type),
             (self.publicity_label, self.publicity),
             (self.accessibility_label, self.accessibility),
@@ -109,6 +113,8 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         # Set values from input Document model
         self.name.setText(document.name)
         self.url.setText(document.url)
+        if document.identifier:
+            self.identifier.setText(document.identifier)
         self.document_type.set_value(document.type_of_document_id)
         self.publicity.set_value(document.category_of_publicity_id)
         self.accessibility.setChecked(document.accessibility is True)
@@ -123,7 +129,8 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
 
     def is_ok(self) -> bool:
         return (
-            self.document_type.value() is not None
+            self.identifier.text() != ""
+            and self.document_type.value() is not None
             and self.publicity.value() is not None
             and self.language.value() is not None
             and self.retention_time.value() is not None
@@ -173,6 +180,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         return Document(
             name=self.name.text(),
             url=self.url.text(),
+            identifier=self.identifier.text(),
             type_of_document_id=self.document_type.value(),
             accessibility=self.accessibility.isChecked(),
             category_of_publicity_id=self.publicity.value(),

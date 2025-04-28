@@ -589,6 +589,7 @@ class DocumentLayer(AbstractPlanLayer):
 
         feature["name"] = serialize_localized_text(model.name)
         feature["url"] = model.url
+        feature["permanent_document_identifier"] = model.identifier
         feature["type_of_document_id"] = model.type_of_document_id
         feature["accessibility"] = model.accessibility
         feature["category_of_publicity_id"] = model.category_of_publicity_id
@@ -608,6 +609,7 @@ class DocumentLayer(AbstractPlanLayer):
         return Document(
             name=deserialize_localized_text(feature["name"]),
             url=feature["url"],
+            identifier=feature["permanent_document_identifier"],
             type_of_document_id=feature["type_of_document_id"],
             accessibility=feature["accessibility"],
             category_of_publicity_id=feature["category_of_publicity_id"],
