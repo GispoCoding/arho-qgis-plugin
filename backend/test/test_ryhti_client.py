@@ -329,7 +329,9 @@ def mock_xroad_ryhti_update_existing_plan_matter(
             "Accept": "application/json",
             "Content-type": "application/json",
         },
-        status_code=200,
+        # TODO: Currently, Ryhti responses with HTTP 201 to PUT requests. Change this back to
+        # HTTP 200 when Ryhti API is fixed, or the API spec is updated:
+        status_code=201,
     )
     # New phase may be created.
     requests_mock.post(
@@ -1027,4 +1029,7 @@ def test_save_update_existing_matter_phase_post_responses(
     )
     session.refresh(plan_instance)
     assert plan_instance.exported_at
-    assert plan_instance.validation_errors == "Kaava-asian vaihe on päivitetty Ryhtiin."
+    # TODO: switch to using correct message once Ryhti responds correctly. Currently, Ryhti
+    # claims a new phase is created every time the existing phase is updated.
+    # assert plan_instance.validation_errors == "Kaava-asian vaihe on päivitetty Ryhtiin."
+    assert plan_instance.validation_errors == "Uusi kaava-asian vaihe on viety Ryhtiin."

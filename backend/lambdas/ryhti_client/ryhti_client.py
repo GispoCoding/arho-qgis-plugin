@@ -1657,6 +1657,20 @@ class RyhtiClient:
                 "warnings": response.json()["warnings"],
                 "detail": None,
             }
+        elif response.status_code == 201:
+            # PUT successful, but the resource is weirdly reported as created. This is
+            # not in accordance of the API specification.
+            #
+            # If we really created a new resource, that is an internal implementation
+            # detail; for the API consumer, the same resource with existing UUID has
+            # been updated. Therefore, the response *should* be HTTP 200.
+            # But let's accept HTTP 201 for now:
+            ryhti_response = {
+                "status": 201,
+                "errors": None,
+                "warnings": response.json()["warnings"],
+                "detail": None,
+            }
         else:
             try:
                 # API errors always contain JSON
@@ -1710,7 +1724,7 @@ class RyhtiClient:
             elif get_response.status_code == 200:
                 LOGGER.info(
                     f"Plan matter {permanent_id} found! "
-                    "Checking if plan matter phase exits..."
+                    "Checking if plan matter phase exists..."
                 )
                 phases: List[RyhtiPlanMatterPhase] = get_response.json()[
                     "planMatterPhases"
@@ -1751,8 +1765,8 @@ class RyhtiClient:
                     continue
                 # 3) If plan matter phase existed, update plan matter phase instead
                 LOGGER.info(
-                    f"Plan matter phase {local_lifecycle_status} found! "
-                    "Updating phase..."
+                    f"Plan matter phase {current_phase['planMatterPhaseKey']} "
+                    f"with status {local_lifecycle_status} found! Updating phase..."
                 )
                 # Use existing phase id:
                 local_phase["planMatterPhaseKey"] = current_phase["planMatterPhaseKey"]
