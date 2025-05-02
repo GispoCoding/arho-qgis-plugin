@@ -3,7 +3,7 @@ from __future__ import annotations
 from importlib import resources
 from typing import cast
 
-from qgis.core import QgsApplication
+from qgis.core import NULL, QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
@@ -102,7 +102,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
         if self.regulation.theme_id:
             self._add_theme(self.regulation.theme_id)
-        if self.regulation.subject_identifiers is not None:
+        if self.regulation.subject_identifiers not in [None, NULL]:
             for subject in self.regulation.subject_identifiers:
                 self._add_subject_identifier(subject)
 
