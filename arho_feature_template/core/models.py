@@ -452,7 +452,7 @@ class Regulation(PlanBaseModel):
 
 @dataclass
 class Proposition(PlanBaseModel):
-    value: str
+    value: str | None
     theme_ids: list[str] = field(default_factory=list, compare=False)
     proposition_number: int | None = None
     regulation_group_id: str | None = None
