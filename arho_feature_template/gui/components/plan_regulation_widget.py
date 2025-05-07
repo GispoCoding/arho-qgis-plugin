@@ -21,6 +21,7 @@ from qgis.PyQt.QtWidgets import (
 from arho_feature_template.core.models import (
     AdditionalInformation,
     AdditionalInformationConfigLibrary,
+    AttributeValue,
     Regulation,
 )
 from arho_feature_template.gui.components.additional_information_widget import AdditionalInformationWidget
@@ -242,9 +243,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
     def into_model(self) -> Regulation:
         verbal_regulation_type_ids = [widget.get_value() for widget in self.type_of_verbal_regulation_widgets]
-        return Regulation(
+        model = Regulation(
             config=self.config,
-            value=self.value_widget_manager.into_model() if self.value_widget_manager else None,
+            value=self.value_widget_manager.into_model() if self.value_widget_manager else AttributeValue(),
             regulation_number=None,
             additional_information=[ai_widget.into_model() for ai_widget in self.additional_information_widgets],
             files=[],
@@ -253,5 +254,11 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
                 widget.get_value() for widget in self.subject_identifier_widgets if widget.get_value() != ""
             ],
             verbal_regulation_type_ids=[value for value in verbal_regulation_type_ids if value is not None],
+            regulation_group_id=self.regulation.regulation_group_id,
+            modified=self.regulation.modified,
             id_=self.regulation.id_,
         )
+        if not model.modified and model != self.regulation:
+            model.modified = True
+
+        return model
