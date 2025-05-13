@@ -246,7 +246,7 @@ class RegulationLibrary:
         return cls._instance
 
 
-class PlanModel:
+class PlanBaseModel:
     def __post_init__(self):
         # Set all found NULLs to None
         for _field in fields(self):
@@ -255,7 +255,7 @@ class PlanModel:
 
 
 @dataclass
-class RegulationConfig(PlanModel):
+class RegulationConfig(PlanBaseModel):
     """
     Describes plan regulation type.
 
@@ -301,7 +301,7 @@ class RegulationConfig(PlanModel):
 
 
 @dataclass
-class AdditionalInformationConfig(PlanModel):
+class AdditionalInformationConfig(PlanBaseModel):
     # From layer
     id: str
     additional_information_type: str
@@ -405,7 +405,7 @@ class AdditionalInformationConfigLibrary:
 
 
 @dataclass
-class AttributeValue(PlanModel):
+class AttributeValue(PlanBaseModel):
     value_data_type: AttributeValueDataType | None = None
 
     numeric_value: int | float | None = None
@@ -425,7 +425,7 @@ class AttributeValue(PlanModel):
 
 
 @dataclass
-class AdditionalInformation(PlanModel):
+class AdditionalInformation(PlanBaseModel):
     config: AdditionalInformationConfig  # includes code and unit among other needed data for saving feature
 
     id_: str | None = None
@@ -436,7 +436,7 @@ class AdditionalInformation(PlanModel):
 
 
 @dataclass
-class Regulation(PlanModel):
+class Regulation(PlanBaseModel):
     config: RegulationConfig  # includes regulation_code and unit among other needed data for saving feature
     value: AttributeValue | None = None
     additional_information: list[AdditionalInformation] = field(default_factory=list)
@@ -451,7 +451,7 @@ class Regulation(PlanModel):
 
 
 @dataclass
-class Proposition(PlanModel):
+class Proposition(PlanBaseModel):
     value: str
     theme_id: str | None = None
     proposition_number: int | None = None
@@ -461,7 +461,7 @@ class Proposition(PlanModel):
 
 
 @dataclass
-class RegulationGroup(PlanModel):
+class RegulationGroup(PlanBaseModel):
     type_code_id: str | None = None
     name: str | None = None
     short_name: str | None = None
@@ -540,7 +540,7 @@ class RegulationGroup(PlanModel):
 
 
 @dataclass
-class LifeCycle(PlanModel):
+class LifeCycle(PlanBaseModel):
     status_id: str | None = None
     id_: str | None = None
     # No need to compare `plan_id` since lifecycles can't be reassigned for another plan after creation
@@ -559,7 +559,7 @@ class LifeCycle(PlanModel):
 
 
 @dataclass
-class PlanFeature(PlanModel):
+class PlanFeature(PlanBaseModel):
     geom: QgsGeometry | None = None  # Need to allow None for feature templates
     type_of_underground_id: str | None = None
     layer_name: str | None = None
@@ -580,7 +580,7 @@ class PlanFeature(PlanModel):
 
 
 @dataclass
-class Plan(PlanModel):
+class Plan(PlanBaseModel):
     name: str | None = None
     description: str | None = None
     plan_type_id: str | None = None
@@ -600,7 +600,7 @@ class Plan(PlanModel):
 
 
 @dataclass
-class Document(PlanModel):
+class Document(PlanBaseModel):
     name: str | None = None
     url: str | None = None
     type_of_document_id: str | None = None
