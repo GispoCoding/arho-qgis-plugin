@@ -13,7 +13,9 @@ from qgis.PyQt.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
+    QScrollArea,
     QSizePolicy,
+    QSplitter,
     QTextBrowser,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -60,7 +62,10 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.color_code: QLineEdit
         self.type_of_regulation_group: CodeComboBox
 
-        self.regulations_tree_layout: QVBoxLayout
+        self.regulations_tab: QWidget
+        self.libraries_widget: QWidget
+        self.regulations_scroll_area: QScrollArea
+
         self.regulations_scroll_area_contents: QWidget
         self.regulations_layout: QBoxLayout
         self.regulation_info: QTextBrowser
@@ -74,6 +79,14 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.button_box: QDialogButtonBox
 
         # INIT
+        self.regulations_tab.layout().removeWidget(self.libraries_widget)
+        self.regulations_tab.layout().removeWidget(self.regulations_scroll_area)
+        splitter = QSplitter(self.regulations_tab)
+        splitter.addWidget(self.libraries_widget)
+        splitter.addWidget(self.regulations_scroll_area)
+        splitter.setSizes([300, 540])
+        self.regulations_tab.layout().addWidget(splitter)
+
         self.regulation_group = regulation_group
         self.regulation_widgets: list[RegulationWidget] = []
         self.proposition_widgets: list[PropositionWidget] = []
@@ -82,7 +95,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
         # Initialize regulation library
         self.regulations_selection_widget = TreeWithSearchWidget()
-        self.regulations_tree_layout.insertWidget(1, self.regulations_selection_widget)
+        self.libraries_widget.layout().insertWidget(1, self.regulations_selection_widget)
         self.regulations_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_regulation)
         self.regulations_selection_widget.tree.itemClicked.connect(self.update_selected_regulation)
         for config in RegulationLibrary.get_regulations():

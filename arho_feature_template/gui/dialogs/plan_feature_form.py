@@ -9,11 +9,13 @@ from qgis.PyQt.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QGroupBox,
     QLineEdit,
     QMessageBox,
     QScrollArea,
     QSizePolicy,
     QSpacerItem,
+    QSplitter,
     QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
@@ -28,7 +30,7 @@ from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_id
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QVBoxLayout, QWidget
+    from qgis.PyQt.QtWidgets import QWidget
 
     from arho_feature_template.core.models import RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
@@ -54,15 +56,27 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.feature_name: QLineEdit
         self.feature_description: QTextEdit
         self.feature_type_of_underground: CodeComboBox
+
+        self.regulation_groups_groupbox: QGroupBox
+        self.libraries_widget: QWidget
+        self.regulation_groups_widget: QWidget
         self.plan_regulation_group_scrollarea: QScrollArea
         self.plan_regulation_group_scrollarea_contents: QWidget
         self.plan_regulation_group_libraries_combobox: QComboBox
         self.plan_regulation_groups_tree: QTreeWidget
+
         self.button_box: QDialogButtonBox
 
-        self.regulation_groups_tree_layout: QVBoxLayout
-
         # INIT
+        self.regulation_groups_groupbox.layout().setContentsMargins(0, 0, 0, 0)
+        self.regulation_groups_groupbox.layout().removeWidget(self.libraries_widget)
+        self.regulation_groups_groupbox.layout().removeWidget(self.regulation_groups_widget)
+        splitter = QSplitter(self.regulation_groups_groupbox)
+        splitter.addWidget(self.libraries_widget)
+        splitter.addWidget(self.regulation_groups_widget)
+        splitter.setSizes([300, 550])
+        self.regulation_groups_groupbox.layout().addWidget(splitter)
+
         self.existing_group_short_names = active_plan_regulation_groups_library.get_short_names()
         self.active_plan_regulation_groups_library = active_plan_regulation_groups_library
         self.regulation_group_libraries = [*regulation_group_libraries, active_plan_regulation_groups_library]
@@ -76,7 +90,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.setWindowTitle(form_title)
 
         self.regulation_groups_selection_widget = TreeWithSearchWidget()
-        self.regulation_groups_tree_layout.insertWidget(2, self.regulation_groups_selection_widget)
+        self.libraries_widget.layout().insertWidget(2, self.regulation_groups_selection_widget)
         self.regulation_groups_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
         self.select_library_by_active_plan_type()
         self.show_regulation_group_library(self.plan_regulation_group_libraries_combobox.currentIndex())
