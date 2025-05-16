@@ -615,6 +615,6 @@ class Document(PlanBaseModel):
     # exported_file_key:
     confirmation_date: datetime | None = None
     arrival_date: datetime | None = None
-    plan_id: int | None = None
+    plan_id: str | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = None
