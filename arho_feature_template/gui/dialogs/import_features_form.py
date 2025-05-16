@@ -3,14 +3,15 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING, Generator
 
-from qgis import processing
 from qgis.core import (
     QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
     QgsFeature,
     QgsFeatureIterator,
     QgsFeatureRequest,
     QgsFieldProxyModel,
     QgsMapLayerProxyModel,
+    QgsProject,
     QgsVectorLayer,
 )
 from qgis.PyQt import uic
@@ -142,10 +143,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         if not self.target_crs:
             self.target_crs = PlanLayer.get_from_project().crs()
 
-        if self.source_layer.crs() == self.target_crs:
-            source_features = list(self.get_source_features(self.source_layer))
-        else:
-            source_features = list(self.get_source_features(self.reproject_layer(self.target_crs, self.source_layer)))
+        source_features = list(self.get_source_features(self.source_layer))
 
         if not source_features:
             iface.messageBar().pushInfo("", "Yhtään kohdetta ei tuotu.")
@@ -198,18 +196,29 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             msg = f"Could not find plan feature layer class for layer name {self.target_layer_name}"
             raise ValueError(msg)
 
-        return [
-            layer_class.feature_from_model(
-                PlanFeature(
-                    geom=feature.geometry(),
-                    type_of_underground_id=type_of_underground_id,
-                    layer_name=self.target_layer_name,
-                    name=feature[source_layer_name_field] if source_layer_name_field else None,
-                    description=feature[source_layer_description_field] if source_layer_description_field else None,
+        crs_mismatch = self.source_layer.crs() != self.target_crs
+        transform = QgsCoordinateTransform(
+            self.source_layer.crs(), PlanLayer.get_from_project().crs(), QgsProject.instance()
+        )
+
+        plan_features = []
+        for feature in source_features:
+            geom = feature.geometry()
+            if crs_mismatch:
+                geom.transform(transform)
+
+            plan_features.append(
+                layer_class.feature_from_model(
+                    PlanFeature(
+                        geom=geom,
+                        type_of_underground_id=type_of_underground_id,
+                        layer_name=self.target_layer_name,
+                        name=feature[source_layer_name_field] if source_layer_name_field else None,
+                        description=feature[source_layer_description_field] if source_layer_description_field else None,
+                    )
                 )
             )
-            for feature in source_features
-        ]
+        return plan_features
 
     def create_regulation_group_associations(self, plan_features: list[QgsFeature]) -> list[QgsFeature]:
         return [
@@ -233,10 +242,3 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
         layer.endEditCommand()
         return layer.commitChanges(stopEditing=False)
-
-    @staticmethod
-    def reproject_layer(target_crs: QgsCoordinateReferenceSystem, layer: QgsVectorLayer) -> QgsVectorLayer:
-        results = processing.run(
-            "native:reprojectlayer", {"INPUT": layer, "TARGET_CRS": target_crs, "OUTPUT": "TEMPORARY_OUTPUT"}
-        )
-        return results["OUTPUT"]
