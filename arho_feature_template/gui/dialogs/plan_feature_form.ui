@@ -1,26 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>template_form</class>
- <widget class="QDialog" name="template_form">
+ <class>plan_feature_form</class>
+ <widget class="QDialog" name="plan_feature_form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>906</width>
+    <width>949</width>
     <height>749</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Template form</string>
+   <string>Plan feature form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <widget class="QgsCollapsibleGroupBox" name="mGroupBox">
+    <widget class="QgsCollapsibleGroupBox" name="plan_feature_groupbox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string>Kaavakohteen tiedot</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout">
       <item row="0" column="0">
@@ -70,53 +76,57 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="regulation_groups_groupbox">
      <property name="title">
       <string>Kaavamääräysryhmät</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <layout class="QVBoxLayout" name="regulation_groups_tree_layout">
-        <item>
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Kaavamääräysryhmäkirjastot</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QComboBox" name="plan_regulation_group_libraries_combobox"/>
-        </item>
-       </layout>
+       <widget class="QWidget" name="libraries_widget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Kaavamääräysryhmäkirjastot</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="plan_regulation_group_libraries_combobox"/>
+         </item>
+        </layout>
+       </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Valitut kaavamääräysryhmät</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QScrollArea" name="plan_regulation_group_scrollarea">
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="plan_regulation_group_scrollarea_contents">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>656</width>
-             <height>600</height>
-            </rect>
+       <widget class="QWidget" name="regulation_groups_widget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Kaavakohteen kaavamääräysryhmät</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_2"/>
           </widget>
-         </widget>
-        </item>
-       </layout>
+         </item>
+         <item>
+          <widget class="QScrollArea" name="plan_regulation_group_scrollarea">
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="plan_regulation_group_scrollarea_contents">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>667</width>
+              <height>426</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_2"/>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -148,7 +158,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
-   <receiver>template_form</receiver>
+   <receiver>plan_feature_form</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
