@@ -103,8 +103,10 @@ class PlanManager(QObject):
         self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
         self.regulation_groups_dock.request_edit_regulation_group.connect(self.edit_regulation_group)
         self.regulation_groups_dock.request_delete_regulation_groups.connect(self.delete_regulation_group)
-        self.regulation_groups_dock.request_delete_all_regulation_groups.connect(self.delete_all_regulation_groups)
-        self.regulation_groups_dock.request_add_groups_to_feats.connect(self.add_regulation_groups_for_feats)
+        self.regulation_groups_dock.request_remove_all_regulation_groups.connect(
+            self.remove_all_regulation_groups_from_feats
+        )
+        self.regulation_groups_dock.request_add_groups_to_feats.connect(self.add_regulation_groups_to_feats)
 
         self.update_active_plan_regulation_group_library()
         self.regulation_groups_dock.hide()
@@ -199,7 +201,7 @@ class PlanManager(QObject):
         if groups_changed:
             self.update_active_plan_regulation_group_library()
 
-    def delete_all_regulation_groups(self, feats: list[tuple[str, Generator[str]]]):
+    def remove_all_regulation_groups_from_feats(self, feats: list[tuple[str, Generator[str]]]):
         for feat_layer_name, feat_ids in feats:
             for feat_id in feat_ids:
                 for association in RegulationGroupAssociationLayer.get_associations_for_feature(
@@ -212,7 +214,7 @@ class PlanManager(QObject):
                     ):
                         iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
 
-    def add_regulation_groups_for_feats(self, groups: list[RegulationGroup], feats: list[tuple[str, Generator[str]]]):
+    def add_regulation_groups_to_feats(self, groups: list[RegulationGroup], feats: list[tuple[str, Generator[str]]]):
         for feat_layer_name, feat_ids in feats:
             for feat_id in feat_ids:
                 for group in groups:
