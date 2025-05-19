@@ -70,7 +70,14 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="add_all_btn">
+     <widget class="QPushButton" name="remove_selected_btn">
+      <property name="text">
+       <string>Poista valitut ryhmät valituilta kohteilta</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="add_selected_btn">
       <property name="text">
        <string>Lisää valitut ryhmät valituille kohteille</string>
       </property>
