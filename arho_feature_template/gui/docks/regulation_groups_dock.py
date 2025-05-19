@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generator
 
 from qgis.core import QgsApplication
 from qgis.gui import QgsDockWidget
@@ -10,6 +10,7 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QMessageBox, QPushButton
 
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.project.layers.plan_layers import plan_feature_layers
 from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
@@ -33,6 +34,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     new_regulation_group_requested = pyqtSignal()
     edit_regulation_group_requested = pyqtSignal(RegulationGroup)
     delete_regulation_group_requested = pyqtSignal(RegulationGroup)
+    delete_all_regulation_groups_requested = pyqtSignal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -41,6 +43,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.new_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.delete_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.edit_btn.setIcon(QgsApplication.getThemeIcon("mActionEditTable.svg"))
+        self.remove_all_btn: QPushButton
         # QgsApplication.getThemeIcon("symbologyEdit.svg")
 
         self.connect_buttons()
@@ -56,6 +59,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.new_btn.clicked)
         disconnect_signal(self.edit_btn.clicked)
         disconnect_signal(self.delete_btn.clicked)
+        disconnect_signal(self.remove_all_btn.clicked)
 
     def connect_buttons(self):
         self._disconnect_buttons()
@@ -63,6 +67,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.new_btn.clicked.connect(self.new_regulation_group_requested.emit)
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
         self.delete_btn.clicked.connect(self.on_delete_btn_clicked)
+        self.remove_all_btn.clicked.connect(self.on_remove_all_btn_clicked)
 
     def update_regulation_groups(self, regulation_group_library: RegulationGroupLibrary):
         self.regulation_group_list.clear()
@@ -109,6 +114,12 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             if response == QMessageBox.Yes:
                 self.delete_regulation_group_requested.emit(self.selected_group)
 
+    def on_remove_all_btn_clicked(self):
+        feats: list[tuple[str, Generator[str]]] = [
+            (layer_class.name, layer_class.get_selected_feature_ids()) for layer_class in plan_feature_layers
+        ]
+        self.delete_all_regulation_groups_requested.emit(feats)
+
     def filter_regulation_groups(self) -> None:
         search_text = self.search_box.value().lower()
 
@@ -127,3 +138,4 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.new_regulation_group_requested)
         disconnect_signal(self.edit_regulation_group_requested)
         disconnect_signal(self.delete_regulation_group_requested)
+        disconnect_signal(self.delete_all_regulation_groups_requested)
