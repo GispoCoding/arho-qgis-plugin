@@ -84,7 +84,11 @@
      </widget>
     </item>
     <item>
-     <widget class="QListWidget" name="regulation_group_list"/>
+     <widget class="QListWidget" name="regulation_group_list">
+      <property name="selectionMode">
+       <enum>QAbstractItemView::ExtendedSelection</enum>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>
