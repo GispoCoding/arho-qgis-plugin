@@ -100,13 +100,12 @@ class PlanManager(QObject):
 
         # Initialize regulation groups dock
         self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
-        self.regulation_groups_dock.new_regulation_group_requested.connect(self.create_new_regulation_group)
-        self.regulation_groups_dock.edit_regulation_group_requested.connect(self.edit_regulation_group)
-        self.regulation_groups_dock.delete_regulation_group_requested.connect(self.delete_regulation_group)
-        self.regulation_groups_dock.delete_all_regulation_groups_requested.connect(self.delete_all_regulation_groups)
-        self.regulation_groups_dock.add_regulation_groups_for_all_requested.connect(
-            self.add_regulation_groups_for_feats
-        )
+        self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
+        self.regulation_groups_dock.request_edit_regulation_group.connect(self.edit_regulation_group)
+        self.regulation_groups_dock.request_delete_regulation_groups.connect(self.delete_regulation_group)
+        self.regulation_groups_dock.request_delete_all_regulation_groups.connect(self.delete_all_regulation_groups)
+        self.regulation_groups_dock.request_add_groups_to_feats.connect(self.add_regulation_groups_for_feats)
+
         self.update_active_plan_regulation_group_library()
         self.regulation_groups_dock.hide()
 
@@ -191,8 +190,13 @@ class PlanManager(QObject):
 
         return None
 
-    def delete_regulation_group(self, group: RegulationGroup):
-        if delete_regulation_group(group):
+    def delete_regulation_group(self, groups: list[RegulationGroup]):
+        groups_changed = False
+        for group in groups:
+            if delete_regulation_group(group):
+                groups_changed = True
+
+        if groups_changed:
             self.update_active_plan_regulation_group_library()
 
     def delete_all_regulation_groups(self, feats: list[tuple[str, Generator[str]]]):
