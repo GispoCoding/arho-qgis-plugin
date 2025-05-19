@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Generator, cast
+from typing import TYPE_CHECKING, Generator, Iterable, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
@@ -102,14 +102,14 @@ class PlanManager(QObject):
         self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
         self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
         self.regulation_groups_dock.request_edit_regulation_group.connect(self.edit_regulation_group)
-        self.regulation_groups_dock.request_delete_regulation_groups.connect(self.delete_regulation_group)
+        self.regulation_groups_dock.request_delete_regulation_groups.connect(self.delete_regulation_groups)
         self.regulation_groups_dock.request_remove_all_regulation_groups.connect(
-            self.remove_all_regulation_groups_from_feats
+            self.remove_all_regulation_groups_from_features
         )
         self.regulation_groups_dock.request_remove_selected_groups.connect(
-            self.remove_selected_regulation_groups_from_feats
+            self.remove_selected_regulation_groups_from_features
         )
-        self.regulation_groups_dock.request_add_groups_to_feats.connect(self.add_regulation_groups_to_feats)
+        self.regulation_groups_dock.request_add_groups_to_features.connect(self.add_regulation_groups_to_features)
 
         self.update_active_plan_regulation_group_library()
         self.regulation_groups_dock.hide()
@@ -195,7 +195,7 @@ class PlanManager(QObject):
 
         return None
 
-    def delete_regulation_group(self, groups: list[RegulationGroup]):
+    def delete_regulation_groups(self, groups: Iterable[RegulationGroup]):
         groups_changed = False
         for group in groups:
             if delete_regulation_group(group):
@@ -204,8 +204,8 @@ class PlanManager(QObject):
         if groups_changed:
             self.update_active_plan_regulation_group_library()
 
-    def remove_all_regulation_groups_from_feats(self, feats: list[tuple[str, Generator[str]]]):
-        for feat_layer_name, feat_ids in feats:
+    def remove_all_regulation_groups_from_features(self, features: list[tuple[str, Generator[str]]]):
+        for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
                 for association in RegulationGroupAssociationLayer.get_associations_for_feature(
                     feat_id, feat_layer_name
@@ -217,17 +217,19 @@ class PlanManager(QObject):
                     ):
                         iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
 
-    def add_regulation_groups_to_feats(self, groups: list[RegulationGroup], feats: list[tuple[str, Generator[str]]]):
-        for feat_layer_name, feat_ids in feats:
+    def add_regulation_groups_to_features(
+        self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
+    ):
+        for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
                 for group in groups:
                     save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
 
-    def remove_selected_regulation_groups_from_feats(
-        self, groups: list[RegulationGroup], feats: list[tuple[str, Generator[str]]]
+    def remove_selected_regulation_groups_from_features(
+        self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
     ):
         group_ids = [cast(str, group.id_) for group in groups]
-        for feat_layer_name, feat_ids in feats:
+        for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
                 for association in RegulationGroupAssociationLayer.get_associations_for_feature(
                     feat_id, feat_layer_name

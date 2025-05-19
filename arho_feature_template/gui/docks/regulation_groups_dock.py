@@ -30,7 +30,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     request_remove_selected_groups = pyqtSignal(
         object, object
     )  # Types: list[RegulationGroup],  list[tuple[str, Generator[str]]
-    request_add_groups_to_feats = pyqtSignal(
+    request_add_groups_to_features = pyqtSignal(
         object, object
     )  # Types: list[RegulationGroup],  list[tuple[str, Generator[str]]
 
@@ -105,6 +105,8 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def on_edit_btn_clicked(self):
         selected = self.get_selected_regulation_groups()
+        if len(selected) == 0:
+            return
         if len(selected) == 1:
             self.request_edit_regulation_group.emit(selected[0])
         else:
@@ -133,7 +135,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def on_add_selected_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
         if len(selected_groups) > 0:
-            self.request_add_groups_to_feats.emit(selected_groups, self.get_selected_feat_ids())
+            self.request_add_groups_to_features.emit(selected_groups, self.get_selected_feat_ids())
 
     def filter_regulation_groups(self) -> None:
         search_text = self.search_box.value().lower()
@@ -149,4 +151,4 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.request_delete_regulation_groups)
         disconnect_signal(self.request_remove_all_regulation_groups)
         disconnect_signal(self.request_remove_selected_groups)
-        disconnect_signal(self.request_add_groups_to_feats)
+        disconnect_signal(self.request_add_groups_to_features)
