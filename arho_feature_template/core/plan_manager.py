@@ -106,6 +106,9 @@ class PlanManager(QObject):
         self.regulation_groups_dock.request_remove_all_regulation_groups.connect(
             self.remove_all_regulation_groups_from_feats
         )
+        self.regulation_groups_dock.request_remove_selected_groups.connect(
+            self.remove_selected_regulation_groups_from_feats
+        )
         self.regulation_groups_dock.request_add_groups_to_feats.connect(self.add_regulation_groups_to_feats)
 
         self.update_active_plan_regulation_group_library()
@@ -219,6 +222,25 @@ class PlanManager(QObject):
             for feat_id in feat_ids:
                 for group in groups:
                     save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
+
+    def remove_selected_regulation_groups_from_feats(
+        self, groups: list[RegulationGroup], feats: list[tuple[str, Generator[str]]]
+    ):
+        group_ids = [cast(str, group.id_) for group in groups]
+        for feat_layer_name, feat_ids in feats:
+            for feat_id in feat_ids:
+                for association in RegulationGroupAssociationLayer.get_associations_for_feature(
+                    feat_id, feat_layer_name
+                ):
+                    if association["plan_regulation_group_id"] in group_ids:  # noqa: SIM102
+                        if not _delete_feature(
+                            association,
+                            RegulationGroupAssociationLayer.get_from_project(),
+                            "Kaavamääräysryhmän assosiaation poisto",
+                        ):
+                            iface.messageBar().pushCritical(
+                                "", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui."
+                            )
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         if activate:
