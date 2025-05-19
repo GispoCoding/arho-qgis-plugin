@@ -7,7 +7,7 @@ from qgis.core import QgsApplication
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
-from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QMessageBox, QPushButton
+from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QMenu, QMessageBox, QPushButton
 
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.project.layers.plan_layers import plan_feature_layers
@@ -46,9 +46,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.new_btn: QPushButton
         self.delete_btn: QPushButton
         self.edit_btn: QPushButton
-        self.remove_all_btn: QPushButton
-        self.remove_selected_btn: QPushButton
-        self.add_selected_btn: QPushButton
+        self.modify_selected_features_btn: QPushButton
 
         # INIT
         self.new_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
@@ -58,25 +56,31 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.regulation_group_list.setSelectionMode(self.regulation_group_list.ExtendedSelection)
         self.search_box.valueChanged.connect(self.filter_regulation_groups)
 
-        self.connect_buttons()
+        menu = QMenu()
+        self.add_selected_action = menu.addAction("Lisää valitut ryhmät valituille kohteille")
+        self.remove_all_action = menu.addAction("Poista kaikki ryhmät valituilta kohteilta")
+        self.remove_selected_action = menu.addAction("Poista valitut ryhmät valituilta kohteilta")
+        self.modify_selected_features_btn.setMenu(menu)
 
-    def _disconnect_buttons(self):
+        self._connect_signals()
+
+    def _disconnect_signals(self):
         disconnect_signal(self.new_btn.clicked)
         disconnect_signal(self.edit_btn.clicked)
         disconnect_signal(self.delete_btn.clicked)
-        disconnect_signal(self.remove_all_btn.clicked)
-        disconnect_signal(self.remove_selected_btn.clicked)
-        disconnect_signal(self.add_selected_btn.clicked)
+        disconnect_signal(self.remove_all_action.triggered)
+        disconnect_signal(self.remove_selected_action.triggered)
+        disconnect_signal(self.add_selected_action.triggered)
 
-    def connect_buttons(self):
-        self._disconnect_buttons()
+    def _connect_signals(self):
+        self._disconnect_signals()
 
         self.new_btn.clicked.connect(self.request_new_regulation_group.emit)
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
         self.delete_btn.clicked.connect(self.on_delete_btn_clicked)
-        self.remove_all_btn.clicked.connect(self.on_remove_all_btn_clicked)
-        self.remove_selected_btn.clicked.connect(self.on_remove_selected_btn_clicked)
-        self.add_selected_btn.clicked.connect(self.on_add_selected_btn_clicked)
+        self.remove_all_action.triggered.connect(self.on_remove_all_btn_clicked)
+        self.remove_selected_action.triggered.connect(self.on_remove_selected_btn_clicked)
+        self.add_selected_action.triggered.connect(self.on_add_selected_btn_clicked)
 
     def update_regulation_groups(self, regulation_group_library: RegulationGroupLibrary):
         self.regulation_group_list.clear()
@@ -138,7 +142,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             item.setHidden(search_text not in item.text().lower())
 
     def unload(self):
-        self._disconnect_buttons()
+        self._disconnect_signals()
 
         disconnect_signal(self.request_new_regulation_group)
         disconnect_signal(self.request_edit_regulation_group)
