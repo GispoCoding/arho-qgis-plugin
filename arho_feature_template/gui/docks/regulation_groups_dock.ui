@@ -70,6 +70,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QPushButton" name="add_all_btn">
+      <property name="text">
+       <string>Lisää valitut ryhmät valituille kohteille</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QgsFilterLineEdit" name="search_box">
       <property name="showSearchIcon">
        <bool>true</bool>

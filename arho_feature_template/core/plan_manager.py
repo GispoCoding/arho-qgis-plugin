@@ -104,6 +104,9 @@ class PlanManager(QObject):
         self.regulation_groups_dock.edit_regulation_group_requested.connect(self.edit_regulation_group)
         self.regulation_groups_dock.delete_regulation_group_requested.connect(self.delete_regulation_group)
         self.regulation_groups_dock.delete_all_regulation_groups_requested.connect(self.delete_all_regulation_groups)
+        self.regulation_groups_dock.add_regulation_groups_for_all_requested.connect(
+            self.add_regulation_groups_for_feats
+        )
         self.update_active_plan_regulation_group_library()
         self.regulation_groups_dock.hide()
 
@@ -193,15 +196,23 @@ class PlanManager(QObject):
             self.update_active_plan_regulation_group_library()
 
     def delete_all_regulation_groups(self, feats: list[tuple[str, Generator[str]]]):
-        for feat_layer, feat_ids in feats:
+        for feat_layer_name, feat_ids in feats:
             for feat_id in feat_ids:
-                for association in RegulationGroupAssociationLayer.get_associations_for_feature(feat_id, feat_layer):
+                for association in RegulationGroupAssociationLayer.get_associations_for_feature(
+                    feat_id, feat_layer_name
+                ):
                     if not _delete_feature(
                         association,
                         RegulationGroupAssociationLayer.get_from_project(),
                         "Kaavamääräysryhmän assosiaation poisto",
                     ):
                         iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+
+    def add_regulation_groups_for_feats(self, groups: list[RegulationGroup], feats: list[tuple[str, Generator[str]]]):
+        for feat_layer_name, feat_ids in feats:
+            for feat_id in feat_ids:
+                for group in groups:
+                    save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         if activate:
