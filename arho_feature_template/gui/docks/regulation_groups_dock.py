@@ -35,6 +35,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     edit_regulation_group_requested = pyqtSignal(RegulationGroup)
     delete_regulation_group_requested = pyqtSignal(RegulationGroup)
     delete_all_regulation_groups_requested = pyqtSignal(object)
+    add_regulation_groups_for_all_requested = pyqtSignal(object, object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -44,6 +45,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.delete_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.edit_btn.setIcon(QgsApplication.getThemeIcon("mActionEditTable.svg"))
         self.remove_all_btn: QPushButton
+        self.add_all_btn: QPushButton
         # QgsApplication.getThemeIcon("symbologyEdit.svg")
 
         self.connect_buttons()
@@ -53,13 +55,14 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.search_box.valueChanged.connect(self.filter_regulation_groups)
 
-        self.selected_group = None
+        self.selected_group: RegulationGroup | None = None
 
     def _disconnect_buttons(self):
         disconnect_signal(self.new_btn.clicked)
         disconnect_signal(self.edit_btn.clicked)
         disconnect_signal(self.delete_btn.clicked)
         disconnect_signal(self.remove_all_btn.clicked)
+        disconnect_signal(self.add_all_btn.clicked)
 
     def connect_buttons(self):
         self._disconnect_buttons()
@@ -68,6 +71,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
         self.delete_btn.clicked.connect(self.on_delete_btn_clicked)
         self.remove_all_btn.clicked.connect(self.on_remove_all_btn_clicked)
+        self.add_all_btn.clicked.connect(self.on_add_all_btn_clicked)
 
     def update_regulation_groups(self, regulation_group_library: RegulationGroupLibrary):
         self.regulation_group_list.clear()
@@ -120,6 +124,14 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         ]
         self.delete_all_regulation_groups_requested.emit(feats)
 
+    def on_add_all_btn_clicked(self):
+        feats: list[tuple[str, Generator[str]]] = [
+            (layer_class.name, layer_class.get_selected_feature_ids()) for layer_class in plan_feature_layers
+        ]
+        if self.selected_group:
+            selected_groups = [self.selected_group]
+            self.add_regulation_groups_for_all_requested.emit(selected_groups, feats)
+
     def filter_regulation_groups(self) -> None:
         search_text = self.search_box.value().lower()
 
@@ -139,3 +151,4 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.edit_regulation_group_requested)
         disconnect_signal(self.delete_regulation_group_requested)
         disconnect_signal(self.delete_all_regulation_groups_requested)
+        disconnect_signal(self.add_regulation_groups_for_all_requested)
