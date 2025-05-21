@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 
 from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
     QgsFeature,
-    QgsFeatureIterator,
-    QgsFeatureRequest,
     QgsFieldProxyModel,
     QgsMapLayerProxyModel,
     QgsProject,
@@ -29,7 +27,7 @@ from arho_feature_template.project.layers.plan_layers import (
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 
 if TYPE_CHECKING:
-    from qgis.gui import QgsCheckableComboBox, QgsFieldComboBox, QgsFieldExpressionWidget, QgsMapLayerComboBox
+    from qgis.gui import QgsCheckableComboBox, QgsFieldComboBox, QgsMapLayerComboBox
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
@@ -45,7 +43,6 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
         # TYPES
         self.source_layer_selection: QgsMapLayerComboBox
-        self.filter_expression: QgsFieldExpressionWidget
         self.selected_features_only: QCheckBox
 
         self.name_selection: QgsFieldComboBox
@@ -119,7 +116,6 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.source_layer_name: str = self.source_layer.name()
         self.target_layer_name: str = self.target_layer.name()
 
-        self.filter_expression.setLayer(self.source_layer)
         self.name_selection.setLayer(self.source_layer)
         self.description_selection.setLayer(self.source_layer)
 
@@ -175,22 +171,12 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
         self.progress_bar.setValue(100)
 
-    def get_source_features(self, source_layer: QgsVectorLayer) -> Generator[QgsFeature, None, None]:
-        request = QgsFeatureRequest()
-        expression_text = self.filter_expression.currentText()
-        if expression_text:
-            request.setFilterExpression(expression_text)
-
+    def get_source_features(self, source_layer: QgsVectorLayer) -> list[QgsFeature]:
         return (
-            feat
-            for feat in source_layer.getFeatures(request)
-            if not self.selected_features_only.isChecked() or feat in source_layer.selectedFeatures()
+            source_layer.selectedFeatures() if self.selected_features_only.isChecked() else source_layer.getFeatures()
         )
 
-    def create_plan_features(self, source_features: QgsFeatureIterator | list[QgsFeature]) -> list[QgsFeature]:
-        type_of_underground_id = self.feature_type_of_underground_selection.value()
-        source_layer_name_field = self.name_selection.currentField()
-        source_layer_description_field = self.description_selection.currentField()
+    def create_plan_features(self, source_features: list[QgsFeature]) -> list[QgsFeature]:
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(self.target_layer_name)
         if not layer_class:
             msg = f"Could not find plan feature layer class for layer name {self.target_layer_name}"
@@ -200,6 +186,10 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         transform = QgsCoordinateTransform(
             self.source_layer.crs(), PlanLayer.get_from_project().crs(), QgsProject.instance()
         )
+
+        type_of_underground_id = self.feature_type_of_underground_selection.value()
+        source_layer_name_field = self.name_selection.currentField()
+        source_layer_description_field = self.description_selection.currentField()
 
         plan_features = []
         for feature in source_features:
