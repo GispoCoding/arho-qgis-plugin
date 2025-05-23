@@ -160,21 +160,41 @@ class Plugin:
         self.validation_dock.hide()
 
         # Actions
-        self.new_land_use_plan_action = self.add_action(
-            text="Luo kaava",
+        self.draw_new_plan_action = self.add_action(
+            text="Piirrä kaavan ulkoraja",
             icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
             # icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
-            triggered_callback=self.add_new_plan,
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Luo uusi kaava",
+            triggered_callback=self.plan_manager.digitize_plan_geometry,
+            add_to_menu=False,
+            add_to_toolbar=False,
+            status_tip="Luo uusi kaava piirtämällä",
+        )
+        self.import_plan_action = self.add_action(
+            text="Tuo kaavan ulkoraja",
+            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
+            triggered_callback=self.plan_manager.import_plan_geometry,
+            add_to_menu=False,
+            add_to_toolbar=False,
+            status_tip="Luo uusi kaava tuomalla jo olemassa oleva kaavan ulkorajan geometria",
         )
 
-        self.load_land_use_plan_action = self.add_action(
+        self.new_plan_button = QToolButton()
+        self.new_plan_button.setText("Luo kaava")
+        self.new_plan_button.setIcon(QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")))
+        self.new_plan_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
+
+        menu = QMenu()
+        menu.addAction(self.draw_new_plan_action)
+        menu.addAction(self.import_plan_action)
+        self.new_plan_button.setMenu(menu)
+        self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
+
+        self.load_plan_action = self.add_action(
             text="Avaa kaava",
             # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
             icon=QIcon(resources_path("icons", "toolbar", "avaa_kaava4.svg")),
-            triggered_callback=self.load_existing_land_use_plan,
+            triggered_callback=self.load_existing_plan,
             parent=iface.mainWindow(),
             add_to_menu=True,
             add_to_toolbar=True,
@@ -187,7 +207,7 @@ class Plugin:
         self.edit_plan_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
         self.edit_plan_tool_action = self.toolbar.addWidget(self.edit_plan_tool_button)
 
-        self.edit_land_use_plan_action = self.add_action(
+        self.edit_plan_action = self.add_action(
             text="Muokkaa kaavaa",
             # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
             icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
@@ -197,8 +217,8 @@ class Plugin:
             add_to_toolbar=False,
             status_tip="Muokkaa aktiivisen kaavan tietoja",
         )
-        self.edit_plan_tool_button.menu().addAction(self.edit_land_use_plan_action)
-        self.edit_plan_tool_button.setDefaultAction(self.edit_land_use_plan_action)
+        self.edit_plan_tool_button.menu().addAction(self.edit_plan_action)
+        self.edit_plan_tool_button.setDefaultAction(self.edit_plan_action)
 
         self.edit_lifecycles_action = self.add_action(
             text="Muokkaa kaavan elinkaarien päivämääriä",
@@ -328,9 +348,9 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
-        self.project_depending_actions = [self.new_land_use_plan_action, self.load_land_use_plan_action]
+        self.project_depending_actions = [self.draw_new_plan_action, self.load_plan_action]
         self.plan_depending_actions = [
-            self.edit_land_use_plan_action,
+            self.edit_plan_action,
             self.edit_lifecycles_action,
             self.new_feature_dock_action,
             self.identify_plan_features_action,
@@ -374,11 +394,8 @@ class Plugin:
             dock_widget.show()
             dock_widget.raise_()
 
-    def add_new_plan(self):
-        self.plan_manager.add_new_plan()
-
-    def load_existing_land_use_plan(self):
-        self.plan_manager.load_land_use_plan()
+    def load_existing_plan(self):
+        self.plan_manager.load_plan()
 
     def serialize_plan(self):
         """Serializes currently active plan."""
