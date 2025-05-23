@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Generator, Iterable, cast
 
-from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer, QgsWkbTypes
+from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
@@ -65,12 +65,11 @@ from arho_feature_template.utils.misc_utils import (
     handle_unsaved_changes,
     iface,
     set_active_plan_id,
+    set_imported_layer_invisible,
     use_wait_cursor,
 )
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature
-
     from arho_feature_template.core.models import Proposition, Regulation
 
 logger = logging.getLogger(__name__)
@@ -123,7 +122,7 @@ class PlanManager(QObject):
 
         # Initialize digitize tools
         self.plan_digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
-        self.plan_digitize_map_tool.digitizingCompleted.connect(self._plan_geom_digitized)
+        self.plan_digitize_map_tool.digitizingCompleted.connect(self._plan_geom_ready)
 
         self.feature_digitize_map_tool = None
         self.initialize_feature_digitize_map_tool()
@@ -328,9 +327,7 @@ class PlanManager(QObject):
         if layer:
             self.feature_digitize_map_tool.setLayer(layer)
 
-    def add_new_plan(self):
-        """Initiate the process to add a new plan to the Kaava layer."""
-
+    def digitize_plan_geometry(self):
         self.previous_map_tool = iface.mapCanvas().mapTool()
         self.previous_active_plan_id = get_active_plan_id()
 
@@ -348,6 +345,31 @@ class PlanManager(QObject):
         plan_layer.startEditing()
         self.plan_digitize_map_tool.setLayer(plan_layer)
         iface.mapCanvas().setMapTool(self.plan_digitize_map_tool)
+
+    def import_plan_geometry(self):
+        plan_layer = PlanLayer.get_from_project()
+        if not plan_layer:
+            return
+        self.previously_editable = plan_layer.isEditable()
+        self.previous_active_plan_id = get_active_plan_id()
+        self.previous_map_tool = iface.mapCanvas().mapTool()
+
+        layer: QgsVectorLayer = iface.activeLayer()
+        plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
+        if layer.name() in plan_layer_names:
+            iface.messageBar().pushWarning("", "Kaavan ulkorajaa ei voi tuoda ARHOn tasoilta.")
+            return
+        if layer.geometryType() != QgsWkbTypes.PolygonGeometry:
+            iface.messageBar().pushWarning("", "Kaavan ulkorajaksi valittu geometria ei ole polygoni.")
+            return
+        features = layer.selectedFeatures()
+        if not features:
+            iface.messageBar().pushWarning("", "Ei valittuja kohteita kaavan ulkorajaksi.")
+            return
+
+        plan_saved = self._plan_geom_ready(features)
+        if plan_saved:
+            set_imported_layer_invisible(layer)
 
     def edit_plan(self):
         plan_layer = PlanLayer.get_from_project()
@@ -402,19 +424,30 @@ class PlanManager(QObject):
         self.initialize_feature_digitize_map_tool(layer)
         iface.mapCanvas().setMapTool(self.feature_digitize_map_tool)
 
-    def _plan_geom_digitized(self, feature: QgsFeature):
-        """Callback for when a new feature is added to the Kaava layer."""
+    def _plan_geom_ready(self, features: QgsFeature | list[QgsFeature]) -> bool:
+        """Callback for when new feature(s) is added to the Kaava layer."""
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
-            return
+            return False
 
-        plan_model = Plan(geom=feature.geometry())
+        if isinstance(features, QgsFeature):
+            geom = features.geometry()
+        else:
+            geom = QgsGeometry.unaryUnion([feature.geometry() for feature in features if feature.geometry()])
+
+        plan_model = Plan(geom=geom)
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
             plan_id = save_plan(attribute_form.model)
-            plan_to_be_activated = plan_id if plan_id is not None else self.previous_active_plan_id
+            if plan_id is not None:
+                plan_to_be_activated = plan_id
+                plan_saved = True
+            else:
+                plan_to_be_activated = self.previous_active_plan_id
+                plan_saved = False
         else:
             plan_to_be_activated = self.previous_active_plan_id
+            plan_saved = False
 
         self.set_active_plan(plan_to_be_activated)
 
@@ -422,6 +455,8 @@ class PlanManager(QObject):
             plan_layer.startEditing()
 
         iface.mapCanvas().setMapTool(self.previous_map_tool)
+
+        return plan_saved
 
     def _plan_feature_geom_digitized(self, feature: QgsFeature):
         # NOTE: What if user has changed dock selections while digitizng?
@@ -502,7 +537,7 @@ class PlanManager(QObject):
             canvas.zoomToFeatureExtent(bounding_box.buffered(50))
             canvas.refresh()
 
-    def load_land_use_plan(self):
+    def load_plan(self):
         """Load an existing land use plan using a dialog selection."""
         connection_names = get_existing_database_connection_names()
 

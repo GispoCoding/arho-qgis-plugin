@@ -144,3 +144,9 @@ def null_to_none(value) -> Any:
     if value == NULL or value is None:
         return None
     return value
+
+
+def set_imported_layer_invisible(layer: QgsVectorLayer) -> None:
+    root = QgsProject.instance().layerTreeRoot()
+    layer_node = root.findLayer(layer.id())
+    layer_node.setItemVisibilityChecked(False)
