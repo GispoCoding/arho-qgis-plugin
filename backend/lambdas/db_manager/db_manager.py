@@ -169,13 +169,18 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
     )
     try:
         users = db_helper.get_users()
+        print("Got db users")
+        print(users)
         root_conn.autocommit = True
         main_conn_params = db_helper.get_connection_parameters(User.SU, Db.MAIN)
         msg = ""
 
+        print("Got main db conn params")
+        print(main_conn_params)
         # 1) check and create database and users
         main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
         if not main_db_exists:
+            print("Db not found, creating...")
             msg += create_db(root_conn, db_helper.get_db_name(Db.MAIN))
         main_conn = psycopg2.connect(**main_conn_params)
         main_conn.autocommit = True
@@ -204,6 +209,7 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
         if version == "head":
             version = current_head_version
         if old_version != version:
+            print("Trying to migrate db...")
             # Go figure. Alembic API has no way of checking if a version is up
             # or down from current version. We have to figure it out by trying
             try:
@@ -257,6 +263,7 @@ def handler(event: Event, _) -> Response:
     # if the code fails before returning response, aws lambda will return http 500
     # with the exception stack trace, as desired.
     response = Response(statusCode=200, body=json.dumps(""))
+    print(f"Got event {event}")
     db_helper = DatabaseHelper()
     try:
         event_type = Action(event["action"])
