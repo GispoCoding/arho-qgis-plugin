@@ -36,7 +36,7 @@ jobs:
     if: ${{ needs.check-skip-deploy.outputs.skip-deploy == 'false' }}
     strategy:
       matrix:
-        environment: [vsl-test, arho-test]
+        environment: [vsl-test, arho-test, espoo-test]
     environment: ${{ matrix.environment }}
     steps:
       - uses: actions/checkout@v2
