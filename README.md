@@ -9,14 +9,18 @@
 
 ## Development
 
+Clone the project with the following command to include the [qgis_plugin_tools](https://github.com/GispoCoding/qgis_plugin_tools) submodule.
+```
+git clone --recurse-submodules https://github.com/GispoCoding/arho-feature-template.git
+```
+
 Create a virtual environment activate it and install needed dependencies with the following commands:
 ```console
+cd arho-feature-template
 python create_qgis_venv.py
 .venv\Scripts\activate # On Linux and macOS run `source .venv\bin\activate`
 pip install -r requirements-dev.txt -r requirements-test.txt
 ```
-
-For more detailed development instructions see [development](docs/development.md).
 
 ### Testing the plugin on QGIS
 
