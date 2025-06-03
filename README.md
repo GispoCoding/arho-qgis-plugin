@@ -7,6 +7,10 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
+This is a QGIS plugin for producing land use plans and is compatible with [Ryhti](https://ryhti.syke.fi/en/), the Finnish national built environment information system.
+
+The plugin is expected to be used with the [arho-ryhti](https://github.com/GispoCoding/arho-ryhti) backend system, which provides the necessary database and backend services.
+
 ## Development
 
 Clone the project with the following command to include the [qgis_plugin_tools](https://github.com/GispoCoding/qgis_plugin_tools) submodule.
@@ -21,6 +25,14 @@ python create_qgis_venv.py
 .venv\Scripts\activate # On Linux and macOS run `source .venv\bin\activate`
 pip install -r requirements-dev.txt -r requirements-test.txt
 ```
+
+### Backend setup
+
+Use a local [Arho-ryhti](https://github.com/GispoCoding/arho-ryhti) backend for development. The backend can be run in a Docker container.
+```
+git clone https://github.com/GispoCoding/arho-ryhti.git
+```
+Follow the instructions in the [README](https://github.com/GispoCoding/arho-ryhti/blob/main/README.md) of the arho-ryhti repository to set up the backend.
 
 ### Testing the plugin on QGIS
 
