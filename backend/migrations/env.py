@@ -2,8 +2,8 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from alembic_utils.pg_function import PGFunction
-from alembic_utils.pg_trigger import PGTrigger
+from alembic_utils.pg_extension import PGExtension
+from alembic_utils.pg_grant_table import PGGrantTable
 from alembic_utils.replaceable_entity import register_entities
 from sqlalchemy import create_engine
 
@@ -93,7 +93,7 @@ imported_triggers = (
     + [trg_validate_event_type]
 )
 
-register_entities(entities=imported_triggers, entity_types=[PGTrigger, PGFunction])
+register_entities(imported_triggers)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -117,18 +117,24 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-# Do not check PostGIS extension tables
 def include_object(object, name, type_, reflected, compare_to):
-    if type_ == "table" and name == "spatial_ref_sys":
+    # Extension installs are managed by the AWS RDS.
+    # Manage table grants manually for now.
+    if isinstance(object, (PGGrantTable, PGExtension)):
         return False
     else:
         return True
 
 
-# Check our schemas
 def include_name(name, type_, parent_names):
-    if type_ in "schema":
-        return name in ["hame", "codes"]
+    # Do not check PostGIS extension tables
+    if type_ == "table" and name in {"spatial_ref_sys"}:
+        return False
+    if type_ == "view" and name in {
+        "public.geometry_columns",
+        "public.geography_columns",
+    }:
+        return False
     else:
         return True
 
