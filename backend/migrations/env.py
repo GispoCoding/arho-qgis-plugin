@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 # *ALL* sqlalchemy models have to be imported so that alembic detects all tables
 from database.base import Base
 from database.codes import *  # noqa
+from database.functions import functions
 from database.models import *  # noqa
 from database.triggers import (
     generate_add_plan_id_fkey_triggers,
@@ -94,6 +95,7 @@ imported_triggers = (
 )
 
 register_entities(imported_triggers)
+register_entities(functions)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
