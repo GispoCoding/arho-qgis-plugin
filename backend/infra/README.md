@@ -58,11 +58,22 @@ Remember to commit any changes you made to the terraform configuration, or if yo
 
 ### Adding ssh tunneling users
 
-The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. They are defined in the `hame-dev.tfvars.json` `bastion_ec2_tunnel_public_keys` field.
+The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. This is done using the Ansible playbook in `infra/ansible/playbook.yml`. The playbook will add the public keys to the authorized keys of the ssh-tunnel user on the bastion host.
 
-Note that adding user data with terraform requires the EC2 server to be replaced for the changes to take effect. This also changes the IP, which is why the tunneling server has an address `hame-dev.bastion.gispocoding.fi`. The DNS record will be changed when you replace the server.
+Public ssh keys are stored in the `infra/public_keys` directory, and the playbook will read the public key file corresponding to the current terraform workspace. The public key files should be named according to the terraform workspace, e.g. `public_keys/hame-test`. The public key files are encrypted for security, so you should use `sops` to encrypt the public key files before committing them to the repository.
 
-Therefore, *adding a new ssh key to `bastion_ec2_tunnel_public_keys`*, recreates the bastion server with new user data and new IP and updates the DNS record accordingly. Also, this means the server host key changes when you add new ssh keys.
+To add a new ssh key:
+1. Fetch the latest ssh key files running `git pull`
+2. Decrypt the public key file using `sops -d public_keys/$(terraform workspace show).enc > public_keys/$(terraform workspace show)`
+3. Add the public key to the `public_keys/<workspace name>` file, or create a new file if it does not exist.
+4. Run the Ansible playbook to add the public key to the bastion host:  
+```console
+ansible-playbook ansible/playbook.yml \
+  -i ansible/inventory/hosts.yml \
+  -e "bastion_host=$(terraform output -raw bastion_address) ssh_key_file=../public_keys/$(terraform workspace show)"
+```
+5. Encrypt the public key file again using `sops -e public_keys/$(terraform workspace show) > public_keys/$(terraform workspace show).enc`
+6. Commit the changes to the repository.
 
 ## Configuring new instances
 

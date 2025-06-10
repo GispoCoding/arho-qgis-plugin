@@ -199,7 +199,6 @@ locals {
     "bastion_user_data.tpl",
     {
       ec2_user_public_keys    = var.bastion_ec2_user_public_keys,
-      ec2_tunnel_public_keys  = var.bastion_ec2_tunnel_public_keys
     }
   )
 }
