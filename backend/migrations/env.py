@@ -35,6 +35,7 @@ from database.validation import (
     trgfunc_validate_lifecycle_date,
     trgfunc_validate_line_geometry,
 )
+from database.views import views
 
 modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
 
@@ -96,6 +97,7 @@ imported_triggers = (
 
 register_entities(imported_triggers)
 register_entities(functions)
+register_entities(views)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
