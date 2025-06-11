@@ -66,6 +66,9 @@ class LifecycleTableWidget(QTableWidget):
 
         self.lifecycles = lifecycles
         self.existing_lifecycles: dict[str, LifeCycle] = {}
+        self.lifecycle_values: dict[str, int] = {}
+        for feature in LifeCycleStatusLayer.get_from_project().getFeatures():
+            self.lifecycle_values[feature["name"]["fin"]] = int(feature["value"])
 
         # Initialize table widget
         self.setColumnCount(4)
@@ -104,9 +107,7 @@ class LifecycleTableWidget(QTableWidget):
         self.setCellWidget(row_position, 0, status)
 
         status_text = status.currentText()
-        status_id = status.currentData()
-
-        status_value = self._get_sortable_value(status_id)
+        status_value = self.lifecycle_values[status_text] if status_text != "NULL" else None
         status_item = LifeCycleTableWidgetItem(status_text, status_value)
         self.setItem(row_position, 0, status_item)
 
@@ -164,15 +165,9 @@ class LifecycleTableWidget(QTableWidget):
                 combobox.currentText(),
                 edited_row,
                 0,
-                self._get_sortable_value(combobox.currentData()),
+                self.lifecycle_values[combobox.currentText()] if combobox.currentText() != "NULL" else None,
             )
             self.table_edited.emit()
-
-    def _get_sortable_value(self, feat_id: str) -> int:
-        feature = LifeCycleStatusLayer.get_feature_by_id(feat_id)
-        if feature:
-            return int(feature["value"])
-        return 0
 
     def _update_datetime_item(self, datetime_obj: QDateTime, row: int, col: int):
         item = self.item(row, col)
