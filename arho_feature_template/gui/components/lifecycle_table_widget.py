@@ -95,6 +95,8 @@ class LifecycleTableWidget(QTableWidget):
         self.add_lifecycle_row(LifeCycle())
 
     def add_lifecycle_row(self, lifecycle: LifeCycle):
+        # Set sorting temporarily disabled so that the new row will be the last
+        self.setSortingEnabled(False)
         row_position = self.rowCount()
         self.insertRow(row_position)
 
@@ -152,6 +154,7 @@ class LifecycleTableWidget(QTableWidget):
         self.setItem(row_position, 3, id_item)
 
         self.table_edited.emit()
+        self.setSortingEnabled(True)
 
     def _on_status_changed(self, combobox: CodeComboBox):
         edited_row = None
