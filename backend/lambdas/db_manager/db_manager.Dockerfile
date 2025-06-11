@@ -10,7 +10,7 @@ COPY lambdas/db_manager/db_manager.py \
 
 # Copy alembic configuration
 COPY alembic.ini ${LAMBDA_TASK_ROOT}/
-COPY database/migrations ${LAMBDA_TASK_ROOT}/database/migrations/
+COPY migrations ${LAMBDA_TASK_ROOT}/migrations
 
 # Copy database code
 COPY \

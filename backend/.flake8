@@ -3,7 +3,7 @@
 max-line-length = 88
 exclude =
     test_*
-    database/migrations/versions/*
+    migrations/versions/*
 extend-ignore =
             E203,
             # whitespace before ':'
