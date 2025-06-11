@@ -28,19 +28,19 @@ class DateTimeTableWidgetItem(QTableWidgetItem):
         if not dt1.isValid() and not dt2.isValid():
             return False  # Treat both as equal if invalid
         if not dt1.isValid():
-            return True  # Invalid comes before valid
+            return False  # Invalid comes after valid
         if not dt2.isValid():
-            return False  # Valid comes after invalid
+            return True  # Valid comes before invalid
 
         return dt1 < dt2
 
 
 class LifeCycleTableWidgetItem(QTableWidgetItem):
-    def __init__(self, text: str, data_value: int):
+    def __init__(self, text: str, data_value: int | None):
         super().__init__()
         self.set_text_value(text, data_value)
 
-    def set_text_value(self, text: str, data_value: int):
+    def set_text_value(self, text: str, data_value: int | None):
         self.setText(text)
         self.setData(Qt.UserRole, data_value)
 
@@ -51,9 +51,9 @@ class LifeCycleTableWidgetItem(QTableWidgetItem):
         if val1 is None and val2 is None:
             return False  # Treat both as equal if None
         if val1 is None:
-            return True  # None comes before valid
+            return False  # None comes before valid
         if val2 is None:
-            return False  # Valid comes after None
+            return True  # Valid comes after None
 
         return val1 < val2
 
@@ -160,7 +160,7 @@ class LifecycleTableWidget(QTableWidget):
                 edited_row = row
                 break
 
-        if edited_row:
+        if edited_row is not None:
             self._update_cb_item(
                 combobox.currentText(),
                 edited_row,
@@ -174,7 +174,7 @@ class LifecycleTableWidget(QTableWidget):
         if isinstance(item, DateTimeTableWidgetItem):
             item.set_datetime(datetime_obj)
 
-    def _update_cb_item(self, text: str, row: int, col: int, data_value: int):
+    def _update_cb_item(self, text: str, row: int, col: int, data_value: int | None):
         item = self.item(row, col)
         if isinstance(item, LifeCycleTableWidgetItem):
             item.set_text_value(text, data_value)
