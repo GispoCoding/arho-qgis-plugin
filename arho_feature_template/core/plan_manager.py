@@ -23,6 +23,7 @@ from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
     AdditionalInformation,
     Document,
+    EventDate,
     LifeCycle,
     Plan,
     PlanFeature,
@@ -55,6 +56,7 @@ from arho_feature_template.project.layers.plan_layers import (
     FEATURE_LAYER_NAME_TO_CLASS_MAP,
     AdditionalInformationLayer,
     DocumentLayer,
+    EventDateLayer,
     LegalEffectAssociationLayer,
     LifeCycleLayer,
     PlanLayer,
@@ -1270,6 +1272,7 @@ def save_lifecycle(lifecycle: LifeCycle) -> str | None:
         return lifecycle.id_
 
     feature = LifeCycleLayer.feature_from_model(lifecycle)
+
     if not _save_feature(
         feature=feature,
         layer=LifeCycleLayer.get_from_project(),
@@ -1277,6 +1280,31 @@ def save_lifecycle(lifecycle: LifeCycle) -> str | None:
         edit_text="Elinkaaren lisäys" if lifecycle.id_ is None else "Elinkaaren muokkaus",
     ):
         iface.messageBar().pushCritical("", "Elinkaaren tallentaminen epäonnistui.")
+        return None
+
+    feat_id = cast(str, feature["id"])
+
+    # Save all event dates for this lifecycle
+    for event_date in lifecycle.event_dates:
+        event_date.lifecycle_date_id = feat_id
+        save_event_date(event_date)
+
+    return feat_id
+
+
+def save_event_date(event: EventDate) -> str | None:
+    if event.id_ is not None and not event.modified:
+        return event.id_
+
+    feature = EventDateLayer.feature_from_model(event)
+
+    if not _save_feature(
+        feature=feature,
+        layer=EventDateLayer.get_from_project(),
+        id_=event.id_,
+        edit_text="Tapahtumapäivän lisäys" if event.id_ is None else "Tapahtumapäivän muokkaus",
+    ):
+        iface.messageBar().pushCritical("", "Tapahtumapäivän tallentaminen epäonnistui.")
         return None
 
     return feature["id"]
