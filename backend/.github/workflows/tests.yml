@@ -28,6 +28,6 @@ jobs:
       - name: Create debug directory
         run: mkdir ryhti_debug
       - name: Test
-        run: python -m pytest
+        run: pytest --no-docker-mounts
         env:
           SYKE_APIKEY: ${{ secrets.SYKE_APIKEY }}

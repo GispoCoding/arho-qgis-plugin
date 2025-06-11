@@ -34,6 +34,15 @@ SCHEMA_FILES_PATH = Path(".")
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
 
+def pytest_addoption(parser, pluginmanager):
+    parser.addoption(
+        "--no-docker-mounts",
+        action="store_true",
+        default=False,
+        help="Run tests without mounting dev files to containers.",
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def set_env():
     db_manager.SCHEMA_FILES_PATH = str(Path(__file__).parent.parent)
@@ -73,10 +82,15 @@ def main_db_params_with_root_user():
 
 
 @pytest.fixture(scope="session")
-def docker_compose_file(pytestconfig):
-    compose_file = Path(__file__).parent.parent / "docker-compose.dev.yml"
-    assert compose_file.exists()
-    return str(compose_file)
+def docker_compose_file(pytestconfig: pytest.Config):
+    compose_files = [Path(__file__).parent.parent / "docker-compose.dev.yml"]
+
+    if pytestconfig.getoption("no_docker_mounts"):
+        compose_files.append(
+            Path(__file__).parent.parent / "docker-compose.clear-mounts.yml"
+        )
+
+    return [str(f) for f in compose_files]
 
 
 if os.environ.get("MANAGE_DOCKER", USE_DOCKER):
