@@ -192,6 +192,11 @@ class PlanDecisionNameLayer(AbstractCodeLayer):
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "value", code)
         return cast(str, attribute_value.get(LANGUAGE)) if attribute_value else None
 
+    @classmethod
+    def get_id(cls, code: str) -> str | None:
+        attribute_value = cls.get_attribute_value_by_another_attribute_value("id", "value", code)
+        return cast(str, attribute_value) if attribute_value else None
+
 
 class ProcessingEventTypeLayer(AbstractCodeLayer):
     name = "Käsittelytapahtuman tyyppi"
@@ -201,6 +206,11 @@ class ProcessingEventTypeLayer(AbstractCodeLayer):
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "value", code)
         return cast(str, attribute_value.get(LANGUAGE)) if attribute_value else None
 
+    @classmethod
+    def get_id(cls, code: str) -> str | None:
+        attribute_value = cls.get_attribute_value_by_another_attribute_value("id", "value", code)
+        return cast(str, attribute_value) if attribute_value else None
+
 
 class InteractionEventTypeLayer(AbstractCodeLayer):
     name = "Vuorovaikutustapahtuman tyyppi"
@@ -209,6 +219,11 @@ class InteractionEventTypeLayer(AbstractCodeLayer):
     def get_interaction_event_type_name(cls, code: str) -> str | None:
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "value", code)
         return cast(str, attribute_value.get(LANGUAGE)) if attribute_value else None
+
+    @classmethod
+    def get_id(cls, code: str) -> str | None:
+        attribute_value = cls.get_attribute_value_by_another_attribute_value("id", "value", code)
+        return cast(str, attribute_value) if attribute_value else None
 
 
 class AdditionalInformationTypeLayer(AbstractCodeLayer):
