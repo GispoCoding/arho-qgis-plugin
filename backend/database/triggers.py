@@ -1,4 +1,5 @@
 import inspect
+from textwrap import dedent
 
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
@@ -374,6 +375,95 @@ def generate_add_plan_id_fkey_triggers():
             schema="hame",
             signature=trg_signature,
             on_entity=f"hame.{table}",
+            is_constraint=False,
+            definition=trg_definition,
+        )
+        trgs.append(trg)
+
+    return trgs, [trgfunc]
+
+
+def generate_instead_of_triggers_for_visualization_views():
+    trgfunc_signature = "trgf_iiud()"
+    trgfunc_definition = dedent(
+        """\
+            RETURNS TRIGGER
+            LANGUAGE plpgsql AS
+        $$
+        DECLARE
+            _tbl  regclass := quote_ident(TG_TABLE_SCHEMA) || '.'
+                            || quote_ident(substring(TG_TABLE_NAME from '(.+)_v$'));
+            _cols text;
+            _vals text;
+        BEGIN
+            IF TG_OP = 'DELETE' THEN
+                EXECUTE format(
+                    'DELETE FROM %s WHERE id = $1',
+                    _tbl
+                )
+                USING OLD.id;
+                RETURN OLD;
+            END IF;
+
+            SELECT INTO _cols, _vals
+                    string_agg(quote_ident(attname), ', '),
+                    string_agg('x.' || quote_ident(attname), ', ')
+            FROM pg_attribute
+            WHERE
+                attrelid = _tbl
+                AND NOT attisdropped   -- no dropped (dead) columns
+                AND attnum > 0;        -- no system columns
+
+            CASE TG_OP
+                WHEN 'INSERT' THEN
+                    EXECUTE format('
+                        INSERT INTO %s(%s) SELECT %s
+                        FROM  (SELECT ($1).*) x',
+                    _tbl, _cols, _vals
+                    )
+                    USING NEW;
+                WHEN 'UPDATE' THEN
+                    EXECUTE format('
+                        UPDATE %s a
+                        SET   (%s) = (%s)
+                        FROM  (SELECT ($2).*) x
+                        WHERE a.id = $1',
+                        _tbl, _cols, _vals
+                    )
+                    USING OLD.id, NEW;
+            END CASE;
+
+        RETURN NEW;
+        END
+        $$;
+    """
+    )
+
+    trgfunc = PGFunction(
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+    )
+
+    trgs = []
+    for view in {
+        "land_use_area_v",
+        "land_use_point_v",
+        "other_area_v",
+        "other_point_v",
+        "line_v",
+    }:
+        trg_signature = f"trg_iiud_{view}"
+        trg_definition = dedent(
+            f"""\
+        INSTEAD OF INSERT OR UPDATE OR DELETE
+        ON hame.{view}
+        FOR EACH ROW
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+        )
+        trg = PGTrigger(
+            schema="hame",
+            signature=trg_signature,
+            on_entity=f"hame.{view}",
             is_constraint=False,
             definition=trg_definition,
         )

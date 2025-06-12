@@ -14,6 +14,7 @@ from database.functions import functions
 from database.models import *  # noqa
 from database.triggers import (
     generate_add_plan_id_fkey_triggers,
+    generate_instead_of_triggers_for_visualization_views,
     generate_modified_at_triggers,
     generate_new_lifecycle_date_triggers,
     generate_new_lifecycle_status_triggers,
@@ -66,6 +67,12 @@ add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_tri
     validate_polygon_geometry_trgfuncs,
 ) = generate_validate_polygon_geometry_triggers()
 
+(
+    instead_of_trigger_func_for_visualization_view,
+    instead_of_triggers_for_visualization_views,
+) = generate_instead_of_triggers_for_visualization_views()
+
+
 imported_triggers = (
     modified_at_trgfuncs
     + modified_at_trgs
@@ -81,6 +88,8 @@ imported_triggers = (
     + add_plan_id_fkey_trgs
     + validate_polygon_geometry_trgfuncs
     + validate_polygon_geometry_trgs
+    + instead_of_trigger_func_for_visualization_view
+    + instead_of_triggers_for_visualization_views
     + [trg_validate_line_geometry]
     + [trgfunc_validate_line_geometry]
     + [trgfunc_prevent_land_use_area_overlaps]
