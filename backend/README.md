@@ -100,7 +100,7 @@ Once you have created plan data in the database, you may test calling the SYKE R
     - Specifically, when adding geometry fields, please note [GeoAlchemy2 bug with Alembic](https://geoalchemy-2.readthedocs.io/en/latest/alembic.html#interactions-between-alembic-and-geoalchemy-2), which means you will have to *manually remove* `op.create_index` and `op.drop_index` in the revision file. This is because GeoAlchemy2 already automatically creates geometry index whenever adding a geometry column.
 6. Run tests with `pytest` to check that the revision file runs correctly. At minimum, you may have to change the tested table counts (codes_count and hame_count) in [database test setup](./test/conftest.py) to reflect the correct number of tables in the database.
 <!-- 8. To update the [database documentation](./backend/databasemodel/dbdoc/README.md) to reflect the changes, install [tbls](https://github.com/k1LoW/tbls) and run `tbls doc --force`. -->
-7. Commit your changes and the new revision file in [alembic versions dir](./database/migrations/versions).
+7. Commit your changes and the new revision file in [alembic versions dir](./migrations/versions).
 
 #### Adding a new table
 
