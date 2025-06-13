@@ -13,16 +13,19 @@
 
 ARHO land use planning database compatible with [national Ryhti data model](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/), connecting to [national Ryhti APIs](https://ryhti.syke.fi/tietoa-jarjestelmasta/miten-tieto-liikkuu/). The database may be used with QGIS with [ARHO land use planning plugin](https://github.com/GispoCoding/arho-feature-template). The database and required functions work on AWS (Amazon Web Services) cloud platform.
 
+## Table of contents
 - [Architecture](#architecture)
 - [Data model](#data-model)
 - [Development requirements](#development-requirements)
 - [Development](#development)
-  - [Database and functions](#database-and-functions)
+  - [Tests](#tests)
   - [Database changes](#database-changes)
+    - [Adding a new table](#adding-a-new-table)
+  - [Data backup and restore](#data-backup-and-restore)
   - [Adding requirements](#adding-requirements)
-- [Connecting to the test database](#connecting-to-the-test-database)
+- [Connecting to the AWS database](#connecting-to-the-aws-database)
   - [Creating SSH key pairs](#creating-ssh-key-pairs)
-  - [Opening an SSH tunnel to the server](#opening-an-ssh-tunnel-to-the-server)
+  - [Opening an SSH tunnel to AWS](#opening-an-ssh-tunnel-to-aws)
   - [Connecting to the database from QGIS](#connecting-to-the-database-from-qgis)
 
 ## Architecture
@@ -70,7 +73,9 @@ To start and create a database:
 
 10. Start the development containers with `make up` (or `docker-compose -f docker-compose.dev.yml up -d`).
 11. Fill the database with current data model by `make test-create-db`.
-12. Populate national code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi) by `make test-koodistot`. (If you have not specified an MML API key, code tables will be populated, but municipality and regional geometries will be left empty, and you will get an error telling you that MML API key is missing.)
+12. To continue you have two choises. Either you can populate the database with some test data or start from scratch by populating code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi)
+    - a)  To populate the database with some test data, run `make test-populate-test-data`. (Provide the password for the `postgres` user when prompted.)
+    - b)  To Populate national code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi), run `make test-koodistot`. (If you have not specified an MML API key, code tables will be populated, but municipality and regional geometries will be left empty, and you will get an error telling you that MML API key is missing.)
 
 > To stop development containers use `make stop`. To delete containers and the database volume use `make down`.
 
@@ -123,6 +128,20 @@ hame_tables = [
 4. Apply the migrations by running `make test-migrate-db`
 5. Remove the temporary exception
 6. Run `make revision name="add triggers"` to create a migration file for trigger creation.
+
+
+### Data backup and restore
+To back up the database data, use the following command:
+```shell
+docker compose -f docker-compose.dev.yml run --rm db pg_dump -h db -d hame -U postgres --data-only --schema=codes --schema=hame -Fc -f /opt/pg_backups/data.dump
+```
+
+The backup folder on the server `/opt/pg_backups` is mounted to the host machine's `./pg_dumps` folder, so you can find the backup file `data.dump` in the `pg_dumps` folder on your host machine.
+
+To restore the database data, use:
+```shell
+docker compose -f docker-compose.dev.yml run --rm db pg_restore -h db -d hame -U postgres --disable-triggers /opt/pg_backups/data.dump
+```
 
 ### Adding requirements
 

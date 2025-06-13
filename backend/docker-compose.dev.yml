@@ -12,6 +12,8 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - postgis-data:/var/lib/postgresql/data
+      - ./pg_dumps:/opt/pg_backups
+
     command: ["postgres", "-c", "log_statement=all"]
 
   db_manager:

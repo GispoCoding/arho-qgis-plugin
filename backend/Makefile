@@ -6,6 +6,10 @@ test-migrate-db:
 	@echo "Migrating Hame database..."
 	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d '{"action" : "migrate_db"}'
 
+test-populate-test-data:
+	@echo "Populating database with test data..."
+	docker compose -f docker-compose.dev.yml run --rm db pg_restore -h db -d hame -U postgres --disable-triggers /opt/pg_backups/sample_data.dump
+
 test-koodistot:
 	@echo "Loading Koodistot data..."
 	curl -XPOST "http://localhost:8082/2015-03-31/functions/function/invocations" -d '{}'
