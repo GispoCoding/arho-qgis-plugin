@@ -87,9 +87,13 @@ primary_use_regulations = PGFunction(
                                         (
                                         select
                                             ai.numeric_value,
+                                            ai.unit,
                                             ai.numeric_range_min,
                                             ai.numeric_range_max,
                                             ai.text_value,
+                                            ai.text_syntax,
+                                            ai.code_title,
+                                            ai.code_list,
                                             ai.code_value
                                         ) as ai_values
                                 )
