@@ -58,7 +58,7 @@ line_v = PGView(
         select
             *,
             hame.short_names('line', id) short_names,
-            hame.type_regulations('line', id) regulations,
+            hame.type_regulations('line', id) type_regulations,
             hame.regulation_values('line', id) regulation_values
         from
             hame.line
@@ -74,7 +74,7 @@ other_point_v = PGView(
         select
             *,
             hame.short_names('other_point', id) short_names,
-            hame.type_regulations('other_point', id) regulations,
+            hame.type_regulations('other_point', id) type_regulations,
             hame.regulation_values('other_point', id) regulation_values
         from
             hame.other_point

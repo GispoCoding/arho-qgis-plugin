@@ -47,14 +47,14 @@ def upgrade() -> None:
     hame_line_v = PGView(
         schema="hame",
         signature="line_v",
-        definition="select\n    *,\n    hame.short_names('line', id) short_names,\n    hame.type_regulations('line', id) regulations,\n    hame.regulation_values('line', id) regulation_values\nfrom\n    hame.line",
+        definition="select\n    *,\n    hame.short_names('line', id) short_names,\n    hame.type_regulations('line', id) type_regulations,\n    hame.regulation_values('line', id) regulation_values\nfrom\n    hame.line",
     )
     op.create_entity(hame_line_v)
 
     hame_other_point_v = PGView(
         schema="hame",
         signature="other_point_v",
-        definition="select\n    *,\n    hame.short_names('other_point', id) short_names,\n    hame.type_regulations('other_point', id) regulations,\n    hame.regulation_values('other_point', id) regulation_values\nfrom\n    hame.other_point",
+        definition="select\n    *,\n    hame.short_names('other_point', id) short_names,\n    hame.type_regulations('other_point', id) type_regulations,\n    hame.regulation_values('other_point', id) regulation_values\nfrom\n    hame.other_point",
     )
     op.create_entity(hame_other_point_v)
 
