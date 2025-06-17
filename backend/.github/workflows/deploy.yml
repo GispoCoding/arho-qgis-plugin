@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "main"
+  workflow_dispatch:
 
 jobs:
   check-skip-deploy:
@@ -33,7 +34,7 @@ jobs:
   build-and-deploy-lambdas-and-database:
     runs-on: ubuntu-latest
     needs: check-skip-deploy
-    if: ${{ needs.check-skip-deploy.outputs.skip-deploy == 'false' }}
+    if: github.event_name == 'workflow_dispatch' || needs.check-skip-deploy.outputs.skip-deploy == 'false'
     strategy:
       matrix:
         environment: [vsl-test, arho-test, espoo-test]
