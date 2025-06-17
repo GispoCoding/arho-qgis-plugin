@@ -10,14 +10,7 @@ resource "aws_instance" "bastion-ec2-instance" {
   iam_instance_profile = aws_iam_instance_profile.ec2-iam-profile.name
   tenancy              = "default"
   user_data_replace_on_change = true  # This is needed to update user data *and* ip address
-  user_data     = templatefile(
-    "bastion_user_data.tpl",
-    {
-      ec2_user_public_keys = "${var.bastion_ec2_user_public_keys}",
-      ec2_tunnel_public_keys = "${var.bastion_ec2_tunnel_public_keys}"
-    }
-    )
-
+  user_data     = local.bastion_user_data
   tags = merge(local.default_tags, {
     Name = "${var.prefix}-bastion"
   })
