@@ -143,13 +143,6 @@ resource "aws_lambda_provisioned_concurrency_config" "ryhti_client" {
   qualifier = aws_lambda_alias.ryhti_client_live.name
 }
 
-resource "aws_lambda_permission" "cloudwatch_call_ryhti_client" {
-    action = "lambda:InvokeFunction"
-    function_name = aws_lambda_function.ryhti_client.function_name
-    principal = "events.amazonaws.com"
-    source_arn = aws_cloudwatch_event_rule.lambda_ryhti_client.arn
-}
-
 resource "aws_lambda_permission" "api_gateway_call_ryhti_client" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ryhti_client.function_name

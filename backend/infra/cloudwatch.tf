@@ -43,17 +43,9 @@ resource "aws_cloudwatch_event_rule" "lambda_koodistot" {
   tags              = local.default_tags
 }
 
-
 resource "aws_cloudwatch_event_target" "lambda_koodistot" {
   target_id = "${var.prefix}_load_koodistot"
   rule      = aws_cloudwatch_event_rule.lambda_koodistot.name
   arn       = aws_lambda_function.koodistot_loader.arn
-  input     = "{}"
-}
-
-resource "aws_cloudwatch_event_target" "lambda_ryhti_client" {
-  target_id = "${var.prefix}_run_ryhti_client"
-  rule      = aws_cloudwatch_event_rule.lambda_ryhti_client.name
-  arn       = aws_lambda_function.ryhti_client.arn
   input     = "{}"
 }
