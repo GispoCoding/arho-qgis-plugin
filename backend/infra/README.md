@@ -62,13 +62,7 @@ The most common infrastructure task is to add/removes ssh keys on the ssh tunnel
 
 Note that adding user data with terraform requires the EC2 server to be replaced for the changes to take effect. This also changes the IP, which is why the tunneling server has an address `hame-dev.bastion.gispocoding.fi`. The DNS record will be changed when you replace the server.
 
-Therefore, *after adding a new ssh key to `bastion_ec2_tunnel_public_keys`*, to get the new user data to server and get the address pointing to the correct (new) IP address, *you must run terraform with*
-
-```shell
-terraform apply --var-file hame-dev.tfvars.json -replace aws_instance.bastion-ec2-instance
-```
-
-This recreates the bastion server with new user data and new IP and updates the DNS record accordingly. Also, this means the server host key changes when you add new ssh keys.
+Therefore, *adding a new ssh key to `bastion_ec2_tunnel_public_keys`*, recreates the bastion server with new user data and new IP and updates the DNS record accordingly. Also, this means the server host key changes when you add new ssh keys.
 
 ## Configuring new instances
 
