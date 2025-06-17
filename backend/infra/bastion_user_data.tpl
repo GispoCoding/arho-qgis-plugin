@@ -14,7 +14,9 @@ users:
   - name: ec2-user
     sudo:  ALL=(ALL) NOPASSWD:ALL
     ssh-authorized-keys:
-    - ${ec2_user_public_key}
+    %{ for key in ec2_user_public_keys ~}
+    - ${key}
+    %{ endfor ~}
   - name: ec2-tunnel
     sudo: False
     ssh-authorized-keys:
