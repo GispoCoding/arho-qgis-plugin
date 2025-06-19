@@ -9,5 +9,5 @@ jobs:
     steps:
       - uses: yogevbd/enforce-label-action@2.2.2
         with:
-          REQUIRED_LABELS_ANY: "bug,enhancement,internal,documentation,skip-changelog"
-          REQUIRED_LABELS_ANY_DESCRIPTION: "Select at least one label ['bug','enhancement','internal','documentation','skip-changelog'] for the PR"
+          REQUIRED_LABELS_ANY: "bug,enhancement,performance,project,data model,UI/UX,visualization,internal,documentation,skip-changelog"
+          REQUIRED_LABELS_ANY_DESCRIPTION: "Select at least one label ['bug','enhancement', 'performance', 'project', 'data model', 'UI/UX', 'visualization', 'internal','documentation','skip-changelog'] for the PR"
