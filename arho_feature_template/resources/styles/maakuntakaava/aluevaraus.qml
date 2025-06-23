@@ -38,18 +38,17 @@
       <rule key="{6c634515-0051-42eb-91a5-a9c078f6c08e}" symbol="33" filter="map_akeys(&quot;primary_use&quot;) = array('moottoriurheilualue')" label="Moottoriurheilun alue"/>
       <rule key="{2d47c22f-2b30-4c8c-a979-030cbb216fa8}" symbol="34" filter="map_akeys(&quot;primary_use&quot;) = array('ampumarataAlue')" label="Ampumarata-alue"/>
       <rule key="{a1c1c3f5-055e-409c-8321-9a84185c159b}" symbol="35" filter="map_akeys(&quot;primary_use&quot;) = array('puolustusvoimienAlue')" label="Puolustusvoimien alue"/>
-      <rule key="{5a4970f4-aa3b-414b-bd0c-dfba3534370c}" symbol="36" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousAlue')" label="Maa- ja metsätalousvaltainen alue"/>
-      <rule key="{37d6564b-2fb0-4408-b073-c9252db5cd47}" symbol="37" filter="map_akeys(&quot;primary_use&quot;) = array('suojelualue')" label="Suojelualue"/>
-      <rule key="{398b6b3f-5f86-4645-9025-5c81601138cf}" symbol="38" filter="map_akeys(&quot;primary_use&quot;) = array('luonnonsuojelualue')" label="Luonnonsuojelualue"/>
-      <rule key="{3f704118-812d-4eae-8431-e58cd3f9efda}" symbol="39" filter="map_akeys(&quot;primary_use&quot;) = array('muinaismuistoAlue')" label="Muinaismuistoalue"/>
-      <rule key="{d0e0d8b6-a8ed-4f52-a06b-ddb93d468fb5}" symbol="40" filter="map_akeys(&quot;primary_use&quot;) = array('rakennussuojelualue')" label="Rakennussuojelualue"/>
-      <rule key="{46ec18e1-ce05-4ed6-8e7d-d98630b373b9}" symbol="41" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousAlue')" label="Maa- ja metsätalousvaltainen alue"/>
-      <rule key="{4bad31f4-8a5d-43af-94b9-17b1c53ef3bb}" symbol="42" filter="map_akeys(&quot;primary_use&quot;) = array('metsatalousalue')" label="Metsätalousvaltainen alue"/>
-      <rule key="{19e82f62-be3d-4c45-be2b-1db82d0931b3}" symbol="43" filter="map_akeys(&quot;primary_use&quot;) = array('maatalousalue')" label="Maatalousalue"/>
-      <rule key="{22614bb2-4df4-4a6c-bee3-ab1d995230b6}" symbol="44" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousalueJollaErityistaUlkoilunOhjaamistarvetta')" label="Maa- ja metsätalousalue,&#xa;jolla on erityistä ulkoilun&#xa;ohjaamistarvetta"/>
-      <rule key="{0766528a-a01a-4ce5-acfe-bd858a5a7efa}" symbol="45" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousalueJollaErityisiaYmparistoarvoja')" label="Maa- ja metsätalousalue,&#xa;jolla on erityisiä&#xa;ympäristöarvoja"/>
-      <rule key="{311ac9cb-0e80-48b4-a724-787422412e65}" symbol="46" filter="map_akeys(&quot;primary_use&quot;) = array('vesialue')" label="Vesialue"/>
-      <rule key="{6c40bf34-929c-418e-94f7-3427a76e2a2e}" symbol="47" filter="ELSE" label="Kuvaustekniikkaa ei toteutettu"/>
+      <rule key="{37d6564b-2fb0-4408-b073-c9252db5cd47}" symbol="36" filter="map_akeys(&quot;primary_use&quot;) = array('suojelualue')" label="Suojelualue"/>
+      <rule key="{398b6b3f-5f86-4645-9025-5c81601138cf}" symbol="37" filter="map_akeys(&quot;primary_use&quot;) = array('luonnonsuojelualue')" label="Luonnonsuojelualue"/>
+      <rule key="{3f704118-812d-4eae-8431-e58cd3f9efda}" symbol="38" filter="map_akeys(&quot;primary_use&quot;) = array('muinaismuistoAlue')" label="Muinaismuistoalue"/>
+      <rule key="{d0e0d8b6-a8ed-4f52-a06b-ddb93d468fb5}" symbol="39" filter="map_akeys(&quot;primary_use&quot;) = array('rakennussuojelualue')" label="Rakennussuojelualue"/>
+      <rule key="{46ec18e1-ce05-4ed6-8e7d-d98630b373b9}" symbol="40" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousAlue')" label="Maa- ja metsätalousvaltainen alue"/>
+      <rule key="{4bad31f4-8a5d-43af-94b9-17b1c53ef3bb}" symbol="41" filter="map_akeys(&quot;primary_use&quot;) = array('metsatalousalue')" label="Metsätalousvaltainen alue"/>
+      <rule key="{19e82f62-be3d-4c45-be2b-1db82d0931b3}" symbol="42" filter="map_akeys(&quot;primary_use&quot;) = array('maatalousalue')" label="Maatalousalue"/>
+      <rule key="{22614bb2-4df4-4a6c-bee3-ab1d995230b6}" symbol="43" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousalueJollaErityistaUlkoilunOhjaamistarvetta')" label="Maa- ja metsätalousalue,&#xa;jolla on erityistä ulkoilun&#xa;ohjaamistarvetta"/>
+      <rule key="{0766528a-a01a-4ce5-acfe-bd858a5a7efa}" symbol="44" filter="map_akeys(&quot;primary_use&quot;) = array('maaJaMetsatalousalueJollaErityisiaYmparistoarvoja')" label="Maa- ja metsätalousalue,&#xa;jolla on erityisiä&#xa;ympäristöarvoja"/>
+      <rule key="{311ac9cb-0e80-48b4-a724-787422412e65}" symbol="45" filter="map_akeys(&quot;primary_use&quot;) = array('vesialue')" label="Vesialue"/>
+      <rule key="{6c40bf34-929c-418e-94f7-3427a76e2a2e}" symbol="46" filter="ELSE" label="Kuvaustekniikkaa ei toteutettu"/>
     </rules>
     <symbols>
       <symbol alpha="1" name="0" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
@@ -990,10 +989,10 @@
             <Option name="type" value="collection" type="QString"/>
           </Option>
         </data_defined_properties>
-        <layer locked="0" enabled="1" class="SimpleFill" id="{ec8c5e7a-5005-4f3c-ae52-adde9625bf87}" pass="0">
+        <layer locked="0" enabled="1" class="SimpleFill" id="{7554776e-3a03-40e0-a89c-8a0570b33b0d}" pass="0">
           <Option type="Map">
             <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
-            <Option name="color" value="223,223,61,255,rgb:0.87450980392156863,0.87450980392156863,0.23921568627450981,1" type="QString"/>
+            <Option name="color" value="198,229,232,255,rgb:0.77647058823529413,0.89803921568627454,0.90980392156862744,1" type="QString"/>
             <Option name="joinstyle" value="bevel" type="QString"/>
             <Option name="offset" value="0,0" type="QString"/>
             <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
@@ -1145,37 +1144,6 @@
             <Option name="type" value="collection" type="QString"/>
           </Option>
         </data_defined_properties>
-        <layer locked="0" enabled="1" class="SimpleFill" id="{7554776e-3a03-40e0-a89c-8a0570b33b0d}" pass="0">
-          <Option type="Map">
-            <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
-            <Option name="color" value="198,229,232,255,rgb:0.77647058823529413,0.89803921568627454,0.90980392156862744,1" type="QString"/>
-            <Option name="joinstyle" value="bevel" type="QString"/>
-            <Option name="offset" value="0,0" type="QString"/>
-            <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
-            <Option name="offset_unit" value="MM" type="QString"/>
-            <Option name="outline_color" value="0,0,0,255,rgb:0,0,0,1" type="QString"/>
-            <Option name="outline_style" value="solid" type="QString"/>
-            <Option name="outline_width" value="1" type="QString"/>
-            <Option name="outline_width_unit" value="Point" type="QString"/>
-            <Option name="style" value="solid" type="QString"/>
-          </Option>
-          <data_defined_properties>
-            <Option type="Map">
-              <Option name="name" value="" type="QString"/>
-              <Option name="properties"/>
-              <Option name="type" value="collection" type="QString"/>
-            </Option>
-          </data_defined_properties>
-        </layer>
-      </symbol>
-      <symbol alpha="1" name="41" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
-        <data_defined_properties>
-          <Option type="Map">
-            <Option name="name" value="" type="QString"/>
-            <Option name="properties"/>
-            <Option name="type" value="collection" type="QString"/>
-          </Option>
-        </data_defined_properties>
         <layer locked="0" enabled="1" class="SimpleFill" id="{ec8c5e7a-5005-4f3c-ae52-adde9625bf87}" pass="0">
           <Option type="Map">
             <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
@@ -1199,7 +1167,7 @@
           </data_defined_properties>
         </layer>
       </symbol>
-      <symbol alpha="1" name="42" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
+      <symbol alpha="1" name="41" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
         <data_defined_properties>
           <Option type="Map">
             <Option name="name" value="" type="QString"/>
@@ -1230,7 +1198,7 @@
           </data_defined_properties>
         </layer>
       </symbol>
-      <symbol alpha="1" name="43" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
+      <symbol alpha="1" name="42" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
         <data_defined_properties>
           <Option type="Map">
             <Option name="name" value="" type="QString"/>
@@ -1242,6 +1210,37 @@
           <Option type="Map">
             <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
             <Option name="color" value="245,241,173,255,rgb:0.96078431372549022,0.94509803921568625,0.67843137254901964,1" type="QString"/>
+            <Option name="joinstyle" value="bevel" type="QString"/>
+            <Option name="offset" value="0,0" type="QString"/>
+            <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+            <Option name="offset_unit" value="MM" type="QString"/>
+            <Option name="outline_color" value="0,0,0,255,rgb:0,0,0,1" type="QString"/>
+            <Option name="outline_style" value="solid" type="QString"/>
+            <Option name="outline_width" value="1" type="QString"/>
+            <Option name="outline_width_unit" value="Point" type="QString"/>
+            <Option name="style" value="solid" type="QString"/>
+          </Option>
+          <data_defined_properties>
+            <Option type="Map">
+              <Option name="name" value="" type="QString"/>
+              <Option name="properties"/>
+              <Option name="type" value="collection" type="QString"/>
+            </Option>
+          </data_defined_properties>
+        </layer>
+      </symbol>
+      <symbol alpha="1" name="43" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
+        <data_defined_properties>
+          <Option type="Map">
+            <Option name="name" value="" type="QString"/>
+            <Option name="properties"/>
+            <Option name="type" value="collection" type="QString"/>
+          </Option>
+        </data_defined_properties>
+        <layer locked="0" enabled="1" class="SimpleFill" id="{8bed3793-f1a4-4440-b8ee-c45836a20bf8}" pass="0">
+          <Option type="Map">
+            <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
+            <Option name="color" value="201,224,180,255,rgb:0.78823529411764703,0.8784313725490196,0.70588235294117652,1" type="QString"/>
             <Option name="joinstyle" value="bevel" type="QString"/>
             <Option name="offset" value="0,0" type="QString"/>
             <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
@@ -1300,37 +1299,6 @@
             <Option name="type" value="collection" type="QString"/>
           </Option>
         </data_defined_properties>
-        <layer locked="0" enabled="1" class="SimpleFill" id="{8bed3793-f1a4-4440-b8ee-c45836a20bf8}" pass="0">
-          <Option type="Map">
-            <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
-            <Option name="color" value="201,224,180,255,rgb:0.78823529411764703,0.8784313725490196,0.70588235294117652,1" type="QString"/>
-            <Option name="joinstyle" value="bevel" type="QString"/>
-            <Option name="offset" value="0,0" type="QString"/>
-            <Option name="offset_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
-            <Option name="offset_unit" value="MM" type="QString"/>
-            <Option name="outline_color" value="0,0,0,255,rgb:0,0,0,1" type="QString"/>
-            <Option name="outline_style" value="solid" type="QString"/>
-            <Option name="outline_width" value="1" type="QString"/>
-            <Option name="outline_width_unit" value="Point" type="QString"/>
-            <Option name="style" value="solid" type="QString"/>
-          </Option>
-          <data_defined_properties>
-            <Option type="Map">
-              <Option name="name" value="" type="QString"/>
-              <Option name="properties"/>
-              <Option name="type" value="collection" type="QString"/>
-            </Option>
-          </data_defined_properties>
-        </layer>
-      </symbol>
-      <symbol alpha="1" name="46" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
-        <data_defined_properties>
-          <Option type="Map">
-            <Option name="name" value="" type="QString"/>
-            <Option name="properties"/>
-            <Option name="type" value="collection" type="QString"/>
-          </Option>
-        </data_defined_properties>
         <layer locked="0" enabled="1" class="SimpleFill" id="{bf1feecc-4fb6-4004-993d-2ff3ca052c0a}" pass="0">
           <Option type="Map">
             <Option name="border_width_map_unit_scale" value="3x:0,0,0,0,0,0" type="QString"/>
@@ -1354,7 +1322,7 @@
           </data_defined_properties>
         </layer>
       </symbol>
-      <symbol alpha="1" name="47" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
+      <symbol alpha="1" name="46" force_rhr="0" frame_rate="10" clip_to_extent="1" type="fill" is_animated="0">
         <data_defined_properties>
           <Option type="Map">
             <Option name="name" value="" type="QString"/>
@@ -1425,7 +1393,7 @@
               <Option name="type" value="collection" type="QString"/>
             </Option>
           </data_defined_properties>
-          <symbol alpha="1" name="@47@1" force_rhr="0" frame_rate="10" clip_to_extent="1" type="line" is_animated="0">
+          <symbol alpha="1" name="@46@1" force_rhr="0" frame_rate="10" clip_to_extent="1" type="line" is_animated="0">
             <data_defined_properties>
               <Option type="Map">
                 <Option name="name" value="" type="QString"/>
