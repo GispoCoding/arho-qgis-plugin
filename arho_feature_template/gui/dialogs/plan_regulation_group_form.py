@@ -56,8 +56,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        self.name: QLineEdit
-        self.short_name: QLineEdit
+        self.heading: QLineEdit
+        self.letter_code: QLineEdit
         self.group_number: QgsSpinBox
         self.color_code: QLineEdit
         self.type_of_regulation_group: CodeComboBox
@@ -91,7 +91,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.regulation_widgets: list[RegulationWidget] = []
         self.proposition_widgets: list[PropositionWidget] = []
         self.save_as_config = False
-        self.existing_group_short_names = active_plan_regulation_groups_library.get_short_names()
+        self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
 
         # Initialize regulation library
         self.regulations_selection_widget = TreeWithSearchWidget()
@@ -111,8 +111,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         # Initialize from model
-        self.name.setText(self.regulation_group.name if self.regulation_group.name else "")
-        self.short_name.setText(self.regulation_group.short_name if self.regulation_group.short_name else "")
+        self.heading.setText(self.regulation_group.heading if self.regulation_group.heading else "")
+        self.letter_code.setText(self.regulation_group.letter_code if self.regulation_group.letter_code else "")
         self.group_number.setValue(self.regulation_group.group_number if self.regulation_group.group_number else 0)
         self.color_code.setText(self.regulation_group.color_code if self.regulation_group.color_code else "")
         self.type_of_regulation_group.set_value(self.regulation_group.type_code_id)
@@ -157,19 +157,19 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         for child_config in config.child_regulations:
             self._initalize_regulation_from_config(child_config, item)
 
-    def _check_short_name(self) -> bool:
-        short_name = self.short_name.text()
+    def _check_letter_code(self) -> bool:
+        letter_code = self.letter_code.text()
 
-        def _is_existing_model_with_unmodified_short_name(model: RegulationGroup, short_name: str) -> bool:
-            return bool(model.id_ and short_name == model.short_name)
+        def _is_existing_model_with_unmodified_letter_code(model: RegulationGroup, letter_code: str) -> bool:
+            return bool(model.id_ and letter_code == model.letter_code)
 
-        if not short_name:
+        if not letter_code:
             return True
         if (
-            not _is_existing_model_with_unmodified_short_name(self.regulation_group, short_name)
-            and short_name in self.existing_group_short_names
+            not _is_existing_model_with_unmodified_letter_code(self.regulation_group, letter_code)
+            and letter_code in self.existing_group_letter_codes
         ):
-            msg = f"Kaavamääräysryhmä lyhyellä nimellä '<b>{short_name}</b>' on jo olemassa."
+            msg = f"Kaavamääräysryhmä lyhyellä nimellä '<b>{letter_code}</b>' on jo olemassa."
             QMessageBox.critical(self, "Virhe", msg)
             return False
         return True
@@ -217,8 +217,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
             type_code_id=self.type_of_regulation_group.value(),
-            name=self.name.text() if self.name.text() != "" else None,
-            short_name=self.short_name.text() if self.short_name.text() != "" else None,
+            heading=self.heading.text() if self.heading.text() != "" else None,
+            letter_code=self.letter_code.text() if self.letter_code.text() != "" else None,
             color_code=self.color_code.text() if self.color_code.text() != "" else None,
             group_number=self.group_number.value() if self.group_number.value() > 0 else None,
             regulations=[widget.into_model() for widget in self.regulation_widgets],
@@ -232,6 +232,6 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         return model
 
     def _on_ok_clicked(self):
-        if self._check_short_name():
+        if self._check_letter_code():
             self.model = self.into_model()
             self.accept()

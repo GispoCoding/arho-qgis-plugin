@@ -117,7 +117,7 @@
       <item>
        <layout class="QFormLayout" name="regulation_group_details_layout">
         <item row="0" column="0">
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="heading_label">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -143,12 +143,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Otsikko:</string>
+           <string>Kaavamääräyksen otsikko:</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="name">
+         <widget class="QLineEdit" name="heading">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -161,14 +161,14 @@
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QLabel" name="short_name_label">
+         <widget class="QLabel" name="letter_code_label">
           <property name="text">
-           <string>Lyhyt nimi:</string>
+           <string>Kirjaintunnus:</string>
           </property>
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="short_name"/>
+         <widget class="QLineEdit" name="letter_code"/>
         </item>
        </layout>
       </item>

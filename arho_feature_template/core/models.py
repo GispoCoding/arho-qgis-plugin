@@ -60,11 +60,11 @@ class FeatureTemplateLibrary:
     feature_templates: list[PlanFeature]
 
     @classmethod
-    def find_matching_group_config(cls, group_name: str, regulation_group_libraries: list[RegulationGroupLibrary]):
+    def find_matching_group_config(cls, group_heading: str, regulation_group_libraries: list[RegulationGroupLibrary]):
         for library in regulation_group_libraries:
             for category in library.regulation_group_categories:
                 for group in category.regulation_groups:
-                    if group.name == group_name:
+                    if group.heading == group_heading:
                         return group
         return None
 
@@ -94,8 +94,8 @@ class FeatureTemplateLibrary:
                             description=feature_data.get("description"),
                             regulation_groups=[
                                 group
-                                for group_name in feature_data.get("regulation_groups", [])
-                                if (group := cls.find_matching_group_config(group_name, regulation_group_libraries))
+                                for group_heading in feature_data.get("regulation_groups", [])
+                                if (group := cls.find_matching_group_config(group_heading, regulation_group_libraries))
                             ],
                             plan_id=None,
                             id_=None,
@@ -145,13 +145,13 @@ class RegulationGroupLibrary:
                 ],
             )
 
-    def get_short_names(self) -> set[str]:
+    def get_letter_codes(self) -> set[str]:
         """Returns set of non-empty short names (letter codes) of regulation groups part of the library."""
         return {
-            regulation_group.short_name
+            regulation_group.letter_code
             for category in self.regulation_group_categories
             for regulation_group in category.regulation_groups
-            if regulation_group.short_name
+            if regulation_group.letter_code
         }
 
 
@@ -463,8 +463,8 @@ class Proposition(PlanBaseModel):
 @dataclass
 class RegulationGroup(PlanBaseModel):
     type_code_id: str | None = None
-    name: str | None = None
-    short_name: str | None = None
+    heading: str | None = None  # Called "regulation_heading" / "kaavamääräyksen otsikko" in UI and data model
+    letter_code: str | None = None
     color_code: str | None = None
     group_number: int | None = None
     regulations: list[Regulation] = field(default_factory=list, compare=False)
@@ -528,8 +528,8 @@ class RegulationGroup(PlanBaseModel):
         return cls(
             type_code_id=data.get("type"),  # NOTE: Might need to convert type code into type code ID here when
             # config file has type codes for regulation groups
-            name=data.get("name"),
-            short_name=data.get("short_name"),
+            heading=data.get("heading"),
+            letter_code=data.get("letter_code"),
             color_code=data.get("color_code"),
             group_number=data.get("group_number"),
             regulations=regulations,
@@ -538,7 +538,7 @@ class RegulationGroup(PlanBaseModel):
         )
 
     def __str__(self):
-        return " - ".join(part for part in (self.short_name, self.name) if part)
+        return " - ".join(part for part in (self.letter_code, self.heading) if part)
 
 
 @dataclass

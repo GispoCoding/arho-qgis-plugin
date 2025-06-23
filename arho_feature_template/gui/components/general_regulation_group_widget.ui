@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>420</width>
+    <width>468</width>
     <height>98</height>
    </rect>
   </property>
@@ -134,12 +134,12 @@
            </font>
           </property>
           <property name="text">
-           <string>Otsikko:</string>
+           <string>Kaavamääräyksen otsikko:</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="name">
+         <widget class="QLineEdit" name="heading">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
             <horstretch>0</horstretch>

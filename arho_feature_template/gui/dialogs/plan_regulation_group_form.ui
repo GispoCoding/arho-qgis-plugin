@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabs">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="regulation_group_info_tab">
       <attribute name="title">
@@ -27,24 +27,24 @@
        <item>
         <layout class="QFormLayout" name="formLayout">
          <item row="0" column="0">
-          <widget class="QLabel" name="label_2">
+          <widget class="QLabel" name="heading_label">
            <property name="text">
-            <string>Otsikko:</string>
+            <string>Kaavamääräyksen otsikko:</string>
            </property>
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLineEdit" name="name"/>
+          <widget class="QLineEdit" name="heading"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>Lyhyt nimi:</string>
+            <string>Kirjaintunnus:</string>
            </property>
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QLineEdit" name="short_name"/>
+          <widget class="QLineEdit" name="letter_code"/>
          </item>
          <item row="2" column="0">
           <widget class="QLabel" name="label">
@@ -196,7 +196,7 @@ p, li { white-space: pre-wrap; }
             <x>0</x>
             <y>0</y>
             <width>898</width>
-            <height>577</height>
+            <height>594</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="propositions_layout">

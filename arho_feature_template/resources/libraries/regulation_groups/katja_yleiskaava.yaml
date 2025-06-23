@@ -4,107 +4,107 @@ categories:
   - category_code: aluevaraukset
     name: Aluevaraukset
     plan_regulation_groups:
-      - name: Asuntoalue
+      - heading: Asuntoalue
         geometry: [Alue, Piste]
-        short_name: A
+        letter_code: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Kerrostalovaltainen asuntoalue
+      - heading: Kerrostalovaltainen asuntoalue
         geometry: [Alue, Piste]
-        short_name: AK
+        letter_code: AK
         plan_regulations:
           - regulation_code: asuinkerrostaloalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Pientalovaltainen asuntoalue
+      - heading: Pientalovaltainen asuntoalue
         geometry: [Alue, Piste]
-        short_name: AP
+        letter_code: AP
         plan_regulations:
           - regulation_code: asuinpientaloalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Kyläalue
+      - heading: Kyläalue
         geometry: [Alue, Piste]
-        short_name: AT
+        letter_code: AT
         plan_regulations:
           - regulation_code: kylaAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Keskustatoimintojen alue
+      - heading: Keskustatoimintojen alue
         geometry: [Alue, Piste]
-        short_name: C
+        letter_code: C
         plan_regulations:
           - regulation_code: keskustatoimintojenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Keskustatoimintojen alakeskus
+      - heading: Keskustatoimintojen alakeskus
         geometry: [Alue, Piste]
-        short_name: CA
+        letter_code: CA
         plan_regulations:
           - regulation_code: keskustatoimintojenAlakeskus
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Työpaikka-alue
+      - heading: Työpaikka-alue
         geometry: [Alue, Piste]
-        short_name: TP
+        letter_code: TP
         plan_regulations:
           - regulation_code: tyopaikkojenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Palvelujen alue
+      - heading: Palvelujen alue
         geometry: [Alue, Piste]
-        short_name: P
+        letter_code: P
         plan_regulations:
           - regulation_code: palvelujenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Lähipalvelujen alue
+      - heading: Lähipalvelujen alue
         geometry: [Alue, Piste]
-        short_name: PL
+        letter_code: PL
         plan_regulations:
           - regulation_code: palvelujenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: paikallinen
 
-      - name: Julkisten palvelujen ja hallinnon alue
+      - heading: Julkisten palvelujen ja hallinnon alue
         geometry: [Alue, Piste]
-        short_name: PY
+        letter_code: PY
         plan_regulations:
           - regulation_code: palvelujenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: varattuYleiseenKayttoon
 
-      - name: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
+      - heading: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
         geometry: [Alue, Piste]
-        short_name: KM
+        letter_code: KM
         plan_regulations:
           - regulation_code: vahittaiskaupanSuuryksikko
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan myymäläkeskittymän
+      - heading: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan myymäläkeskittymän
         geometry: [Alue, Piste]
-        short_name: KMK
+        letter_code: KMK
         plan_regulations:
           - regulation_code: vahittaiskaupanMyymalakeskittyma
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Teollisuus- ja varastoalue
+      - heading: Teollisuus- ja varastoalue
         geometry: [Alue, Piste]
-        short_name: T
+        letter_code: T
         plan_regulations:
           - regulation_code: teollisuusalue
             additional_information:
@@ -113,35 +113,35 @@ categories:
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Ympäristövaikutuksiltaan merkittävien teollisuustoimintojen alue
+      - heading: Ympäristövaikutuksiltaan merkittävien teollisuustoimintojen alue
         geometry: [Alue, Piste]
-        short_name: TT
+        letter_code: TT
         plan_regulations:
           - regulation_code: teollisuusalue
             additional_information:
               - type: paakayttotarkoitus
           - regulation_code: ymparistohairioalue
 
-      - name: Teollisuusalue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
+      - heading: Teollisuusalue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
         geometry: [Alue, Piste]
-        short_name: TY
+        letter_code: TY
         plan_regulations:
           - regulation_code: teollisuusalue
             additional_information:
               - type: paakayttotarkoitus
               - type: ymparistoAsettaaToiminnanLaadulleErityisiaVaatimuksia
 
-      - name: Varastoalue
+      - heading: Varastoalue
         geometry: [Alue, Piste]
-        short_name: TV
+        letter_code: TV
         plan_regulations:
           - regulation_code: varastoalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Teollisuus- ja varastoalue, jolla on/jolle saa sijoittaa merkittävän, vaarallisia kemikaaleja valmistavan tai varastoivan laitoksen
+      - heading: Teollisuus- ja varastoalue, jolla on/jolle saa sijoittaa merkittävän, vaarallisia kemikaaleja valmistavan tai varastoivan laitoksen
         geometry: [Alue, Piste]
-        short_name: T/kem
+        letter_code: T/kem
         plan_regulations:
           - regulation_code: teollisuusalue
             additional_information:
@@ -152,225 +152,225 @@ categories:
               - type: paakayttotarkoitus
               - type: VaarallistenKemikaalienValmistusJaVarastointiSallittu
 
-      - name: Virkistysalue
+      - heading: Virkistysalue
         geometry: [Alue, Piste]
-        short_name: V
+        letter_code: V
         plan_regulations:
           - regulation_code: virkistysalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Lähivirkistysalue
+      - heading: Lähivirkistysalue
         geometry: [Alue, Piste]
-        short_name: VL
+        letter_code: VL
         plan_regulations:
           - regulation_code: lahivirkistysalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Urheilu- ja virkistyspalvelujen alue
+      - heading: Urheilu- ja virkistyspalvelujen alue
         geometry: [Alue, Piste]
-        short_name: VU
+        letter_code: VU
         plan_regulations:
           - regulation_code: urheiluJaVirkistyspalvelujenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Retkeily- ja ulkoilualue
+      - heading: Retkeily- ja ulkoilualue
         geometry: [Alue, Piste]
-        short_name: VR
+        letter_code: VR
         plan_regulations:
           - regulation_code: retkeilyJaUlkoiluAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Uimaranta
+      - heading: Uimaranta
         geometry: [Alue, Piste]
-        short_name: VV
+        letter_code: VV
         plan_regulations:
           - regulation_code: uimaranta
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Vapaa-ajan asumisen ja matkailun alue
+      - heading: Vapaa-ajan asumisen ja matkailun alue
         geometry: [Alue, Piste]
-        short_name: R
+        letter_code: R
         plan_regulations:
           - regulation_code: vapaaAjanAsumisenJaMatkailunAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Vapaa-ajan asumisen alue
+      - heading: Vapaa-ajan asumisen alue
         geometry: [Alue, Piste]
-        short_name: RA
+        letter_code: RA
         plan_regulations:
           - regulation_code: vapaaAjanAsumisenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Matkailupalvelujen alue
+      - heading: Matkailupalvelujen alue
         geometry: [Alue, Piste]
-        short_name: RM
+        letter_code: RM
         plan_regulations:
           - regulation_code: matkailupalvelujenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Leirintäalue
+      - heading: Leirintäalue
         geometry: [Alue, Piste]
-        short_name: RL
+        letter_code: RL
         plan_regulations:
           - regulation_code: leirintaAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Asuntovaunualue
+      - heading: Asuntovaunualue
         geometry: [Alue, Piste]
-        short_name: RV
+        letter_code: RV
         plan_regulations:
           - regulation_code: asuntovaunualue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Siirtolapuutarha-alue
+      - heading: Siirtolapuutarha-alue
         geometry: [Alue, Piste]
-        short_name: RSP
+        letter_code: RSP
         plan_regulations:
           - regulation_code: siirtolapuutarhaAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Palstaviljelyalue
+      - heading: Palstaviljelyalue
         geometry: [Alue, Piste]
-        short_name: RP
+        letter_code: RP
         plan_regulations:
           - regulation_code: palstaviljelyalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Liikennealue
+      - heading: Liikennealue
         geometry: [Alue, Piste]
-        short_name: L
+        letter_code: L
         plan_regulations:
           - regulation_code: liikennealue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maantieliikenteen alue
+      - heading: Maantieliikenteen alue
         geometry: [Alue, Piste]
-        short_name: LT
+        letter_code: LT
         plan_regulations:
           - regulation_code: maantie
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Katualue
+      - heading: Katualue
         geometry: [Alue, Piste]
-        short_name: # NOTE: check symbol p. 25
+        letter_code: # NOTE: check symbol p. 25
         plan_regulations:
           - regulation_code: katu
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Rautatieliikenteen alue
+      - heading: Rautatieliikenteen alue
         geometry: [Alue, Piste]
-        short_name: LR
+        letter_code: LR
         plan_regulations:
           - regulation_code: raideliikenteenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Lentoliikenteen alue
+      - heading: Lentoliikenteen alue
         geometry: [Alue, Piste]
-        short_name: LL
+        letter_code: LL
         plan_regulations:
           - regulation_code: lentoliikenteenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Satama-alue
+      - heading: Satama-alue
         geometry: [Alue, Piste]
-        short_name: LS
+        letter_code: LS
         plan_regulations:
           - regulation_code: satama-alue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Venesatama
+      - heading: Venesatama
         geometry: [Alue, Piste]
-        short_name: LV
+        letter_code: LV
         plan_regulations:
           - regulation_code: venesatama
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Venevalkama
+      - heading: Venevalkama
         geometry: [Alue, Piste]
-        short_name: LVV
+        letter_code: LVV
         plan_regulations:
           - regulation_code: venevalkama
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Huoltoasema-alue
+      - heading: Huoltoasema-alue
         geometry: [Alue, Piste]
-        short_name: LH
+        letter_code: LH
         plan_regulations:
           - regulation_code: huoltoasemaAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Henkilöliikenteen terminaalialue
+      - heading: Henkilöliikenteen terminaalialue
         geometry: [Alue, Piste]
-        short_name: LHA
+        letter_code: LHA
         plan_regulations:
           - regulation_code: henkiloliikenteenTerminaalialue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Tavaraliikenteen terminaalialue
+      - heading: Tavaraliikenteen terminaalialue
         geometry: [Alue, Piste]
-        short_name: LTA
+        letter_code: LTA
         plan_regulations:
           - regulation_code: tavaraliikenteenTerminaalialue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Varikkoalue
+      - heading: Varikkoalue
         geometry: [Alue, Piste]
-        short_name: LVH
+        letter_code: LVH
         plan_regulations:
           - regulation_code: varikko
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Erityisalue
+      - heading: Erityisalue
         geometry: [Alue, Piste]
-        short_name: E
+        letter_code: E
         plan_regulations:
           - regulation_code: erityisalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Yhdyskuntateknisen huollon alue
+      - heading: Yhdyskuntateknisen huollon alue
         geometry: [Alue, Piste]
-        short_name: ET
+        letter_code: ET
         plan_regulations:
           - regulation_code: yhdyskuntateknisenHuollonAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Energiahuollon alue
+      - heading: Energiahuollon alue
         geometry: [Alue, Piste]
-        short_name: EN
+        letter_code: EN
         plan_regulations:
           - regulation_code: energiahuollonAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Tuulivoimatuotantoon tarkoitettu energiatuotannon alue
+      - heading: Tuulivoimatuotantoon tarkoitettu energiatuotannon alue
         geometry: [Alue, Piste]
-        short_name: EN/tv
+        letter_code: EN/tv
         plan_regulations:
           - regulation_code: energiahuollonAlue
             additional_information:
@@ -378,9 +378,9 @@ categories:
               - type: kayttotarkoituskohdistus
                 code_value: tuulivoimalaAlue
 
-      - name: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
+      - heading: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
         geometry: [Alue, Piste]
-        short_name: EN/au
+        letter_code: EN/au
         plan_regulations:
           - regulation_code: energiahuollonAlue
             additional_information:
@@ -388,185 +388,185 @@ categories:
               - type: kayttotarkoituskohdistus
                 code_value: aurinkovoimalaAlue
 
-      - name: Jätteenkäsittelyalue
+      - heading: Jätteenkäsittelyalue
         geometry: [Alue, Piste]
-        short_name: EJ
+        letter_code: EJ
         plan_regulations:
           - regulation_code: jatteenkasittelyalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Kiertotalouden alue
+      - heading: Kiertotalouden alue
         geometry: [Alue, Piste]
-        short_name: EJK
+        letter_code: EJK
         plan_regulations:
           - regulation_code: kiertotaloudenAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maa-ainesten ottoalue
+      - heading: Maa-ainesten ottoalue
         geometry: [Alue, Piste]
-        short_name: EO
+        letter_code: EO
         plan_regulations:
           - regulation_code: maaAinestenOttoalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Turvetuotannon alue
+      - heading: Turvetuotannon alue
         geometry: [Alue, Piste]
-        short_name: EOT
+        letter_code: EOT
         plan_regulations:
           - regulation_code: turvetuotantoalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Kaivosalue
+      - heading: Kaivosalue
         geometry: [Alue, Piste]
-        short_name: EK
+        letter_code: EK
         plan_regulations:
           - regulation_code: kaivosalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Moottoriurheilun alue
+      - heading: Moottoriurheilun alue
         geometry: [Alue, Piste]
-        short_name: EU
+        letter_code: EU
         plan_regulations:
           - regulation_code: moottoriurheilualue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Ampumarata-alue
+      - heading: Ampumarata-alue
         geometry: [Alue, Piste]
-        short_name: EA
+        letter_code: EA
         plan_regulations:
           - regulation_code: ampumarataAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Puolustusvoimien alue
+      - heading: Puolustusvoimien alue
         geometry: [Alue, Piste]
-        short_name: EP
+        letter_code: EP
         plan_regulations:
           - regulation_code: puolustusvoimienAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Hautausmaa-alue
+      - heading: Hautausmaa-alue
         geometry: [Alue, Piste]
-        short_name: EH
+        letter_code: EH
         plan_regulations:
           - regulation_code: hautausmaa
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Suojaviheralue
+      - heading: Suojaviheralue
         geometry: [Alue, Piste]
-        short_name: EV
+        letter_code: EV
         plan_regulations:
           - regulation_code: suojaviheralue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Suojelualue
+      - heading: Suojelualue
         geometry: [Alue, Piste]
-        short_name: S
+        letter_code: S
         plan_regulations:
           - regulation_code: suojelualue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Luonnonsuojelualue
+      - heading: Luonnonsuojelualue
         geometry: [Alue, Piste]
-        short_name: SL
+        letter_code: SL
         plan_regulations:
           - regulation_code: luonnonsuojelualue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Muinaismuistoalue
+      - heading: Muinaismuistoalue
         geometry: [Alue, Piste]
-        short_name: SM
+        letter_code: SM
         plan_regulations:
           - regulation_code: muinaismuistoAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Rakennussuojelualue
+      - heading: Rakennussuojelualue
         geometry: Alue
-        short_name: SR
+        letter_code: SR
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Suojeltu rakennus, jota ei saa purkaa
+      - heading: Suojeltu rakennus, jota ei saa purkaa
         geometry: Piste
-        short_name: SR
+        letter_code: SR
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltujen rakennusten alue
+      - heading: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltujen rakennusten alue
         geometry: Alue
-        short_name: SRS
+        letter_code: SRS
         plan_regulations:
           - regulation_code: rakennusperinnonSuojelemisestaAnnetunLainNojallaSuojeltuRakennus
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
+      - heading: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
         geometry: Piste
-        short_name: SRS
+        letter_code: SRS
         plan_regulations:
           - regulation_code: rakennusperinnonSuojelemisestaAnnetunLainNojallaSuojeltuRakennus
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maa- ja metsätalous- valtainen alue
+      - heading: Maa- ja metsätalous- valtainen alue
         geometry: Alue
-        short_name: M
+        letter_code: M
         plan_regulations:
           - regulation_code: maaJaMetsatalousAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Metsätalousvaltainen alue
+      - heading: Metsätalousvaltainen alue
         geometry: Alue
-        short_name: MM
+        letter_code: MM
         plan_regulations:
           - regulation_code: metsatalousalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maatalousalue
+      - heading: Maatalousalue
         geometry: Alue
-        short_name: MT
+        letter_code: MT
         plan_regulations:
           - regulation_code: maatalousalue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Kotieläintalouden suuryksikön alue
+      - heading: Kotieläintalouden suuryksikön alue
         geometry: [Alue, Piste]
-        short_name: ME
+        letter_code: ME
         plan_regulations:
           - regulation_code: kotielaintaloudenSuuryksikonAlue
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Pelto
+      - heading: Pelto
         geometry: Alue
-        short_name: MTP
+        letter_code: MTP
         plan_regulations:
           - regulation_code: pelto
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maisemallisesti arvokas peltoalue
+      - heading: Maisemallisesti arvokas peltoalue
         geometry: [Alue, Piste]
-        short_name: MA
+        letter_code: MA
         plan_regulations:
           - regulation_code: pelto
             additional_information:
@@ -575,25 +575,25 @@ categories:
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maa- ja metsätalousvaltainen alue, jolla on erityistä ulkoilun ohjaamistarvetta
+      - heading: Maa- ja metsätalousvaltainen alue, jolla on erityistä ulkoilun ohjaamistarvetta
         geometry: [Alue, Piste]
-        short_name: MU
+        letter_code: MU
         plan_regulations:
           - regulation_code: maaJaMetsatalousalueJollaErityistaUlkoilunOhjaamistarvetta
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Maa- ja metsätalousvaltainen alue, jolla on erityisiä ympäristöarvoja
+      - heading: Maa- ja metsätalousvaltainen alue, jolla on erityisiä ympäristöarvoja
         geometry: [Alue, Piste]
-        short_name: MY
+        letter_code: MY
         plan_regulations:
           - regulation_code: maaJaMetsatalousalueJollaErityisiaYmparistoarvoja
             additional_information:
               - type: paakayttotarkoitus
 
-      - name: Vesialue
+      - heading: Vesialue
         geometry: [Alue, Piste]
-        short_name: VV
+        letter_code: VV
         plan_regulations:
           - regulation_code: vesialue
             additional_information:
@@ -602,63 +602,63 @@ categories:
   - category_code: ymparistonmuuutosAluevaraukset
     name: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     plan_regulation_groups:
-      - name: Olemassa oleva asuntovaltainen alue
+      - heading: Olemassa oleva asuntovaltainen alue
         geometry: [Alue, Piste]
-        short_name: A
+        letter_code: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: olemassaOleva
 
-      - name: Asuntovaltainen alue, jolla ympäristö säilytetään
+      - heading: Asuntovaltainen alue, jolla ympäristö säilytetään
         geometry: [Alue, Piste]
-        short_name: A/s
+        letter_code: A/s
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: sailytettava
 
-      - name: Olennaisesti muuttuva asuntovaltainen alue
+      - heading: Olennaisesti muuttuva asuntovaltainen alue
         geometry: [Alue, Piste]
-        short_name: A
+        letter_code: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: olennaisestiMuuttuva
 
-      - name: Uusi asuntovaltainen alue
+      - heading: Uusi asuntovaltainen alue
         geometry: [Alue, Piste]
-        short_name: A
+        letter_code: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: uusi
 
-      - name: Asuntovaltainen alue, joka osoitetaan reservialueena
+      - heading: Asuntovaltainen alue, joka osoitetaan reservialueena
         geometry: [Alue, Piste]
-        short_name: A/res
+        letter_code: A/res
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: reservialue
 
-      - name: Kehitettävä asuntovaltainen alue
+      - heading: Kehitettävä asuntovaltainen alue
         geometry: [Alue, Piste]
-        short_name: A
+        letter_code: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
               - type: paakayttotarkoitus
               - type: kehitettava
 
-      - name: Eheytettävä tai tiivistettävä asuntovaltainen alue
+      - heading: Eheytettävä tai tiivistettävä asuntovaltainen alue
         geometry: [Alue, Piste]
-        short_name: A
+        letter_code: A
         plan_regulations:
           - regulation_code: asumisenAlue
             additional_information:
@@ -668,9 +668,9 @@ categories:
   - category_code: osa-alueet
     name: Erityisominaisuudet ja muut osa-alueet
     plan_regulation_groups:
-      - name: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
+      - heading: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
         geometry: [Alue, Piste]
-        short_name: kyma
+        letter_code: kyma
         plan_regulations:
           - regulation_code: maisemallisestiArvokasAlue
             additional_information:
@@ -679,554 +679,554 @@ categories:
             additional_information:
               - type: osaAlue
 
-      - name: Maisemallisesti arvokas alue
+      - heading: Maisemallisesti arvokas alue
         geometry: Alue
-        short_name: ma
+        letter_code: ma
         plan_regulations:
           - regulation_code: maisemallisestiArvokasAlue
             additional_information:
               - type: osaAlue
 
-      - name: Kansainvälisesti arvokas maisema-alue
+      - heading: Kansainvälisesti arvokas maisema-alue
         geometry: Alue
-        short_name: kvma
+        letter_code: kvma
         plan_regulations:
           - regulation_code: maisemallisestiArvokasAlue
             additional_information:
               - type: osaAlue
               - type: kansainvalinen
 
-      - name: Valtakunnallisesti arvokas maisema-alue
+      - heading: Valtakunnallisesti arvokas maisema-alue
         geometry: Alue
-        short_name: vama
+        letter_code: vama
         plan_regulations:
           - regulation_code: valtakunnallisestiArvokasMaisemaAlue
             additional_information:
               - type: osaAlue
               - type: kansainvalinen
 
-      - name: Maakunnallisesti arvokas maisema-alue
+      - heading: Maakunnallisesti arvokas maisema-alue
         geometry: Alue
-        short_name: mma
+        letter_code: mma
         plan_regulations:
           - regulation_code: maisemallisestiArvokasAlue
             additional_information:
               - type: osaAlue
               - type: maakunnallinen
 
-      - name: Paikallisesti arvokas maisema-alue
+      - heading: Paikallisesti arvokas maisema-alue
         geometry: Alue
-        short_name: pma
+        letter_code: pma
         plan_regulations:
           - regulation_code: maisemallisestiArvokasAlue
             additional_information:
               - type: osaAlue
               - type: paikallinen
 
-      - name: Merkittävä rakennettu kulttuuriympäristö
+      - heading: Merkittävä rakennettu kulttuuriympäristö
         geometry: [Alue, Piste]
-        short_name: ky
+        letter_code: ky
         plan_regulations:
           - regulation_code: merkittavaRakennettuKulttuuriymparisto
             additional_information:
               - type: osaAlue
 
-      - name: Kansainvälisesti merkittävä rakennettu kulttuuriympäristö
+      - heading: Kansainvälisesti merkittävä rakennettu kulttuuriympäristö
         geometry: [Alue, Piste]
-        short_name: kvky
+        letter_code: kvky
         plan_regulations:
           - regulation_code: merkittavaRakennettuKulttuuriymparisto
             additional_information:
               - type: osaAlue
               - type: kansainvalinen
 
-      - name: Valtakunnallisesti merkittävä rakennettu kulttuuriympäristö
+      - heading: Valtakunnallisesti merkittävä rakennettu kulttuuriympäristö
         geometry: [Alue, Piste, Viiva]
-        short_name: rky
+        letter_code: rky
         plan_regulations:
           - regulation_code: valtakunnallisestiMerkittavaRakennettuKulttuuriymparisto
             additional_information:
               - type: osaAlue
               - type: valtakunnallinen
 
-      - name: Maakunnallisesti merkittävä rakennettu kulttuuriympäristö
+      - heading: Maakunnallisesti merkittävä rakennettu kulttuuriympäristö
         geometry: [Alue, Piste]
-        short_name: mky
+        letter_code: mky
         plan_regulations:
           - regulation_code: merkittavaRakennettuKulttuuriymparisto
             additional_information:
               - type: osaAlue
               - type: maakunnallinen
 
-      - name: Paikallisesti merkittävä rakennettu kulttuuriympäristö
+      - heading: Paikallisesti merkittävä rakennettu kulttuuriympäristö
         geometry: [Alue, Piste]
-        short_name: pky
+        letter_code: pky
         plan_regulations:
           - regulation_code: merkittavaRakennettuKulttuuriymparisto
             additional_information:
               - type: osaAlue
               - type: paikallinen
 
-      - name: Kaupunki- tai kyläkuvallisesti arvokas alue
+      - heading: Kaupunki- tai kyläkuvallisesti arvokas alue
         geometry: [Alue, Piste]
-        short_name: sk
+        letter_code: sk
         plan_regulations:
           - regulation_code: kaupunkiTaiKylakuvallisestiArvokasAlue
             additional_information:
               - type: osaAlue
 
-      - name: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä muinaisjäännös
+      - heading: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä muinaisjäännös
         geometry: [Alue, Piste]
-        short_name: ark
+        letter_code: ark
         plan_regulations:
           - regulation_code: muuArkeologinenKohde
             additional_information:
               - type: osaAlue
 
-      - name: Valtakunnallisesti merkittävä arkeologinen kohde
+      - heading: Valtakunnallisesti merkittävä arkeologinen kohde
         geometry: [Alue, Piste]
-        short_name: vark
+        letter_code: vark
         plan_regulations:
           - regulation_code: valtakunnallisestiMerkittavaArkeologinenKohde
             additional_information:
               - type: osaAlue
               - type: valtakunnallinen
 
-      - name: Arvokas harjualue tai muu geologinen muodostuma
+      - heading: Arvokas harjualue tai muu geologinen muodostuma
         geometry: [Alue, Piste]
-        short_name: ge
+        letter_code: ge
         plan_regulations:
           - regulation_code: arvokasGeologinenMuodostuma
             additional_information:
               - type: osaAlue
 
-      - name: Tärkeä vedenhankintaan soveltuva pohjavesialue
+      - heading: Tärkeä vedenhankintaan soveltuva pohjavesialue
         geometry: [Alue, Piste]
-        short_name: pv
+        letter_code: pv
         plan_regulations:
           - regulation_code: pohjavesialue
             additional_information:
               - type: osaAlue
 
-      - name: Natura 2000 -verkostoon kuuluva alue
+      - heading: Natura 2000 -verkostoon kuuluva alue
         geometry: [Alue, Viiva, Piste]
-        short_name: nat
+        letter_code: nat
         plan_regulations:
           - regulation_code: natura2000VerkostonAlue
             additional_information:
               - type: osaAlue
 
-      - name: Luonnon monimuotoisuuden kannalta erityisen tärkeä alue
+      - heading: Luonnon monimuotoisuuden kannalta erityisen tärkeä alue
         geometry: [Alue, Viiva, Piste]
-        short_name: luo
+        letter_code: luo
         plan_regulations:
           - regulation_code: luonnonMonimuotoisuudenKannaltaErityisenTarkeaAlue
             additional_information:
               - type: osaAlue
 
-      - name: UNESCO:n maailmanperintökohde
+      - heading: UNESCO:n maailmanperintökohde
         geometry: [Alue, Piste]
-        short_name: un
+        letter_code: un
         plan_regulations:
           - regulation_code: unesconMaailmanperintokohde
             additional_information:
               - type: osaAlue
 
-      - name: Kansallinen kaupunkipuisto
+      - heading: Kansallinen kaupunkipuisto
         geometry: [Alue, Piste]
-        short_name: kp
+        letter_code: kp
         plan_regulations:
           - regulation_code: kansallinenKaupunkipuisto
             additional_information:
               - type: osaAlue
 
-      - name: Maisemanhoitoalue
+      - heading: Maisemanhoitoalue
         geometry: Alue
-        short_name: mai
+        letter_code: mai
         plan_regulations:
           - regulation_code: maisemanhoitoalue
             additional_information:
               - type: osaAlue
 
-      - name: Saamelaiskulttuurin kannalta tärkeä alue
+      - heading: Saamelaiskulttuurin kannalta tärkeä alue
         geometry: [Alue, Piste]
-        short_name: saame
+        letter_code: saame
         plan_regulations:
           - regulation_code: saamelaiskulttuurinKannaltaTarkeaAlue
             additional_information:
               - type: osaAlue
 
-      - name: Poronhoitolain mukainen poronhoitoalue
+      - heading: Poronhoitolain mukainen poronhoitoalue
         geometry: Alue
-        short_name: poro
+        letter_code: poro
         plan_regulations:
           - regulation_code: poronhoitoalue
             additional_information:
               - type: osaAlue
 
-      - name: Ympäristöhäiriöalue
+      - heading: Ympäristöhäiriöalue
         geometry: [Alue, Piste]
-        short_name: häiriö
+        letter_code: häiriö
         plan_regulations:
           - regulation_code: ymparistohairioalue
             additional_information:
               - type: osaAlue
 
-      - name: Ympäristö- tai maisemavaurion korjaustarve
+      - heading: Ympäristö- tai maisemavaurion korjaustarve
         geometry: [Alue, Piste]
-        short_name: häiriö
+        letter_code: häiriö
         plan_regulations:
           - regulation_code: ymparistohairioalue
             additional_information:
               - type: osaAlue
 
-      - name: Terveyshaitan poistamistarve
+      - heading: Terveyshaitan poistamistarve
         geometry: [Alue, Piste]
-        short_name: häiriö
+        letter_code: häiriö
         plan_regulations:
           - regulation_code: ymparistohairioalue
             additional_information:
               - type: osaAlue
 
-      - name: Melualue
+      - heading: Melualue
         geometry: Alue
-        short_name: melu
+        letter_code: melu
         plan_regulations:
           - regulation_code: melualue
             additional_information:
               - type: osaAlue
 
-      - name: Tärinäalue
+      - heading: Tärinäalue
         geometry: Alue
-        short_name: tärinä # Note: Check ääkköset
+        letter_code: tärinä # Note: Check ääkköset
         plan_regulations:
           - regulation_code: tarinaAlue
             additional_information:
               - type: osaAlue
 
-      - name: Radonriskialue
+      - heading: Radonriskialue
         geometry: [Alue, Piste]
-        short_name: radon
+        letter_code: radon
         plan_regulations:
           - regulation_code: radonriskialue
             additional_information:
               - type: osaAlue
 
-      - name: Pilaantunut maa-alue
+      - heading: Pilaantunut maa-alue
         geometry: [Alue, Piste]
-        short_name: pima
+        letter_code: pima
         plan_regulations:
           - regulation_code: pilaantunutMaaAlue
             additional_information:
               - type: osaAlue
 
-      - name: Vaara-alue
+      - heading: Vaara-alue
         geometry: [Alue, Piste]
-        short_name: vaara
+        letter_code: vaara
         plan_regulations:
           - regulation_code: vaaraAlue
             additional_information:
               - type: osaAlue
 
-      - name: Tulvariskialue
+      - heading: Tulvariskialue
         geometry: [Alue, Piste]
-        short_name: tulva
+        letter_code: tulva
         plan_regulations:
           - regulation_code: tulvariskialue
             additional_information:
               - type: osaAlue
 
-      - name: Tulvapenger
+      - heading: Tulvapenger
         geometry: Alue
-        short_name: tupe
+        letter_code: tupe
         plan_regulations:
           - regulation_code: tulvapenger
             additional_information:
               - type: osaAlue
 
-      - name: Suojavyöhyke
+      - heading: Suojavyöhyke
         geometry: Alue
-        short_name: suojav
+        letter_code: suojav
         plan_regulations:
           - regulation_code: suojavyohyke
             additional_information:
               - type: osaAlue
 
-      - name: Suojeltu puu, jota ei saa kaataa
+      - heading: Suojeltu puu, jota ei saa kaataa
         geometry: Piste
-        short_name: # NOTE: Check symbol p.33
+        letter_code: # NOTE: Check symbol p.33
         plan_regulations:
           - regulation_code: suojelualue
             additional_information:
               - type: kayttotarkoituskohdistus
                 code_value: puuTaiPuurivi
 
-      - name: Pysäkki
+      - heading: Pysäkki
         geometry: Piste
-        short_name: pys
+        letter_code: pys
         plan_regulations:
           - regulation_code: pysakki
 
-      - name: Linja-autoasema
+      - heading: Linja-autoasema
         geometry: Piste
-        short_name: # NOTE: Check symbol p. 33
+        letter_code: # NOTE: Check symbol p. 33
         plan_regulations:
           - regulation_code: linjaAutoasema
 
-      - name: Metroasema
+      - heading: Metroasema
         geometry: Piste
-        short_name: metro
+        letter_code: metro
         plan_regulations:
           - regulation_code: raideliikenteenAsemaTaiSeisake
             additional_information:
               - type: kayttotarkoituskohdistus
                 code_value: metro
 
-      - name: Liittymä
+      - heading: Liittymä
         geometry: Piste
-        short_name: # NOTE: Check symbol
+        letter_code: # NOTE: Check symbol
         plan_regulations:
           - regulation_code: liittyma
 
-      - name: Eritasoliittymä
+      - heading: Eritasoliittymä
         geometry: Piste
-        short_name: # NOTE: Check symbol
+        letter_code: # NOTE: Check symbol
         plan_regulations:
           - regulation_code: eritasoliittyma
 
-      - name: Suuntaisliittymä
+      - heading: Suuntaisliittymä
         geometry: Piste
-        short_name: # NOTE: Check symbol
+        letter_code: # NOTE: Check symbol
         plan_regulations:
           - regulation_code: suuntaisliittyma
 
-      - name: Eritasoristeys
+      - heading: Eritasoristeys
         geometry: Piste
-        short_name: eri
+        letter_code: eri
         plan_regulations:
           - regulation_code: eritasoristeys
 
-      - name: Alikulku
+      - heading: Alikulku
         geometry: Piste
-        short_name: ali
+        letter_code: ali
         plan_regulations:
           - regulation_code: alikulku
 
-      - name: Jalankululle tarkoitettu alikulku
+      - heading: Jalankululle tarkoitettu alikulku
         geometry: Piste
-        short_name: /jk ali # NOTE: Check symbol => formatting p. 33
+        letter_code: /jk ali # NOTE: Check symbol => formatting p. 33
         plan_regulations:
           - regulation_code: alikulku
             additional_information:
               - type: kayttotarkoituskohdistus
                 code_value: jalankulkualue
 
-      - name: Ylikulku
+      - heading: Ylikulku
         geometry: Piste
-        short_name: yli
+        letter_code: yli
         plan_regulations:
           - regulation_code: ylikulku
 
-      - name: Jalankululle tarkoitettu ylikulku
+      - heading: Jalankululle tarkoitettu ylikulku
         geometry: Piste
-        short_name: /jk yli # NOTE: Check symbol => formatting p. 33
+        letter_code: /jk yli # NOTE: Check symbol => formatting p. 33
         plan_regulations:
           - regulation_code: ylikulku
             additional_information:
               - type: kayttotarkoituskohdistus
                 code_value: jalankulkualue
 
-      - name: Konsultointivyöhyke
+      - heading: Konsultointivyöhyke
         geometry: Alue
-        short_name: konsu
+        letter_code: konsu
         plan_regulations:
           - regulation_code: konsultointivyohyke
             additional_information:
               - type: osaAlue
 
-      - name: Kehittämisalue
+      - heading: Kehittämisalue
         geometry: Alue
-        short_name: ke
+        letter_code: ke
         plan_regulations:
           - regulation_code: kehittamisalue
             additional_information:
               - type: osaAlue
 
-      - name: Suunnittelutarvealue
+      - heading: Suunnittelutarvealue
         geometry: Alue
-        short_name: st
+        letter_code: st
         plan_regulations:
           - regulation_code: suunnittelutarvealue
             additional_information:
               - type: osaAlue
 
-      - name: Alue, jota koskee rakentamisrajoitus
+      - heading: Alue, jota koskee rakentamisrajoitus
         geometry: [Alue, Piste]
-        short_name: rr
+        letter_code: rr
         plan_regulations:
           - regulation_code: rakentamisrajoitusYleiskaava
             additional_information:
               - type: osaAlue
 
-      - name: Alue, jota koskee määräaikainen rakentamisrajoitus
+      - heading: Alue, jota koskee määräaikainen rakentamisrajoitus
         geometry: [Alue, Piste]
-        short_name: mrr
+        letter_code: mrr
         plan_regulations:
           - regulation_code: maaraAikainenRakentamisrajoitus
             additional_information:
               - type: osaAlue
 
-      - name: Alue, jota koskee toimenpiderajoitus
+      - heading: Alue, jota koskee toimenpiderajoitus
         geometry: Alue
-        short_name: tr
+        letter_code: tr
         plan_regulations:
           - regulation_code: toimenpiderajoitus
             additional_information:
               - type: osaAlue
 
-      - name: Tuulivoimaloiden alue
+      - heading: Tuulivoimaloiden alue
         geometry: [Alue, Piste]
-        short_name: tv
+        letter_code: tv
         plan_regulations:
           - regulation_code: tuulivoimalaAlue
             additional_information:
               - type: osaAlue
 
-      - name: Tuulivoimalan ohjeellinen sijainti
+      - heading: Tuulivoimalan ohjeellinen sijainti
         geometry: Piste
-        short_name: # NOTE: Check symbol p .34
+        letter_code: # NOTE: Check symbol p .34
         plan_regulations:
           - regulation_code: tuulivoimalaAlue
             additional_information:
               - type: ohjeellinenSijainti
 
-      - name: Aurinkovoimaloiden alue
+      - heading: Aurinkovoimaloiden alue
         geometry: [Alue, Piste]
-        short_name: aur
+        letter_code: aur
         plan_regulations:
           - regulation_code: aurinkovoimalaAlue
             additional_information:
               - type: osaAlue
 
-      - name: Suojeltava alueen osa
+      - heading: Suojeltava alueen osa
         geometry: [Alue, Piste]
-        short_name: s
+        letter_code: s
         plan_regulations:
           - regulation_code: suojelualue
             additional_information:
               - type: osaAlue
 
-      - name: Alue, jolla sijaitsee luonnonsuojelulain mukainen luonnonsuojelualue tai -kohde
+      - heading: Alue, jolla sijaitsee luonnonsuojelulain mukainen luonnonsuojelualue tai -kohde
         geometry: [Alue, Piste]
-        short_name: sl
+        letter_code: sl
         plan_regulations:
           - regulation_code: luonnonsuojelualue
             additional_information:
               - type: osaAlue
 
-      - name: Suojeltu rakennus, jota ei saa purkaa
+      - heading: Suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: sr
+        letter_code: sr
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: osaAlue
 
-      - name: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      - heading: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: kvsr # NOTE: Check Point Symbol p. 34
+        letter_code: kvsr # NOTE: Check Point Symbol p. 34
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: osaAlue
               - type: kansainvalinen
 
-      - name: Valtakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      - heading: Valtakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: vasr # NOTE: Check Point Symbol p. 34
+        letter_code: vasr # NOTE: Check Point Symbol p. 34
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: osaAlue
               - type: valtakunnallinen
 
-      - name: Maakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      - heading: Maakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: msr # NOTE: Check Point Symbol p. 35
+        letter_code: msr # NOTE: Check Point Symbol p. 35
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: osaAlue
               - type: maakunnallinen
 
-      - name: Paikallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      - heading: Paikallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: msr # NOTE: Check Point Symbol p. 35
+        letter_code: msr # NOTE: Check Point Symbol p. 35
         plan_regulations:
           - regulation_code: rakennussuojelualue
             additional_information:
               - type: osaAlue
               - type: paikallinen
 
-      - name: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
+      - heading: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: srs
+        letter_code: srs
         plan_regulations:
           - regulation_code: rakennusperinnonSuojelemisestaAnnetunLainNojallaSuojeltuRakennus
             additional_information:
               - type: osaAlue
 
-      - name: Alueen osa, jolla sijaitsee muinaismuistolailla rauhoitettu kiinteä muinaisjäännös
+      - heading: Alueen osa, jolla sijaitsee muinaismuistolailla rauhoitettu kiinteä muinaisjäännös
         geometry: [Alue, Piste]
-        short_name: sm
+        letter_code: sm
         plan_regulations:
           - regulation_code: muinaismuistoAlue
             additional_information:
               - type: osaAlue
 
-      - name: Valtion omistamien rakennusten suojelusta annetun asetuksen nojalla suojeltu rakennus, jota ei saa purkaa
+      - heading: Valtion omistamien rakennusten suojelusta annetun asetuksen nojalla suojeltu rakennus, jota ei saa purkaa
         geometry: [Alue, Piste]
-        short_name: sra
+        letter_code: sra
         plan_regulations:
           - regulation_code: valtionOmistamienRakennustenSuojelustaAnnetunAsetuksenNojallaSuojeltuRakennus
             additional_information:
               - type: osaAlue
 
-      - name: Kirkkolain nojalla suojeltu kirkollinen rakennus
+      - heading: Kirkkolain nojalla suojeltu kirkollinen rakennus
         geometry: [Alue, Piste]
-        short_name: srk
+        letter_code: srk
         plan_regulations:
           - regulation_code: suojeltuKirkollinenRakennus
             additional_information:
               - type: osaAlue
 
-      - name: Ortodoksisesta kirkosta annetun lain nojalla suojeltu kirkko tai rukoushuone
+      - heading: Ortodoksisesta kirkosta annetun lain nojalla suojeltu kirkko tai rukoushuone
         geometry: [Alue, Piste]
-        short_name: srko
+        letter_code: srko
         plan_regulations:
           - regulation_code: suojeltuOrtodoksinenKirkkoTaiRukoushuone
             additional_information:
               - type: osaAlue
 
-      - name: Ekologisen kompensaation alue
+      - heading: Ekologisen kompensaation alue
         geometry: [Alue, Piste]
-        short_name: ekok
+        letter_code: ekok
         plan_regulations:
           - regulation_code: ekologisenKompensaationAlue
             additional_information:
               - type: osaAlue
 
-      - name: Hulevesien hallintaan tarkoitettu alue
+      - heading: Hulevesien hallintaan tarkoitettu alue
         geometry: [Alue, Piste]
-        short_name: hule
+        letter_code: hule
         plan_regulations:
           - regulation_code: hulevesienHallintaAlue
             additional_information:
               - type: osaAlue
 
-      - name: Maa-ainesten vastaanotto- tai läjitysalue
+      - heading: Maa-ainesten vastaanotto- tai läjitysalue
         geometry: [Alue, Piste]
-        short_name: läji
+        letter_code: läji
         plan_regulations:
           - regulation_code: maaAinestenVastaanottoTaiLajitysAlue
             additional_information:
@@ -1235,27 +1235,27 @@ categories:
   - category_code: kehittämisperiaatteet
     name: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     plan_regulation_groups:
-      - name: Kaupunkikehittämisvyöhyke
+      - heading: Kaupunkikehittämisvyöhyke
         geometry: Alue
-        short_name: kk
+        letter_code: kk
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
               - type: osaAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Maaseudun kehittämisvyöhyke
+      - heading: Maaseudun kehittämisvyöhyke
         geometry: Alue
-        short_name: mk
+        letter_code: mk
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
               - type: osaAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Matkailun ja virkistyksen kehittämisvyöhyke
+      - heading: Matkailun ja virkistyksen kehittämisvyöhyke
         geometry: Alue
-        short_name: mv
+        letter_code: mv
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1266,9 +1266,9 @@ categories:
                 code_value: virkistysalue
           - regulation_code: sanallinenMaarays
 
-      - name: Matkailun kehittämisvyöhyke
+      - heading: Matkailun kehittämisvyöhyke
         geometry: Alue
-        short_name: rma
+        letter_code: rma
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1277,9 +1277,9 @@ categories:
                 code_value: matkailupalvelujenAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Virkistyksen kehittämisvyöhyke
+      - heading: Virkistyksen kehittämisvyöhyke
         geometry: Alue
-        short_name: vka
+        letter_code: vka
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1288,9 +1288,9 @@ categories:
                 code_value: virkistysalue
           - regulation_code: sanallinenMaarays
 
-      - name: Vähittäiskaupan kehittämisvyöhyke
+      - heading: Vähittäiskaupan kehittämisvyöhyke
         geometry: Alue
-        short_name: kma
+        letter_code: kma
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1299,27 +1299,27 @@ categories:
                 code_value: vahittaiskaupanSuuryksikko
           - regulation_code: sanallinenMaarays
 
-      - name: Ekologinen kehittämisvyöhyke
+      - heading: Ekologinen kehittämisvyöhyke
         geometry: Alue
-        short_name: eko
+        letter_code: eko
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
               - type: osaAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Kulttuuriympäristön kehittämisen kohdealue
+      - heading: Kulttuuriympäristön kehittämisen kohdealue
         geometry: Alue
-        short_name: ky
+        letter_code: ky
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
               - type: osaAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Energiahuollon / energiatuotannon kehittämisvyöhyke
+      - heading: Energiahuollon / energiatuotannon kehittämisvyöhyke
         geometry: Alue
-        short_name: ena
+        letter_code: ena
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1328,9 +1328,9 @@ categories:
                 code_value: energiahuollonAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Kaupan palveluiden kehittämisvyöhyke
+      - heading: Kaupan palveluiden kehittämisvyöhyke
         geometry: Alue
-        short_name: ka
+        letter_code: ka
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1339,9 +1339,9 @@ categories:
                 code_value: palvelujenAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Liikenteen kehittämisvyöhyke
+      - heading: Liikenteen kehittämisvyöhyke
         geometry: Alue
-        short_name: lka
+        letter_code: lka
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1350,9 +1350,9 @@ categories:
                 code_value: liikennealue
           - regulation_code: sanallinenMaarays
 
-      - name: Keskustatoimintojen kehittämisvyöhyke
+      - heading: Keskustatoimintojen kehittämisvyöhyke
         geometry: Alue
-        short_name: cka
+        letter_code: cka
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1361,9 +1361,9 @@ categories:
                 code_value: keskustatoimintojenAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Teollisuustoimintojen kehittämisvyöhyke
+      - heading: Teollisuustoimintojen kehittämisvyöhyke
         geometry: Alue
-        short_name: tka
+        letter_code: tka
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1372,18 +1372,18 @@ categories:
                 code_value: teollisuusalue
           - regulation_code: sanallinenMaarays
 
-      - name: Logistiikkatoimintojen kehittämisvyöhyke
+      - heading: Logistiikkatoimintojen kehittämisvyöhyke
         geometry: Alue
-        short_name: log
+        letter_code: log
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
               - type: osaAlue
           - regulation_code: sanallinenMaarays
 
-      - name: Yhdyskuntarakenteen eheyttämistarve
+      - heading: Yhdyskuntarakenteen eheyttämistarve
         geometry: Alue
-        short_name: # NOTE: check symbol p. 37
+        letter_code: # NOTE: check symbol p. 37
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1391,16 +1391,16 @@ categories:
               - type: eheytettavaTaiTiivistettava
           - regulation_code: sanallinenMaarays
 
-      - name: Yhdyskuntarakenteen laajenemissuunta
+      - heading: Yhdyskuntarakenteen laajenemissuunta
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 37
+        letter_code: # NOTE: check symbol p. 37
         plan_regulations:
           - regulation_code: yhdyskuntarakenteenLaajenemissuunta
           - regulation_code: sanallinenMaarays
 
-      - name: Liikenteen yhteystarve
+      - heading: Liikenteen yhteystarve
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 37
+        letter_code: # NOTE: check symbol p. 37
         plan_regulations:
           - regulation_code: kehittamisvyohyke
             additional_information:
@@ -1410,103 +1410,103 @@ categories:
   - category_code: viivat
     name: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     plan_regulation_groups:
-      - name: Nykyinen tie
+      - heading: Nykyinen tie
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 38
+        letter_code: # NOTE: check symbol p. 38
         plan_regulations:
           - regulation_code: tie
 
-      - name: Moottori- tai moottoriliikennetie
+      - heading: Moottori- tai moottoriliikennetie
         geometry: Viiva
-        short_name: mo
+        letter_code: mo
         plan_regulations:
           - regulation_code: moottoriTaiMoottoriliikenneTie
 
-      - name: Kaksiajoratainen tie tai katu
+      - heading: Kaksiajoratainen tie tai katu
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 38
+        letter_code: # NOTE: check symbol p. 38
         plan_regulations:
           - regulation_code: kaksiajoratainenTieTaiKatu
 
-      - name: Valtatie tai kantatie
+      - heading: Valtatie tai kantatie
         geometry: Viiva
-        short_name: vt/kt
+        letter_code: vt/kt
         plan_regulations:
           - regulation_code: valtatie
           - regulation_code: kantatie
 
-      - name: Valtatie
+      - heading: Valtatie
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
 
-      - name: Kantatie
+      - heading: Kantatie
         geometry: Viiva
-        short_name: kt
+        letter_code: kt
         plan_regulations:
           - regulation_code: kantatie
 
-      - name: Seututie tai pääkatu
+      - heading: Seututie tai pääkatu
         geometry: Viiva
-        short_name: st/pk
+        letter_code: st/pk
         plan_regulations:
           - regulation_code: seututie
           - regulation_code: paakatu
 
-      - name: Seututie
+      - heading: Seututie
         geometry: Viiva
-        short_name: st
+        letter_code: st
         plan_regulations:
           - regulation_code: seututie
 
-      - name: Pääkatu
+      - heading: Pääkatu
         geometry: Viiva
-        short_name: pk
+        letter_code: pk
         plan_regulations:
           - regulation_code: paakatu
 
-      - name: Yhdystie tai kokoojakatu
+      - heading: Yhdystie tai kokoojakatu
         geometry: Viiva
-        short_name: yt/kk
+        letter_code: yt/kk
         plan_regulations:
           - regulation_code: yhdystie
           - regulation_code: kokoojakatu
 
-      - name: Yhdystie
+      - heading: Yhdystie
         geometry: Viiva
-        short_name: yt
+        letter_code: yt
         plan_regulations:
           - regulation_code: yhdystie
 
-      - name: Kokoojakatu
+      - heading: Kokoojakatu
         geometry: Viiva
-        short_name: kk
+        letter_code: kk
         plan_regulations:
           - regulation_code: kokoojakatu
 
-      - name: Maantie tai katu
+      - heading: Maantie tai katu
         geometry: Viiva
-        short_name: LT/katu
+        letter_code: LT/katu
         plan_regulations:
           - regulation_code: maantie
           - regulation_code: katu
 
-      - name: Maantie
+      - heading: Maantie
         geometry: Viiva
-        short_name: LT
+        letter_code: LT
         plan_regulations:
           - regulation_code: maantie
 
-      - name: Katu
+      - heading: Katu
         geometry: Viiva
-        short_name: katu
+        letter_code: katu
         plan_regulations:
           - regulation_code: katu
 
-      - name: Joukkoliikenteelle varattu tie tai katu
+      - heading: Joukkoliikenteelle varattu tie tai katu
         geometry: Viiva
-        short_name: LT/katu - jl # NOTE: Check symbol p. 39
+        letter_code: LT/katu - jl # NOTE: Check symbol p. 39
         plan_regulations:
           - regulation_code: maantie
             additional_information:
@@ -1517,224 +1517,224 @@ categories:
               - type: kayttotarkoituskohdistus
                 code_value: joukkoliikenteenAlue
 
-      - name: Joukkoliikenteelle varattu katu
+      - heading: Joukkoliikenteelle varattu katu
         geometry: Viiva
-        short_name: katu - jl # NOTE: Check symbol p.39
+        letter_code: katu - jl # NOTE: Check symbol p.39
         plan_regulations:
           - regulation_code: katu
             additional_information:
               - type: kayttotarkoituskohdistus
                 code_value: joukkoliikenteenAlue
 
-      - name: Rautatie
+      - heading: Rautatie
         geometry: Viiva
-        short_name: # NOTE: Check symbol p.39
+        letter_code: # NOTE: Check symbol p.39
         plan_regulations:
           - regulation_code: raideliikenteenAlue
 
-      - name: Päärata
+      - heading: Päärata
         geometry: Viiva
-        short_name: pr
+        letter_code: pr
         plan_regulations:
           - regulation_code: paarata
 
-      - name: Yhdysrata
+      - heading: Yhdysrata
         geometry: Viiva
-        short_name: yr
+        letter_code: yr
         plan_regulations:
           - regulation_code: yhdysrata
 
-      - name: Sivurata
+      - heading: Sivurata
         geometry: Viiva
-        short_name: siv
+        letter_code: siv
         plan_regulations:
           - regulation_code: sivurata
 
-      - name: Kaupunkirata
+      - heading: Kaupunkirata
         geometry: Viiva
-        short_name: kr
+        letter_code: kr
         plan_regulations:
           - regulation_code: kaupunkirata
 
-      - name: Metro
+      - heading: Metro
         geometry: Viiva
-        short_name: metro
+        letter_code: metro
         plan_regulations:
           - regulation_code: metro
 
-      - name: Raitiotie
+      - heading: Raitiotie
         geometry: Viiva
-        short_name: rt
+        letter_code: rt
         plan_regulations:
           - regulation_code: raitiotie
 
-      - name: Liikennetunneli
+      - heading: Liikennetunneli
         geometry: Viiva
-        short_name: lt
+        letter_code: lt
         plan_regulations:
           - regulation_code: liikennetunneli
 
-      - name: Moottorikelkkailureitti
+      - heading: Moottorikelkkailureitti
         geometry: Viiva
-        short_name: # NOTE: Check symbol p. 40
+        letter_code: # NOTE: Check symbol p. 40
         plan_regulations:
           - regulation_code: moottorikelkkailureitti
 
-      - name: Jalankulku- ja pyöräilyreitti
+      - heading: Jalankulku- ja pyöräilyreitti
         geometry: Viiva
-        short_name: jk/pp
+        letter_code: jk/pp
         plan_regulations:
           - regulation_code: pyorailyalue
           - regulation_code: jalankulkualue
 
-      - name: Pyöräilyreitti
+      - heading: Pyöräilyreitti
         geometry: Viiva
-        short_name: pp
+        letter_code: pp
         plan_regulations:
           - regulation_code: pyorailyalue
 
-      - name: Jalankulkureitti
+      - heading: Jalankulkureitti
         geometry: Viiva
-        short_name: jk
+        letter_code: jk
         plan_regulations:
           - regulation_code: jalankulkualue
 
-      - name: Laivaväylä
+      - heading: Laivaväylä
         geometry: Viiva
-        short_name: lv
+        letter_code: lv
         plan_regulations:
           - regulation_code: laivavayla
 
-      - name: Veneväylä
+      - heading: Veneväylä
         geometry: Viiva
-        short_name: vv
+        letter_code: vv
         plan_regulations:
           - regulation_code: venevayla
 
-      - name: Lossi- tai lauttayhteys
+      - heading: Lossi- tai lauttayhteys
         geometry: Viiva
-        short_name: ly
+        letter_code: ly
         plan_regulations:
           - regulation_code: lossiTaiLauttaYhteys
 
   - category_code: ymparistonmuuutosLiikennemuodot
     name: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     plan_regulation_groups:
-      - name: Nykyinen tie
+      - heading: Nykyinen tie
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: tie
             additional_information:
               - type: olemassaOleva
 
-      - name: Uusi tie
+      - heading: Uusi tie
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: tie
             additional_information:
               - type: uusi
 
-      - name: Merkittävästi parannettava tie
+      - heading: Merkittävästi parannettava tie
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: tie
             additional_information:
               - type: merkittavastiParannettava
 
-      - name: Valtatie
+      - heading: Valtatie
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
             additional_information:
               - type: olemassaOleva
 
-      - name: Uusi valtatie
+      - heading: Uusi valtatie
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
             additional_information:
               - type: uusi
 
-      - name: Merkittävästi parannettava valtatie
+      - heading: Merkittävästi parannettava valtatie
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
             additional_information:
               - type: merkittavastiParannettava
 
-      - name: Tieliikenteen yhteystarve
+      - heading: Tieliikenteen yhteystarve
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: tie
             additional_information:
               - type: yhteystarve
 
-      - name: Ohjeellinen tie
+      - heading: Ohjeellinen tie
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: tie
             additional_information:
               - type: ohjeellinenSijainti
 
-      - name: Vaihtoehtoinen tie
+      - heading: Vaihtoehtoinen tie
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: tie
             additional_information:
               - type: vaihtoehtoinen
 
-      - name: Valtatien yhteystarve
+      - heading: Valtatien yhteystarve
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
             additional_information:
               - type: yhteystarve
 
-      - name: Ohjeellinen valtatie
+      - heading: Ohjeellinen valtatie
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
             additional_information:
               - type: ohjeellinenSijainti
 
-      - name: Vaihtoehtoinen valtatie
+      - heading: Vaihtoehtoinen valtatie
         geometry: Viiva
-        short_name: vt
+        letter_code: vt
         plan_regulations:
           - regulation_code: valtatie
             additional_information:
               - type: vaihtoehtoinen
 
-      - name: Raideliikenteen yhteystarve
+      - heading: Raideliikenteen yhteystarve
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 41
+        letter_code: # NOTE: check symbol p. 41
         plan_regulations:
           - regulation_code: raideliikenteenAlue
             additional_information:
               - type: yhteystarve
 
-      - name: Joukkoliikenteen kehittämiskäytävä
+      - heading: Joukkoliikenteen kehittämiskäytävä
         geometry: Viiva
-        short_name: jl
+        letter_code: jl
         plan_regulations:
           - regulation_code: joukkoliikenteenAlue
             additional_information:
               - type: kehitettava
 
-      - name: Jalankulun ja pyöräilyn yhteystarve
+      - heading: Jalankulun ja pyöräilyn yhteystarve
         geometry: Viiva
-        short_name: jk/pp
+        letter_code: jk/pp
         plan_regulations:
           - regulation_code: pyorailyalue
             additional_information:
@@ -1743,17 +1743,17 @@ categories:
             additional_information:
               - type: yhteystarve
 
-      - name: Jalankulun yhteystarve
+      - heading: Jalankulun yhteystarve
         geometry: Viiva
-        short_name: jk
+        letter_code: jk
         plan_regulations:
           - regulation_code: jalankulkualue
             additional_information:
               - type: yhteystarve
 
-      - name: Pyöräilyn yhteystarve
+      - heading: Pyöräilyn yhteystarve
         geometry: Viiva
-        short_name: pp
+        letter_code: pp
         plan_regulations:
           - regulation_code: pyorailyalue
             additional_information:
@@ -1762,109 +1762,109 @@ categories:
   - category_code: muutLinjaukset
     name: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     plan_regulation_groups:
-      - name: Viheryhteys
+      - heading: Viheryhteys
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 42
+        letter_code: # NOTE: check symbol p. 42
         plan_regulations:
           - regulation_code: viheryhteys
 
-      - name: Viheryhteystarve
+      - heading: Viheryhteystarve
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 42
+        letter_code: # NOTE: check symbol p. 42
         plan_regulations:
           - regulation_code: viheryhteys
             additional_information:
               - type: yhteystarve
 
-      - name: Sähkölinja
+      - heading: Sähkölinja
         geometry: Viiva
-        short_name: z
+        letter_code: z
         plan_regulations:
           - regulation_code: sahkolinja
 
-      - name: Uusi sähkölinja
+      - heading: Uusi sähkölinja
         geometry: Viiva
-        short_name: z
+        letter_code: z
         plan_regulations:
           - regulation_code: sahkolinja
             additional_information:
               - type: uusi
 
-      - name: Sähkölinjan yhteystarve
+      - heading: Sähkölinjan yhteystarve
         geometry: Viiva
-        short_name: z
+        letter_code: z
         plan_regulations:
           - regulation_code: sahkolinja
             additional_information:
               - type: yhteystarve
 
-      - name: Vesijohto tai viemäri
+      - heading: Vesijohto tai viemäri
         geometry: Viiva
-        short_name: v
+        letter_code: v
         plan_regulations:
           - regulation_code: vesijohtoTaiViemari
 
-      - name: Uusi vesijohto tai viemäri
+      - heading: Uusi vesijohto tai viemäri
         geometry: Viiva
-        short_name: v
+        letter_code: v
         plan_regulations:
           - regulation_code: vesijohtoTaiViemari
             additional_information:
               - type: uusi
 
-      - name: Vesijohdon tai viemärin yhteystarve
+      - heading: Vesijohdon tai viemärin yhteystarve
         geometry: Viiva
-        short_name: v
+        letter_code: v
         plan_regulations:
           - regulation_code: vesijohtoTaiViemari
             additional_information:
               - type: yhteystarve
 
-      - name: Kaasulinja
+      - heading: Kaasulinja
         geometry: Viiva
-        short_name: k
+        letter_code: k
         plan_regulations:
           - regulation_code: kaasulinja
 
-      - name: Uusi kaasulinja
+      - heading: Uusi kaasulinja
         geometry: Viiva
-        short_name: k
+        letter_code: k
         plan_regulations:
           - regulation_code: kaasulinja
             additional_information:
               - type: uusi
 
-      - name: Kaasulinjan yhteystarve
+      - heading: Kaasulinjan yhteystarve
         geometry: Viiva
-        short_name: k
+        letter_code: k
         plan_regulations:
           - regulation_code: kaasulinja
             additional_information:
               - type: yhteystarve
 
-      - name: Historiallinen tie
+      - heading: Historiallinen tie
         geometry: Viiva
-        short_name: /s
+        letter_code: /s
         plan_regulations:
           - regulation_code: historiallinenKohde
 
-      - name: Ulkoilu- tai virkistysreitti
+      - heading: Ulkoilu- tai virkistysreitti
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 42
+        letter_code: # NOTE: check symbol p. 42
         plan_regulations:
           - regulation_code: ulkoiluTaiVirkistysReitti
 
-      - name: Uusi ulkoilu- tai virkistysreitti
+      - heading: Uusi ulkoilu- tai virkistysreitti
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 42
+        letter_code: # NOTE: check symbol p. 42
         plan_regulations:
           - regulation_code: ulkoiluTaiVirkistysReitti
             additional_information:
               - type: uusi
 
-      - name: Ulkoilu- tai virkistysreitin yhteystarve
+      - heading: Ulkoilu- tai virkistysreitin yhteystarve
         geometry: Viiva
-        short_name: # NOTE: check symbol p. 42
+        letter_code: # NOTE: check symbol p. 42
         plan_regulations:
           - regulation_code: ulkoiluTaiVirkistysReitti
             additional_information:
@@ -1873,24 +1873,24 @@ categories:
   - category_code: numeerisetJaTekstimuotoiset
     name: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     plan_regulation_groups:
-      - name: Kaupungin- tai kunnanosan nimi
+      - heading: Kaupungin- tai kunnanosan nimi
         geometry: Alue
         plan_regulations:
           - regulation_code: kaupunginTaiKunnanosanNimi
 
-      - name: Tuulivoimalan enimmäiskorkeus
+      - heading: Tuulivoimalan enimmäiskorkeus
         geometry: Alue
         description: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
         plan_regulations:
           - regulation_code: tuulivoimalanEnimmaiskorkeus
 
-      - name: Tuulivoimaloiden määrä
+      - heading: Tuulivoimaloiden määrä
         geometry: Alue
         description: Määräys osoittaa kuinka monta tuulivoimalaa alueelle saa rakentaa
         plan_regulations:
           - regulation_code: tuulivoimaloidenMaara
 
-      - name: Rakennuspaikkojen määrä
+      - heading: Rakennuspaikkojen määrä
         geometry: Alue
         description: Määräys osoittaa kuinka monta rakennuspaikkaa alueelle saa rakentaa
         plan_regulations:
@@ -1899,23 +1899,23 @@ categories:
   - category_code: rakennuspaikka
     name: Rakennuspaikkaa koskevat kaavamääräysryhmät
     plan_regulation_groups:
-      - name: Rakennuspaikka
+      - heading: Rakennuspaikka
         geometry: Piste
-        short_name: # NOTE: check symbol p. 44
+        letter_code: # NOTE: check symbol p. 44
         plan_regulations:
           - regulation_code: rakennuspaikka
 
-      - name: Uusi rakennuspaikka
+      - heading: Uusi rakennuspaikka
         geometry: Piste
-        short_name: # NOTE: check symbol p. 44
+        letter_code: # NOTE: check symbol p. 44
         plan_regulations:
           - regulation_code: rakennuspaikka
             additional_information:
               - type: uusi
 
-      - name: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
+      - heading: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
         geometry: Piste
-        short_name: # NOTE: check symbol p. 44
+        letter_code: # NOTE: check symbol p. 44
         plan_regulations:
           - regulation_code: rakennuspaikka
             additional_information:
@@ -1924,9 +1924,9 @@ categories:
                 code_list: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK
                 code_value: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/11
 
-      - name: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
+      - heading: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
         geometry: Piste
-        short_name: # NOTE: check symbol p. 44
+        letter_code: # NOTE: check symbol p. 44
         plan_regulations:
           - regulation_code: rakennuspaikka
             additional_information:
@@ -1936,9 +1936,9 @@ categories:
                 code_value: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/11
               - type: uusi
 
-      - name: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
+      - heading: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
         geometry: Piste
-        short_name: # NOTE: check symbol p. 44
+        letter_code: # NOTE: check symbol p. 44
         plan_regulations:
           - regulation_code: rakennuspaikka
             additional_information:
@@ -1947,9 +1947,9 @@ categories:
                 code_list: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK
                 code_value: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/12
 
-      - name: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
+      - heading: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
         geometry: Piste
-        short_name: # NOTE: check symbol p. 44
+        letter_code: # NOTE: check symbol p. 44
         plan_regulations:
           - regulation_code: rakennuspaikka
             additional_information:
