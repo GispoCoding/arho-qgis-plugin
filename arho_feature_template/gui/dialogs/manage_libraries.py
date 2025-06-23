@@ -69,11 +69,13 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         # VARS
         self.active_library: RegulationGroupLibrary | None = None
         self.new_libraries: list[RegulationGroupLibrary] = []
-        self.deleted_libraries_filepaths: list[str] = []
+
+        # Reference to the original library list
+        self.custom_regulation_group_libraries = custom_regulation_group_libraries
 
         # Make a deep copy of the given library list so that modifications will only be saved when user
         # succesfully clicks Ok in this form
-        self.custom_regulation_group_libraries = copy.deepcopy(custom_regulation_group_libraries)
+        self.updated_regulation_group_libraries = copy.deepcopy(custom_regulation_group_libraries)
 
         # SIGNALS
         self.regulation_group_libarary_selection.currentIndexChanged.connect(self._on_regulation_group_library_changed)
@@ -113,6 +115,9 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         if self.regulation_group_libarary_selection.count() != 0:
             self.regulation_group_libarary_selection.setCurrentIndex(0)
         self._check_required_fields()
+
+        # Call to handle the case where no libraries are present
+        self._on_regulation_group_library_changed(None)
 
     # LIBRARIES
     def _check_required_fields(self) -> None:
@@ -262,7 +267,14 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
 
     def _delete_library(self, library: RegulationGroupLibrary):
         if library.file_path is not None and id(library) in [id(lib) for lib in self.custom_regulation_group_libraries]:
-            self.deleted_libraries_filepaths.append(library.file_path)
+            TemplateManager.delete_template_file(library.file_path)
+
+            # Find the correct library from the list of updated regulation group libraries
+            # We have to find the correct library like this because the library instances are
+            # different in the original list and the copied list
+            for lib in self.updated_regulation_group_libraries:
+                if lib.file_path == library.file_path:
+                    self.updated_regulation_group_libraries.remove(lib)
 
         self.regulation_group_libarary_selection.removeItem(self.regulation_group_libarary_selection.currentIndex())
 
@@ -388,5 +400,5 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
 
     def _on_ok_clicked(self):
         if self._check_form():
-            self.custom_regulation_group_libraries = self._get_current_libraries()
+            self.updated_regulation_group_libraries = self._get_current_libraries()
             self.accept()

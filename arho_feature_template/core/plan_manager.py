@@ -222,19 +222,17 @@ class PlanManager(QObject):
                 if library.library_type == RegulationGroupLibrary.LibraryType.CUSTOM
             ]
         )
-        if manage_libraries_form.exec_():
-            # Delete files of deleted libraries
-            for file_path in manage_libraries_form.deleted_libraries_filepaths:
-                TemplateManager.delete_template_file(file_path)
-
+        result = manage_libraries_form.exec_()
+        # Even if user clicked cancel, we retrieve the list of updated libraries in case a library was deleted
+        updated_libraries = manage_libraries_form.updated_regulation_group_libraries
+        if result:
             # Rewrite all new and remaining library config files and reinitialize libraries
-            updated_libraries = manage_libraries_form.custom_regulation_group_libraries
             for library in updated_libraries:
                 TemplateManager.write_regulation_group_template_file(
                     library.into_template_dict(), Path(library.file_path), overwrite=True
                 )
-            set_user_regulation_group_library_config_files(library.file_path for library in updated_libraries)
-            self.initialize_libraries()
+        set_user_regulation_group_library_config_files(library.file_path for library in updated_libraries)
+        self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
