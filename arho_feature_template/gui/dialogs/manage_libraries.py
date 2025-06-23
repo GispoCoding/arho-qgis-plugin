@@ -291,7 +291,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
     def _add_regulation_group_to_list(self, group: RegulationGroup):
         item = QListWidgetItem(str(group))
         item.setToolTip(
-            f"Otsikko: {group.name}\nLyhyt nimi: {group.short_name}\n"
+            f"Kaavamääräyksen otsikko: {group.heading}\\Kirjaintunnus: {group.letter_code}\n"
             f"Kategoria: {group.category}\nKaavamääräysten määrä: {len(group.regulations)}"
         )
         item.setData(DATA_ROLE, group)
