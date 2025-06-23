@@ -36,9 +36,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         # TYPES
         self.frame: QFrame
-        self.name: QLineEdit
-        self.short_name: QLineEdit
-        self.short_name_label: QLabel
+        self.heading: QLineEdit
+        self.letter_code: QLineEdit
         self.edit_btn: QPushButton
         self.del_btn: QPushButton
         self.regulation_group_details_layout: QFormLayout
@@ -67,8 +66,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def from_model(self, regulation_group: RegulationGroup):
         self.regulation_group = regulation_group
 
-        self.name.setText(regulation_group.name if regulation_group.name else "")
-        self.short_name.setText(regulation_group.short_name if regulation_group.short_name else "")
+        self.heading.setText(regulation_group.heading if regulation_group.heading else "")
+        self.letter_code.setText(regulation_group.letter_code if regulation_group.letter_code else "")
 
         # Remove existing child widgets if reinitializing
         for widget in self.regulation_widgets:
@@ -163,8 +162,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
             type_code_id=self.regulation_group.type_code_id,
-            name=self.name.text(),
-            short_name=self.short_name.text(),
+            heading=self.heading.text(),
+            letter_code=self.letter_code.text(),
             color_code=self.regulation_group.color_code,
             regulations=[widget.into_model() for widget in self.regulation_widgets],
             propositions=[widget.into_model() for widget in self.proposition_widgets],

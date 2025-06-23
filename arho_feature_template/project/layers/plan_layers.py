@@ -228,8 +228,10 @@ class RegulationGroupLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: RegulationGroup, plan_id: str | None = None) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["short_name"] = model.short_name if model.short_name else None
-        feature["name"] = serialize_localized_text(model.name)
+        # TODO: Change `short_name` into `letter_code` in DB
+        # TODO: Change `name` into `heading` or `regulation_heading` in DB
+        feature["short_name"] = model.letter_code if model.letter_code else None
+        feature["name"] = serialize_localized_text(model.heading)
         feature["type_of_plan_regulation_group_id"] = model.type_code_id
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
         feature["id"] = model.id_ if model.id_ else feature["id"]
@@ -239,8 +241,8 @@ class RegulationGroupLayer(AbstractPlanLayer):
     def model_from_feature(cls, feature: QgsFeature) -> RegulationGroup:
         return RegulationGroup(
             type_code_id=feature["type_of_plan_regulation_group_id"],
-            name=deserialize_localized_text(feature["name"]),
-            short_name=feature["short_name"],
+            heading=deserialize_localized_text(feature["name"]),
+            letter_code=feature["short_name"],
             color_code=None,
             group_number=None,
             regulations=[

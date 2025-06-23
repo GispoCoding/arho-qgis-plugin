@@ -77,7 +77,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         splitter.setSizes([300, 550])
         self.regulation_groups_groupbox.layout().addWidget(splitter)
 
-        self.existing_group_short_names = active_plan_regulation_groups_library.get_short_names()
+        self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
         self.active_plan_regulation_groups_library = active_plan_regulation_groups_library
         self.regulation_group_libraries = [*regulation_group_libraries, active_plan_regulation_groups_library]
         self.plan_regulation_group_libraries_combobox.addItems(
@@ -140,13 +140,13 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
             self.plan_regulation_group_scrollarea_contents.layout().removeItem(self.scroll_area_spacer)
             self.scroll_area_spacer = None
 
-    def _check_regulation_group_short_names(self) -> bool:
+    def _check_regulation_group_letter_codes(self) -> bool:
         seen_names = set()
         existing_names = set()
         duplicate_names = set()
 
-        def _is_existing_model_with_unmodified_short_name(model: RegulationGroup, short_name: str) -> bool:
-            return bool(model.id_ and short_name == model.short_name)
+        def _is_existing_model_with_unmodified_letter_code(model: RegulationGroup, letter_code: str) -> bool:
+            return bool(model.id_ and letter_code == model.letter_code)
 
         def _format_names(names, last_item_conjucation: str = "ja") -> str:
             names = list(names)
@@ -156,20 +156,20 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
             return formatted_names
 
         for reg_group_widget in self.regulation_group_widgets:
-            short_name = reg_group_widget.short_name.text()
-            if not short_name:
+            letter_code = reg_group_widget.letter_code.text()
+            if not letter_code:
                 continue
 
             if (
-                not _is_existing_model_with_unmodified_short_name(reg_group_widget.regulation_group, short_name)
-                and short_name in self.existing_group_short_names
+                not _is_existing_model_with_unmodified_letter_code(reg_group_widget.regulation_group, letter_code)
+                and letter_code in self.existing_group_letter_codes
             ):
-                existing_names.add(short_name)
+                existing_names.add(letter_code)
 
-            if short_name in seen_names:
-                duplicate_names.add(short_name)
+            if letter_code in seen_names:
+                duplicate_names.add(letter_code)
 
-            seen_names.add(short_name)
+            seen_names.add(letter_code)
 
         if existing_names:
             if len(existing_names) == 1:
@@ -260,7 +260,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
 
     def _on_ok_clicked(self):
         if (
-            self._check_regulation_group_short_names()
+            self._check_regulation_group_letter_codes()
             and self._check_multiple_regulation_groups_with_principal_intended_use_regulations()
         ):
             self.model = self.into_model()
