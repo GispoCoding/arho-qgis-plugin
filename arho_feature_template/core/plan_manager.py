@@ -53,7 +53,7 @@ from arho_feature_template.project.layers.plan_layers import (
 )
 from arho_feature_template.resources.libraries.feature_templates import feature_template_library_config_files
 from arho_feature_template.resources.libraries.regulation_groups import (
-    # get_default_regulation_group_library_config_files,
+    get_default_regulation_group_library_config_files,
     get_user_regulation_group_library_config_files,
     set_user_regulation_group_library_config_files,
 )
@@ -170,14 +170,14 @@ class PlanManager(QObject):
             return
 
         self.regulation_group_libraries: list[RegulationGroupLibrary] = []
-        # self.regulation_group_libraries = [
-        #     RegulationGroupLibrary.from_template_dict(
-        #         data=TemplateManager.read_template_file(file_path),
-        #         library_type=RegulationGroupLibrary.LibraryType.DEFAULT,
-        #         file_path=file_path
-        #     )
-        #     for file_path in get_default_regulation_group_library_config_files()
-        # ]
+        self.regulation_group_libraries = [
+            RegulationGroupLibrary.from_template_dict(
+                data=TemplateManager.read_regulation_group_template_file(file_path),
+                library_type=RegulationGroupLibrary.LibraryType.DEFAULT,
+                file_path=str(file_path),
+            )
+            for file_path in get_default_regulation_group_library_config_files()
+        ]
         self.regulation_group_libraries.extend(
             RegulationGroupLibrary.from_template_dict(
                 data=TemplateManager.read_regulation_group_template_file(file_path),
