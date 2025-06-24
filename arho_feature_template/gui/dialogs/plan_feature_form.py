@@ -82,6 +82,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         splitter.setSizes([300, 550])
         self.regulation_groups_groupbox.layout().addWidget(splitter)
 
+        self.template_categories: dict[str, QTreeWidgetItem] = {}
         self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
         self.active_plan_regulation_groups_library = active_plan_regulation_groups_library
         self.regulation_group_libraries = [
@@ -102,7 +103,6 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.regulation_groups_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
         self.select_library_by_active_plan_type()
 
-        self.template_categories: dict[str, QTreeWidgetItem] = {}
         self.show_regulation_group_library(self.plan_regulation_group_libraries_combobox.currentIndex())
 
         self.feature_type_of_underground.populate_from_code_layer(UndergroundTypeLayer)
