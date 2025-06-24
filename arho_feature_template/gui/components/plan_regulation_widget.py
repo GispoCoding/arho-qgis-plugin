@@ -30,6 +30,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     ValueWidgetManager,
 )
 from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
+from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -53,11 +54,10 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.expand_hide_btn: QToolButton
 
         # INIT
-        self.config = regulation.config
         self.regulation = regulation
-
+        self.default_value = PlanRegulationTypeLayer.get_default_value_by_id(self.regulation.regulation_type_id)
         self.value_widget_manager = (
-            ValueWidgetManager(self.regulation.value, self.config.default_value) if self.config.default_value else None
+            ValueWidgetManager(self.regulation.value, self.default_value) if self.default_value else None
         )
 
         # List of widgets for hiding / showing
@@ -76,7 +76,11 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.regulation_details_container.hide()
         self.expanded = False
 
-        self.regulation_name.setText(self.config.name)
+        name_text = PlanRegulationTypeLayer.get_name_by_id(self.regulation.regulation_type_id)
+        if isinstance(name_text, dict):
+            name_text = deserialize_localized_text(name_text)
+        self.regulation_name.setText(name_text)
+
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
@@ -85,10 +89,11 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
     def _init_widgets(self):
         # Value input
-        if self.config.default_value:
+        if self.default_value:
             self._add_widget(RequiredFieldLabel("Arvo"), self.value_widget_manager.value_widget)
 
-        if self.config.regulation_code in PlanRegulationTypeLayer.verbal_regulation_codes:
+        regulation_type = PlanRegulationTypeLayer.get_type_by_id(self.regulation.regulation_type_id)
+        if regulation_type in PlanRegulationTypeLayer.verbal_regulation_types:
             for type_id in self.regulation.verbal_regulation_type_ids:
                 self._add_type_of_verbal_regulation(type_id)
             if len(self.type_of_verbal_regulation_widgets) == 0:
@@ -224,7 +229,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
     def into_model(self) -> Regulation:
         verbal_regulation_type_ids = [widget.get_value() for widget in self.type_of_verbal_regulation_widgets]
         model = Regulation(
-            config=self.config,
+            regulation_type_id=self.regulation.regulation_type_id,
             value=self.value_widget_manager.into_model() if self.value_widget_manager else AttributeValue(),
             regulation_number=None,
             additional_information=[ai_widget.into_model() for ai_widget in self.additional_information_widgets],
