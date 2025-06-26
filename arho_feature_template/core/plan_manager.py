@@ -6,7 +6,15 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Generator, Iterable, cast
 
-from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer, QgsWkbTypes
+from qgis.core import (
+    QgsExpressionContextUtils,
+    QgsFeature,
+    QgsGeometry,
+    QgsLayerTreeLayer,
+    QgsProject,
+    QgsVectorLayer,
+    QgsWkbTypes,
+)
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
@@ -59,6 +67,7 @@ from arho_feature_template.project.layers.plan_layers import (
     TypeOfVerbalRegulationAssociationLayer,
     plan_layers,
 )
+from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import feature_template_library_config_files
 from arho_feature_template.resources.libraries.regulation_groups import (
     get_default_regulation_group_library_config_files,
@@ -555,6 +564,11 @@ class PlanManager(QObject):
 
             self.set_permanent_identifier(identifier)
 
+            for node in QgsProject.instance().layerTreeRoot().children():
+                if isinstance(node, QgsLayerTreeLayer):
+                    layer = node.layer()
+                    if layer.name() != "Kaava":  # type: ignore[operator]
+                        _apply_style(layer)
             self.zoom_to_active_plan()
 
     def zoom_to_active_plan(self):
@@ -778,14 +792,12 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     active_plan = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
     model = PlanLayer.model_from_feature(active_plan)
     plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
-    path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    path = os.path.join(path, "resources", "styles")
     if plan_type == PlanType.REGIONAL:
-        path = os.path.join(path, "maakuntakaava")
+        path = plugin_path("resources", "styles", "maakuntakaava")
     elif plan_type == PlanType.GENERAL:
-        path = os.path.join(path, "yleiskaava")
+        path = plugin_path("resources", "styles", "yleiskaava")
     # elif plan_type == PlanType.TOWN:
-    #     path = os.path.join(path, "asemakaava")
+    #     path = plugin_path("resources", "styles", "asemakaava")
 
     msg, result = layer.loadNamedStyle(os.path.join(path, QML_MAP[layer.name()]))
     layer.triggerRepaint()
