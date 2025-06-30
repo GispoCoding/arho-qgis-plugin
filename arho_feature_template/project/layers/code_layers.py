@@ -64,7 +64,11 @@ class AbstractCodeLayer(AbstractLayer):
 
     @classmethod
     def get_cached_attributes(cls) -> dict[str, dict[str, Any]]:
-        """Returns a dictionary of features where key is ID and value is a dictionary of attributes."""
+        """
+        Returns a dictionary of features where key is ID and value is a dictionary of attributes.
+
+        If cache does not exist yet, will build it first and return it then.
+        """
         # NOTE: If we build cache partially, we might return only part of features
         if not cls.cache_exists():
             cls.build_cache()
@@ -105,6 +109,16 @@ class AbstractCodeLayer(AbstractLayer):
             return {}
         cls._cache_feature(feat)
         return cls._cache[id_]
+
+    @classmethod
+    def get_attribute_value_by_another_attribute_value(
+        cls, target_attribute: str, filter_attribute: str, filter_value: str
+    ) -> Any | None:
+        for attribute_data in cls._cache.values():
+            if attribute_data[filter_attribute] == filter_value:
+                return attribute_data[target_attribute]
+
+        return super().get_attribute_value_by_another_attribute_value(target_attribute, filter_attribute, filter_value)
 
 
 class PlanTypeLayer(AbstractCodeLayer):
