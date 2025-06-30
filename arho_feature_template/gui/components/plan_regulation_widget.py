@@ -17,7 +17,6 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
-    AdditionalInformationConfigLibrary,
     AttributeValue,
     Regulation,
 )
@@ -29,7 +28,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     TypeOfVerbalRegulationWidget,
     ValueWidgetManager,
 )
-from arho_feature_template.project.layers.code_layers import PlanRegulationTypeLayer
+from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
@@ -111,34 +110,27 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             self._add_additional_info(info)
 
     def _create_additional_information_menu(self) -> QMenu:
-        informations_dict: dict[str, QMenu] = {}
+        # Store menus in dict to assign sub menus. Key is information type ID.
+        _menu_dict: dict[str, QMenu] = {}
+        additional_information_menu = QMenu(self)
 
-        def _add_action(parent_id: str, info_type: str, display_name: str):
-            action = informations_dict[parent_id].addAction(display_name)
-            action.triggered.connect(
-                lambda _: self._add_additional_info(
-                    AdditionalInformation(config=AdditionalInformationConfigLibrary.get_config_by_code(info_type))
+        for id_, attributes in sorted(
+            AdditionalInformationTypeLayer.get_cached_attributes().items(), key=lambda item: item[1]["level"]
+        ):
+            if attributes["level"] == 1:
+                sub_menu = QMenu(deserialize_localized_text(attributes["name"]), self)
+                _menu_dict[id_] = sub_menu
+            else:  # level 2
+                sub_menu = _menu_dict[attributes["parent_id"]]
+                action = sub_menu.addAction(deserialize_localized_text(attributes["name"]))
+                action.triggered.connect(
+                    lambda _, id_=id_, attrs=attributes: self._add_additional_info(
+                        AdditionalInformation(additional_information_type_id=id_, value=attrs["default_value"])
+                    )
                 )
-            )
-
-        ai_config_library = AdditionalInformationConfigLibrary.get_instance()
-        for top_level_code in ai_config_library.top_level_codes:
-            top_level_config = ai_config_library.get_config_by_code(top_level_code)
-
-            sub_menu = QMenu(top_level_config.name, self)
-            informations_dict[top_level_code] = sub_menu
-
-            for child_code in top_level_config.children:
-                config = ai_config_library.get_config_by_code(child_code)
-                if not config.name:
-                    continue
-                _add_action(top_level_code, config.additional_information_type, config.name)
-
-        menu = QMenu(self)
-        for sub_menu in informations_dict.values():
-            menu.addMenu(sub_menu)
-
-        return menu
+        for sub_menu in _menu_dict.values():
+            additional_information_menu.addMenu(sub_menu)
+        return additional_information_menu
 
     def _init_additional_attributes_and_information_btn(self):
         attributes_and_information_menu = QMenu(self)
