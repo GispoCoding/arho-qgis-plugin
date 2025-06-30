@@ -10,7 +10,6 @@ from qgis.core import QgsFeature, QgsVectorLayerUtils
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
-    AdditionalInformationConfigLibrary,
     AttributeValue,
     Document,
     LifeCycle,
@@ -747,7 +746,7 @@ class AdditionalInformationLayer(AbstractPlanLayer):
         feature = cls.initialize_feature_from_model(model)
 
         feature["plan_regulation_id"] = model.plan_regulation_id
-        feature["type_additional_information_id"] = model.config.id
+        feature["type_additional_information_id"] = model.additional_information_type_id
 
         update_feature_from_attribute_value_model(model.value, feature)
 
@@ -756,10 +755,9 @@ class AdditionalInformationLayer(AbstractPlanLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> AdditionalInformation:
         return AdditionalInformation(
-            config=AdditionalInformationConfigLibrary.get_config_by_id(feature["type_additional_information_id"]),
+            additional_information_type_id=feature["type_additional_information_id"],
             id_=feature["id"],
             plan_regulation_id=feature["plan_regulation_id"],
-            type_additional_information_id=feature["type_additional_information_id"],
             value=attribute_value_model_from_feature(feature),
             modified=False,
         )

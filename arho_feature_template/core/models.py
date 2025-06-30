@@ -2,21 +2,15 @@ from __future__ import annotations
 
 import enum
 import logging
-import os
 from dataclasses import dataclass, field, fields
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
-import yaml
-
-from arho_feature_template.exceptions import ConfigSyntaxError
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     PlanRegulationTypeLayer,
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
-from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import deserialize_localized_text, null_to_none
 
 if TYPE_CHECKING:
@@ -27,9 +21,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-PLAN_REGULATIONS_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "kaavamaaraykset.yaml"))
-ADDITIONAL_INFORMATION_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "additional_information.yaml"))
 
 
 class AttributeValueDataType(str, enum.Enum):
@@ -237,93 +228,6 @@ class AdditionalInformationConfig(PlanBaseModel):
 
 
 @dataclass
-class AdditionalInformationConfigLibrary:
-    version: str
-    configs: dict[str, AdditionalInformationConfig] = field(default_factory=dict)
-    top_level_codes: list[str] = field(default_factory=list)
-
-    _id_to_configs: dict[str, AdditionalInformationConfig] = field(default_factory=dict)
-    _instance: AdditionalInformationConfigLibrary | None = None
-
-    @classmethod
-    def get_instance(cls) -> AdditionalInformationConfigLibrary:
-        """Get the singleton instance, if initialized."""
-        if cls._instance is None:
-            cls._instance = cls.initialize(ADDITIONAL_INFORMATION_CONFIG_PATH)
-        return cls._instance
-
-    @classmethod
-    def initialize(cls, config_fp: Path = ADDITIONAL_INFORMATION_CONFIG_PATH) -> AdditionalInformationConfigLibrary:
-        with config_fp.open(encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-            if data.get("version") != 1:
-                msg = "Version must be 1"
-                raise ConfigSyntaxError(msg)
-            config_file_configs = {
-                ai_config_data["code"]: ai_config_data for ai_config_data in data["additional_information"]
-            }
-
-        code_to_configs: dict[str, AdditionalInformationConfig] = {}
-        id_to_cofigs: dict[str, AdditionalInformationConfig] = {}
-        for feature in AdditionalInformationTypeLayer.get_features():
-            ai_code = feature["value"]
-            congig_file_config = config_file_configs.get(ai_code)
-
-            default_value = (
-                AttributeValue(
-                    value_data_type=AttributeValueDataType(congig_file_config["data_type"]),
-                    unit=congig_file_config.get("unit"),
-                )
-                if congig_file_config is not None
-                else None
-            )
-
-            ai_config = AdditionalInformationConfig(
-                id=feature["id"],
-                additional_information_type=ai_code,
-                name=deserialize_localized_text(feature["name"]),
-                description=deserialize_localized_text(feature["description"]),
-                status=feature["status"],
-                level=feature["level"],
-                parent_id=feature["parent_id"],
-                default_value=default_value,
-            )
-            code_to_configs[ai_code] = ai_config
-            id_to_cofigs[feature["id"]] = ai_config
-
-        top_level_codes = []
-        for ai_config in code_to_configs.values():
-            if ai_config.parent_id:
-                id_to_cofigs[ai_config.parent_id].children.append(ai_config.additional_information_type)
-            else:
-                top_level_codes.append(ai_config.additional_information_type)
-
-        return cls(
-            version=data["version"],
-            configs=code_to_configs,
-            top_level_codes=top_level_codes,
-            _id_to_configs=id_to_cofigs,
-        )
-
-    @classmethod
-    def get_config_by_code(cls, code: str) -> AdditionalInformationConfig:
-        """Get a regulation by it's regulation code.
-
-        Raises a KeyError if code not exists.
-        """
-        return cls.get_instance().configs[code]
-
-    @classmethod
-    def get_config_by_id(cls, id_: str) -> AdditionalInformationConfig:
-        """Get a regulation by it's regulation code.
-
-        Raises a KeyError if code not exists.
-        """
-
-        return cls.get_instance()._id_to_configs[id_]  # noqa: SLF001
-
-
-@dataclass
 class AttributeValue(PlanBaseModel):
     value_data_type: AttributeValueDataType | None = None
 
@@ -383,27 +287,22 @@ class AttributeValue(PlanBaseModel):
 
 @dataclass
 class AdditionalInformation(PlanBaseModel):
-    config: AdditionalInformationConfig  # includes code and unit among other needed data for saving feature
-
-    id_: str | None = None
-    plan_regulation_id: str | None = None
-    type_additional_information_id: str | None = None
+    additional_information_type_id: str
     value: AttributeValue | None = None
+    plan_regulation_id: str | None = None
     modified: bool = field(compare=False, default=True)
+    id_: str | None = None
 
     @staticmethod
     def from_template_dict(data: dict) -> AdditionalInformation:
-        ai_config = AdditionalInformationConfigLibrary.get_config_by_code(data["type"])
-        default_value = ai_config.default_value if ai_config.default_value else None
-
         return AdditionalInformation(
-            config=ai_config,
-            value=AttributeValue.from_template_dict(data, default_value=default_value),
+            additional_information_type_id=cast(str, AdditionalInformationTypeLayer.get_id_by_type(data["type"])),
+            value=AttributeValue.from_template_dict(data),  # TODO: check default value is OK
         )
 
     def into_template_dict(self) -> dict:
         return {
-            "type": self.config.additional_information_type,
+            "type": AdditionalInformationTypeLayer.get_type_by_id(self.additional_information_type_id),
             **(self.value.into_template_dict() if self.value else {}),
         }
 

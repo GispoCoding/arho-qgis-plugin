@@ -11,7 +11,6 @@ import yaml
 from arho_feature_template.exceptions import ConfigSyntaxError, LayerNameNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.misc_utils import LANGUAGE
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
@@ -31,19 +30,22 @@ class PlanType(str, enum.Enum):
 class AbstractCodeLayer(AbstractLayer):
     _cache: ClassVar[dict[str, dict[str, Any]]] = {}
     _attributes_to_leave_out_from_cache: ClassVar[list[str]] = ["created_at", "modified_at"]
-
     category_only_codes: ClassVar[list[str]] = []
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._cache = {}
 
     @classmethod
     def build_cache(cls):
-        """Builds a cache dictionary for the whole layer to avoid duplicate access to immutable code layer data.
+        """
+        Builds a cache dictionary for the whole layer to avoid duplicate access to immutable code layer data.
 
         Iterates features of the layer and stores found attributes to `_cache` class var dictionary (keys are
-        code feature IDs, values are dictionaries where keys are attribute names and values are attribute values)."""
+        code feature IDs, values are dictionaries where keys are attribute names and values are attribute values).
+        """
         for feat in cls.get_from_project().getFeatures():
             cls._cache_feature(feat)
-
-        logger.info("Built a cache for layer %s", cls.name)
 
     @classmethod
     def _cache_feature(cls, feat: QgsFeature):
@@ -162,6 +164,8 @@ class PlanThemeLayer(AbstractCodeLayer):
 class AdditionalInformationTypeLayer(AbstractCodeLayer):
     name = "Lisätiedonlaji"
 
+    ADDITIONAL_INFORMATION_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "additional_information.yaml"))
+
     category_only_codes: ClassVar[list[str]] = [
         "tyyppi",
         "hairionTorjuntatarve",
@@ -172,9 +176,56 @@ class AdditionalInformationTypeLayer(AbstractCodeLayer):
     ]
 
     @classmethod
-    def get_additional_information_name(cls, info_type: str) -> str | None:
-        attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "value", info_type)
-        return cast(str, attribute_value.get(LANGUAGE)) if attribute_value else None
+    def build_cache(cls):
+        super().build_cache()
+        configs = cls.read_additional_information_configs()
+        cls.initialize_from_additional_information_config(configs)
+
+    @classmethod
+    def read_additional_information_configs(cls) -> dict:
+        # NOTE: Should this config be read in another module? Imports now here to avoid circular import
+        from arho_feature_template.core.models import AttributeValue, AttributeValueDataType
+
+        with cls.ADDITIONAL_INFORMATION_CONFIG_PATH.open(encoding="utf-8") as f:
+            config_data = yaml.safe_load(f)
+        try:
+            return {
+                info_data["code"]: {
+                    "default_value": AttributeValue(
+                        value_data_type=AttributeValueDataType(info_data["data_type"]),
+                        unit=info_data.get("unit"),
+                    )
+                }
+                for info_data in config_data["additional_information"]
+            }
+        except KeyError as e:
+            raise ConfigSyntaxError(str(e)) from e
+
+    @classmethod
+    def initialize_from_additional_information_config(cls, information_configs: dict):
+        for info_attributes in cls._cache.values():
+            additional_data: dict = information_configs.get(info_attributes["value"], {"default_value": None})
+            info_attributes |= additional_data  # noqa: PLW2901
+
+    @classmethod
+    def get_id_by_type(cls, information_type: str) -> str | None:
+        return cls.get_id_by_attribute("value", information_type)
+
+    @classmethod
+    def get_type_by_id(cls, id_: str) -> str | None:
+        return cls.get_attribute_by_id("value", id_)
+
+    @classmethod
+    def get_name_by_id(cls, id_: str) -> str | None:
+        return cls.get_attribute_by_id("name", id_)
+
+    @classmethod
+    def get_default_value_by_id(cls, id_: str) -> AttributeValue | None:
+        attribute_value = cls._cache.get(id_, {}).get("default_value", "not_found")
+        # Attribute value could be None and we don't want to access DB in that without a need
+        if attribute_value != "not_found":
+            return attribute_value
+        return None
 
 
 class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
