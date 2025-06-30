@@ -11,12 +11,12 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
-from arho_feature_template.utils.misc_utils import deserialize_localized_text, null_to_none
+from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from qgis.core import QgsFeature, QgsGeometry
+    from qgis.core import QgsGeometry
     from qgis.PyQt.QtCore import QDate
 
 
@@ -162,69 +162,6 @@ class PlanBaseModel:
         for _field in fields(self):
             value = getattr(self, _field.name)
             setattr(self, _field.name, null_to_none(value))
-
-
-@dataclass
-class RegulationConfig(PlanBaseModel):
-    """
-    Describes plan regulation type.
-
-    Initialized from DB/QGIS layer and extended with data from a config file.
-    """
-
-    id: str
-    regulation_code: str
-    name: str | None
-    description: str | None
-    status: str
-    level: int
-    parent_id: str | None
-    child_regulations: list[RegulationConfig] = field(default_factory=list, compare=False)
-
-    # Data from config file
-    category_only: bool = False
-    default_value: AttributeValue | None = None
-
-    # NOTE: Perhaps this ("model_from_feature") should be method of PlanTypeLayer class?
-    @classmethod
-    def from_feature(cls, feature: QgsFeature) -> RegulationConfig:
-        """
-        Initialize PlanRegulationConfig from QgsFeature.
-
-        Child regulations, value type ,category only and unit need to be set separately.
-        """
-        return cls(
-            id=feature["id"],
-            regulation_code=feature["value"],
-            name=deserialize_localized_text(feature["name"]),
-            description=deserialize_localized_text(feature["description"]),
-            status=feature["status"],
-            level=feature["level"],
-            parent_id=feature["parent_id"],
-        )
-
-    def add_to_dictionary(self, dictionary: dict[str, RegulationConfig]):
-        """Add child regulations to dictionary too."""
-        dictionary[self.regulation_code] = self
-        for regulation in self.child_regulations:
-            regulation.add_to_dictionary(dictionary)
-
-
-@dataclass
-class AdditionalInformationConfig(PlanBaseModel):
-    # From layer
-    id: str
-    additional_information_type: str
-    name: str | None
-    description: str | None
-    status: str
-    level: int
-    parent_id: str | None
-
-    children: list[str] = field(default_factory=list, compare=False)
-
-    # From config file
-    default_value: AttributeValue | None = None
 
 
 @dataclass
