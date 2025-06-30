@@ -239,9 +239,7 @@ class PlanManager(QObject):
 
         if regulation_group_form.exec_():
             model = regulation_group_form.model
-            if regulation_group_form.save_as_config:
-                save_regulation_group_as_config(model)
-            elif save_regulation_group(model) is None:
+            if save_regulation_group(model) is None:
                 return None
             # NOTE: Should we reinitialize regulation group dock even if saving failed?
             self.update_active_plan_regulation_group_library()
