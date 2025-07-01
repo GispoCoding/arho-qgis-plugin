@@ -30,11 +30,13 @@ class PlanType(str, enum.Enum):
 class AbstractCodeLayer(AbstractLayer):
     _cache: ClassVar[dict[str, dict[str, Any]]] = {}
     _attributes_to_leave_out_from_cache: ClassVar[list[str]] = ["created_at", "modified_at"]
+    _field_names: ClassVar[list[str]] = []
     category_only_codes: ClassVar[list[str]] = []
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         cls._cache = {}
+        cls._field_names = []
 
     @classmethod
     def build_cache(cls):
@@ -44,17 +46,21 @@ class AbstractCodeLayer(AbstractLayer):
         Iterates features of the layer and stores found attributes to `_cache` class var dictionary (keys are
         code feature IDs, values are dictionaries where keys are attribute names and values are attribute values).
         """
+        cls._field_names = cls.get_from_project().fields().names()
         for feat in cls.get_from_project().getFeatures():
             cls._cache_feature(feat)
 
     @classmethod
     def _cache_feature(cls, feat: QgsFeature):
+        if len(cls._field_names) == 0:
+            cls._field_names = cls.get_from_project().fields().names()
+
         attribute_dict = {}
-        for attribute in cls.get_from_project().fields().names():
+        for attribute in cls._field_names:
             if attribute in cls._attributes_to_leave_out_from_cache:
                 continue
             # NOTE: 'feat.attribute(attribute)' returns None if attribute is not found
-            attribute_value_to_cache = feat.attribute(attribute)
+            attribute_value_to_cache = feat[attribute]
             attribute_dict[attribute] = attribute_value_to_cache
 
         id_ = feat["id"]
