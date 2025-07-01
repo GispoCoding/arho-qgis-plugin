@@ -36,6 +36,7 @@ from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import (
+    AdditionalInformationTypeLayer,
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
     code_layers,
@@ -173,6 +174,7 @@ class PlanManager(QObject):
         @use_wait_cursor
         def _cache_code_layers():
             PlanRegulationTypeLayer.build_cache()
+            AdditionalInformationTypeLayer.build_cache()
 
         _cache_code_layers()
 
