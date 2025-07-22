@@ -26,7 +26,7 @@ class CodeComboBox(QComboBox):
         self.setCurrentIndex(0)
 
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
-        for id_, attributes in layer_type.get_cached_attributes().items():
+        for id_, attributes in layer_type.get_attribute_dict().items():
             text = attributes.get("name")
             if isinstance(text, dict):
                 text = deserialize_localized_text(text)
@@ -72,7 +72,7 @@ class HierarchicalCodeComboBox(QComboBox):
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         items: dict[str, QTreeWidgetItem] = {}
 
-        for id_, attributes in sorted(layer_type.get_cached_attributes().items(), key=lambda item: item[1]["level"]):
+        for id_, attributes in sorted(layer_type.get_attribute_dict().items(), key=lambda item: item[1]["level"]):
             item = QTreeWidgetItem()
             items[id_] = item
 

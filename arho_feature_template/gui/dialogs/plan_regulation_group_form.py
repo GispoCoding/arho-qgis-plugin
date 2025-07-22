@@ -164,7 +164,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         # NOTE: This could be encapsulated as it's own widget, i.e. 'RegulationTreeWidget', which this
         # form will create at start
         for id_, attributes in sorted(
-            PlanRegulationTypeLayer.get_cached_attributes().items(), key=lambda item: item[1]["level"]
+            PlanRegulationTypeLayer.get_attribute_dict().items(), key=lambda item: item[1]["level"]
         ):
             tree_widget_item = self.regulations_selection_widget.add_item_to_tree(
                 text=attributes["name"],

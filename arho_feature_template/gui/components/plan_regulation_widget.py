@@ -115,7 +115,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         additional_information_menu = QMenu(self)
 
         for id_, attributes in sorted(
-            AdditionalInformationTypeLayer.get_cached_attributes().items(), key=lambda item: item[1]["level"]
+            AdditionalInformationTypeLayer.get_attribute_dict().items(), key=lambda item: item[1]["level"]
         ):
             if attributes["level"] == 1:
                 sub_menu = QMenu(deserialize_localized_text(attributes["name"]), self)
