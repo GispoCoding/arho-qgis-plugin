@@ -41,10 +41,12 @@ class AbstractCodeLayer(AbstractLayer):
     @classmethod
     def build_cache(cls):
         """
-        Builds a cache dictionary for the whole layer to avoid duplicate access to immutable code layer data.
+        Builds a cache dictionary for the whole layer to reduce DB access.
 
         Iterates features of the layer and stores found attributes to `_cache` class var dictionary (keys are
         code feature IDs, values are dictionaries where keys are attribute names and values are attribute values).
+
+        The built cache dictionary can be accessed with method `get_attribute_dict`.
         """
         cls._field_names = cls.get_from_project().fields().names()
         for feat in cls.get_from_project().getFeatures():
@@ -69,9 +71,9 @@ class AbstractCodeLayer(AbstractLayer):
         cls._cache[id_] = attribute_dict
 
     @classmethod
-    def get_cached_attributes(cls) -> dict[str, dict[str, Any]]:
+    def get_attribute_dict(cls) -> dict[str, dict[str, Any]]:
         """
-        Returns a dictionary of features where key is ID and value is a dictionary of attributes.
+        Returns a dictionary of features where key is ID and value is a dictionary of attributes (name, value).
 
         If cache does not exist yet, will build it first and return it then.
         """
@@ -106,6 +108,7 @@ class AbstractCodeLayer(AbstractLayer):
 
     @classmethod
     def get_attributes_by_id(cls, id_: str) -> dict[str, Any]:
+        """Will cache the queried feature as a side effect if not already present in cached."""
         attributes = cls._cache.get(id_, {})
         if attributes:
             return attributes
