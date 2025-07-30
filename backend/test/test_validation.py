@@ -4,7 +4,7 @@ import pytest
 from geoalchemy2.shape import from_shape
 from shapely import transform
 from shapely.geometry import MultiLineString, MultiPolygon
-from sqlalchemy.exc import InternalError
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
 from database import codes, models
@@ -27,7 +27,7 @@ def test_validate_polygon_geometry_triggers(
         organisation=organisation_instance,
     )
     session.add(invalid_plan_instance)
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         session.commit()
 
     session.rollback()
@@ -38,7 +38,7 @@ def test_validate_polygon_geometry_triggers(
         plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(invalid_land_use_area_instance)
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         session.commit()
 
     session.rollback()
@@ -49,7 +49,7 @@ def test_validate_polygon_geometry_triggers(
         plan_regulation_groups=[plan_regulation_group_instance],
     )
     session.add(invalid_other_area_instance)
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         session.commit()
     session.rollback()
 
@@ -71,7 +71,7 @@ def test_validate_line_geometry(
         type_of_underground=type_of_underground_instance,
         plan_regulation_groups=[plan_regulation_group_instance],
     )
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         session.add(another_line_instance)
         session.commit()
     session.rollback()
@@ -107,10 +107,11 @@ def test_overlapping_land_use_area_geometries_trigger(
         type_of_underground=type_of_underground_instance,
     )
 
-    with pytest.raises(InternalError) as excinfo:
+    with pytest.raises(ProgrammingError) as excinfo:
         session.add(new_land_use_area_instance)
         session.flush()
-    assert "Geometries overlap" in str(excinfo.value.orig.pgerror)
+
+    assert "Geometries overlap" in str(excinfo.value.orig.diag.message_primary)
 
 
 def test_adjacent_land_use_areas_should_be_fine(
@@ -157,14 +158,14 @@ def test_validate_lifecycle_dates(
     assert lifecycle_date_instance.starting_at < lifecycle_date_instance.ending_at
     session.add(lifecycle_date_instance)
     # check that modified date cannot start after ending
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         lifecycle_date_instance.starting_at = (
             lifecycle_date_instance.ending_at + timedelta(days=1)
         )
         session.flush()
     session.rollback()
     # check that new date cannot start after ending
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         new_lifecycle_date_instance = models.LifeCycleDate(
             plan=plan_instance,
             starting_at=datetime.now() + timedelta(days=1),
@@ -186,14 +187,14 @@ def test_validate_event_dates(
     )
     session.add(interaction_event_date_instance)
     # check that modified event cannot start after ending
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         interaction_event_date_instance.starting_at = (
             interaction_event_date_instance.ending_at + timedelta(days=1)
         )
         session.flush()
     session.rollback()
     # check that new event cannot start after ending
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         new_event_date_instance = models.EventDate(
             lifecycle_date=preparation_date_instance,
             starting_at=datetime.now() + timedelta(days=1),
@@ -217,21 +218,21 @@ def test_validate_event_dates_inside_status_dates(
         interaction_event_date_instance.ending_at < preparation_date_instance.ending_at
     )
     # check that modified event cannot start before status starts
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         interaction_event_date_instance.starting_at = (
             preparation_date_instance.starting_at - timedelta(days=1)
         )
         session.flush()
     session.rollback()
     # check that modified event cannot end after status ends
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         interaction_event_date_instance.ending_at = (
             preparation_date_instance.ending_at + timedelta(days=1)
         )
         session.flush()
     session.rollback()
     # check that new event cannot start before status starts
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         new_event_date_instance = models.EventDate(
             lifecycle_date=preparation_date_instance,
             starting_at=preparation_date_instance.starting_at - timedelta(days=1),
@@ -240,7 +241,7 @@ def test_validate_event_dates_inside_status_dates(
         session.flush()
     session.rollback()
     # check that new event cannot end after status ends
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         new_event_date_instance = models.EventDate(
             lifecycle_date=preparation_date_instance,
             starting_at=preparation_date_instance.ending_at + timedelta(days=1),
@@ -265,7 +266,7 @@ def test_validate_event_types(
     )
     session.add(decision_date_instance)
     # check that modified event cannot be added to wrong status
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         decision_date_instance.lifecycle_date = approved_date_instance
         decision_date_instance.starting_at = approved_date_instance.starting_at
         decision_date_instance.ending_at = (
@@ -274,12 +275,12 @@ def test_validate_event_types(
         session.flush()
     session.rollback()
     # check that modified event cannot be added to wrong event type
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         decision_date_instance.decision = plan_proposal_presenting_for_public_decision
         session.flush()
     session.rollback()
     # check that new event cannot be added to wrong status/event type combination
-    with pytest.raises(InternalError):
+    with pytest.raises(ProgrammingError):
         new_event_date_instance = models.EventDate(
             lifecycle_date=approved_date_instance,
             starting_at=approved_date_instance.starting_at,

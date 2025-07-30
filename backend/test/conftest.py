@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Callable, Iterable, List, Mapping, Optional
 from zoneinfo import ZoneInfo
 
-import psycopg2
+import psycopg
 import pytest
 import sqlalchemy
 from alembic import command
@@ -100,9 +100,9 @@ if os.environ.get("MANAGE_DOCKER", USE_DOCKER):
         def is_responsive(params):
             succeeds = False
             try:
-                with psycopg2.connect(**root_db_params):
+                with psycopg.connect(**root_db_params):
                     succeeds = True
-            except psycopg2.OperationalError:
+            except psycopg.OperationalError:
                 pass
             return succeeds
 
@@ -241,7 +241,7 @@ def hame_database_downgraded(hame_database_upgraded, current_head_version_id):
 
 
 def drop_hame_db(main_db_params, root_db_params):
-    conn = psycopg2.connect(**root_db_params)
+    conn = psycopg.connect(**root_db_params)
     try:
         conn.autocommit = True
         with conn.cursor() as cur:
@@ -274,15 +274,15 @@ def wait_until_responsive(check, timeout, pause, clock=timeit.default_timer):
 def is_responsive(params):
     succeeds = False
     try:
-        with psycopg2.connect(**params):
+        with psycopg.connect(**params):
             succeeds = True
-    except psycopg2.OperationalError:
+    except psycopg.OperationalError:
         pass
     return succeeds
 
 
 def assert_database_is_alright(
-    cur: psycopg2.extensions.cursor,
+    cur: psycopg.Cursor,
     expected_hame_count: int = hame_count,
     expected_codes_count: int = codes_count,
     expected_matview_count: int = matview_count,

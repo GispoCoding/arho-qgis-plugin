@@ -3,7 +3,7 @@ import logging
 from copy import deepcopy
 from typing import Iterator, Type
 
-import psycopg2
+import psycopg
 import pytest
 
 from database import codes
@@ -725,7 +725,7 @@ def check_code_parents(cur):
 
 
 def assert_data_is_imported(main_db_params):
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(f"SELECT count(*) FROM codes.lifecycle_status")
@@ -749,7 +749,7 @@ def assert_data_is_imported(main_db_params):
 
 
 def assert_changed_data_is_imported(main_db_params):
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(f"SELECT count(*) FROM codes.lifecycle_status")

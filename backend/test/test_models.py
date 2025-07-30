@@ -1,5 +1,5 @@
 import pytest
-from psycopg2 import sql
+from psycopg import sql
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 

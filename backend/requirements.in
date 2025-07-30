@@ -1,7 +1,7 @@
 alembic
 boto3
 geoalchemy2
-psycopg2-binary
+psycopg[binary]
 requests
 requests-toolbelt
 shapely

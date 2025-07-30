@@ -4,12 +4,12 @@ import logging
 from pathlib import Path
 from typing import Optional, TypedDict
 
-import psycopg2
+import psycopg
 from alembic import command
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from alembic.util.exc import CommandError
-from psycopg2.sql import SQL, Identifier
+from psycopg.sql import SQL, Identifier, Literal
 
 from database.db_helper import DatabaseHelper, Db, User
 
@@ -37,7 +37,7 @@ class Event(TypedDict):
     version: Optional[str]  # Ansible version id
 
 
-def create_db(conn: psycopg2.extensions.connection, db_name: str) -> str:
+def create_db(conn: psycopg.Connection, db_name: str) -> str:
     """Creates empty db."""
     with conn.cursor() as cur:
         cur.execute(
@@ -49,7 +49,7 @@ def create_db(conn: psycopg2.extensions.connection, db_name: str) -> str:
 
 
 def configure_schemas_and_users(
-    conn: psycopg2.extensions.connection, users: dict[User, dict]
+    conn: psycopg.Connection, users: dict[User, dict]
 ) -> str:
     """
     Configures given database with hame schemas and users.
@@ -62,30 +62,28 @@ def configure_schemas_and_users(
                 # superuser exists already
                 pass
             elif key == User.ADMIN:
-                # To get the quotes right, username will have to be injected
-                # using format, while password must be in vars.
                 cur.execute(
                     SQL(
-                        "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
-                    ).format(username=Identifier(user["username"])),
-                    vars={"password": user["password"]},
+                        "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD {password}"  # noqa: E501
+                    ).format(
+                        username=Identifier(user["username"]),
+                        password=Literal(user["password"]),
+                    )
                 )
             else:
-                # To get the quotes right, username will have to be injected
-                # using format, while password must be in vars.
                 cur.execute(
                     SQL(
-                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD %(password)s;"  # noqa
-                    ).format(username=Identifier(user["username"])),
-                    vars={"password": user["password"]},
+                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD {password}"  # noqa: E501
+                    ).format(
+                        username=Identifier(user["username"]),
+                        password=Literal(user["password"]),
+                    )
                 )
     msg = "Added hame schemas and users."
     return msg
 
 
-def configure_permissions(
-    conn: psycopg2.extensions.connection, users: dict[User, dict]
-) -> str:
+def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> str:
     """
     Configures user permissions.
 
@@ -151,10 +149,10 @@ def configure_permissions(
     return msg
 
 
-def database_exists(conn: psycopg2.extensions.connection, db_name: str) -> bool:
+def database_exists(conn: psycopg.Connection, db_name: str) -> bool:
     query = SQL("SELECT count(*) FROM pg_database WHERE datname = %(db_name)s")
     with conn.cursor() as cur:
-        cur.execute(query, vars={"db_name": db_name})
+        cur.execute(query, {"db_name": db_name})
         return cur.fetchone()[0] == 1
 
 
@@ -164,7 +162,7 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
 
     Can also be used to create the database up to any version.
     """
-    root_conn = psycopg2.connect(
+    root_conn = psycopg.connect(
         **db_helper.get_connection_parameters(User.SU, Db.MAINTENANCE)
     )
     try:
@@ -182,7 +180,7 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
         if not main_db_exists:
             print("Db not found, creating...")
             msg += create_db(root_conn, db_helper.get_db_name(Db.MAIN))
-        main_conn = psycopg2.connect(**main_conn_params)
+        main_conn = psycopg.connect(**main_conn_params)
         main_conn.autocommit = True
         if not main_db_exists:
             msg += configure_schemas_and_users(main_conn, users)
@@ -232,19 +230,19 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
 
 
 def change_password(
-    user: User, db_helper: DatabaseHelper, conn: psycopg2.extensions.connection
+    user: User, db_helper: DatabaseHelper, conn: psycopg.Connection
 ) -> None:
     username, pw = db_helper.get_username_and_password(user)
     with conn.cursor() as cur:
         sql = SQL("ALTER USER {user} WITH PASSWORD %(password)s").format(
             user=Identifier(username)
         )
-        cur.execute(sql, vars={"password": pw})
+        cur.execute(sql, {"password": pw})
     conn.commit()
 
 
 def change_passwords(db_helper: DatabaseHelper) -> str:
-    conn = psycopg2.connect(
+    conn = psycopg.connect(
         **db_helper.get_connection_parameters(User.SU, Db.MAINTENANCE)
     )
     try:

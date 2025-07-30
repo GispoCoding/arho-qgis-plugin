@@ -1,7 +1,7 @@
 import inspect
 import json
 
-import psycopg2
+import psycopg
 import pytest
 import requests
 from sqlalchemy.orm import Session
@@ -77,7 +77,7 @@ def test_create_db(create_db, main_db_params_with_root_user):
     """
     Test the whole lambda endpoint
     """
-    conn = psycopg2.connect(**main_db_params_with_root_user)
+    conn = psycopg.connect(**main_db_params_with_root_user)
     try:
         with conn.cursor() as cur:
             assert_database_is_alright(cur)
@@ -89,7 +89,7 @@ def test_populate_koodistot(populate_koodistot, main_db_params):
     """
     Test the whole lambda endpoint
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
@@ -110,7 +110,7 @@ def test_populate_suomifi_koodistot(populate_suomifi_koodistot, main_db_params):
     """
     Test only suomi.fi codes
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
@@ -144,7 +144,7 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
     """
     Test only local codes
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             for name, value in inspect.getmembers(codes, inspect.isclass):
@@ -248,7 +248,7 @@ def test_get_all_plans(get_all_plans, main_db_params):
     Test the whole lambda endpoint with an invalid plan
     """
     # getting plan JSON from lambda should not run validations
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
@@ -305,7 +305,7 @@ def test_get_single_plan(get_single_plan, main_db_params):
     Test the whole lambda endpoint with single_plan
     """
     # getting plan JSON from lambda should not run validations
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
@@ -355,7 +355,7 @@ def test_validate_all_plans(validate_all_plans, main_db_params):
     """
     Test the whole lambda endpoint with valid and invalid plans
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
@@ -405,7 +405,7 @@ def test_validate_single_invalid_plan(validate_single_invalid_plan, main_db_para
     """
     Test the whole lambda endpoint with an invalid plan
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -457,7 +457,7 @@ def test_get_permanent_plan_identifier(get_permanent_plan_identifier, main_db_pa
     Test the whole lambda endpoint with single_plan
     """
     # getting permanent identifier from lambda should not run validations
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
@@ -537,7 +537,7 @@ def test_get_single_plan_matter(get_single_plan_matter, main_db_params):
     Test the whole lambda endpoint with single_plan_matter
     """
     # getting plan JSON from lambda should not run validations
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
@@ -609,7 +609,7 @@ def test_validate_valid_plan_matter_in_preparation(
     as valid. Also, validating plan matter should make sure that plan documents
     are included in the plan matter.
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -689,7 +689,7 @@ def test_post_plan_matters_in_preparation(
     created in Ryhti. The plan matter without identifier should not be exported. Also,
     POSTing plan matter should make sure that plan documents are included in the plan matter.
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -783,7 +783,7 @@ def test_post_valid_plan_matter_in_preparation(
     being created in Ryhti. Also, POSTing plan matter should make sure that plan
     documents are included in the plan matter.
     """
-    conn = psycopg2.connect(**main_db_params)
+    conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(

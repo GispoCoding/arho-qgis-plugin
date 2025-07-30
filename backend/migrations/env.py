@@ -146,7 +146,7 @@ def get_url(connection_params: dict):
     )
     port = connection_params.get("port", os.environ.get("DB_INSTANCE_PORT", "5434"))
     dbname = connection_params.get("dbname", os.environ.get("DB_MAIN_NAME", "hame"))
-    return f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
 
 
 def run_migrations_offline() -> None:
@@ -183,7 +183,7 @@ def run_migrations_online() -> None:
     In this scenario we need to create an Engine
     and associate a connection with the context.
 
-    An existing psycopg2 connection cannot be used here.
+    An existing psycopg connection cannot be used here.
     We have to provide an sqlalchemy connectable or nothing.
     """
     connection_params = config.attributes.get("connection", {})

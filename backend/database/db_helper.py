@@ -90,7 +90,7 @@ class DatabaseHelper:
     def get_connection_string(self) -> str:
         db_params = self.get_connection_parameters()
         return (
-            f'postgresql://{db_params["user"]}:{db_params["password"]}'
+            f'postgresql+psycopg://{db_params["user"]}:{db_params["password"]}'
             f'@{db_params["host"]}:{db_params["port"]}/{db_params["dbname"]}'
         )
 
