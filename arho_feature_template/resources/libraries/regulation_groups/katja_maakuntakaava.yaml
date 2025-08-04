@@ -943,16 +943,6 @@ plan_regulation_groups:
       - regulation_code: yhdyskuntarakenteenLaajenemissuunta
       - regulation_code: sanallinenMaarays
 
-  - heading: Liikenteen yhteystarve
-    category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
-    geometry: Viiva
-    letter_code: # NOTE: Check symbol
-    plan_regulations:
-      - regulation_code: kehittamisvyohyke
-        additional_information:
-          - type: yhteystarve
-      - regulation_code: sanallinenMaarays # NOTE: Check if yhteystarve needs to be added as type
-
     #p. 57
   - heading: Nykyinen tie
     category: Maakuntakaavan geometrialtaan viivamaiset kaavakohteet, liikennemuotojen käyttöön tarkoitetut linjaukset
@@ -1235,6 +1225,16 @@ plan_regulation_groups:
       - regulation_code: pyorailyalue
         additional_information:
           - type: yhteystarve
+
+  - heading: Liikenteen yhteystarve
+    category: Ympäristönmuutosta koskevien määräysten vaikutus maakuntakaavan eri liikennemuotojen käyttöön tarkoitettuihin linjauksiin
+    geometry: Viiva
+    letter_code: # NOTE: Check symbol
+    plan_regulations:
+      - regulation_code: kehittamisvyohyke
+        additional_information:
+          - type: yhteystarve
+      - regulation_code: sanallinenMaarays # NOTE: Check if yhteystarve needs to be added as type
 
     #p. 60
   - heading: Viheryhteys
