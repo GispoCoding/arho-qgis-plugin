@@ -1359,3 +1359,10 @@ plan_regulation_groups:
       - regulation_code: ulkoiluTaiVirkistysReitti
         additional_information:
           - type: yhteystarve
+
+  - heading: Joki tai muu avouoma
+    category: Muita maakuntakaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
+    geometry: Viiva
+    letter_code: W
+    plan_regulations:
+      - regulation_code: vesialue
