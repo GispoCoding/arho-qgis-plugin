@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Dict, List, Optional, Self, Type, TypeVar
 
-from geoalchemy2 import Geometry
+from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Table, Uuid
 from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -275,7 +275,10 @@ class Municipality(CodeBase):
 
     __tablename__ = "municipality"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/kunta_1_20240101"
-    geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True)
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True
+    )
 
     organisations: Mapped[List["Organisation"]] = relationship(
         back_populates="municipality"
@@ -289,7 +292,10 @@ class AdministrativeRegion(CodeBase):
 
     __tablename__ = "administrative_region"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
-    geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True)
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True
+    )
 
     organisations: Mapped[List["Organisation"]] = relationship(
         back_populates="administrative_region"

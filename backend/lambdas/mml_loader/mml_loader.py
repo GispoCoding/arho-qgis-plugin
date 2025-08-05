@@ -63,7 +63,7 @@ class MMLLoader:
         self.Session = sessionmaker(bind=engine)
         LOGGER.info("Loader initialized")
 
-    def get_geometries(self) -> Dict:
+    def get_geometries(self) -> dict[str, MultiPolygon]:
         """
         Gets administrative region geometries from from MML OGC API Process.
         """
@@ -106,7 +106,7 @@ class MMLLoader:
 
         return geoms
 
-    def parse_gml(self, output_dir: str, year: str, size: str) -> Dict:
+    def parse_gml(self, output_dir: str, year: str, size: str) -> dict[str, MultiPolygon]:
         """
         Parses a GML file to extract geometry data
         """
@@ -160,7 +160,7 @@ class MMLLoader:
                             polygons[id] = [gml_string]
 
         # Parse GML elements into shapely geometries
-        geoms = {}
+        geoms: dict[str, MultiPolygon] = {}
         for region_code in region_codes:
             if region_code in polygons:
                 shapes = []
@@ -182,7 +182,7 @@ class MMLLoader:
 
         return geoms
 
-    def save_geometries(self, geoms: Dict) -> str:
+    def save_geometries(self, geoms: dict[str, MultiPolygon]) -> str:
         """
         Save all geometries into the corresponding tables.
         """

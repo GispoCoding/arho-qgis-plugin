@@ -2,6 +2,7 @@ import inspect
 import json
 import logging
 from typing import Any, Dict, List, Optional, Type, TypedDict
+from uuid import UUID
 
 import requests
 from sqlalchemy import create_engine
@@ -201,7 +202,7 @@ class KoodistotLoader:
         code_class: Type[codes.CodeBase],
         incoming: Dict[str, Any],
         session: Session,
-        saved_objects: Optional[Dict[str, codes.CodeBase]] = None,
+        saved_objects: Optional[Dict[UUID, codes.CodeBase]] = None,
     ) -> codes.CodeBase:
         """
         Find object based on its unique fields, or create new object. Update fields
@@ -258,7 +259,7 @@ class KoodistotLoader:
         """
         Save all objects in the objects dict, grouped by object class.
         """
-        saved_objects: Dict[str, codes.CodeBase] = dict()
+        saved_objects: Dict[UUID, codes.CodeBase] = dict()
         with self.Session() as session:
             for code_class, class_codes in objects.items():
                 LOGGER.info(f"Importing codes to {code_class}...")

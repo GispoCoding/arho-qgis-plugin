@@ -259,7 +259,7 @@ class Plan(PlanBase):
     matter_management_identifier: Mapped[Optional[str]]
     record_number: Mapped[Optional[str]]
     geom: Mapped[WKBElement] = mapped_column(
-        "geom", Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
     )
     # Only plan should have validated_at field, since validation is only done
     # for complete plan objects. Also validation errors might concern multiple
@@ -324,7 +324,7 @@ class PlanObjectBase(PlanBase):
     )
 
     # Annotate the geom here and define columns in subclasses.
-    geom: WKBElement
+    geom: Mapped[WKBElement]
 
     # class reference in abstract base class, with backreference to class name
     # Let's load all the codes for objects joined.
@@ -365,7 +365,7 @@ class LandUseArea(PlanObjectBase):
     __tablename__ = "land_use_area"
 
     geom: Mapped[WKBElement] = mapped_column(
-        "geom", Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
     )
 
 
@@ -377,7 +377,7 @@ class OtherArea(PlanObjectBase):
     __tablename__ = "other_area"
 
     geom: Mapped[WKBElement] = mapped_column(
-        "geom", Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
     )
 
 
@@ -389,7 +389,7 @@ class Line(PlanObjectBase):
     __tablename__ = "line"
 
     geom: Mapped[WKBElement] = mapped_column(
-        "geom", Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID)
+        type_=Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID)
     )
 
 
@@ -401,7 +401,7 @@ class LandUsePoint(PlanObjectBase):
     __tablename__ = "land_use_point"
 
     geom: Mapped[WKBElement] = mapped_column(
-        "geom", Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+        type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
     )
 
 
@@ -413,7 +413,7 @@ class OtherPoint(PlanObjectBase):
     __tablename__ = "other_point"
 
     geom: Mapped[WKBElement] = mapped_column(
-        "geom", Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+        type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
     )
 
 
