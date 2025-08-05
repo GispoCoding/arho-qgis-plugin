@@ -538,7 +538,7 @@ def test_cascade_delete_of_lifecycle_dates_using_db(
     connection = session.connection().connection
     cur = connection.cursor()
 
-    def lifecycle_date_exists():
+    def lifecycle_date_exists() -> bool:
         cur.execute(
             sql.SQL("SELECT EXISTS (SELECT id FROM {table} WHERE id=%s)").format(
                 table=sql.Identifier(
@@ -547,7 +547,8 @@ def test_cascade_delete_of_lifecycle_dates_using_db(
             ),
             (lifecycle_object.id,),
         )
-        return cur.fetchone()[0]
+        row = cur.fetchone()
+        return bool(row[0]) if row else False
 
     def delete_plan_base_object():
         cur.execute(
@@ -603,7 +604,7 @@ def test_cascade_delete_using_db(
     connection = session.connection().connection
     cur = connection.cursor()
 
-    def child_object_exists():
+    def child_object_exists() -> bool:
         cur.execute(
             sql.SQL("SELECT EXISTS (SELECT id FROM {table} WHERE id=%s)").format(
                 table=sql.Identifier(
@@ -612,7 +613,8 @@ def test_cascade_delete_using_db(
             ),
             (child_object.id,),
         )
-        return cur.fetchone()[0]
+        row = cur.fetchone()
+        return bool(row[0]) if row else False
 
     def delete_parent_object():
         cur.execute(

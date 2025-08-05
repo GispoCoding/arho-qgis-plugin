@@ -7,7 +7,8 @@ import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from database import codes
+# SQLAlchemy needs all the models to be imported to make relationships mapper to work
+from database import codes, models  # noqa: F401
 from database.db_helper import DatabaseHelper, User
 
 """

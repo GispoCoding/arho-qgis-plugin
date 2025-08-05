@@ -1,9 +1,17 @@
 import enum
 import json
 import os
-from typing import Dict, List, Optional, Tuple, Type
+from typing import Dict, List, Optional, Tuple, Type, TypedDict
 
 import boto3
+
+
+class ConnectionParameters(TypedDict):
+    host: str
+    port: str
+    dbname: str
+    user: str
+    password: str
 
 
 class User(enum.Enum):
@@ -74,7 +82,7 @@ class DatabaseHelper:
 
     def get_connection_parameters(
         self, user: Optional[User] = None, db: Db = Db.MAIN
-    ) -> Dict[str, str]:
+    ) -> ConnectionParameters:
         if not user:
             # take the first user that has credentials provided
             user = next(iter(self._users))

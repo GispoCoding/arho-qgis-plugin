@@ -153,7 +153,8 @@ def database_exists(conn: psycopg.Connection, db_name: str) -> bool:
     query = SQL("SELECT count(*) FROM pg_database WHERE datname = %(db_name)s")
     with conn.cursor() as cur:
         cur.execute(query, {"db_name": db_name})
-        return cur.fetchone()[0] == 1
+        row = cur.fetchone()
+        return bool(row[0]) if row is not None else False
 
 
 def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:

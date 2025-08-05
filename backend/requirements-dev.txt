@@ -10,6 +10,8 @@ attrs==25.3.0
     #   pytest-docker
 black==25.1.0
     # via -r requirements-dev.in
+botocore-stubs==1.38.46
+    # via types-boto3
 certifi==2025.7.14
     # via
     #   -c /home/lkajan/projects/arho-ryhti/requirements.txt
@@ -53,6 +55,10 @@ mypy-extensions==1.1.0
     #   mypy
 nodeenv==1.9.1
     # via pre-commit
+numpy==2.3.2
+    # via
+    #   -c /home/lkajan/projects/arho-ryhti/requirements.txt
+    #   types-shapely
 packaging==25.0
     # via
     #   -c /home/lkajan/projects/arho-ryhti/requirements.txt
@@ -99,7 +105,15 @@ requests==2.32.4
     #   requests-mock
 requests-mock==1.12.1
     # via -r requirements-dev.in
+types-awscrt==0.27.5
+    # via botocore-stubs
+types-boto3==1.40.2
+    # via -r requirements-dev.in
 types-requests==2.32.4.20250611
+    # via -r requirements-dev.in
+types-s3transfer==0.13.0
+    # via types-boto3
+types-shapely==2.1.0.20250710
     # via -r requirements-dev.in
 types-simplejson==3.20.0.20250326
     # via -r requirements-dev.in

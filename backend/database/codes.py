@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Self, Type, TypeVar
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, ForeignKey, Table, Uuid
@@ -7,6 +7,24 @@ from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, relati
 from sqlalchemy.sql import func
 
 from database.base import Base, VersionedBase, language_str, unique_str
+
+if TYPE_CHECKING:
+    from database.models import (
+        Document,
+        EventDate,
+        LandUseArea,
+        LandUsePoint,
+        LifeCycleDate,
+        Line,
+        Organisation,
+        OtherArea,
+        OtherPoint,
+        Plan,
+        PlanProposition,
+        PlanRegulation,
+        PlanRegulationGroup,
+        SourceData,
+    )
 
 allowed_events = Table(
     "allowed_events",
@@ -75,20 +93,22 @@ class CodeBase(VersionedBase):
     level: Mapped[int] = mapped_column(server_default="1", index=True)
 
     # self-reference in abstract base class:
-    # We cannot use @classmethod decorator here. Alembic is buggy and apparently
-    # does not recognize declared attributes that are correctly marked as class methods.
     @declared_attr
-    def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:  # noqa
+    @classmethod
+    def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:
         return mapped_column(
             ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
         )
 
-    # Oh great. Unlike SQLAlchemy documentation states, @classmethod decorator should
-    # absolutely *not* be used. Declared relationships are not correctly set if the
-    # decorator is present.
     @declared_attr
-    def parent(cls) -> Mapped[Optional[VersionedBase]]:  # noqa
-        return relationship(cls, remote_side=[cls.id], backref="children")
+    @classmethod
+    def parent(cls) -> Mapped[Optional[Self]]:
+        return relationship(cls, remote_side=[cls.id], back_populates="children")
+
+    @declared_attr
+    @classmethod
+    def children(cls) -> Mapped[List[Self]]:
+        return relationship(cls, back_populates="parent")
 
     @property
     def uri(self):
@@ -103,8 +123,7 @@ class LifeCycleStatus(CodeBase):
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
-    lifecycle_dates = relationship(
-        "LifeCycleDate",
+    lifecycle_dates: Mapped[List["LifeCycleDate"]] = relationship(
         back_populates="lifecycle_status",
     )
     allowed_interaction_events: Mapped[List["TypeOfInteractionEvent"]] = relationship(
@@ -121,6 +140,29 @@ class LifeCycleStatus(CodeBase):
         overlaps="allowed_decisions,allowed_interaction_events",
     )
 
+    plans: Mapped[List["Plan"]] = relationship(back_populates="lifecycle_status")
+
+    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+        back_populates="lifecycle_status"
+    )
+    other_areas: Mapped[List["OtherArea"]] = relationship(
+        back_populates="lifecycle_status"
+    )
+    lines: Mapped[List["Line"]] = relationship(back_populates="lifecycle_status")
+    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+        back_populates="lifecycle_status"
+    )
+    other_points: Mapped[List["OtherPoint"]] = relationship(
+        back_populates="lifecycle_status"
+    )
+
+    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+        back_populates="lifecycle_status"
+    )
+    plan_propositions: Mapped[List["PlanProposition"]] = relationship(
+        back_populates="lifecycle_status"
+    )
+
 
 class PlanType(CodeBase):
     """
@@ -130,6 +172,8 @@ class PlanType(CodeBase):
     __tablename__ = "plan_type"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji"
 
+    plans: Mapped[List["Plan"]] = relationship(back_populates="plan_type")
+
 
 class TypeOfPlanRegulation(CodeBase):
     """
@@ -138,6 +182,10 @@ class TypeOfPlanRegulation(CodeBase):
 
     __tablename__ = "type_of_plan_regulation"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+
+    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+        back_populates="type_of_plan_regulation"
+    )
 
 
 class TypeOfAdditionalInformation(CodeBase):
@@ -165,6 +213,11 @@ class TypeOfVerbalPlanRegulation(CodeBase):
         "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji"
     )
 
+    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+        secondary="hame.type_of_verbal_regulation_association",
+        back_populates="types_of_verbal_plan_regulations",
+    )
+
 
 class TypeOfSourceData(CodeBase):
     """
@@ -173,6 +226,10 @@ class TypeOfSourceData(CodeBase):
 
     __tablename__ = "type_of_source_data"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_LahtotietoaineistonLaji"
+
+    source_data: Mapped[List["SourceData"]] = relationship(
+        back_populates="type_of_source_data"
+    )
 
 
 class TypeOfUnderground(CodeBase):
@@ -183,6 +240,20 @@ class TypeOfUnderground(CodeBase):
     __tablename__ = "type_of_underground"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji"
 
+    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+        back_populates="type_of_underground"
+    )
+    other_areas: Mapped[List["OtherArea"]] = relationship(
+        back_populates="type_of_underground"
+    )
+    lines: Mapped[List["Line"]] = relationship(back_populates="type_of_underground")
+    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+        back_populates="type_of_underground"
+    )
+    other_points: Mapped[List["OtherPoint"]] = relationship(
+        back_populates="type_of_underground"
+    )
+
 
 class TypeOfDocument(CodeBase):
     """
@@ -191,6 +262,10 @@ class TypeOfDocument(CodeBase):
 
     __tablename__ = "type_of_document"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_AsiakirjanLaji_YKAK"
+
+    documents: Mapped[List["Document"]] = relationship(
+        back_populates="type_of_document"
+    )
 
 
 class Municipality(CodeBase):
@@ -202,6 +277,10 @@ class Municipality(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/kunta_1_20240101"
     geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True)
 
+    organisations: Mapped[List["Organisation"]] = relationship(
+        back_populates="municipality"
+    )
+
 
 class AdministrativeRegion(CodeBase):
     """
@@ -211,6 +290,10 @@ class AdministrativeRegion(CodeBase):
     __tablename__ = "administrative_region"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
     geom = Column(Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True)
+
+    organisations: Mapped[List["Organisation"]] = relationship(
+        back_populates="administrative_region"
+    )
 
 
 class TypeOfPlanRegulationGroup(CodeBase):
@@ -230,6 +313,10 @@ class TypeOfPlanRegulationGroup(CodeBase):
         {"value": "otherPointRegulations", "name": {"fin": "Muu piste"}},
     ]
 
+    plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+        back_populates="type_of_plan_regulation_group"
+    )
+
 
 class PlanTheme(CodeBase):
     """
@@ -238,6 +325,17 @@ class PlanTheme(CodeBase):
 
     __tablename__ = "plan_theme"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavoitusteema"
+
+    plan_propositions: Mapped[List["PlanProposition"]] = relationship(
+        secondary="hame.plan_theme_association",
+        overlaps="plan_regulations",
+        back_populates="plan_themes",
+    )
+    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+        secondary="hame.plan_theme_association",
+        overlaps="plan_propositions",
+        back_populates="plan_themes",
+    )
 
 
 class CategoryOfPublicity(CodeBase):
@@ -248,6 +346,10 @@ class CategoryOfPublicity(CodeBase):
     __tablename__ = "category_of_publicity"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/julkisuus"
 
+    documents: Mapped[List["Document"]] = relationship(
+        back_populates="category_of_publicity"
+    )
+
 
 class PersonalDataContent(CodeBase):
     """
@@ -256,6 +358,10 @@ class PersonalDataContent(CodeBase):
 
     __tablename__ = "personal_data_content"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto"
+
+    documents: Mapped[List["Document"]] = relationship(
+        back_populates="personal_data_content"
+    )
 
 
 class RetentionTime(CodeBase):
@@ -266,6 +372,8 @@ class RetentionTime(CodeBase):
     __tablename__ = "retention_time"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/sailytysaika"
 
+    documents: Mapped[List["Document"]] = relationship(back_populates="retention_time")
+
 
 class Language(CodeBase):
     """
@@ -275,6 +383,8 @@ class Language(CodeBase):
     __tablename__ = "language"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/ryhtikielet"
 
+    documents: Mapped[List["Document"]] = relationship(back_populates="language")
+
 
 class LegalEffectsOfMasterPlan(CodeBase):
     """
@@ -283,6 +393,11 @@ class LegalEffectsOfMasterPlan(CodeBase):
 
     __tablename__ = "legal_effects_of_master_plan"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK"
+
+    plans: Mapped[List["Plan"]] = relationship(
+        secondary="hame.legal_effects_association",
+        back_populates="legal_effects_of_master_plan",
+    )
 
 
 decisions_by_status = {
@@ -363,6 +478,10 @@ class TypeOfInteractionEvent(CodeBase):
         overlaps="allowed_decisions,allowed_processing_events",
     )
 
+    event_dates: Mapped[List["EventDate"]] = relationship(
+        back_populates="interaction_event"
+    )
+
 
 class NameOfPlanCaseDecision(CodeBase):
     """
@@ -377,6 +496,8 @@ class NameOfPlanCaseDecision(CodeBase):
         back_populates="allowed_decisions",
         overlaps="allowed_interaction_events,allowed_processing_events,allowed_statuses",  # noqa
     )
+
+    event_dates: Mapped[List["EventDate"]] = relationship(back_populates="decision")
 
 
 class TypeOfProcessingEvent(CodeBase):
@@ -393,6 +514,10 @@ class TypeOfProcessingEvent(CodeBase):
         overlaps="allowed_interaction_events,allowed_decisions,allowed_statuses",
     )
 
+    event_dates: Mapped[List["EventDate"]] = relationship(
+        back_populates="processing_event"
+    )
+
 
 class TypeOfDecisionMaker(CodeBase):
     """
@@ -403,7 +528,10 @@ class TypeOfDecisionMaker(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija"
 
 
-def get_code(session: Session, code_class: Type[CodeBase], value: str) -> CodeBase:
+T = TypeVar("T", bound=CodeBase)
+
+
+def get_code(session: Session, code_class: Type[T], value: str) -> T | None:
     """
     Get code object by value.
     """

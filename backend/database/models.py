@@ -2,13 +2,40 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
+from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from database.base import AttributeValueMixin, Base, VersionedBase, language_str
-from database.codes import LifeCycleStatus
+from database.base import (
+    PROJECT_SRID,
+    AttributeValueMixin,
+    Base,
+    VersionedBase,
+    language_str,
+)
+from database.codes import (
+    AdministrativeRegion,
+    CategoryOfPublicity,
+    Language,
+    LegalEffectsOfMasterPlan,
+    LifeCycleStatus,
+    Municipality,
+    NameOfPlanCaseDecision,
+    PersonalDataContent,
+    PlanTheme,
+    PlanType,
+    RetentionTime,
+    TypeOfAdditionalInformation,
+    TypeOfDocument,
+    TypeOfInteractionEvent,
+    TypeOfPlanRegulation,
+    TypeOfPlanRegulationGroup,
+    TypeOfProcessingEvent,
+    TypeOfSourceData,
+    TypeOfUnderground,
+    TypeOfVerbalPlanRegulation,
+)
 
 regulation_group_association = Table(
     "regulation_group_association",
@@ -167,13 +194,13 @@ class PlanBase(VersionedBase):
     @classmethod
     def lifecycle_status(cls) -> Mapped["LifeCycleStatus"]:
         return relationship(
-            "LifeCycleStatus", backref=f"{cls.__tablename__}s", lazy="joined"
+            "LifeCycleStatus", back_populates=f"{cls.__tablename__}s", lazy="joined"
         )
 
     # Let's add backreference to allow lazy loading from this side.
     @declared_attr
     @classmethod
-    def lifecycle_dates(cls):  # noqa
+    def lifecycle_dates(cls) -> Mapped[List["LifeCycleDate"]]:  # noqa
         return relationship(
             "LifeCycleDate",
             back_populates=f"{cls.__tablename__}",
@@ -195,31 +222,33 @@ class Plan(PlanBase):
         ForeignKey("hame.organisation.id", name="organisation_id_fkey")
     )
     organisation: Mapped["Organisation"] = relationship(
-        "Organisation", backref="plans", lazy="joined"
+        back_populates="plans", lazy="joined"
     )
 
     plan_type_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
     )
     # Let's load all the codes for objects joined.
-    plan_type = relationship("PlanType", backref="plans", lazy="joined")
+    plan_type: Mapped["PlanType"] = relationship(back_populates="plans", lazy="joined")
     # Also join plan documents
-    documents = relationship(
-        "Document", back_populates="plan", lazy="joined", cascade="delete"
+    documents: Mapped[List["Document"]] = relationship(
+        back_populates="plan", lazy="joined", cascade="delete"
     )
     # Load plan objects ordered
-    land_use_areas = relationship(
-        "LandUseArea", order_by="LandUseArea.ordering", back_populates="plan"
+    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+        order_by="LandUseArea.ordering", back_populates="plan"
     )
-    other_areas = relationship(
-        "OtherArea", order_by="OtherArea.ordering", back_populates="plan"
+    other_areas: Mapped[List["OtherArea"]] = relationship(
+        order_by="OtherArea.ordering", back_populates="plan"
     )
-    lines = relationship("Line", order_by="Line.ordering", back_populates="plan")
-    land_use_points = relationship(
-        "LandUsePoint", order_by="LandUsePoint.ordering", back_populates="plan"
+    lines: Mapped[List["Line"]] = relationship(
+        order_by="Line.ordering", back_populates="plan"
     )
-    other_points = relationship(
-        "OtherPoint", order_by="OtherPoint.ordering", back_populates="plan"
+    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+        order_by="LandUsePoint.ordering", back_populates="plan"
+    )
+    other_points: Mapped[List["OtherPoint"]] = relationship(
+        order_by="OtherPoint.ordering", back_populates="plan"
     )
 
     permanent_plan_identifier: Mapped[Optional[str]]
@@ -229,7 +258,9 @@ class Plan(PlanBase):
     scale: Mapped[Optional[int]]
     matter_management_identifier: Mapped[Optional[str]]
     record_number: Mapped[Optional[str]]
-    geom: Mapped[MultiPolygon]
+    geom: Mapped[WKBElement] = mapped_column(
+        "geom", Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
     # Only plan should have validated_at field, since validation is only done
     # for complete plan objects. Also validation errors might concern multiple
     # models, not just one field or one table in database.
@@ -244,12 +275,16 @@ class Plan(PlanBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    legal_effects_of_master_plan = relationship(
+    legal_effects_of_master_plan: Mapped[
+        List["LegalEffectsOfMasterPlan"]
+    ] = relationship(
         "LegalEffectsOfMasterPlan",
         secondary=legal_effects_association,
         lazy="joined",
-        backref="plans",
+        back_populates="plans",
     )
+
+    source_data: Mapped[List["SourceData"]] = relationship(back_populates="plan")
 
 
 class PlanObjectBase(PlanBase):
@@ -288,22 +323,28 @@ class PlanObjectBase(PlanBase):
         ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
     )
 
+    # Annotate the geom here and define columns in subclasses.
+    geom: WKBElement
+
     # class reference in abstract base class, with backreference to class name
     # Let's load all the codes for objects joined.
     @declared_attr
-    def type_of_underground(cls) -> Mapped[VersionedBase]:  # noqa
+    @classmethod
+    def type_of_underground(cls) -> Mapped["TypeOfUnderground"]:
         return relationship(
-            "TypeOfUnderground", backref=f"{cls.__tablename__}s", lazy="joined"
+            "TypeOfUnderground", back_populates=f"{cls.__tablename__}s", lazy="joined"
         )
 
     # class reference in abstract base class, with backreference to class name:
     @declared_attr
-    def plan(cls) -> Mapped[VersionedBase]:  # noqa
+    @classmethod
+    def plan(cls) -> Mapped["Plan"]:
         return relationship("Plan", back_populates=f"{cls.__tablename__}s")
 
     # class reference in abstract base class, with backreference to class name:
     @declared_attr
-    def plan_regulation_groups(cls) -> Mapped[List[VersionedBase]]:  # noqa
+    @classmethod
+    def plan_regulation_groups(cls) -> Mapped[List["PlanRegulationGroup"]]:
         return relationship(
             "PlanRegulationGroup",
             secondary="hame.regulation_group_association",
@@ -323,7 +364,9 @@ class LandUseArea(PlanObjectBase):
 
     __tablename__ = "land_use_area"
 
-    geom: Mapped[MultiPolygon]
+    geom: Mapped[WKBElement] = mapped_column(
+        "geom", Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
 
 
 class OtherArea(PlanObjectBase):
@@ -333,7 +376,9 @@ class OtherArea(PlanObjectBase):
 
     __tablename__ = "other_area"
 
-    geom: Mapped[MultiPolygon]
+    geom: Mapped[WKBElement] = mapped_column(
+        "geom", Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
 
 
 class Line(PlanObjectBase):
@@ -343,7 +388,9 @@ class Line(PlanObjectBase):
 
     __tablename__ = "line"
 
-    geom: Mapped[MultiLineString]
+    geom: Mapped[WKBElement] = mapped_column(
+        "geom", Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID)
+    )
 
 
 class LandUsePoint(PlanObjectBase):
@@ -353,7 +400,9 @@ class LandUsePoint(PlanObjectBase):
 
     __tablename__ = "land_use_point"
 
-    geom: Mapped[MultiPoint]
+    geom: Mapped[WKBElement] = mapped_column(
+        "geom", Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+    )
 
 
 class OtherPoint(PlanObjectBase):
@@ -363,7 +412,9 @@ class OtherPoint(PlanObjectBase):
 
     __tablename__ = "other_point"
 
-    geom: Mapped[MultiPoint]
+    geom: Mapped[WKBElement] = mapped_column(
+        "geom", Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+    )
 
 
 class PlanRegulationGroup(VersionedBase):
@@ -407,13 +458,12 @@ class PlanRegulationGroup(VersionedBase):
             name="type_of_plan_regulation_group_id_fkey",
         )
     )
-    type_of_plan_regulation_group = relationship(
-        "TypeOfPlanRegulationGroup", backref="plan_regulation_groups", lazy="joined"
+    type_of_plan_regulation_group: Mapped["TypeOfPlanRegulationGroup"] = relationship(
+        back_populates="plan_regulation_groups", lazy="joined"
     )
 
     # Let's add backreference to allow lazy loading from this side.
     plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
-        "PlanRegulation",
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanRegulation.ordering",  # list regulations in right order
@@ -429,7 +479,6 @@ class PlanRegulationGroup(VersionedBase):
     # But why don't integration tests catch this missing, they contain propositions too?
     # Maybe has something to do with the lifecycle of pytest session fixture?
     plan_propositions: Mapped[List["PlanProposition"]] = relationship(
-        "PlanProposition",
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanProposition.ordering",  # list propositions in right order
@@ -501,11 +550,11 @@ class AdditionalInformation(VersionedBase, AttributeValueMixin):
     )
 
     plan_regulation: Mapped["PlanRegulation"] = relationship(
-        "PlanRegulation", back_populates="additional_information"
+        back_populates="additional_information"
     )
-    type_of_additional_information = relationship(
-        "TypeOfAdditionalInformation", lazy="joined"
-    )
+    type_of_additional_information: Mapped[
+        "TypeOfAdditionalInformation"
+    ] = relationship(lazy="joined")
 
 
 type_of_verbal_regulation_association = Table(
@@ -565,28 +614,29 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
     )
 
     plan_regulation_group: Mapped[PlanRegulationGroup] = relationship(
-        "PlanRegulationGroup", back_populates="plan_regulations"
+        back_populates="plan_regulations"
     )
     # Let's load all the codes for objects joined.
-    type_of_plan_regulation = relationship(
-        "TypeOfPlanRegulation", backref="plan_regulations", lazy="joined"
+    type_of_plan_regulation: Mapped["TypeOfPlanRegulation"] = relationship(
+        back_populates="plan_regulations", lazy="joined"
     )
     # Let's load all the codes for objects joined.
-    types_of_verbal_plan_regulations = relationship(
+    types_of_verbal_plan_regulations: Mapped[
+        List["TypeOfVerbalPlanRegulation"]
+    ] = relationship(
         "TypeOfVerbalPlanRegulation",
         secondary=type_of_verbal_regulation_association,
-        backref="plan_regulations",
+        back_populates="plan_regulations",
         lazy="joined",
     )
-    plan_themes = relationship(
-        "PlanTheme",
+    plan_themes: Mapped[List["PlanTheme"]] = relationship(
         secondary=plan_theme_association,
-        backref="plan_regulations",
+        overlaps="plan_propositions,plan_themes",
+        back_populates="plan_regulations",
         lazy="joined",
     )
 
     additional_information: Mapped[list[AdditionalInformation]] = relationship(
-        "AdditionalInformation",
         back_populates="plan_regulation",
         lazy="joined",
         cascade="all, delete-orphan",
@@ -621,14 +671,14 @@ class PlanProposition(PlanBase):
         )
     )
 
-    plan_regulation_group = relationship(
-        "PlanRegulationGroup", back_populates="plan_propositions"
+    plan_regulation_group: Mapped["PlanRegulationGroup"] = relationship(
+        back_populates="plan_propositions"
     )
     # Let's load all the codes for objects joined.
-    plan_themes = relationship(
-        "PlanTheme",
+    plan_themes: Mapped[List["PlanTheme"]] = relationship(
         secondary=plan_theme_association,
-        backref="plan_propositions",
+        overlaps="plan_regulations,plan_themes",
+        back_populates="plan_propositions",
         lazy="joined",
     )
     text_value: Mapped[Optional[language_str]]
@@ -650,10 +700,10 @@ class SourceData(VersionedBase):
     )
 
     # Let's load all the codes for objects joined.
-    type_of_source_data = relationship(
-        "TypeOfSourceData", backref="source_data", lazy="joined"
+    type_of_source_data: Mapped["TypeOfSourceData"] = relationship(
+        back_populates="source_data", lazy="joined"
     )
-    plan = relationship("Plan", backref="source_data")
+    plan: Mapped["Plan"] = relationship(back_populates="source_data")
     name: Mapped[Optional[language_str]]
     additional_information_uri: Mapped[str]
     detachment_date: Mapped[datetime]
@@ -677,10 +727,14 @@ class Organisation(VersionedBase):
         )
     )
     # Let's load all the codes for objects joined.
-    municipality = relationship("Municipality", backref="organisations", lazy="joined")
-    administrative_region = relationship(
-        "AdministrativeRegion", backref="organisations", lazy="joined"
+    municipality: Mapped["Municipality"] = relationship(
+        back_populates="organisations", lazy="joined"
     )
+    administrative_region: Mapped["AdministrativeRegion"] = relationship(
+        back_populates="organisations", lazy="joined"
+    )
+
+    plans: Mapped[List["Plan"]] = relationship(back_populates="organisation")
 
 
 class Document(VersionedBase):
@@ -714,18 +768,22 @@ class Document(VersionedBase):
     )
 
     # Let's load all the codes for objects joined.
-    type_of_document = relationship(
-        "TypeOfDocument", backref="documents", lazy="joined"
+    type_of_document: Mapped["TypeOfDocument"] = relationship(
+        back_populates="documents", lazy="joined"
     )
-    plan = relationship("Plan", back_populates="documents")
-    category_of_publicity = relationship(
-        "CategoryOfPublicity", backref="documents", lazy="joined"
+    plan: Mapped["Plan"] = relationship(back_populates="documents")
+    category_of_publicity: Mapped["CategoryOfPublicity"] = relationship(
+        back_populates="documents", lazy="joined"
     )
-    personal_data_content = relationship(
-        "PersonalDataContent", backref="documents", lazy="joined"
+    personal_data_content: Mapped["PersonalDataContent"] = relationship(
+        back_populates="documents", lazy="joined"
     )
-    retention_time = relationship("RetentionTime", backref="documents", lazy="joined")
-    language = relationship("Language", backref="documents", lazy="joined")
+    retention_time: Mapped["RetentionTime"] = relationship(
+        back_populates="documents", lazy="joined"
+    )
+    language: Mapped["Language"] = relationship(
+        back_populates="documents", lazy="joined"
+    )
 
     permanent_document_identifier: Mapped[Optional[str]]  # e.g. diaarinumero
     name: Mapped[Optional[language_str]]
@@ -816,12 +874,11 @@ class LifeCycleDate(VersionedBase):
         back_populates="lifecycle_dates"
     )
     # Let's load all the codes for objects joined.
-    lifecycle_status = relationship(
-        "LifeCycleStatus", back_populates="lifecycle_dates", lazy="joined"
+    lifecycle_status: Mapped["LifeCycleStatus"] = relationship(
+        back_populates="lifecycle_dates", lazy="joined"
     )
     # Let's add backreference to allow lazy loading from this side.
-    event_dates = relationship(
-        "EventDate",
+    event_dates: Mapped[List["EventDate"]] = relationship(
         back_populates="lifecycle_date",
         lazy="joined",
         cascade="all, delete-orphan",
@@ -869,17 +926,17 @@ class EventDate(VersionedBase):
     )
 
     # Let's load all the codes for objects joined.
-    lifecycle_date = relationship(
-        "LifeCycleDate", back_populates="event_dates", lazy="joined"
+    lifecycle_date: Mapped["LifeCycleDate"] = relationship(
+        back_populates="event_dates", lazy="joined"
     )
-    decision = relationship(
-        "NameOfPlanCaseDecision", backref="event_dates", lazy="joined"
+    decision: Mapped["NameOfPlanCaseDecision"] = relationship(
+        back_populates="event_dates", lazy="joined"
     )
-    processing_event = relationship(
-        "TypeOfProcessingEvent", backref="event_dates", lazy="joined"
+    processing_event: Mapped["TypeOfProcessingEvent"] = relationship(
+        back_populates="event_dates", lazy="joined"
     )
-    interaction_event = relationship(
-        "TypeOfInteractionEvent", backref="event_dates", lazy="joined"
+    interaction_event: Mapped["TypeOfInteractionEvent"] = relationship(
+        back_populates="event_dates", lazy="joined"
     )
 
     starting_at: Mapped[datetime]

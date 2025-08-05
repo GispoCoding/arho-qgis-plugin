@@ -3,7 +3,7 @@ import time
 import timeit
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Iterable, List, Mapping, Optional
+from typing import Callable, Iterable, List, Mapping, Optional, TypeVar
 from zoneinfo import ZoneInfo
 
 import psycopg
@@ -506,11 +506,14 @@ def rollback_after(session: Session):
     session.rollback()
 
 
+T = TypeVar("T")
+
+
 @pytest.fixture
 def temp_session_feature(session: Session):
     created_instances = []
 
-    def add_instance(instance):
+    def add_instance(instance: T) -> T:
         session.add(instance)
         session.commit()
         created_instances.append(instance)
@@ -1515,7 +1518,7 @@ def plan_map_instance(
     personal_data_content_no_personal_data_instance,
     retention_time_permanent_instance,
     language_finnish_instance,
-):
+) -> models.Document:
     instance = models.Document(
         name={"fin": "Kaavakartta"},
         type_of_document=type_of_document_plan_map_instance,

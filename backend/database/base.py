@@ -2,8 +2,6 @@ import uuid
 from datetime import datetime
 from typing import Any, List, Optional
 
-from geoalchemy2 import Geometry
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -25,9 +23,6 @@ class Base(DeclarativeBase):
         uuid.UUID: UUID(as_uuid=False),
         dict[str, str]: JSONB,
         List[str]: ARRAY(TEXT),
-        MultiLineString: Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID),
-        MultiPoint: Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID),
-        MultiPolygon: Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID),
         datetime: TIMESTAMP(timezone=True),
     }
 

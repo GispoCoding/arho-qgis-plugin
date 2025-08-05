@@ -1,26 +1,30 @@
 import inspect
-from typing import get_type_hints
 
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
+from geoalchemy2 import Geometry
+
+from database import models
 
 # from codes import (
 #     decisions_by_status,
 #     interaction_events_by_status,
 #     processing_events_by_status,
 # )
-from shapely.geometry import MultiPolygon
-from sqlalchemy.orm import Mapped
 
-from database import models
 
-tables_with_polygon_geometry = [
-    klass.__tablename__
-    for _, klass in inspect.getmembers(models, inspect.isclass)
-    if inspect.getmodule(klass) == models
-    and "geom" in get_type_hints(klass)
-    and get_type_hints(klass)["geom"] == Mapped[MultiPolygon]
-]
+tables_with_polygon_geometry = []
+for _, klass in inspect.getmembers(models, inspect.isclass):
+    if not hasattr(klass, "__table__") or inspect.getmodule(klass) != models:
+        continue
+    columns = klass.__table__.c
+    geom_column = columns.get("geom", None)
+    if (
+        geom_column is not None
+        and isinstance(geom_column.type, Geometry)
+        and geom_column.type.geometry_type in ("MULTIPOLYGON")
+    ):
+        tables_with_polygon_geometry.append(klass.__tablename__)
 
 
 def generate_validate_polygon_geometry_triggers():

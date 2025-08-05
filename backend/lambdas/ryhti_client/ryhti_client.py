@@ -3,18 +3,28 @@ import email.utils
 import enum
 import logging
 import os
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Type, TypedDict, cast
-from uuid import uuid4
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    TypedDict,
+    cast,
+)
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 import boto3
 import requests
 import simplejson as json  # type: ignore
-from geoalchemy2 import Geometry
+from geoalchemy2 import WKBElement
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Query, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
 from database.codes import (
@@ -106,8 +116,8 @@ class ResponseBody(TypedDict):
     """
 
     title: str
-    details: Dict[str, str | None]
-    ryhti_responses: Dict[str, RyhtiResponse]
+    details: dict[str | UUID, str | None]
+    ryhti_responses: dict[UUID, RyhtiResponse]
 
 
 class Response(TypedDict):
@@ -306,11 +316,11 @@ class RyhtiClient:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         # Cache plans fetched from database
-        self.plans: Dict[str, models.Plan] = dict()
+        self.plans: Dict[UUID, models.Plan] = dict()
         # Cache plan dictionaries
-        self.plan_dictionaries: Dict[str, RyhtiPlan] = dict()
+        self.plan_dictionaries: Dict[UUID, RyhtiPlan] = dict()
         # Cache plan matter dictionaries
-        self.plan_matter_dictionaries: Dict[str, RyhtiPlanMatter] = dict()
+        self.plan_matter_dictionaries: Dict[UUID, RyhtiPlanMatter] = dict()
 
         # We only ever need code uri values, not codes themselves, so let's not bother
         # fetching codes from the database at all. URI is known from class and value.
@@ -335,11 +345,12 @@ class RyhtiClient:
         with self.Session(expire_on_commit=False) as session:
             LOGGER.info("Caching requested plans from database...")
             # Only process specified plans
-            plan_query: Query = session.query(models.Plan)
+            stmt = select(models.Plan)
             if plan_uuid:
                 LOGGER.info(f"Only fetching plan {plan_uuid}")
-                plan_query = plan_query.filter_by(id=plan_uuid)
-            self.plans = {plan.id: plan for plan in plan_query.all()}
+                stmt = stmt.where(models.Plan.id == plan_uuid)
+
+            self.plans = {plan.id: plan for plan in session.scalars(stmt).unique()}
         if not self.plans:
             LOGGER.info("No plans found in database.")
         else:
@@ -399,7 +410,7 @@ class RyhtiClient:
         top_level_code = plan_type_uri.split("/")[-1][0]
         return api_paths[top_level_code]
 
-    def get_geojson(self, geometry: Geometry) -> dict:
+    def get_geojson(self, geometry: WKBElement) -> dict:
         """
         Returns geojson format dict with the correct SRID set.
         """
@@ -501,7 +512,7 @@ class RyhtiClient:
         """
 
         def class_and_value_match(event_date: models.EventDate) -> bool:
-            return (
+            return bool(
                 (
                     event_class is NameOfPlanCaseDecision
                     and event_date.decision
@@ -536,7 +547,7 @@ class RyhtiClient:
         """
         Construct a dict of Ryhti compatible plan recommendation.
         """
-        recommendation_dict = dict()
+        recommendation_dict: dict[str, Any] = {}
         recommendation_dict["planRecommendationKey"] = plan_recommendation.id
         recommendation_dict[
             "lifeCycleStatus"
@@ -634,7 +645,7 @@ class RyhtiClient:
         """
         Construct a dict of Ryhti compatible plan regulation.
         """
-        regulation_dict = dict()
+        regulation_dict: dict[str, Any] = {}
         regulation_dict["planRegulationKey"] = plan_regulation.id
         regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
         regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
@@ -677,7 +688,7 @@ class RyhtiClient:
         differences, so you can specify if you want to create a general
         regulation group.
         """
-        group_dict = dict()
+        group_dict: dict[str, Any] = {}
         if general:
             group_dict["generalRegulationGroupKey"] = group.id
         else:
@@ -702,7 +713,7 @@ class RyhtiClient:
         """
         Construct a dict of Ryhti compatible plan object.
         """
-        plan_object_dict = dict()
+        plan_object_dict: dict[str, Any] = {}
         plan_object_dict["planObjectKey"] = plan_object.id
         plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
         plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
@@ -848,7 +859,7 @@ class RyhtiClient:
         plan_dictionary = RyhtiPlan()
 
         # planKey should always be the local uuid, not the permanent plan matter id.
-        plan_dictionary["planKey"] = plan.id
+        plan_dictionary["planKey"] = str(plan.id)
         # Let's have all the code values preloaded joined from db.
         # It makes this super easy:
         plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
@@ -912,7 +923,7 @@ class RyhtiClient:
 
         return plan_dictionary
 
-    def get_plan_dictionaries(self) -> Dict[str, RyhtiPlan]:
+    def get_plan_dictionaries(self) -> Dict[UUID, RyhtiPlan]:
         """
         Construct a dict of valid Ryhti compatible plan dictionaries from plans in the
         local database.
@@ -926,7 +937,7 @@ class RyhtiClient:
         """
         Construct a dict of single Ryhti compatible plan map.
         """
-        plan_map = dict()
+        plan_map: dict[str, Any] = {}
         plan_map["planMapKey"] = document.id
         plan_map["name"] = document.name
         plan_map["fileKey"] = document.exported_file_key
@@ -940,7 +951,7 @@ class RyhtiClient:
         """
         Construct a dict of single Ryhti compatible plan attachment document.
         """
-        attachment_document = dict()
+        attachment_document: dict[str, Any] = {}
         attachment_document["attachmentDocumentKey"] = document.id
         attachment_document[
             "documentIdentifier"
@@ -962,7 +973,7 @@ class RyhtiClient:
         """
         Construct a dict of single Ryhti compatible other plan material item.
         """
-        other_plan_material = dict()
+        other_plan_material: dict[str, Any] = {}
         other_plan_material["otherPlanMaterialKey"] = document.id
         other_plan_material["name"] = document.name
         other_plan_material["fileKey"] = document.exported_file_key
@@ -1303,23 +1314,20 @@ class RyhtiClient:
         plan_matter["planMatterPhases"] = self.get_plan_matter_phases(plan)
         return plan_matter
 
-    def get_plan_matters(self) -> Dict[str, RyhtiPlanMatter]:
+    def get_plan_matters(self) -> dict[UUID, RyhtiPlanMatter]:
         """
         Construct a dict of Ryhti compatible plan matters from plans with
         permanent identifiers in the local database. In case plan has no
         permanent identifier, it is not included in the dict.
         """
-        plan_matters = dict()
-        for plan in self.plans.values():
-            plan_matters[plan.id] = self.get_plan_matter(plan)
-        return plan_matters
+        return {plan.id: self.get_plan_matter(plan) for plan in self.plans.values()}
 
-    def validate_plans(self) -> Dict[str, RyhtiResponse]:
+    def validate_plans(self) -> Dict[UUID, RyhtiResponse]:
         """
         Validates all plans serialized in client plan dictionaries.
         """
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
-        responses: Dict[str, RyhtiResponse] = dict()
+        responses: Dict[UUID, RyhtiResponse] = {}
         for plan_id, plan_dict in self.plan_dictionaries.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
 
@@ -1372,12 +1380,12 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
-    def upload_plan_documents(self) -> Dict[str, List[RyhtiResponse]]:
+    def upload_plan_documents(self) -> Dict[UUID, List[RyhtiResponse]]:
         """
         Upload any changed plan documents. If document has not been modified
         since it was last uploaded, do nothing.
         """
-        responses: Dict[str, List[RyhtiResponse]] = dict()
+        responses: Dict[UUID, List[RyhtiResponse]] = dict()
         file_endpoint = self.xroad_server_address + self.xroad_api_path + "File"
         upload_headers = self.xroad_headers.copy()
         # We must *not* provide Content-Type header:
@@ -1484,11 +1492,11 @@ class RyhtiClient:
                         )
         return responses
 
-    def get_permanent_plan_identifiers(self) -> Dict[str, RyhtiResponse]:
+    def get_permanent_plan_identifiers(self) -> Dict[UUID, RyhtiResponse]:
         """
         Get permanent plan identifiers for all plans that do not have identifiers set.
         """
-        responses: Dict[str, RyhtiResponse] = dict()
+        responses: Dict[UUID, RyhtiResponse] = dict()
         for plan in self.plans.values():
             if not plan.permanent_plan_identifier:
                 plan_identifier_endpoint = (
@@ -1557,12 +1565,12 @@ class RyhtiClient:
                         json.dump(str(responses[plan.id]), response_file)
         return responses
 
-    def validate_plan_matters(self) -> Dict[str, RyhtiResponse]:
+    def validate_plan_matters(self) -> Dict[UUID, RyhtiResponse]:
         """
         Validates all plan matters that have their permanent identifiers set.
         """
         self.plan_matter_dictionaries = self.get_plan_matters()
-        responses: Dict[str, RyhtiResponse] = dict()
+        responses: Dict[UUID, RyhtiResponse] = dict()
         for plan_id, plan_matter in self.plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
             if not permanent_id:
@@ -1687,7 +1695,7 @@ class RyhtiClient:
                 response.raise_for_status()
         return cast(RyhtiResponse, ryhti_response)
 
-    def post_plan_matters(self) -> Dict[str, RyhtiResponse]:
+    def post_plan_matters(self) -> dict[UUID, RyhtiResponse]:
         """
         POST all plan matter data with permanent identifiers to Ryhti.
 
@@ -1695,7 +1703,7 @@ class RyhtiClient:
         creating a new plan matter phase, or updating the plan matter phase.
         """
         self.plan_matter_dictionaries = self.get_plan_matters()
-        responses: Dict[str, RyhtiResponse] = dict()
+        responses: dict[UUID, RyhtiResponse] = dict()
         for plan_id, plan_matter in self.plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
             if not permanent_id:
@@ -1805,7 +1813,7 @@ class RyhtiClient:
         return responses
 
     def save_plan_validation_responses(
-        self, responses: Dict[str, RyhtiResponse]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> Response:
         """
         Save open validation API response data to the database and return lambda
@@ -1820,7 +1828,7 @@ class RyhtiClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: Dict[str, str | None] = {}
+        details: dict[str | UUID, str | None] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 # Refetch plan from db in case it has been deleted
@@ -1866,7 +1874,7 @@ class RyhtiClient:
             ),
         )
 
-    def set_plan_documents(self, responses: Dict[str, List[RyhtiResponse]]):
+    def set_plan_documents(self, responses: Dict[UUID, List[RyhtiResponse]]):
         """
         Save uploaded plan document keys, export times and etags to the database.
         Also, append document data to the plan dictionaries.
@@ -1895,13 +1903,13 @@ class RyhtiClient:
                 session.commit()
 
     def set_permanent_plan_identifiers(
-        self, responses: Dict[str, RyhtiResponse]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> Response:
         """
         Save permanent plan identifiers returned by RYHTI API to the database and
         return lambda response.
         """
-        details: Dict[str, str | None] = {}
+        details: dict[UUID | str, str | None] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 # Make sure that the plan dict stays up to date
@@ -1927,7 +1935,7 @@ class RyhtiClient:
         )
 
     def save_plan_matter_validation_responses(
-        self, responses: Dict[str, RyhtiResponse]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> Response:
         """
         Save X-Road validation API response data to the database and return lambda
@@ -1942,7 +1950,7 @@ class RyhtiClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: Dict[str, str | None] = {}
+        details: dict[UUID | str, str | None] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id in self.plans.keys():
                 plan: Optional[models.Plan] = session.get(models.Plan, plan_id)
@@ -1960,7 +1968,8 @@ class RyhtiClient:
                         f"Plan {plan_id} had no permanent identifier. "
                         "Could not create plan matter!"
                     )
-                    plan.validation_errors = details[plan_id]
+                    a = details[plan_id]
+                    plan.validation_errors = a
                     LOGGER.info(details[plan_id])
                     continue
                 LOGGER.info(f"Saving response for plan matter {plan_id}...")
@@ -2000,7 +2009,7 @@ class RyhtiClient:
         )
 
     def save_plan_matter_post_responses(
-        self, responses: Dict[str, RyhtiResponse]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> Response:
         """
         Save X-Road API POST response data to the database and return lambda response.
@@ -2013,7 +2022,7 @@ class RyhtiClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: Dict[str, str | None] = {}
+        details: dict[UUID | str, str | None] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id in self.plans.keys():
                 plan: Optional[models.Plan] = session.get(models.Plan, plan_id)
@@ -2052,7 +2061,7 @@ class RyhtiClient:
                 elif response["status"] == 201:
                     details[plan_id] = (
                         "Plan matter or plan matter phase POST successful for "
-                        + plan_id
+                        + str(plan_id)
                         + "."
                     )
                     plan.validation_errors = "Uusi kaava-asian vaihe on viety Ryhtiin."

@@ -13,3 +13,5 @@ pytest-docker
 requests-mock
 types-requests
 types-simplejson
+types-boto3
+types-shapely
