@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Generator, Iterable, cast
 
@@ -18,6 +19,8 @@ from arho_feature_template.core.models import (
     LifeCycle,
     Plan,
     PlanFeature,
+    Proposition,
+    Regulation,
     RegulationGroup,
     RegulationGroupLibrary,
 )
@@ -71,7 +74,6 @@ from arho_feature_template.utils.misc_utils import (
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
-    from arho_feature_template.core.models import Proposition, Regulation
 
 logger = logging.getLogger(__name__)
 
@@ -699,6 +701,27 @@ def _save_feature(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, e
     return layer.commitChanges(stopEditing=False)
 
 
+def _save_features(features: list[QgsFeature], layer: QgsVectorLayer, edit_text: str = "") -> bool:
+    if not layer.isEditable():
+        layer.startEditing()
+    layer.beginEditCommand(edit_text)
+    layer.addFeatures(features)
+    layer.endEditCommand()
+    return layer.commitChanges(stopEditing=False)
+
+
+def _delete_features(features: list[QgsFeature], layer: QgsVectorLayer, delete_text: str = "") -> bool:
+    feature_ids = [feature.id() for feature in features]
+    if not layer.isEditable():
+        layer.startEditing()
+    layer.beginEditCommand(delete_text)
+
+    layer.deleteFeatures(feature_ids)
+
+    layer.endEditCommand()
+    return layer.commitChanges(stopEditing=False)
+
+
 def _delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
     if not layer.isEditable():
         layer.startEditing()
@@ -827,6 +850,7 @@ def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> 
 
 @use_wait_cursor
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
+    start = time.time()
     group_id = regulation_group.id_
     editing = group_id is not None
     if group_id is None or regulation_group.modified:
@@ -858,13 +882,15 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     if regulation_group.regulations:
         for regulation in regulation_group.regulations:
             regulation.regulation_group_id = group_id  # Updating regulation group ID
-            save_regulation(regulation)
+        save_regulations(regulation_group.regulations)
 
     # Save propositions
     if regulation_group.propositions:
         for proposition in regulation_group.propositions:
             proposition.regulation_group_id = group_id  # Updating regulation group ID
-            save_proposition(proposition)
+        save_propositions(regulation_group.propositions)
+    end = time.time()
+    print(f" Time took to save regulation group: {end-start} s.")
 
     return group_id
 
@@ -902,33 +928,19 @@ def save_regulation_group_association(regulation_group_id: str, layer_name: str,
     return True
 
 
-def save_regulation(regulation: Regulation) -> str | None:
-    reg_id = regulation.id_
-    editing = reg_id is not None
-    if reg_id is None or regulation.modified:
-        regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
-        if not _save_feature(
-            feature=regulation_feature,
-            layer=PlanRegulationLayer.get_from_project(),
-            id_=reg_id,
-            edit_text="Kaavamääräyksen muokkaus" if editing else "Kaavamääräyksen lisäys",
-        ):
-            iface.messageBar().pushCritical("", "Kaavamääräyksen tallentaminen epäonnistui.")
-            return None
-        reg_id = cast(str, regulation_feature["id"])
-
-    if editing:
+def _handle_regulation_associations(regulations: Regulation | list[Regulation], reg_ids: str | list[str]) -> None:
+    info_layer = AdditionalInformationLayer.get_from_project()
+    if isinstance(regulations, Regulation) and isinstance(reg_ids, str):
         # Check for additional information to be deleted
-        info_layer = AdditionalInformationLayer.get_from_project()
         for info_feature in AdditionalInformationLayer.get_additional_information_to_delete(
-            regulation.additional_information, reg_id
+            regulations.additional_information, reg_ids
         ):
             if not _delete_feature(info_feature, info_layer, "Lisätiedon poisto"):
-                iface.messageBar().pushCritical("", "Liätiedon poistaminen epäonnistui.")
+                iface.messageBar().pushCritical("", "Lisätiedon poistaminen epäonnistui.")
 
         # Check for verbal regulation types to be deleted
         for association in TypeOfVerbalRegulationAssociationLayer.get_dangling_associations(
-            reg_id, regulation.verbal_regulation_type_ids
+            reg_ids, regulations.verbal_regulation_type_ids
         ):
             if not _delete_feature(
                 association,
@@ -940,7 +952,9 @@ def save_regulation(regulation: Regulation) -> str | None:
                 )
 
         # Check for plan theme to be deleted
-        for association in PlanThemeAssociationLayer.get_dangling_regulation_associations(reg_id, regulation.theme_ids):
+        for association in PlanThemeAssociationLayer.get_dangling_regulation_associations(
+            reg_ids, regulations.theme_ids
+        ):
             if not _delete_feature(
                 association,
                 PlanThemeAssociationLayer.get_from_project(),
@@ -948,53 +962,256 @@ def save_regulation(regulation: Regulation) -> str | None:
             ):
                 iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
 
-    for additional_information in regulation.additional_information:
-        additional_information.plan_regulation_id = reg_id
-        save_additional_information(additional_information)
+        # Save associated data
+        for ai in regulations.additional_information:
+            ai.plan_regulation_id = reg_ids
+            save_additional_information(ai)
 
-    for verbal_regulation_type_id in regulation.verbal_regulation_type_ids:
-        save_type_of_verbal_regulation_association(reg_id, verbal_regulation_type_id)
+        for verbal_regulation_type_id in regulations.verbal_regulation_type_ids:
+            save_type_of_verbal_regulation_association(reg_ids, verbal_regulation_type_id)
 
-    for plan_theme_id in regulation.theme_ids:
-        save_plan_theme_association(plan_theme_id=plan_theme_id, regulation_id=reg_id)
+        for plan_theme_id in regulations.theme_ids:
+            save_plan_theme_association(plan_theme_ids=plan_theme_id, regulation_ids=reg_ids)
 
-    return reg_id
+    elif isinstance(regulations, list) and isinstance(reg_ids, list):
+        info_features_to_delete = []
+        verbal_regulations_to_delete = []
+        plan_themes_to_delete = []
+        for regulation, reg_id in zip(regulations, reg_ids):
+            info_features = AdditionalInformationLayer.get_additional_information_to_delete(
+                regulation.additional_information, reg_id
+            )
+            info_features_to_delete.extend(info_features)
+
+            verbal_regulations = TypeOfVerbalRegulationAssociationLayer.get_dangling_associations(
+                reg_id, regulation.verbal_regulation_type_ids
+            )
+            verbal_regulations_to_delete.extend(verbal_regulations)
+
+            plan_themes = PlanThemeAssociationLayer.get_dangling_regulation_associations(reg_id, regulation.theme_ids)
+            plan_themes_to_delete.extend(plan_themes)
+
+        if not _delete_features(info_features_to_delete, info_layer, "Lisätietojen poisto"):
+            iface.messageBar().pushCritical("", "Lisätietojen poistaminen epäonnistui.")
+
+        if not _delete_features(
+            verbal_regulations_to_delete,
+            TypeOfVerbalRegulationAssociationLayer.get_from_project(),
+            "Sanallisten kaavamääräysten lajien assosiaatioiden poisto",
+        ):
+            iface.messageBar().pushCritical(
+                "", "Sanallisten kaavamääräysten lajien assosiaatioiden poistaminen epäonnistui."
+            )
+
+        if not _delete_features(
+            plan_themes_to_delete,
+            PlanThemeAssociationLayer.get_from_project(),
+            "Kaavoitusteemojen assosiaatioiden poisto",
+        ):
+            iface.messageBar().pushCritical("", "Kaavoitusteemojen assosiaatioiden poistaminen epäonnistui.")
+
+        # Save associated data
+        verbal_regulation_ids = []
+        plan_theme_ids = []
+        additional_informations = []
+        for regulation, reg_id in zip(regulations, reg_ids):
+            additional_information = regulation.additional_information
+            for ai in additional_information:
+                ai.plan_regulation_id = reg_id
+            additional_informations.extend(additional_information)
+            verbal_regulation_ids.extend(regulation.verbal_regulation_type_ids)
+            plan_theme_ids.extend(regulation.theme_ids)
+        save_additional_information(additional_informations)
+        save_type_of_verbal_regulation_association(reg_ids, verbal_regulation_ids)
+        save_plan_theme_association(plan_theme_ids=plan_theme_ids, regulation_ids=reg_ids)
+
+
+def _handle_proposition_associations(propositions: Proposition | list[Proposition], prop_ids: str | list[str]) -> None:
+    if isinstance(propositions, Proposition) and isinstance(prop_ids, str):
+        # Check for plan theme to be deleted
+        for association in PlanThemeAssociationLayer.get_dangling_proposition_associations(
+            prop_ids, propositions.theme_ids
+        ):
+            if not _delete_feature(
+                association,
+                PlanThemeAssociationLayer.get_from_project(),
+                "Kaavoitusteeman assosiaation poisto",
+            ):
+                iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
+
+        for plan_theme_id in propositions.theme_ids:
+            save_plan_theme_association(plan_theme_ids=plan_theme_id, proposition_ids=prop_ids)
+
+    elif isinstance(propositions, list) and isinstance(prop_ids, list):
+        plan_themes_to_delete = []
+        for proposition, prop_id in zip(propositions, prop_ids):
+            plan_themes = PlanThemeAssociationLayer.get_dangling_regulation_associations(prop_id, proposition.theme_ids)
+            plan_themes_to_delete.extend(plan_themes)
+
+        if not _delete_features(
+            plan_themes_to_delete,
+            PlanThemeAssociationLayer.get_from_project(),
+            "Kaavoitusteemojen assosiaatioiden poisto",
+        ):
+            iface.messageBar().pushCritical("", "Kaavoitusteemojen assosiaatioiden poistaminen epäonnistui.")
+
+        # Save associated data
+        plan_theme_ids = []
+        for proposition in propositions:
+            plan_theme_ids.extend(proposition.theme_ids)
+        save_plan_theme_association(plan_theme_ids=plan_theme_ids, proposition_ids=prop_ids)
+
+
+@use_wait_cursor
+def save_regulations(regulations: list[Regulation]) -> None:
+    if not regulations:
+        return
+
+    regulation_layer = PlanRegulationLayer.get_from_project()
+
+    # Single regulation case
+    if len(regulations) == 1:
+        regulation = regulations[0]
+        reg_id = regulation.id_
+        editing = reg_id is not None
+
+        if reg_id is None or regulation.modified:
+            regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
+            if not _save_feature(
+                feature=regulation_feature,
+                layer=regulation_layer,
+                id_=reg_id,
+                edit_text="Kaavamääräyksen muokkaus" if editing else "Kaavamääräyksen lisäys",
+            ):
+                iface.messageBar().pushCritical("", "Kaavamääräyksen tallentaminen epäonnistui.")
+                return
+            reg_id = cast(str, regulation_feature["id"])
+            _handle_regulation_associations(regulation, reg_id)
+
+        return
+
+    # Multiple regulations case (batch save for new regulations, individual for updates)
+    new_regulations = []
+    for regulation in regulations:
+        reg_id = regulation.id_
+        editing = reg_id is not None
+
+        regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
+        if not editing:  # New regulations
+            new_regulations.append((regulation, regulation_feature))
+        else:  # Existing regulations
+            if not _save_feature(
+                feature=regulation_feature,
+                layer=regulation_layer,
+                id_=reg_id,
+                edit_text="Kaavamääräyksen muokkaus",
+            ):
+                iface.messageBar().pushCritical("", f"Kaavamääräyksen '{regulation.value}' muokkaus epäonnistui.")
+                continue
+            reg_id = cast(str, regulation_feature["id"])
+            _handle_regulation_associations(regulation, reg_id)
+
+    # Batch save new regulations
+    features_to_add = [item[1] for item in new_regulations]
+    if features_to_add:
+        if not _save_features(features=features_to_add, layer=regulation_layer, edit_text="Kaavamääräysten lisäys"):
+            iface.messageBar().pushCritical("", "Kaavamääräysten tallentaminen epäonnistui.")
+            return
+
+        saved_regulations = []
+        reg_ids = []
+        for regulation, regulation_feature in new_regulations:
+            reg_id = cast(str, regulation_feature["id"])
+            saved_regulations.append(regulation)
+            reg_ids.append(reg_id)
+        _handle_regulation_associations(saved_regulations, reg_ids)
+
+    return
 
 
 def save_plan_theme_association(
-    plan_theme_id: str, regulation_id: str | None = None, proposition_id: str | None = None
+    plan_theme_ids: list[str] | str,
+    regulation_ids: list[str] | str | None = None,
+    proposition_ids: list[str] | str | None = None,
 ) -> bool:
-    if regulation_id is not None and PlanThemeAssociationLayer.regulation_association_exists(
-        plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id
-    ):
-        return True
+    if isinstance(plan_theme_ids, str):
+        plan_theme_ids = [plan_theme_ids]
+    if isinstance(regulation_ids, str):
+        regulation_ids = [regulation_ids]
+    if isinstance(proposition_ids, str):
+        proposition_ids = [proposition_ids]
 
-    if proposition_id is not None and PlanThemeAssociationLayer.proposition_association_exists(
-        plan_theme_id=plan_theme_id, plan_proposition_id=proposition_id
-    ):
-        return True
-    feature = PlanThemeAssociationLayer.feature_from(
-        plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id, plan_proposition_id=proposition_id
-    )
+    features_to_save = []
     layer = PlanThemeAssociationLayer.get_from_project()
 
-    if not _save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavoitusteeman assosiaation lisäys"):
-        iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation tallentaminen epäonnistui.")
+    for i, plan_theme_id in enumerate(plan_theme_ids):
+        regulation_id = regulation_ids[i] if regulation_ids and i < len(regulation_ids) else None
+        proposition_id = proposition_ids[i] if proposition_ids and i < len(proposition_ids) else None
+
+        if regulation_id is not None and PlanThemeAssociationLayer.regulation_association_exists(
+            plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id
+        ):
+            continue
+
+        if proposition_id is not None and PlanThemeAssociationLayer.proposition_association_exists(
+            plan_theme_id=plan_theme_id, plan_proposition_id=proposition_id
+        ):
+            continue
+
+        feature = PlanThemeAssociationLayer.feature_from(
+            plan_theme_id=plan_theme_id,
+            plan_regulation_id=regulation_id,
+            plan_proposition_id=proposition_id,
+        )
+        features_to_save.append(feature)
+
+    if not features_to_save:
+        return True
+
+    if len(features_to_save) == 1:
+        edit_text = "Kaavoitusteeman assosiaation lisäys"
+    else:
+        edit_text = "Kaavoitusteemojen assosiaatioiden lisäys"
+
+    if not _save_features(features=features_to_save, layer=layer, edit_text=edit_text):
+        iface.messageBar().pushCritical("", f"{edit_text} epäonnistui.")
         return False
 
     return True
 
 
-def save_type_of_verbal_regulation_association(regulation_id: str, verbal_regulation_type_id: str) -> bool:
-    if TypeOfVerbalRegulationAssociationLayer.association_exists(regulation_id, verbal_regulation_type_id):
-        return True
-    feature = TypeOfVerbalRegulationAssociationLayer.feature_from(regulation_id, verbal_regulation_type_id)
+def save_type_of_verbal_regulation_association(
+    regulation_ids: list[str] | str,
+    verbal_regulation_type_ids: list[str] | str,
+) -> bool:
+    if isinstance(regulation_ids, str):
+        regulation_ids = [regulation_ids]
+    if isinstance(verbal_regulation_type_ids, str):
+        verbal_regulation_type_ids = [verbal_regulation_type_ids]
+
+    features_to_save = []
     layer = TypeOfVerbalRegulationAssociationLayer.get_from_project()
 
-    if not _save_feature(
-        feature=feature, layer=layer, id_=None, edit_text="Sanallisen kaavamääräyksen lajin assosiaation lisäys"
-    ):
-        iface.messageBar().pushCritical("", "Sanallisen kaavamääräyksen lajin assosiaation tallentaminen epäonnistui.")
+    if len(regulation_ids) == 1:
+        edit_text = "Sanallisen kaavamääräyksen lajin assosiaation lisäys"
+    else:
+        edit_text = "Sanallisten kaavamääräysten lajien assosiaatioiden lisäys"
+
+    for reg_id, verbal_regulation_type_id in zip(regulation_ids, verbal_regulation_type_ids):
+        if not reg_id or not verbal_regulation_type_id:
+            continue
+
+        if TypeOfVerbalRegulationAssociationLayer.association_exists(reg_id, verbal_regulation_type_id):
+            continue
+
+        feature = TypeOfVerbalRegulationAssociationLayer.feature_from(reg_id, verbal_regulation_type_id)
+        features_to_save.append(feature)
+
+    if not features_to_save:
+        return True
+
+    if not _save_features(features=features_to_save, layer=layer, edit_text=edit_text):
+        iface.messageBar().pushCritical("", f"{edit_text} epäonnistui.")
         return False
 
     return True
@@ -1013,21 +1230,33 @@ def save_legal_effect_association(plan_id: str, legal_effect_id: str) -> bool:
     return True
 
 
-def save_additional_information(additional_information: AdditionalInformation) -> str | None:
-    if additional_information.id_ is not None and not additional_information.modified:
-        return additional_information.id_
+def save_additional_information(
+    additional_information: list[AdditionalInformation] | AdditionalInformation,
+) -> None:
+    if not isinstance(additional_information, list):
+        additional_information = [additional_information]
 
-    feature = AdditionalInformationLayer.feature_from_model(additional_information)
-    if not _save_feature(
-        feature=feature,
-        layer=AdditionalInformationLayer.get_from_project(),
-        id_=additional_information.id_,
-        edit_text="Lisätiedon lisäys" if additional_information.id_ is None else "Lisätiedon muokkaus",
-    ):
-        iface.messageBar().pushCritical("", "Lisätiedon tallentaminen epäonnistui.")
-        return None
+    features_to_save = []
+    layer = AdditionalInformationLayer.get_from_project()
 
-    return feature["id"]
+    for ai in additional_information:
+        if ai.id_ is not None and not ai.modified:
+            continue
+
+        feature = AdditionalInformationLayer.feature_from_model(ai)
+
+        if ai.id_ is None:
+            features_to_save.append(feature)
+        else:
+            edit_text = "Lisätiedon muokkaus"
+            if not _save_feature(feature=feature, layer=layer, id_=ai.id_, edit_text=edit_text):
+                iface.messageBar().pushCritical("", f"{edit_text} epäonnistui")
+
+    if features_to_save:
+        edit_text = "Lisätietojen lisäys" if len(features_to_save) > 1 else "Lisätiedon lisäys"
+
+        if not _save_features(features=features_to_save, layer=layer, edit_text=edit_text):
+            iface.messageBar().pushCritical("", f"{edit_text} epäonnistui.")
 
 
 def delete_additional_information(additional_information: AdditionalInformation) -> bool:
@@ -1052,39 +1281,71 @@ def delete_regulation(regulation: Regulation) -> bool:
     return True
 
 
-def save_proposition(proposition: Proposition) -> str | None:
-    prop_id = proposition.id_
-    editing = prop_id is not None
-    if proposition.id_ is not None and not proposition.modified:
-        return proposition.id_
+def save_propositions(propositions: list[Proposition]) -> None:
+    if not propositions:
+        return
 
-    feature = PlanPropositionLayer.feature_from_model(proposition)
-    if not _save_feature(
-        feature=feature,
-        layer=PlanPropositionLayer.get_from_project(),
-        id_=prop_id,
-        edit_text="Kaavasuosituksen lisäys" if prop_id is None else "Kaavasuosituksen muokkaus",
-    ):
-        iface.messageBar().pushCritical("", "Kaavasuosituksen tallentaminen epäonnistui.")
-        return None
-    prop_id = cast(str, feature["id"])
+    proposition_layer = PlanPropositionLayer.get_from_project()
 
-    if editing:
-        # Check for plan theme to be deleted
-        for association in PlanThemeAssociationLayer.get_dangling_proposition_associations(
-            prop_id, proposition.theme_ids
-        ):
-            if not _delete_feature(
-                association,
-                PlanThemeAssociationLayer.get_from_project(),
-                "Kaavoitusteeman assosiaation poisto",
+    # Single proposition case
+    if len(propositions) == 1:
+        proposition = propositions[0]
+        prop_id = proposition.id_
+        editing = prop_id is not None
+
+        if prop_id is None or proposition.modified:
+            proposition_feature = PlanPropositionLayer.feature_from_model(proposition)
+            if not _save_feature(
+                feature=proposition_feature,
+                layer=proposition_layer,
+                id_=prop_id,
+                edit_text="Kaavasuosituksen muokkaus" if editing else "Kaavasuosituksen lisäys",
             ):
-                iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
+                iface.messageBar().pushCritical("", "Kaavasuosituksen tallentaminen epäonnistui.")
+                return
+            prop_id = cast(str, proposition_feature["id"])
+            _handle_proposition_associations(proposition, prop_id)
 
-    for plan_theme_id in proposition.theme_ids:
-        save_plan_theme_association(plan_theme_id=plan_theme_id, proposition_id=prop_id)
+        return
 
-    return feature["id"]
+    # Multiple propositions case (batch save for new regulations, individual for updates)
+    new_propositions = []
+    for proposition in propositions:
+        prop_id = proposition.id_
+        editing = prop_id is not None
+        # print(proposition)
+
+        proposition_feature = PlanPropositionLayer.feature_from_model(proposition)
+        if not editing:  # New propositions
+            new_propositions.append((proposition, proposition_feature))
+        else:  # Existing regulations
+            if not _save_feature(
+                feature=proposition_feature,
+                layer=proposition_layer,
+                id_=prop_id,
+                edit_text="Kaavasuosituksen muokkaus",
+            ):
+                iface.messageBar().pushCritical("", f"Kaavasuosituksen '{proposition.value}' muokkaus epäonnistui.")
+                continue
+            prop_id = cast(str, proposition_feature["id"])
+            _handle_proposition_associations(proposition, prop_id)
+
+    # Batch save new regulations
+    features_to_add = [item[1] for item in new_propositions]
+    if features_to_add:
+        if not _save_features(features=features_to_add, layer=proposition_layer, edit_text="Kaavasuositusten lisäys"):
+            iface.messageBar().pushCritical("", "Kaavasuositusten tallentaminen epäonnistui.")
+            return
+
+        saved_propositions = []
+        prop_ids = []
+        for proposition, proposition_feature in new_propositions:
+            prop_id = cast(str, proposition_feature["id"])
+            saved_propositions.append(proposition)
+            prop_ids.append(prop_id)
+        _handle_proposition_associations(saved_propositions, prop_ids)
+
+    return
 
 
 def delete_proposition(proposition: Proposition) -> bool:
