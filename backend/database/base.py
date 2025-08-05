@@ -1,18 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from geoalchemy2 import Geometry
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
-from sqlalchemy import ForeignKey, Index
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    declared_attr,
-    mapped_column,
-    relationship,
-)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP
 from sqlalchemy.types import Enum as SQLAlchemyEnum
@@ -68,151 +61,6 @@ class VersionedBase(Base):
     created_at: Mapped[timestamp]
     # TODO: postgresql has no default onupdate. Must implement this with trigger.
     modified_at: Mapped[timestamp]
-
-
-class CodeBase(VersionedBase):
-    """
-    Code tables in Ryhti should refer to national Ryhti code table URIs. They may
-    have hierarchical structure.
-    """
-
-    __abstract__ = True
-    __table_args__ = {"schema": "codes"}
-    code_list_uri = ""  # the URI to use for looking for codes online
-    local_codes: List[Dict] = []  # local codes to add to the code list
-
-    value: Mapped[unique_str]
-    short_name: Mapped[str] = mapped_column(server_default="", index=True)
-    name: Mapped[Optional[language_str]]
-    description: Mapped[Optional[language_str]]
-    # Let's import code status too. This tells our importer if the koodisto is final,
-    # or if the code can be deleted and/or moved.
-    status: Mapped[str]
-    # For now, level can just be imported from RYTJ. Let's assume the level in RYTJ
-    # is correct, so we don't have to calculate and recalculate it ourselves.
-    level: Mapped[int] = mapped_column(server_default="1", index=True)
-
-    # self-reference in abstract base class:
-    # We cannot use @classmethod decorator here. Alembic is buggy and apparently
-    # does not recognize declared attributes that are correctly marked as class methods.
-    @declared_attr
-    def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:  # noqa
-        return mapped_column(
-            ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
-        )
-
-    # Oh great. Unlike SQLAlchemy documentation states, @classmethod decorator should
-    # absolutely *not* be used. Declared relationships are not correctly set if the
-    # decorator is present.
-    @declared_attr
-    def parent(cls) -> Mapped[Optional[VersionedBase]]:  # noqa
-        return relationship(cls, remote_side=[cls.id], backref="children")
-
-    @property
-    def uri(self):
-        return f"{self.code_list_uri}/code/{self.value}"
-
-
-class PlanBase(VersionedBase):
-    """
-    All plan data tables should have additional date fields.
-    """
-
-    __abstract__ = True
-
-    # Let's have exported at field for all plan data, because some of them may be
-    # exported and others added after the plan has last been exported? This will
-    # require finding all the exported objects in the database after export is done,
-    # is it worth the trouble?
-    exported_at: Mapped[Optional[datetime]]
-
-    lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
-        index=True,
-    )
-
-    # class reference in abstract base class, with backreference to class name:
-    @declared_attr
-    def lifecycle_status(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship(
-            "LifeCycleStatus", backref=f"{cls.__tablename__}s", lazy="joined"
-        )
-
-    # Let's add backreference to allow lazy loading from this side.
-    @declared_attr
-    def lifecycle_dates(cls):  # noqa
-        return relationship(
-            "LifeCycleDate",
-            back_populates=f"{cls.__tablename__}",
-            lazy="joined",
-            cascade="all, delete-orphan",
-            passive_deletes=True,
-            order_by="LifeCycleDate.starting_at",
-        )
-
-
-class PlanObjectBase(PlanBase):
-    """
-    All plan object tables have the same fields, apart from geometry.
-    """
-
-    __abstract__ = True
-
-    @declared_attr.directive
-    @classmethod
-    def __table_args__(cls):
-        return (
-            Index(
-                f"ix_{cls.__tablename__}_plan_id_ordering",
-                "plan_id",
-                "ordering",
-                unique=True,
-            ),
-            PlanBase.__table_args__,
-        )
-
-    name: Mapped[Optional[language_str]]
-    description: Mapped[Optional[language_str]]
-    source_data_object: Mapped[Optional[str]]
-    height_min: Mapped[Optional[float]]
-    height_max: Mapped[Optional[float]]
-    height_unit: Mapped[Optional[str]]
-    height_reference_point: Mapped[Optional[str]]
-    ordering: Mapped[Optional[int]]
-    type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
-        index=True,
-    )
-    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
-    )
-
-    # class reference in abstract base class, with backreference to class name
-    # Let's load all the codes for objects joined.
-    @declared_attr
-    def type_of_underground(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship(
-            "TypeOfUnderground", backref=f"{cls.__tablename__}s", lazy="joined"
-        )
-
-    # class reference in abstract base class, with backreference to class name:
-    @declared_attr
-    def plan(cls) -> Mapped[VersionedBase]:  # noqa
-        return relationship("Plan", back_populates=f"{cls.__tablename__}s")
-
-    # class reference in abstract base class, with backreference to class name:
-    @declared_attr
-    def plan_regulation_groups(cls) -> Mapped[List[VersionedBase]]:  # noqa
-        return relationship(
-            "PlanRegulationGroup",
-            secondary="hame.regulation_group_association",
-            back_populates=f"{cls.__tablename__}s",
-            overlaps=(
-                "general_plan_regulation_groups,land_use_areas,other_areas,"
-                "land_use_points,lines,plan_regulation_groups"
-            ),
-            lazy="joined",
-        )
 
 
 class AttributeValueMixin:

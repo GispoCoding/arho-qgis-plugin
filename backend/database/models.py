@@ -4,20 +4,11 @@ from typing import List, Optional
 
 from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
 
-# we have to import CodeBase in codes.py from here to allow two-way relationships
-from database.base import (  # noqa
-    AttributeValueMixin,
-    Base,
-    CodeBase,
-    PlanBase,
-    PlanObjectBase,
-    VersionedBase,
-    language_str,
-    timestamp,
-)
+from database.base import AttributeValueMixin, Base, VersionedBase, language_str
+from database.codes import LifeCycleStatus
 
 regulation_group_association = Table(
     "regulation_group_association",
@@ -153,6 +144,46 @@ plan_theme_association = Table(
 )
 
 
+class PlanBase(VersionedBase):
+    """
+    All plan data tables should have additional date fields.
+    """
+
+    __abstract__ = True
+
+    # Let's have exported at field for all plan data, because some of them may be
+    # exported and others added after the plan has last been exported? This will
+    # require finding all the exported objects in the database after export is done,
+    # is it worth the trouble?
+    exported_at: Mapped[Optional[datetime]]
+
+    lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
+        index=True,
+    )
+
+    # class reference in abstract base class, with backreference to class name:
+    @declared_attr
+    @classmethod
+    def lifecycle_status(cls) -> Mapped["LifeCycleStatus"]:
+        return relationship(
+            "LifeCycleStatus", backref=f"{cls.__tablename__}s", lazy="joined"
+        )
+
+    # Let's add backreference to allow lazy loading from this side.
+    @declared_attr
+    @classmethod
+    def lifecycle_dates(cls):  # noqa
+        return relationship(
+            "LifeCycleDate",
+            back_populates=f"{cls.__tablename__}",
+            lazy="joined",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
+            order_by="LifeCycleDate.starting_at",
+        )
+
+
 class Plan(PlanBase):
     """
     Maakuntakaava, compatible with Ryhti 2.0 specification
@@ -219,6 +250,70 @@ class Plan(PlanBase):
         lazy="joined",
         backref="plans",
     )
+
+
+class PlanObjectBase(PlanBase):
+    """
+    All plan object tables have the same fields, apart from geometry.
+    """
+
+    __abstract__ = True
+
+    @declared_attr.directive
+    @classmethod
+    def __table_args__(cls):
+        return (
+            Index(
+                f"ix_{cls.__tablename__}_plan_id_ordering",
+                "plan_id",
+                "ordering",
+                unique=True,
+            ),
+            PlanBase.__table_args__,
+        )
+
+    name: Mapped[Optional[language_str]]
+    description: Mapped[Optional[language_str]]
+    source_data_object: Mapped[Optional[str]]
+    height_min: Mapped[Optional[float]]
+    height_max: Mapped[Optional[float]]
+    height_unit: Mapped[Optional[str]]
+    height_reference_point: Mapped[Optional[str]]
+    ordering: Mapped[Optional[int]]
+    type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
+        index=True,
+    )
+    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
+    )
+
+    # class reference in abstract base class, with backreference to class name
+    # Let's load all the codes for objects joined.
+    @declared_attr
+    def type_of_underground(cls) -> Mapped[VersionedBase]:  # noqa
+        return relationship(
+            "TypeOfUnderground", backref=f"{cls.__tablename__}s", lazy="joined"
+        )
+
+    # class reference in abstract base class, with backreference to class name:
+    @declared_attr
+    def plan(cls) -> Mapped[VersionedBase]:  # noqa
+        return relationship("Plan", back_populates=f"{cls.__tablename__}s")
+
+    # class reference in abstract base class, with backreference to class name:
+    @declared_attr
+    def plan_regulation_groups(cls) -> Mapped[List[VersionedBase]]:  # noqa
+        return relationship(
+            "PlanRegulationGroup",
+            secondary="hame.regulation_group_association",
+            back_populates=f"{cls.__tablename__}s",
+            overlaps=(
+                "general_plan_regulation_groups,land_use_areas,other_areas,"
+                "land_use_points,lines,plan_regulation_groups"
+            ),
+            lazy="joined",
+        )
 
 
 class LandUseArea(PlanObjectBase):

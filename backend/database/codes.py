@@ -1,11 +1,12 @@
-from typing import List, Type
+import uuid
+from typing import Dict, List, Optional, Type
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, ForeignKey, Table, Uuid
-from sqlalchemy.orm import Mapped, Session, relationship
+from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from database.models import Base, CodeBase
+from database.base import Base, VersionedBase, language_str, unique_str
 
 allowed_events = Table(
     "allowed_events",
@@ -49,6 +50,49 @@ allowed_events = Table(
     ),
     schema="codes",
 )
+
+
+class CodeBase(VersionedBase):
+    """
+    Code tables in Ryhti should refer to national Ryhti code table URIs. They may
+    have hierarchical structure.
+    """
+
+    __abstract__ = True
+    __table_args__ = {"schema": "codes"}
+    code_list_uri = ""  # the URI to use for looking for codes online
+    local_codes: List[Dict] = []  # local codes to add to the code list
+
+    value: Mapped[unique_str]
+    short_name: Mapped[str] = mapped_column(server_default="", index=True)
+    name: Mapped[Optional[language_str]]
+    description: Mapped[Optional[language_str]]
+    # Let's import code status too. This tells our importer if the koodisto is final,
+    # or if the code can be deleted and/or moved.
+    status: Mapped[str]
+    # For now, level can just be imported from RYTJ. Let's assume the level in RYTJ
+    # is correct, so we don't have to calculate and recalculate it ourselves.
+    level: Mapped[int] = mapped_column(server_default="1", index=True)
+
+    # self-reference in abstract base class:
+    # We cannot use @classmethod decorator here. Alembic is buggy and apparently
+    # does not recognize declared attributes that are correctly marked as class methods.
+    @declared_attr
+    def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:  # noqa
+        return mapped_column(
+            ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
+        )
+
+    # Oh great. Unlike SQLAlchemy documentation states, @classmethod decorator should
+    # absolutely *not* be used. Declared relationships are not correctly set if the
+    # decorator is present.
+    @declared_attr
+    def parent(cls) -> Mapped[Optional[VersionedBase]]:  # noqa
+        return relationship(cls, remote_side=[cls.id], backref="children")
+
+    @property
+    def uri(self):
+        return f"{self.code_list_uri}/code/{self.value}"
 
 
 class LifeCycleStatus(CodeBase):

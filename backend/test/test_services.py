@@ -6,8 +6,7 @@ import pytest
 import requests
 from sqlalchemy.orm import Session
 
-from database import models
-from lambdas.koodistot_loader.koodistot_loader import codes
+from database import codes
 
 from .conftest import assert_database_is_alright, deepcompare, drop_hame_db
 

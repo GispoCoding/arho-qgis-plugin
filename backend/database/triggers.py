@@ -10,13 +10,16 @@ hame_tables = [
     klass.__tablename__
     for _, klass in inspect.getmembers(models, inspect.isclass)
     if inspect.getmodule(klass) == models  # Ignore imported classes
+    and hasattr(klass, "__tablename__")  # Ignore classes without __tablename__
 ]
 
 # All tables that inherit PlanBase
 tables_with_lifecycle_date = [
     klass.__tablename__
     for _, klass in inspect.getmembers(models, inspect.isclass)
-    if inspect.getmodule(klass) == models and issubclass(klass, models.PlanBase)
+    if inspect.getmodule(klass) == models
+    and issubclass(klass, models.PlanBase)
+    and hasattr(klass, "__tablename__")  # Ignore classes without __tablename__
 ]
 
 # Regulations and propositions link to plan via plan regulation group
@@ -26,7 +29,9 @@ plan_regulation_tables = ["plan_regulation", "plan_proposition"]
 plan_object_tables = [
     klass.__tablename__
     for _, klass in inspect.getmembers(models, inspect.isclass)
-    if inspect.getmodule(klass) == models and issubclass(klass, models.PlanObjectBase)
+    if inspect.getmodule(klass) == models
+    and issubclass(klass, models.PlanObjectBase)
+    and hasattr(klass, "__tablename__")  # Ignore classes without __tablename__
 ]
 
 
