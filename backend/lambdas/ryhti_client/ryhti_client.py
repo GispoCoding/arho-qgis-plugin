@@ -244,6 +244,7 @@ class RyhtiClient:
         "User-Agent": "ARHO - Open source Ryhti compatible database",
         "Content-Type": "application/json",
         "Accept": "application/json",
+        "Accept-Language": "fi-FI",
     }
     public_api_base = "https://api.ymparisto.fi/ryhti/plan-public/api/"
     xroad_server_address = ""
@@ -276,9 +277,7 @@ class RyhtiClient:
         if public_api_url:
             self.public_api_base = public_api_url
         self.public_api_key = public_api_key
-        self.public_headers |= {"Ocp-Apim-Subscription-Key": self.public_api_key} | {
-            "Accept-Language": "fi-FI"
-        }
+        self.public_headers |= {"Ocp-Apim-Subscription-Key": self.public_api_key}
 
         # X-Road API needs path and headers configured
         if xroad_server_address:
@@ -1580,14 +1579,12 @@ class RyhtiClient:
                     json.dump(plan_matter, plan_file)
             LOGGER.info(f"POSTing JSON: {json.dumps(plan_matter)}")
 
-            validation_headers = self.xroad_headers.copy()
-            validation_headers |= {"Accept-Language": "fi-FI"}
             # requests apparently uses simplejson automatically if it is installed!
             # A bit too much magic for my taste, but seems to work.
             response = requests.post(
                 plan_matter_validation_endpoint,
                 json=plan_matter,
-                headers=validation_headers,
+                headers=self.xroad_headers,
             )
             LOGGER.info(f"Got response {response}")
             LOGGER.info(response.text)
