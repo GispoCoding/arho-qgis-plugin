@@ -482,6 +482,16 @@ plan_regulation_groups:
           - type: osaAlue
           - type: maakunnallinen
 
+  - heading: Paikallisesti arvokas maisema-alue
+    category: Alueiden erityisominaisuudet ja muut osa-alueet
+    geometry: Alue
+    letter_code: pma
+    plan_regulations:
+      - regulation_code: maisemallisestiArvokasAlue
+        additional_information:
+          - type: osaAlue
+          - type: paikallinen
+
   - heading: Merkittävä rakennettu kulttuuriympäristö
     category: Alueiden erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
@@ -496,7 +506,7 @@ plan_regulation_groups:
     geometry: [Alue, Piste]
     letter_code: kvky
     plan_regulations:
-      - regulation_code: maisemallisestiArvokasAlue
+      - regulation_code: merkittavaRakennettuKulttuuriymparisto
         additional_information:
           - type: osaAlue
           - type: kansainvalinen
@@ -506,7 +516,7 @@ plan_regulation_groups:
     geometry: [Alue, Piste, Viiva]
     letter_code: rky
     plan_regulations:
-      - regulation_code: valtakunnallisestiMerkittavaRakennettuKulttuuriymparisto
+      - regulation_code: merkittavaRakennettuKulttuuriymparisto
         additional_information:
           - type: osaAlue
           - type: valtakunnallinen
@@ -655,7 +665,7 @@ plan_regulation_groups:
     geometry: Alue
     letter_code: tärinä
     plan_regulations:
-      - regulation_code: melualue
+      - regulation_code: tarinaAlue
         additional_information:
           - type: osaAlue
 
