@@ -752,7 +752,7 @@ plan_regulation_groups:
           - type: osaAlue
 
   #p. 54
-  - heading: Kaupunkikehittämisen kohdealue
+  - heading: Kaupunkikehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: kk
@@ -762,7 +762,7 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Maaseudun kehittämisen kohdealue
+  - heading: Maaseudun kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: mk
@@ -772,7 +772,7 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Matkailun ja virkistyksen kehittämisen kohdealue
+  - heading: Matkailun ja virkistyksen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: mv
@@ -786,7 +786,7 @@ plan_regulation_groups:
             value: virkistysalue
       - regulation_code: sanallinenMaarays
 
-  - heading: Matkailun kehittämisen kohdealue
+  - heading: Matkailun kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: rma
@@ -798,7 +798,7 @@ plan_regulation_groups:
             value: matkailupalvelujenAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Virkistyksen kehittämisen kohdealue
+  - heading: Virkistyksen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: vka
@@ -810,7 +810,7 @@ plan_regulation_groups:
             value: virkistysalue
       - regulation_code: sanallinenMaarays
 
-  - heading: Vähittäiskaupan kehittämisen kohdealue
+  - heading: Vähittäiskaupan kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: kma
@@ -833,7 +833,7 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Kulttuuriympäristön kehittämisen kohdealue
+  - heading: Kulttuuriympäristön kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: ky
