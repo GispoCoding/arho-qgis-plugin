@@ -632,7 +632,7 @@ def test_set_permanent_plan_identifiers_in_wrong_region(
     assert plan_instance.organisation is another_organisation_instance
     assert not plan_instance.permanent_plan_identifier
     assert (
-        message["body"]["details"][plan_instance.id]
+        message[plan_instance.id]
         == "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
     )
 
@@ -656,7 +656,7 @@ def test_set_permanent_plan_identifiers(
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
     assert plan_instance.permanent_plan_identifier == received_plan_identifier
-    assert message["body"]["details"][plan_instance.id] == received_plan_identifier
+    assert message[plan_instance.id] == received_plan_identifier
 
 
 @pytest.fixture()
