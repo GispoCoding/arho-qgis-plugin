@@ -275,12 +275,10 @@ class RyhtiClient:
         xroad_member_code: Optional[str] = None,
         xroad_member_client_name: Optional[str] = None,
         xroad_port: Optional[int] = 8080,
-        event_type: Action = Action.VALIDATE_PLANS,
         plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
     ) -> None:
         LOGGER.info("Initializing Ryhti client...")
-        self.event_type = event_type
         self.debug_json = debug_json
 
         # Public API only needs an API key and URL
@@ -2181,7 +2179,6 @@ def handler(
 
     client = RyhtiClient(
         db_helper.get_connection_string(),
-        event_type=event_type,
         plan_uuid=plan_uuid,
         debug_json=debug_json,
         public_api_key=public_api_key,
