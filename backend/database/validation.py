@@ -98,6 +98,7 @@ trgfunc_prevent_land_use_area_overlaps = PGFunction(
         FROM hame.land_use_area
         WHERE
             plan_id = NEW.plan_id
+            AND id IS DISTINCT FROM NEW.id
             AND ST_Overlaps(geom, NEW.geom)
         ;
         IF overlapping_id IS NOT NULL THEN
