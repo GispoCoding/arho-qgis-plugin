@@ -836,7 +836,7 @@ plan_regulation_groups:
   - heading: Kulttuuriympäristön kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
-    letter_code: ky
+    letter_code: kya
     plan_regulations:
       - regulation_code: kehittamisvyohyke
         additional_information:
