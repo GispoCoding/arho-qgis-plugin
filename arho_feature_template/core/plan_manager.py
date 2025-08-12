@@ -10,7 +10,6 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsFeature,
     QgsGeometry,
-    QgsLayerTreeLayer,
     QgsProject,
     QgsVectorLayer,
     QgsWkbTypes,
@@ -564,9 +563,9 @@ class PlanManager(QObject):
                 identifier = None
 
             self.set_permanent_identifier(identifier)
-            # for feature_layer in plan_feature_layers:
-            #     layer = feature_layer.get_from_project()
-            #     _apply_style(layer)
+            for feature_layer in plan_feature_layers:
+                layer = feature_layer.get_from_project()
+                _apply_style(layer)
             self.zoom_to_active_plan()
 
     def zoom_to_active_plan(self):
@@ -786,22 +785,30 @@ def _delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str
     return layer.commitChanges(stopEditing=False)
 
 
-# def _apply_style(layer: QgsVectorLayer) -> None:
-#     active_plan = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
-#     model = PlanLayer.model_from_feature(active_plan)
-#     plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
-#     if plan_type == PlanType.REGIONAL:
-#         path = plugin_path("resources", "styles", "maakuntakaava")
-#     elif plan_type == PlanType.GENERAL:
-#         path = plugin_path("resources", "styles", "yleiskaava")
-#     elif plan_type == PlanType.TOWN:
-#         path = plugin_path("resources", "styles", "asemakaava")
+def _apply_style(layer: QgsVectorLayer) -> None:
+    active_plan = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
+    model = PlanLayer.model_from_feature(active_plan)
+    plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
+    if plan_type == PlanType.REGIONAL:
+        path = plugin_path("resources", "styles", "maakuntakaava")
+    # elif plan_type == PlanType.GENERAL:
+    #     path = plugin_path("resources", "styles", "yleiskaava")
+    # elif plan_type == PlanType.TOWN:
+    #     path = plugin_path("resources", "styles", "asemakaava")
 
-#     msg, result = layer.loadNamedStyle(os.path.join(path, QML_MAP[layer.name()]))
-#     if not result:
-#         iface.messageBar().pushCritical("", msg)
-#         return
-#     layer.triggerRepaint()
+    # Apply style to temp layer and copy symbology and labels from there to the actual layer
+    geom_type = QgsWkbTypes.displayString(layer.wkbType())
+    crs = layer.crs().authid()
+    temp_layer = QgsVectorLayer(f"{geom_type}?crs={crs}", "temp_layer", "memory")
+    msg, result = temp_layer.loadNamedStyle(os.path.join(path, QML_MAP[layer.name()]))
+    if not result:
+        iface.messageBar().pushCritical("", msg)
+        return
+    layer.setRenderer(temp_layer.renderer().clone())
+    layer.setLabeling(temp_layer.labeling().clone())
+    layer.setLabelsEnabled(True)
+
+    layer.triggerRepaint()
 
 
 @use_wait_cursor
@@ -896,7 +903,6 @@ def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> 
             iface.messageBar().pushCritical("", "Kaavakohteen tallentaminen epäonnistui.")
             return None
         feat_id = cast(str, feature["id"])
-    # _apply_style(layer_class.get_from_project())
 
     if editing:
         # Check for deleted regulation groups
