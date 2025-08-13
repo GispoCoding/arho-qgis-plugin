@@ -226,7 +226,10 @@ def handler(
         xroad_member_code=xroad_member_code,
         xroad_member_client_name=xroad_member_client_name,
     )
-    if client.plans:
+
+    database_client = client.database_client
+
+    if database_client.plans:
         if event_type is Action.GET_PLANS:
             # just return the JSON to the user
             response_title = "Returning serialized plans from database."
@@ -235,7 +238,7 @@ def handler(
                 statusCode=200,
                 body=ResponseBody(
                     title=response_title,
-                    details=cast(dict, client.plan_dictionaries),
+                    details=cast(dict, database_client.plan_dictionaries),
                     ryhti_responses={},
                 ),
             )
@@ -243,7 +246,7 @@ def handler(
         if event_type is Action.GET_PLAN_MATTERS:
             # just return the JSON to the user
             LOGGER.info("Formatting plan matter data...")
-            plan_matters = client.get_plan_matters()
+            plan_matters = database_client.get_plan_matters()
             response_title = "Returning serialized plan matters from database."
             LOGGER.info(response_title)
             lambda_response = Response(
@@ -261,7 +264,9 @@ def handler(
             validation_responses = client.validate_plans()
             # 2) Save and return plan validation data
             LOGGER.info("Saving plan validation data...")
-            save_details = client.save_plan_validation_responses(validation_responses)
+            save_details = database_client.save_plan_validation_responses(
+                validation_responses
+            )
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(
@@ -279,7 +284,7 @@ def handler(
             plan_identifier_responses = client.get_permanent_plan_identifiers()
             # 2) Save and return permanent plan identifiers
             LOGGER.info("Setting permanent plan identifiers for plans...")
-            save_details = client.set_permanent_plan_identifiers(
+            save_details = database_client.set_permanent_plan_identifiers(
                 plan_identifier_responses
             )
             lambda_response = Response(
@@ -305,13 +310,15 @@ def handler(
             LOGGER.info("Checking and updating plan documents for plans...")
             plan_documents = client.upload_plan_documents()
             LOGGER.info("Marking documents exported...")
-            client.set_plan_documents(plan_documents)
+            database_client.set_plan_documents(plan_documents)
             # 2) Validate plan matters with identifiers with X-Road API
             LOGGER.info("Validating plan matters for plans...")
             responses = client.validate_plan_matters()
             # 3) Save and return plan matter validation data
             LOGGER.info("Saving plan matter validation data for plans...")
-            save_details = client.save_plan_matter_validation_responses(responses)
+            save_details = database_client.save_plan_matter_validation_responses(
+                responses
+            )
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(
@@ -328,13 +335,13 @@ def handler(
             LOGGER.info("Checking and updating plan documents for plans...")
             plan_documents = client.upload_plan_documents()
             LOGGER.info("Marking documents exported...")
-            client.set_plan_documents(plan_documents)
+            database_client.set_plan_documents(plan_documents)
             # 2) Create or update Ryhti plan matters
             LOGGER.info("POSTing plan matters...")
             responses = client.post_plan_matters()
             # 3) Save and return plan matter update responses
             LOGGER.info("Saving plan matter POST data for posted plans...")
-            save_details = client.save_plan_matter_post_responses(responses)
+            save_details = database_client.save_plan_matter_post_responses(responses)
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(

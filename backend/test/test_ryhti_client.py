@@ -399,7 +399,9 @@ def test_related_land_use_area(
     is added to the related plan objects list.
     """
 
-    plan_dict = client_with_plan_data.plan_dictionaries[complete_test_plan.id]
+    plan_dict = client_with_plan_data.database_client.plan_dictionaries[
+        complete_test_plan.id
+    ]
     other_area_in_dict = next(
         (
             plan_object
@@ -499,7 +501,9 @@ def test_get_plan_dictionaries(
     """
     Check that correct JSON structure is generated when client is initialized.
     """
-    result_plan_dict = client_with_plan_data.plan_dictionaries[plan_instance.id]
+    result_plan_dict = client_with_plan_data.database_client.plan_dictionaries[
+        plan_instance.id
+    ]
     deepcompare(
         result_plan_dict,
         desired_plan_dict,
@@ -540,7 +544,9 @@ def test_save_plan_validation_responses(
     Check that Ryhti validation error is saved to database.
     """
     responses = client_with_plan_data.validate_plans()
-    message = client_with_plan_data.save_plan_validation_responses(responses)
+    message = client_with_plan_data.database_client.save_plan_validation_responses(
+        responses
+    )
     session.refresh(plan_instance)
     assert plan_instance.validated_at
     assert plan_instance.validation_errors == next(iter(responses.values()))["errors"]
@@ -623,10 +629,8 @@ def test_set_permanent_plan_identifiers_in_wrong_region(
     id_responses = (
         authenticated_client_with_plan_in_wrong_region.get_permanent_plan_identifiers()
     )
-    message = (
-        authenticated_client_with_plan_in_wrong_region.set_permanent_plan_identifiers(
-            id_responses
-        )
+    message = authenticated_client_with_plan_in_wrong_region.database_client.set_permanent_plan_identifiers(
+        id_responses
     )
     session.refresh(plan_instance)
     assert plan_instance.organisation is another_organisation_instance
@@ -649,8 +653,10 @@ def test_set_permanent_plan_identifiers(
     """
 
     id_responses = authenticated_client_with_plan.get_permanent_plan_identifiers()
-    message = authenticated_client_with_plan.set_permanent_plan_identifiers(
-        id_responses
+    message = (
+        authenticated_client_with_plan.database_client.set_permanent_plan_identifiers(
+            id_responses
+        )
     )
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
@@ -671,7 +677,9 @@ def client_with_plan_with_permanent_identifier(
     identifier set.
     """
     id_responses = authenticated_client_with_plan.get_permanent_plan_identifiers()
-    authenticated_client_with_plan.set_permanent_plan_identifiers(id_responses)
+    authenticated_client_with_plan.database_client.set_permanent_plan_identifiers(
+        id_responses
+    )
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
     assert plan_instance.permanent_plan_identifier
@@ -693,7 +701,7 @@ def client_with_plan_with_permanent_identifier_in_proposal_phase(
     id_responses = (
         authenticated_client_with_plan_in_proposal_phase.get_permanent_plan_identifiers()
     )
-    authenticated_client_with_plan_in_proposal_phase.set_permanent_plan_identifiers(
+    authenticated_client_with_plan_in_proposal_phase.database_client.set_permanent_plan_identifiers(
         id_responses
     )
     session.refresh(plan_instance)
@@ -738,7 +746,9 @@ def test_set_plan_documents(
     permanent identifiers.
     """
     responses = client_with_plan_with_permanent_identifier.upload_plan_documents()
-    client_with_plan_with_permanent_identifier.set_plan_documents(responses)
+    client_with_plan_with_permanent_identifier.database_client.set_plan_documents(
+        responses
+    )
     session.refresh(plan_instance.documents[0])
     assert plan_instance.documents[0].exported_at
     assert plan_instance.documents[0].exported_file_key
@@ -765,7 +775,9 @@ def client_with_plan_with_permanent_identifier_and_documents(
             assert document_response["status"] == 201
             assert not document_response["errors"]
             assert document_response["detail"]
-    client_with_plan_with_permanent_identifier.set_plan_documents(responses)
+    client_with_plan_with_permanent_identifier.database_client.set_plan_documents(
+        responses
+    )
     session.refresh(plan_instance.documents[0])
     assert plan_instance.documents[0].exported_at
     assert plan_instance.documents[0].exported_file_key
@@ -794,7 +806,7 @@ def client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase(
             assert document_response["status"] == 201
             assert not document_response["errors"]
             assert document_response["detail"]
-    client_with_plan_with_permanent_identifier_in_proposal_phase.set_plan_documents(
+    client_with_plan_with_permanent_identifier_in_proposal_phase.database_client.set_plan_documents(
         responses
     )
     session.refresh(plan_instance.documents[0])
@@ -829,7 +841,7 @@ def test_upload_unchanged_plan_documents(
             assert plan_id == plan_instance.id
             assert document_response["status"] is None
             assert document_response["detail"] == "File unchanged since last upload."
-    client_with_plan_with_permanent_identifier_and_documents.set_plan_documents(
+    client_with_plan_with_permanent_identifier_and_documents.database_client.set_plan_documents(
         reupload_responses
     )
     session.refresh(plan_instance.documents[0])
@@ -847,12 +859,10 @@ def test_get_plan_matters(
     Check that correct JSON structure is generated for plan matter. This requires that
     the client has already fetched a permanent identifer for the plan.
     """
-    client_with_plan_with_permanent_identifier_and_documents.plan_matter_dictionaries = (
-        client_with_plan_with_permanent_identifier_and_documents.get_plan_matters()
+    plan_matter_dictionaries = (
+        client_with_plan_with_permanent_identifier_and_documents.database_client.get_plan_matters()
     )
-    plan_matter = client_with_plan_with_permanent_identifier_and_documents.plan_matter_dictionaries[
-        plan_instance.id
-    ]
+    plan_matter = plan_matter_dictionaries[plan_instance.id]
     deepcompare(
         plan_matter,
         desired_plan_matter_dict,
@@ -908,7 +918,7 @@ def test_save_plan_matter_validation_responses(
     responses = (
         client_with_plan_with_permanent_identifier_and_documents.validate_plan_matters()
     )
-    message = client_with_plan_with_permanent_identifier_and_documents.save_plan_matter_validation_responses(
+    message = client_with_plan_with_permanent_identifier_and_documents.database_client.save_plan_matter_validation_responses(
         responses
     )
     session.refresh(plan_instance)
@@ -946,7 +956,7 @@ def test_save_new_plan_matter_post_responses(
     responses = (
         client_with_plan_with_permanent_identifier_and_documents.post_plan_matters()
     )
-    message = client_with_plan_with_permanent_identifier_and_documents.save_plan_matter_post_responses(
+    message = client_with_plan_with_permanent_identifier_and_documents.database_client.save_plan_matter_post_responses(
         responses
     )
     session.refresh(plan_instance)
@@ -985,7 +995,7 @@ def test_save_update_existing_matter_post_responses(
     responses = (
         client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.post_plan_matters()
     )
-    message = client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.save_plan_matter_post_responses(
+    message = client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.database_client.save_plan_matter_post_responses(
         responses
     )
     session.refresh(plan_instance)
@@ -1024,7 +1034,7 @@ def test_save_update_existing_matter_phase_post_responses(
     responses = (
         client_with_plan_with_permanent_identifier_and_documents.post_plan_matters()
     )
-    message = client_with_plan_with_permanent_identifier_and_documents.save_plan_matter_post_responses(
+    message = client_with_plan_with_permanent_identifier_and_documents.database_client.save_plan_matter_post_responses(
         responses
     )
     session.refresh(plan_instance)
