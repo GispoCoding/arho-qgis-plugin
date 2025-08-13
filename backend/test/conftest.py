@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import timeit
 from datetime import datetime
@@ -22,6 +23,9 @@ from database.base import PROJECT_SRID
 from database.db_helper import DatabaseHelper, User
 from database.enums import AttributeValueDataType
 from lambdas.db_manager import db_manager
+
+# A little hack to make sure the ryhti_client package can be found during tests
+sys.path.append("lambdas/ryhti_client")
 
 hame_count: int = 19  # adjust me when adding tables
 codes_count: int = 22  # adjust me when adding tables

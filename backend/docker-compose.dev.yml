@@ -78,7 +78,8 @@ services:
       - mock_xroad
     volumes:
       - ./ryhti_debug:/var/task/ryhti_debug
-      - ./lambdas/ryhti_client/ryhti_client.py:/var/task/ryhti_client.py
+      - ./lambdas/ryhti_client/ryhti_client:/var/task/ryhti_client
+      - ./lambdas/ryhti_client/lambda_function.py:/var/task/lambda_function.py
       - ./database:/var/task/database
 
   mml_loader:

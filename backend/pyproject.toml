@@ -1,6 +1,7 @@
 [tool.isort]
 # Black compatible values for isort https://black.readthedocs.io/en/stable/compatible_configs.html#isort
 profile = "black"
+known_first_party = ["database", "ryhti_client"]
 
 [tool.pytest.ini_options]
 pythonpath = [
