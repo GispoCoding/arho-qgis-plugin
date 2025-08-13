@@ -26,6 +26,15 @@ from database.codes import (
     processing_events_by_status,
 )
 from database.enums import AttributeValueDataType
+from ryhti_client.ryhti_schema import (
+    Period,
+    RyhtiHandlingEvent,
+    RyhtiInteractionEvent,
+    RyhtiPlan,
+    RyhtiPlanDecision,
+    RyhtiPlanMatter,
+    RyhtiPlanMatterPhase,
+)
 
 if TYPE_CHECKING:
     import uuid
@@ -55,76 +64,6 @@ class RyhtiResponse(TypedDict):
     detail: Optional[str]
     errors: Optional[dict]
     warnings: Optional[dict]
-
-
-class Period(TypedDict):
-    begin: str
-    end: str | None
-
-
-# Typing for ryhti dicts
-class RyhtiPlan(TypedDict, total=False):
-    planKey: str
-    lifeCycleStatus: str
-    scale: int
-    legalEffectOfLocalMasterPlans: List | None
-    geographicalArea: Dict
-    periodOfValidity: Period | None
-    approvalDate: str | None
-    planMaps: List
-    planAnnexes: List
-    otherPlanMaterials: List
-    planReport: Dict | None
-    generalRegulationGroups: List[Dict]
-    planDescription: str | None
-    planObjects: List
-    planRegulationGroups: List
-    planRegulationGroupRelations: List
-
-
-class RyhtiPlanDecision(TypedDict, total=False):
-    planDecisionKey: str
-    name: str
-    decisionDate: str
-    dateOfDecision: str
-    typeOfDecisionMaker: str
-    plans: List[RyhtiPlan]
-
-
-class RyhtiHandlingEvent(TypedDict, total=False):
-    handlingEventKey: str
-    handlingEventType: str
-    eventTime: str
-    cancelled: bool
-
-
-class RyhtiInteractionEvent(TypedDict, total=False):
-    interactionEventKey: str
-    interactionEventType: str
-    eventTime: Period
-
-
-class RyhtiPlanMatterPhase(TypedDict, total=False):
-    planMatterPhaseKey: str
-    lifeCycleStatus: str
-    geographicalArea: Dict
-    handlingEvent: RyhtiHandlingEvent | None
-    interactionEvents: List[RyhtiInteractionEvent] | None
-    planDecision: RyhtiPlanDecision | None
-
-
-class RyhtiPlanMatter(TypedDict, total=False):
-    permanentPlanIdentifier: str
-    planType: str
-    name: Dict
-    timeOfInitiation: str | None
-    description: Dict
-    producerPlanIdentifier: str
-    caseIdentifiers: List
-    recordNumbers: List
-    administrativeAreaIdentifiers: List
-    digitalOrigin: str
-    planMatterPhases: List[RyhtiPlanMatterPhase]
 
 
 class RyhtiClient:
