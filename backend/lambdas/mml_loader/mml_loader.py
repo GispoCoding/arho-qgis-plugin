@@ -15,6 +15,8 @@ from shapely.geometry import MultiPolygon, shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+# SQLAlchemy needs all the models to be imported to make relationships mapper to work
+from database import codes, models  # noqa: F401
 from database.codes import AdministrativeRegion, Municipality
 from database.db_helper import DatabaseHelper, User
 
