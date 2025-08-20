@@ -6,14 +6,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Generator, Iterable, cast
 
-from qgis.core import (
-    QgsExpressionContextUtils,
-    QgsFeature,
-    QgsGeometry,
-    QgsProject,
-    QgsVectorLayer,
-    QgsWkbTypes,
-)
+from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer, QgsWkbTypes
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
@@ -33,6 +26,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
+from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.lifecycle_editor import LifecycleEditor
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
@@ -251,6 +245,11 @@ class PlanManager(QObject):
             for file_path in get_user_plan_feature_library_config_files()
         ]
         self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
+
+    def open_import_plan_dialog(self):
+        dialog = ImportPlanForm(iface.mainWindow())
+        if dialog.exec_() and dialog.imported_plan_id:
+            self.set_active_plan(dialog.imported_plan_id)
 
     def open_import_features_dialog(self):
         import_features_form = ImportFeaturesForm(self.active_plan_regulation_group_library)
@@ -529,9 +528,7 @@ class PlanManager(QObject):
             )
             title = plan_feature.name
         else:
-            plan_feature = PlanFeature(
-                layer_name=self.new_feature_dock.active_feature_layer,
-            )
+            plan_feature = PlanFeature(layer_name=self.new_feature_dock.active_feature_layer)
             title = self.new_feature_dock.active_feature_type
 
         plan_feature.geom = feature.geometry()
@@ -891,9 +888,7 @@ def save_plan(plan: Plan) -> str | None:
         # Check for deleted legal effects
         for association in LegalEffectAssociationLayer.get_dangling_associations(plan_id, plan.legal_effect_ids):
             if not _delete_feature(
-                association,
-                LegalEffectAssociationLayer.get_from_project(),
-                "Oikeusvaikutuksen assosiaation poisto",
+                association, LegalEffectAssociationLayer.get_from_project(), "Oikeusvaikutuksen assosiaation poisto"
             ):
                 iface.messageBar().pushCritical("", "Oikeusvaikutuksen assosiaation poistaminen epäonnistui.")
 
@@ -1092,9 +1087,7 @@ def save_regulation(regulation: Regulation) -> str | None:
         # Check for plan theme to be deleted
         for association in PlanThemeAssociationLayer.get_dangling_regulation_associations(reg_id, regulation.theme_ids):
             if not _delete_feature(
-                association,
-                PlanThemeAssociationLayer.get_from_project(),
-                "Kaavoitusteeman assosiaation poisto",
+                association, PlanThemeAssociationLayer.get_from_project(), "Kaavoitusteeman assosiaation poisto"
             ):
                 iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
 
@@ -1225,9 +1218,7 @@ def save_proposition(proposition: Proposition) -> str | None:
             prop_id, proposition.theme_ids
         ):
             if not _delete_feature(
-                association,
-                PlanThemeAssociationLayer.get_from_project(),
-                "Kaavoitusteeman assosiaation poisto",
+                association, PlanThemeAssociationLayer.get_from_project(), "Kaavoitusteeman assosiaation poisto"
             ):
                 iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
 

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from http import HTTPStatus
-from typing import Callable, cast
+from typing import Any, Callable, cast
 
 from qgis.PyQt.QtCore import QByteArray, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
@@ -20,6 +21,8 @@ class LambdaService(QObject):
     validation_failed = pyqtSignal(str)
     plan_matter_received = pyqtSignal(dict)
     plan_identifier_received = pyqtSignal(dict)
+    plan_imported = pyqtSignal(str)
+    plan_import_failed = pyqtSignal(str)
 
     ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.User + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
@@ -28,6 +31,7 @@ class LambdaService(QObject):
     ACTION_GET_PLAN_MATTERS = "get_plan_matters"
     ACTION_POST_PLAN_MATTERS = "post_plan_matters"
     ACTION_GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
+    ACTION_IMPORT_PLAN = "import_plan"
 
     def __init__(self):
         super().__init__()
@@ -52,7 +56,19 @@ class LambdaService(QObject):
     def get_permanent_identifier(self, plan_id: str):
         self._send_request(action=self.ACTION_GET_PERMANENT_IDENTIFIERS, plan_id=plan_id)
 
-    def _send_request(self, action: str, plan_id: str):
+    def import_plan(self, plan_json: str, extra_data: dict, force: bool = False):  # noqa: FBT001, FBT002
+        payload: dict[str, Any] = {
+            # For now use a random non existing UUID so backend won't find any existing plan
+            # TODO: Change this when backend supports importing without UUID
+            "plan_uuid": str(uuid.uuid4()),
+            "data": {"plan_json": plan_json, "extra_data": extra_data},
+        }
+        if force:
+            payload["force"] = True
+
+        self._send_request(action=self.ACTION_IMPORT_PLAN, payload=payload)
+
+    def _send_request(self, action: str, plan_id: str | None = None, payload: dict | None = None):
         """Sends a request to the lambda function."""
         proxy_host, proxy_port, self.lambda_url = get_settings()
 
@@ -67,8 +83,11 @@ class LambdaService(QObject):
         else:
             self.network_manager.setProxy(QNetworkProxy())
 
-        payload = {"action": action, "plan_uuid": plan_id}
-        payload_bytes = QByteArray(json.dumps(payload).encode("utf-8"))
+        if not payload or plan_id:
+            payload = {"plan_uuid": plan_id}
+        payload["action"] = action
+
+        payload_bytes = QByteArray(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         request = QNetworkRequest(QUrl(self.lambda_url))
         request.setAttribute(LambdaService.ActionAttribute, action)
         request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
@@ -83,6 +102,7 @@ class LambdaService(QObject):
         handlers = {
             self.ACTION_GET_PLANS: self._process_export_plan_response,
             self.ACTION_GET_PLAN_MATTERS: self._process_export_plan_matter_response,
+            self.ACTION_IMPORT_PLAN: self._process_import_plan_response,
             self.ACTION_VALIDATE_PLANS: self._process_validation_response,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_response,
             self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_response,
@@ -94,6 +114,7 @@ class LambdaService(QObject):
         handlers = {
             self.ACTION_GET_PLANS: lambda x: None,  # noqa: ARG005
             self.ACTION_GET_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
+            self.ACTION_IMPORT_PLAN: self._handle_import_error,
             self.ACTION_VALIDATE_PLANS: self._handle_validation_error,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._handle_validation_error,
             self.ACTION_POST_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
@@ -219,3 +240,15 @@ class LambdaService(QObject):
 
         # Emit the signal with the JSON
         self.plan_matter_data_received.emit(plan_matter)
+
+    def _process_import_plan_response(self, response_body: dict):
+        title = response_body.get("title")
+        if title == "Plan imported.":
+            details = response_body.get("details") or {}
+            plan_id = details.get("plan_id")
+            self.plan_imported.emit(plan_id)
+        else:
+            self._handle_import_error(str(response_body))
+
+    def _handle_import_error(self, error: str):
+        self.plan_import_failed.emit(f"error: {error}")
