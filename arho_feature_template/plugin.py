@@ -168,15 +168,23 @@ class Plugin:
             triggered_callback=self.plan_manager.digitize_plan_geometry,
             add_to_menu=False,
             add_to_toolbar=False,
-            status_tip="Luo uusi kaava piirtämällä",
+            status_tip="Luo uusi kaava piirtämällä kaavarajaus",
         )
-        self.import_plan_action = self.add_action(
+        self.new_plan_from_border = self.add_action(
             text="Tuo kaavan ulkoraja",
             icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
             triggered_callback=self.plan_manager.import_plan_geometry,
             add_to_menu=False,
             add_to_toolbar=False,
-            status_tip="Luo uusi kaava tuomalla jo olemassa oleva kaavan ulkorajan geometria",
+            status_tip="Luo uusi kaava tuomalla kaavarajaus toiselta tasolta",
+        )
+        self.import_plan = self.add_action(
+            text="Tuo kaava",
+            icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
+            triggered_callback=self.plan_manager.open_import_plan_dialog,
+            add_to_menu=False,
+            add_to_toolbar=False,
+            status_tip="Tuo kaavan JSON tietokantaan",
         )
 
         self.new_plan_button = QToolButton()
@@ -187,7 +195,8 @@ class Plugin:
 
         menu = QMenu()
         menu.addAction(self.draw_new_plan_action)
-        menu.addAction(self.import_plan_action)
+        menu.addAction(self.new_plan_from_border)
+        menu.addAction(self.import_plan)
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
@@ -316,7 +325,7 @@ class Plugin:
             text="Tuo kaavakohteita",
             icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
             triggered_callback=self.plan_manager.open_import_features_dialog,
-            add_to_menu=True,
+            add_to_menu=False,
             add_to_toolbar=True,
             status_tip="Tuo kaavakohteita tietokantaan toisilta vektoritasoilta",
         )
@@ -357,7 +366,7 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
-        self.project_depending_actions = [self.draw_new_plan_action, self.import_plan_action, self.load_plan_action]
+        self.project_depending_actions = [self.draw_new_plan_action, self.new_plan_from_border, self.load_plan_action]
         self.plan_depending_actions = [
             self.edit_plan_action,
             self.edit_lifecycles_action,
