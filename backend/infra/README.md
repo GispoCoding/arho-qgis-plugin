@@ -66,11 +66,15 @@ To add a new ssh key:
 1. Fetch the latest ssh key files running `git pull`
 2. Decrypt the public key file using `sops -d public_keys/$(terraform workspace show).enc > public_keys/$(terraform workspace show)`
 3. Add the public key to the `public_keys/<workspace name>` file, or create a new file if it does not exist.
-4. Run the Ansible playbook to add the public key to the bastion host:  
-```console
+4. Run the Ansible playbook to add the public key to the bastion host (ssh key to use to connect can be given with a `--private-key` argument):  
+```bash
 ansible-playbook ansible/playbook.yml \
   -i ansible/inventory/hosts.yml \
-  -e "bastion_host=$(terraform output -raw bastion_address) ssh_key_file=../public_keys/$(terraform workspace show)"
+  --extra-vars " \
+      bastion_host=$(terraform output -raw bastion_address) \
+      ssh_key_file=../public_keys/$(terraform workspace show) \
+   "
+   # --private-key ~/.ssh/my_private_key
 ```
 5. Encrypt the public key file again using `sops -e public_keys/$(terraform workspace show) > public_keys/$(terraform workspace show).enc`
 6. Commit the changes to the repository.
