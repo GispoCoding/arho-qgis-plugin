@@ -23,13 +23,11 @@ from database.triggers import (
 )
 from database.validation import (
     generate_validate_polygon_geometry_triggers,
-    trg_prevent_land_use_area_overlaps,
     trg_validate_event_date,
     trg_validate_event_date_inside_status_date,
     trg_validate_event_type,
     trg_validate_lifecycle_date,
     trg_validate_line_geometry,
-    trgfunc_prevent_land_use_area_overlaps,
     trgfunc_validate_event_date,
     trgfunc_validate_event_date_inside_status_date,
     trgfunc_validate_event_type,
@@ -92,8 +90,6 @@ imported_triggers = (
     + instead_of_triggers_for_visualization_views
     + [trg_validate_line_geometry]
     + [trgfunc_validate_line_geometry]
-    + [trgfunc_prevent_land_use_area_overlaps]
-    + [trg_prevent_land_use_area_overlaps]
     + [trgfunc_validate_lifecycle_date]
     + [trg_validate_lifecycle_date]
     + [trgfunc_validate_event_date]

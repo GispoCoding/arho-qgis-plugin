@@ -90,42 +90,6 @@ trg_validate_line_geometry = PGTrigger(
     EXECUTE FUNCTION hame.trgfunc_line_validate_geometry()""",
 )
 
-trgfunc_prevent_land_use_area_overlaps = PGFunction(
-    schema="hame",
-    signature="trgfunc_land_use_area_prevent_overlap()",
-    definition="""
-    RETURNS TRIGGER AS $$
-    DECLARE
-        overlapping_id UUID;
-    BEGIN
-        SELECT id INTO overlapping_id
-        FROM hame.land_use_area
-        WHERE
-            plan_id = NEW.plan_id
-            AND id IS DISTINCT FROM NEW.id
-            AND ST_Overlaps(geom, NEW.geom)
-        ;
-        IF overlapping_id IS NOT NULL THEN
-            RAISE EXCEPTION 'Geometries overlap: % - %',
-                NEW.id, overlapping_id
-                USING HINT = 'Two land use areas cannot overlap';
-        END IF;
-        RETURN NEW;
-    END;
-    $$ language 'plpgsql'
-    """,
-)
-
-trg_prevent_land_use_area_overlaps = PGTrigger(
-    schema="hame",
-    signature="trg_land_use_area_prevent_overlap",
-    on_entity="hame.land_use_area",
-    definition="""
-        BEFORE INSERT OR UPDATE ON land_use_area
-        FOR EACH ROW
-        EXECUTE FUNCTION hame.trgfunc_land_use_area_prevent_overlap()
-    """,
-)
 
 trgfunc_validate_lifecycle_date = PGFunction(
     schema="hame",
