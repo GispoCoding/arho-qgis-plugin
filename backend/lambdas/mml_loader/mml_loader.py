@@ -47,8 +47,8 @@ class MMLLoader:
         "id": "hallinnolliset_aluejaot_vektori_koko_suomi",
         "inputs": {
             "fileFormatInput": "GML",
-            "dataSetInput": "kuntajako_250k",
-            "yearInput": 2023,
+            "dataSetInput": "kuntajako_10k",
+            "yearInput": 2025,
         },
     }
 
@@ -135,7 +135,7 @@ class MMLLoader:
                 )
             ]
 
-        polygons = {}
+        polygons: Dict[str, list] = {}
 
         au_elements = root.findall(f".//au{size}:AdministrativeUnit_{size}", namespaces)
         prefix = "{" + namespaces["gml"] + "}"
@@ -154,22 +154,31 @@ class MMLLoader:
                     # Extract polygons
                     if gml_string.startswith("<ns0:Polygon"):
                         id = au_id.split("_")[-1]
-                        polygons[id] = gml_string
+                        if id in polygons:
+                            polygons[id].append(gml_string)
+                        else:
+                            polygons[id] = [gml_string]
 
         # Parse GML elements into shapely geometries
         geoms = {}
         for region_code in region_codes:
             if region_code in polygons:
-                geom = pygml.parse(polygons[region_code])
-                geoms[region_code] = from_shape(
-                    MultiPolygon([(shape(geom.__geo_interface__))])
-                )
+                shapes = []
+                for gml_string in polygons[region_code]:
+                    gml_object = pygml.parse(gml_string)
+                    shapes.append(shape(gml_object.__geo_interface__))
+
+                if shapes:
+                    geoms[region_code] = from_shape(MultiPolygon(shapes))
         for municipality_code in municipality_codes:
             if municipality_code in polygons:
-                geom = pygml.parse(polygons[municipality_code])
-                geoms[municipality_code] = from_shape(
-                    MultiPolygon([(shape(geom.__geo_interface__))])
-                )
+                shapes = []
+                for gml_string in polygons[municipality_code]:
+                    gml_object = pygml.parse(gml_string)
+                    shapes.append(shape(gml_object.__geo_interface__))
+
+                if shapes:
+                    geoms[municipality_code] = from_shape(MultiPolygon(shapes))
 
         return geoms
 

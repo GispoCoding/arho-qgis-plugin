@@ -16,8 +16,8 @@ def mock_mml(requests_mock):
             "id": "hallinnolliset_aluejaot_vektori_koko_suomi",
             "inputs": {
                 "fileFormatInput": "GML",
-                "dataSetInput": "kuntajako_250k",
-                "yearInput": 2023,
+                "dataSetInput": "kuntajako_10k",
+                "yearInput": 2025,
             },
         }
 
@@ -36,7 +36,7 @@ def mock_mml(requests_mock):
     )
     with open(path, "rb") as zip_file:
         requests_mock.get(
-            "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/dl/v1/whatever/TietoaKuntajaosta_2023_250k.zip",
+            "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/dl/v1/whatever/TietoaKuntajaosta_2025_10k.zip",
             body=zip_file,
             headers={
                 "Content-Type": "application/zip",
