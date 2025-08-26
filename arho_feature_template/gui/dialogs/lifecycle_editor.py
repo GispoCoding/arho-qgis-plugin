@@ -101,27 +101,16 @@ class LifecycleEditor(QDialog, FormClass):  # type: ignore
         self._initialize_required_date_widgets()
 
     def _initialize_required_date_widgets(self):
-        if not hasattr(self, "required_dates_group_box"):
-            self.required_dates_group_box = QGroupBox("Vaadittavat päivämäärät")
-            self.required_dates_group_box.setLayout(QVBoxLayout())
-            self.required_dates_group_box.hide()
-            self.layout().insertWidget(1, self.required_dates_group_box)
-
         # Iterate over lifecycles and create sub-group boxes
         for lifecycle in self.plan.lifecycles:
             lifecycle_id = lifecycle.id_
-            if not lifecycle_id:
-                continue
-
-            status_id = lifecycle.status_id
-            status_name = LifeCycleStatusLayer.get_status_name(status_id)
-            if not status_name:
+            status_name = LifeCycleStatusLayer.get_status_name(lifecycle.status_id)
+            if not lifecycle_id or not status_name:
                 continue
 
             groupbox = QGroupBox()
             layout = QFormLayout()
             groupbox.setLayout(layout)
-            groupbox.hide()  # hidden by default
             self.lifecycle_event_widgets[lifecycle_id] = groupbox
             self.required_dates_group_box.layout().addWidget(groupbox)
 
@@ -272,8 +261,7 @@ class LifecycleEditor(QDialog, FormClass):  # type: ignore
 
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
-        is_ok = self.lifecycle_table.is_ok()
-        ok_button.setEnabled(is_ok)
+        ok_button.setEnabled(self.lifecycle_table.is_ok())
 
     def _on_ok_clicked(self):
         all_event_dates_map = self._get_all_event_dates_from_widgets()

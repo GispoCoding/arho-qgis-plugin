@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-# from datetime import datetime
 from qgis.gui import QgsDateTimeEdit
 from qgis.PyQt.QtCore import QDate, Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
@@ -16,9 +15,7 @@ from arho_feature_template.project.layers.code_layers import LifeCycleStatusLaye
 
 class LifecycleTableWidget(QTableWidget):
     table_edited = pyqtSignal()
-    row_added = pyqtSignal(object)
     lifecycle_selected = pyqtSignal(LifeCycle)
-    status_changed = pyqtSignal(int, object)
 
     def __init__(self, lifecycles: list[LifeCycle], parent=None):
         super().__init__(parent)
@@ -47,7 +44,6 @@ class LifecycleTableWidget(QTableWidget):
 
     def add_new_lifecycle_row(self):
         self.add_lifecycle_row(LifeCycle())
-        self.row_added.emit(LifeCycle())
 
     def get_lifecycle_at(self, row_index: int) -> LifeCycle:
         return self.row_into_model(row_index)
@@ -62,10 +58,6 @@ class LifecycleTableWidget(QTableWidget):
 
         status = CodeComboBox()
         status.populate_from_code_layer(LifeCycleStatusLayer)
-
-        status.currentIndexChanged.connect(
-            lambda _, row=row_position, s=status: self.status_changed.emit(row, s.value())
-        )
 
         if lifecycle.status_id:
             status.set_value(lifecycle.status_id)
@@ -102,20 +94,21 @@ class LifecycleTableWidget(QTableWidget):
             end_date_edit.clear()
 
         self.setCellWidget(row_position, 2, end_date_edit)
-        self.table_edited.emit()
 
     def is_ok(self) -> bool:
-        is_table_ok = True
         for row in range(self.rowCount()):
             status_item = self.cellWidget(row, 0)
             start_date_item = self.cellWidget(row, 1)
-            if status_item is None or start_date_item is None:
-                is_table_ok = False
-                break
-            if status_item.value() is None or not start_date_item.date().isValid():
-                is_table_ok = False
-                break
-        return is_table_ok
+            end_date_item = self.cellWidget(row, 2)
+
+            if (
+                status_item.value() is None
+                or not start_date_item.date().isValid()
+                or (end_date_item.date().isValid() and end_date_item.date() < start_date_item.date())
+            ):
+                return False
+
+        return True
 
     def row_into_model(
         self,
@@ -146,8 +139,4 @@ class LifecycleTableWidget(QTableWidget):
     def into_model(
         self, event_dates_by_lifecycle_id: dict[str | None, list[EventDate]] | None = None
     ) -> list[LifeCycle]:
-        lifecycles_from_table = []
-        for row in range(self.rowCount()):
-            lifecycle = self.row_into_model(row, event_dates_by_lifecycle_id)
-            lifecycles_from_table.append(lifecycle)
-        return lifecycles_from_table
+        return [self.row_into_model(row, event_dates_by_lifecycle_id) for row in range(self.rowCount())]

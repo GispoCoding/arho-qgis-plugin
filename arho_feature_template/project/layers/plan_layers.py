@@ -859,10 +859,6 @@ class EventDateLayer(AbstractPlanLayer):
             modified=False,
         )
 
-    @classmethod
-    def get_features_by_lifecycle_date_id(cls, lifecycle_date_id: str) -> list[QgsFeature]:
-        return list(cls.get_features_by_attribute_value("lifecycle_date_id", lifecycle_date_id))
-
 
 FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
     LandUsePointLayer.name: LandUsePointLayer,

@@ -61,8 +61,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>776</width>
-            <height>562</height>
+            <width>778</width>
+            <height>555</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -203,7 +203,7 @@
               <string>Muut tunnukset</string>
              </property>
              <property name="collapsed">
-              <bool>true</bool>
+              <bool>false</bool>
              </property>
              <layout class="QFormLayout" name="formLayout_2">
               <item row="0" column="0">
