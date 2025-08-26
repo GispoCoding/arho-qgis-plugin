@@ -168,11 +168,6 @@ class PlanManager(QObject):
         self.lambda_service.plan_matter_json_received.connect(self.save_plan_matter_json)
 
     def initialize_from_project(self):
-        # # If project is not open, don't try to initialize
-        # # NOTE: QgsProject.instance(), QgsProject().fileInfo() and QgsProject().fileIName()
-        # # don't seem to work as indicators whether a project is open?
-        # if not QgsProject.instance() or not QgsProject().fileInfo():
-        #     return
         self.cache_code_layers()
         self.initialize_libraries()
 
@@ -704,6 +699,10 @@ class PlanManager(QObject):
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
 
     def on_project_loaded(self):
+        if QgsProject.instance().fileName() == "":
+            # No project is open. Ignoring signal.
+            return
+
         self.initialize_from_project()
 
         if self.check_compatible_project_version() and self.check_required_layers():
