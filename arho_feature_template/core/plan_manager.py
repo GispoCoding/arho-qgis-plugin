@@ -787,6 +787,8 @@ def _delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str
 
 def _apply_style(layer: QgsVectorLayer) -> None:
     active_plan = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
+    if not active_plan:
+        return
     model = PlanLayer.model_from_feature(active_plan)
     plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
     if plan_type == PlanType.REGIONAL:
