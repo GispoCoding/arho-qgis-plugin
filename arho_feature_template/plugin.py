@@ -348,7 +348,7 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
-        self.project_depending_actions = [self.draw_new_plan_action, self.load_plan_action]
+        self.project_depending_actions = [self.draw_new_plan_action, self.import_plan_action, self.load_plan_action]
         self.plan_depending_actions = [
             self.edit_plan_action,
             self.edit_lifecycles_action,
