@@ -286,7 +286,7 @@ plan_regulation_groups:
 
   - heading: Maantieliikenteen alue
     category: Aluevaraukset
-    geometry: [Alue]
+    geometry: Alue
     letter_code: LT
     plan_regulations:
       - regulation_code: maantie
@@ -295,7 +295,7 @@ plan_regulation_groups:
 
   - heading: Katualue
     category: Aluevaraukset
-    geometry: [Alue]
+    geometry: Alue
     letter_code:
     plan_regulations:
       - regulation_code: katu
