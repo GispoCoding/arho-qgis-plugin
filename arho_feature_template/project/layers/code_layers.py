@@ -11,6 +11,7 @@ import yaml
 from arho_feature_template.exceptions import ConfigSyntaxError, LayerNameNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.utils.misc_utils import LANGUAGE
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
