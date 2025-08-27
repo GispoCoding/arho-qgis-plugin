@@ -814,6 +814,8 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     #     path = plugin_path("resources", "styles", "yleiskaava")
     # elif plan_type == PlanType.TOWN:
     #     path = plugin_path("resources", "styles", "asemakaava")
+    else:
+        return
 
     # Apply style to temp layer and copy symbology and labels from there to the actual layer
     geom_type = QgsWkbTypes.displayString(layer.wkbType())
