@@ -1,6 +1,7 @@
 import email.utils
 import logging
-from typing import Dict, List, Optional, TypedDict, cast
+from pathlib import Path
+from typing import Any, Dict, List, Optional, TypedDict, cast
 from uuid import UUID
 
 import requests
@@ -32,6 +33,11 @@ class RyhtiResponse(TypedDict):
     detail: Optional[str]
     errors: Optional[dict]
     warnings: Optional[dict]
+
+
+def save_debug_json(filename: str, data: Any) -> None:
+    with Path("ryhti_debug", filename).open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 
 class RyhtiClient:
@@ -167,8 +173,7 @@ class RyhtiClient:
                 else plan.organisation.administrative_region.value
             )
             if self.debug_json:
-                with open(f"ryhti_debug/{plan_id}.json", "w") as plan_file:
-                    json.dump(plan_dict, plan_file)
+                save_debug_json(f"{plan_id}.json", plan_dict)
             LOGGER.info(f"POSTing JSON: {json.dumps(plan_dict)}")
 
             # requests apparently uses simplejson automatically if it is installed!
@@ -199,8 +204,7 @@ class RyhtiClient:
                     # There is something wrong with the API
                     response.raise_for_status()
             if self.debug_json:
-                with open(f"ryhti_debug/{plan_id}.response.json", "w") as response_file:
-                    json.dump(responses[plan_id], response_file)
+                save_debug_json(f"{plan_id}.response.json", responses[plan_id])
             LOGGER.info(responses[plan_id])
         return responses
 
@@ -381,12 +385,19 @@ class RyhtiClient:
                     }
                 if self.debug_json:
                     with open(
-                        f"ryhti_debug/{plan.id}.identifier.response.json", "w"
+                        f"ryhti_debug/{plan.id}.identifier.response.json",
+                        "w",
+                        encoding="utf-8",
                     ) as response_file:
                         response_file.write(str(plan_identifier_endpoint) + "\n")
                         response_file.write(str(self.xroad_headers) + "\n")
                         response_file.write(str(data) + "\n")
-                        json.dump(str(responses[plan.id]), response_file)
+                        json.dump(
+                            responses[plan.id],
+                            response_file,
+                            indent=4,
+                            ensure_ascii=False,
+                        )
         return responses
 
     def validate_plan_matters(self) -> Dict[UUID, RyhtiResponse]:
@@ -409,8 +420,7 @@ class RyhtiClient:
             LOGGER.info(f"Validating JSON for plan matter {permanent_id}...")
 
             if self.debug_json:
-                with open(f"ryhti_debug/{permanent_id}.json", "w") as plan_file:
-                    json.dump(plan_matter, plan_file)
+                save_debug_json(f"{permanent_id}.json", plan_matter)
             LOGGER.info(f"POSTing JSON: {json.dumps(plan_matter)}")
 
             # requests apparently uses simplejson automatically if it is installed!
@@ -438,10 +448,7 @@ class RyhtiClient:
                     # There is something wrong with the API
                     response.raise_for_status()
             if self.debug_json:
-                with open(
-                    f"ryhti_debug/{permanent_id}.response.json", "w"
-                ) as response_file:
-                    json.dump(responses[plan_id], response_file)
+                save_debug_json(f"{permanent_id}.response.json", responses[plan_id])
             LOGGER.info(responses[plan_id])
         return responses
 
@@ -552,11 +559,10 @@ class RyhtiClient:
                     plan_matter_endpoint, plan_matter
                 )
                 if self.debug_json:
-                    with open(
-                        f"ryhti_debug/{permanent_id}.plan_matter_post_response.json",
-                        "w",
-                    ) as response_file:
-                        json.dump(responses[plan_id], response_file)
+                    save_debug_json(
+                        f"{permanent_id}.plan_matter_post_response.json",
+                        responses[plan_id],
+                    )
                 LOGGER.info(responses[plan_id])
                 continue
             # 2) If plan matter existed, check or create plan matter phase instead
@@ -593,13 +599,10 @@ class RyhtiClient:
                         plan_matter_phase_endpoint, local_phase
                     )
                     if self.debug_json:
-                        with open(
-                            "ryhti_debug/"
-                            + permanent_id
-                            + ".plan_matter_phase_post_response.json",
-                            "w",
-                        ) as response_file:
-                            json.dump(responses[plan_id], response_file)
+                        save_debug_json(
+                            f"{permanent_id}.plan_matter_phase_post_response.json",
+                            responses[plan_id],
+                        )
                     LOGGER.info(responses[plan_id])
                     continue
                 # 3) If plan matter phase existed, update plan matter phase instead
@@ -618,13 +621,10 @@ class RyhtiClient:
                     plan_matter_phase_endpoint, local_phase
                 )
                 if self.debug_json:
-                    with open(
-                        "ryhti_debug/"
-                        + permanent_id
-                        + ".plan_matter_phase_put_response.json",
-                        "w",
-                    ) as response_file:
-                        json.dump(responses[plan_id], response_file)
+                    save_debug_json(
+                        f"{permanent_id}.plan_matter_phase_put_response.json",
+                        responses[plan_id],
+                    )
                 LOGGER.info(responses[plan_id])
             else:
                 try:
