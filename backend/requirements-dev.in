@@ -1,4 +1,6 @@
 -c requirements.txt
+
+ansible-core
 black
 flake8
 flake8-bugbear
@@ -15,3 +17,5 @@ types-requests
 types-simplejson
 types-boto3
 types-shapely
+
+-e file:.

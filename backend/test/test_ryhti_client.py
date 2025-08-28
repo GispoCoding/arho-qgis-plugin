@@ -12,7 +12,7 @@ from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
 from database import codes, models
-from lambdas.ryhti_client.ryhti_client.ryhti_client import RyhtiClient
+from ryhti_client.ryhti_client import RyhtiClient
 
 from .conftest import deepcompare
 
