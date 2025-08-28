@@ -10,7 +10,9 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsFeature,
     QgsGeometry,
+    QgsLayerDefinition,
     QgsProject,
+    QgsRasterLayer,
     QgsVectorLayer,
     QgsWkbTypes,
 )
@@ -167,7 +169,7 @@ class PlanManager(QObject):
         self.lambda_service.plan_jsons_received.connect(self.save_plan_jsons)
         self.lambda_service.plan_matter_json_received.connect(self.save_plan_matter_json)
 
-    def initialize_from_project(self):
+    def initialize_caches_and_libraries(self):
         self.cache_code_layers()
         self.initialize_libraries()
 
@@ -378,7 +380,71 @@ class PlanManager(QObject):
         if layer:
             self.feature_digitize_map_tool.setLayer(layer)
 
+    def load_plan_layers(self):
+        project = QgsProject.instance()
+        root = QgsProject.instance().layerTreeRoot()
+        geom_layers = ["Kaava", "Maankäytön kohteet", "Muut pisteet", "Viivat", "Osa-alue", "Aluevaraus"]
+        plan_regulation_layers = [
+            "Kaavamääräysryhmät",
+            "Kaavamääräys",
+            "Kaavasuositus",
+            "Kaavamääräyksen lisätiedot",
+        ]
+        info_layers = [
+            "Toimija",
+            "Asiakirjat",
+            "Lähtötietoaineistot",
+            "Kaavoitusteemojen assosiaatiot",
+            "Kaavamääräysryhmien assosiaatiot",
+            "Elinkaaren päiväykset",
+            "Sanallisten kaavamääräyksien lajien assosiaatiot",
+            "Yleiskaavan oikeusvaikutusten assosiaatiot",
+        ]
+        layers = dict.fromkeys(geom_layers + plan_regulation_layers + info_layers)
+        for layer in plan_layers:
+            if layer.name in layers:
+                layers[layer.name] = layer
+        for layer in code_layers:
+            if layer.name in layers:
+                layers[layer.name] = layer
+
+        for layer_name in geom_layers:
+            if not project.mapLayersByName(layer_name):
+                layer = layers[layer_name]
+                QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, root)
+
+        if not root.findGroup("Kaavamerkinnät ja määräykset"):
+            plan_notations = root.addGroup("Kaavamerkinnät ja määräykset")
+            for layer_name in plan_regulation_layers:
+                if layer_name not in [child.name() for child in plan_notations.children()]:
+                    layer = layers[layer_name]
+                    QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, plan_notations)
+
+        if not root.findGroup("Taustatiedot"):
+            background_info = root.addGroup("Taustatiedot")
+            for layer_name in info_layers:
+                if layer_name not in [child.name() for child in background_info.children()]:
+                    layer = layers[layer_name]
+                    QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, background_info)
+
+        if not root.findGroup("Taustakartta"):
+            map_group = root.addGroup("Taustakartta")
+            uri = "type=xyz&url=https://tile.openstreetmap.org/{z}/{x}/{y}.png&zmax=19&zmin=0&crs=EPSG3857"
+            layer_name = "OpenStreetMap"
+            osm_layer = QgsRasterLayer(uri, layer_name, "wms")
+            project.addMapLayer(osm_layer, False)
+            map_group.addLayer(osm_layer)
+
+        if not root.findGroup("Koodit"):
+            codes = root.addGroup("Koodit")
+            for code_layer in code_layers:
+                if code_layer.name != "Toimija":
+                    QgsLayerDefinition.loadLayerDefinition(code_layer.qlr_path, project, codes)
+
+        self.initialize_caches_and_libraries()
+
     def digitize_plan_geometry(self):
+        self.load_plan_layers()
         self.previous_map_tool = iface.mapCanvas().mapTool()
         self.previous_active_plan_id = get_active_plan_id()
 
@@ -398,6 +464,7 @@ class PlanManager(QObject):
         iface.mapCanvas().setMapTool(self.plan_digitize_map_tool)
 
     def import_plan_geometry(self):
+        self.load_plan_layers()
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
             return
@@ -406,6 +473,8 @@ class PlanManager(QObject):
         self.previous_map_tool = iface.mapCanvas().mapTool()
 
         layer: QgsVectorLayer = iface.activeLayer()
+        if not layer:
+            layer = QgsProject.instance().mapLayersByName("Kaava")[0]
         plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
         if layer.name() in plan_layer_names:
             iface.messageBar().pushWarning("", "Kaavan ulkorajaa ei voi tuoda ARHOn tasoilta.")
@@ -592,6 +661,7 @@ class PlanManager(QObject):
 
     def load_plan(self):
         """Load an existing land use plan using a dialog selection."""
+        self.load_plan_layers()
         connection_names = get_existing_database_connection_names()
 
         if not connection_names:
@@ -703,7 +773,7 @@ class PlanManager(QObject):
             # No project is open. Ignoring signal.
             return
 
-        self.initialize_from_project()
+        self.initialize_caches_and_libraries()
 
         if self.check_compatible_project_version() and self.check_required_layers():
             QgsProject.instance().cleared.connect(self.on_project_cleared)

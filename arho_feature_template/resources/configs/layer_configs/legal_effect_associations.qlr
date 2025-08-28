@@ -1,0 +1,300 @@
+<!DOCTYPE qgis-layer-definition>
+<qlr>
+  <layer-tree-group groupLayer="" name="" expanded="1" checked="Qt::Checked">
+    <customproperties>
+      <Option/>
+    </customproperties>
+    <layer-tree-layer patch_size="-1,-1" id="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d" name="Yleiskaavan oikeusvaikutusten assosiaatiot" source="service='postgres' authcfg=ryhtirw key='plan_id,legal_effects_of_master_plan_id' checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;legal_effects_association&quot;" legend_split_behavior="0" expanded="1" legend_exp="" checked="Qt::Checked" providerKey="postgres">
+      <customproperties>
+        <Option/>
+      </customproperties>
+    </layer-tree-layer>
+  </layer-tree-group>
+  <maplayers>
+    <maplayer refreshOnNotifyEnabled="0" readOnly="0" refreshOnNotifyMessage="" minScale="1e+08" autoRefreshMode="Disabled" styleCategories="AllStyleCategories" maxScale="0" legendPlaceholderImage="" geometry="No geometry" type="vector" hasScaleBasedVisibilityFlag="0" autoRefreshTime="0" wkbType="NoGeometry">
+      <id>legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d</id>
+      <datasource>service='postgres' authcfg=ryhtirw key='plan_id,legal_effects_of_master_plan_id' checkPrimaryKeyUnicity='1' table="hame"."legal_effects_association"</datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <layername>Yleiskaavan oikeusvaikutusten assosiaatiot</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <wkt></wkt>
+          <proj4></proj4>
+          <srsid>0</srsid>
+          <srid>0</srid>
+          <authid></authid>
+          <description></description>
+          <projectionacronym></projectionacronym>
+          <ellipsoidacronym></ellipsoidacronym>
+          <geographicflag>false</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <resourceMetadata>
+        <identifier></identifier>
+        <parentidentifier></parentidentifier>
+        <language></language>
+        <type>dataset</type>
+        <title></title>
+        <abstract></abstract>
+        <links/>
+        <dates/>
+        <fees></fees>
+        <encoding></encoding>
+        <crs>
+          <spatialrefsys nativeFormat="Wkt">
+            <wkt></wkt>
+            <proj4></proj4>
+            <srsid>0</srsid>
+            <srid>0</srid>
+            <authid></authid>
+            <description></description>
+            <projectionacronym></projectionacronym>
+            <ellipsoidacronym></ellipsoidacronym>
+            <geographicflag>false</geographicflag>
+          </spatialrefsys>
+        </crs>
+        <extent/>
+      </resourceMetadata>
+      <provider encoding="">postgres</provider>
+      <vectorjoins/>
+      <layerDependencies/>
+      <dataDependencies/>
+      <expressionfields/>
+      <map-layer-style-manager current="default">
+        <map-layer-style name="default"/>
+      </map-layer-style-manager>
+      <auxiliaryLayer/>
+      <metadataUrls/>
+      <flags>
+        <Identifiable>1</Identifiable>
+        <Removable>1</Removable>
+        <Searchable>1</Searchable>
+        <Private>0</Private>
+      </flags>
+      <temporal limitMode="0" endField="" startExpression="" durationField="" fixedDuration="0" accumulate="0" enabled="0" durationUnit="min" startField="" mode="0" endExpression="">
+        <fixedRange>
+          <start></start>
+          <end></end>
+        </fixedRange>
+      </temporal>
+      <elevation respectLayerSymbol="1" extrusion="0" type="IndividualFeatures" extrusionEnabled="0" clamping="Terrain" binding="Centroid" showMarkerSymbolInSurfacePlots="0" zscale="1" zoffset="0" symbology="Line">
+        <data-defined-properties>
+          <Option type="Map">
+            <Option value="" name="name" type="QString"/>
+            <Option name="properties"/>
+            <Option value="collection" name="type" type="QString"/>
+          </Option>
+        </data-defined-properties>
+        <profileLineSymbol>
+          <symbol name="" force_rhr="0" is_animated="0" type="line" frame_rate="10" alpha="1" clip_to_extent="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" name="name" type="QString"/>
+                <Option name="properties"/>
+                <Option value="collection" name="type" type="QString"/>
+              </Option>
+            </data_defined_properties>
+            <layer pass="0" id="{17e461ab-74ab-48a5-88db-040a137c7bfa}" class="SimpleLine" locked="0" enabled="1">
+              <Option type="Map">
+                <Option value="0" name="align_dash_pattern" type="QString"/>
+                <Option value="square" name="capstyle" type="QString"/>
+                <Option value="5;2" name="customdash" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="customdash_map_unit_scale" type="QString"/>
+                <Option value="MM" name="customdash_unit" type="QString"/>
+                <Option value="0" name="dash_pattern_offset" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="dash_pattern_offset_map_unit_scale" type="QString"/>
+                <Option value="MM" name="dash_pattern_offset_unit" type="QString"/>
+                <Option value="0" name="draw_inside_polygon" type="QString"/>
+                <Option value="bevel" name="joinstyle" type="QString"/>
+                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" name="line_color" type="QString"/>
+                <Option value="solid" name="line_style" type="QString"/>
+                <Option value="0.6" name="line_width" type="QString"/>
+                <Option value="MM" name="line_width_unit" type="QString"/>
+                <Option value="0" name="offset" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
+                <Option value="MM" name="offset_unit" type="QString"/>
+                <Option value="0" name="ring_filter" type="QString"/>
+                <Option value="0" name="trim_distance_end" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="trim_distance_end_map_unit_scale" type="QString"/>
+                <Option value="MM" name="trim_distance_end_unit" type="QString"/>
+                <Option value="0" name="trim_distance_start" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="trim_distance_start_map_unit_scale" type="QString"/>
+                <Option value="MM" name="trim_distance_start_unit" type="QString"/>
+                <Option value="0" name="tweak_dash_pattern_on_corners" type="QString"/>
+                <Option value="0" name="use_custom_dash" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="width_map_unit_scale" type="QString"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" name="name" type="QString"/>
+                  <Option name="properties"/>
+                  <Option value="collection" name="type" type="QString"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileLineSymbol>
+        <profileFillSymbol>
+          <symbol name="" force_rhr="0" is_animated="0" type="fill" frame_rate="10" alpha="1" clip_to_extent="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" name="name" type="QString"/>
+                <Option name="properties"/>
+                <Option value="collection" name="type" type="QString"/>
+              </Option>
+            </data_defined_properties>
+            <layer pass="0" id="{d7ed1fef-9655-4a9b-9d9d-d284edfcf67c}" class="SimpleFill" locked="0" enabled="1">
+              <Option type="Map">
+                <Option value="3x:0,0,0,0,0,0" name="border_width_map_unit_scale" type="QString"/>
+                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" name="color" type="QString"/>
+                <Option value="bevel" name="joinstyle" type="QString"/>
+                <Option value="0,0" name="offset" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
+                <Option value="MM" name="offset_unit" type="QString"/>
+                <Option value="81,111,79,255,rgb:0.31764705882352939,0.43529411764705883,0.30980392156862746,1" name="outline_color" type="QString"/>
+                <Option value="solid" name="outline_style" type="QString"/>
+                <Option value="0.2" name="outline_width" type="QString"/>
+                <Option value="MM" name="outline_width_unit" type="QString"/>
+                <Option value="solid" name="style" type="QString"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" name="name" type="QString"/>
+                  <Option name="properties"/>
+                  <Option value="collection" name="type" type="QString"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileFillSymbol>
+        <profileMarkerSymbol>
+          <symbol name="" force_rhr="0" is_animated="0" type="marker" frame_rate="10" alpha="1" clip_to_extent="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" name="name" type="QString"/>
+                <Option name="properties"/>
+                <Option value="collection" name="type" type="QString"/>
+              </Option>
+            </data_defined_properties>
+            <layer pass="0" id="{0709f30b-0fb2-49f6-b1af-78563a76cc11}" class="SimpleMarker" locked="0" enabled="1">
+              <Option type="Map">
+                <Option value="0" name="angle" type="QString"/>
+                <Option value="square" name="cap_style" type="QString"/>
+                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" name="color" type="QString"/>
+                <Option value="1" name="horizontal_anchor_point" type="QString"/>
+                <Option value="bevel" name="joinstyle" type="QString"/>
+                <Option value="diamond" name="name" type="QString"/>
+                <Option value="0,0" name="offset" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
+                <Option value="MM" name="offset_unit" type="QString"/>
+                <Option value="81,111,79,255,rgb:0.31764705882352939,0.43529411764705883,0.30980392156862746,1" name="outline_color" type="QString"/>
+                <Option value="solid" name="outline_style" type="QString"/>
+                <Option value="0.2" name="outline_width" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="outline_width_map_unit_scale" type="QString"/>
+                <Option value="MM" name="outline_width_unit" type="QString"/>
+                <Option value="diameter" name="scale_method" type="QString"/>
+                <Option value="3" name="size" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" name="size_map_unit_scale" type="QString"/>
+                <Option value="MM" name="size_unit" type="QString"/>
+                <Option value="1" name="vertical_anchor_point" type="QString"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" name="name" type="QString"/>
+                  <Option name="properties"/>
+                  <Option value="collection" name="type" type="QString"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileMarkerSymbol>
+      </elevation>
+      <customproperties>
+        <Option/>
+      </customproperties>
+      <geometryOptions geometryPrecision="0" removeDuplicateNodes="0">
+        <activeChecks type="StringList">
+          <Option value="" type="QString"/>
+        </activeChecks>
+        <checkConfiguration/>
+      </geometryOptions>
+      <legend showLabelLegend="0" type="default-vector"/>
+      <referencedLayers>
+        <relation id="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d_legal_effects_of_master_plan_id_legal_effects_of_master_plan_eaa158b3_4b7c_403d_a9cc_c980adbb80ed_id" name="legal_effects_of_master_plan_id_fkey" referencedLayer="legal_effects_of_master_plan_eaa158b3_4b7c_403d_a9cc_c980adbb80ed" strength="Association" layerId="legal_effects_of_master_plan_eaa158b3_4b7c_403d_a9cc_c980adbb80ed" layerName="Yleiskaavan oikeusvaikutus" providerKey="postgres" referencingLayer="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d" dataSource="service='postgres' authcfg=ryhtirw key='id' checkPrimaryKeyUnicity='1' table=&quot;codes&quot;.&quot;legal_effects_of_master_plan&quot;">
+          <fieldRef referencedField="id" referencingField="legal_effects_of_master_plan_id"/>
+        </relation>
+        <relation id="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d_plan_id_plan_2efa5590_1439_49fe_9204_436ff1851ef1_id" name="plan_id_fkey" referencedLayer="plan_2efa5590_1439_49fe_9204_436ff1851ef1" strength="Association" layerId="plan_2efa5590_1439_49fe_9204_436ff1851ef1" layerName="Kaava" providerKey="postgres" referencingLayer="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d" dataSource="service='postgres' authcfg=ryhtirw key='id' estimatedmetadata=true srid=3067 type=MultiPolygon checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;plan&quot; (geom) sql=id = 'fe5c9311-eb7d-436b-9d61-d3880de53621'">
+          <fieldRef referencedField="id" referencingField="plan_id"/>
+        </relation>
+      </referencedLayers>
+      <fieldConfiguration>
+        <field name="plan_id" configurationFlags="NoFlag">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="legal_effects_of_master_plan_id" configurationFlags="NoFlag">
+          <editWidget type="">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+      </fieldConfiguration>
+      <aliases>
+        <alias field="plan_id" name="" index="0"/>
+        <alias field="legal_effects_of_master_plan_id" name="" index="1"/>
+      </aliases>
+      <splitPolicies>
+        <policy field="plan_id" policy="Duplicate"/>
+        <policy field="legal_effects_of_master_plan_id" policy="Duplicate"/>
+      </splitPolicies>
+      <duplicatePolicies>
+        <policy field="plan_id" policy="Duplicate"/>
+        <policy field="legal_effects_of_master_plan_id" policy="Duplicate"/>
+      </duplicatePolicies>
+      <defaults>
+        <default field="plan_id" applyOnUpdate="0" expression=""/>
+        <default field="legal_effects_of_master_plan_id" applyOnUpdate="0" expression=""/>
+      </defaults>
+      <constraints>
+        <constraint field="plan_id" notnull_strength="1" constraints="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="legal_effects_of_master_plan_id" notnull_strength="1" constraints="1" unique_strength="0" exp_strength="0"/>
+      </constraints>
+      <constraintExpressions>
+        <constraint field="plan_id" desc="" exp=""/>
+        <constraint field="legal_effects_of_master_plan_id" desc="" exp=""/>
+      </constraintExpressions>
+      <expressionfields/>
+      <attributeactions>
+        <defaultAction value="{00000000-0000-0000-0000-000000000000}" key="Canvas"/>
+      </attributeactions>
+      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="" sortOrder="0">
+        <columns/>
+      </attributetableconfig>
+      <conditionalstyles>
+        <rowstyles/>
+        <fieldstyles/>
+      </conditionalstyles>
+      <storedexpressions/>
+      <editform tolerant="1"></editform>
+      <editforminit/>
+      <editforminitcodesource>0</editforminitcodesource>
+      <editforminitfilepath></editforminitfilepath>
+      <editforminitcode><![CDATA[]]></editforminitcode>
+      <featformsuppress>0</featformsuppress>
+      <editorlayout>generatedlayout</editorlayout>
+      <editable/>
+      <labelOnTop/>
+      <reuseLastValue/>
+      <dataDefinedFieldProperties/>
+      <widgets/>
+      <previewExpression></previewExpression>
+      <mapTip enabled="1"></mapTip>
+    </maplayer>
+  </maplayers>
+</qlr>

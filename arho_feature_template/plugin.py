@@ -187,6 +187,7 @@ class Plugin:
         menu = QMenu()
         menu.addAction(self.draw_new_plan_action)
         menu.addAction(self.import_plan_action)
+        menu.setEnabled(True)
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
@@ -375,7 +376,7 @@ class Plugin:
         )
         self.plan_manager.plan_set.connect(self.on_active_plan_set)
         self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
-        self.plan_manager.project_loaded.connect(self.on_project_loaded)
+        # self.plan_manager.project_loaded.connect(self.on_project_loaded)
         self.plan_manager.project_cleared.connect(self.on_project_cleared)
         self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
         self.plan_manager.plan_identifier_set.connect(self.validation_dock.on_permanent_identifier_set)
@@ -454,8 +455,8 @@ class Plugin:
             action.setEnabled(True)
 
     def on_project_cleared(self):
-        for action in self.project_depending_actions:
-            action.setEnabled(False)
+        # for action in self.project_depending_actions:
+        #     action.setEnabled(False)
         for action in self.plan_depending_actions:
             action.setEnabled(False)
 
