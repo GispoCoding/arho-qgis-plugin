@@ -24,6 +24,8 @@ env_files = [
 ]
 
 [tool.mypy]
+mypy_path = "./,./lambdas/ryhti_client"
+explicit_package_bases = true
 exclude = [
   "migrations"
 ]
