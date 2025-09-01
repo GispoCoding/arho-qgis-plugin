@@ -29,3 +29,7 @@ explicit_package_bases = true
 exclude = [
   "migrations"
 ]
+
+[[tool.mypy.overrides]]
+module = ["pygml.*"]
+follow_untyped_imports = true

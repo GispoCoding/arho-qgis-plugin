@@ -21,9 +21,21 @@ repos:
     rev: v1.8.0
     hooks:
       - id: mypy
+        exclude: ^migrations/
         additional_dependencies:
+          - alembic
+          - alembic_utils
+          - geoalchemy2
+          - psycopg[binary]
+          - pydantic
+          - pytest
+          - requests-mock
+          - sqlalchemy
+          - types-boto3
           - types-requests
+          - types-shapely
           - types-simplejson
+
   - repo: https://github.com/PyCQA/flake8
     rev: 7.0.0
     hooks:
