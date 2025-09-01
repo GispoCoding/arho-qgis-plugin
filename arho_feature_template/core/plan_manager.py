@@ -440,6 +440,7 @@ class PlanManager(QObject):
             for code_layer in code_layers:
                 if code_layer.name != "Toimija":
                     QgsLayerDefinition.loadLayerDefinition(code_layer.qlr_path, project, codes)
+                    project.mapLayersByName(code_layer.name)[0].setReadOnly(True)
 
         self.initialize_caches_and_libraries()
 
