@@ -164,8 +164,8 @@ class PlanManager(QObject):
         self.lambda_service.plan_identifier_received.connect(
             lambda value: self.set_permanent_identifier(value["identifier"])
         )
-        self.lambda_service.plan_jsons_received.connect(self.save_plan_jsons)
-        self.lambda_service.plan_matter_json_received.connect(self.save_plan_matter_json)
+        self.lambda_service.plan_data_received.connect(self.save_exported_plan)
+        self.lambda_service.plan_matter_data_received.connect(self.save_exported_plan_matter)
 
     def initialize_from_project(self):
         self.cache_code_layers()
@@ -615,8 +615,11 @@ class PlanManager(QObject):
             if isinstance(layer, QgsVectorLayer) and layer.isEditable():
                 layer.commitChanges()
 
-    def get_plan_json(self):
-        """Serializes plan and plan outline to JSON"""
+    def export_plan(self):
+        """Starts the plan export process
+
+        Calls async export_plan method of lambda services.
+        The plan_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
             iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
@@ -627,10 +630,13 @@ class PlanManager(QObject):
             self.json_plan_path = str(dialog.plan_file.filePath())
             self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
 
-            self.lambda_service.serialize_plan(plan_id)
+            self.lambda_service.export_plan(plan_id)
 
-    def get_plan_matter_json(self):
-        """Serializes plan matter to JSON"""
+    def export_plan_matter(self):
+        """Starts the plan matter export process
+
+        Calls async export_plan_matter method of lambda services.
+        The plan_matter_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
             iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
@@ -640,7 +646,7 @@ class PlanManager(QObject):
         if dialog.exec_() == QDialog.Accepted:
             self.json_plan_matter_path = str(dialog.plan_matter_file.filePath())
 
-            self.lambda_service.serialize_plan_matter(plan_id)
+            self.lambda_service.export_plan_matter(plan_id)
 
     def get_permanent_plan_identifier(self):
         """Gets the permanent plan identifier for the active plan."""
@@ -661,9 +667,9 @@ class PlanManager(QObject):
         QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "permanent_identifier", identifier)
         self.plan_identifier_set.emit(identifier)
 
-    def save_plan_jsons(self, plan_json, outline_json):
-        """This slot saves the plan and outline JSONs to files."""
-        if plan_json is None or outline_json is None:
+    def save_exported_plan(self, plan_data: dict, outline_data: dict):
+        """This slot saves the plan and outline data to JSON files."""
+        if plan_data is None or outline_data is None:
             iface.messageBar().pushCritical("", "Kaavaa tai sen ulkorajaa ei löytynyt.")
             return
 
@@ -674,16 +680,16 @@ class PlanManager(QObject):
 
         # Save the JSONs
         with open(self.json_plan_path, "w", encoding="utf-8") as full_file:
-            json.dump(plan_json, full_file, ensure_ascii=False, indent=2)
+            json.dump(plan_data, full_file, ensure_ascii=False, indent=2)
 
         with open(self.json_plan_outline_path, "w", encoding="utf-8") as outline_file:
-            json.dump(outline_json, outline_file, ensure_ascii=False, indent=2)
+            json.dump(outline_data, outline_file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava ja kaavan ulkoraja tallennettu.")
 
-    def save_plan_matter_json(self, plan_matter_json):
-        """This slot saves the plan matter JSON to file."""
-        if plan_matter_json is None:
+    def save_exported_plan_matter(self, plan_matter_data):
+        """Saves the plan matter data to a JSON file."""
+        if plan_matter_data is None:
             iface.messageBar().pushCritical("", "Kaava-asiaa ei löytynyt.")
             return
 
@@ -694,7 +700,7 @@ class PlanManager(QObject):
 
         # Save the JSON
         with open(self.json_plan_matter_path, "w", encoding="utf-8") as file:
-            json.dump(plan_matter_json, file, ensure_ascii=False, indent=2)
+            json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
 
@@ -723,8 +729,8 @@ class PlanManager(QObject):
         iface.actionPan().trigger()
 
         # Lambda service
-        disconnect_signal(self.lambda_service.plan_jsons_received)
-        disconnect_signal(self.lambda_service.plan_matter_json_received)
+        disconnect_signal(self.lambda_service.plan_data_received)
+        disconnect_signal(self.lambda_service.plan_matter_data_received)
         self.lambda_service.deleteLater()
 
         # Feature digitize tool

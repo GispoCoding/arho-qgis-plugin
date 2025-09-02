@@ -284,7 +284,7 @@ class Plugin:
             text="Tallenna kaava JSON",
             # icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
             icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.serialize_plan,
+            triggered_callback=self.export_plan,
             add_to_menu=True,
             add_to_toolbar=False,
             status_tip="Tallenna aktiivinen kaava JSON muodossa",
@@ -295,7 +295,7 @@ class Plugin:
         self.serialize_plan_matter_action = self.add_action(
             text="Tallenna kaava-asian JSON",
             icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.serialize_plan_matter,
+            triggered_callback=self.export_plan_matter,
             add_to_menu=True,
             add_to_toolbar=False,
             status_tip="Tallenna aktiivisen kaavan kaava-asia JSON muodossa",
@@ -397,13 +397,13 @@ class Plugin:
     def load_existing_plan(self):
         self.plan_manager.load_plan()
 
-    def serialize_plan(self):
-        """Serializes currently active plan."""
-        self.plan_manager.get_plan_json()
+    def export_plan(self):
+        """Export the active plan to json."""
+        self.plan_manager.export_plan()
 
-    def serialize_plan_matter(self):
-        """Serializes currently activate plan's plan matter."""
-        self.plan_manager.get_plan_matter_json()
+    def export_plan_matter(self):
+        """Export the plan matter of the activate plan."""
+        self.plan_manager.export_plan_matter()
 
     def open_settings(self):
         """Open the plugin settings dialog."""
