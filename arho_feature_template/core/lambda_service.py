@@ -14,8 +14,8 @@ from arho_feature_template.utils.misc_utils import get_active_plan_id, get_setti
 
 
 class LambdaService(QObject):
-    plan_matter_json_received = pyqtSignal(dict)
-    plan_jsons_received = pyqtSignal(dict, dict)
+    plan_matter_data_received = pyqtSignal(dict)
+    plan_data_received = pyqtSignal(dict, dict)
     validation_received = pyqtSignal(dict)
     validation_failed = pyqtSignal()
     plan_matter_received = pyqtSignal(dict)
@@ -32,12 +32,12 @@ class LambdaService(QObject):
     def __init__(self):
         super().__init__()
         self.network_manager = QNetworkAccessManager()
-        self.network_manager.finished.connect(self._handle_reply)
+        self.network_manager.finished.connect(self._handle_response)
 
-    def serialize_plan(self, plan_id: str):
+    def export_plan(self, plan_id: str):
         self._send_request(action=self.ACTION_GET_PLANS, plan_id=plan_id)
 
-    def serialize_plan_matter(self, plan_id: str):
+    def export_plan_matter(self, plan_id: str):
         self._send_request(action=self.ACTION_GET_PLAN_MATTERS, plan_id=plan_id)
 
     def validate_plan(self, plan_id: str):
@@ -81,12 +81,12 @@ class LambdaService(QObject):
 
     def _get_response_handler(self, action: str) -> Callable[[dict], None]:
         handlers = {
-            self.ACTION_GET_PLANS: self._process_plan_json_reply,
-            self.ACTION_GET_PLAN_MATTERS: self._process_plan_matter_json_reply,
-            self.ACTION_VALIDATE_PLANS: self._process_validation_reply,
-            self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_reply,
-            self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_reply,
-            self.ACTION_GET_PERMANENT_IDENTIFIERS: self._process_identifier_reply,
+            self.ACTION_GET_PLANS: self._process_export_plan_response,
+            self.ACTION_GET_PLAN_MATTERS: self._process_export_plan_matter_response,
+            self.ACTION_VALIDATE_PLANS: self._process_validation_response,
+            self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_response,
+            self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_response,
+            self.ACTION_GET_PERMANENT_IDENTIFIERS: self._process_identifier_response,
         }
         return handlers[action]
 
@@ -101,53 +101,53 @@ class LambdaService(QObject):
         }
         return handlers[action]
 
-    def _handle_reply(self, reply: QNetworkReply):
-        action = reply.request().attribute(LambdaService.ActionAttribute)
+    def _handle_response(self, response: QNetworkReply):
+        action = response.request().attribute(LambdaService.ActionAttribute)
         response_handler = self._get_response_handler(action)
         error_handler = self._get_error_handler(action)
-        if reply.error() != QNetworkReply.NoError:
-            error = reply.errorString()
+        if response.error() != QNetworkReply.NoError:
+            error = response.errorString()
             QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
             error_handler()
-            reply.deleteLater()
+            response.deleteLater()
             return
 
         try:
-            response_data = reply.readAll().data().decode("utf-8")
-            response_json = json.loads(response_data)
+            response_json = response.readAll().data().decode("utf-8")
+            response_data = json.loads(response_json)
 
             if not self._is_api_gateway_request():
                 # If calling the lambda directly, the response includes status code and body
-                if int(response_json.get("statusCode", 0)) != HTTPStatus.OK:
-                    error = response_json["body"] if "body" in response_json else response_json["errorMessage"]
+                if int(response_data.get("statusCode", 0)) != HTTPStatus.OK:
+                    error = response_data["body"] if "body" in response_data else response_data["errorMessage"]
                     QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
                     error_handler()
-                    reply.deleteLater()
+                    response.deleteLater()
                     return
-                body = response_json["body"]
+                response_body = response_data["body"]
             else:
-                body = response_json
+                response_body = response_data
 
         except (json.JSONDecodeError, KeyError) as e:
             QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {e}")
             error_handler()
             return
         finally:
-            reply.deleteLater()
-        response_handler(body)
+            response.deleteLater()
+        response_handler(response_body)
 
     def _handle_validation_error(self):
         self.validation_failed.emit()
 
-    def _process_plan_matter_reply(self, response_json: dict):
+    def _process_plan_matter_response(self, response_body: dict):
         """Processes the post plan matter reply from the lambda and emits a signal."""
-        ryhti_responses = response_json.get("ryhti_responses")
+        ryhti_responses = response_body.get("ryhti_responses")
 
         self.plan_matter_received.emit(ryhti_responses)
 
-    def _process_identifier_reply(self, response_json: dict):
+    def _process_identifier_response(self, response_body: dict):
         """Process the identifier reply and update project variable for the active plan."""
-        ryhti_responses = response_json.get("ryhti_responses", {})
+        ryhti_responses = response_body.get("ryhti_responses", {})
 
         plan_id = get_active_plan_id()
 
@@ -164,44 +164,43 @@ class LambdaService(QObject):
             )
             # self.plan_identifiers_received.emit({"plan_id": plan_id, "status": "failure"})
 
-    def _process_validation_reply(self, response_json: dict):
+    def _process_validation_response(self, response_body: dict):
         """Processes the validation reply from the lambda and emits a signal."""
-        validation_errors = response_json.get("ryhti_responses")
+        validation_errors = response_body.get("ryhti_responses")
         self.validation_received.emit(validation_errors)
 
-    def _process_plan_json_reply(self, response_json: dict):
+    def _process_export_plan_response(self, response_body: dict):
         """Processes the reply from the lambda and emits signal."""
         plan_id = get_active_plan_id()
 
-        details = response_json.get("details", {})
+        details = response_body.get("details", {})
 
         # Extract the plan JSON for the given plan_id
-        plan_json = details.get(plan_id, {})
-        if not isinstance(plan_json, dict):
-            plan_json = {}
+        plan_data = details.get(plan_id, {})
+        if not isinstance(plan_data, dict):
+            plan_data = {}
 
-        outline_json = {}
-        if plan_json:
-            geographical_area = plan_json.get("geographicalArea")
+        outline_data = {}
+        if plan_data:
+            geographical_area = plan_data.get("geographicalArea")
             if geographical_area:
-                outline_json = {
+                outline_data = {
                     "srid": geographical_area.get("srid"),
                     "geometry": geographical_area.get("geometry"),
                 }
 
-        # Emit the signal with the two JSONs
-        self.plan_jsons_received.emit(plan_json, outline_json)
+        self.plan_data_received.emit(plan_data, outline_data)
 
-    def _process_plan_matter_json_reply(self, response_json: dict):
+    def _process_export_plan_matter_response(self, response_body: dict):
         """Processes the reply from the lambda and emits signal."""
         plan_id = get_active_plan_id()
 
-        details = response_json.get("details", {})
+        details = response_body.get("details", {})
 
-        # Extract the plan matter JSON for the given plan_id
-        plan_matter_json = details.get(plan_id, {})
-        if not isinstance(plan_matter_json, dict):
-            plan_matter_json = {}
+        # Extract the plan matter data for the given plan_id
+        plan_matter = details.get(plan_id, {})
+        if not isinstance(plan_matter, dict):
+            plan_matter = {}
 
         # Emit the signal with the JSON
-        self.plan_matter_json_received.emit(plan_matter_json)
+        self.plan_matter_data_received.emit(plan_matter)
