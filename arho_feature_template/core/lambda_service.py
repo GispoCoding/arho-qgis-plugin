@@ -17,7 +17,7 @@ class LambdaService(QObject):
     plan_matter_data_received = pyqtSignal(dict)
     plan_data_received = pyqtSignal(dict, dict)
     validation_received = pyqtSignal(dict)
-    validation_failed = pyqtSignal()
+    validation_failed = pyqtSignal(str)
     plan_matter_received = pyqtSignal(dict)
     plan_identifier_received = pyqtSignal(dict)
 
@@ -90,14 +90,14 @@ class LambdaService(QObject):
         }
         return handlers[action]
 
-    def _get_error_handler(self, action: str) -> Callable[[], None]:
+    def _get_error_handler(self, action: str) -> Callable[[str], None]:
         handlers = {
-            self.ACTION_GET_PLANS: lambda: None,
-            self.ACTION_GET_PLAN_MATTERS: lambda: None,
+            self.ACTION_GET_PLANS: lambda x: None,  # noqa: ARG005
+            self.ACTION_GET_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
             self.ACTION_VALIDATE_PLANS: self._handle_validation_error,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._handle_validation_error,
-            self.ACTION_POST_PLAN_MATTERS: lambda: None,
-            self.ACTION_GET_PERMANENT_IDENTIFIERS: lambda: None,
+            self.ACTION_POST_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
+            self.ACTION_GET_PERMANENT_IDENTIFIERS: lambda x: None,  # noqa: ARG005
         }
         return handlers[action]
 
@@ -105,10 +105,10 @@ class LambdaService(QObject):
         action = response.request().attribute(LambdaService.ActionAttribute)
         response_handler = self._get_response_handler(action)
         error_handler = self._get_error_handler(action)
-        if response.error() != QNetworkReply.NoError:
+        if response.error() != QNetworkReply.NoError:  # type: ignore  # wrong type annotation in the stubs
             error = response.errorString()
             QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
-            error_handler()
+            error_handler(error)
             response.deleteLater()
             return
 
@@ -121,7 +121,7 @@ class LambdaService(QObject):
                 if int(response_data.get("statusCode", 0)) != HTTPStatus.OK:
                     error = response_data["body"] if "body" in response_data else response_data["errorMessage"]
                     QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
-                    error_handler()
+                    error_handler(error)
                     response.deleteLater()
                     return
                 response_body = response_data["body"]
@@ -130,14 +130,14 @@ class LambdaService(QObject):
 
         except (json.JSONDecodeError, KeyError) as e:
             QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {e}")
-            error_handler()
+            error_handler(str(e))
             return
         finally:
             response.deleteLater()
         response_handler(response_body)
 
-    def _handle_validation_error(self):
-        self.validation_failed.emit()
+    def _handle_validation_error(self, error: str):
+        self.validation_failed.emit(error)
 
     def _process_plan_matter_response(self, response_body: dict):
         """Processes the post plan matter reply from the lambda and emits a signal."""
@@ -166,7 +166,15 @@ class LambdaService(QObject):
 
     def _process_validation_response(self, response_body: dict):
         """Processes the validation reply from the lambda and emits a signal."""
-        validation_errors = response_body.get("ryhti_responses")
+        validation_errors = response_body["ryhti_responses"]
+        plan_id = get_active_plan_id()
+
+        if (validation_errors_of_active_plan := validation_errors.get(plan_id)) and (
+            validation_errors_of_active_plan.get("traceId") is not None
+        ):
+            self.validation_failed.emit(f"Ryhtivirhe: {validation_errors_of_active_plan}")
+            return
+
         self.validation_received.emit(validation_errors)
 
     def _process_export_plan_response(self, response_body: dict):
