@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from importlib import resources
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QLabel, QProgressBar, QPushButton
 
     from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
+
+logger = logging.getLogger(__name__)
 
 ui_path = resources.files(__package__) / "validation_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
@@ -32,9 +35,17 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.lambda_service = LambdaService()
         self.lambda_service.validation_received.connect(self.list_validation_errors)
-        self.lambda_service.validation_failed.connect(self.enable_validation)
+        self.lambda_service.validation_failed.connect(self.handle_validation_call_errors)
         self.validate_button.clicked.connect(self.validate_plan)
         self.validate_plan_matter_button.clicked.connect(self.validate_plan_matter)
+
+        self.enable_validation()
+
+    def handle_validation_call_errors(self, error: str):
+        self.validation_label.setText("Kaavan validoinnissa tapahtui virhe.")
+        self.validation_label.setStyleSheet("QLabel {color: red}")
+
+        logger.warning("Kaavan validoinnissa tapahtui virhe: %s", error)
 
         self.enable_validation()
 
@@ -51,6 +62,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         """Handles the button press to trigger the validation process."""
 
         self.validation_label.setText("Kaavan validointivirheet:")
+        self.validation_label.setStyleSheet("")
 
         # Clear the existing errors from the list view
         self.validation_result_tree_view.clear_errors()
@@ -71,6 +83,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         """Handles the button press to trigger the plan matter validation process."""
 
         self.validation_label.setText("Kaava-asian validointivirheet:")
+        self.validation_label.setStyleSheet("")
 
         # Clear the existing errors from the list view
         self.validation_result_tree_view.clear_errors()
