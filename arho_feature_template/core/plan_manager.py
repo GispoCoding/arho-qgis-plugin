@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Generator, Iterable, cast
 
 from qgis.core import (
+    Qgis,
     QgsExpressionContextUtils,
     QgsFeature,
     QgsGeometry,
@@ -168,6 +169,10 @@ class PlanManager(QObject):
         )
         self.lambda_service.plan_jsons_received.connect(self.save_plan_jsons)
         self.lambda_service.plan_matter_json_received.connect(self.save_plan_matter_json)
+
+        # Initialize project transaction mode
+        project = QgsProject.instance()
+        project.setTransactionMode(Qgis.TransactionMode.BufferedGroups)
 
     def initialize_caches_and_libraries(self):
         self.cache_code_layers()
