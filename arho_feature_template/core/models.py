@@ -47,58 +47,46 @@ class TemplateSyntaxError(Exception):
 
 
 @dataclass
-class FeatureTemplateLibrary:
-    """Describes the configuration of a feature template library"""
+class PlanFeatureLibrary:
+    """Describes the configuration of a plan feature library"""
 
     name: str = ""
-    version: str | None = None
+    file_path: str | None = None
+    version: int | None = None
     description: str | None = None
-    feature_templates: list[PlanFeature] = field(default_factory=list, compare=False)
+    # NOTE: Consider `library_type` class variable if default/custom/active feature libraries are all used
+    status: bool = True
+    plan_features: list[PlanFeature] = field(default_factory=list, compare=False)
 
     @classmethod
-    def find_matching_group_config(cls, group_heading: str, regulation_group_libraries: list[RegulationGroupLibrary]):
-        for library in regulation_group_libraries:
-            for group in library.regulation_groups:
-                if group.heading == group_heading:
-                    return group
-        return None
+    def from_template_dict(cls, data: dict, file_path: str | None = None) -> PlanFeatureLibrary:
+        if data == {}:
+            return PlanFeatureLibrary(file_path=file_path, status=False)
 
-    @classmethod
-    def from_template_dict(
-        cls, data: dict, regulation_group_libraries: list[RegulationGroupLibrary]
-    ) -> FeatureTemplateLibrary:
-        get_underground_id = UndergroundTypeLayer.get_attribute_value_by_another_attribute_value
         try:
-            return FeatureTemplateLibrary(
+            return PlanFeatureLibrary(
                 name=data.get("name", ""),
+                file_path=file_path,
                 version=data.get("version"),
                 description=data.get("description"),
-                feature_templates=[
-                    PlanFeature(
-                        geom=None,
-                        type_of_underground_id=(
-                            get_underground_id("id", "value", feature_data.get("type_of_underground"))
-                            if feature_data.get("type_of_underground")
-                            else None
-                        ),
-                        layer_name=feature_data.get("layer_name"),
-                        name=feature_data.get("name"),
-                        description=feature_data.get("description"),
-                        regulation_groups=[
-                            group
-                            for group_heading in feature_data.get("regulation_groups", [])
-                            if (group := cls.find_matching_group_config(group_heading, regulation_group_libraries))
-                        ],
-                        plan_id=None,
-                        id_=None,
-                    )
-                    for feature_data in data["feature_templates"]
+                status=True,
+                plan_features=[
+                    PlanFeature.from_template_dict(plan_feature_data) for plan_feature_data in data["plan_features"]
                 ]
-                if data.get("feature_templates")
+                if data.get("plan_features")
                 else [],
             )
         except KeyError as e:
             raise TemplateSyntaxError(str(cls), str(e)) from e
+
+    def into_template_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "file_path": self.file_path,
+            "version": self.version,
+            "description": self.description,
+            "plan_features": [plan_feature.into_template_dict() for plan_feature in self.plan_features],
+        }
 
 
 @dataclass
@@ -403,12 +391,35 @@ class PlanFeature(PlanBaseModel):
 
     @classmethod
     def from_template_dict(cls, data: dict) -> PlanFeature:
-        # TODO: Implement
-        return cls(**data)
+        get_underground_id = UndergroundTypeLayer.get_attribute_value_by_another_attribute_value
+        return cls(
+            geom=None,
+            type_of_underground_id=(
+                get_underground_id("id", "value", data["type_of_underground"])
+                if data.get("type_of_underground")
+                else None
+            ),
+            layer_name=data.get("layer_name"),
+            name=data.get("name"),
+            description=data.get("description"),
+            regulation_groups=[
+                RegulationGroup.from_template_dict(group_data) for group_data in data.get("regulation_groups", [])
+            ],
+            plan_id=None,
+            id_=None,
+        )
 
     def into_template_dict(self) -> dict:
-        # TODO: Implement
-        return {}
+        return {
+            # Type of underground should always be defined at this point
+            "type_of_underground": UndergroundTypeLayer.get_attribute_by_id(
+                "value", cast(str, self.type_of_underground_id)
+            ),
+            "layer_name": self.layer_name,
+            "name": self.name,
+            "description": self.description,
+            "regulation_groups": [regulation_group.into_template_dict() for regulation_group in self.regulation_groups],
+        }
 
     def __str__(self):
         return self.name if self.name else ""
