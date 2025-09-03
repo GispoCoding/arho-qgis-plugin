@@ -89,7 +89,9 @@ def handle_unsaved_changes() -> bool:
 
 def set_active_plan_id(plan_id: str | None):
     """Store the given plan ID as the active plan ID as a project variable."""
-    QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "active_plan_id", plan_id)
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "active_plan_id", plan_id if plan_id is not None else ""
+    )
 
 
 def get_active_plan_id():
