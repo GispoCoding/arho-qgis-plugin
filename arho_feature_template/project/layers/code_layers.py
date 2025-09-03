@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import yaml
-from PyQt5.QtCore import QMetaType
-from qgis.core import QgsField, QgsVectorLayer
 
 from arho_feature_template.exceptions import ConfigSyntaxError, LayerNameNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
@@ -133,29 +131,6 @@ class AbstractCodeLayer(AbstractLayer):
 
         return super().get_attribute_value_by_another_attribute_value(target_attribute, filter_attribute, filter_value)
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("value", QMetaType.QString),
-                QgsField("short_name", QMetaType.QString),
-                QgsField("name", QMetaType.QString),
-                QgsField("description", QMetaType.QString),
-                QgsField("status", QMetaType.QString),
-                QgsField("level", QMetaType.Int),
-                QgsField("parent_id", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class PlanTypeLayer(AbstractCodeLayer):
     name = "Kaavalaji"
@@ -205,26 +180,6 @@ class LifeCycleStatusLayer(AbstractCodeLayer):
 class OrganisationLayer(AbstractCodeLayer):
     name = "Toimija"
     qlr_path = os.path.join(QLR_PATH, "organisation.qlr")
-
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("name", QMetaType.QString),
-                QgsField("business_id", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("administrative_region_id", QMetaType.QString),
-                QgsField("municipality_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
 
 
 class UndergroundTypeLayer(AbstractCodeLayer):
@@ -457,29 +412,6 @@ class LegalEffectsLayer(AbstractCodeLayer):
 
 class CodeLayerWithGeometry(AbstractCodeLayer):
     name = "temp"
-
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("MultiPolygon?crs=epsg:3067", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("value", QMetaType.QString),
-                QgsField("short_name", QMetaType.QString),
-                QgsField("name", QMetaType.QString),
-                QgsField("description", QMetaType.QString),
-                QgsField("status", QMetaType.QString),
-                QgsField("level", QMetaType.Int),
-                QgsField("parent_id", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
 
 
 class Municipality(CodeLayerWithGeometry):

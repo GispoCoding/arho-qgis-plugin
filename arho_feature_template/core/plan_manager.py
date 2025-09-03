@@ -49,6 +49,7 @@ from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGro
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
+    OrganisationLayer,
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
     PlanType,
@@ -68,8 +69,11 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     TypeOfVerbalRegulationAssociationLayer,
+    background_info_layers,
+    geom_layers,
     plan_feature_layers,
     plan_layers,
+    plan_regulation_layers,
 )
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import feature_template_library_config_files
@@ -102,6 +106,8 @@ QML_MAP = {
     "Maankäytön kohteet": "land_use_point.qml",
     "Muut pisteet": "other_point.qml",
 }
+
+DEFAULT_GROUPS = {"Kaavamerkinnät ja määräykset", "Taustatiedot", "Taustakartta", "Koodit"}
 
 
 class PlanDigitizeMapTool(QgsMapToolDigitizeFeature): ...
@@ -169,10 +175,6 @@ class PlanManager(QObject):
         )
         self.lambda_service.plan_jsons_received.connect(self.save_plan_jsons)
         self.lambda_service.plan_matter_json_received.connect(self.save_plan_matter_json)
-
-        # Initialize project transaction mode
-        project = QgsProject.instance()
-        project.setTransactionMode(Qgis.TransactionMode.BufferedGroups)
 
     def initialize_caches_and_libraries(self):
         self.cache_code_layers()
@@ -387,50 +389,40 @@ class PlanManager(QObject):
 
     def load_plan_layers(self):
         project = QgsProject.instance()
-        root = QgsProject.instance().layerTreeRoot()
-        geom_layers = ["Kaava", "Maankäytön kohteet", "Muut pisteet", "Viivat", "Osa-alue", "Aluevaraus"]
-        plan_regulation_layers = [
-            "Kaavamääräysryhmät",
-            "Kaavamääräys",
-            "Kaavasuositus",
-            "Kaavamääräyksen lisätiedot",
-        ]
-        info_layers = [
-            "Toimija",
-            "Asiakirjat",
-            "Lähtötietoaineistot",
-            "Kaavoitusteemojen assosiaatiot",
-            "Kaavamääräysryhmien assosiaatiot",
-            "Elinkaaren päiväykset",
-            "Sanallisten kaavamääräyksien lajien assosiaatiot",
-            "Yleiskaavan oikeusvaikutusten assosiaatiot",
-        ]
-        layers = dict.fromkeys(geom_layers + plan_regulation_layers + info_layers)
-        for layer in plan_layers:
-            if layer.name in layers:
-                layers[layer.name] = layer
-        for layer in code_layers:
-            if layer.name in layers:
-                layers[layer.name] = layer
+        root = project.layerTreeRoot()
 
-        for layer_name in geom_layers:
-            if not project.mapLayersByName(layer_name):
-                layer = layers[layer_name]
-                QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, root)
+        # Initialize project transaction mode
+        project.setTransactionMode(Qgis.TransactionMode.BufferedGroups)
 
-        if not root.findGroup("Kaavamerkinnät ja määräykset"):
-            plan_notations = root.addGroup("Kaavamerkinnät ja määräykset")
-            for layer_name in plan_regulation_layers:
-                if layer_name not in [child.name() for child in plan_notations.children()]:
-                    layer = layers[layer_name]
+        if len(root.findGroups(recursive=False)) <= len(DEFAULT_GROUPS) - 1:
+            plan_group = root.insertGroup(0, "Uusi kaava")
+        else:
+            return
+
+        background_info_layers.append(OrganisationLayer)
+
+        for layer in geom_layers:
+            if layer.name not in [child.name() for child in plan_group.children()]:
+                QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, plan_group)
+
+        if not plan_group.findGroup("Kaavamerkinnät ja määräykset"):
+            plan_notations = plan_group.addGroup("Kaavamerkinnät ja määräykset")
+            for layer in plan_regulation_layers:
+                if layer.name not in [child.name() for child in plan_notations.children()]:
                     QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, plan_notations)
 
         if not root.findGroup("Taustatiedot"):
             background_info = root.addGroup("Taustatiedot")
-            for layer_name in info_layers:
-                if layer_name not in [child.name() for child in background_info.children()]:
-                    layer = layers[layer_name]
+            for layer in background_info_layers:
+                if layer.name not in [child.name() for child in background_info.children()]:
                     QgsLayerDefinition.loadLayerDefinition(layer.qlr_path, project, background_info)
+
+        if not root.findGroup("Koodit"):
+            codes = root.addGroup("Koodit")
+            for code_layer in code_layers:
+                if code_layer.name != "Toimija":
+                    QgsLayerDefinition.loadLayerDefinition(code_layer.qlr_path, project, codes)
+                    project.mapLayersByName(code_layer.name)[0].setReadOnly(True)
 
         if not root.findGroup("Taustakartta"):
             map_group = root.addGroup("Taustakartta")
@@ -439,13 +431,6 @@ class PlanManager(QObject):
             osm_layer = QgsRasterLayer(uri, layer_name, "wms")
             project.addMapLayer(osm_layer, False)
             map_group.addLayer(osm_layer)
-
-        if not root.findGroup("Koodit"):
-            codes = root.addGroup("Koodit")
-            for code_layer in code_layers:
-                if code_layer.name != "Toimija":
-                    QgsLayerDefinition.loadLayerDefinition(code_layer.qlr_path, project, codes)
-                    project.mapLayersByName(code_layer.name)[0].setReadOnly(True)
 
         self.initialize_caches_and_libraries()
 
@@ -471,16 +456,24 @@ class PlanManager(QObject):
 
     def import_plan_geometry(self):
         self.load_plan_layers()
+        self.previous_map_tool = iface.mapCanvas().mapTool()
+        self.previous_active_plan_id = get_active_plan_id()
+
+        if not handle_unsaved_changes():
+            return
+
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
             return
         self.previously_editable = plan_layer.isEditable()
-        self.previous_active_plan_id = get_active_plan_id()
-        self.previous_map_tool = iface.mapCanvas().mapTool()
+
+        self.set_active_plan(None)
 
         layer: QgsVectorLayer = iface.activeLayer()
         if not layer:
-            layer = QgsProject.instance().mapLayersByName("Kaava")[0]
+            iface.messageBar().pushWarning("", "Ei valittua tasoa.")
+            self.remove_new_plan_group()
+            return
         plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
         if layer.name() in plan_layer_names:
             iface.messageBar().pushWarning("", "Kaavan ulkorajaa ei voi tuoda ARHOn tasoilta.")
@@ -568,12 +561,15 @@ class PlanManager(QObject):
             if plan_id is not None:
                 plan_to_be_activated = plan_id
                 plan_saved = True
+                self.rename_new_plan_group(plan_id)
             else:
                 plan_to_be_activated = self.previous_active_plan_id
                 plan_saved = False
+                self.remove_new_plan_group()
         else:
             plan_to_be_activated = self.previous_active_plan_id
             plan_saved = False
+            self.remove_new_plan_group()
 
         self.set_active_plan(plan_to_be_activated)
 
@@ -683,7 +679,26 @@ class PlanManager(QObject):
             selected_plan_id = dialog.get_selected_plan_id()
             self.commit_all_editable_layers()
 
+            self.rename_new_plan_group(selected_plan_id)
             self.set_active_plan(selected_plan_id)
+        else:
+            self.remove_new_plan_group()
+
+    def rename_new_plan_group(self, plan_id):
+        root = QgsProject.instance().layerTreeRoot()
+        layer_groups = root.findGroups(recursive=False)
+        plan_group = next((group for group in layer_groups if group.name() not in DEFAULT_GROUPS), None)
+        if not plan_group:
+            return
+
+        plan_name = PlanLayer.get_plan_name(plan_id)
+        plan_group.setName(plan_name)
+
+    def remove_new_plan_group(self):
+        root = QgsProject.instance().layerTreeRoot()
+        plan_group = root.findGroup("Uusi kaava")
+        if plan_group:
+            root.removeChildNode(plan_group)
 
     def commit_all_editable_layers(self):
         """Commit all changes in any editable layers."""

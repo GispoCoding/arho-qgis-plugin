@@ -7,8 +7,7 @@ from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator, cast
 
-from PyQt5.QtCore import QMetaType
-from qgis.core import QgsFeature, QgsField, QgsVectorLayer, QgsVectorLayerUtils
+from qgis.core import QgsFeature, QgsVectorLayerUtils
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -162,35 +161,6 @@ class PlanLayer(AbstractPlanLayer):
             return None
         return cast(str, producers_id)
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("MultiPolygon?crs=epsg:3067", "Kaava", "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("name", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("exported_at", QMetaType.QDate),
-                QgsField("lifecycle_status_id", QMetaType.QString),
-                QgsField("organisation_id", QMetaType.QString),
-                QgsField("plan_type_id", QMetaType.QString),
-                QgsField("permanent_plan_identifier", QMetaType.QString),
-                QgsField("producers_plan_identifier", QMetaType.QString),
-                QgsField("description", QMetaType.QString),
-                QgsField("scale", QMetaType.Int),
-                QgsField("matter_management_identifier", QMetaType.QString),
-                QgsField("record_number", QMetaType.QString),
-                QgsField("validated_at", QMetaType.QDate),
-                QgsField("validation_errors", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class PlanFeatureLayer(AbstractPlanLayer):
     @classmethod
@@ -228,37 +198,6 @@ class PlanFeatureLayer(AbstractPlanLayer):
             modified=False,
             id_=feature["id"],
         )
-
-    # @classmethod
-    # def create_qgis_layer(cls) -> QgsVectorLayer:
-    #     layer = QgsVectorLayer(f"{cls.geom}?crs=epsg:3067", cls.name, "memory")  # ignore
-    #     provider = layer.dataProvider()
-    #     layer.startEditing()
-    #     provider.addAttributes(
-    #         [
-    #             QgsField("name", QMetaType.QString),
-    #             QgsField("id", QMetaType.QString),
-    #             QgsField("created_at", QMetaType.QDate),
-    #             QgsField("modified_at", QMetaType.QDate),
-    #             QgsField("exported_at", QMetaType.QDate),
-    #             QgsField("description", QMetaType.QString),
-    #             QgsField("source_data_object", QMetaType.QString),
-    #             QgsField("height_unit", QMetaType.QString),
-    #             QgsField("ordering", QMetaType.Int),
-    #             QgsField("type_of_underground", QMetaType.QString),
-    #             QgsField("plan_id", QMetaType.QString),
-    #             QgsField("lifecycle_status_id", QMetaType.QString),
-    #             QgsField("height_min", QMetaType.Double),
-    #             QgsField("height_max", QMetaType.Double),
-    #             QgsField("height_reference_point", QMetaType.QString),
-    #             QgsField("short_names", QMetaType.QStringList),
-    #             QgsField("type_regulations", QMetaType.QString),
-    #             QgsField("regulation_values", QMetaType.QString),
-    #         ]
-    #     )
-    #     layer.commitChanges()
-
-    #     return layer
 
 
 class LandUsePointLayer(PlanFeatureLayer):
@@ -335,42 +274,10 @@ class RegulationGroupLayer(AbstractPlanLayer):
             id_=feature["id"],
         )
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("short_name", QMetaType.QString),
-                QgsField("name", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("ordering", QMetaType.Int),
-                QgsField("plan_id", QMetaType.QString),
-                QgsField("type_of_plan_regulation_group_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class RegulationGroupAssociationLayer(AbstractPlanLayer):
     name = "Kaavamääräysryhmien assosiaatiot"
-    filter_template = Template(
-        dedent(
-            """\
-            EXISTS (
-                SELECT 1
-                FROM hame.plan_regulation_group prg
-                WHERE
-                    hame.regulation_group_association.plan_regulation_group_id = prg.id
-                    AND prg.plan_id = '$plan_id'
-            )"""
-        )
-    )
+    filter_template = None
     qlr_path = os.path.join(QLR_PATH, "plan_regulation_group_associations.qlr")
 
     layer_name_to_attribute_map: ClassVar[dict[str, str]] = {
@@ -441,27 +348,6 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         associations = RegulationGroupAssociationLayer.get_associations_for_feature(feature_id, layer_name)
         updated_group_ids = [group.id_ for group in groups]
         return [assoc for assoc in associations if assoc["plan_regulation_group_id"] not in updated_group_ids]
-
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("id", QMetaType.QString),
-                QgsField("plan_regulation_group_id", QMetaType.QString),
-                QgsField("plan_id", QMetaType.QString),
-                QgsField("land_use_area_id", QMetaType.QString),
-                QgsField("other_area_id", QMetaType.QString),
-                QgsField("land_use_point_id", QMetaType.QString),
-                QgsField("other_point_id", QMetaType.QString),
-                QgsField("line_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
 
 
 def attribute_value_model_from_feature(feature: QgsFeature) -> AttributeValue:
@@ -560,57 +446,10 @@ class PlanRegulationLayer(AbstractPlanLayer):
             if reg["id"] not in updated_regulation_ids
         ]
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("plan_regulation_group_id", QMetaType.QString),
-                QgsField("type_of_plan_regulation_id", QMetaType.QString),
-                QgsField("unit", QMetaType.QString),
-                QgsField("text_value", QMetaType.QString),
-                QgsField("numeric_value", QMetaType.Double),
-                QgsField("exported_at", QMetaType.QDate),
-                QgsField("lifecycle_status_id", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("ordering", QMetaType.Int),
-                QgsField("subject_identifiers", QMetaType.QStringList),
-                QgsField("numeric_range_min", QMetaType.Double),
-                QgsField("numeric_range_max", QMetaType.Double),
-                QgsField("value_data_type", QMetaType.QString),
-                QgsField("text_syntax", QMetaType.QString),
-                QgsField("code_list", QMetaType.QString),
-                QgsField("code_value", QMetaType.QString),
-                QgsField("code_title", QMetaType.QString),
-                QgsField("height_reference_point", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
     name = "Sanallisten kaavamääräyksien lajien assosiaatiot"
-    filter_template = Template(
-        dedent(
-            """\
-            EXISTS (
-                SELECT 1
-                FROM
-                    hame.plan_regulation_group prg
-                    JOIN hame.plan_regulation pr
-                        ON (prg.id = pr.plan_regulation_group_id)
-                WHERE
-                    hame.type_of_verbal_regulation_association.plan_regulation_id = pr.id
-                    AND prg.plan_id = '$plan_id'
-            )"""
-        )
-    )
+    filter_template = None
     qlr_path = os.path.join(QLR_PATH, "verbal_regulation_type_associations.qlr")
 
     @classmethod
@@ -643,21 +482,6 @@ class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
     def get_dangling_associations(cls, regulation_id: str, updated_type_ids: list[str]) -> list[QgsFeature]:
         associations = cls.get_associations_for_regulation(regulation_id)
         return [assoc for assoc in associations if assoc["type_of_verbal_plan_regulation_id"] not in updated_type_ids]
-
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("plan_regulation_id", QMetaType.QString),
-                QgsField("type_of_verbal_plan_regulation_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
 
 
 class LegalEffectAssociationLayer(AbstractPlanLayer):
@@ -697,21 +521,6 @@ class LegalEffectAssociationLayer(AbstractPlanLayer):
         return [
             assoc for assoc in associations if assoc["legal_effects_of_master_plan_id"] not in updated_legal_effect_ids
         ]
-
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("plan_id", QMetaType.QString),
-                QgsField("legal_effects_of_master_plan_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
 
 
 class PlanPropositionLayer(AbstractPlanLayer):
@@ -766,50 +575,10 @@ class PlanPropositionLayer(AbstractPlanLayer):
             if prop["id"] not in updated_proposition_ids
         ]
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("plan_regulation_group_id", QMetaType.QString),
-                QgsField("text_value", QMetaType.QString),
-                QgsField("exported_at", QMetaType.QDate),
-                QgsField("lifecycle_status_id", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("ordering", QMetaType.Int),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class PlanThemeAssociationLayer(AbstractPlanLayer):
     name = "Kaavoitusteemojen assosiaatiot"
-    filter_template = Template(
-        dedent(
-            """\
-            EXISTS (
-                SELECT 1
-                FROM
-                    hame.plan_regulation_group prg
-                    LEFT JOIN hame.plan_regulation pr
-                        ON prg.id = pr.plan_regulation_group_id
-                    LEFT JOIN hame.plan_proposition pp
-                        ON prg.id = pp.plan_regulation_group_id
-                WHERE
-                    prg.plan_id = '$plan_id'
-                    AND (
-                    hame.plan_theme_association.plan_regulation_id = pr.id
-                        OR hame.plan_theme_association.plan_proposition_id = pp.id
-                )
-            )"""
-        )
-    )
+    filter_template = None
     qlr_path = os.path.join(QLR_PATH, "plan_theme_associations.qlr")
 
     @classmethod
@@ -874,27 +643,10 @@ class PlanThemeAssociationLayer(AbstractPlanLayer):
         associations = cls.get_associations_for_plan_proposition(plan_proposition_id)
         return [assoc for assoc in associations if assoc["plan_theme_id"] not in updated_plan_theme_ids]
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("id", QMetaType.QString),
-                QgsField("plan_regulation_id", QMetaType.QString),
-                QgsField("plan_proposition_id", QMetaType.QString),
-                QgsField("plan_theme_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class DocumentLayer(AbstractPlanLayer):
     name = "Asiakirjat"
-    filter_template = Template("plan_id = '$plan_id'")
+    filter_template = None
     qlr_path = os.path.join(QLR_PATH, "documents.qlr")
 
     @classmethod
@@ -947,65 +699,11 @@ class DocumentLayer(AbstractPlanLayer):
             if doc["id"] not in updated_document_ids
         ]
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("type_of_document_id", QMetaType.QString),
-                QgsField("decision_date", QMetaType.QDate),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("plan_id", QMetaType.QString),
-                QgsField("permanent_document_identifier", QMetaType.QString),
-                QgsField("category_of_publicity_id", QMetaType.QString),
-                QgsField("url", QMetaType.QString),
-                QgsField("personal_data_content_id", QMetaType.QString),
-                QgsField("retention_time_id", QMetaType.QString),
-                QgsField("language_id", QMetaType.QString),
-                QgsField("exported_at", QMetaType.QDate),
-                QgsField("exported_file_key", QMetaType.QString),
-                QgsField("arrival_date", QMetaType.QDate),
-                QgsField("confirmation_date", QMetaType.QDate),
-                QgsField("document_date", QMetaType.QDate),
-                QgsField("name", QMetaType.QString),
-                QgsField("accessibility", QMetaType.Bool),
-                QgsField("exported_file_etag", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class SourceDataLayer(AbstractPlanLayer):
     name = "Lähtötietoaineistot"
-    filter_template = Template("plan_id = '$plan_id'")
+    filter_template = None
     qlr_path = os.path.join(QLR_PATH, "source_data.qlr")
-
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("type_of_source_data_id", QMetaType.QString),
-                QgsField("name", QMetaType.QString),
-                QgsField("additional_information_uri", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("detachment_date", QMetaType.QDate),
-                QgsField("plan_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
 
 
 class AdditionalInformationLayer(AbstractPlanLayer):
@@ -1059,35 +757,6 @@ class AdditionalInformationLayer(AbstractPlanLayer):
             if info["id"] not in updated_info_ids
         ]
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("plan_regulation_id", QMetaType.QString),
-                QgsField("type_additional_information_id", QMetaType.QString),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("value_data_type", QMetaType.QString),
-                QgsField("numeric_value", QMetaType.Double),
-                QgsField("numeric_range_min", QMetaType.Double),
-                QgsField("numeric_range_max", QMetaType.Double),
-                QgsField("unit", QMetaType.QString),
-                QgsField("text_value", QMetaType.QString),
-                QgsField("text_syntax", QMetaType.QString),
-                QgsField("code_list", QMetaType.QString),
-                QgsField("code_value", QMetaType.QString),
-                QgsField("code_title", QMetaType.QString),
-                QgsField("height_reference_point", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 class LifeCycleLayer(AbstractPlanLayer):
     name = "Elinkaaren päiväykset"
@@ -1135,33 +804,6 @@ class LifeCycleLayer(AbstractPlanLayer):
     def get_features_by_plan_id(cls, plan_id: str) -> list[QgsFeature]:
         return list(cls.get_features_by_attribute_value("plan_id", plan_id))
 
-    @classmethod
-    def create_qgis_layer(cls) -> QgsVectorLayer:
-        layer = QgsVectorLayer("none", cls.name, "memory")
-        provider = layer.dataProvider()
-        layer.startEditing()
-        provider.addAttributes(
-            [
-                QgsField("lifecycle_status_id", QMetaType.QString),
-                QgsField("plan_id", QMetaType.QString),
-                QgsField("plan_regulation_id", QMetaType.QString),
-                QgsField("plan_proposition_id", QMetaType.QString),
-                QgsField("starting_at", QMetaType.QDate),
-                QgsField("ending_at", QMetaType.QDate),
-                QgsField("id", QMetaType.QString),
-                QgsField("created_at", QMetaType.QDate),
-                QgsField("modified_at", QMetaType.QDate),
-                QgsField("land_use_area_id", QMetaType.QString),
-                QgsField("other_area_id", QMetaType.QString),
-                QgsField("line_id", QMetaType.QString),
-                QgsField("land_use_point_id", QMetaType.QString),
-                QgsField("other_point_id", QMetaType.QString),
-            ]
-        )
-        layer.commitChanges()
-
-        return layer
-
 
 FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
     LandUsePointLayer.name: LandUsePointLayer,
@@ -1176,3 +818,20 @@ plan_layers.remove(PlanFeatureLayer)
 
 plan_feature_layers = PlanFeatureLayer.__subclasses__()
 plan_layers.extend(plan_feature_layers)
+
+geom_layers = [PlanLayer, LandUsePointLayer, OtherPointLayer, LineLayer, OtherAreaLayer, LandUseAreaLayer]
+plan_regulation_layers = [
+    RegulationGroupLayer,
+    PlanRegulationLayer,
+    PlanPropositionLayer,
+    AdditionalInformationLayer,
+]
+background_info_layers = [
+    DocumentLayer,
+    SourceDataLayer,
+    PlanThemeAssociationLayer,
+    RegulationGroupAssociationLayer,
+    LifeCycleLayer,
+    TypeOfVerbalRegulationAssociationLayer,
+    LegalEffectAssociationLayer,
+]

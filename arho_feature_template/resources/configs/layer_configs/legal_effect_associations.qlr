@@ -1,18 +1,18 @@
 <!DOCTYPE qgis-layer-definition>
 <qlr>
-  <layer-tree-group groupLayer="" name="" expanded="1" checked="Qt::Checked">
+  <layer-tree-group name="" expanded="1" checked="Qt::Checked" groupLayer="">
     <customproperties>
       <Option/>
     </customproperties>
-    <layer-tree-layer patch_size="-1,-1" id="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d" name="Yleiskaavan oikeusvaikutusten assosiaatiot" source="service='postgres' authcfg=ryhtirw key='plan_id,legal_effects_of_master_plan_id' checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;legal_effects_association&quot;" legend_split_behavior="0" expanded="1" legend_exp="" checked="Qt::Checked" providerKey="postgres">
+    <layer-tree-layer id="Yleiskaavan_oikeusvaikutusten_assosiaatiot_2720d239_21f3_49c8_a56f_56a1d3333b6a" source="service='postgres' authcfg=ryhtirw key='plan_id,legal_effects_of_master_plan_id' checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;legal_effects_association&quot;" providerKey="postgres" name="Yleiskaavan oikeusvaikutusten assosiaatiot" legend_exp="" patch_size="-1,-1" legend_split_behavior="0" checked="Qt::Checked" expanded="1">
       <customproperties>
         <Option/>
       </customproperties>
     </layer-tree-layer>
   </layer-tree-group>
   <maplayers>
-    <maplayer refreshOnNotifyEnabled="0" readOnly="0" refreshOnNotifyMessage="" minScale="1e+08" autoRefreshMode="Disabled" styleCategories="AllStyleCategories" maxScale="0" legendPlaceholderImage="" geometry="No geometry" type="vector" hasScaleBasedVisibilityFlag="0" autoRefreshTime="0" wkbType="NoGeometry">
-      <id>legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d</id>
+    <maplayer refreshOnNotifyEnabled="0" styleCategories="AllStyleCategories" autoRefreshMode="Disabled" minScale="1e+08" readOnly="0" refreshOnNotifyMessage="" type="vector" wkbType="NoGeometry" hasScaleBasedVisibilityFlag="0" autoRefreshTime="0" maxScale="0" geometry="No geometry" legendPlaceholderImage="">
+      <id>Yleiskaavan_oikeusvaikutusten_assosiaatiot_2720d239_21f3_49c8_a56f_56a1d3333b6a</id>
       <datasource>service='postgres' authcfg=ryhtirw key='plan_id,legal_effects_of_master_plan_id' checkPrimaryKeyUnicity='1' table="hame"."legal_effects_association"</datasource>
       <keywordList>
         <value></value>
@@ -38,6 +38,15 @@
         <type>dataset</type>
         <title></title>
         <abstract></abstract>
+        <contact>
+          <name></name>
+          <organization></organization>
+          <position></position>
+          <voice></voice>
+          <fax></fax>
+          <email></email>
+          <role></role>
+        </contact>
         <links/>
         <dates/>
         <fees></fees>
@@ -55,7 +64,15 @@
             <geographicflag>false</geographicflag>
           </spatialrefsys>
         </crs>
-        <extent/>
+        <extent>
+          <spatial crs="" minz="0" dimensions="2" miny="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxz="0" minx="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxy="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxx="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368"/>
+          <temporal>
+            <period>
+              <start></start>
+              <end></end>
+            </period>
+          </temporal>
+        </extent>
       </resourceMetadata>
       <provider encoding="">postgres</provider>
       <vectorjoins/>
@@ -69,142 +86,142 @@
       <metadataUrls/>
       <flags>
         <Identifiable>1</Identifiable>
-        <Removable>1</Removable>
+        <Removable>0</Removable>
         <Searchable>1</Searchable>
         <Private>0</Private>
       </flags>
-      <temporal limitMode="0" endField="" startExpression="" durationField="" fixedDuration="0" accumulate="0" enabled="0" durationUnit="min" startField="" mode="0" endExpression="">
+      <temporal enabled="0" durationField="" startField="" endField="" limitMode="0" durationUnit="min" fixedDuration="0" startExpression="" accumulate="0" mode="0" endExpression="">
         <fixedRange>
           <start></start>
           <end></end>
         </fixedRange>
       </temporal>
-      <elevation respectLayerSymbol="1" extrusion="0" type="IndividualFeatures" extrusionEnabled="0" clamping="Terrain" binding="Centroid" showMarkerSymbolInSurfacePlots="0" zscale="1" zoffset="0" symbology="Line">
+      <elevation extrusionEnabled="0" respectLayerSymbol="1" clamping="Terrain" zoffset="0" zscale="1" type="IndividualFeatures" symbology="Line" binding="Centroid" extrusion="0" showMarkerSymbolInSurfacePlots="0">
         <data-defined-properties>
           <Option type="Map">
-            <Option value="" name="name" type="QString"/>
+            <Option value="" type="QString" name="name"/>
             <Option name="properties"/>
-            <Option value="collection" name="type" type="QString"/>
+            <Option value="collection" type="QString" name="type"/>
           </Option>
         </data-defined-properties>
         <profileLineSymbol>
-          <symbol name="" force_rhr="0" is_animated="0" type="line" frame_rate="10" alpha="1" clip_to_extent="1">
+          <symbol force_rhr="0" type="line" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
             <data_defined_properties>
               <Option type="Map">
-                <Option value="" name="name" type="QString"/>
+                <Option value="" type="QString" name="name"/>
                 <Option name="properties"/>
-                <Option value="collection" name="type" type="QString"/>
+                <Option value="collection" type="QString" name="type"/>
               </Option>
             </data_defined_properties>
-            <layer pass="0" id="{17e461ab-74ab-48a5-88db-040a137c7bfa}" class="SimpleLine" locked="0" enabled="1">
+            <layer enabled="1" id="{17e461ab-74ab-48a5-88db-040a137c7bfa}" class="SimpleLine" pass="0" locked="0">
               <Option type="Map">
-                <Option value="0" name="align_dash_pattern" type="QString"/>
-                <Option value="square" name="capstyle" type="QString"/>
-                <Option value="5;2" name="customdash" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="customdash_map_unit_scale" type="QString"/>
-                <Option value="MM" name="customdash_unit" type="QString"/>
-                <Option value="0" name="dash_pattern_offset" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="dash_pattern_offset_map_unit_scale" type="QString"/>
-                <Option value="MM" name="dash_pattern_offset_unit" type="QString"/>
-                <Option value="0" name="draw_inside_polygon" type="QString"/>
-                <Option value="bevel" name="joinstyle" type="QString"/>
-                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" name="line_color" type="QString"/>
-                <Option value="solid" name="line_style" type="QString"/>
-                <Option value="0.6" name="line_width" type="QString"/>
-                <Option value="MM" name="line_width_unit" type="QString"/>
-                <Option value="0" name="offset" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
-                <Option value="MM" name="offset_unit" type="QString"/>
-                <Option value="0" name="ring_filter" type="QString"/>
-                <Option value="0" name="trim_distance_end" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="trim_distance_end_map_unit_scale" type="QString"/>
-                <Option value="MM" name="trim_distance_end_unit" type="QString"/>
-                <Option value="0" name="trim_distance_start" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="trim_distance_start_map_unit_scale" type="QString"/>
-                <Option value="MM" name="trim_distance_start_unit" type="QString"/>
-                <Option value="0" name="tweak_dash_pattern_on_corners" type="QString"/>
-                <Option value="0" name="use_custom_dash" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="width_map_unit_scale" type="QString"/>
+                <Option value="0" type="QString" name="align_dash_pattern"/>
+                <Option value="square" type="QString" name="capstyle"/>
+                <Option value="5;2" type="QString" name="customdash"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="customdash_map_unit_scale"/>
+                <Option value="MM" type="QString" name="customdash_unit"/>
+                <Option value="0" type="QString" name="dash_pattern_offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="dash_pattern_offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="dash_pattern_offset_unit"/>
+                <Option value="0" type="QString" name="draw_inside_polygon"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" type="QString" name="line_color"/>
+                <Option value="solid" type="QString" name="line_style"/>
+                <Option value="0.6" type="QString" name="line_width"/>
+                <Option value="MM" type="QString" name="line_width_unit"/>
+                <Option value="0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="0" type="QString" name="ring_filter"/>
+                <Option value="0" type="QString" name="trim_distance_end"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="trim_distance_end_map_unit_scale"/>
+                <Option value="MM" type="QString" name="trim_distance_end_unit"/>
+                <Option value="0" type="QString" name="trim_distance_start"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="trim_distance_start_map_unit_scale"/>
+                <Option value="MM" type="QString" name="trim_distance_start_unit"/>
+                <Option value="0" type="QString" name="tweak_dash_pattern_on_corners"/>
+                <Option value="0" type="QString" name="use_custom_dash"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="width_map_unit_scale"/>
               </Option>
               <data_defined_properties>
                 <Option type="Map">
-                  <Option value="" name="name" type="QString"/>
+                  <Option value="" type="QString" name="name"/>
                   <Option name="properties"/>
-                  <Option value="collection" name="type" type="QString"/>
+                  <Option value="collection" type="QString" name="type"/>
                 </Option>
               </data_defined_properties>
             </layer>
           </symbol>
         </profileLineSymbol>
         <profileFillSymbol>
-          <symbol name="" force_rhr="0" is_animated="0" type="fill" frame_rate="10" alpha="1" clip_to_extent="1">
+          <symbol force_rhr="0" type="fill" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
             <data_defined_properties>
               <Option type="Map">
-                <Option value="" name="name" type="QString"/>
+                <Option value="" type="QString" name="name"/>
                 <Option name="properties"/>
-                <Option value="collection" name="type" type="QString"/>
+                <Option value="collection" type="QString" name="type"/>
               </Option>
             </data_defined_properties>
-            <layer pass="0" id="{d7ed1fef-9655-4a9b-9d9d-d284edfcf67c}" class="SimpleFill" locked="0" enabled="1">
+            <layer enabled="1" id="{d7ed1fef-9655-4a9b-9d9d-d284edfcf67c}" class="SimpleFill" pass="0" locked="0">
               <Option type="Map">
-                <Option value="3x:0,0,0,0,0,0" name="border_width_map_unit_scale" type="QString"/>
-                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" name="color" type="QString"/>
-                <Option value="bevel" name="joinstyle" type="QString"/>
-                <Option value="0,0" name="offset" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
-                <Option value="MM" name="offset_unit" type="QString"/>
-                <Option value="81,111,79,255,rgb:0.31764705882352939,0.43529411764705883,0.30980392156862746,1" name="outline_color" type="QString"/>
-                <Option value="solid" name="outline_style" type="QString"/>
-                <Option value="0.2" name="outline_width" type="QString"/>
-                <Option value="MM" name="outline_width_unit" type="QString"/>
-                <Option value="solid" name="style" type="QString"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="border_width_map_unit_scale"/>
+                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" type="QString" name="color"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="0,0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="81,111,79,255,rgb:0.31764705882352939,0.43529411764705883,0.30980392156862746,1" type="QString" name="outline_color"/>
+                <Option value="solid" type="QString" name="outline_style"/>
+                <Option value="0.2" type="QString" name="outline_width"/>
+                <Option value="MM" type="QString" name="outline_width_unit"/>
+                <Option value="solid" type="QString" name="style"/>
               </Option>
               <data_defined_properties>
                 <Option type="Map">
-                  <Option value="" name="name" type="QString"/>
+                  <Option value="" type="QString" name="name"/>
                   <Option name="properties"/>
-                  <Option value="collection" name="type" type="QString"/>
+                  <Option value="collection" type="QString" name="type"/>
                 </Option>
               </data_defined_properties>
             </layer>
           </symbol>
         </profileFillSymbol>
         <profileMarkerSymbol>
-          <symbol name="" force_rhr="0" is_animated="0" type="marker" frame_rate="10" alpha="1" clip_to_extent="1">
+          <symbol force_rhr="0" type="marker" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
             <data_defined_properties>
               <Option type="Map">
-                <Option value="" name="name" type="QString"/>
+                <Option value="" type="QString" name="name"/>
                 <Option name="properties"/>
-                <Option value="collection" name="type" type="QString"/>
+                <Option value="collection" type="QString" name="type"/>
               </Option>
             </data_defined_properties>
-            <layer pass="0" id="{0709f30b-0fb2-49f6-b1af-78563a76cc11}" class="SimpleMarker" locked="0" enabled="1">
+            <layer enabled="1" id="{0709f30b-0fb2-49f6-b1af-78563a76cc11}" class="SimpleMarker" pass="0" locked="0">
               <Option type="Map">
-                <Option value="0" name="angle" type="QString"/>
-                <Option value="square" name="cap_style" type="QString"/>
-                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" name="color" type="QString"/>
-                <Option value="1" name="horizontal_anchor_point" type="QString"/>
-                <Option value="bevel" name="joinstyle" type="QString"/>
-                <Option value="diamond" name="name" type="QString"/>
-                <Option value="0,0" name="offset" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="offset_map_unit_scale" type="QString"/>
-                <Option value="MM" name="offset_unit" type="QString"/>
-                <Option value="81,111,79,255,rgb:0.31764705882352939,0.43529411764705883,0.30980392156862746,1" name="outline_color" type="QString"/>
-                <Option value="solid" name="outline_style" type="QString"/>
-                <Option value="0.2" name="outline_width" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="outline_width_map_unit_scale" type="QString"/>
-                <Option value="MM" name="outline_width_unit" type="QString"/>
-                <Option value="diameter" name="scale_method" type="QString"/>
-                <Option value="3" name="size" type="QString"/>
-                <Option value="3x:0,0,0,0,0,0" name="size_map_unit_scale" type="QString"/>
-                <Option value="MM" name="size_unit" type="QString"/>
-                <Option value="1" name="vertical_anchor_point" type="QString"/>
+                <Option value="0" type="QString" name="angle"/>
+                <Option value="square" type="QString" name="cap_style"/>
+                <Option value="114,155,111,255,rgb:0.44705882352941179,0.60784313725490191,0.43529411764705883,1" type="QString" name="color"/>
+                <Option value="1" type="QString" name="horizontal_anchor_point"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="diamond" type="QString" name="name"/>
+                <Option value="0,0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="81,111,79,255,rgb:0.31764705882352939,0.43529411764705883,0.30980392156862746,1" type="QString" name="outline_color"/>
+                <Option value="solid" type="QString" name="outline_style"/>
+                <Option value="0.2" type="QString" name="outline_width"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="outline_width_map_unit_scale"/>
+                <Option value="MM" type="QString" name="outline_width_unit"/>
+                <Option value="diameter" type="QString" name="scale_method"/>
+                <Option value="3" type="QString" name="size"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="size_map_unit_scale"/>
+                <Option value="MM" type="QString" name="size_unit"/>
+                <Option value="1" type="QString" name="vertical_anchor_point"/>
               </Option>
               <data_defined_properties>
                 <Option type="Map">
-                  <Option value="" name="name" type="QString"/>
+                  <Option value="" type="QString" name="name"/>
                   <Option name="properties"/>
-                  <Option value="collection" name="type" type="QString"/>
+                  <Option value="collection" type="QString" name="type"/>
                 </Option>
               </data_defined_properties>
             </layer>
@@ -212,69 +229,74 @@
         </profileMarkerSymbol>
       </elevation>
       <customproperties>
-        <Option/>
+        <Option type="Map">
+          <Option value="0" type="int" name="embeddedWidgets/count"/>
+          <Option name="variableNames"/>
+          <Option name="variableValues"/>
+        </Option>
       </customproperties>
       <geometryOptions geometryPrecision="0" removeDuplicateNodes="0">
-        <activeChecks type="StringList">
-          <Option value="" type="QString"/>
-        </activeChecks>
+        <activeChecks/>
         <checkConfiguration/>
       </geometryOptions>
       <legend showLabelLegend="0" type="default-vector"/>
-      <referencedLayers>
-        <relation id="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d_legal_effects_of_master_plan_id_legal_effects_of_master_plan_eaa158b3_4b7c_403d_a9cc_c980adbb80ed_id" name="legal_effects_of_master_plan_id_fkey" referencedLayer="legal_effects_of_master_plan_eaa158b3_4b7c_403d_a9cc_c980adbb80ed" strength="Association" layerId="legal_effects_of_master_plan_eaa158b3_4b7c_403d_a9cc_c980adbb80ed" layerName="Yleiskaavan oikeusvaikutus" providerKey="postgres" referencingLayer="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d" dataSource="service='postgres' authcfg=ryhtirw key='id' checkPrimaryKeyUnicity='1' table=&quot;codes&quot;.&quot;legal_effects_of_master_plan&quot;">
-          <fieldRef referencedField="id" referencingField="legal_effects_of_master_plan_id"/>
-        </relation>
-        <relation id="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d_plan_id_plan_2efa5590_1439_49fe_9204_436ff1851ef1_id" name="plan_id_fkey" referencedLayer="plan_2efa5590_1439_49fe_9204_436ff1851ef1" strength="Association" layerId="plan_2efa5590_1439_49fe_9204_436ff1851ef1" layerName="Kaava" providerKey="postgres" referencingLayer="legal_effects_association_8d02b0eb_3f80_4e84_bcf7_5c3903bdd56d" dataSource="service='postgres' authcfg=ryhtirw key='id' estimatedmetadata=true srid=3067 type=MultiPolygon checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;plan&quot; (geom) sql=id = 'fe5c9311-eb7d-436b-9d61-d3880de53621'">
-          <fieldRef referencedField="id" referencingField="plan_id"/>
-        </relation>
-      </referencedLayers>
+      <referencedLayers/>
       <fieldConfiguration>
         <field name="plan_id" configurationFlags="NoFlag">
-          <editWidget type="">
+          <editWidget type="TextEdit">
             <config>
-              <Option/>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
             </config>
           </editWidget>
         </field>
         <field name="legal_effects_of_master_plan_id" configurationFlags="NoFlag">
-          <editWidget type="">
+          <editWidget type="TextEdit">
             <config>
-              <Option/>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
             </config>
           </editWidget>
         </field>
       </fieldConfiguration>
       <aliases>
-        <alias field="plan_id" name="" index="0"/>
-        <alias field="legal_effects_of_master_plan_id" name="" index="1"/>
+        <alias field="plan_id" index="0" name=""/>
+        <alias field="legal_effects_of_master_plan_id" index="1" name=""/>
       </aliases>
       <splitPolicies>
-        <policy field="plan_id" policy="Duplicate"/>
-        <policy field="legal_effects_of_master_plan_id" policy="Duplicate"/>
+        <policy field="plan_id" policy="DefaultValue"/>
+        <policy field="legal_effects_of_master_plan_id" policy="DefaultValue"/>
       </splitPolicies>
       <duplicatePolicies>
         <policy field="plan_id" policy="Duplicate"/>
         <policy field="legal_effects_of_master_plan_id" policy="Duplicate"/>
       </duplicatePolicies>
       <defaults>
-        <default field="plan_id" applyOnUpdate="0" expression=""/>
-        <default field="legal_effects_of_master_plan_id" applyOnUpdate="0" expression=""/>
+        <default field="plan_id" expression="" applyOnUpdate="0"/>
+        <default field="legal_effects_of_master_plan_id" expression="" applyOnUpdate="0"/>
       </defaults>
       <constraints>
-        <constraint field="plan_id" notnull_strength="1" constraints="1" unique_strength="0" exp_strength="0"/>
-        <constraint field="legal_effects_of_master_plan_id" notnull_strength="1" constraints="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="plan_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="legal_effects_of_master_plan_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
       </constraints>
       <constraintExpressions>
-        <constraint field="plan_id" desc="" exp=""/>
-        <constraint field="legal_effects_of_master_plan_id" desc="" exp=""/>
+        <constraint field="plan_id" exp="" desc=""/>
+        <constraint field="legal_effects_of_master_plan_id" exp="" desc=""/>
       </constraintExpressions>
       <expressionfields/>
       <attributeactions>
         <defaultAction value="{00000000-0000-0000-0000-000000000000}" key="Canvas"/>
       </attributeactions>
-      <attributetableconfig actionWidgetStyle="dropDown" sortExpression="" sortOrder="0">
-        <columns/>
+      <attributetableconfig sortExpression="" sortOrder="0" actionWidgetStyle="dropDown">
+        <columns>
+          <column width="-1" type="field" name="plan_id" hidden="0"/>
+          <column width="-1" type="field" name="legal_effects_of_master_plan_id" hidden="0"/>
+          <column width="-1" type="actions" hidden="1"/>
+        </columns>
       </attributetableconfig>
       <conditionalstyles>
         <rowstyles/>
@@ -285,15 +307,40 @@
       <editforminit/>
       <editforminitcodesource>0</editforminitcodesource>
       <editforminitfilepath></editforminitfilepath>
-      <editforminitcode><![CDATA[]]></editforminitcode>
+      <editforminitcode><![CDATA[# -*- coding: utf-8 -*-
+"""
+QGIS forms can have a Python function that is called when the form is
+opened.
+
+Use this function to add extra logic to your forms.
+
+Enter the name of the function in the "Python Init function"
+field.
+An example follows:
+"""
+from qgis.PyQt.QtWidgets import QWidget
+
+def my_form_open(dialog, layer, feature):
+    geom = feature.geometry()
+    control = dialog.findChild(QWidget, "MyLineEdit")
+]]></editforminitcode>
       <featformsuppress>0</featformsuppress>
       <editorlayout>generatedlayout</editorlayout>
-      <editable/>
-      <labelOnTop/>
-      <reuseLastValue/>
+      <editable>
+        <field editable="1" name="legal_effects_of_master_plan_id"/>
+        <field editable="1" name="plan_id"/>
+      </editable>
+      <labelOnTop>
+        <field name="legal_effects_of_master_plan_id" labelOnTop="0"/>
+        <field name="plan_id" labelOnTop="0"/>
+      </labelOnTop>
+      <reuseLastValue>
+        <field name="legal_effects_of_master_plan_id" reuseLastValue="0"/>
+        <field name="plan_id" reuseLastValue="0"/>
+      </reuseLastValue>
       <dataDefinedFieldProperties/>
       <widgets/>
-      <previewExpression></previewExpression>
+      <previewExpression>"plan_id"</previewExpression>
       <mapTip enabled="1"></mapTip>
     </maplayer>
   </maplayers>
