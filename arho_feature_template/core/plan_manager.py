@@ -23,10 +23,10 @@ from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
     AdditionalInformation,
     Document,
-    FeatureTemplateLibrary,
     LifeCycle,
     Plan,
     PlanFeature,
+    PlanFeatureLibrary,
     RegulationGroup,
     RegulationGroupLibrary,
 )
@@ -122,7 +122,7 @@ class PlanManager(QObject):
         self.json_plan_outline_path = None
         self.json_plan_matter_path = None
 
-        self.feature_template_libraries = []
+        self.plan_feature_libraries = []
         self.regulation_group_libraries = []
 
         # Initialize new feature dock
@@ -239,14 +239,14 @@ class PlanManager(QObject):
 
     def _initialize_plan_feature_libraries(self):
         """Make sure regulation group libraries are updated before initializing plan feature libraries."""
-        self.feature_template_libraries = [
-            FeatureTemplateLibrary.from_template_dict(
+        self.plan_feature_libraries = [
+            PlanFeatureLibrary.from_template_dict(
                 data=TemplateManager.read_plan_feature_template_file(file_path),
                 regulation_group_libraries=self.regulation_group_libraries,
             )
             for file_path in get_default_plan_feature_library_config_files()
         ]
-        self.new_feature_dock.initialize_feature_template_libraries(self.feature_template_libraries)
+        self.new_feature_dock.initialize_feature_template_libraries(self.plan_feature_libraries)
 
     def open_import_features_dialog(self):
         import_features_form = ImportFeaturesForm(self.active_plan_regulation_group_library)
