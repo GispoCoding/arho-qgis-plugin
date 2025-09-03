@@ -36,15 +36,29 @@ class AbstractPlanLayer(AbstractLayer):
     filter_template: ClassVar[Template | None]
 
     @classmethod
-    def apply_filter(cls, plan_id: str | None) -> None:
-        """Apply a filter to the layer based on the plan_id."""
+    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
+        """Apply filter to the layer by plan id."""
         if cls.filter_template is None:
             return
-        filter_expression = cls.filter_template.substitute(plan_id=plan_id) if plan_id else ""
+
+        filter_expression = cls.filter_template.substitute(plan_id=plan_id)
+
+        cls.apply_filter(filter_expression)
+
+    @classmethod
+    def hide_all_features(cls) -> None:
+        cls.apply_filter("false")
+
+    @classmethod
+    def show_all_features(cls) -> None:
+        cls.apply_filter("")
+
+    @classmethod
+    def apply_filter(cls, filter_expression) -> None:
+        """Apply filter expression"""
         layer = cls.get_from_project()
         if layer.isEditable():
             raise LayerEditableError(cls.name)
-
         if not layer:
             logger.warning("Layer %s not found", cls.name)
             return None
