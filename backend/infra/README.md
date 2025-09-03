@@ -25,9 +25,11 @@ Run these steps the first time.
 
 ### Multi-factor authentication (MFA)
 
-For most AWS accounts, MFA is required. You will get 400 or 403 error when running terraform with
-just the right access key. To set up MFA, install both AWS CLI and jq, and make sure you have `aws` and `jq` in path. Execute the `[get-mfa-vars.sh](https://gist.github.com/mvaaltola/0abced5790401f2454444fb2ffd4acc0)` script with the *AWS arn of your MFA device and current MFA access code*,
-and finally run `. /tmp/aws-mfa-token` to temporarily set the correct MFA environment variables in your shell. By default, the MFA session token will last for 12 hours.
+For most AWS accounts, multi-factor authentication (MFA) is required. If you run Terraform with only your access key, you may receive 400 or 403 errors. To set up MFA, install both AWS CLI and `jq`, and ensure both are available in your system path.
+
+Use the [get-mfa-vars.sh](get-mfa-vars.sh) script to obtain temporary MFA session token environment variables. You can either run `source get-mfa-vars.sh` to update your current shell's environment variables directly, or execute `./get-mfa-vars.sh` to generate a file `/tmp/aws-mfa-token` containing the variables, then run `. /tmp/aws-mfa-token` to set them in your shell.
+
+You may set your MFA device ARN in the `AWS_MFA_IDENTIFIER` environment variable. If not set, the script prompts for it. For more details, run `./get-mfa-vars.sh --help`. By default, the MFA session token is valid for 12 hours.
 
 ### Terraform workspaces
 
