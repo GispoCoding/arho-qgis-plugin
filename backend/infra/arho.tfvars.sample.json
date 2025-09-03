@@ -44,9 +44,7 @@
     "syke_xroad_client_id": "<Your Syke client id for X-Road Ryhti client>",
     "syke_xroad_client_secret": "<Your Syke client secret for X-Road Ryhti client>",
     "mml_apikey": "<Your MML API key for loading MML data>",
-    "bastion_ec2_user_public_key": "<Public key for ssh tunnel server superuser>",
-    "bastion_ec2_tunnel_public_keys": [
-        "<Public key to access ssh tunnel to database>",
-        "<Another public key to access ssh tunnel to database>"
+    "bastion_ec2_user_public_key": [
+        "<Public key for ssh tunnel server superuser.>"
     ]
 }

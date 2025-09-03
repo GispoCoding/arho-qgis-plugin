@@ -71,11 +71,6 @@ variable "bastion_ec2_user_public_keys" {
   type        = list
 }
 
-variable "bastion_ec2_tunnel_public_keys" {
-  description = "Public ssh keys for bastion EC2 tunnel user"
-  type        = list
-}
-
 variable "db_storage" {
   description = "DB Storage in GB"
   type        = number
