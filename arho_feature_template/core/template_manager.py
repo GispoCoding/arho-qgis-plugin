@@ -94,6 +94,20 @@ class TemplateManager:
         )
 
     @classmethod
+    def write_plan_feature_template_file(
+        cls,
+        plan_feature_config_data: dict,
+        file_path: Path | str,
+        overwrite: bool = True,  # noqa: FBT001, FBT002
+    ):
+        plan_feature_config_data["library_type"] = "plan_feature"
+        cls._write_to_yaml_file(
+            config_data=plan_feature_config_data,
+            file_path=file_path if type(file_path) is Path else Path(file_path),
+            overwrite=overwrite,
+        )
+
+    @classmethod
     def delete_template_file(cls, file_path: Path | str) -> bool:
         file_path = file_path if type(file_path) is Path else Path(file_path)
         if os.path.exists(file_path):

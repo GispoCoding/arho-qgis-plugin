@@ -69,7 +69,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_layers,
 )
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
-from arho_feature_template.resources.libraries.feature_templates import feature_template_library_config_files
+from arho_feature_template.resources.libraries.feature_templates import get_default_plan_feature_library_config_files
 from arho_feature_template.resources.libraries.regulation_groups import (
     get_default_regulation_group_library_config_files,
     get_user_regulation_group_library_config_files,
@@ -244,7 +244,7 @@ class PlanManager(QObject):
                 data=TemplateManager.read_plan_feature_template_file(file_path),
                 regulation_group_libraries=self.regulation_group_libraries,
             )
-            for file_path in feature_template_library_config_files()
+            for file_path in get_default_plan_feature_library_config_files()
         ]
         self.new_feature_dock.initialize_feature_template_libraries(self.feature_template_libraries)
 
