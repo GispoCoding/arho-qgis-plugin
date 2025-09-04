@@ -45,7 +45,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Luo uusi kaavamääräysryhmäkirjasto</string>
+        <string>Luo uusi kirjasto</string>
        </property>
        <property name="text">
         <string/>
@@ -61,7 +61,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Tuo kaavamääräysryhmäkirjasto</string>
+        <string>Tuo kirjasto</string>
        </property>
        <property name="text">
         <string/>
@@ -77,7 +77,7 @@
         </size>
        </property>
        <property name="toolTip">
-        <string>Poista kaavamääräysryhmäkirjasto</string>
+        <string>Poista kirjasto</string>
        </property>
        <property name="text">
         <string/>
@@ -243,7 +243,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Luo uusi kaavamääräysryhmäpohja</string>
+           <string>Luo uusi pohja</string>
           </property>
           <property name="text">
            <string/>
@@ -259,7 +259,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Muokkaa valittua kaavamääräysryhmäpohjaa</string>
+           <string>Muokkaa valittua pohjaa</string>
           </property>
           <property name="text">
            <string/>
@@ -275,7 +275,7 @@
            </size>
           </property>
           <property name="toolTip">
-           <string>Poista kaavamääräysryhmä pohja(t)</string>
+           <string>Poista pohja(t)</string>
           </property>
           <property name="text">
            <string/>
@@ -300,7 +300,7 @@
       <item>
        <widget class="QgsFilterLineEdit" name="library_element_filter">
         <property name="toolTip">
-         <string>Suodata kaavamääräysryhmäpohjia</string>
+         <string>Suodata pohjia</string>
         </property>
         <property name="showSearchIcon">
          <bool>true</bool>
@@ -313,7 +313,7 @@
       <item>
        <widget class="QListWidget" name="library_element_list">
         <property name="toolTip">
-         <string>Kirjaston kaavamääräysryhmäpohjat</string>
+         <string>Kirjaston pohjat</string>
         </property>
         <property name="selectionMode">
          <enum>QAbstractItemView::ExtendedSelection</enum>
