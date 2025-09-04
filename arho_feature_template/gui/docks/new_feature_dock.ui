@@ -69,7 +69,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Alusta kaavakohde templaatista</string>
+       <string>Luo kaavakohde mallipohjasta</string>
       </property>
      </widget>
     </item>
@@ -95,13 +95,20 @@
     </item>
     <item>
      <widget class="QgsFilterLineEdit" name="search_box">
+      <property name="toolTip">
+       <string>Suodata mallipohjia</string>
+      </property>
       <property name="showSearchIcon">
        <bool>true</bool>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QListWidget" name="template_list"/>
+     <widget class="QListWidget" name="template_list">
+      <property name="toolTip">
+       <string>Kaavakohdepohjat</string>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

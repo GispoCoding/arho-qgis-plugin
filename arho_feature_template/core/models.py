@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, fields
 from typing import TYPE_CHECKING, cast
 
@@ -47,80 +48,80 @@ class TemplateSyntaxError(Exception):
 
 
 @dataclass
-class FeatureTemplateLibrary:
-    """Describes the configuration of a feature template library"""
-
-    name: str = ""
-    version: str | None = None
-    description: str | None = None
-    feature_templates: list[PlanFeature] = field(default_factory=list, compare=False)
-
-    @classmethod
-    def find_matching_group_config(cls, group_heading: str, regulation_group_libraries: list[RegulationGroupLibrary]):
-        for library in regulation_group_libraries:
-            for group in library.regulation_groups:
-                if group.heading == group_heading:
-                    return group
-        return None
-
-    @classmethod
-    def from_template_dict(
-        cls, data: dict, regulation_group_libraries: list[RegulationGroupLibrary]
-    ) -> FeatureTemplateLibrary:
-        get_underground_id = UndergroundTypeLayer.get_attribute_value_by_another_attribute_value
-        try:
-            return FeatureTemplateLibrary(
-                name=data.get("name", ""),
-                version=data.get("version"),
-                description=data.get("description"),
-                feature_templates=[
-                    PlanFeature(
-                        geom=None,
-                        type_of_underground_id=(
-                            get_underground_id("id", "value", feature_data.get("type_of_underground"))
-                            if feature_data.get("type_of_underground")
-                            else None
-                        ),
-                        layer_name=feature_data.get("layer_name"),
-                        name=feature_data.get("name"),
-                        description=feature_data.get("description"),
-                        regulation_groups=[
-                            group
-                            for group_heading in feature_data.get("regulation_groups", [])
-                            if (group := cls.find_matching_group_config(group_heading, regulation_group_libraries))
-                        ],
-                        plan_id=None,
-                        id_=None,
-                    )
-                    for feature_data in data["feature_templates"]
-                ]
-                if data.get("feature_templates")
-                else [],
-            )
-        except KeyError as e:
-            raise TemplateSyntaxError(str(cls), str(e)) from e
-
-
-@dataclass
-class RegulationGroupLibrary:
-    """A collection of plan regulation groups."""
+class Library(ABC):
+    """Describes a (template) library."""
 
     class LibraryType(str, enum.Enum):
         DEFAULT = "default"
         CUSTOM = "custom"
-        ACTIVE_PLAN_GROUPS = "active_plan_groups"
+        ACTIVE_PLAN = "active_plan"
 
     name: str = ""
     file_path: str | None = None
     version: int | None = None
     description: str | None = None
-    library_type: LibraryType = LibraryType.CUSTOM
     status: bool = True
+    library_type: Library.LibraryType = LibraryType.CUSTOM
+
+    @classmethod
+    @abstractmethod
+    def from_template_dict(cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None) -> Library:
+        pass
+
+    @abstractmethod
+    def into_template_dict(self) -> dict:
+        pass
+
+
+@dataclass
+class PlanFeatureLibrary(Library):
+    """A collection of plan features."""
+
+    plan_features: list[PlanFeature] = field(default_factory=list, compare=False)
+
+    @classmethod
+    def from_template_dict(
+        cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None
+    ) -> PlanFeatureLibrary:
+        if data == {}:
+            return PlanFeatureLibrary(file_path=file_path, status=False)
+
+        try:
+            return PlanFeatureLibrary(
+                name=data.get("name", ""),
+                file_path=file_path,
+                version=data.get("version"),
+                description=data.get("description"),
+                status=True,
+                library_type=library_type,  # NOTE: All PlanFeatureLibraries are CUSTOM now
+                plan_features=[
+                    PlanFeature.from_template_dict(plan_feature_data) for plan_feature_data in data["plan_features"]
+                ]
+                if data.get("plan_features")
+                else [],
+            )
+        except KeyError as e:
+            raise TemplateSyntaxError(str(cls), str(e)) from e
+
+    def into_template_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "file_path": self.file_path,
+            "version": self.version,
+            "description": self.description,
+            "plan_features": [plan_feature.into_template_dict() for plan_feature in self.plan_features],
+        }
+
+
+@dataclass
+class RegulationGroupLibrary(Library):
+    """A collection of plan regulation groups."""
+
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
 
     @classmethod
     def from_template_dict(
-        cls, data: dict, library_type: LibraryType, file_path: str | None = None
+        cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None
     ) -> RegulationGroupLibrary:
         """Returns whether initialization from data was succesfull and the created RegulationGroupLibrary."""
         if data == {}:
@@ -369,6 +370,16 @@ class RegulationGroup(PlanBaseModel):
     def __str__(self):
         return " - ".join(part for part in (self.letter_code, self.heading) if part)
 
+    def as_tooltip(self) -> str:
+        letter_code = self.letter_code if self.letter_code else ""
+        return (
+            f"Kaavamääräyksen otsikko: {self.heading}\n"
+            f"Kirjaintunnus: {letter_code}\n"
+            f"Kategoria: {self.category}\n"
+            f"Kaavamääräysten määrä: {len(self.regulations)}\n"
+            f"Suositusten määrä: {len(self.propositions)}"
+        )
+
 
 @dataclass
 class LifeCycle(PlanBaseModel):
@@ -403,15 +414,45 @@ class PlanFeature(PlanBaseModel):
 
     @classmethod
     def from_template_dict(cls, data: dict) -> PlanFeature:
-        # TODO: Implement
-        return cls(**data)
+        get_underground_id = UndergroundTypeLayer.get_attribute_value_by_another_attribute_value
+        return cls(
+            geom=None,
+            type_of_underground_id=(
+                get_underground_id("id", "value", data["type_of_underground"])
+                if data.get("type_of_underground")
+                else None
+            ),
+            layer_name=data.get("layer_name"),
+            name=data.get("name"),
+            description=data.get("description"),
+            regulation_groups=[
+                RegulationGroup.from_template_dict(group_data) for group_data in data.get("regulation_groups", [])
+            ],
+            plan_id=None,
+            id_=None,
+        )
 
     def into_template_dict(self) -> dict:
-        # TODO: Implement
-        return {}
+        return {
+            # Type of underground should always be defined at this point
+            "type_of_underground": UndergroundTypeLayer.get_attribute_by_id(
+                "value", cast(str, self.type_of_underground_id)
+            ),
+            "layer_name": self.layer_name,
+            "name": self.name,
+            "description": self.description,
+            "regulation_groups": [regulation_group.into_template_dict() for regulation_group in self.regulation_groups],
+        }
 
     def __str__(self):
         return self.name if self.name else ""
+
+    def as_tooltip(self) -> str:
+        return (
+            f"Nimi: {self.name}\n"
+            f"Kuvaus: {self.description}\n"
+            f"Kaavamääräysryhmien määrä: {len(self.regulation_groups)}"
+        )
 
 
 @dataclass
