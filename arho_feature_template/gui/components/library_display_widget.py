@@ -115,6 +115,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.import_library_btn.clicked.connect(self._on_import_library_clicked)
         self.delete_library_btn.clicked.connect(self._on_delete_library_clicked)
 
+        self.library_element_list.itemDoubleClicked.connect(lambda _: self._on_edit_element_clicked())
         self.edit_library_element_btn.clicked.connect(self._on_edit_element_clicked)
         self.delete_library_element_btn.clicked.connect(self._on_delete_element_clicked)
 
