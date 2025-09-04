@@ -307,7 +307,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def _delete_library(self, library: Library):
         if library.file_path is not None and id(library) in [id(lib) for lib in self.libraries]:
-            TemplateManager.delete_template_file(library.file_path)
+            # TemplateManager.delete_template_file(library.file_path)
 
             # Find the correct library from the list of updated libraries
             # We have to find the correct library like this because the library instances are
