@@ -397,7 +397,13 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         element = selected_item.data(DATA_ROLE)
 
         if self.library_type_class is PlanFeatureLibrary:
-            form = PlanFeatureForm(element, "Muokkaa kaavakohdepohjaa", self.regulation_group_libraries)
+            title = "Muokkaa kaavakohdepohjaa"
+            # Find correct plan feature type for the plan feature template to be edited
+            for plan_feature_type, plan_feature_layer in FEATURE_TYPE_TO_LAYER_NAME.items():
+                if plan_feature_layer == element.layer_name:
+                    title = f"Muokkaa kaavakohdepohjaa ({plan_feature_type})"
+                    break
+            form = PlanFeatureForm(element, title, self.regulation_group_libraries)
         elif self.library_type_class is RegulationGroupLibrary:
             form = PlanRegulationGroupForm(element, None)
             form.setWindowTitle("Muokkaa kaavamääräysryhmäpohjaa")
