@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, fields
 from typing import TYPE_CHECKING, cast
 
@@ -47,19 +48,41 @@ class TemplateSyntaxError(Exception):
 
 
 @dataclass
-class PlanFeatureLibrary:
-    """Describes the configuration of a plan feature library"""
+class Library(ABC):
+    """Describes a (template) library."""
+
+    class LibraryType(str, enum.Enum):
+        DEFAULT = "default"
+        CUSTOM = "custom"
+        ACTIVE_PLAN = "active_plan"
 
     name: str = ""
     file_path: str | None = None
     version: int | None = None
     description: str | None = None
-    # NOTE: Consider `library_type` class variable if default/custom/active feature libraries are all used
     status: bool = True
+    library_type: Library.LibraryType = LibraryType.CUSTOM
+
+    @classmethod
+    @abstractmethod
+    def from_template_dict(cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None) -> Library:
+        pass
+
+    @abstractmethod
+    def into_template_dict(self) -> dict:
+        pass
+
+
+@dataclass
+class PlanFeatureLibrary(Library):
+    """A collection of plan features."""
+
     plan_features: list[PlanFeature] = field(default_factory=list, compare=False)
 
     @classmethod
-    def from_template_dict(cls, data: dict, file_path: str | None = None) -> PlanFeatureLibrary:
+    def from_template_dict(
+        cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None
+    ) -> PlanFeatureLibrary:
         if data == {}:
             return PlanFeatureLibrary(file_path=file_path, status=False)
 
@@ -70,6 +93,7 @@ class PlanFeatureLibrary:
                 version=data.get("version"),
                 description=data.get("description"),
                 status=True,
+                library_type=library_type,  # NOTE: All PlanFeatureLibraries are CUSTOM now
                 plan_features=[
                     PlanFeature.from_template_dict(plan_feature_data) for plan_feature_data in data["plan_features"]
                 ]
@@ -90,25 +114,14 @@ class PlanFeatureLibrary:
 
 
 @dataclass
-class RegulationGroupLibrary:
+class RegulationGroupLibrary(Library):
     """A collection of plan regulation groups."""
 
-    class LibraryType(str, enum.Enum):
-        DEFAULT = "default"
-        CUSTOM = "custom"
-        ACTIVE_PLAN_GROUPS = "active_plan_groups"
-
-    name: str = ""
-    file_path: str | None = None
-    version: int | None = None
-    description: str | None = None
-    library_type: LibraryType = LibraryType.CUSTOM
-    status: bool = True
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
 
     @classmethod
     def from_template_dict(
-        cls, data: dict, library_type: LibraryType, file_path: str | None = None
+        cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None
     ) -> RegulationGroupLibrary:
         """Returns whether initialization from data was succesfull and the created RegulationGroupLibrary."""
         if data == {}:
@@ -357,6 +370,12 @@ class RegulationGroup(PlanBaseModel):
     def __str__(self):
         return " - ".join(part for part in (self.letter_code, self.heading) if part)
 
+    def as_tooltip(self) -> str:
+        return (
+            f"Kaavamääräyksen otsikko: {self.heading}\\Kirjaintunnus: {self.letter_code}\n"
+            f"Kategoria: {self.category}\nKaavamääräysten määrä: {len(self.regulations)}"
+        )
+
 
 @dataclass
 class LifeCycle(PlanBaseModel):
@@ -423,6 +442,12 @@ class PlanFeature(PlanBaseModel):
 
     def __str__(self):
         return self.name if self.name else ""
+
+    def as_tooltip(self) -> str:
+        return (
+            f"Nimi: {self.name}\n"
+            f"Kuvaus: {self.description}\nKaavamääräysryhmien määrä: {len(self.regulation_groups)}"
+        )
 
 
 @dataclass
