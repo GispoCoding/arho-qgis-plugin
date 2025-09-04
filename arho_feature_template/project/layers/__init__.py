@@ -79,7 +79,12 @@ class AbstractLayer(ABC):
         cls, target_attribute: str, filter_attribute: str, filter_value: str
     ) -> Generator[Any]:
         layer = cls.get_from_project()
-        request = QgsFeatureRequest().setFilterExpression(f"\"{filter_attribute}\"='{filter_value}'")
+        if filter_value is None:
+            expression = f'"{filter_attribute}" IS NULL'
+        else:
+            expression = f"\"{filter_attribute}\"='{filter_value}'"
+
+        request = QgsFeatureRequest().setFilterExpression(expression)
         request.setSubsetOfAttributes([target_attribute], layer.fields())
         request.setFlags(QgsFeatureRequest.NoGeometry)
         for feature in layer.getFeatures(request):
