@@ -69,7 +69,10 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_layers,
 )
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
-from arho_feature_template.resources.libraries.feature_templates import get_default_plan_feature_library_config_files
+from arho_feature_template.resources.libraries.feature_templates import (
+    get_user_plan_feature_library_config_files,
+    set_user_plan_feature_library_config_files,
+)
 from arho_feature_template.resources.libraries.regulation_groups import (
     get_default_regulation_group_library_config_files,
     get_user_regulation_group_library_config_files,
@@ -222,7 +225,7 @@ class PlanManager(QObject):
         self.regulation_group_libraries: list[RegulationGroupLibrary] = []
         self.regulation_group_libraries = [
             RegulationGroupLibrary.from_template_dict(
-                data=TemplateManager.read_regulation_group_template_file(file_path),
+                data=TemplateManager.read_library_config_file(file_path, "regulation_group"),
                 library_type=RegulationGroupLibrary.LibraryType.DEFAULT,
                 file_path=str(file_path),
             )
@@ -230,7 +233,7 @@ class PlanManager(QObject):
         ]
         self.regulation_group_libraries.extend(
             RegulationGroupLibrary.from_template_dict(
-                data=TemplateManager.read_regulation_group_template_file(file_path),
+                data=TemplateManager.read_library_config_file(file_path, "regulation_group"),
                 library_type=RegulationGroupLibrary.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
@@ -241,12 +244,13 @@ class PlanManager(QObject):
         """Make sure regulation group libraries are updated before initializing plan feature libraries."""
         self.plan_feature_libraries = [
             PlanFeatureLibrary.from_template_dict(
-                data=TemplateManager.read_plan_feature_template_file(file_path),
-                regulation_group_libraries=self.regulation_group_libraries,
+                data=TemplateManager.read_library_config_file(file_path, "plan_feature"),
+                library_type=PlanFeatureLibrary.LibraryType.CUSTOM,
+                file_path=str(file_path),
             )
-            for file_path in get_default_plan_feature_library_config_files()
+            for file_path in get_user_plan_feature_library_config_files()
         ]
-        self.new_feature_dock.initialize_feature_template_libraries(self.plan_feature_libraries)
+        self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
 
     def open_import_features_dialog(self):
         import_features_form = ImportFeaturesForm(self.active_plan_regulation_group_library)
@@ -264,24 +268,27 @@ class PlanManager(QObject):
         self._open_regulation_group_form(regulation_group)
 
     def manage_libraries(self):
-        # Open Manage libraries form with all custom libraries
-        manage_libraries_form = ManageLibrariesForm(
-            [
-                library
-                for library in self.regulation_group_libraries
-                if library.library_type == RegulationGroupLibrary.LibraryType.CUSTOM
-            ]
-        )
+        manage_libraries_form = ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries)
         result = manage_libraries_form.exec_()
         # Even if user clicked cancel, we retrieve the list of updated libraries in case a library was deleted
-        updated_libraries = manage_libraries_form.updated_regulation_group_libraries
+        updated_regulation_group_libraries = (
+            manage_libraries_form.regulation_group_library_widget.get_current_libraries()
+        )
+        updated_plan_feature_libraries = manage_libraries_form.plan_feature_library_widget.get_current_libraries()
         if result:
             # Rewrite all new and remaining library config files and reinitialize libraries
-            for library in updated_libraries:
+            for library in updated_regulation_group_libraries:
                 TemplateManager.write_regulation_group_template_file(
                     library.into_template_dict(), Path(library.file_path), overwrite=True
                 )
-        set_user_regulation_group_library_config_files(library.file_path for library in updated_libraries)
+            for library in updated_plan_feature_libraries:
+                TemplateManager.write_plan_feature_template_file(
+                    library.into_template_dict(), Path(library.file_path), overwrite=True
+                )
+        set_user_regulation_group_library_config_files(
+            library.file_path for library in updated_regulation_group_libraries
+        )
+        set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
         self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
@@ -772,7 +779,7 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
         file_path=None,
         version=None,
         description=None,
-        library_type=RegulationGroupLibrary.LibraryType.ACTIVE_PLAN_GROUPS,
+        library_type=RegulationGroupLibrary.LibraryType.ACTIVE_PLAN,
         regulation_groups=regulation_groups,
     )
 
