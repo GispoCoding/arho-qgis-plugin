@@ -519,7 +519,14 @@ class PlanManager(QObject):
     def _plan_feature_geom_digitized(self, feature: QgsFeature):
         # NOTE: What if user has changed dock selections while digitizng?
         if self.new_feature_dock.active_template:
-            plan_feature = self.new_feature_dock.active_template
+            plan_feat_template = self.new_feature_dock.active_template
+            plan_feature = PlanFeature(
+                type_of_underground_id=plan_feat_template.type_of_underground_id,
+                layer_name=plan_feat_template.layer_name,
+                name=plan_feat_template.name,
+                description=plan_feat_template.description,
+                regulation_groups=plan_feat_template.regulation_groups,  # Check if ok
+            )
             title = plan_feature.name
         else:
             plan_feature = PlanFeature(
@@ -529,7 +536,10 @@ class PlanManager(QObject):
 
         plan_feature.geom = feature.geometry()
         attribute_form = PlanFeatureForm(
-            plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
+            plan_feature,
+            title if title else "",
+            self.regulation_group_libraries,
+            self.active_plan_regulation_group_library,
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
