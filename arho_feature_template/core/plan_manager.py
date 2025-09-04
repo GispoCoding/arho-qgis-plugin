@@ -589,6 +589,7 @@ class PlanManager(QObject):
 
         self.new_feature_dock.set_plan(plan_id)
         self.update_active_plan_regulation_group_library()
+
         if plan_id:
             identifier = PlanLayer.get_attribute_value_by_another_attribute_value(
                 "permanent_plan_identifier", "id", plan_id
