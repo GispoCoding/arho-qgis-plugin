@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+QLR_PATH = resources_path("configs", "layer_configs")
+
 
 class PlanType(str, enum.Enum):
     REGIONAL = "regional"
@@ -139,6 +141,8 @@ class PlanTypeLayer(AbstractCodeLayer):
     general_plan_type_first_character = "2"
     town_plan_type_first_character = "3"
 
+    qlr_path = os.path.join(QLR_PATH, "plan_type.qlr")
+
     @classmethod
     def get_plan_type(cls, _id: str | None) -> PlanType | None:
         if _id is None:
@@ -170,22 +174,27 @@ class PlanTypeLayer(AbstractCodeLayer):
 
 class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
+    qlr_path = os.path.join(QLR_PATH, "lifecycle_status.qlr")
 
 
 class OrganisationLayer(AbstractCodeLayer):
     name = "Toimija"
+    qlr_path = os.path.join(QLR_PATH, "organisation.qlr")
 
 
 class UndergroundTypeLayer(AbstractCodeLayer):
     name = "Maanalaisuuden tyyppi"
+    qlr_path = os.path.join(QLR_PATH, "type_of_underground.qlr")
 
 
 class PlanThemeLayer(AbstractCodeLayer):
     name = "Kaavoitusteemat"
+    qlr_path = os.path.join(QLR_PATH, "plan_theme.qlr")
 
 
 class AdditionalInformationTypeLayer(AbstractCodeLayer):
     name = "Lisätiedonlaji"
+    qlr_path = os.path.join(QLR_PATH, "additional_information_type.qlr")
 
     ADDITIONAL_INFORMATION_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "additional_information.yaml"))
 
@@ -253,6 +262,7 @@ class AdditionalInformationTypeLayer(AbstractCodeLayer):
 
 class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
     name = "Kaavamääräysryhmän tyyppi"
+    qlr_path = os.path.join(QLR_PATH, "plan_regulation_group_type.qlr")
 
     LAYER_NAME_TO_REGULATION_GROUP_TYPE_MAP: ClassVar[dict[str, str]] = {
         "Kaava": "generalRegulations",
@@ -276,6 +286,7 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
 
 class PlanRegulationTypeLayer(AbstractCodeLayer):
     name = "Kaavamääräyslaji"
+    qlr_path = os.path.join(QLR_PATH, "plan_regulation_type.qlr")
 
     PLAN_REGULATIONS_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "kaavamaaraykset.yaml"))
     # Attributes added from config: 'category_only' and 'default_value'
@@ -352,44 +363,70 @@ class PlanRegulationTypeLayer(AbstractCodeLayer):
 
 class VerbalRegulationType(AbstractCodeLayer):
     name = "Sanallisen määräyksen laji"
+    qlr_path = os.path.join(QLR_PATH, "verbal_regulation_type.qlr")
 
     category_only_codes: ClassVar[list[str]] = ["maarayksenTyyppi"]
 
 
 class CategoryOfPublicityLayer(AbstractCodeLayer):
     name = "Julkisuusluokka"
+    qlr_path = os.path.join(QLR_PATH, "category_of_publicity.qlr")
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class TypeOfDocumentLayer(AbstractCodeLayer):
     name = "Asiakirjatyyppi"
+    qlr_path = os.path.join(QLR_PATH, "type_of_document.qlr")
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class LanguageLayer(AbstractCodeLayer):
     name = "Kieli"
+    qlr_path = os.path.join(QLR_PATH, "language.qlr")
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class PersonalDataContentLayer(AbstractCodeLayer):
     name = "Henkilötietosisältö"
+    qlr_path = os.path.join(QLR_PATH, "personal_data_content.qlr")
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class RetentionTimeLayer(AbstractCodeLayer):
     name = "Säilytysaika"
+    qlr_path = os.path.join(QLR_PATH, "retention_time.qlr")
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class LegalEffectsLayer(AbstractCodeLayer):
     name = "Yleiskaavan oikeusvaikutus"
+    qlr_path = os.path.join(QLR_PATH, "legal_effects.qlr")
 
     category_only_codes: ClassVar[list[str]] = []
 
 
-code_layers = AbstractCodeLayer.__subclasses__()
+class CodeLayerWithGeometry(AbstractCodeLayer):
+    name = "temp"
+
+
+class Municipality(CodeLayerWithGeometry):
+    name = "Kunta"
+    qlr_path = os.path.join(QLR_PATH, "municipality.qlr")
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+class Region(CodeLayerWithGeometry):
+    name = "Maakunta"
+    qlr_path = os.path.join(QLR_PATH, "region.qlr")
+
+    category_only_codes: ClassVar[list[str]] = []
+
+
+code_layers = CodeLayerWithGeometry.__subclasses__() + AbstractCodeLayer.__subclasses__()
+code_layers.remove(CodeLayerWithGeometry)

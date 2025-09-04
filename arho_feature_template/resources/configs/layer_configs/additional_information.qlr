@@ -1,0 +1,635 @@
+<!DOCTYPE qgis-layer-definition>
+<qlr>
+  <layer-tree-group name="" expanded="1" checked="Qt::Checked" groupLayer="">
+    <customproperties>
+      <Option/>
+    </customproperties>
+    <layer-tree-layer id="Kaavam__r_yksen_lis_tiedot_ba508389_9ab2_428e_9366_133e07f23bc7" source="service='postgres' authcfg=ryhtirw key='id' checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;additional_information&quot; sql=EXISTS (&#xa;    SELECT 1&#xa;    FROM&#xa;        hame.plan_regulation_group prg&#xa;        JOIN hame.plan_regulation pr&#xa;            ON (prg.id = pr.plan_regulation_group_id)&#xa;    WHERE&#xa;        hame.additional_information.plan_regulation_id = pr.id&#xa;        AND prg.plan_id = '899e3a7b-9e82-40c3-8f94-152737db9b05'&#xa;)" providerKey="postgres" name="Kaavamääräyksen lisätiedot" legend_exp="" patch_size="-1,-1" legend_split_behavior="0" checked="Qt::Checked" expanded="1">
+      <customproperties>
+        <Option/>
+      </customproperties>
+    </layer-tree-layer>
+  </layer-tree-group>
+  <maplayers>
+    <maplayer refreshOnNotifyEnabled="0" styleCategories="AllStyleCategories" autoRefreshMode="Disabled" minScale="1e+08" readOnly="0" refreshOnNotifyMessage="" type="vector" wkbType="NoGeometry" hasScaleBasedVisibilityFlag="0" autoRefreshTime="0" maxScale="0" geometry="No geometry" legendPlaceholderImage="">
+      <id>Kaavam__r_yksen_lis_tiedot_ba508389_9ab2_428e_9366_133e07f23bc7</id>
+      <datasource>service='postgres' authcfg=ryhtirw key='id' checkPrimaryKeyUnicity='1' table="hame"."additional_information" sql=EXISTS (
+    SELECT 1
+    FROM
+        hame.plan_regulation_group prg
+        JOIN hame.plan_regulation pr
+            ON (prg.id = pr.plan_regulation_group_id)
+    WHERE
+        hame.additional_information.plan_regulation_id = pr.id
+        AND prg.plan_id = '899e3a7b-9e82-40c3-8f94-152737db9b05'
+)</datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <layername>Kaavamääräyksen lisätiedot</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <wkt></wkt>
+          <proj4></proj4>
+          <srsid>0</srsid>
+          <srid>0</srid>
+          <authid></authid>
+          <description></description>
+          <projectionacronym></projectionacronym>
+          <ellipsoidacronym></ellipsoidacronym>
+          <geographicflag>false</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <resourceMetadata>
+        <identifier></identifier>
+        <parentidentifier></parentidentifier>
+        <language></language>
+        <type>dataset</type>
+        <title></title>
+        <abstract></abstract>
+        <contact>
+          <name></name>
+          <organization></organization>
+          <position></position>
+          <voice></voice>
+          <fax></fax>
+          <email></email>
+          <role></role>
+        </contact>
+        <links/>
+        <dates/>
+        <fees></fees>
+        <encoding></encoding>
+        <crs>
+          <spatialrefsys nativeFormat="Wkt">
+            <wkt></wkt>
+            <proj4></proj4>
+            <srsid>0</srsid>
+            <srid>0</srid>
+            <authid></authid>
+            <description></description>
+            <projectionacronym></projectionacronym>
+            <ellipsoidacronym></ellipsoidacronym>
+            <geographicflag>false</geographicflag>
+          </spatialrefsys>
+        </crs>
+        <extent>
+          <spatial crs="" minz="0" dimensions="2" miny="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxz="0" minx="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxy="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxx="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368"/>
+          <temporal>
+            <period>
+              <start></start>
+              <end></end>
+            </period>
+          </temporal>
+        </extent>
+      </resourceMetadata>
+      <provider encoding="">postgres</provider>
+      <vectorjoins/>
+      <layerDependencies/>
+      <dataDependencies/>
+      <expressionfields/>
+      <map-layer-style-manager current="default">
+        <map-layer-style name="default"/>
+      </map-layer-style-manager>
+      <auxiliaryLayer/>
+      <metadataUrls/>
+      <flags>
+        <Identifiable>1</Identifiable>
+        <Removable>0</Removable>
+        <Searchable>1</Searchable>
+        <Private>0</Private>
+      </flags>
+      <temporal enabled="0" durationField="numeric_value" startField="created_at" endField="" limitMode="0" durationUnit="min" fixedDuration="0" startExpression="" accumulate="0" mode="0" endExpression="">
+        <fixedRange>
+          <start></start>
+          <end></end>
+        </fixedRange>
+      </temporal>
+      <elevation extrusionEnabled="0" respectLayerSymbol="1" clamping="Terrain" zoffset="0" zscale="1" type="IndividualFeatures" symbology="Line" binding="Centroid" extrusion="0" showMarkerSymbolInSurfacePlots="0">
+        <data-defined-properties>
+          <Option type="Map">
+            <Option value="" type="QString" name="name"/>
+            <Option name="properties"/>
+            <Option value="collection" type="QString" name="type"/>
+          </Option>
+        </data-defined-properties>
+        <profileLineSymbol>
+          <symbol force_rhr="0" type="line" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" type="QString" name="name"/>
+                <Option name="properties"/>
+                <Option value="collection" type="QString" name="type"/>
+              </Option>
+            </data_defined_properties>
+            <layer enabled="1" id="{ebb873e1-c925-480e-bb06-25e50c1fc85f}" class="SimpleLine" pass="0" locked="0">
+              <Option type="Map">
+                <Option value="0" type="QString" name="align_dash_pattern"/>
+                <Option value="square" type="QString" name="capstyle"/>
+                <Option value="5;2" type="QString" name="customdash"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="customdash_map_unit_scale"/>
+                <Option value="MM" type="QString" name="customdash_unit"/>
+                <Option value="0" type="QString" name="dash_pattern_offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="dash_pattern_offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="dash_pattern_offset_unit"/>
+                <Option value="0" type="QString" name="draw_inside_polygon"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="164,113,88,255,rgb:0.64313725490196083,0.44313725490196076,0.34509803921568627,1" type="QString" name="line_color"/>
+                <Option value="solid" type="QString" name="line_style"/>
+                <Option value="0.6" type="QString" name="line_width"/>
+                <Option value="MM" type="QString" name="line_width_unit"/>
+                <Option value="0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="0" type="QString" name="ring_filter"/>
+                <Option value="0" type="QString" name="trim_distance_end"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="trim_distance_end_map_unit_scale"/>
+                <Option value="MM" type="QString" name="trim_distance_end_unit"/>
+                <Option value="0" type="QString" name="trim_distance_start"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="trim_distance_start_map_unit_scale"/>
+                <Option value="MM" type="QString" name="trim_distance_start_unit"/>
+                <Option value="0" type="QString" name="tweak_dash_pattern_on_corners"/>
+                <Option value="0" type="QString" name="use_custom_dash"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="width_map_unit_scale"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" type="QString" name="name"/>
+                  <Option name="properties"/>
+                  <Option value="collection" type="QString" name="type"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileLineSymbol>
+        <profileFillSymbol>
+          <symbol force_rhr="0" type="fill" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" type="QString" name="name"/>
+                <Option name="properties"/>
+                <Option value="collection" type="QString" name="type"/>
+              </Option>
+            </data_defined_properties>
+            <layer enabled="1" id="{512aa65f-57fe-43c1-b637-512e01d2495f}" class="SimpleFill" pass="0" locked="0">
+              <Option type="Map">
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="border_width_map_unit_scale"/>
+                <Option value="164,113,88,255,rgb:0.64313725490196083,0.44313725490196076,0.34509803921568627,1" type="QString" name="color"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="0,0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="117,81,63,255,rgb:0.45882352941176469,0.31764705882352939,0.24705882352941178,1" type="QString" name="outline_color"/>
+                <Option value="solid" type="QString" name="outline_style"/>
+                <Option value="0.2" type="QString" name="outline_width"/>
+                <Option value="MM" type="QString" name="outline_width_unit"/>
+                <Option value="solid" type="QString" name="style"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" type="QString" name="name"/>
+                  <Option name="properties"/>
+                  <Option value="collection" type="QString" name="type"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileFillSymbol>
+        <profileMarkerSymbol>
+          <symbol force_rhr="0" type="marker" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" type="QString" name="name"/>
+                <Option name="properties"/>
+                <Option value="collection" type="QString" name="type"/>
+              </Option>
+            </data_defined_properties>
+            <layer enabled="1" id="{e3fd802b-ab92-40d1-8a9b-63d8621dfff9}" class="SimpleMarker" pass="0" locked="0">
+              <Option type="Map">
+                <Option value="0" type="QString" name="angle"/>
+                <Option value="square" type="QString" name="cap_style"/>
+                <Option value="164,113,88,255,rgb:0.64313725490196083,0.44313725490196076,0.34509803921568627,1" type="QString" name="color"/>
+                <Option value="1" type="QString" name="horizontal_anchor_point"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="diamond" type="QString" name="name"/>
+                <Option value="0,0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="117,81,63,255,rgb:0.45882352941176469,0.31764705882352939,0.24705882352941178,1" type="QString" name="outline_color"/>
+                <Option value="solid" type="QString" name="outline_style"/>
+                <Option value="0.2" type="QString" name="outline_width"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="outline_width_map_unit_scale"/>
+                <Option value="MM" type="QString" name="outline_width_unit"/>
+                <Option value="diameter" type="QString" name="scale_method"/>
+                <Option value="3" type="QString" name="size"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="size_map_unit_scale"/>
+                <Option value="MM" type="QString" name="size_unit"/>
+                <Option value="1" type="QString" name="vertical_anchor_point"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" type="QString" name="name"/>
+                  <Option name="properties"/>
+                  <Option value="collection" type="QString" name="type"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileMarkerSymbol>
+      </elevation>
+      <customproperties>
+        <Option type="Map">
+          <Option value="0" type="int" name="embeddedWidgets/count"/>
+          <Option name="variableNames"/>
+          <Option name="variableValues"/>
+        </Option>
+      </customproperties>
+      <geometryOptions geometryPrecision="0" removeDuplicateNodes="0">
+        <activeChecks/>
+        <checkConfiguration/>
+      </geometryOptions>
+      <legend showLabelLegend="0" type="default-vector"/>
+      <referencedLayers/>
+      <fieldConfiguration>
+        <field name="plan_regulation_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="type_additional_information_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="created_at" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="modified_at" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="value_data_type" configurationFlags="NoFlag">
+          <editWidget type="Enumeration">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="numeric_value" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="numeric_range_min" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="numeric_range_max" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="unit" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="text_value" configurationFlags="NoFlag">
+          <editWidget type="KeyValue">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="text_syntax" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="code_list" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="code_value" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="code_title" configurationFlags="NoFlag">
+          <editWidget type="KeyValue">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="height_reference_point" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+      </fieldConfiguration>
+      <aliases>
+        <alias field="plan_regulation_id" index="0" name=""/>
+        <alias field="type_additional_information_id" index="1" name=""/>
+        <alias field="id" index="2" name=""/>
+        <alias field="created_at" index="3" name=""/>
+        <alias field="modified_at" index="4" name=""/>
+        <alias field="value_data_type" index="5" name=""/>
+        <alias field="numeric_value" index="6" name=""/>
+        <alias field="numeric_range_min" index="7" name=""/>
+        <alias field="numeric_range_max" index="8" name=""/>
+        <alias field="unit" index="9" name=""/>
+        <alias field="text_value" index="10" name=""/>
+        <alias field="text_syntax" index="11" name=""/>
+        <alias field="code_list" index="12" name=""/>
+        <alias field="code_value" index="13" name=""/>
+        <alias field="code_title" index="14" name=""/>
+        <alias field="height_reference_point" index="15" name=""/>
+      </aliases>
+      <splitPolicies>
+        <policy field="plan_regulation_id" policy="DefaultValue"/>
+        <policy field="type_additional_information_id" policy="DefaultValue"/>
+        <policy field="id" policy="DefaultValue"/>
+        <policy field="created_at" policy="DefaultValue"/>
+        <policy field="modified_at" policy="DefaultValue"/>
+        <policy field="value_data_type" policy="DefaultValue"/>
+        <policy field="numeric_value" policy="DefaultValue"/>
+        <policy field="numeric_range_min" policy="DefaultValue"/>
+        <policy field="numeric_range_max" policy="DefaultValue"/>
+        <policy field="unit" policy="DefaultValue"/>
+        <policy field="text_value" policy="DefaultValue"/>
+        <policy field="text_syntax" policy="DefaultValue"/>
+        <policy field="code_list" policy="DefaultValue"/>
+        <policy field="code_value" policy="DefaultValue"/>
+        <policy field="code_title" policy="DefaultValue"/>
+        <policy field="height_reference_point" policy="DefaultValue"/>
+      </splitPolicies>
+      <duplicatePolicies>
+        <policy field="plan_regulation_id" policy="Duplicate"/>
+        <policy field="type_additional_information_id" policy="Duplicate"/>
+        <policy field="id" policy="Duplicate"/>
+        <policy field="created_at" policy="Duplicate"/>
+        <policy field="modified_at" policy="Duplicate"/>
+        <policy field="value_data_type" policy="Duplicate"/>
+        <policy field="numeric_value" policy="Duplicate"/>
+        <policy field="numeric_range_min" policy="Duplicate"/>
+        <policy field="numeric_range_max" policy="Duplicate"/>
+        <policy field="unit" policy="Duplicate"/>
+        <policy field="text_value" policy="Duplicate"/>
+        <policy field="text_syntax" policy="Duplicate"/>
+        <policy field="code_list" policy="Duplicate"/>
+        <policy field="code_value" policy="Duplicate"/>
+        <policy field="code_title" policy="Duplicate"/>
+        <policy field="height_reference_point" policy="Duplicate"/>
+      </duplicatePolicies>
+      <defaults>
+        <default field="plan_regulation_id" expression="" applyOnUpdate="0"/>
+        <default field="type_additional_information_id" expression="" applyOnUpdate="0"/>
+        <default field="id" expression="uuid('WithoutBraces')" applyOnUpdate="0"/>
+        <default field="created_at" expression="" applyOnUpdate="0"/>
+        <default field="modified_at" expression="" applyOnUpdate="0"/>
+        <default field="value_data_type" expression="" applyOnUpdate="0"/>
+        <default field="numeric_value" expression="" applyOnUpdate="0"/>
+        <default field="numeric_range_min" expression="" applyOnUpdate="0"/>
+        <default field="numeric_range_max" expression="" applyOnUpdate="0"/>
+        <default field="unit" expression="" applyOnUpdate="0"/>
+        <default field="text_value" expression="map('fin','','swe','','eng','')" applyOnUpdate="0"/>
+        <default field="text_syntax" expression="" applyOnUpdate="0"/>
+        <default field="code_list" expression="" applyOnUpdate="0"/>
+        <default field="code_value" expression="" applyOnUpdate="0"/>
+        <default field="code_title" expression="map('fin','','swe','','eng','')" applyOnUpdate="0"/>
+        <default field="height_reference_point" expression="" applyOnUpdate="0"/>
+      </defaults>
+      <constraints>
+        <constraint field="plan_regulation_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="type_additional_information_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="id" constraints="3" notnull_strength="1" unique_strength="1" exp_strength="0"/>
+        <constraint field="created_at" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="modified_at" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="value_data_type" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="numeric_value" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="numeric_range_min" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="numeric_range_max" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="unit" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="text_value" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="text_syntax" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="code_list" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="code_value" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="code_title" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="height_reference_point" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+      </constraints>
+      <constraintExpressions>
+        <constraint field="plan_regulation_id" exp="" desc=""/>
+        <constraint field="type_additional_information_id" exp="" desc=""/>
+        <constraint field="id" exp="" desc=""/>
+        <constraint field="created_at" exp="" desc=""/>
+        <constraint field="modified_at" exp="" desc=""/>
+        <constraint field="value_data_type" exp="" desc=""/>
+        <constraint field="numeric_value" exp="" desc=""/>
+        <constraint field="numeric_range_min" exp="" desc=""/>
+        <constraint field="numeric_range_max" exp="" desc=""/>
+        <constraint field="unit" exp="" desc=""/>
+        <constraint field="text_value" exp="" desc=""/>
+        <constraint field="text_syntax" exp="" desc=""/>
+        <constraint field="code_list" exp="" desc=""/>
+        <constraint field="code_value" exp="" desc=""/>
+        <constraint field="code_title" exp="" desc=""/>
+        <constraint field="height_reference_point" exp="" desc=""/>
+      </constraintExpressions>
+      <expressionfields/>
+      <attributeactions>
+        <defaultAction value="{00000000-0000-0000-0000-000000000000}" key="Canvas"/>
+      </attributeactions>
+      <attributetableconfig sortExpression="" sortOrder="0" actionWidgetStyle="dropDown">
+        <columns>
+          <column width="-1" type="field" name="plan_regulation_id" hidden="0"/>
+          <column width="-1" type="field" name="type_additional_information_id" hidden="0"/>
+          <column width="-1" type="field" name="id" hidden="0"/>
+          <column width="-1" type="field" name="created_at" hidden="0"/>
+          <column width="-1" type="field" name="modified_at" hidden="0"/>
+          <column width="-1" type="field" name="value_data_type" hidden="0"/>
+          <column width="-1" type="field" name="numeric_value" hidden="0"/>
+          <column width="-1" type="field" name="numeric_range_min" hidden="0"/>
+          <column width="-1" type="field" name="numeric_range_max" hidden="0"/>
+          <column width="-1" type="field" name="unit" hidden="0"/>
+          <column width="-1" type="field" name="text_value" hidden="0"/>
+          <column width="-1" type="field" name="text_syntax" hidden="0"/>
+          <column width="-1" type="field" name="code_list" hidden="0"/>
+          <column width="-1" type="field" name="code_value" hidden="0"/>
+          <column width="-1" type="field" name="code_title" hidden="0"/>
+          <column width="-1" type="field" name="height_reference_point" hidden="0"/>
+          <column width="-1" type="actions" hidden="1"/>
+        </columns>
+      </attributetableconfig>
+      <conditionalstyles>
+        <rowstyles/>
+        <fieldstyles/>
+      </conditionalstyles>
+      <storedexpressions/>
+      <editform tolerant="1"></editform>
+      <editforminit/>
+      <editforminitcodesource>0</editforminitcodesource>
+      <editforminitfilepath></editforminitfilepath>
+      <editforminitcode><![CDATA[# -*- coding: utf-8 -*-
+"""
+QGIS forms can have a Python function that is called when the form is
+opened.
+
+Use this function to add extra logic to your forms.
+
+Enter the name of the function in the "Python Init function"
+field.
+An example follows:
+"""
+from qgis.PyQt.QtWidgets import QWidget
+
+def my_form_open(dialog, layer, feature):
+    geom = feature.geometry()
+    control = dialog.findChild(QWidget, "MyLineEdit")
+]]></editforminitcode>
+      <featformsuppress>0</featformsuppress>
+      <editorlayout>generatedlayout</editorlayout>
+      <editable>
+        <field editable="1" name="code_list"/>
+        <field editable="1" name="code_title"/>
+        <field editable="1" name="code_value"/>
+        <field editable="1" name="created_at"/>
+        <field editable="1" name="height_reference_point"/>
+        <field editable="1" name="id"/>
+        <field editable="1" name="modified_at"/>
+        <field editable="1" name="numeric_range_max"/>
+        <field editable="1" name="numeric_range_min"/>
+        <field editable="1" name="numeric_value"/>
+        <field editable="1" name="plan_regulation_id"/>
+        <field editable="1" name="text_syntax"/>
+        <field editable="1" name="text_value"/>
+        <field editable="1" name="type_additional_information_id"/>
+        <field editable="1" name="unit"/>
+        <field editable="1" name="value_data_type"/>
+      </editable>
+      <labelOnTop>
+        <field name="code_list" labelOnTop="0"/>
+        <field name="code_title" labelOnTop="0"/>
+        <field name="code_value" labelOnTop="0"/>
+        <field name="created_at" labelOnTop="0"/>
+        <field name="height_reference_point" labelOnTop="0"/>
+        <field name="id" labelOnTop="0"/>
+        <field name="modified_at" labelOnTop="0"/>
+        <field name="numeric_range_max" labelOnTop="0"/>
+        <field name="numeric_range_min" labelOnTop="0"/>
+        <field name="numeric_value" labelOnTop="0"/>
+        <field name="plan_regulation_id" labelOnTop="0"/>
+        <field name="text_syntax" labelOnTop="0"/>
+        <field name="text_value" labelOnTop="0"/>
+        <field name="type_additional_information_id" labelOnTop="0"/>
+        <field name="unit" labelOnTop="0"/>
+        <field name="value_data_type" labelOnTop="0"/>
+      </labelOnTop>
+      <reuseLastValue>
+        <field name="code_list" reuseLastValue="0"/>
+        <field name="code_title" reuseLastValue="0"/>
+        <field name="code_value" reuseLastValue="0"/>
+        <field name="created_at" reuseLastValue="0"/>
+        <field name="height_reference_point" reuseLastValue="0"/>
+        <field name="id" reuseLastValue="0"/>
+        <field name="modified_at" reuseLastValue="0"/>
+        <field name="numeric_range_max" reuseLastValue="0"/>
+        <field name="numeric_range_min" reuseLastValue="0"/>
+        <field name="numeric_value" reuseLastValue="0"/>
+        <field name="plan_regulation_id" reuseLastValue="0"/>
+        <field name="text_syntax" reuseLastValue="0"/>
+        <field name="text_value" reuseLastValue="0"/>
+        <field name="type_additional_information_id" reuseLastValue="0"/>
+        <field name="unit" reuseLastValue="0"/>
+        <field name="value_data_type" reuseLastValue="0"/>
+      </reuseLastValue>
+      <dataDefinedFieldProperties/>
+      <widgets/>
+      <previewExpression>"code_title"</previewExpression>
+      <mapTip enabled="1"></mapTip>
+    </maplayer>
+  </maplayers>
+</qlr>
