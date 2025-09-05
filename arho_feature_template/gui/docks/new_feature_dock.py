@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QComboBox, QWidget
 
-    from arho_feature_template.core.models import FeatureTemplateLibrary, PlanFeature
+    from arho_feature_template.core.models import PlanFeature, PlanFeatureLibrary
 
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
@@ -42,8 +42,8 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_feature_type: str | None = None
         self.active_feature_layer: str | None = None
         self.active_template: PlanFeature | None = None
-        self.feature_template_libraries: list[FeatureTemplateLibrary] | None = None
-        self.library_selection.currentIndexChanged.connect(self.set_active_feature_template_library)
+        self.plan_feature_libraries: list[PlanFeatureLibrary] | None = None
+        self.library_selection.currentIndexChanged.connect(self.set_active_plan_feature_library)
 
         self.template_list.setSelectionMode(self.template_list.SingleSelection)
         self.search_box.valueChanged.connect(self.filter_plan_feature_templates)
@@ -52,11 +52,11 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.template_list.clicked.connect(self.on_template_item_clicked)
         self.new_feature_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
 
-    def initialize_feature_template_libraries(self, feature_template_libraries: list[FeatureTemplateLibrary]):
-        self.feature_template_libraries = feature_template_libraries
+    def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanFeatureLibrary]):
+        self.plan_feature_libraries = plan_feature_libraries
         self.library_selection.clear()
-        self.library_selection.addItems([library.name for library in self.feature_template_libraries])
-        self.set_active_feature_template_library(0)
+        self.library_selection.addItems([library.name for library in self.plan_feature_libraries])
+        self.set_active_plan_feature_library(0)
 
     def set_plan(self, plan_id: str):
         regional_plan_type_names = ["Kokonaismaakuntakaava", "Vaihemaakuntakaava"]
@@ -121,11 +121,11 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_template = None
         self.template_list.clearSelection()
 
-    def set_active_feature_template_library(self, index: int) -> None:
-        if self.feature_template_libraries and len(self.feature_template_libraries) > 0:
+    def set_active_plan_feature_library(self, index: int) -> None:
+        if self.plan_feature_libraries and len(self.plan_feature_libraries) > 0:
             self.template_list.clear()
-            library = self.feature_template_libraries[index]
-            for feature_template in library.feature_templates:
+            library = self.plan_feature_libraries[index]
+            for feature_template in library.plan_features:
                 item = QListWidgetItem(feature_template.name)
                 item.setData(Qt.UserRole, feature_template)
                 self.template_list.addItem(item)

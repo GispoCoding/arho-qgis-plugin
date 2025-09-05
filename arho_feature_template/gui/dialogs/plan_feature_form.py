@@ -53,7 +53,8 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         plan_feature: PlanFeature,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
-        active_plan_regulation_groups_library: RegulationGroupLibrary,
+        active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
+        template_form: bool = False,  # noqa: FBT001, FBT002
     ):
         super().__init__()
         self.setupUi(self)
@@ -84,12 +85,18 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         self.regulation_groups_groupbox.layout().addWidget(splitter)
 
         self.template_categories: dict[str, QTreeWidgetItem] = {}
-        self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
-        self.active_plan_regulation_groups_library = active_plan_regulation_groups_library
-        self.regulation_group_libraries = [
-            *(library for library in regulation_group_libraries if library.status),
-            active_plan_regulation_groups_library,
-        ]
+        self.template_form = template_form
+
+        self.regulation_group_libraries = [*(library for library in regulation_group_libraries if library.status)]
+
+        self.active_plan_regulation_groups_library: RegulationGroupLibrary | None = None
+        if active_plan_regulation_groups_library:
+            self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
+            self.active_plan_regulation_groups_library = active_plan_regulation_groups_library
+            self.regulation_group_libraries.append(active_plan_regulation_groups_library)
+        else:
+            self.existing_group_letter_codes = set()
+
         self.plan_regulation_group_libraries_combobox.addItems(
             library.name for library in self.regulation_group_libraries
         )
@@ -124,21 +131,22 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
 
     def select_library_by_active_plan_type(self):
         feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
-        model = PlanLayer.model_from_feature(feature)
+        if feature is not None:
+            model = PlanLayer.model_from_feature(feature)
 
-        plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
-        library_name = ""
-        if plan_type == PlanType.REGIONAL:
-            library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
-        elif plan_type == PlanType.GENERAL:
-            library_name = "Yleiskaavan kaavamääräysryhmät (Katja)"
-        elif plan_type == PlanType.TOWN:
-            library_name = "Asemakaavan kaavamääräysryhmät (Katja)"
+            plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
+            library_name = ""
+            if plan_type == PlanType.REGIONAL:
+                library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
+            elif plan_type == PlanType.GENERAL:
+                library_name = "Yleiskaavan kaavamääräysryhmät (Katja)"
+            elif plan_type == PlanType.TOWN:
+                library_name = "Asemakaavan kaavamääräysryhmät (Katja)"
 
-        for i, library in enumerate(self.regulation_group_libraries):
-            if library.name == library_name:
-                self.plan_regulation_group_libraries_combobox.setCurrentIndex(i)
-                return
+            for i, library in enumerate(self.regulation_group_libraries):
+                if library.name == library_name:
+                    self.plan_regulation_group_libraries_combobox.setCurrentIndex(i)
+                    return
 
         self.plan_regulation_group_libraries_combobox.setCurrentIndex(0)
 
@@ -214,6 +222,15 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
             QMessageBox.critical(self, "Virhe", msg)
             return False
 
+        return True
+
+    def _check_feature_name(self) -> bool:
+        """Feature must have a name if we are saving a plan feature template."""
+        # TODO: Find a better way to detect if we are saving a plan feature template
+        if self.template_form and self.feature_name.text() == "":
+            msg = "Kaavakohdepohjalla täytyy olla nimi."
+            QMessageBox.critical(self, "Virhe", msg)
+            return False
         return True
 
     def add_selected_plan_regulation_group(self, item: QTreeWidgetItem, column: int):
@@ -294,6 +311,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
         if (
             self._check_regulation_group_letter_codes()
             and self._check_multiple_regulation_groups_with_principal_intended_use_regulations()
+            and self._check_feature_name()
         ):
             self.model = self.into_model()
             self.accept()

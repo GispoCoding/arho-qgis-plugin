@@ -57,27 +57,39 @@ class TemplateManager:
             iface.messageBar().pushCritical("", fail_msg)
             return {}
 
+    # @classmethod
+    # def read_regulation_group_template_file(cls, file_path: Path | str) -> dict:
+    #     data = cls._read_from_yaml_file(
+    #         file_path=file_path if type(file_path) is Path else Path(file_path),
+    #         fail_msg=f"Kaavamääräyskirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
+    #     )
+    #     library_type = data.get("library_type")
+    #     if not library_type or library_type != "regulation_group":
+    #         return {}
+    #     return data
+
     @classmethod
-    def read_regulation_group_template_file(cls, file_path: Path | str) -> dict:
+    def read_library_config_file(cls, file_path: Path | str, expected_library_type: str) -> dict:
         data = cls._read_from_yaml_file(
             file_path=file_path if type(file_path) is Path else Path(file_path),
-            fail_msg=f"Kaavamääräyskirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
+            fail_msg=f"Kirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
         )
         library_type = data.get("library_type")
-        if not library_type or library_type != "regulation_group":
+        if not library_type or library_type != expected_library_type:
+            iface.messageBar().pushCritical("", f"Kirjaston tyyppiä ei löytynyt tai se oli väärä: {library_type}")
             return {}
         return data
 
-    @classmethod
-    def read_plan_feature_template_file(cls, file_path: Path | str) -> dict:
-        data = cls._read_from_yaml_file(
-            file_path=file_path if type(file_path) is Path else Path(file_path),
-            fail_msg=f"Kaavakohdekirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
-        )
-        library_type = data.get("library_type")
-        if not library_type or library_type != "plan_feature":
-            return {}
-        return data
+    # @classmethod
+    # def read_plan_feature_template_file(cls, file_path: Path | str) -> dict:
+    #     data = cls._read_from_yaml_file(
+    #         file_path=file_path if type(file_path) is Path else Path(file_path),
+    #         fail_msg=f"Kaavakohdekirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
+    #     )
+    #     library_type = data.get("library_type")
+    #     if not library_type or library_type != "plan_feature":
+    #         return {}
+    #     return data
 
     @classmethod
     def write_regulation_group_template_file(
@@ -89,6 +101,20 @@ class TemplateManager:
         regulation_group_config_data["library_type"] = "regulation_group"
         cls._write_to_yaml_file(
             config_data=regulation_group_config_data,
+            file_path=file_path if type(file_path) is Path else Path(file_path),
+            overwrite=overwrite,
+        )
+
+    @classmethod
+    def write_plan_feature_template_file(
+        cls,
+        plan_feature_config_data: dict,
+        file_path: Path | str,
+        overwrite: bool = True,  # noqa: FBT001, FBT002
+    ):
+        plan_feature_config_data["library_type"] = "plan_feature"
+        cls._write_to_yaml_file(
+            config_data=plan_feature_config_data,
             file_path=file_path if type(file_path) is Path else Path(file_path),
             overwrite=overwrite,
         )
