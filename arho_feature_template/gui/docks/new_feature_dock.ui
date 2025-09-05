@@ -69,7 +69,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Luo kaavakohde mallipohjasta</string>
+       <string>Alusta kaavakohde pohjasta</string>
       </property>
      </widget>
     </item>
@@ -84,7 +84,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>Kaavakohdekirjasto</string>
+         <string>Kaavakohdepohjakirjasto</string>
         </property>
        </widget>
       </item>
