@@ -557,17 +557,22 @@ class PlanManager(QObject):
         set_active_plan_id(plan_id)
         if plan_id:
             self.plan_set.emit()
+            for layer in plan_layers:
+                layer.filter_layer_by_plan_id(plan_id)
         else:
             self.plan_unset.emit()
-
-        for layer in plan_layers:
-            layer.apply_filter(plan_id)
+            for layer in plan_layers:
+                if layer.name == "Kaava":
+                    layer.show_all_features()
+                else:
+                    layer.hide_all_features()
 
         if previously_in_edit_mode:
             plan_layer.startEditing()
 
         self.new_feature_dock.set_plan(plan_id)
         self.update_active_plan_regulation_group_library()
+
         if plan_id:
             identifier = PlanLayer.get_attribute_value_by_another_attribute_value(
                 "permanent_plan_identifier", "id", plan_id

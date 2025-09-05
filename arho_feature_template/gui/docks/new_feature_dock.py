@@ -67,7 +67,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
             "Kuntien yhteinen yleiskaava",
             "Maanalainen yleiskaava",
         ]
-        if PlanLayer.get_plan_type_name(plan_id) not in regional_plan_type_names + general_plan_type_names:
+        if plan_id and PlanLayer.get_plan_type_name(plan_id) not in regional_plan_type_names + general_plan_type_names:
             self.new_feature_grid.initialize_buttons(exclude=["Maankäytön kohde"])
         else:
             self.new_feature_grid.initialize_buttons()
