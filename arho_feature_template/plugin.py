@@ -187,6 +187,7 @@ class Plugin:
         menu = QMenu()
         menu.addAction(self.draw_new_plan_action)
         menu.addAction(self.import_plan_action)
+        menu.setEnabled(True)
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
@@ -454,8 +455,8 @@ class Plugin:
             action.setEnabled(True)
 
     def on_project_cleared(self):
-        for action in self.project_depending_actions:
-            action.setEnabled(False)
+        # for action in self.project_depending_actions:
+        #     action.setEnabled(False)
         for action in self.plan_depending_actions:
             action.setEnabled(False)
 

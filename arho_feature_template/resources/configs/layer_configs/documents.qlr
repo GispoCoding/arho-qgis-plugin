@@ -1,0 +1,807 @@
+<!DOCTYPE qgis-layer-definition>
+<qlr>
+  <layer-tree-group name="" expanded="1" checked="Qt::Checked" groupLayer="">
+    <customproperties>
+      <Option/>
+    </customproperties>
+    <layer-tree-layer id="Asiakirjat_df2e349b_bea1_4666_88f7_a911b4cf9c1f" source="service='postgres' authcfg=ryhtirw key='id' estimatedmetadata=true checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;document&quot;" providerKey="postgres" name="Asiakirjat" legend_exp="" patch_size="-1,-1" legend_split_behavior="0" checked="Qt::Checked" expanded="1">
+      <customproperties>
+        <Option/>
+      </customproperties>
+    </layer-tree-layer>
+  </layer-tree-group>
+  <maplayers>
+    <maplayer refreshOnNotifyEnabled="0" styleCategories="AllStyleCategories" autoRefreshMode="Disabled" minScale="1e+08" readOnly="0" refreshOnNotifyMessage="" type="vector" wkbType="NoGeometry" hasScaleBasedVisibilityFlag="0" autoRefreshTime="0" maxScale="0" geometry="No geometry" legendPlaceholderImage="">
+      <id>Asiakirjat_df2e349b_bea1_4666_88f7_a911b4cf9c1f</id>
+      <datasource>service='postgres' authcfg=ryhtirw key='id' estimatedmetadata=true checkPrimaryKeyUnicity='1' table="hame"."document"</datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <layername>Asiakirjat</layername>
+      <srs>
+        <spatialrefsys nativeFormat="Wkt">
+          <wkt></wkt>
+          <proj4></proj4>
+          <srsid>0</srsid>
+          <srid>0</srid>
+          <authid></authid>
+          <description></description>
+          <projectionacronym></projectionacronym>
+          <ellipsoidacronym></ellipsoidacronym>
+          <geographicflag>false</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <resourceMetadata>
+        <identifier></identifier>
+        <parentidentifier></parentidentifier>
+        <language></language>
+        <type>dataset</type>
+        <title></title>
+        <abstract></abstract>
+        <contact>
+          <name></name>
+          <organization></organization>
+          <position></position>
+          <voice></voice>
+          <fax></fax>
+          <email></email>
+          <role></role>
+        </contact>
+        <links/>
+        <dates/>
+        <fees></fees>
+        <encoding></encoding>
+        <crs>
+          <spatialrefsys nativeFormat="Wkt">
+            <wkt></wkt>
+            <proj4></proj4>
+            <srsid>0</srsid>
+            <srid>0</srid>
+            <authid></authid>
+            <description></description>
+            <projectionacronym></projectionacronym>
+            <ellipsoidacronym></ellipsoidacronym>
+            <geographicflag>false</geographicflag>
+          </spatialrefsys>
+        </crs>
+        <extent>
+          <spatial crs="" minz="0" dimensions="2" miny="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxz="0" minx="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxy="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxx="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368"/>
+          <temporal>
+            <period>
+              <start></start>
+              <end></end>
+            </period>
+          </temporal>
+        </extent>
+      </resourceMetadata>
+      <provider encoding="">postgres</provider>
+      <vectorjoins/>
+      <layerDependencies/>
+      <dataDependencies/>
+      <expressionfields/>
+      <map-layer-style-manager current="oletus">
+        <map-layer-style name="oletus"/>
+      </map-layer-style-manager>
+      <auxiliaryLayer/>
+      <metadataUrls/>
+      <flags>
+        <Identifiable>1</Identifiable>
+        <Removable>0</Removable>
+        <Searchable>1</Searchable>
+        <Private>0</Private>
+      </flags>
+      <temporal enabled="0" durationField="" startField="decision_date" endField="" limitMode="0" durationUnit="min" fixedDuration="0" startExpression="" accumulate="0" mode="0" endExpression="">
+        <fixedRange>
+          <start></start>
+          <end></end>
+        </fixedRange>
+      </temporal>
+      <elevation extrusionEnabled="0" respectLayerSymbol="1" clamping="Terrain" zoffset="0" zscale="1" type="IndividualFeatures" symbology="Line" binding="Centroid" extrusion="0" showMarkerSymbolInSurfacePlots="0">
+        <data-defined-properties>
+          <Option type="Map">
+            <Option value="" type="QString" name="name"/>
+            <Option name="properties"/>
+            <Option value="collection" type="QString" name="type"/>
+          </Option>
+        </data-defined-properties>
+        <profileLineSymbol>
+          <symbol force_rhr="0" type="line" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" type="QString" name="name"/>
+                <Option name="properties"/>
+                <Option value="collection" type="QString" name="type"/>
+              </Option>
+            </data_defined_properties>
+            <layer enabled="1" id="{802b630e-e5a9-4fcc-9407-17ad6d2a5c9e}" class="SimpleLine" pass="0" locked="0">
+              <Option type="Map">
+                <Option value="0" type="QString" name="align_dash_pattern"/>
+                <Option value="square" type="QString" name="capstyle"/>
+                <Option value="5;2" type="QString" name="customdash"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="customdash_map_unit_scale"/>
+                <Option value="MM" type="QString" name="customdash_unit"/>
+                <Option value="0" type="QString" name="dash_pattern_offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="dash_pattern_offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="dash_pattern_offset_unit"/>
+                <Option value="0" type="QString" name="draw_inside_polygon"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="225,89,137,255,rgb:0.88235294117647056,0.34901960784313724,0.53725490196078429,1" type="QString" name="line_color"/>
+                <Option value="solid" type="QString" name="line_style"/>
+                <Option value="0.6" type="QString" name="line_width"/>
+                <Option value="MM" type="QString" name="line_width_unit"/>
+                <Option value="0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="0" type="QString" name="ring_filter"/>
+                <Option value="0" type="QString" name="trim_distance_end"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="trim_distance_end_map_unit_scale"/>
+                <Option value="MM" type="QString" name="trim_distance_end_unit"/>
+                <Option value="0" type="QString" name="trim_distance_start"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="trim_distance_start_map_unit_scale"/>
+                <Option value="MM" type="QString" name="trim_distance_start_unit"/>
+                <Option value="0" type="QString" name="tweak_dash_pattern_on_corners"/>
+                <Option value="0" type="QString" name="use_custom_dash"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="width_map_unit_scale"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" type="QString" name="name"/>
+                  <Option name="properties"/>
+                  <Option value="collection" type="QString" name="type"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileLineSymbol>
+        <profileFillSymbol>
+          <symbol force_rhr="0" type="fill" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" type="QString" name="name"/>
+                <Option name="properties"/>
+                <Option value="collection" type="QString" name="type"/>
+              </Option>
+            </data_defined_properties>
+            <layer enabled="1" id="{d12c7abd-1119-45ed-a03a-46c3b846ec9b}" class="SimpleFill" pass="0" locked="0">
+              <Option type="Map">
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="border_width_map_unit_scale"/>
+                <Option value="225,89,137,255,rgb:0.88235294117647056,0.34901960784313724,0.53725490196078429,1" type="QString" name="color"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="0,0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="161,64,98,255,rgb:0.63137254901960782,0.25098039215686274,0.3843137254901961,1" type="QString" name="outline_color"/>
+                <Option value="solid" type="QString" name="outline_style"/>
+                <Option value="0.2" type="QString" name="outline_width"/>
+                <Option value="MM" type="QString" name="outline_width_unit"/>
+                <Option value="solid" type="QString" name="style"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" type="QString" name="name"/>
+                  <Option name="properties"/>
+                  <Option value="collection" type="QString" name="type"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileFillSymbol>
+        <profileMarkerSymbol>
+          <symbol force_rhr="0" type="marker" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+            <data_defined_properties>
+              <Option type="Map">
+                <Option value="" type="QString" name="name"/>
+                <Option name="properties"/>
+                <Option value="collection" type="QString" name="type"/>
+              </Option>
+            </data_defined_properties>
+            <layer enabled="1" id="{f7ba46fe-bfe4-429d-bab4-cb66b54d9e2e}" class="SimpleMarker" pass="0" locked="0">
+              <Option type="Map">
+                <Option value="0" type="QString" name="angle"/>
+                <Option value="square" type="QString" name="cap_style"/>
+                <Option value="225,89,137,255,rgb:0.88235294117647056,0.34901960784313724,0.53725490196078429,1" type="QString" name="color"/>
+                <Option value="1" type="QString" name="horizontal_anchor_point"/>
+                <Option value="bevel" type="QString" name="joinstyle"/>
+                <Option value="diamond" type="QString" name="name"/>
+                <Option value="0,0" type="QString" name="offset"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="offset_map_unit_scale"/>
+                <Option value="MM" type="QString" name="offset_unit"/>
+                <Option value="161,64,98,255,rgb:0.63137254901960782,0.25098039215686274,0.3843137254901961,1" type="QString" name="outline_color"/>
+                <Option value="solid" type="QString" name="outline_style"/>
+                <Option value="0.2" type="QString" name="outline_width"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="outline_width_map_unit_scale"/>
+                <Option value="MM" type="QString" name="outline_width_unit"/>
+                <Option value="diameter" type="QString" name="scale_method"/>
+                <Option value="3" type="QString" name="size"/>
+                <Option value="3x:0,0,0,0,0,0" type="QString" name="size_map_unit_scale"/>
+                <Option value="MM" type="QString" name="size_unit"/>
+                <Option value="1" type="QString" name="vertical_anchor_point"/>
+              </Option>
+              <data_defined_properties>
+                <Option type="Map">
+                  <Option value="" type="QString" name="name"/>
+                  <Option name="properties"/>
+                  <Option value="collection" type="QString" name="type"/>
+                </Option>
+              </data_defined_properties>
+            </layer>
+          </symbol>
+        </profileMarkerSymbol>
+      </elevation>
+      <customproperties>
+        <Option type="Map">
+          <Option type="List" name="dualview/previewExpressions">
+            <Option value="COALESCE( &quot;name&quot;, '&lt;NULL>' )" type="QString"/>
+            <Option value="COALESCE( &quot;name&quot;, '&lt;NULL>' )" type="QString"/>
+            <Option value="COALESCE( &quot;name&quot;, '&lt;NULL>' )" type="QString"/>
+            <Option value="COALESCE( &quot;name&quot;, '&lt;NULL>' )" type="QString"/>
+          </Option>
+          <Option value="0" type="int" name="embeddedWidgets/count"/>
+          <Option name="variableNames"/>
+          <Option name="variableValues"/>
+        </Option>
+      </customproperties>
+      <geometryOptions geometryPrecision="0" removeDuplicateNodes="0">
+        <activeChecks/>
+        <checkConfiguration/>
+      </geometryOptions>
+      <legend showLabelLegend="0" type="default-vector"/>
+      <referencedLayers/>
+      <fieldConfiguration>
+        <field name="type_of_document_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="decision_date" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="created_at" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="modified_at" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="plan_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="permanent_document_identifier" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="category_of_publicity_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="url" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="personal_data_content_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="retention_time_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="language_id" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="exported_at" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="exported_file_key" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="arrival_date" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="confirmation_date" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="document_date" configurationFlags="NoFlag">
+          <editWidget type="DateTime">
+            <config>
+              <Option type="Map">
+                <Option value="true" type="bool" name="allow_null"/>
+                <Option value="true" type="bool" name="calendar_popup"/>
+                <Option value="d.M.yyyy HH:mm:ss" type="QString" name="display_format"/>
+                <Option value="yyyy-MM-dd HH:mm:ss" type="QString" name="field_format"/>
+                <Option value="false" type="bool" name="field_format_overwrite"/>
+                <Option value="false" type="bool" name="field_iso_format"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="name" configurationFlags="NoFlag">
+          <editWidget type="KeyValue">
+            <config>
+              <Option/>
+            </config>
+          </editWidget>
+        </field>
+        <field name="accessibility" configurationFlags="NoFlag">
+          <editWidget type="CheckBox">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="AllowNullState"/>
+                <Option value="" type="QString" name="CheckedState"/>
+                <Option value="0" type="int" name="TextDisplayMethod"/>
+                <Option value="" type="QString" name="UncheckedState"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field name="exported_file_etag" configurationFlags="NoFlag">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+      </fieldConfiguration>
+      <aliases>
+        <alias field="type_of_document_id" index="0" name="Asiakirjan tyyppi"/>
+        <alias field="decision_date" index="1" name="Päätöspäivämäärä"/>
+        <alias field="id" index="2" name="Id"/>
+        <alias field="created_at" index="3" name="Luontipäivämäärä"/>
+        <alias field="modified_at" index="4" name="Muokkauspäivämäärä"/>
+        <alias field="plan_id" index="5" name="Kaava"/>
+        <alias field="permanent_document_identifier" index="6" name="Pysyvä asiakirjatunnus (tämä tulee Ryhdistä)"/>
+        <alias field="category_of_publicity_id" index="7" name="Julkisuusluokka"/>
+        <alias field="url" index="8" name="Asiakirjan url"/>
+        <alias field="personal_data_content_id" index="9" name=""/>
+        <alias field="retention_time_id" index="10" name=""/>
+        <alias field="language_id" index="11" name=""/>
+        <alias field="exported_at" index="12" name=""/>
+        <alias field="exported_file_key" index="13" name=""/>
+        <alias field="arrival_date" index="14" name=""/>
+        <alias field="confirmation_date" index="15" name=""/>
+        <alias field="document_date" index="16" name=""/>
+        <alias field="name" index="17" name="Dokumentin nimi"/>
+        <alias field="accessibility" index="18" name=""/>
+        <alias field="exported_file_etag" index="19" name=""/>
+      </aliases>
+      <splitPolicies>
+        <policy field="type_of_document_id" policy="DefaultValue"/>
+        <policy field="decision_date" policy="DefaultValue"/>
+        <policy field="id" policy="DefaultValue"/>
+        <policy field="created_at" policy="DefaultValue"/>
+        <policy field="modified_at" policy="DefaultValue"/>
+        <policy field="plan_id" policy="DefaultValue"/>
+        <policy field="permanent_document_identifier" policy="DefaultValue"/>
+        <policy field="category_of_publicity_id" policy="DefaultValue"/>
+        <policy field="url" policy="DefaultValue"/>
+        <policy field="personal_data_content_id" policy="DefaultValue"/>
+        <policy field="retention_time_id" policy="DefaultValue"/>
+        <policy field="language_id" policy="DefaultValue"/>
+        <policy field="exported_at" policy="DefaultValue"/>
+        <policy field="exported_file_key" policy="DefaultValue"/>
+        <policy field="arrival_date" policy="DefaultValue"/>
+        <policy field="confirmation_date" policy="DefaultValue"/>
+        <policy field="document_date" policy="DefaultValue"/>
+        <policy field="name" policy="DefaultValue"/>
+        <policy field="accessibility" policy="DefaultValue"/>
+        <policy field="exported_file_etag" policy="DefaultValue"/>
+      </splitPolicies>
+      <duplicatePolicies>
+        <policy field="type_of_document_id" policy="Duplicate"/>
+        <policy field="decision_date" policy="Duplicate"/>
+        <policy field="id" policy="Duplicate"/>
+        <policy field="created_at" policy="Duplicate"/>
+        <policy field="modified_at" policy="Duplicate"/>
+        <policy field="plan_id" policy="Duplicate"/>
+        <policy field="permanent_document_identifier" policy="Duplicate"/>
+        <policy field="category_of_publicity_id" policy="Duplicate"/>
+        <policy field="url" policy="Duplicate"/>
+        <policy field="personal_data_content_id" policy="Duplicate"/>
+        <policy field="retention_time_id" policy="Duplicate"/>
+        <policy field="language_id" policy="Duplicate"/>
+        <policy field="exported_at" policy="Duplicate"/>
+        <policy field="exported_file_key" policy="Duplicate"/>
+        <policy field="arrival_date" policy="Duplicate"/>
+        <policy field="confirmation_date" policy="Duplicate"/>
+        <policy field="document_date" policy="Duplicate"/>
+        <policy field="name" policy="Duplicate"/>
+        <policy field="accessibility" policy="Duplicate"/>
+        <policy field="exported_file_etag" policy="Duplicate"/>
+      </duplicatePolicies>
+      <defaults>
+        <default field="type_of_document_id" expression="" applyOnUpdate="0"/>
+        <default field="decision_date" expression="" applyOnUpdate="0"/>
+        <default field="id" expression="uuid('WithoutBraces')" applyOnUpdate="0"/>
+        <default field="created_at" expression="" applyOnUpdate="0"/>
+        <default field="modified_at" expression="" applyOnUpdate="0"/>
+        <default field="plan_id" expression=" @active_plan_id " applyOnUpdate="0"/>
+        <default field="permanent_document_identifier" expression="" applyOnUpdate="0"/>
+        <default field="category_of_publicity_id" expression="" applyOnUpdate="0"/>
+        <default field="url" expression="" applyOnUpdate="0"/>
+        <default field="personal_data_content_id" expression="" applyOnUpdate="0"/>
+        <default field="retention_time_id" expression="" applyOnUpdate="0"/>
+        <default field="language_id" expression="" applyOnUpdate="0"/>
+        <default field="exported_at" expression="" applyOnUpdate="0"/>
+        <default field="exported_file_key" expression="" applyOnUpdate="0"/>
+        <default field="arrival_date" expression="" applyOnUpdate="0"/>
+        <default field="confirmation_date" expression="" applyOnUpdate="0"/>
+        <default field="document_date" expression="" applyOnUpdate="0"/>
+        <default field="name" expression="map('fin','','swe','','eng','')" applyOnUpdate="0"/>
+        <default field="accessibility" expression="" applyOnUpdate="0"/>
+        <default field="exported_file_etag" expression="" applyOnUpdate="0"/>
+      </defaults>
+      <constraints>
+        <constraint field="type_of_document_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="decision_date" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="id" constraints="3" notnull_strength="1" unique_strength="1" exp_strength="0"/>
+        <constraint field="created_at" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="modified_at" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="plan_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="permanent_document_identifier" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="category_of_publicity_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="url" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="personal_data_content_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="retention_time_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="language_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="exported_at" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="exported_file_key" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="arrival_date" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="confirmation_date" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+        <constraint field="document_date" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="name" constraints="1" notnull_strength="2" unique_strength="0" exp_strength="0"/>
+        <constraint field="accessibility" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint field="exported_file_etag" constraints="0" notnull_strength="0" unique_strength="0" exp_strength="0"/>
+      </constraints>
+      <constraintExpressions>
+        <constraint field="type_of_document_id" exp="" desc=""/>
+        <constraint field="decision_date" exp="" desc=""/>
+        <constraint field="id" exp="" desc=""/>
+        <constraint field="created_at" exp="" desc=""/>
+        <constraint field="modified_at" exp="" desc=""/>
+        <constraint field="plan_id" exp="" desc=""/>
+        <constraint field="permanent_document_identifier" exp="" desc=""/>
+        <constraint field="category_of_publicity_id" exp="" desc=""/>
+        <constraint field="url" exp="" desc=""/>
+        <constraint field="personal_data_content_id" exp="" desc=""/>
+        <constraint field="retention_time_id" exp="" desc=""/>
+        <constraint field="language_id" exp="" desc=""/>
+        <constraint field="exported_at" exp="" desc=""/>
+        <constraint field="exported_file_key" exp="" desc=""/>
+        <constraint field="arrival_date" exp="" desc=""/>
+        <constraint field="confirmation_date" exp="" desc=""/>
+        <constraint field="document_date" exp="" desc=""/>
+        <constraint field="name" exp="" desc=""/>
+        <constraint field="accessibility" exp="" desc=""/>
+        <constraint field="exported_file_etag" exp="" desc=""/>
+      </constraintExpressions>
+      <expressionfields/>
+      <attributeactions>
+        <defaultAction value="{00000000-0000-0000-0000-000000000000}" key="Canvas"/>
+      </attributeactions>
+      <attributetableconfig sortExpression="" sortOrder="0" actionWidgetStyle="dropDown">
+        <columns>
+          <column width="-1" type="field" name="type_of_document_id" hidden="0"/>
+          <column width="-1" type="field" name="name" hidden="0"/>
+          <column width="-1" type="field" name="decision_date" hidden="0"/>
+          <column width="-1" type="field" name="id" hidden="0"/>
+          <column width="-1" type="field" name="created_at" hidden="0"/>
+          <column width="138" type="field" name="modified_at" hidden="0"/>
+          <column width="-1" type="field" name="plan_id" hidden="0"/>
+          <column width="-1" type="field" name="permanent_document_identifier" hidden="0"/>
+          <column width="-1" type="field" name="category_of_publicity_id" hidden="0"/>
+          <column width="-1" type="field" name="url" hidden="0"/>
+          <column width="-1" type="field" name="personal_data_content_id" hidden="0"/>
+          <column width="-1" type="field" name="retention_time_id" hidden="0"/>
+          <column width="-1" type="field" name="language_id" hidden="0"/>
+          <column width="-1" type="field" name="exported_at" hidden="0"/>
+          <column width="-1" type="field" name="exported_file_key" hidden="0"/>
+          <column width="-1" type="field" name="arrival_date" hidden="0"/>
+          <column width="-1" type="field" name="confirmation_date" hidden="0"/>
+          <column width="-1" type="field" name="document_date" hidden="0"/>
+          <column width="-1" type="field" name="accessibility" hidden="0"/>
+          <column width="-1" type="field" name="exported_file_etag" hidden="0"/>
+          <column width="-1" type="actions" hidden="1"/>
+        </columns>
+      </attributetableconfig>
+      <conditionalstyles>
+        <rowstyles/>
+        <fieldstyles/>
+      </conditionalstyles>
+      <storedexpressions/>
+      <editform tolerant="1"></editform>
+      <editforminit/>
+      <editforminitcodesource>0</editforminitcodesource>
+      <editforminitfilepath></editforminitfilepath>
+      <editforminitcode><![CDATA[# -*- coding: utf-8 -*-
+"""
+QGIS forms can have a Python function that is called when the form is
+opened.
+
+Use this function to add extra logic to your forms.
+
+Enter the name of the function in the "Python Init function"
+field.
+An example follows:
+"""
+from qgis.PyQt.QtWidgets import QWidget
+
+def my_form_open(dialog, layer, feature):
+    geom = feature.geometry()
+    control = dialog.findChild(QWidget, "MyLineEdit")
+]]></editforminitcode>
+      <featformsuppress>0</featformsuppress>
+      <editorlayout>generatedlayout</editorlayout>
+      <attributeEditorForm>
+        <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="">
+          <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="Sans Serif,9,-1,5,50,0,0,0,0,0"/>
+        </labelStyle>
+        <attributeEditorField index="5" verticalStretch="0" name="plan_id" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,7.8,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="6" verticalStretch="0" name="permanent_document_identifier" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="0" verticalStretch="0" name="type_of_document_id" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="17" verticalStretch="0" name="name" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="-1" verticalStretch="0" name="personal_details" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="7" verticalStretch="0" name="category_of_publicity_id" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="-1" verticalStretch="0" name="language" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="8" verticalStretch="0" name="url" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="-1" verticalStretch="0" name="decision" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,8.3,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+        <attributeEditorField index="1" verticalStretch="0" name="decision_date" horizontalStretch="0" showLabel="1">
+          <labelStyle overrideLabelColor="0" overrideLabelFont="0" labelColor="0,0,0,255,rgb:0,0,0,1">
+            <labelFont underline="0" italic="0" strikethrough="0" bold="0" style="" description="MS Shell Dlg 2,7.8,-1,5,50,0,0,0,0,0"/>
+          </labelStyle>
+        </attributeEditorField>
+      </attributeEditorForm>
+      <editable>
+        <field editable="1" name="accessibility"/>
+        <field editable="1" name="arrival_date"/>
+        <field editable="1" name="category_of_publicity_id"/>
+        <field editable="1" name="confirmation_date"/>
+        <field editable="0" name="created_at"/>
+        <field editable="1" name="decision"/>
+        <field editable="1" name="decision_date"/>
+        <field editable="1" name="document_date"/>
+        <field editable="1" name="exported_at"/>
+        <field editable="1" name="exported_file_etag"/>
+        <field editable="1" name="exported_file_key"/>
+        <field editable="1" name="id"/>
+        <field editable="1" name="language"/>
+        <field editable="1" name="language_id"/>
+        <field editable="0" name="modified_at"/>
+        <field editable="1" name="name"/>
+        <field editable="0" name="permanent_document_identifier"/>
+        <field editable="1" name="personal_data_content_id"/>
+        <field editable="1" name="personal_details"/>
+        <field editable="0" name="plan_id"/>
+        <field editable="1" name="publicity"/>
+        <field editable="1" name="retention_time_id"/>
+        <field editable="1" name="type_of_document_id"/>
+        <field editable="1" name="url"/>
+      </editable>
+      <labelOnTop>
+        <field name="accessibility" labelOnTop="0"/>
+        <field name="arrival_date" labelOnTop="0"/>
+        <field name="category_of_publicity_id" labelOnTop="0"/>
+        <field name="confirmation_date" labelOnTop="0"/>
+        <field name="created_at" labelOnTop="0"/>
+        <field name="decision" labelOnTop="0"/>
+        <field name="decision_date" labelOnTop="0"/>
+        <field name="document_date" labelOnTop="0"/>
+        <field name="exported_at" labelOnTop="0"/>
+        <field name="exported_file_etag" labelOnTop="0"/>
+        <field name="exported_file_key" labelOnTop="0"/>
+        <field name="id" labelOnTop="0"/>
+        <field name="language" labelOnTop="0"/>
+        <field name="language_id" labelOnTop="0"/>
+        <field name="modified_at" labelOnTop="0"/>
+        <field name="name" labelOnTop="0"/>
+        <field name="permanent_document_identifier" labelOnTop="0"/>
+        <field name="personal_data_content_id" labelOnTop="0"/>
+        <field name="personal_details" labelOnTop="0"/>
+        <field name="plan_id" labelOnTop="0"/>
+        <field name="publicity" labelOnTop="0"/>
+        <field name="retention_time_id" labelOnTop="0"/>
+        <field name="type_of_document_id" labelOnTop="0"/>
+        <field name="url" labelOnTop="0"/>
+      </labelOnTop>
+      <reuseLastValue>
+        <field name="accessibility" reuseLastValue="0"/>
+        <field name="arrival_date" reuseLastValue="0"/>
+        <field name="category_of_publicity_id" reuseLastValue="0"/>
+        <field name="confirmation_date" reuseLastValue="0"/>
+        <field name="created_at" reuseLastValue="0"/>
+        <field name="decision" reuseLastValue="0"/>
+        <field name="decision_date" reuseLastValue="0"/>
+        <field name="document_date" reuseLastValue="0"/>
+        <field name="exported_at" reuseLastValue="0"/>
+        <field name="exported_file_etag" reuseLastValue="0"/>
+        <field name="exported_file_key" reuseLastValue="0"/>
+        <field name="id" reuseLastValue="0"/>
+        <field name="language" reuseLastValue="0"/>
+        <field name="language_id" reuseLastValue="0"/>
+        <field name="modified_at" reuseLastValue="0"/>
+        <field name="name" reuseLastValue="0"/>
+        <field name="permanent_document_identifier" reuseLastValue="0"/>
+        <field name="personal_data_content_id" reuseLastValue="0"/>
+        <field name="personal_details" reuseLastValue="0"/>
+        <field name="plan_id" reuseLastValue="0"/>
+        <field name="publicity" reuseLastValue="0"/>
+        <field name="retention_time_id" reuseLastValue="0"/>
+        <field name="type_of_document_id" reuseLastValue="0"/>
+        <field name="url" reuseLastValue="0"/>
+      </reuseLastValue>
+      <dataDefinedFieldProperties/>
+      <widgets/>
+      <previewExpression>COALESCE( "name", '&lt;NULL>' )</previewExpression>
+      <mapTip enabled="1"></mapTip>
+    </maplayer>
+  </maplayers>
+</qlr>

@@ -79,11 +79,17 @@ class AbstractLayer(ABC):
         cls, target_attribute: str, filter_attribute: str, filter_value: str
     ) -> Generator[Any]:
         layer = cls.get_from_project()
-        request = QgsFeatureRequest().setFilterExpression(f"\"{filter_attribute}\"='{filter_value}'")
-        request.setSubsetOfAttributes([target_attribute], layer.fields())
-        request.setFlags(QgsFeatureRequest.NoGeometry)
-        for feature in layer.getFeatures(request):
-            yield feature[target_attribute]
+        original_filter = layer.subsetString()
+
+        try:  # Remove filter temporarily before filtering with new value
+            layer.setSubsetString("")
+            request = QgsFeatureRequest().setFilterExpression(f"\"{filter_attribute}\"='{filter_value}'")
+            request.setSubsetOfAttributes([target_attribute], layer.fields())
+            request.setFlags(QgsFeatureRequest.NoGeometry)
+            for feature in layer.getFeatures(request):
+                yield feature[target_attribute]
+        finally:  # Reset filter
+            layer.setSubsetString(original_filter)
 
     @classmethod
     def get_attribute_value_by_another_attribute_value(

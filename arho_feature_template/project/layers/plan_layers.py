@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from abc import abstractmethod
 from string import Template
 from textwrap import dedent
@@ -22,6 +23,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanTypeLayer
+from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import (
     deserialize_localized_text,
     get_active_plan_id,
@@ -30,6 +32,8 @@ from arho_feature_template.utils.misc_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+QLR_PATH = resources_path("configs", "layer_configs")
 
 
 class AbstractPlanLayer(AbstractLayer):
@@ -75,6 +79,7 @@ class AbstractPlanLayer(AbstractLayer):
 class PlanLayer(AbstractPlanLayer):
     name = "Kaava"
     filter_template = Template("id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "plan.qlr")
 
     @classmethod
     def feature_from_model(cls, model: Plan) -> QgsFeature:
@@ -197,32 +202,43 @@ class PlanFeatureLayer(AbstractPlanLayer):
 
 class LandUsePointLayer(PlanFeatureLayer):
     name = "Maankäytön kohteet"
+    geom = "MultiPoint"
     filter_template = Template("plan_id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "land_use_point.qlr")
 
 
 class OtherPointLayer(PlanFeatureLayer):
     name = "Muut pisteet"
+    geom = "MultiPoint"
     filter_template = Template("plan_id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "other_point.qlr")
 
 
 class LineLayer(PlanFeatureLayer):
     name = "Viivat"
+    geom = "MultiLineString"
     filter_template = Template("plan_id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "line.qlr")
 
 
 class LandUseAreaLayer(PlanFeatureLayer):
     name = "Aluevaraus"
+    geom = "MultiPolygon"
     filter_template = Template("plan_id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "land_use_area.qlr")
 
 
 class OtherAreaLayer(PlanFeatureLayer):
     name = "Osa-alue"
+    geom = "MultiPolygon"
     filter_template = Template("plan_id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "other_area.qlr")
 
 
 class RegulationGroupLayer(AbstractPlanLayer):
     name = "Kaavamääräysryhmät"
     filter_template = Template("plan_id = '$plan_id'")
+    qlr_path = os.path.join(QLR_PATH, "plan_regulation_group.qlr")
 
     @classmethod
     def feature_from_model(cls, model: RegulationGroup, plan_id: str | None = None) -> QgsFeature:
@@ -261,18 +277,8 @@ class RegulationGroupLayer(AbstractPlanLayer):
 
 class RegulationGroupAssociationLayer(AbstractPlanLayer):
     name = "Kaavamääräysryhmien assosiaatiot"
-    filter_template = Template(
-        dedent(
-            """\
-            EXISTS (
-                SELECT 1
-                FROM hame.plan_regulation_group prg
-                WHERE
-                    hame.regulation_group_association.plan_regulation_group_id = prg.id
-                    AND prg.plan_id = '$plan_id'
-            )"""
-        )
-    )
+    filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "plan_regulation_group_associations.qlr")
 
     layer_name_to_attribute_map: ClassVar[dict[str, str]] = {
         LandUsePointLayer.name: "land_use_point_id",
@@ -390,6 +396,7 @@ class PlanRegulationLayer(AbstractPlanLayer):
             )"""
         )
     )
+    qlr_path = os.path.join(QLR_PATH, "plan_regulation.qlr")
 
     @classmethod
     def feature_from_model(cls, model: Regulation) -> QgsFeature:
@@ -442,21 +449,8 @@ class PlanRegulationLayer(AbstractPlanLayer):
 
 class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
     name = "Sanallisten kaavamääräyksien lajien assosiaatiot"
-    filter_template = Template(
-        dedent(
-            """\
-            EXISTS (
-                SELECT 1
-                FROM
-                    hame.plan_regulation_group prg
-                    JOIN hame.plan_regulation pr
-                        ON (prg.id = pr.plan_regulation_group_id)
-                WHERE
-                    hame.type_of_verbal_regulation_association.plan_regulation_id = pr.id
-                    AND prg.plan_id = '$plan_id'
-            )"""
-        )
-    )
+    filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "verbal_regulation_type_associations.qlr")
 
     @classmethod
     def feature_from(cls, regulation_id: str, type_of_verbal_regulation_id: str) -> QgsFeature | None:
@@ -493,6 +487,7 @@ class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
 class LegalEffectAssociationLayer(AbstractPlanLayer):
     name = "Yleiskaavan oikeusvaikutusten assosiaatiot"
     filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "legal_effect_associations.qlr")
 
     @classmethod
     def feature_from(cls, plan_id: str, legal_effect_id: str) -> QgsFeature | None:
@@ -542,6 +537,7 @@ class PlanPropositionLayer(AbstractPlanLayer):
             )"""
         )
     )
+    qlr_path = os.path.join(QLR_PATH, "plan_proposition.qlr")
 
     @classmethod
     def feature_from_model(cls, model: Proposition) -> QgsFeature:
@@ -582,26 +578,8 @@ class PlanPropositionLayer(AbstractPlanLayer):
 
 class PlanThemeAssociationLayer(AbstractPlanLayer):
     name = "Kaavoitusteemojen assosiaatiot"
-    filter_template = Template(
-        dedent(
-            """\
-            EXISTS (
-                SELECT 1
-                FROM
-                    hame.plan_regulation_group prg
-                    LEFT JOIN hame.plan_regulation pr
-                        ON prg.id = pr.plan_regulation_group_id
-                    LEFT JOIN hame.plan_proposition pp
-                        ON prg.id = pp.plan_regulation_group_id
-                WHERE
-                    prg.plan_id = '$plan_id'
-                    AND (
-                    hame.plan_theme_association.plan_regulation_id = pr.id
-                        OR hame.plan_theme_association.plan_proposition_id = pp.id
-                )
-            )"""
-        )
-    )
+    filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "plan_theme_associations.qlr")
 
     @classmethod
     def feature_from(
@@ -668,7 +646,8 @@ class PlanThemeAssociationLayer(AbstractPlanLayer):
 
 class DocumentLayer(AbstractPlanLayer):
     name = "Asiakirjat"
-    filter_template = Template("plan_id = '$plan_id'")
+    filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "documents.qlr")
 
     @classmethod
     def feature_from_model(cls, model: Document) -> QgsFeature:
@@ -723,7 +702,8 @@ class DocumentLayer(AbstractPlanLayer):
 
 class SourceDataLayer(AbstractPlanLayer):
     name = "Lähtötietoaineistot"
-    filter_template = Template("plan_id = '$plan_id'")
+    filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "source_data.qlr")
 
 
 class AdditionalInformationLayer(AbstractPlanLayer):
@@ -743,6 +723,7 @@ class AdditionalInformationLayer(AbstractPlanLayer):
             )"""
         )
     )
+    qlr_path = os.path.join(QLR_PATH, "additional_information.qlr")
 
     @classmethod
     def feature_from_model(cls, model: AdditionalInformation) -> QgsFeature:
@@ -780,6 +761,7 @@ class AdditionalInformationLayer(AbstractPlanLayer):
 class LifeCycleLayer(AbstractPlanLayer):
     name = "Elinkaaren päiväykset"
     filter_template = None
+    qlr_path = os.path.join(QLR_PATH, "lifecycle.qlr")
 
     @classmethod
     def feature_from_model(cls, model: LifeCycle) -> QgsFeature:
@@ -836,3 +818,20 @@ plan_layers.remove(PlanFeatureLayer)
 
 plan_feature_layers = PlanFeatureLayer.__subclasses__()
 plan_layers.extend(plan_feature_layers)
+
+geom_layers = [PlanLayer, LandUsePointLayer, OtherPointLayer, LineLayer, OtherAreaLayer, LandUseAreaLayer]
+plan_regulation_layers = [
+    RegulationGroupLayer,
+    PlanRegulationLayer,
+    PlanPropositionLayer,
+    AdditionalInformationLayer,
+]
+background_info_layers = [
+    DocumentLayer,
+    SourceDataLayer,
+    PlanThemeAssociationLayer,
+    RegulationGroupAssociationLayer,
+    LifeCycleLayer,
+    TypeOfVerbalRegulationAssociationLayer,
+    LegalEffectAssociationLayer,
+]
