@@ -12,7 +12,6 @@ from qgis.PyQt.QtWidgets import (
     QDialogButtonBox,
     QHBoxLayout,
     QLabel,
-    QMessageBox,
     QScrollArea,
     QSizePolicy,
     QSplitter,
@@ -173,23 +172,6 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             )
             regulation_type_widgets[id_] = tree_widget_item
 
-    def _check_letter_code(self) -> bool:
-        letter_code = self.letter_code.text()
-
-        def _is_existing_model_with_unmodified_letter_code(model: RegulationGroup, letter_code: str) -> bool:
-            return bool(model.id_ and letter_code == model.letter_code)
-
-        if not letter_code:
-            return True
-        if (
-            not _is_existing_model_with_unmodified_letter_code(self.regulation_group, letter_code)
-            and letter_code in self.existing_group_letter_codes
-        ):
-            msg = f"Kaavamääräysryhmä lyhyellä nimellä '<b>{letter_code}</b>' on jo olemassa."
-            QMessageBox.critical(self, "Virhe", msg)
-            return False
-        return True
-
     def update_selected_regulation(self, item: QTreeWidgetItem, column: int):
         _, regulation_type_attributes = item.data(column, Qt.UserRole)
         text = regulation_type_attributes["description"]
@@ -250,6 +232,5 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         return model
 
     def _on_ok_clicked(self):
-        if self._check_letter_code():
-            self.model = self.into_model()
-            self.accept()
+        self.model = self.into_model()
+        self.accept()
