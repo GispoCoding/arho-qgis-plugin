@@ -159,52 +159,6 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
             self.plan_regulation_group_scrollarea_contents.layout().removeItem(self.scroll_area_spacer)
             self.scroll_area_spacer = None
 
-    def _check_regulation_group_letter_codes(self) -> bool:
-        seen_names = set()
-        existing_names = set()
-        duplicate_names = set()
-
-        def _is_existing_model_with_unmodified_letter_code(model: RegulationGroup, letter_code: str) -> bool:
-            return bool(model.id_ and letter_code == model.letter_code)
-
-        def _format_names(names, last_item_conjucation: str = "ja") -> str:
-            names = list(names)
-            formatted_names = ", ".join(f"'<b>{name}</b>'" for name in names[:-1])
-            formatted_names += f" {last_item_conjucation} " if len(names) > 1 else ""
-            formatted_names += f"'<b>{names[-1]}</b>'" if names else ""
-            return formatted_names
-
-        for reg_group_widget in self.regulation_group_widgets:
-            letter_code = reg_group_widget.letter_code.text()
-            if not letter_code:
-                continue
-
-            if (
-                not _is_existing_model_with_unmodified_letter_code(reg_group_widget.regulation_group, letter_code)
-                and letter_code in self.existing_group_letter_codes
-            ):
-                existing_names.add(letter_code)
-
-            if letter_code in seen_names:
-                duplicate_names.add(letter_code)
-
-            seen_names.add(letter_code)
-
-        if existing_names:
-            if len(existing_names) == 1:
-                msg = f"Kaavamääräysryhmä lyhyellä nimellä {_format_names(existing_names)} on jo olemassa."
-            else:
-                msg = f"Kaavamääräysryhmät lyhyillä nimillä {_format_names(existing_names)} ovat jo olemassa."
-            QMessageBox.critical(self, "Virhe", msg)
-            return False
-
-        if duplicate_names:
-            msg = f"Lomakkeella on useita kaavamääräysryhmiä, joilla on lyhyt nimi {_format_names(duplicate_names, 'tai')}."
-            QMessageBox.critical(self, "Virhe", msg)
-            return False
-
-        return True
-
     def _check_multiple_regulation_groups_with_principal_intended_use_regulations(self) -> bool:
         principal_intended_use_groups = {
             regulation_group_widget
@@ -309,8 +263,7 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
 
     def _on_ok_clicked(self):
         if (
-            self._check_regulation_group_letter_codes()
-            and self._check_multiple_regulation_groups_with_principal_intended_use_regulations()
+            self._check_multiple_regulation_groups_with_principal_intended_use_regulations()
             and self._check_feature_name()
         ):
             self.model = self.into_model()
