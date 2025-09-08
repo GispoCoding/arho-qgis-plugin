@@ -1,28 +1,19 @@
 <!DOCTYPE qgis-layer-definition>
 <qlr>
-  <layer-tree-group name="" expanded="1" checked="Qt::Checked" groupLayer="">
+  <layer-tree-group expanded="1" checked="Qt::Checked" groupLayer="" name="">
     <customproperties>
       <Option/>
     </customproperties>
-    <layer-tree-layer id="Sanallisten_kaavam__r_yksien_lajien_assosiaatiot_df78e3c3_7ae6_4f57_9df8_9a6bea3c4484" source="service='postgres' authcfg=ryhtirw key='plan_regulation_id,type_of_verbal_plan_regulation_id' checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;type_of_verbal_regulation_association&quot; sql=EXISTS (&#xa;    SELECT 1&#xa;    FROM&#xa;        hame.plan_regulation_group prg&#xa;        JOIN hame.plan_regulation pr&#xa;            ON (prg.id = pr.plan_regulation_group_id)&#xa;    WHERE&#xa;        hame.type_of_verbal_regulation_association.plan_regulation_id = pr.id&#xa;        AND prg.plan_id = 'fe5c9311-eb7d-436b-9d61-d3880de53621'&#xa;)" providerKey="postgres" name="Sanallisten kaavamääräyksien lajien assosiaatiot" legend_exp="" patch_size="-1,-1" legend_split_behavior="0" checked="Qt::Checked" expanded="1">
+    <layer-tree-layer providerKey="postgres" checked="Qt::Checked" expanded="1" legend_split_behavior="0" patch_size="-1,-1" id="Sanallisten_kaavam__r_yksien_lajien_assosiaatiot_b2d573a2_e272_44fc_99f7_65cfb918cd79" name="Sanallisten kaavamääräyksien lajien assosiaatiot" legend_exp="" source="service='postgres' authcfg=ryhtirw key='plan_regulation_id,type_of_verbal_plan_regulation_id' checkPrimaryKeyUnicity='1' table=&quot;hame&quot;.&quot;type_of_verbal_regulation_association&quot;">
       <customproperties>
         <Option/>
       </customproperties>
     </layer-tree-layer>
   </layer-tree-group>
   <maplayers>
-    <maplayer refreshOnNotifyEnabled="0" styleCategories="AllStyleCategories" autoRefreshMode="Disabled" minScale="1e+08" readOnly="0" refreshOnNotifyMessage="" type="vector" wkbType="NoGeometry" hasScaleBasedVisibilityFlag="0" autoRefreshTime="0" maxScale="0" geometry="No geometry" legendPlaceholderImage="">
-      <id>Sanallisten_kaavam__r_yksien_lajien_assosiaatiot_df78e3c3_7ae6_4f57_9df8_9a6bea3c4484</id>
-      <datasource>service='postgres' authcfg=ryhtirw key='plan_regulation_id,type_of_verbal_plan_regulation_id' checkPrimaryKeyUnicity='1' table="hame"."type_of_verbal_regulation_association" sql=EXISTS (
-    SELECT 1
-    FROM
-        hame.plan_regulation_group prg
-        JOIN hame.plan_regulation pr
-            ON (prg.id = pr.plan_regulation_group_id)
-    WHERE
-        hame.type_of_verbal_regulation_association.plan_regulation_id = pr.id
-        AND prg.plan_id = 'fe5c9311-eb7d-436b-9d61-d3880de53621'
-)</datasource>
+    <maplayer geometry="No geometry" hasScaleBasedVisibilityFlag="0" refreshOnNotifyMessage="" autoRefreshMode="Disabled" readOnly="0" legendPlaceholderImage="" styleCategories="AllStyleCategories" maxScale="0" minScale="1e+08" wkbType="NoGeometry" refreshOnNotifyEnabled="0" type="vector" autoRefreshTime="0">
+      <id>Sanallisten_kaavam__r_yksien_lajien_assosiaatiot_b2d573a2_e272_44fc_99f7_65cfb918cd79</id>
+      <datasource>service='postgres' authcfg=ryhtirw key='plan_regulation_id,type_of_verbal_plan_regulation_id' checkPrimaryKeyUnicity='1' table="hame"."type_of_verbal_regulation_association"</datasource>
       <keywordList>
         <value></value>
       </keywordList>
@@ -74,7 +65,7 @@
           </spatialrefsys>
         </crs>
         <extent>
-          <spatial crs="" minz="0" dimensions="2" miny="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxz="0" minx="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxy="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxx="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368"/>
+          <spatial crs="" minx="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" dimensions="2" minz="0" maxy="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxz="0" miny="179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368" maxx="-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368"/>
           <temporal>
             <period>
               <start></start>
@@ -99,13 +90,13 @@
         <Searchable>1</Searchable>
         <Private>0</Private>
       </flags>
-      <temporal enabled="0" durationField="" startField="" endField="" limitMode="0" durationUnit="min" fixedDuration="0" startExpression="" accumulate="0" mode="0" endExpression="">
+      <temporal endExpression="" durationUnit="min" startExpression="" limitMode="0" durationField="" accumulate="0" startField="" mode="0" endField="" fixedDuration="0" enabled="0">
         <fixedRange>
           <start></start>
           <end></end>
         </fixedRange>
       </temporal>
-      <elevation extrusionEnabled="0" respectLayerSymbol="1" clamping="Terrain" zoffset="0" zscale="1" type="IndividualFeatures" symbology="Line" binding="Centroid" extrusion="0" showMarkerSymbolInSurfacePlots="0">
+      <elevation clamping="Terrain" extrusion="0" zscale="1" symbology="Line" respectLayerSymbol="1" type="IndividualFeatures" binding="Centroid" zoffset="0" extrusionEnabled="0" showMarkerSymbolInSurfacePlots="0">
         <data-defined-properties>
           <Option type="Map">
             <Option value="" type="QString" name="name"/>
@@ -114,7 +105,7 @@
           </Option>
         </data-defined-properties>
         <profileLineSymbol>
-          <symbol force_rhr="0" type="line" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+          <symbol force_rhr="0" is_animated="0" frame_rate="10" type="line" name="" alpha="1" clip_to_extent="1">
             <data_defined_properties>
               <Option type="Map">
                 <Option value="" type="QString" name="name"/>
@@ -122,7 +113,7 @@
                 <Option value="collection" type="QString" name="type"/>
               </Option>
             </data_defined_properties>
-            <layer enabled="1" id="{7b728f9e-72d3-4ed7-935e-10ba59ded0a1}" class="SimpleLine" pass="0" locked="0">
+            <layer class="SimpleLine" id="{7b728f9e-72d3-4ed7-935e-10ba59ded0a1}" pass="0" enabled="1" locked="0">
               <Option type="Map">
                 <Option value="0" type="QString" name="align_dash_pattern"/>
                 <Option value="square" type="QString" name="capstyle"/>
@@ -163,7 +154,7 @@
           </symbol>
         </profileLineSymbol>
         <profileFillSymbol>
-          <symbol force_rhr="0" type="fill" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+          <symbol force_rhr="0" is_animated="0" frame_rate="10" type="fill" name="" alpha="1" clip_to_extent="1">
             <data_defined_properties>
               <Option type="Map">
                 <Option value="" type="QString" name="name"/>
@@ -171,7 +162,7 @@
                 <Option value="collection" type="QString" name="type"/>
               </Option>
             </data_defined_properties>
-            <layer enabled="1" id="{e6521823-60a1-4e0c-8900-654e5bea1f40}" class="SimpleFill" pass="0" locked="0">
+            <layer class="SimpleFill" id="{e6521823-60a1-4e0c-8900-654e5bea1f40}" pass="0" enabled="1" locked="0">
               <Option type="Map">
                 <Option value="3x:0,0,0,0,0,0" type="QString" name="border_width_map_unit_scale"/>
                 <Option value="141,90,153,255,rgb:0.55294117647058827,0.35294117647058826,0.59999999999999998,1" type="QString" name="color"/>
@@ -196,7 +187,7 @@
           </symbol>
         </profileFillSymbol>
         <profileMarkerSymbol>
-          <symbol force_rhr="0" type="marker" name="" is_animated="0" frame_rate="10" clip_to_extent="1" alpha="1">
+          <symbol force_rhr="0" is_animated="0" frame_rate="10" type="marker" name="" alpha="1" clip_to_extent="1">
             <data_defined_properties>
               <Option type="Map">
                 <Option value="" type="QString" name="name"/>
@@ -204,7 +195,7 @@
                 <Option value="collection" type="QString" name="type"/>
               </Option>
             </data_defined_properties>
-            <layer enabled="1" id="{266df2fb-314c-40f6-a0f1-c65a55798597}" class="SimpleMarker" pass="0" locked="0">
+            <layer class="SimpleMarker" id="{266df2fb-314c-40f6-a0f1-c65a55798597}" pass="0" enabled="1" locked="0">
               <Option type="Map">
                 <Option value="0" type="QString" name="angle"/>
                 <Option value="square" type="QString" name="cap_style"/>
@@ -240,11 +231,11 @@
       <customproperties>
         <Option type="Map">
           <Option value="0" type="int" name="embeddedWidgets/count"/>
-          <Option name="variableNames"/>
-          <Option name="variableValues"/>
+          <Option type="invalid" name="variableNames"/>
+          <Option type="invalid" name="variableValues"/>
         </Option>
       </customproperties>
-      <geometryOptions geometryPrecision="0" removeDuplicateNodes="0">
+      <geometryOptions removeDuplicateNodes="0" geometryPrecision="0">
         <activeChecks/>
         <checkConfiguration/>
       </geometryOptions>
@@ -285,12 +276,12 @@
         <policy field="type_of_verbal_plan_regulation_id" policy="Duplicate"/>
       </duplicatePolicies>
       <defaults>
-        <default field="plan_regulation_id" expression="" applyOnUpdate="0"/>
-        <default field="type_of_verbal_plan_regulation_id" expression="" applyOnUpdate="0"/>
+        <default expression="" field="plan_regulation_id" applyOnUpdate="0"/>
+        <default expression="" field="type_of_verbal_plan_regulation_id" applyOnUpdate="0"/>
       </defaults>
       <constraints>
-        <constraint field="plan_regulation_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
-        <constraint field="type_of_verbal_plan_regulation_id" constraints="1" notnull_strength="1" unique_strength="0" exp_strength="0"/>
+        <constraint notnull_strength="1" unique_strength="0" field="plan_regulation_id" constraints="1" exp_strength="0"/>
+        <constraint notnull_strength="1" unique_strength="0" field="type_of_verbal_plan_regulation_id" constraints="1" exp_strength="0"/>
       </constraints>
       <constraintExpressions>
         <constraint field="plan_regulation_id" exp="" desc=""/>
@@ -298,13 +289,13 @@
       </constraintExpressions>
       <expressionfields/>
       <attributeactions>
-        <defaultAction value="{00000000-0000-0000-0000-000000000000}" key="Canvas"/>
+        <defaultAction key="Canvas" value="{00000000-0000-0000-0000-000000000000}"/>
       </attributeactions>
       <attributetableconfig sortExpression="" sortOrder="0" actionWidgetStyle="dropDown">
         <columns>
-          <column width="-1" type="field" name="plan_regulation_id" hidden="0"/>
-          <column width="-1" type="field" name="type_of_verbal_plan_regulation_id" hidden="0"/>
-          <column width="-1" type="actions" hidden="1"/>
+          <column hidden="0" type="field" name="plan_regulation_id" width="-1"/>
+          <column hidden="0" type="field" name="type_of_verbal_plan_regulation_id" width="-1"/>
+          <column hidden="1" type="actions" width="-1"/>
         </columns>
       </attributetableconfig>
       <conditionalstyles>
@@ -340,12 +331,12 @@ def my_form_open(dialog, layer, feature):
         <field editable="1" name="type_of_verbal_plan_regulation_id"/>
       </editable>
       <labelOnTop>
-        <field name="plan_regulation_id" labelOnTop="0"/>
-        <field name="type_of_verbal_plan_regulation_id" labelOnTop="0"/>
+        <field labelOnTop="0" name="plan_regulation_id"/>
+        <field labelOnTop="0" name="type_of_verbal_plan_regulation_id"/>
       </labelOnTop>
       <reuseLastValue>
-        <field name="plan_regulation_id" reuseLastValue="0"/>
-        <field name="type_of_verbal_plan_regulation_id" reuseLastValue="0"/>
+        <field reuseLastValue="0" name="plan_regulation_id"/>
+        <field reuseLastValue="0" name="type_of_verbal_plan_regulation_id"/>
       </reuseLastValue>
       <dataDefinedFieldProperties/>
       <widgets/>
