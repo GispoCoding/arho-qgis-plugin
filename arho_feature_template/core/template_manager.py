@@ -118,11 +118,3 @@ class TemplateManager:
             file_path=file_path if type(file_path) is Path else Path(file_path),
             overwrite=overwrite,
         )
-
-    @classmethod
-    def delete_template_file(cls, file_path: Path | str) -> bool:
-        file_path = file_path if type(file_path) is Path else Path(file_path)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            return True
-        return False
