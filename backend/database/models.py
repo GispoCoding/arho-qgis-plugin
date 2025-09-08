@@ -429,7 +429,6 @@ class PlanRegulationGroup(VersionedBase):
             "ix_plan_regulation_group_plan_id_short_name",
             "plan_id",
             "short_name",
-            unique=True,
         ),
         VersionedBase.__table_args__,
     )
