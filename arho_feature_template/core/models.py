@@ -392,11 +392,12 @@ class LifeCycle(PlanBaseModel):
     starting_at: QDate | None = None
     ending_at: QDate | None = None
     # might not need the following
-    land_use_are_id: str | None = None
+    land_use_area_id: str | None = None
     other_area_id: str | None = None
     line_id: str | None = None
     land_use_point_id: str | None = None
     other_point_id: str | None = None
+    event_dates: list[EventDate] = field(default_factory=list, compare=False)
     modified: bool = field(compare=False, default=True)
 
 
@@ -495,3 +496,15 @@ class Document(PlanBaseModel):
     plan_id: str | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = None
+
+
+@dataclass
+class EventDate:
+    lifecycle_date_id: str
+    decision_id: str | None = None
+    processing_event_id: str | None = None
+    interaction_event_id: str | None = None
+    starting_at: QDate | None = None
+    ending_at: QDate | None = None
+    id_: str | None = None
+    modified: bool = field(compare=False, default=True)
