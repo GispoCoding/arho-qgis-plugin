@@ -559,7 +559,9 @@ class RyhtiClient:
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
         # we should only have one valid period. If there are several, pick last
         recommendation_dict["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(plan_recommendation, self.valid_status_value)
+            self.get_lifecycle_periods(
+                plan_recommendation, self.valid_status_value, datetimes=False
+            )
         )
         recommendation_dict["value"] = plan_recommendation.text_value
         return recommendation_dict
@@ -657,7 +659,9 @@ class RyhtiClient:
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
         # we should only have one valid period. If there are several, pick last
         regulation_dict["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(plan_regulation, self.valid_status_value)
+            self.get_lifecycle_periods(
+                plan_regulation, self.valid_status_value, datetimes=False
+            )
         )
 
         if plan_regulation.types_of_verbal_plan_regulations:
@@ -723,7 +727,9 @@ class RyhtiClient:
         plan_object_dict["objectNumber"] = plan_object.ordering
         # we should only have one valid period. If there are several, pick last
         plan_object_dict["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(plan_object, self.valid_status_value)
+            self.get_lifecycle_periods(
+                plan_object, self.valid_status_value, datetimes=False
+            )
         )
         if plan_object.height_min or plan_object.height_max:
             plan_object_dict["verticalLimit"] = {
@@ -904,11 +910,13 @@ class RyhtiClient:
 
         # we should only have one valid period. If there are several, pick last
         plan_dictionary["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(plan, self.valid_status_value)
+            self.get_lifecycle_periods(plan, self.valid_status_value, datetimes=False)
         )
         # we should only have one approved period. If there are several, pick last
         period_of_approval = self.get_last_period(
-            self.get_lifecycle_periods(plan, self.approved_status_value)
+            self.get_lifecycle_periods(
+                plan, self.approved_status_value, datetimes=False
+            )
         )
         plan_dictionary["approvalDate"] = (
             period_of_approval["begin"] if period_of_approval else None
