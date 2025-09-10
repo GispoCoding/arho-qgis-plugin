@@ -7,7 +7,6 @@ from uuid import uuid4
 import pytest
 from requests import PreparedRequest
 from requests_mock.request import _RequestObjectProxy
-from requests_toolbelt.multipart.encoder import MultipartEncoder
 from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
