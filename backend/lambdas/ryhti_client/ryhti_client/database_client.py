@@ -636,7 +636,9 @@ class DatabaseClient:
         plan_map: dict[str, Any] = {}
         plan_map["planMapKey"] = document.id
         plan_map["name"] = document.name
-        plan_map["fileKey"] = document.exported_file_key
+        plan_map["fileKey"] = (
+            str(document.exported_file_key) if document.exported_file_key else None
+        )
         # TODO: Take the coordinate system from the actual file?
         plan_map[
             "coordinateSystem"
@@ -658,7 +660,9 @@ class DatabaseClient:
         attachment_document["accessibility"] = document.accessibility
         attachment_document["retentionTime"] = document.retention_time.uri
         attachment_document["languages"] = [document.language.uri]
-        attachment_document["fileKey"] = document.exported_file_key
+        attachment_document["fileKey"] = (
+            str(document.exported_file_key) if document.exported_file_key else None
+        )
         attachment_document["documentDate"] = self.get_date(document.document_date)
         if document.arrival_date:
             attachment_document["arrivedDate"] = self.get_date(document.arrival_date)
@@ -672,7 +676,9 @@ class DatabaseClient:
         other_plan_material: dict[str, Any] = {}
         other_plan_material["otherPlanMaterialKey"] = document.id
         other_plan_material["name"] = document.name
-        other_plan_material["fileKey"] = document.exported_file_key
+        other_plan_material["fileKey"] = (
+            str(document.exported_file_key) if document.exported_file_key else None
+        )
         other_plan_material["personalDataContent"] = document.personal_data_content.uri
         other_plan_material["categoryOfPublicity"] = document.category_of_publicity.uri
         return other_plan_material
@@ -1091,7 +1097,7 @@ class DatabaseClient:
                 ):
                     session.add(document)
                     if document_response["status"] == 201:
-                        document.exported_file_key = document_response["detail"]
+                        document.exported_file_key = UUID(document_response["detail"])
                         document.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
                         # Save the etag of the uploaded file, piggybacked in response
                         if document_response["warnings"]:
@@ -1163,8 +1169,7 @@ class DatabaseClient:
                         f"Plan {plan_id} had no permanent identifier. "
                         "Could not create plan matter!"
                     )
-                    a = details[plan_id]
-                    plan.validation_errors = a
+                    plan.validation_errors = details[plan_id]
                     LOGGER.info(details[plan_id])
                     continue
                 LOGGER.info(f"Saving response for plan matter {plan_id}...")
