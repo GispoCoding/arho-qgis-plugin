@@ -2083,9 +2083,11 @@ def desired_plan_dict(
                 "planRecommendations": [],
             }
         ],
-        "planDescription": complete_test_plan.description[
-            "fin"
-        ],  # TODO: should this be a single language string? why?
+        "planDescription": (
+            complete_test_plan.description["fin"]
+            if complete_test_plan.description
+            else None
+        ),  # TODO: should this be a single language string? why?
         "planObjects": [
             {
                 "planObjectKey": land_use_area_instance.id,
@@ -2260,11 +2262,19 @@ def desired_plan_dict(
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpaallinenKerroslukuArvovali",
                         "value": {
                             "dataType": "PositiveNumericRange",
-                            "minimumValue": int(
-                                numeric_range_plan_regulation_instance.numeric_range_min
+                            "minimumValue": (
+                                int(
+                                    numeric_range_plan_regulation_instance.numeric_range_min
+                                )
+                                if numeric_range_plan_regulation_instance.numeric_range_min
+                                else None
                             ),
-                            "maximumValue": int(
-                                numeric_range_plan_regulation_instance.numeric_range_max
+                            "maximumValue": (
+                                int(
+                                    numeric_range_plan_regulation_instance.numeric_range_max
+                                )
+                                if numeric_range_plan_regulation_instance.numeric_range_max
+                                else None
                             ),
                             # "unitOfMeasure": numeric_range_plan_regulation_instance.unit,  #  floor range does not have unit
                         },
@@ -2353,8 +2363,10 @@ def desired_plan_dict(
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sallittuKerrosala",
                         "value": {
                             "dataType": "PositiveNumeric",
-                            "number": int(
-                                numeric_plan_regulation_instance.numeric_value
+                            "number": (
+                                int(numeric_plan_regulation_instance.numeric_value)
+                                if numeric_plan_regulation_instance.numeric_value
+                                else None
                             ),
                             "unitOfMeasure": numeric_plan_regulation_instance.unit,
                         },
@@ -2549,9 +2561,11 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
         "periodOfValidity": None,
         "approvalDate": None,
         "generalRegulationGroups": [],
-        "planDescription": another_plan_instance.description[
-            "fin"
-        ],  # TODO: should this be a single language string? why?
+        "planDescription": (
+            another_plan_instance.description["fin"]
+            if another_plan_instance.description
+            else None
+        ),  # TODO: should this be a single language string? why?
         "planObjects": [],
         "planRegulationGroups": [],
         "planRegulationGroupRelations": [],
@@ -2745,9 +2759,9 @@ def assert_dicts_equal(
                 value,
                 ignore_keys=ignore_keys,
                 ignore_order_for_keys=ignore_order_for_keys,
-                ignore_list_order=key in ignore_order_for_keys
-                if ignore_order_for_keys
-                else False,
+                ignore_list_order=(
+                    key in ignore_order_for_keys if ignore_order_for_keys else False
+                ),
                 path=current_path,
             )
 

@@ -194,7 +194,10 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
             with main_conn.cursor() as cur:
                 version_query = SQL("SELECT version_num FROM alembic_version")
                 cur.execute(version_query)
-                old_version = cur.fetchone()[0]
+                row = cur.fetchone()
+                if row is None:
+                    raise RuntimeError("alembic_version table is empty")
+                old_version = row[0]
         else:
             old_version = None
         main_conn.close()
@@ -204,6 +207,8 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
         script_dir = ScriptDirectory.from_config(alembic_cfg)
         current_head_version = script_dir.get_current_head()
         print(current_head_version)
+        if current_head_version is None:
+            raise RuntimeError("No alembic head version found.")
 
         if version == "head":
             version = current_head_version

@@ -69,3 +69,16 @@ class RyhtiPlanMatter(TypedDict, total=False):
     administrativeAreaIdentifiers: List
     digitalOrigin: str
     planMatterPhases: List[RyhtiPlanMatterPhase]
+
+
+class AttributeValue(TypedDict, total=False):
+    dataType: str
+    code: str | None
+    codeList: str | None
+    title: dict[str, str] | None
+    number: int | float | None
+    minimumValue: int | float | None
+    maximumValue: int | float | None
+    unitOfMeasure: str | None
+    text: dict[str, str] | None
+    syntax: str | None

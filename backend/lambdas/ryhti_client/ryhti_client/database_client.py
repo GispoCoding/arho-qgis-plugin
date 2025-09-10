@@ -25,6 +25,7 @@ from database.codes import (
 )
 from database.enums import AttributeValueDataType
 from ryhti_client.ryhti_schema import (
+    AttributeValue,
     Period,
     RyhtiHandlingEvent,
     RyhtiInteractionEvent,
@@ -249,8 +250,13 @@ class DatabaseClient:
         recommendation_dict["value"] = plan_recommendation.text_value
         return recommendation_dict
 
-    def get_attribute_value(self, attribute_value: base.AttributeValueMixin) -> Dict:
-        value = {"dataType": attribute_value.value_data_type.value}
+    def get_attribute_value(
+        self, attribute_value: base.AttributeValueMixin
+    ) -> AttributeValue | None:
+        if attribute_value.value_data_type is None:
+            return None
+
+        value: AttributeValue = {"dataType": attribute_value.value_data_type.value}
 
         def cast_numeric(number: float):
             if attribute_value.value_data_type in (
@@ -319,10 +325,9 @@ class DatabaseClient:
         additional_information_dict = {
             "type": additional_information.type_of_additional_information.uri
         }
-        if additional_information.value_data_type is not None:
-            additional_information_dict["value"] = self.get_attribute_value(
-                additional_information
-            )
+
+        if value := self.get_attribute_value(additional_information):
+            additional_information_dict["value"] = value
 
         return additional_information_dict
 
@@ -360,8 +365,8 @@ class DatabaseClient:
             for ai in plan_regulation.additional_information
         ]
 
-        if plan_regulation.value_data_type is not None:
-            regulation_dict["value"] = self.get_attribute_value(plan_regulation)
+        if value := self.get_attribute_value(plan_regulation):
+            regulation_dict["value"] = value
 
         return regulation_dict
 
@@ -959,6 +964,9 @@ class DatabaseClient:
         database.
         """
         plan_matter = RyhtiPlanMatter()
+        if plan.permanent_plan_identifier is None:
+            raise ValueError("permanent_plan_identifier is required for plan matter!")
+
         plan_matter["permanentPlanIdentifier"] = plan.permanent_plan_identifier
         # Plan type has to be proper URI (not just value) here, *unlike* when only
         # validating plan. Go figure.

@@ -83,7 +83,10 @@ def test_validate_lifecycle_dates(
     plan_instance: models.Plan,
     lifecycle_date_instance: models.LifeCycleDate,
 ):
-    assert lifecycle_date_instance.starting_at < lifecycle_date_instance.ending_at
+    assert (
+        lifecycle_date_instance.ending_at
+        and lifecycle_date_instance.starting_at < lifecycle_date_instance.ending_at
+    )
     session.add(lifecycle_date_instance)
     # check that modified date cannot start after ending
     with pytest.raises(ProgrammingError):
@@ -110,7 +113,8 @@ def test_validate_event_dates(
     interaction_event_date_instance: models.EventDate,
 ):
     assert (
-        interaction_event_date_instance.starting_at
+        interaction_event_date_instance.ending_at
+        and interaction_event_date_instance.starting_at
         < interaction_event_date_instance.ending_at
     )
     session.add(interaction_event_date_instance)
@@ -143,7 +147,10 @@ def test_validate_event_dates_inside_status_dates(
         > preparation_date_instance.starting_at
     )
     assert (
-        interaction_event_date_instance.ending_at < preparation_date_instance.ending_at
+        preparation_date_instance.ending_at
+        and interaction_event_date_instance.ending_at
+        and interaction_event_date_instance.ending_at
+        < preparation_date_instance.ending_at
     )
     # check that modified event cannot start before status starts
     with pytest.raises(ProgrammingError):
