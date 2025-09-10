@@ -34,6 +34,7 @@ repos:
           - types-requests
           - types-shapely
           - types-simplejson
+          - git+https://github.com/GispoCoding/ryhti-api-client@v2025.33.1#egg=ryhti_api_client
 
   - repo: https://github.com/PyCQA/flake8
     rev: 7.3.0

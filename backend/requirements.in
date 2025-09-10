@@ -8,3 +8,5 @@ simplejson
 sqlalchemy
 alembic_utils
 pygml
+pydantic
+git+https://github.com/GispoCoding/ryhti-api-client@v2025.23.2#egg=ryhti_api_client

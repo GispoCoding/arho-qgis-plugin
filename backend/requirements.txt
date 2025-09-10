@@ -10,6 +10,8 @@ alembic==1.16.4
     #   alembic-utils
 alembic-utils==0.8.8
     # via -r requirements.in
+annotated-types==0.7.0
+    # via pydantic
 boto3==1.39.16
     # via -r requirements.in
 botocore==1.39.16
@@ -48,11 +50,21 @@ psycopg[binary]==3.2.9
     # via -r requirements.in
 psycopg-binary==3.2.9
     # via psycopg
+pydantic==2.11.7
+    # via
+    #   -r requirements.in
+    #   ryhti-api-client
+pydantic-core==2.33.2
+    # via pydantic
 pygml==0.2.2
     # via -r requirements.in
 python-dateutil==2.9.0.post0
-    # via botocore
+    # via
+    #   botocore
+    #   ryhti-api-client
 requests==2.32.4
+    # via -r requirements.in
+ryhti-api-client @ git+https://github.com/GispoCoding/ryhti-api-client@v2025.23.2
     # via -r requirements.in
 s3transfer==0.13.1
     # via boto3
@@ -73,8 +85,15 @@ typing-extensions==4.14.1
     #   alembic
     #   alembic-utils
     #   flupy
+    #   pydantic
+    #   pydantic-core
+    #   ryhti-api-client
     #   sqlalchemy
+    #   typing-inspection
+typing-inspection==0.4.1
+    # via pydantic
 urllib3==2.5.0
     # via
     #   botocore
     #   requests
+    #   ryhti-api-client
