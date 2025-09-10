@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional, Union
 
 from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
@@ -265,7 +265,7 @@ class Plan(PlanBase):
     # for complete plan objects. Also validation errors might concern multiple
     # models, not just one field or one table in database.
     validated_at: Mapped[Optional[datetime]]
-    validation_errors: Mapped[Optional[dict[str, str]]]
+    validation_errors: Mapped[Optional[Union[dict[str, Any], str]]]
 
     general_plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
         secondary=regulation_group_association,

@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP
@@ -20,8 +20,9 @@ class Base(DeclarativeBase):
     """
 
     type_annotation_map = {
-        uuid.UUID: UUID(as_uuid=False),
-        dict[str, str]: JSONB,
+        uuid.UUID: postgresql.UUID(as_uuid=False),
+        dict[str, str]: postgresql.JSONB,  # Used for multi language text fields
+        Union[dict[str, Any], str]: postgresql.JSONB,  # Used for validation errors
         List[str]: ARRAY(TEXT),
         datetime: TIMESTAMP(timezone=True),
     }
