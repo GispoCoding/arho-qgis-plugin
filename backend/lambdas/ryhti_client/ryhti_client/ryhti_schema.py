@@ -10,7 +10,7 @@ class Period(TypedDict):
 class RyhtiPlan(TypedDict, total=False):
     planKey: str
     lifeCycleStatus: str
-    scale: int
+    scale: int | None
     legalEffectOfLocalMasterPlans: List | None
     geographicalArea: Dict
     periodOfValidity: Period | None
@@ -60,12 +60,12 @@ class RyhtiPlanMatterPhase(TypedDict, total=False):
 class RyhtiPlanMatter(TypedDict, total=False):
     permanentPlanIdentifier: str
     planType: str
-    name: Dict
+    name: dict[str, str]
     timeOfInitiation: str | None
-    description: Dict
-    producerPlanIdentifier: str
-    caseIdentifiers: List
-    recordNumbers: List
+    description: dict[str, str] | None
+    producerPlanIdentifier: str | None
+    caseIdentifiers: List | None
+    recordNumbers: List | None
     administrativeAreaIdentifiers: List
     digitalOrigin: str
     planMatterPhases: List[RyhtiPlanMatterPhase]
