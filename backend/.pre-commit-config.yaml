@@ -1,7 +1,7 @@
 exclude: ".enc.json$"
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
         exclude: docker-compose.clear-mounts.yml # yaml check don't like !reset tag
@@ -10,15 +10,15 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: mixed-line-ending
   - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
       - id: isort
   - repo: https://github.com/psf/black
-    rev: 23.12.1
+    rev: 25.1.0
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.17.1
     hooks:
       - id: mypy
         exclude: ^migrations/
@@ -37,7 +37,7 @@ repos:
           - types-simplejson
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
+    rev: 7.3.0
     hooks:
       - id: flake8
         additional_dependencies:
