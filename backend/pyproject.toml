@@ -23,6 +23,15 @@ env_files = [
     ".env"
 ]
 
+[tool.black]
+line-length = 88
+target-version = ['py313']
+extend-exclude = '''
+(
+  migrations/versions/.*.py  # Alembic migration files
+)
+'''
+
 [tool.mypy]
 mypy_path = "./,./lambdas/ryhti_client"
 explicit_package_bases = true

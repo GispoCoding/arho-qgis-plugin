@@ -140,9 +140,11 @@ class DatabaseClient:
         """
         return [
             {
-                "begin": self.get_isoformat_value_with_z(dates_object.starting_at)
-                if datetimes
-                else self.get_date(dates_object.starting_at),
+                "begin": (
+                    self.get_isoformat_value_with_z(dates_object.starting_at)
+                    if datetimes
+                    else self.get_date(dates_object.starting_at)
+                ),
                 "end": (
                     (
                         self.get_isoformat_value_with_z(dates_object.ending_at)
@@ -233,9 +235,9 @@ class DatabaseClient:
         """
         recommendation_dict: dict[str, Any] = {}
         recommendation_dict["planRecommendationKey"] = plan_recommendation.id
-        recommendation_dict[
-            "lifeCycleStatus"
-        ] = plan_recommendation.lifecycle_status.uri
+        recommendation_dict["lifeCycleStatus"] = (
+            plan_recommendation.lifecycle_status.uri
+        )
         if plan_recommendation.plan_themes:
             recommendation_dict["planThemes"] = [
                 plan_theme.uri for plan_theme in plan_recommendation.plan_themes
@@ -592,9 +594,9 @@ class DatabaseClient:
         plan_dictionary["planRegulationGroups"] = self.get_plan_regulation_groups(
             plan_objects
         )
-        plan_dictionary[
-            "planRegulationGroupRelations"
-        ] = self.get_plan_regulation_group_relations(plan_objects)
+        plan_dictionary["planRegulationGroupRelations"] = (
+            self.get_plan_regulation_group_relations(plan_objects)
+        )
 
         # we should only have one valid period. If there are several, pick last
         plan_dictionary["periodOfValidity"] = self.get_last_period(
@@ -640,9 +642,9 @@ class DatabaseClient:
             str(document.exported_file_key) if document.exported_file_key else None
         )
         # TODO: Take the coordinate system from the actual file?
-        plan_map[
-            "coordinateSystem"
-        ] = f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{str(base.PROJECT_SRID)}"  # noqa
+        plan_map["coordinateSystem"] = (
+            f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{str(base.PROJECT_SRID)}"  # noqa
+        )
         return plan_map
 
     def get_plan_attachment_document(self, document: models.Document) -> Dict:
@@ -651,9 +653,9 @@ class DatabaseClient:
         """
         attachment_document: dict[str, Any] = {}
         attachment_document["attachmentDocumentKey"] = document.id
-        attachment_document[
-            "documentIdentifier"
-        ] = document.permanent_document_identifier
+        attachment_document["documentIdentifier"] = (
+            document.permanent_document_identifier
+        )
         attachment_document["name"] = document.name
         attachment_document["personalDataContent"] = document.personal_data_content.uri
         attachment_document["categoryOfPublicity"] = document.category_of_publicity.uri
@@ -1002,15 +1004,17 @@ class DatabaseClient:
         # Apparently Ryhti plans may cover multiple administrative areas, so the region
         # identifier has to be embedded in a list.
         plan_matter["administrativeAreaIdentifiers"] = [
-            plan.organisation.municipality.value
-            if plan.organisation.municipality
-            else plan.organisation.administrative_region.value
+            (
+                plan.organisation.municipality.value
+                if plan.organisation.municipality
+                else plan.organisation.administrative_region.value
+            )
         ]
         # We have no need of importing the digital origin code list as long as we are
         # not digitizing old plans:
-        plan_matter[
-            "digitalOrigin"
-        ] = "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01"
+        plan_matter["digitalOrigin"] = (
+            "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01"
+        )
         # TODO: kaava-asian liitteet
         # are these different from plan annexes? why? how??
         # plan_matter["matterAnnexes"] = self.get_plan_matter_annexes(plan)
@@ -1060,9 +1064,9 @@ class DatabaseClient:
                 # In case Ryhti API does not respond in the expected manner,
                 # save the response for debugging.
                 if "status" not in response or "errors" not in response:
-                    details[
-                        plan_id
-                    ] = f"RYHTI API returned unexpected response: {response}"
+                    details[plan_id] = (
+                        f"RYHTI API returned unexpected response: {response}"
+                    )
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
                     LOGGER.info(details[plan_id])
                     LOGGER.info(f"Ryhti response: {json.dumps(response)}")
@@ -1127,9 +1131,9 @@ class DatabaseClient:
                     plan.permanent_plan_identifier = response["detail"]
                     details[plan_id] = response["detail"]  # type: ignore[assignment]
                 elif response["status"] == 401:
-                    details[
-                        plan_id
-                    ] = "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
+                    details[plan_id] = (
+                        "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
+                    )
                 elif response["status"] == 400:
                     details[plan_id] = "Kaavalta puuttuu tuottajan kaavatunnus."
             session.commit()
@@ -1177,17 +1181,17 @@ class DatabaseClient:
                 # In case Ryhti API does not respond in the expected manner,
                 # save the response for debugging.
                 if "status" not in response or "errors" not in response:
-                    details[
-                        plan_id
-                    ] = f"RYHTI API returned unexpected response: {response}"
+                    details[plan_id] = (
+                        f"RYHTI API returned unexpected response: {response}"
+                    )
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
                     LOGGER.info(details[plan_id])
                     LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                     continue
                 elif response["status"] == 200:
-                    details[
-                        plan_id
-                    ] = f"Plan matter validation successful for {plan_id}!"
+                    details[plan_id] = (
+                        f"Plan matter validation successful for {plan_id}!"
+                    )
                     plan.validation_errors = (
                         "Kaava-asia on validi ja sen voi viedä Ryhtiin."
                     )
@@ -1240,14 +1244,14 @@ class DatabaseClient:
                 # In case Ryhti API does not respond in the expected manner,
                 # save the response for debugging.
                 if "status" not in response or "errors" not in response:
-                    details[
-                        plan_id
-                    ] = f"RYHTI API returned unexpected response: {response}"
+                    details[plan_id] = (
+                        f"RYHTI API returned unexpected response: {response}"
+                    )
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
                 elif response["status"] == 200:
-                    details[
-                        plan_id
-                    ] = f"Plan matter phase PUT successful for {plan_id}!"
+                    details[plan_id] = (
+                        f"Plan matter phase PUT successful for {plan_id}!"
+                    )
                     plan.validation_errors = "Kaava-asian vaihe on päivitetty Ryhtiin."
                     plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
                     plan.exported_at = datetime.datetime.now(tz=LOCAL_TZ)

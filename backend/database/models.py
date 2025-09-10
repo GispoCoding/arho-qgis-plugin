@@ -275,13 +275,13 @@ class Plan(PlanBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    legal_effects_of_master_plan: Mapped[
-        List["LegalEffectsOfMasterPlan"]
-    ] = relationship(
-        "LegalEffectsOfMasterPlan",
-        secondary=legal_effects_association,
-        lazy="joined",
-        back_populates="plans",
+    legal_effects_of_master_plan: Mapped[List["LegalEffectsOfMasterPlan"]] = (
+        relationship(
+            "LegalEffectsOfMasterPlan",
+            secondary=legal_effects_association,
+            lazy="joined",
+            back_populates="plans",
+        )
     )
 
     source_data: Mapped[List["SourceData"]] = relationship(back_populates="plan")
@@ -552,9 +552,9 @@ class AdditionalInformation(VersionedBase, AttributeValueMixin):
     plan_regulation: Mapped["PlanRegulation"] = relationship(
         back_populates="additional_information"
     )
-    type_of_additional_information: Mapped[
-        "TypeOfAdditionalInformation"
-    ] = relationship(lazy="joined")
+    type_of_additional_information: Mapped["TypeOfAdditionalInformation"] = (
+        relationship(lazy="joined")
+    )
 
 
 type_of_verbal_regulation_association = Table(
@@ -621,13 +621,13 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
         back_populates="plan_regulations", lazy="joined"
     )
     # Let's load all the codes for objects joined.
-    types_of_verbal_plan_regulations: Mapped[
-        List["TypeOfVerbalPlanRegulation"]
-    ] = relationship(
-        "TypeOfVerbalPlanRegulation",
-        secondary=type_of_verbal_regulation_association,
-        back_populates="plan_regulations",
-        lazy="joined",
+    types_of_verbal_plan_regulations: Mapped[List["TypeOfVerbalPlanRegulation"]] = (
+        relationship(
+            "TypeOfVerbalPlanRegulation",
+            secondary=type_of_verbal_regulation_association,
+            back_populates="plan_regulations",
+            lazy="joined",
+        )
     )
     plan_themes: Mapped[List["PlanTheme"]] = relationship(
         secondary=plan_theme_association,

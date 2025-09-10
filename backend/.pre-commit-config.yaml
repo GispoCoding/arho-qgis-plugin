@@ -1,4 +1,4 @@
-exclude: ".enc.json$"
+exclude: .enc.json$|^migrations/versions
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -21,7 +21,6 @@ repos:
     rev: v1.17.1
     hooks:
       - id: mypy
-        exclude: ^migrations/
         additional_dependencies:
           - alembic
           - alembic_utils
