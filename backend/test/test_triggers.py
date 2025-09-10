@@ -571,6 +571,7 @@ def test_add_plan_id_fkey_triggers(
 ):
     # Add another plan instance
     another_plan_instance = models.Plan(
+        name={"fin": "Test Plan"},
         geom=from_shape(
             MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
         ),

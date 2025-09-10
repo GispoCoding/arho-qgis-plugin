@@ -22,6 +22,7 @@ def test_validate_polygon_geometry_triggers(
     )
 
     invalid_plan_instance = models.Plan(
+        name={"fin": "Invalid Plan"},
         geom=from_shape(invalid_polygon),
         lifecycle_status=code_instance,
         organisation=organisation_instance,

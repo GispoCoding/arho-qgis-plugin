@@ -803,6 +803,7 @@ def plan_instance(
     # down too early and teardown will fail, because plan cannot have empty
     # status or organisation.
     instance = models.Plan(
+        name={"fin": "Test Plan 1"},
         geom=from_shape(
             shape(
                 {
@@ -848,6 +849,7 @@ def another_plan_instance(
     # down too early and teardown will fail, because plan cannot have empty
     # status or organisation.
     instance = models.Plan(
+        name={"fin": "Test Plan 2"},
         geom=from_shape(
             shape(
                 {
