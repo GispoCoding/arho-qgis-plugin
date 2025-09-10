@@ -972,10 +972,10 @@ class DatabaseClient:
         database.
         """
         plan_matter = RyhtiPlanMatter()
-        if plan.permanent_plan_identifier is None:
-            raise ValueError("permanent_plan_identifier is required for plan matter!")
 
+        # TODO: permanentPlanIdentifier should be mandatory in this stage
         plan_matter["permanentPlanIdentifier"] = plan.permanent_plan_identifier
+
         # Plan type has to be proper URI (not just value) here, *unlike* when only
         # validating plan. Go figure.
         plan_matter["planType"] = plan.plan_type.uri
