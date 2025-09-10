@@ -48,11 +48,11 @@ def test_modified_at_triggers(
     land_use_point_instance.height_unit = "blah"
     other_point_instance.height_unit = "blah"
     plan_regulation_group_instance.short_name = "foo"
-    text_plan_regulation_instance.text_value = "foo"
-    plan_proposition_instance.text_value = "foo"
+    text_plan_regulation_instance.text_value = {"fin": "foo"}
+    plan_proposition_instance.text_value = {"fin": "foo"}
     source_data_instance.additional_information_uri = "http://test2.fi"
     organisation_instance.business_id = "foo"
-    plan_map_instance.name = "foo"
+    plan_map_instance.name = {"fin": "foo"}
     lifecycle_date_instance.ending_at = datetime.now()
     session.flush()
     session.refresh(plan_instance)
