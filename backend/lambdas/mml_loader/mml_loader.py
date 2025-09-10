@@ -5,12 +5,13 @@ import os
 import tempfile
 import time
 import zipfile
-from typing import Dict, Optional, TypedDict
+from typing import Dict, Optional, TypedDict, cast
 from xml.etree import ElementTree
 
 import pygml
 import requests
 from geoalchemy2.shape import from_shape
+from shapely import Polygon
 from shapely.geometry import MultiPolygon, shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -32,6 +33,21 @@ LOGGER.setLevel(logging.INFO)
 class Response(TypedDict):
     statusCode: int  # noqa N815
     body: str
+
+
+def gml_polygons_to_multipolygon(gml_polygons: list[str]) -> MultiPolygon:
+    shapes: list[Polygon] = []
+    for gml_string in gml_polygons:
+        gml_object = pygml.parse(gml_string)
+        shapely_shape = shape(gml_object.__geo_interface__)
+        if shapely_shape.geom_type != "Polygon":
+            LOGGER.warning(
+                f"Expected Polygon geometry but got {shapely_shape.geom_type}"  # noqa
+            )
+            continue
+        shapes.append(cast(Polygon, shapely_shape))
+
+    return MultiPolygon(shapes)
 
 
 class MMLLoader:
@@ -106,7 +122,9 @@ class MMLLoader:
 
         return geoms
 
-    def parse_gml(self, output_dir: str, year: str, size: str) -> dict[str, MultiPolygon]:
+    def parse_gml(
+        self, output_dir: str, year: str, size: str
+    ) -> dict[str, MultiPolygon]:
         """
         Parses a GML file to extract geometry data
         """
@@ -163,22 +181,13 @@ class MMLLoader:
         geoms: dict[str, MultiPolygon] = {}
         for region_code in region_codes:
             if region_code in polygons:
-                shapes = []
-                for gml_string in polygons[region_code]:
-                    gml_object = pygml.parse(gml_string)
-                    shapes.append(shape(gml_object.__geo_interface__))
+                geoms[region_code] = gml_polygons_to_multipolygon(polygons[region_code])
 
-                if shapes:
-                    geoms[region_code] = from_shape(MultiPolygon(shapes))
         for municipality_code in municipality_codes:
             if municipality_code in polygons:
-                shapes = []
-                for gml_string in polygons[municipality_code]:
-                    gml_object = pygml.parse(gml_string)
-                    shapes.append(shape(gml_object.__geo_interface__))
-
-                if shapes:
-                    geoms[municipality_code] = from_shape(MultiPolygon(shapes))
+                geoms[municipality_code] = gml_polygons_to_multipolygon(
+                    polygons[municipality_code]
+                )
 
         return geoms
 
@@ -195,7 +204,7 @@ class MMLLoader:
                     f"Adding geometry to administrative region {admin_region.value}..."
                 )
                 if geom := geoms.get(admin_region.value):
-                    admin_region.geom = geom
+                    admin_region.geom = from_shape(geom)
                     LOGGER.info(
                         f"Geometry added to administrative region {admin_region.value}"  # noqa
                     )
@@ -203,7 +212,7 @@ class MMLLoader:
             for municipality in municipalities:
                 LOGGER.info(f"Adding geometry to municipality {municipality.value}...")
                 if geom := geoms.get(municipality.value):
-                    municipality.geom = geom
+                    municipality.geom = from_shape(geom)
                     LOGGER.info(
                         f"Geometry added to municipality {municipality.value}"  # noqa
                     )
