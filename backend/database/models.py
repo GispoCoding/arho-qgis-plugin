@@ -267,6 +267,11 @@ class Plan(PlanBase):
     validated_at: Mapped[Optional[datetime]]
     validation_errors: Mapped[Optional[Union[dict[str, Any], str]]]
 
+    # Regulation groups belonging to a plan
+    regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+        back_populates="plan", cascade="all, delete-orphan"
+    )
+
     general_plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
         secondary=regulation_group_association,
         lazy="joined",
@@ -446,7 +451,7 @@ class PlanRegulationGroup(VersionedBase):
         comment="Plan to which this regulation group belongs",
         index=True,
     )
-    plan: Mapped["Plan"] = relationship()
+    plan: Mapped["Plan"] = relationship(back_populates="regulation_groups")
 
     ordering: Mapped[Optional[int]]
 
