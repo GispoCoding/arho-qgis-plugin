@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 
 import pytest
 from geoalchemy2.shape import from_shape
-from shapely import transform
 from shapely.geometry import MultiLineString, MultiPolygon
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
