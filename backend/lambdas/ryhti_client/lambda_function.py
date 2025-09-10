@@ -8,6 +8,7 @@ import boto3
 import simplejson as json
 
 from database.db_helper import DatabaseHelper, User
+from ryhti_client.database_client import DatabaseClient
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
@@ -211,10 +212,12 @@ def handler(
                 "is set to FI-TEST."
             )
         )
-
-    client = RyhtiClient(
+    database_client = DatabaseClient(
         db_helper.get_connection_string(),
         plan_uuid=plan_uuid,
+    )
+    client = RyhtiClient(
+        database_client=database_client,
         debug_json=debug_json,
         public_api_key=public_api_key,
         xroad_syke_client_id=xroad_syke_client_id,
@@ -226,8 +229,6 @@ def handler(
         xroad_member_code=xroad_member_code,
         xroad_member_client_name=xroad_member_client_name,
     )
-
-    database_client = client.database_client
 
     if database_client.plans:
         if event_type is Action.GET_PLANS:

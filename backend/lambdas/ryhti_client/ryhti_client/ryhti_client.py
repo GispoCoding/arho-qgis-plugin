@@ -55,7 +55,7 @@ class RyhtiClient:
 
     def __init__(
         self,
-        connection_string: str,
+        database_client: DatabaseClient,
         public_api_url: Optional[str] = None,
         public_api_key: str = "",
         xroad_syke_client_id: Optional[str] = "",
@@ -66,13 +66,12 @@ class RyhtiClient:
         xroad_member_code: Optional[str] = None,
         xroad_member_client_name: Optional[str] = None,
         xroad_port: Optional[int] = 8080,
-        plan_uuid: Optional[str] = None,
         debug_json: Optional[bool] = False,  # save JSON files for debugging
     ) -> None:
         LOGGER.info("Initializing Ryhti client...")
         self.debug_json = debug_json
 
-        self.database_client = DatabaseClient(connection_string, plan_uuid)
+        self.database_client = database_client
 
         # Public API only needs an API key and URL
         if public_api_url:

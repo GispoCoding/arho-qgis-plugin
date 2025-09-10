@@ -11,6 +11,7 @@ from simplejson import JSONEncoder
 from sqlalchemy.orm import Session
 
 from database import codes, models
+from ryhti_client.database_client import DatabaseClient
 from ryhti_client.ryhti_client import RyhtiClient
 
 from .conftest import deepcompare
@@ -372,8 +373,9 @@ def client_with_plan_data(
     reads plans from the database when initializing.
     """
     # Let's mock production x-road with gispo organization client here.
+    database_client = DatabaseClient(rw_connection_string)
     client = RyhtiClient(
-        rw_connection_string,
+        database_client,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_instance="FI",
@@ -435,8 +437,9 @@ def client_with_plan_data_in_wrong_region(
     session.commit()
 
     # Let's mock production x-road with gispo organization client here.
+    database_client = DatabaseClient(rw_connection_string)
     client = RyhtiClient(
-        rw_connection_string,
+        database_client=database_client,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_instance="FI",
@@ -477,8 +480,9 @@ def client_with_plan_data_in_proposal_phase(
     session.commit()
 
     # Let's mock production x-road with gispo organization client here.
+    database_client = DatabaseClient(rw_connection_string)
     client = RyhtiClient(
-        rw_connection_string,
+        database_client=database_client,
         public_api_url="http://mock.url",
         xroad_server_address="http://mock2.url",
         xroad_instance="FI",
