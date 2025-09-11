@@ -45,7 +45,7 @@ class Plugin:
         self.menu = Plugin.name
 
         self.toolbar = iface.addToolBar("ARHO Toolbar")
-        self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def check_timezone_variable(self):
         """Check if PGTZ environment variable is correctly set."""
@@ -161,9 +161,14 @@ class Plugin:
         self.validation_dock.hide()
 
         # Actions
+        self.new_plan_button = QToolButton()
+        self.new_plan_button.setText("Kaava")
+        self.new_plan_button.setIcon(QIcon(resources_path("icons", "toolbar", "planBorder.svg")))
+        self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
+
         self.draw_new_plan_action = self.add_action(
             text="Piirrä kaavan ulkoraja",
-            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
+            icon=QIcon(resources_path("icons", "toolbar", "planNew.svg")),
             # icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
             triggered_callback=self.plan_manager.digitize_plan_geometry,
             add_to_menu=False,
@@ -172,55 +177,89 @@ class Plugin:
         )
         self.new_plan_from_border = self.add_action(
             text="Tuo kaavan ulkoraja",
-            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
+            icon=QIcon(resources_path("icons", "toolbar", "planNew.svg")),
             triggered_callback=self.plan_manager.import_plan_geometry,
             add_to_menu=False,
             add_to_toolbar=False,
             status_tip="Luo uusi kaava tuomalla kaavarajaus toiselta tasolta",
         )
-        self.import_plan = self.add_action(
+
+        self.import_plan_action = self.add_action(
             text="Tuo kaava",
-            icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "planImport.svg")),
             triggered_callback=self.plan_manager.open_import_plan_dialog,
             add_to_menu=False,
             add_to_toolbar=False,
             status_tip="Tuo kaavan JSON tietokantaan",
         )
 
-        self.new_plan_button = QToolButton()
-        self.new_plan_button.setText("Luo kaava")
-        self.new_plan_button.setIcon(QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")))
-        self.new_plan_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
+        self.load_plan_action = self.add_action(
+            text="Avaa kaava",
+            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "planOpen.svg")),
+            triggered_callback=self.load_existing_plan,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=False,
+            status_tip="Lataa/avaa kaava",
+        )
 
         menu = QMenu()
         menu.addAction(self.draw_new_plan_action)
         menu.addAction(self.new_plan_from_border)
-        menu.addAction(self.import_plan)
+        menu.addAction(self.load_plan_action)
+        menu.addAction(self.import_plan_action)
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
-        self.load_plan_action = self.add_action(
-            text="Avaa kaava",
-            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "avaa_kaava4.svg")),
-            triggered_callback=self.load_existing_plan,
-            parent=iface.mainWindow(),
+        self.save_plan_button = QToolButton()
+        self.save_plan_button.setText("Tallenna kaava")
+        self.save_plan_button.setIcon(QIcon(resources_path("icons", "toolbar", "planSave.svg")))
+        self.save_plan_button.setPopupMode(QToolButton.InstantPopup)
+
+        self.serialize_plan_action = self.add_action(
+            text="Tallenna kaava JSON",
+            # icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "planSave.svg")),
+            triggered_callback=self.export_plan,
             add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Lataa/avaa kaava",
+            add_to_toolbar=False,
+            status_tip="Tallenna aktiivinen kaava JSON muodossa",
         )
 
+        self.serialize_plan_matter_action = self.add_action(
+            text="Tallenna kaava-asian JSON",
+            icon=QIcon(resources_path("icons", "toolbar", "planMatterSave.svg")),
+            triggered_callback=self.export_plan_matter,
+            add_to_menu=True,
+            add_to_toolbar=False,
+            status_tip="Tallenna aktiivisen kaavan kaava-asia JSON muodossa",
+        )
+
+        self.create_geotiff_action = self.add_action(
+            text="Tallenna kaavakartta",
+            icon=QgsApplication.getThemeIcon("mActionAddRasterLayer.svg"),
+            triggered_callback=self.create_geotiff,
+            add_to_menu=True,
+            add_to_toolbar=False,
+            status_tip="Tallenna aktiivinen kaava geotiff muodossa",
+        )
+
+        save_menu = QMenu()
+        save_menu.addAction(self.serialize_plan_action)
+        save_menu.addAction(self.serialize_plan_matter_action)
+        save_menu.addAction(self.create_geotiff_action)
+        self.save_plan_button.setMenu(save_menu)
+        self.save_plan_action = self.toolbar.addWidget(self.save_plan_button)
+
         self.edit_plan_tool_button = QToolButton()
-        self.edit_plan_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.edit_plan_tool_button.setMenu(QMenu())
         self.edit_plan_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
         self.edit_plan_tool_action = self.toolbar.addWidget(self.edit_plan_tool_button)
 
         self.edit_plan_action = self.add_action(
             text="Muokkaa kaavaa",
-            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
+            icon=QIcon(resources_path("icons", "toolbar", "planEdit.svg")),
             triggered_callback=self.plan_manager.edit_plan,
             parent=iface.mainWindow(),
             add_to_menu=True,
@@ -241,10 +280,19 @@ class Plugin:
         )
         self.edit_plan_tool_button.menu().addAction(self.edit_lifecycles_action)
 
+        self.validation_dock_action = self.add_action(
+            text="Validointi",
+            # icon=QgsApplication.getThemeIcon("mActionEditNodesItem.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "planValidate.svg")),
+            triggered_callback=lambda _: self.toggle_dock_visibility(self.validation_dock),
+            add_to_menu=True,
+            add_to_toolbar=True,
+        )
+
         self.new_feature_dock_action = self.add_action(
             text="Luo kaavakohde",
             # icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "luo_kaavakohde.svg")),
+            icon=QIcon(resources_path("icons", "toolbar", "planObjectNew.svg")),
             triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.new_feature_dock),
             add_to_menu=True,
             add_to_toolbar=True,
@@ -252,11 +300,20 @@ class Plugin:
 
         self.identify_plan_features_action = self.add_action(
             text="Muokkaa kaavakohdetta",
-            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavakohdetta1.svg")),
+            icon=QIcon(resources_path("icons", "toolbar", "planObjectedit.svg")),
             toggled_callback=self.plan_manager.toggle_identify_plan_features,
             add_to_menu=False,
             add_to_toolbar=True,
             checkable=True,
+        )
+
+        self.import_features_action = self.add_action(
+            text="Tuo kaavakohteita",
+            icon=QIcon(resources_path("icons", "toolbar", "planObjectsImport.svg")),
+            triggered_callback=self.plan_manager.open_import_features_dialog,
+            add_to_menu=False,
+            add_to_toolbar=True,
+            status_tip="Tuo kaavakohteita tietokantaan toisilta vektoritasoilta",
         )
 
         self.regulation_groups_dock_action = self.add_action(
@@ -275,64 +332,9 @@ class Plugin:
             add_to_toolbar=True,
         )
 
-        self.validation_dock_action = self.add_action(
-            text="Validointi",
-            # icon=QgsApplication.getThemeIcon("mActionEditNodesItem.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "kaavan_validointi2.svg")),
-            triggered_callback=lambda _: self.toggle_dock_visibility(self.validation_dock),
-            add_to_menu=True,
-            add_to_toolbar=True,
-        )
-
-        self.serialize_tool_button = QToolButton()
-        self.serialize_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.serialize_tool_button.setMenu(QMenu())
-        self.serialize_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
-        self.serialize_tool_action = self.toolbar.addWidget(self.serialize_tool_button)
-
-        self.serialize_plan_action = self.add_action(
-            text="Tallenna kaava JSON",
-            # icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.export_plan,
-            add_to_menu=True,
-            add_to_toolbar=False,
-            status_tip="Tallenna aktiivinen kaava JSON muodossa",
-        )
-        self.serialize_tool_button.menu().addAction(self.serialize_plan_action)
-        self.serialize_tool_button.setDefaultAction(self.serialize_plan_action)
-
-        self.serialize_plan_matter_action = self.add_action(
-            text="Tallenna kaava-asian JSON",
-            icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.export_plan_matter,
-            add_to_menu=True,
-            add_to_toolbar=False,
-            status_tip="Tallenna aktiivisen kaavan kaava-asia JSON muodossa",
-        )
-        self.serialize_tool_button.menu().addAction(self.serialize_plan_matter_action)
-
-        self.create_geotiff_action = self.add_action(
-            text="Tallenna kaavakartta",
-            icon=QgsApplication.getThemeIcon("mActionAddRasterLayer.svg"),
-            triggered_callback=self.create_geotiff,
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Tallenna aktiivinen kaava geotiff muodossa",
-        )
-
-        self.import_features_action = self.add_action(
-            text="Tuo kaavakohteita",
-            icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
-            triggered_callback=self.plan_manager.open_import_features_dialog,
-            add_to_menu=False,
-            add_to_toolbar=True,
-            status_tip="Tuo kaavakohteita tietokantaan toisilta vektoritasoilta",
-        )
-
         self.post_plan_matter_action = self.add_action(
             text="Vie kaava-asia",
-            icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
+            icon=QIcon(resources_path("icons", "toolbar", "planMatterExport.svg")),
             triggered_callback=self.post_plan_matter,
             add_to_menu=True,
             add_to_toolbar=True,
