@@ -169,9 +169,9 @@ class LambdaService(QObject):
         validation_errors = response_body["ryhti_responses"]
         plan_id = get_active_plan_id()
 
-        if (validation_errors_of_active_plan := validation_errors.get(plan_id)) and (
-            validation_errors_of_active_plan.get("traceId") is not None
-        ):
+        VALIDATION_ERROR_STATUS = HTTPStatus.UNPROCESSABLE_ENTITY  # noqa: N806
+        validation_errors_of_active_plan = validation_errors.get(plan_id)
+        if validation_errors_of_active_plan.get("status") not in {HTTPStatus.OK, VALIDATION_ERROR_STATUS}:
             self.validation_failed.emit(f"Ryhtivirhe: {validation_errors_of_active_plan}")
             return
 
