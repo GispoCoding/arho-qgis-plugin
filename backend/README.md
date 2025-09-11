@@ -147,12 +147,14 @@ docker compose -f docker-compose.dev.yml run --rm db pg_restore -h db -d hame -U
 
 To add new requirements:
 1. Add the Python library in requirements.in (if used in production) or requirements-dev.in (if used in development/CI/CD).
-2. `pip-compile requirements.in` or `pip-compile requirements-dev.in`
-3. `pip-sync requirements.txt requirements-dev.txt`
+2. Add the library also in lambdas/*/requirements.in if the library is used in any lambda function.
+3. Run `make pip-compile` to update all requirements.txt files.
+4. `pip-sync requirements.txt requirements-dev.txt`
 
 To update requirements to latest versions:
 1. `pip-compile requirements.in --upgrade` and `pip-compile requirements-dev.in --upgrade`
-2. `pip-sync requirements.txt requirements-dev.txt`
+2. Run `make pip-compile` to update requirements.txt also in lambda containers.
+3. `pip-sync requirements.txt requirements-dev.txt`
 
 <!-- ## Data model
 

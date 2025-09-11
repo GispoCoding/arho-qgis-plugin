@@ -1,0 +1,12 @@
+-c ../../requirements.txt
+
+boto3
+geoalchemy2
+psycopg[binary]
+requests
+shapely
+simplejson
+sqlalchemy
+pygml
+pydantic
+git+https://github.com/GispoCoding/ryhti-api-client@v2025.23.2#egg=ryhti_api_client

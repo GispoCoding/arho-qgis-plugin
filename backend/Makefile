@@ -36,3 +36,11 @@ build-lambda:
 
 revision:
 	alembic revision --autogenerate -m "$(name)"; \
+
+pip-compile:
+	pip-compile requirements.in
+	pip-compile requirements-dev.in
+	pip-compile lambdas/db_manager/requirements.in
+	pip-compile lambdas/koodistot_loader/requirements.in
+	pip-compile lambdas/mml_loader/requirements.in
+	pip-compile lambdas/ryhti_client/requirements.in
