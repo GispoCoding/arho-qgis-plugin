@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from qgis.core import QgsFeature, QgsVectorLayer
 from qgis.gui import QgsMapCanvas, QgsMapMouseEvent, QgsMapToolIdentify
-from qgis.PyQt.QtCore import pyqtSignal
+from qgis.PyQt.QtCore import Qt, pyqtSignal
 
 from arho_feature_template.utils.misc_utils import disconnect_signal
 
@@ -22,8 +22,9 @@ class InspectPlanFeatures(QgsMapToolIdentify):
         self.layer_classes = layer_classes
         self.layers: list[QgsVectorLayer] | None = None
 
-        # Set buffer in map units
-        self.setCanvasPropertiesOverrides(searchRadiusMapUnits=20)
+        # Set to QgsMapTool cursor
+        self.setCursor(Qt.CrossCursor)
+
         # Disable "Identify all action"
         self.identifyMenu().setAllowMultipleReturn(False)
 
