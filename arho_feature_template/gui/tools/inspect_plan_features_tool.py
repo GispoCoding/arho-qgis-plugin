@@ -23,7 +23,7 @@ class InspectPlanFeatures(QgsMapToolIdentify):
         self.layers: list[QgsVectorLayer] | None = None
 
         # Set buffer in map units
-        self.setCanvasPropertiesOverrides(20)
+        self.setCanvasPropertiesOverrides(searchRadiusMapUnits=20)
         # Disable "Identify all action"
         self.identifyMenu().setAllowMultipleReturn(False)
 
@@ -32,7 +32,9 @@ class InspectPlanFeatures(QgsMapToolIdentify):
 
     def canvasReleaseEvent(self, event: QgsMapMouseEvent):  # noqa: N802
         self.layers = [cls.get_from_project() for cls in self.layer_classes]
-        identify_results = self.identify(event.x(), event.y(), self.layers)
+        identify_results = self.identify(
+            x=event.x(), y=event.y(), layerList=self.layers, mode=QgsMapToolIdentify.IdentifyMode.LayerSelection
+        )
         if identify_results:
             result = identify_results[0]
             self.edit_feature_requested.emit(result.mFeature, result.mLayer.name())
