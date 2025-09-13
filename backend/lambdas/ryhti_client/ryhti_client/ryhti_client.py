@@ -81,9 +81,7 @@ class RyhtiClient:
         if xroad_server_address:
             self.xroad_server_address = xroad_server_address
             # do not require http in front of local dns record
-            if not (
-                xroad_server_address.startswith(("http://", "https://"))
-            ):
+            if not xroad_server_address.startswith(("http://", "https://")):
                 self.xroad_server_address = "http://" + self.xroad_server_address
         if xroad_port:
             self.xroad_server_address += ":" + str(xroad_port)
@@ -255,13 +253,7 @@ class RyhtiClient:
                         # Just read the whole file to memory when sending it.
                         # That might require increasing lambda memory for big
                         # files, but could not get streaming upload to work :(
-                        files = {
-                            "file": (
-                                file_name,
-                                file_request.raw,
-                                file_type,
-                            )
-                        }
+                        files = {"file": (file_name, file_request.raw, file_type)}
                         # TODO: get coordinate system from file. Maybe not easy
                         # if just streaming it thru.
                         post_parameters = (
@@ -442,9 +434,7 @@ class RyhtiClient:
     ) -> RyhtiResponse:
         """POST new resource to Ryhti API."""
         response = requests.post(
-            endpoint,
-            json=resource_dict,
-            headers=self.xroad_headers,
+            endpoint, json=resource_dict, headers=self.xroad_headers
         )
         LOGGER.info(f"Got response {response}")
         LOGGER.info(response.text)
@@ -470,9 +460,7 @@ class RyhtiClient:
     ) -> RyhtiResponse:
         """PUT resource to Ryhti API."""
         response = requests.put(
-            endpoint,
-            json=resource_dict,
-            headers=self.xroad_headers,
+            endpoint, json=resource_dict, headers=self.xroad_headers
         )
         LOGGER.info(f"Got response {response}")
         LOGGER.info(response.text)
@@ -565,7 +553,7 @@ class RyhtiClient:
                         for phase in phases
                         if phase["lifeCycleStatus"] == local_lifecycle_status
                     ),
-                    None
+                    None,
                 )
                 if not current_phase:
                     LOGGER.info(

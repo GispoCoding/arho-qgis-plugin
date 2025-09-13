@@ -34,8 +34,7 @@ def test_import_plan(
     # delete_plan_after_test(COMPLETE_PLAN_ID)
 
     imported_plan_id = database_client.import_plan(
-        complete_plan_json,
-        extra_data=extra_data,
+        complete_plan_json, extra_data=extra_data
     )
     assert imported_plan_id == UUID(COMPLETE_PLAN_ID)
 
@@ -208,9 +207,7 @@ def test_import_duplicate_plan_with_overwriting(
 
 
 def test_import_invalid_plan(
-    database_client: DatabaseClient,
-    extra_data: dict,
-    invalid_plan_json: str,
+    database_client: DatabaseClient, extra_data: dict, invalid_plan_json: str
 ):
     """Tries to import invalid_plan.json and checks that the import fails.
 
@@ -225,8 +222,7 @@ def test_import_invalid_plan(
 
 
 def test_import_invalid_extra_data(
-    database_client: DatabaseClient,
-    simple_plan_json: str,
+    database_client: DatabaseClient, simple_plan_json: str
 ):
     """Tries to import a plan with invalid extra_data and checks that the import fails."""
     extra_data = {

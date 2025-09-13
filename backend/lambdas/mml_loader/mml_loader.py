@@ -53,10 +53,7 @@ def gml_polygons_to_multipolygon(gml_polygons: list[str]) -> MultiPolygon:
 
 
 class MMLLoader:
-    HEADERS = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
+    HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
     api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"
     job_api_base = (
         "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/dl/v1/"
@@ -159,7 +156,12 @@ class MMLLoader:
             au_id = au_elem.get(prefix + "id")
 
             if au_id and (
-                au_id.startswith(("FI_AU_ADMINISTRATIVEUNIT_REGION_", "FI_AU_ADMINISTRATIVEUNIT_MUNICIPALITY_"))
+                au_id.startswith(
+                    (
+                        "FI_AU_ADMINISTRATIVEUNIT_REGION_",
+                        "FI_AU_ADMINISTRATIVEUNIT_MUNICIPALITY_",
+                    )
+                )
             ):
                 gml_elements = au_elem.findall(".//gml:*", namespaces)
                 for gml_elem in gml_elements:

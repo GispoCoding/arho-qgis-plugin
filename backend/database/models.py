@@ -56,56 +56,38 @@ regulation_group_association = Table(
     # to make the approach uniform with the plan objects
     Column(
         "plan_id",
-        ForeignKey(
-            "hame.plan.id",
-            name="plan_id_fkey",
-            ondelete="CASCADE",
-        ),
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
         index=True,
         comment="A plan in which the regulation group is a general regulation group",
     ),
     Column(
         "land_use_area_id",
         ForeignKey(
-            "hame.land_use_area.id",
-            name="land_use_area_id_fkey",
-            ondelete="CASCADE",
+            "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
         ),
         index=True,
     ),
     Column(
         "other_area_id",
-        ForeignKey(
-            "hame.other_area.id",
-            name="other_area_id_fkey",
-            ondelete="CASCADE",
-        ),
+        ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE"),
         index=True,
     ),
     Column(
         "land_use_point_id",
         ForeignKey(
-            "hame.land_use_point.id",
-            name="land_use_point_id_fkey",
-            ondelete="CASCADE",
+            "hame.land_use_point.id", name="land_use_point_id_fkey", ondelete="CASCADE"
         ),
         index=True,
     ),
     Column(
         "line_id",
-        ForeignKey(
-            "hame.line.id",
-            name="line_id_fkey",
-            ondelete="CASCADE",
-        ),
+        ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE"),
         index=True,
     ),
     Column(
         "other_point_id",
         ForeignKey(
-            "hame.other_point.id",
-            name="other_point_id_fkey",
-            ondelete="CASCADE",
+            "hame.other_point.id", name="other_point_id_fkey", ondelete="CASCADE"
         ),
         index=True,
     ),
@@ -162,9 +144,7 @@ plan_theme_association = Table(
     Column(
         "plan_theme_id",
         ForeignKey(
-            "codes.plan_theme.id",
-            name="plan_theme_id_fkey",
-            ondelete="CASCADE",
+            "codes.plan_theme.id", name="plan_theme_id_fkey", ondelete="CASCADE"
         ),
         index=True,
         nullable=False,
@@ -424,11 +404,7 @@ class PlanRegulationGroup(VersionedBase):
     __tablename__ = "plan_regulation_group"
     __table_args__ = (
         Index("ix_plan_regulation_group_plan_id_ordering", "plan_id", "ordering"),
-        Index(
-            "ix_plan_regulation_group_plan_id_short_name",
-            "plan_id",
-            "short_name",
-        ),
+        Index("ix_plan_regulation_group_plan_id_short_name", "plan_id", "short_name"),
         VersionedBase.__table_args__,
     )
 
@@ -436,11 +412,7 @@ class PlanRegulationGroup(VersionedBase):
     name: Mapped[language_str | None]
 
     plan_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "hame.plan.id",
-            name="plan_id_fkey",
-            ondelete="CASCADE",
-        ),
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
         nullable=False,
         comment="Plan to which this regulation group belongs",
         index=True,
@@ -794,10 +766,7 @@ class LifeCycleDate(VersionedBase):
     __tablename__ = "lifecycle_date"
 
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey(
-            "codes.lifecycle_status.id",
-            name="plan_lifecycle_status_id_fkey",
-        ),
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
         index=True,
     )
     plan_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -887,9 +856,7 @@ class EventDate(VersionedBase):
 
     lifecycle_date_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
-            "hame.lifecycle_date.id",
-            name="lifecycle_date_id_fkey",
-            ondelete="CASCADE",
+            "hame.lifecycle_date.id", name="lifecycle_date_id_fkey", ondelete="CASCADE"
         ),
         index=True,
     )

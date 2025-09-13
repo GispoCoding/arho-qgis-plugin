@@ -29,8 +29,7 @@ db_helper = DatabaseHelper(user=User.READ_WRITE)
 if os.environ.get("READ_FROM_AWS", "1") == "1":
     session = boto3.session.Session()
     client = session.client(
-        service_name="secretsmanager",
-        region_name=os.environ.get("AWS_REGION_NAME", ""),
+        service_name="secretsmanager", region_name=os.environ.get("AWS_REGION_NAME", "")
     )
     xroad_syke_client_secret = client.get_secret_value(
         SecretId=os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN", "")
@@ -197,19 +196,16 @@ def handler(
         or not xroad_syke_client_secret
     ):
         raise ValueError(
-
-                "Please set your local XROAD_SERVER_ADDRESS and your organization "
-                "XROAD_MEMBER_CODE and XROAD_MEMBER_CLIENT_NAME to make API requests "
-                "to X-Road endpoints. Also, set XROAD_SYKE_CLIENT_ID and "
-                "XROAD_SYKE_CLIENT_SECRET that you have received when registering to "
-                "access SYKE X-Road API. To use production X-Road instead of test "
-                "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
-                "is set to FI-TEST."
-
+            "Please set your local XROAD_SERVER_ADDRESS and your organization "
+            "XROAD_MEMBER_CODE and XROAD_MEMBER_CLIENT_NAME to make API requests "
+            "to X-Road endpoints. Also, set XROAD_SYKE_CLIENT_ID and "
+            "XROAD_SYKE_CLIENT_SECRET that you have received when registering to "
+            "access SYKE X-Road API. To use production X-Road instead of test "
+            "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
+            "is set to FI-TEST."
         )
     database_client = DatabaseClient(
-        db_helper.get_connection_string(),
-        plan_uuid=plan_uuid,
+        db_helper.get_connection_string(), plan_uuid=plan_uuid
     )
     client = RyhtiClient(
         database_client=database_client,
@@ -350,9 +346,7 @@ def handler(
             lambda_response = Response(
                 statusCode=400,
                 body=ResponseBody(
-                    title="No action taken.",
-                    details={},
-                    ryhti_responses={},
+                    title="No action taken.", details={}, ryhti_responses={}
                 ),
             )
 
@@ -404,9 +398,7 @@ def handler(
         lambda_response = Response(
             statusCode=200,
             body=ResponseBody(
-                title="Plans not found, exiting.",
-                details={},
-                ryhti_responses={},
+                title="Plans not found, exiting.", details={}, ryhti_responses={}
             ),
         )
 

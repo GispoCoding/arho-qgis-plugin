@@ -59,7 +59,7 @@ class AttributeValueMixin:
     value_data_type: Mapped[AttributeValueDataType | None] = mapped_column(
         SQLAlchemyEnum(
             AttributeValueDataType, values_callable=lambda e: [x.value for x in e]
-        ),
+        )
     )
 
     numeric_value: Mapped[float | None]

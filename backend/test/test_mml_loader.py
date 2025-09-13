@@ -38,9 +38,7 @@ def mock_mml(requests_mock):
         requests_mock.get(
             "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/dl/v1/whatever/TietoaKuntajaosta_2025_10k.zip",
             body=zip_file,
-            headers={
-                "Content-Type": "application/zip",
-            },
+            headers={"Content-Type": "application/zip"},
             status_code=200,
         )
         yield

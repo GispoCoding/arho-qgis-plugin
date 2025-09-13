@@ -189,11 +189,9 @@ def process_revision_directives_add_table(context, revision, directives) -> None
                     ],
                     schema="hame",
                 )
-            ],
+            ]
         ),
-        ops.DowngradeOps(
-            ops=[ops.DropTableOp("test_table", schema="hame")],
-        ),
+        ops.DowngradeOps(ops=[ops.DropTableOp("test_table", schema="hame")]),
     )
 
 
@@ -777,9 +775,7 @@ def type_of_proportion_of_intended_use_additional_information_instance(
 
 
 @pytest.fixture
-def type_of_sub_area_additional_information_instance(
-    temp_session_feature,
-):
+def type_of_sub_area_additional_information_instance(temp_session_feature):
     instance = codes.TypeOfAdditionalInformation(value="osaAlue", status="LOCAL")
     return temp_session_feature(instance)
 
@@ -1201,13 +1197,7 @@ def line_instance(
     plan_regulation_group_instance,
 ):
     instance = models.Line(
-        geom=from_shape(
-            MultiLineString(
-                [
-                    [[382000, 6678000], [383000, 6678000]],
-                ]
-            )
-        ),
+        geom=from_shape(MultiLineString([[[382000, 6678000], [383000, 6678000]]])),
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
@@ -1855,7 +1845,7 @@ def make_additional_information_instance_of_type(session: Session):
         type_of_additional_information: codes.TypeOfAdditionalInformation,
     ):
         instance = models.AdditionalInformation(
-            type_of_additional_information=type_of_additional_information,
+            type_of_additional_information=type_of_additional_information
         )
         created_instances.append(instance)
         return instance
@@ -1908,8 +1898,7 @@ def complete_test_plan(
     type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     type_of_intended_use_allocation_additional_information_instance: codes.TypeOfAdditionalInformation,
     make_additional_information_instance_of_type: Callable[
-        [codes.TypeOfAdditionalInformation],
-        models.AdditionalInformation,
+        [codes.TypeOfAdditionalInformation], models.AdditionalInformation
     ],
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
@@ -1950,7 +1939,7 @@ def complete_test_plan(
     # empty value plan regulation may have intended use
     empty_value_plan_regulation_instance.additional_information.append(
         make_additional_information_instance_of_type(
-            type_of_main_use_additional_information_instance,
+            type_of_main_use_additional_information_instance
         )
     )
     # empty value plan regulation may have proportion of intended use
@@ -1968,7 +1957,7 @@ def complete_test_plan(
     # text value plan regulation may have intended use
     text_plan_regulation_instance.additional_information.append(
         make_additional_information_instance_of_type(
-            type_of_main_use_additional_information_instance,
+            type_of_main_use_additional_information_instance
         )
     )
 
@@ -1989,11 +1978,11 @@ def complete_test_plan(
     # (käyttötarkoituskohdistus):
     pedestrian_street_plan_regulation_instance.additional_information.append(
         make_additional_information_instance_of_type(
-            type_of_main_use_additional_information_instance,
+            type_of_main_use_additional_information_instance
         )
     )
     pedestrian_intended_use_allocation = make_additional_information_instance_of_type(
-        type_of_intended_use_allocation_additional_information_instance,
+        type_of_intended_use_allocation_additional_information_instance
     )
     pedestrian_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
     pedestrian_intended_use_allocation.code_list = (
@@ -2011,7 +2000,7 @@ def complete_test_plan(
         pedestrian_intended_use_allocation
     )
     cycling_intended_use_allocation = make_additional_information_instance_of_type(
-        type_of_intended_use_allocation_additional_information_instance,
+        type_of_intended_use_allocation_additional_information_instance
     )
     cycling_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
     cycling_intended_use_allocation.code_list = (
@@ -2223,7 +2212,7 @@ def desired_plan_dict(
                         "subjectIdentifiers": general_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2231,7 +2220,7 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                    },
+                    }
                 ],
                 "planRecommendations": [],
             }
@@ -2333,10 +2322,7 @@ def desired_plan_dict(
                 "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
                 "geometry": {
                     "srid": str(PROJECT_SRID),
-                    "geometry": {
-                        "type": "Point",
-                        "coordinates": [382000.0, 6678000.0],
-                    },
+                    "geometry": {"type": "Point", "coordinates": [382000.0, 6678000.0]},
                 },
                 "name": land_use_point_instance.name,
                 "description": land_use_point_instance.description,
@@ -2362,7 +2348,7 @@ def desired_plan_dict(
                         "subjectIdentifiers": point_text_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2400,7 +2386,7 @@ def desired_plan_dict(
                             },
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2434,7 +2420,7 @@ def desired_plan_dict(
                         "subjectIdentifiers": numeric_range_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2458,7 +2444,7 @@ def desired_plan_dict(
                             }
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(text_plan_regulation_instance.ordering),
@@ -2479,7 +2465,7 @@ def desired_plan_dict(
                         ],
                         "additionalInformations": [],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2495,12 +2481,12 @@ def desired_plan_dict(
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "value": plan_proposition_instance.text_value,
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
                         "periodOfValidity": None,
-                    },
+                    }
                 ],
                 "letterIdentifier": plan_regulation_group_instance.short_name,
                 "groupNumber": plan_regulation_group_instance.ordering,
@@ -2526,7 +2512,7 @@ def desired_plan_dict(
                         "subjectIdentifiers": numeric_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2534,7 +2520,7 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                    },
+                    }
                 ],
                 "planRecommendations": [],
                 "letterIdentifier": numeric_plan_regulation_group_instance.short_name,
@@ -2557,7 +2543,7 @@ def desired_plan_dict(
                         "subjectIdentifiers": decimal_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2565,7 +2551,7 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                    },
+                    }
                 ],
                 "planRecommendations": [],
                 "letterIdentifier": decimal_plan_regulation_group_instance.short_name,
@@ -2613,7 +2599,7 @@ def desired_plan_dict(
                             },
                         ],
                         "planThemes": [
-                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01",
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(
@@ -2648,7 +2634,7 @@ def desired_plan_dict(
                         ),
                         # TODO: plan regulation documents to be added.
                         "periodOfValidity": None,
-                    },
+                    }
                 ],
                 "planRecommendations": [],
                 "letterIdentifier": construction_area_plan_regulation_group_instance.short_name,
@@ -2768,7 +2754,7 @@ def desired_plan_matter_dict(
                             "begin": "2024-02-14T22:00:00Z",
                             "end": "2024-02-27T22:00:00Z",
                         },
-                    },
+                    }
                 ],
                 "planDecision": {
                     "planDecisionKey": "whatever",
@@ -2783,9 +2769,7 @@ def desired_plan_matter_dict(
                             "planMaps": [
                                 {
                                     "planMapKey": "whatever",
-                                    "name": {
-                                        "fin": "Kaavakartta",
-                                    },
+                                    "name": {"fin": "Kaavakartta"},
                                     "fileKey": "whatever else",
                                     "coordinateSystem": "http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG3067",
                                 }
@@ -2794,7 +2778,7 @@ def desired_plan_matter_dict(
                                 {
                                     "attachmentDocumentKey": "whatever",
                                     "name": {
-                                        "fin": "Osallistumis- ja arviointisuunnitelma",
+                                        "fin": "Osallistumis- ja arviointisuunnitelma"
                                     },
                                     "fileKey": "whatever else",
                                     "documentIdentifier": "HEL 2024-016009",
@@ -2814,9 +2798,7 @@ def desired_plan_matter_dict(
                                 "attachmentDocuments": [
                                     {
                                         "attachmentDocumentKey": "whatever",
-                                        "name": {
-                                            "fin": "Kaavaselostus",
-                                        },
+                                        "name": {"fin": "Kaavaselostus"},
                                         "fileKey": "whatever else",
                                         "documentIdentifier": "HEL 2024-016009",
                                         "personalDataContent": "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto/code/1",
@@ -2834,9 +2816,7 @@ def desired_plan_matter_dict(
                             "otherPlanMaterials": [
                                 {
                                     "otherPlanMaterialKey": "whatever",
-                                    "name": {
-                                        "fin": "Muu asiakirja",
-                                    },
+                                    "name": {"fin": "Muu asiakirja"},
                                     "fileKey": "whatever else",
                                     "personalDataContent": "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto/code/1",
                                     "categoryOfPublicity": "http://uri.suomi.fi/codelist/rytj/julkisuus/code/1",
@@ -2845,7 +2825,7 @@ def desired_plan_matter_dict(
                         }
                     ],
                 },
-            },
+            }
         ],
         # TODO: source data etc. non-mandatory fields to be added
     }
@@ -2894,9 +2874,9 @@ def assert_dicts_equal(
     ignore_order_for_keys: list | None = None,
     path: str = "",
 ) -> None:
-    assert len(dict1) == len(
-        dict2
-    ), f"Dicts differ in length in {path}. Dict1 keys: {dict1.keys()}. Dict2 keys: {dict2.keys()}"
+    assert len(dict1) == len(dict2), (
+        f"Dicts differ in length in {path}. Dict1 keys: {dict1.keys()}. Dict2 keys: {dict2.keys()}"
+    )
     for key in dict2:
         if not ignore_keys or key not in ignore_keys:
             assert key in dict1, f"Key {key} missing in {path}"

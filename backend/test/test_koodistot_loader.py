@@ -425,10 +425,7 @@ def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
 
 @pytest.fixture(scope="module")
 def loader(admin_connection_string) -> KoodistotLoader:
-    return KoodistotLoader(
-        admin_connection_string,
-        api_url="http://mock.url",
-    )
+    return KoodistotLoader(admin_connection_string, api_url="http://mock.url")
 
 
 @pytest.fixture
@@ -466,8 +463,7 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
 def test_get_vireilletullut(loader, koodistot_data) -> None:
     """Check that remote code is imported"""
     code = loader.get_object(
-        codes.LifeCycleStatus,
-        koodistot_data[codes.LifeCycleStatus]["02"],
+        codes.LifeCycleStatus, koodistot_data[codes.LifeCycleStatus]["02"]
     )
     assert code["id"]
     assert code["value"] == "02"
@@ -597,10 +593,7 @@ def custom_code_loader(admin_connection_string) -> Iterator[KoodistotLoader]:
             ],
         },
     ]
-    yield KoodistotLoader(
-        admin_connection_string,
-        api_url="http://mock.url",
-    )
+    yield KoodistotLoader(admin_connection_string, api_url="http://mock.url")
     # we have to remove local codes after the test so that they aren't found
     # in other tests that import the codes module
     codes.TypeOfAdditionalInformation.local_codes = []
@@ -660,7 +653,9 @@ def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data) -
     assert "parent_id" not in code
 
 
-def test_get_custom_paakayttotarkoitus(custom_code_loader, custom_koodistot_data) -> None:
+def test_get_custom_paakayttotarkoitus(
+    custom_code_loader, custom_koodistot_data
+) -> None:
     """Check that remote code with custom local parent is imported"""
     code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
@@ -753,24 +748,21 @@ def assert_changed_data_is_imported(main_db_params) -> None:
         conn.close()
 
 
-def test_save_objects(custom_code_loader, custom_koodistot_data, main_db_params) -> None:
+def test_save_objects(
+    custom_code_loader, custom_koodistot_data, main_db_params
+) -> None:
     custom_code_loader.save_objects(custom_koodistot_data)
     assert_data_is_imported(main_db_params)
 
 
 def test_save_changed_objects(
-    changed_custom_koodistot_data,
-    admin_connection_string,
-    main_db_params,
+    changed_custom_koodistot_data, admin_connection_string, main_db_params
 ) -> None:
     # The database is already populated in the first test. Because
     # connection string (and therefore hame_database_created)
     # has module scope, the database persists between tests.
     assert_data_is_imported(main_db_params)
     # check that a new loader adds one object to the database
-    loader = KoodistotLoader(
-        admin_connection_string,
-        api_url="http://mock.url",
-    )
+    loader = KoodistotLoader(admin_connection_string, api_url="http://mock.url")
     loader.save_objects(changed_custom_koodistot_data)
     assert_changed_data_is_imported(main_db_params)

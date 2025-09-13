@@ -172,10 +172,7 @@ class KoodistotLoader:
         return code_dict
 
     def update_remote_children_of_local_parents(
-        self,
-        instance: codes.CodeBase,
-        child_values: list[str],
-        session: Session,
+        self, instance: codes.CodeBase, child_values: list[str], session: Session
     ) -> None:
         """After a local parent code is created, update any existing children to point
         to the local parent, overriding the remote parent. Everything is flushed

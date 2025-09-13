@@ -349,13 +349,7 @@ def test_new_lifecycle_status_triggers(
     )
     line_instance = models.Line(
         lifecycle_status=code_instance,
-        geom=from_shape(
-            MultiLineString(
-                [
-                    [[382000, 6678000], [383000, 6678000]],
-                ]
-            )
-        ),
+        geom=from_shape(MultiLineString([[[382000, 6678000], [383000, 6678000]]])),
         plan=plan_instance,
         type_of_underground=type_of_underground_instance,
         plan_regulation_groups=[plan_regulation_group_instance],
@@ -505,10 +499,10 @@ def test_update_lifecycle_status_triggers(
         general_regulation_group_instance
     ]
     assert set(land_use_area_instance.plan_regulation_groups) == {
-            numeric_plan_regulation_group_instance,
-            decimal_plan_regulation_group_instance,
-            plan_regulation_group_instance,
-        }
+        numeric_plan_regulation_group_instance,
+        decimal_plan_regulation_group_instance,
+        plan_regulation_group_instance,
+    }
     assert other_area_instance.plan_regulation_groups == [
         construction_area_plan_regulation_group_instance
     ]
@@ -594,16 +588,8 @@ def test_add_plan_id_fkey_triggers(
     point_1 = MultiPoint([[(383000.0, 6678500.0)], [384000.0, 6679500.0]])
     polygon_2 = MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
     point_2 = MultiPoint([[1.25, 1.25], [1.75, 1.75]])
-    line_1 = MultiLineString(
-        [
-            [[383000.0, 6678500.0], [384000.0, 6679500.0]],
-        ]
-    )
-    line_2 = MultiLineString(
-        [
-            [[1.25, 1.25], [1.75, 1.75]],
-        ]
-    )
+    line_1 = MultiLineString([[[383000.0, 6678500.0], [384000.0, 6679500.0]]])
+    line_2 = MultiLineString([[[1.25, 1.25], [1.75, 1.75]]])
 
     # Add new plan object instances to fire the triggers
     another_land_use_area_instance = models.LandUseArea(

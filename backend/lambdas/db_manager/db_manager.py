@@ -273,10 +273,7 @@ def handler(event: Event, _) -> Response:
     except KeyError:
         event_type = Action.CREATE_DB
     except ValueError:
-        return Response(
-            statusCode=400,
-            body=f"Unknown action {event['action']}.",
-        )
+        return Response(statusCode=400, body=f"Unknown action {event['action']}.")
 
     if event_type is Action.CREATE_DB:
         msg = migrate_hame_db(db_helper)

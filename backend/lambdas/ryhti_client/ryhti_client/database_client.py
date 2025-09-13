@@ -496,11 +496,9 @@ class DatabaseClient:
         """
         group_dicts = []
         group_ids = {
-
-                regulation_group.id
-                for plan_object in plan_objects
-                for regulation_group in plan_object.plan_regulation_groups
-
+            regulation_group.id
+            for plan_object in plan_objects
+            for regulation_group in plan_object.plan_regulation_groups
         }
         # Let's fetch all the plan regulation groups for all the objects with a single
         # query. Hoping lazy loading does its trick with all the plan regulations.
@@ -804,10 +802,7 @@ class DatabaseClient:
             # manually (or automatically).
             period_of_handling_event = self.get_last_period(
                 self.get_event_periods(
-                    lifecycle_date,
-                    TypeOfProcessingEvent,
-                    event_value,
-                    datetimes=False,
+                    lifecycle_date, TypeOfProcessingEvent, event_value, datetimes=False
                 )
             )
             period_of_current_status = self.get_periods(
@@ -1236,10 +1231,7 @@ class DatabaseClient:
         return details
 
     def import_plan(
-        self,
-        plan_json: str,
-        extra_data: dict,
-        overwrite: bool = False,
+        self, plan_json: str, extra_data: dict, overwrite: bool = False
     ) -> UUID | None:
         ryhti_plan = ryhti_plan_from_json(plan_json)
         plan_matter_data = plan_matter_data_from_extra_data_dict(extra_data)

@@ -1,10 +1,11 @@
-
 import psycopg
 
 from .conftest import assert_database_is_alright, hame_count
 
 
-def test_database_creation(main_db_params_with_root_user, hame_database_created) -> None:
+def test_database_creation(
+    main_db_params_with_root_user, hame_database_created
+) -> None:
     conn = psycopg.connect(**main_db_params_with_root_user)
     try:
         with conn.cursor() as cur:
@@ -22,7 +23,9 @@ def test_database_creation(main_db_params_with_root_user, hame_database_created)
         conn.close()
 
 
-def test_database_all_migrations(main_db_params_with_root_user, hame_database_migrated) -> None:
+def test_database_all_migrations(
+    main_db_params_with_root_user, hame_database_migrated
+) -> None:
     conn = psycopg.connect(**main_db_params_with_root_user)
     try:
         with conn.cursor() as cur:
@@ -70,7 +73,9 @@ def test_database_cancel_all_migrations(
         conn.close()
 
 
-def test_database_upgrade(main_db_params_with_root_user, hame_database_upgraded) -> None:
+def test_database_upgrade(
+    main_db_params_with_root_user, hame_database_upgraded
+) -> None:
     conn = psycopg.connect(**main_db_params_with_root_user)
     try:
         with conn.cursor() as cur:
@@ -83,15 +88,15 @@ def test_database_upgrade(main_db_params_with_root_user, hame_database_upgraded)
             cur.execute(
                 "SELECT table_name FROM information_schema.tables WHERE table_name='test_table'"
             )
-            assert cur.fetchall() == [
-                ("test_table",),
-            ]
+            assert cur.fetchall() == [("test_table",)]
 
     finally:
         conn.close()
 
 
-def test_database_downgrade(main_db_params_with_root_user, hame_database_downgraded) -> None:
+def test_database_downgrade(
+    main_db_params_with_root_user, hame_database_downgraded
+) -> None:
     conn = psycopg.connect(**main_db_params_with_root_user)
     try:
         with conn.cursor() as cur:

@@ -121,7 +121,7 @@ class LifeCycleStatus(CodeBase):
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
     lifecycle_dates: Mapped[list["LifeCycleDate"]] = relationship(
-        back_populates="lifecycle_status",
+        back_populates="lifecycle_status"
     )
     allowed_interaction_events: Mapped[list["TypeOfInteractionEvent"]] = relationship(
         secondary="codes.allowed_events", back_populates="allowed_statuses"
@@ -496,7 +496,9 @@ class TypeOfDecisionMaker(CodeBase):
 T = TypeVar("T", bound=CodeBase)
 
 
-def get_code[T: CodeBase](session: Session, code_class: type[T], value: str) -> T | None:
+def get_code[T: CodeBase](
+    session: Session, code_class: type[T], value: str
+) -> T | None:
     """Get code object by value."""
     return session.query(code_class).filter_by(value=value).first()
 

@@ -39,9 +39,7 @@ def mml_loader_url(docker_ip, docker_services) -> str:
 
 @pytest.fixture
 def create_db(db_manager_url, main_db_params, root_db_params):
-    payload = {
-        "action": "create_db",
-    }
+    payload = {"action": "create_db"}
     r = requests.post(db_manager_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
@@ -92,8 +90,7 @@ def test_populate_koodistot(populate_koodistot, main_db_params) -> None:
             for _name, value in inspect.getmembers(codes, inspect.isclass):
                 if issubclass(value, codes.CodeBase) and (
                     # some code tables have external source, some have local source, some have both
-                    value.code_list_uri
-                    or value.local_codes
+                    value.code_list_uri or value.local_codes
                 ):
                     print(value)
                     cur.execute(f"SELECT count(*) FROM codes.{value.__tablename__}")
@@ -186,7 +183,7 @@ def test_populate_local_koodistot(populate_local_koodistot, main_db_params) -> N
             "isBase64Encoded": False,
             "stageVariables": {},
         },
-    ],
+    ]
 )
 def get_all_plans(
     request,
@@ -384,7 +381,9 @@ def validate_single_invalid_plan(
     assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
-def test_validate_single_invalid_plan(validate_single_invalid_plan, main_db_params) -> None:
+def test_validate_single_invalid_plan(
+    validate_single_invalid_plan, main_db_params
+) -> None:
     """Test the whole lambda endpoint with an invalid plan"""
     conn = psycopg.connect(**main_db_params)
     try:
@@ -432,7 +431,9 @@ def get_permanent_plan_identifier(
     assert len(body["ryhti_responses"]) == 1
 
 
-def test_get_permanent_plan_identifier(get_permanent_plan_identifier, main_db_params) -> None:
+def test_get_permanent_plan_identifier(
+    get_permanent_plan_identifier, main_db_params
+) -> None:
     """Test the whole lambda endpoint with single_plan"""
     # getting permanent identifier from lambda should not run validations
     conn = psycopg.connect(**main_db_params)
@@ -528,7 +529,9 @@ def test_get_single_plan_matter(get_single_plan_matter, main_db_params) -> None:
 
 
 @pytest.fixture
-def validate_valid_plan_matter_in_preparation(ryhti_client_url, complete_test_plan) -> None:
+def validate_valid_plan_matter_in_preparation(
+    ryhti_client_url, complete_test_plan
+) -> None:
     """Validate a valid Ryhti plan and plan matter against the Ryhti API. This guarantees
     that the Ryhti plan is formed according to spec and passes open Ryhti API validation.
 
@@ -588,12 +591,9 @@ def test_validate_valid_plan_matter_in_preparation(
             cur.execute(
                 "SELECT id, validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
             )
-            (
-                exported_plan_id,
-                validation_date,
-                errors,
-                permanent_plan_identifier,
-            ) = cur.fetchone()
+            (exported_plan_id, validation_date, errors, permanent_plan_identifier) = (
+                cur.fetchone()
+            )
             assert validation_date
             assert errors == "Kaava-asia on validi ja sen voi viedä Ryhtiin."
             assert permanent_plan_identifier == "MK-123456"
@@ -815,10 +815,7 @@ def import_payload(extra_data):
 
 
 def test_import_plan(
-    codes_loaded,
-    import_payload,
-    ryhti_client_url,
-    simple_plan_json: str,
+    codes_loaded, import_payload, ryhti_client_url, simple_plan_json: str
 ):
     """Test importing a plan"""
     import_payload["data"]["plan_json"] = simple_plan_json
@@ -852,11 +849,7 @@ def test_import_duplicate_plan(
     assert data["body"]["title"] == "Plan already exists."
 
 
-def test_import_invalid_plan(
-    ryhti_client_url,
-    import_payload,
-    invalid_plan_json: str,
-):
+def test_import_invalid_plan(ryhti_client_url, import_payload, invalid_plan_json: str):
     import_payload["data"]["plan_json"] = invalid_plan_json
 
     r = requests.post(ryhti_client_url, data=json.dumps(import_payload))

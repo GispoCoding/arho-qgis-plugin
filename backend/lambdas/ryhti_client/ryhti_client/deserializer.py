@@ -103,9 +103,7 @@ class Deserializer:
         self.session = session
 
         self.code_id_cache: dict[tuple[type[CodeBase], str], UUID | None] = {}
-        self.code_instance_cache: dict[
-            tuple[type[CodeBase], str], CodeBase | None
-        ] = {}
+        self.code_instance_cache: dict[tuple[type[CodeBase], str], CodeBase | None] = {}
 
     def get_code_id(self, code_model: type[CodeBase], code: str) -> Optional["UUID"]:
         if (code_model, code) in self.code_id_cache:
@@ -270,7 +268,7 @@ class Deserializer:
     def deserialize_additional_information(
         self, additional_information: RyhtiAdditionalInformation
     ) -> AdditionalInformation:
-        """ """
+        """Deserializes a RyhtiAdditionalInformation into an AdditionalInformation SQLAlchemy model instance."""
         value = self.form_value_dict(additional_information.value)
         return AdditionalInformation(
             type_of_additional_information=self.get_code_instance_from_uri(
@@ -282,7 +280,9 @@ class Deserializer:
     def deserialize_regulation(
         self, ryhti_regulation: RyhtiPlanRegulation
     ) -> PlanRegulation:
-        """"planRegulationKey", ✅
+        """Deserializes a RyhtiPlanRegulation into a PlanRegulation SQLAlchemy model instance.
+
+        "planRegulationKey", ✅
         "planRegulationUri",
         "value",  ✅
         "lifeCycleStatus", ✅
@@ -332,7 +332,9 @@ class Deserializer:
     def deserialize_recommendation(
         self, ryhti_plan_recommendation: RyhtiPlanRecommendation
     ) -> PlanProposition:
-        """"planRecommendationKey", ✅
+        """Deserializes a RyhtiPlanRecommendation into a PlanProposition SQLAlchemy model instance.
+
+        "planRecommendationKey", ✅
         "planRecommendationUri",
         "value", ✅
         "lifeCycleStatus", ✅
@@ -359,7 +361,9 @@ class Deserializer:
     def deserialize_plan_regulation_group(
         self, regulation_group: RyhtiPlanRegulationGroup
     ):
-        """"planRegulationGroupKey", ✅
+        """Deserializes a RyhtiPlanRegulationGroup into a PlanRegulationGroup SQLAlchemy model instance.
+
+        "planRegulationGroupKey", ✅
         "planRegulationGroupUri",
         "titleOfPlanRegulation", ✅
         "letterIdentifier", ✅
@@ -388,7 +392,9 @@ class Deserializer:
     def deserialize_general_regulation_group(
         self, ryhti_general_regulation_group: RyhtiGeneralRegulationGroup
     ) -> PlanRegulationGroup:
-        """"generalRegulationGroupKey", ✅
+        """Deserializes a RyhtiGeneralRegulationGroup into a PlanRegulationGroup SQLAlchemy model instance.
+
+        "generalRegulationGroupKey", ✅
         "generalRegulationGroupUri",
         "titleOfPlanRegulation", ✅
         "planRegulations", ✅
@@ -438,7 +444,6 @@ class Deserializer:
     def _determine_point_plan_object_type(
         self, regulation_groups: list[PlanRegulationGroup], plan_type: PlanType
     ) -> type[LandUsePoint] | type[OtherPoint]:
-
         def get_root_plan_type(plan_type: PlanType) -> PlanType:
             if plan_type.parent is None:
                 return plan_type
@@ -529,7 +534,9 @@ class Deserializer:
         regulation_groups: list[PlanRegulationGroup],
         plan_type: PlanType,
     ) -> LandUseArea | OtherArea | LandUsePoint | OtherPoint | Line:
-        """"planObjectKey", ✅
+        """Deserializes a RyhtiPlanObject into a PlanObject SQLAlchemy model instance.
+
+        "planObjectKey", ✅
         "planObjectUri",
         "lifeCycleStatus", ✅
         "undergroundStatus", ✅
@@ -603,7 +610,9 @@ class Deserializer:
     def deserialize_plan_annex(
         self, ryhti_document: RyhtiPlanAttachmentDocument
     ) -> Document:
-        """"attachmentDocumentKey", ✅
+        """Deserializes a RyhtiPlanAttachmentDocument into a Document SQLAlchemy model instance.
+
+        "attachmentDocumentKey", ✅
         "documentIdentifier", ✅
         "name", ✅
         "personalDataContent", ✅
@@ -652,7 +661,9 @@ class Deserializer:
         )
 
     def deserialise_plan_map(self, ryhti_plan_map: RyhtiPlanMap) -> Document:
-        """"planMapKey", ✅
+        """Deserializes a RyhtiPlanMap into a Document SQLAlchemy model instance.
+
+        "planMapKey", ✅
         "planMapUri",
         "name", ✅
         "fileKey", ✅

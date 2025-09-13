@@ -48,9 +48,7 @@ def generate_modified_at_triggers():
         """
 
     trgfunc = PGFunction(
-        schema="hame",
-        signature=trgfunc_signature,
-        definition=trgfunc_definition,
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
     )
 
     trgs = []
@@ -94,9 +92,7 @@ def generate_new_object_add_lifecycle_date_triggers():
     $$ language 'plpgsql'
         """
     trgfunc = PGFunction(
-        schema="hame",
-        signature=trgfunc_signature,
-        definition=trgfunc_definition,
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
     )
 
     for table in tables_with_lifecycle_date:
@@ -148,9 +144,7 @@ def generate_new_lifecycle_date_triggers():
     $$ language 'plpgsql'
     """
     trgfunc = PGFunction(
-        schema="hame",
-        signature=trgfunc_signature,
-        definition=trgfunc_definition,
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
     )
 
     for table in tables_with_lifecycle_date:
@@ -244,9 +238,7 @@ def generate_update_lifecycle_status_triggers():
         """
 
         trgfunc = PGFunction(
-            schema="hame",
-            signature=trgfunc_signature,
-            definition=trgfunc_definition,
+            schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
         )
         trgfuncs.append(trgfunc)
 

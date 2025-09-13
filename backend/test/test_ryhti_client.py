@@ -681,9 +681,7 @@ def client_with_plan_with_permanent_identifier_in_proposal_phase(
     """Return RyhtiClient that has plan data in proposal phase read in and
     its permanent identifier set.
     """
-    id_responses = (
-        authenticated_client_with_plan_in_proposal_phase.get_permanent_plan_identifiers()
-    )
+    id_responses = authenticated_client_with_plan_in_proposal_phase.get_permanent_plan_identifiers()
     authenticated_client_with_plan_in_proposal_phase.database_client.set_permanent_plan_identifiers(
         id_responses
     )
@@ -776,9 +774,7 @@ def client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase(
     """Returns Ryhti client that has plan data in proposal phase read in, that is
     authenticated to our mock X-Road API, and that has plan documents uploaded.
     """
-    responses = (
-        client_with_plan_with_permanent_identifier_in_proposal_phase.upload_plan_documents()
-    )
+    responses = client_with_plan_with_permanent_identifier_in_proposal_phase.upload_plan_documents()
     for plan_id, document_responses in responses.items():
         assert plan_id == plan_instance.id
         for document_response in document_responses:
@@ -835,9 +831,7 @@ def test_get_plan_matters(
     """Check that correct JSON structure is generated for plan matter. This requires that
     the client has already fetched a permanent identifer for the plan.
     """
-    plan_matter_dictionaries = (
-        client_with_plan_with_permanent_identifier_and_documents.database_client.get_plan_matters()
-    )
+    plan_matter_dictionaries = client_with_plan_with_permanent_identifier_and_documents.database_client.get_plan_matters()
     plan_matter = plan_matter_dictionaries[plan_instance.id]
     deepcompare(
         plan_matter,
@@ -942,9 +936,7 @@ def test_update_existing_plan_matters(
     """Check that JSON is posted and response received when the plan matter exists in Ryhti
     and a new plan matter phase must be posted.
     """
-    responses = (
-        client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.post_plan_matters()
-    )
+    responses = client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.post_plan_matters()
     for plan_id, response in responses.items():
         assert plan_id == plan_instance.id
         assert response["warnings"]
@@ -958,9 +950,7 @@ def test_save_update_existing_matter_post_responses(
     mock_xroad_ryhti_update_existing_plan_matter: Callable,
 ) -> None:
     """Check that export time is saved to database."""
-    responses = (
-        client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.post_plan_matters()
-    )
+    responses = client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.post_plan_matters()
     message = client_with_plan_with_permanent_identifier_and_documents_in_proposal_phase.database_client.save_plan_matter_post_responses(
         responses
     )

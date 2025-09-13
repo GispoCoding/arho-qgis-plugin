@@ -97,8 +97,8 @@ class DatabaseHelper:
     def get_connection_string(self) -> str:
         db_params = self.get_connection_parameters()
         return (
-            f'postgresql+psycopg://{db_params["user"]}:{db_params["password"]}'
-            f'@{db_params["host"]}:{db_params["port"]}/{db_params["dbname"]}'
+            f"postgresql+psycopg://{db_params['user']}:{db_params['password']}"
+            f"@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
         )
 
     def get_username_and_password(self, user: User) -> tuple[str, str]:
