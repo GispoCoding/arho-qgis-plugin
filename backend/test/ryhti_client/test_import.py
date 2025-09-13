@@ -216,7 +216,6 @@ def test_import_invalid_plan(
 
     invalid_plan.json is missing a required field (lifeCycleStatus)
     """
-
     with pytest.raises(ValueError) as excinfo:
         database_client.import_plan(invalid_plan_json, extra_data)
 
@@ -230,7 +229,6 @@ def test_import_invalid_extra_data(
     simple_plan_json: str,
 ):
     """Tries to import a plan with invalid extra_data and checks that the import fails."""
-
     extra_data = {
         "name": "test_plan",
         # "plan_type_id" is missing

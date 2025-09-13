@@ -2,7 +2,7 @@ import enum
 import json
 import logging
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import psycopg
 from alembic import command
@@ -28,13 +28,13 @@ class Action(enum.Enum):
 
 
 class Response(TypedDict):
-    statusCode: int  # noqa N815
+    statusCode: int
     body: str
 
 
 class Event(TypedDict):
     action: str  # EventType
-    version: Optional[str]  # Ansible version id
+    version: str | None  # Ansible version id
 
 
 def create_db(conn: psycopg.Connection, db_name: str) -> str:
@@ -51,9 +51,7 @@ def create_db(conn: psycopg.Connection, db_name: str) -> str:
 def configure_schemas_and_users(
     conn: psycopg.Connection, users: dict[User, dict]
 ) -> str:
-    """
-    Configures given database with hame schemas and users.
-    """
+    """Configures given database with hame schemas and users."""
     with conn.cursor() as cur:
         cur.execute(SQL("CREATE SCHEMA codes; CREATE SCHEMA hame;"))
         cur.execute(SQL("CREATE EXTENSION postgis WITH SCHEMA public;"))
@@ -84,8 +82,7 @@ def configure_schemas_and_users(
 
 
 def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> str:
-    """
-    Configures user permissions.
+    """Configures user permissions.
 
     Can also be run on an existing database to fix user permissions to be up to date.
     """
@@ -220,12 +217,14 @@ def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
                 command.downgrade(alembic_cfg, version)
             except CommandError:
                 command.upgrade(alembic_cfg, version)
-            msg += "\n" + (
+            msg += (
+                "\n"
                 f"Database was in version {old_version}.\n"
                 f"Migrated the database to {version}."
             )
         else:
-            msg += "\n" + (
+            msg += (
+                "\n"
                 "Requested version is the same as current database "
                 f"version {old_version}.\nNo migrations were run."
             )

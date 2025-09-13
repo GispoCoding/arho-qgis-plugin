@@ -1,4 +1,4 @@
-from typing import Dict, List, TypedDict
+from typing import TypedDict
 
 
 class Period(TypedDict):
@@ -11,19 +11,19 @@ class RyhtiPlan(TypedDict, total=False):
     planKey: str
     lifeCycleStatus: str
     scale: int | None
-    legalEffectOfLocalMasterPlans: List | None
-    geographicalArea: Dict
+    legalEffectOfLocalMasterPlans: list | None
+    geographicalArea: dict
     periodOfValidity: Period | None
     approvalDate: str | None
-    planMaps: List
-    planAnnexes: List
-    otherPlanMaterials: List
-    planReport: Dict | None
-    generalRegulationGroups: List[Dict]
+    planMaps: list
+    planAnnexes: list
+    otherPlanMaterials: list
+    planReport: dict | None
+    generalRegulationGroups: list[dict]
     planDescription: str | None
-    planObjects: List
-    planRegulationGroups: List
-    planRegulationGroupRelations: List
+    planObjects: list
+    planRegulationGroups: list
+    planRegulationGroupRelations: list
 
 
 class RyhtiPlanDecision(TypedDict, total=False):
@@ -32,7 +32,7 @@ class RyhtiPlanDecision(TypedDict, total=False):
     decisionDate: str
     dateOfDecision: str
     typeOfDecisionMaker: str
-    plans: List[RyhtiPlan]
+    plans: list[RyhtiPlan]
 
 
 class RyhtiHandlingEvent(TypedDict, total=False):
@@ -51,9 +51,9 @@ class RyhtiInteractionEvent(TypedDict, total=False):
 class RyhtiPlanMatterPhase(TypedDict, total=False):
     planMatterPhaseKey: str
     lifeCycleStatus: str
-    geographicalArea: Dict
+    geographicalArea: dict
     handlingEvent: RyhtiHandlingEvent | None
-    interactionEvents: List[RyhtiInteractionEvent] | None
+    interactionEvents: list[RyhtiInteractionEvent] | None
     planDecision: RyhtiPlanDecision | None
 
 
@@ -64,11 +64,11 @@ class RyhtiPlanMatter(TypedDict, total=False):
     timeOfInitiation: str | None
     description: dict[str, str] | None
     producerPlanIdentifier: str | None
-    caseIdentifiers: List | None
-    recordNumbers: List | None
-    administrativeAreaIdentifiers: List
+    caseIdentifiers: list | None
+    recordNumbers: list | None
+    administrativeAreaIdentifiers: list
     digitalOrigin: str
-    planMatterPhases: List[RyhtiPlanMatterPhase]
+    planMatterPhases: list[RyhtiPlanMatterPhase]
 
 
 class AttributeValue(TypedDict, total=False):

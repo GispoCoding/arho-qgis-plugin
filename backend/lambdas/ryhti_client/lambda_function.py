@@ -1,7 +1,7 @@
 import enum
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 from uuid import UUID
 
 import boto3
@@ -50,9 +50,7 @@ xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID", "")
 
 
 class ResponseBody(TypedDict):
-    """
-    Data returned in lambda function response.
-    """
+    """Data returned in lambda function response."""
 
     title: str
     details: dict[str | UUID, str | None]
@@ -60,8 +58,7 @@ class ResponseBody(TypedDict):
 
 
 class Response(TypedDict):
-    """
-    Represents the response of the lambda function to the caller.
+    """Represents the response of the lambda function to the caller.
 
     Let's abide by the AWS API Gateway 2.0 response format. If we want to specify
     a custom status code, this means that other data must be embedded in request body.
@@ -69,13 +66,12 @@ class Response(TypedDict):
     https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html
     """
 
-    statusCode: int  # noqa N815
+    statusCode: int
     body: ResponseBody
 
 
 class Event(TypedDict, total=False):
-    """
-    Support validating, POSTing or getting a desired plan. If provided directly to
+    """Support validating, POSTing or getting a desired plan. If provided directly to
     lambda, the lambda request needs only contain these keys.
 
     If plan_uuid is empty, all plans in database are processed.
@@ -85,15 +81,14 @@ class Event(TypedDict, total=False):
     """
 
     action: str  # Action
-    plan_uuid: Optional[str]  # UUID for plan to be used
-    save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
-    data: Optional[dict]  # Additional data to be used in the action, if needed
-    force: Optional[bool]  # True if we want to force the action, if needed
+    plan_uuid: str | None  # UUID for plan to be used
+    save_json: bool | None  # True if we want JSON files to be saved in ryhti_debug
+    data: dict | None  # Additional data to be used in the action, if needed
+    force: bool | None  # True if we want to force the action, if needed
 
 
 class AWSAPIGatewayPayload(TypedDict):
-    """
-    Represents the request coming to Lambda through AWS API Gateway.
+    """Represents the request coming to Lambda through AWS API Gateway.
 
     The same request may arrive to lambda either through AWS integrations or API
     Gateway. If arriving through the API Gateway, it will contain all data that
@@ -103,15 +98,14 @@ class AWSAPIGatewayPayload(TypedDict):
     """
 
     version: Literal["2.0"]
-    headers: Dict
-    queryStringParameters: Dict
-    requestContext: Dict
+    headers: dict
+    queryStringParameters: dict
+    requestContext: dict
     body: str  # The event is stringified json, we have to jsonify it first
 
 
 class AWSAPIGatewayResponse(TypedDict):
-    """
-    Represents the response from Lambda to AWS API Gateway.
+    """Represents the response from Lambda to AWS API Gateway.
 
     For the API gateway, we just have to stringify the body.
     """
@@ -123,8 +117,7 @@ class AWSAPIGatewayResponse(TypedDict):
 def responsify(
     response: Response, using_api_gateway: bool = False
 ) -> Response | AWSAPIGatewayResponse:
-    """
-    Convert response to API gateway response if the request arrived through API gateway.
+    """Convert response to API gateway response if the request arrived through API gateway.
     If we want to provide status code to API gateway, the JSON body must be string.
     """
     return (
@@ -149,8 +142,7 @@ class Action(enum.Enum):
 def handler(
     payload: Event | AWSAPIGatewayPayload, _
 ) -> Response | AWSAPIGatewayResponse:
-    """
-    Handler which is called when accessing the endpoint. We must handle both API
+    """Handler which is called when accessing the endpoint. We must handle both API
     gateway HTTP requests and regular lambda requests. API gateway requires
     the response body to be stringified.
 
@@ -167,11 +159,11 @@ def handler(
     # API Gateway HTTP request. We kinda have to infer which one is the case here.
     try:
         # API Gateway request. The JSON body has to be converted to python object.
-        event = cast(Event, json.loads(cast(AWSAPIGatewayPayload, payload)["body"]))
+        event = cast("Event", json.loads(cast("AWSAPIGatewayPayload", payload)["body"]))
         using_api_gateway = True
     except KeyError:
         # Direct lambda request
-        event = cast(Event, payload)
+        event = cast("Event", payload)
 
     try:
         event_type = Action(event["action"])
@@ -205,7 +197,7 @@ def handler(
         or not xroad_syke_client_secret
     ):
         raise ValueError(
-            (
+
                 "Please set your local XROAD_SERVER_ADDRESS and your organization "
                 "XROAD_MEMBER_CODE and XROAD_MEMBER_CLIENT_NAME to make API requests "
                 "to X-Road endpoints. Also, set XROAD_SYKE_CLIENT_ID and "
@@ -213,7 +205,7 @@ def handler(
                 "access SYKE X-Road API. To use production X-Road instead of test "
                 "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
                 "is set to FI-TEST."
-            )
+
         )
     database_client = DatabaseClient(
         db_helper.get_connection_string(),
@@ -242,7 +234,7 @@ def handler(
                 statusCode=200,
                 body=ResponseBody(
                     title=response_title,
-                    details=cast(dict, database_client.plan_dictionaries),
+                    details=cast("dict", database_client.plan_dictionaries),
                     ryhti_responses={},
                 ),
             )
@@ -257,7 +249,7 @@ def handler(
                 statusCode=200,
                 body=ResponseBody(
                     title=response_title,
-                    details=cast(dict, plan_matters),
+                    details=cast("dict", plan_matters),
                     ryhti_responses={},
                 ),
             )
@@ -374,9 +366,9 @@ def handler(
             title = "Missing plan data or extra data."
             details: dict[str, Any] = {}
         else:
-            plan_json = cast(str, plan_json)
-            extra_data = cast(dict, extra_data)
-            overwrite = True if event.get("force") is True else False
+            plan_json = cast("str", plan_json)
+            extra_data = cast("dict", extra_data)
+            overwrite = event.get("force") is True
 
             try:
                 imported_id = database_client.import_plan(

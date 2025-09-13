@@ -5,13 +5,12 @@ import os
 import tempfile
 import time
 import zipfile
-from typing import Dict, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, TypedDict, cast
 from xml.etree import ElementTree
 
 import pygml
 import requests
 from geoalchemy2.shape import from_shape
-from shapely import Polygon
 from shapely.geometry import MultiPolygon, shape
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -20,6 +19,9 @@ from sqlalchemy.orm import sessionmaker
 from database import codes, models  # noqa: F401
 from database.codes import AdministrativeRegion, Municipality
 from database.db_helper import DatabaseHelper, User
+
+if TYPE_CHECKING:
+    from shapely import Polygon
 
 """
 For populating administrative regions (Maakunta) and municipalities (Kunta) with
@@ -31,7 +33,7 @@ LOGGER.setLevel(logging.INFO)
 
 
 class Response(TypedDict):
-    statusCode: int  # noqa N815
+    statusCode: int
     body: str
 
 
@@ -45,7 +47,7 @@ def gml_polygons_to_multipolygon(gml_polygons: list[str]) -> MultiPolygon:
                 f"Expected Polygon geometry but got {shapely_shape.geom_type}"  # noqa
             )
             continue
-        shapes.append(cast(Polygon, shapely_shape))
+        shapes.append(cast("Polygon", shapely_shape))
 
     return MultiPolygon(shapes)
 
@@ -55,7 +57,7 @@ class MMLLoader:
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
-    api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"  # noqa
+    api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"
     job_api_base = (
         "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/dl/v1/"
     )
@@ -69,7 +71,7 @@ class MMLLoader:
     }
 
     def __init__(
-        self, connection_string: str, api_url: Optional[str] = None, api_key: str = ""
+        self, connection_string: str, api_url: str | None = None, api_key: str = ""
     ) -> None:
         if api_url:
             self.api_base = api_url
@@ -80,9 +82,7 @@ class MMLLoader:
         LOGGER.info("Loader initialized")
 
     def get_geometries(self) -> dict[str, MultiPolygon]:
-        """
-        Gets administrative region geometries from from MML OGC API Process.
-        """
+        """Gets administrative region geometries from from MML OGC API Process."""
         session = requests.Session()
 
         with tempfile.TemporaryDirectory() as output_dir:
@@ -125,9 +125,7 @@ class MMLLoader:
     def parse_gml(
         self, output_dir: str, year: str, size: str
     ) -> dict[str, MultiPolygon]:
-        """
-        Parses a GML file to extract geometry data
-        """
+        """Parses a GML file to extract geometry data"""
         tree = ElementTree.parse(
             f"{output_dir}/SuomenHallinnollisetYksikot_{year}_{size}.xml"
         )
@@ -153,7 +151,7 @@ class MMLLoader:
                 )
             ]
 
-        polygons: Dict[str, list] = {}
+        polygons: dict[str, list] = {}
 
         au_elements = root.findall(f".//au{size}:AdministrativeUnit_{size}", namespaces)
         prefix = "{" + namespaces["gml"] + "}"
@@ -161,8 +159,7 @@ class MMLLoader:
             au_id = au_elem.get(prefix + "id")
 
             if au_id and (
-                au_id.startswith("FI_AU_ADMINISTRATIVEUNIT_REGION_")
-                or au_id.startswith("FI_AU_ADMINISTRATIVEUNIT_MUNICIPALITY_")
+                au_id.startswith(("FI_AU_ADMINISTRATIVEUNIT_REGION_", "FI_AU_ADMINISTRATIVEUNIT_MUNICIPALITY_"))
             ):
                 gml_elements = au_elem.findall(".//gml:*", namespaces)
                 for gml_elem in gml_elements:
@@ -192,9 +189,7 @@ class MMLLoader:
         return geoms
 
     def save_geometries(self, geoms: dict[str, MultiPolygon]) -> str:
-        """
-        Save all geometries into the corresponding tables.
-        """
+        """Save all geometries into the corresponding tables."""
         successful_actions = 0
         with self.Session() as session:
             admin_regions = session.query(AdministrativeRegion).all()

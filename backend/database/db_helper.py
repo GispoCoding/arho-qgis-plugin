@@ -1,7 +1,7 @@
 import enum
 import json
 import os
-from typing import Dict, List, Optional, Tuple, Type, TypedDict
+from typing import TypedDict
 
 import boto3
 
@@ -47,15 +47,14 @@ class Db(enum.Enum):
 
 
 class DatabaseHelper:
-    def __init__(self, user: Optional[User] = None):
-        """
-        Initialize a database helper with given user privileges.
+    def __init__(self, user: User | None = None) -> None:
+        """Initialize a database helper with given user privileges.
 
         If user is not specified, requires that the lambda function has *all* user
         privileges and secrets specified in lambda function os.environ.
         """
         # if user is not specified, iterate through all users
-        users: List | Type[User] = [user] if user else User
+        users: list | type[User] = [user] if user else User
         if os.environ.get("READ_FROM_AWS", "1") == "1":
             session = boto3.session.Session()
             client = session.client(
@@ -81,7 +80,7 @@ class DatabaseHelper:
         self._region_name = os.environ.get("AWS_REGION_NAME")
 
     def get_connection_parameters(
-        self, user: Optional[User] = None, db: Db = Db.MAIN
+        self, user: User | None = None, db: Db = Db.MAIN
     ) -> ConnectionParameters:
         if not user:
             # take the first user that has credentials provided
@@ -102,12 +101,12 @@ class DatabaseHelper:
             f'@{db_params["host"]}:{db_params["port"]}/{db_params["dbname"]}'
         )
 
-    def get_username_and_password(self, user: User) -> Tuple[str, str]:
+    def get_username_and_password(self, user: User) -> tuple[str, str]:
         user_credentials = self._users[user]
         return user_credentials["username"], user_credentials["password"]
 
     def get_db_name(self, db: Db) -> str:
         return self._dbs[db]
 
-    def get_users(self) -> Dict[User, dict]:
+    def get_users(self) -> dict[User, dict]:
         return self._users

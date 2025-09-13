@@ -22,7 +22,7 @@ def test_modified_at_triggers(
     organisation_instance: models.Organisation,
     plan_map_instance: models.Document,
     lifecycle_date_instance: models.LifeCycleDate,
-):
+) -> None:
     # Save old modified_at timestamps
     plan_old_modified_at = plan_instance.modified_at
     land_use_area_instance_old_modified_at = land_use_area_instance.modified_at
@@ -103,7 +103,7 @@ def test_new_object_add_lifecycle_date_triggers(
     line_instance: models.Line,
     land_use_point_instance: models.LandUsePoint,
     other_point_instance: models.OtherPoint,
-):
+) -> None:
     assert plan_instance.lifecycle_dates
     lifecycle_date = next(iter(plan_instance.lifecycle_dates))
     assert lifecycle_date.lifecycle_status == plan_instance.lifecycle_status
@@ -168,7 +168,7 @@ def test_new_lifecycle_date_triggers(
     other_point_instance: models.OtherPoint,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
-):
+) -> None:
     assert plan_instance.lifecycle_status_id != another_code_instance.id
     assert text_plan_regulation_instance.lifecycle_status_id != another_code_instance.id
     assert plan_proposition_instance.lifecycle_status_id != another_code_instance.id
@@ -210,18 +210,18 @@ def test_new_lifecycle_date_triggers(
 
     # Get old and new entries in lifecycle_date table
     def get_new_lifecycle_date(instance: models.PlanBase) -> models.LifeCycleDate:
-        return [
+        return next(
             date
             for date in instance.lifecycle_dates
             if date.lifecycle_status == code_instance
-        ][0]
+        )
 
     def get_old_lifecycle_date(instance: models.PlanBase) -> models.LifeCycleDate:
-        return [
+        return next(
             date
             for date in instance.lifecycle_dates
             if date.lifecycle_status == another_code_instance
-        ][0]
+        )
 
     plan_new_lifecycle_date = get_new_lifecycle_date(plan_instance)
     plan_regulation_new_lifecycle_date = get_new_lifecycle_date(
@@ -290,7 +290,7 @@ def test_new_lifecycle_status_triggers(
     another_code_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     type_of_underground_instance: codes.TypeOfUnderground,
-):
+) -> None:
     assert plan_instance.general_plan_regulation_groups == [
         general_regulation_group_instance
     ]
@@ -456,9 +456,8 @@ def test_update_lifecycle_status_triggers(
     plan_proposition_instance: models.PlanProposition,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
-):
-    """
-    We must test that the trigger also updates everything in plan objects and plan regulations
+) -> None:
+    """We must test that the trigger also updates everything in plan objects and plan regulations
     on the plan that *do not* have the same plan regulation group as the plan.
     """
     plan_instance.lifecycle_status = code_instance
@@ -505,13 +504,11 @@ def test_update_lifecycle_status_triggers(
     assert plan_instance.general_plan_regulation_groups == [
         general_regulation_group_instance
     ]
-    assert set(land_use_area_instance.plan_regulation_groups) == set(
-        [
+    assert set(land_use_area_instance.plan_regulation_groups) == {
             numeric_plan_regulation_group_instance,
             decimal_plan_regulation_group_instance,
             plan_regulation_group_instance,
-        ]
-    )
+        }
     assert other_area_instance.plan_regulation_groups == [
         construction_area_plan_regulation_group_instance
     ]
@@ -568,7 +565,7 @@ def test_add_plan_id_fkey_triggers(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     organisation_instance: models.Organisation,
-):
+) -> None:
     # Add another plan instance
     another_plan_instance = models.Plan(
         name={"fin": "Test Plan"},

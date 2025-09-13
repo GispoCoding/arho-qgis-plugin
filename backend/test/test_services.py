@@ -14,30 +14,30 @@ from .conftest import assert_database_is_alright, deepcompare, drop_hame_db
 
 
 @pytest.fixture(scope="module")
-def db_manager_url(docker_ip, docker_services):
+def db_manager_url(docker_ip, docker_services) -> str:
     port = docker_services.port_for("db_manager", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
 @pytest.fixture(scope="module")
-def koodistot_loader_url(docker_ip, docker_services):
+def koodistot_loader_url(docker_ip, docker_services) -> str:
     port = docker_services.port_for("koodistot_loader", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
 @pytest.fixture(scope="module")
-def ryhti_client_url(docker_ip, docker_services):
+def ryhti_client_url(docker_ip, docker_services) -> str:
     port = docker_services.port_for("ryhti_client", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
 @pytest.fixture(scope="module")
-def mml_loader_url(docker_ip, docker_services):
+def mml_loader_url(docker_ip, docker_services) -> str:
     port = docker_services.port_for("mml_loader", 8080)
     return f"http://{docker_ip}:{port}/2015-03-31/functions/function/invocations"
 
 
-@pytest.fixture()
+@pytest.fixture
 def create_db(db_manager_url, main_db_params, root_db_params):
     payload = {
         "action": "create_db",
@@ -50,34 +50,32 @@ def create_db(db_manager_url, main_db_params, root_db_params):
     drop_hame_db(main_db_params, root_db_params)
 
 
-@pytest.fixture()
-def populate_koodistot(koodistot_loader_url, main_db_params, create_db):
+@pytest.fixture
+def populate_koodistot(koodistot_loader_url, main_db_params, create_db) -> None:
     payload = {}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
 
 
-@pytest.fixture()
-def populate_suomifi_koodistot(koodistot_loader_url, main_db_params, create_db):
+@pytest.fixture
+def populate_suomifi_koodistot(koodistot_loader_url, main_db_params, create_db) -> None:
     payload = {"local_codes": False}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
 
 
-@pytest.fixture()
-def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db):
+@pytest.fixture
+def populate_local_koodistot(koodistot_loader_url, main_db_params, create_db) -> None:
     payload = {"suomifi_codes": False}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
 
 
-def test_create_db(create_db, main_db_params_with_root_user):
-    """
-    Test the whole lambda endpoint
-    """
+def test_create_db(create_db, main_db_params_with_root_user) -> None:
+    """Test the whole lambda endpoint"""
     conn = psycopg.connect(**main_db_params_with_root_user)
     try:
         with conn.cursor() as cur:
@@ -86,14 +84,12 @@ def test_create_db(create_db, main_db_params_with_root_user):
         conn.close()
 
 
-def test_populate_koodistot(populate_koodistot, main_db_params):
-    """
-    Test the whole lambda endpoint
-    """
+def test_populate_koodistot(populate_koodistot, main_db_params) -> None:
+    """Test the whole lambda endpoint"""
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            for name, value in inspect.getmembers(codes, inspect.isclass):
+            for _name, value in inspect.getmembers(codes, inspect.isclass):
                 if issubclass(value, codes.CodeBase) and (
                     # some code tables have external source, some have local source, some have both
                     value.code_list_uri
@@ -107,14 +103,12 @@ def test_populate_koodistot(populate_koodistot, main_db_params):
         conn.close()
 
 
-def test_populate_suomifi_koodistot(populate_suomifi_koodistot, main_db_params):
-    """
-    Test only suomi.fi codes
-    """
+def test_populate_suomifi_koodistot(populate_suomifi_koodistot, main_db_params) -> None:
+    """Test only suomi.fi codes"""
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            for name, value in inspect.getmembers(codes, inspect.isclass):
+            for _name, value in inspect.getmembers(codes, inspect.isclass):
                 if (
                     value is not codes.CodeBase
                     and issubclass(value, codes.CodeBase)
@@ -141,14 +135,12 @@ def test_populate_suomifi_koodistot(populate_suomifi_koodistot, main_db_params):
         conn.close()
 
 
-def test_populate_local_koodistot(populate_local_koodistot, main_db_params):
-    """
-    Test only local codes
-    """
+def test_populate_local_koodistot(populate_local_koodistot, main_db_params) -> None:
+    """Test only local codes"""
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            for name, value in inspect.getmembers(codes, inspect.isclass):
+            for _name, value in inspect.getmembers(codes, inspect.isclass):
                 if (
                     value is not codes.CodeBase
                     and issubclass(value, codes.CodeBase)
@@ -203,9 +195,8 @@ def get_all_plans(
     another_test_plan,
     desired_plan_dict,
     another_plan_dict,
-):
-    """
-    Get invalid plan JSONs from lambda. The plans should be validated separately.
+) -> None:
+    """Get invalid plan JSONs from lambda. The plans should be validated separately.
 
     Getting plans should make lambda return http 200 OK (to indicate that serialization
     has been run successfully), with the ryhti_responses dict empty, and details
@@ -244,16 +235,14 @@ def get_all_plans(
     assert not body["ryhti_responses"]
 
 
-def test_get_all_plans(get_all_plans, main_db_params):
-    """
-    Test the whole lambda endpoint with an invalid plan
-    """
+def test_get_all_plans(get_all_plans, main_db_params) -> None:
+    """Test the whole lambda endpoint with an invalid plan"""
     # getting plan JSON from lambda should not run validations
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            cur.execute("SELECT validated_at, validation_errors FROM hame.plan")
             validation_date, errors = cur.fetchone()
             assert not validation_date
             assert not errors
@@ -264,12 +253,11 @@ def test_get_all_plans(get_all_plans, main_db_params):
         conn.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_single_plan(
     ryhti_client_url, complete_test_plan, another_test_plan, desired_plan_dict
-):
-    """
-    Get single plan JSON from lambda by id. Another plan in the database should not be
+) -> None:
+    """Get single plan JSON from lambda by id. Another plan in the database should not be
     serialized.
 
     Getting plan should make lambda return http 200 OK (to indicate that serialization
@@ -301,16 +289,14 @@ def get_single_plan(
     assert not body["ryhti_responses"]
 
 
-def test_get_single_plan(get_single_plan, main_db_params):
-    """
-    Test the whole lambda endpoint with single_plan
-    """
+def test_get_single_plan(get_single_plan, main_db_params) -> None:
+    """Test the whole lambda endpoint with single_plan"""
     # getting plan JSON from lambda should not run validations
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            cur.execute("SELECT validated_at, validation_errors FROM hame.plan")
             validation_date, errors = cur.fetchone()
             assert not validation_date
             assert not errors
@@ -321,10 +307,9 @@ def test_get_single_plan(get_single_plan, main_db_params):
         conn.close()
 
 
-@pytest.fixture()
-def validate_all_plans(ryhti_client_url, complete_test_plan, another_test_plan):
-    """
-    Validate valid and invalid Ryhti plans against the Ryhti API.
+@pytest.fixture
+def validate_all_plans(ryhti_client_url, complete_test_plan, another_test_plan) -> None:
+    """Validate valid and invalid Ryhti plans against the Ryhti API.
 
     An invalid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors returned in the payload.
@@ -352,14 +337,12 @@ def validate_all_plans(ryhti_client_url, complete_test_plan, another_test_plan):
     assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
-def test_validate_all_plans(validate_all_plans, main_db_params):
-    """
-    Test the whole lambda endpoint with valid and invalid plans
-    """
+def test_validate_all_plans(validate_all_plans, main_db_params) -> None:
+    """Test the whole lambda endpoint with valid and invalid plans"""
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            cur.execute("SELECT validated_at, validation_errors FROM hame.plan")
             validation_date, errors = cur.fetchone()
             assert validation_date
             assert errors == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
@@ -370,12 +353,11 @@ def test_validate_all_plans(validate_all_plans, main_db_params):
         conn.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def validate_single_invalid_plan(
     ryhti_client_url, complete_test_plan, another_test_plan
-):
-    """
-    Validate an invalid Ryhti plan against the Ryhti API.
+) -> None:
+    """Validate an invalid Ryhti plan against the Ryhti API.
 
     An invalid plan should make lambda return http 200 OK (to indicate that the validation
     has been run successfully), with the validation errors returned in the payload.
@@ -402,15 +384,13 @@ def validate_single_invalid_plan(
     assert body["ryhti_responses"][another_test_plan.id]["errors"]
 
 
-def test_validate_single_invalid_plan(validate_single_invalid_plan, main_db_params):
-    """
-    Test the whole lambda endpoint with an invalid plan
-    """
+def test_validate_single_invalid_plan(validate_single_invalid_plan, main_db_params) -> None:
+    """Test the whole lambda endpoint with an invalid plan"""
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT validated_at, validation_errors FROM hame.plan ORDER BY modified_at DESC"
+                "SELECT validated_at, validation_errors FROM hame.plan ORDER BY modified_at DESC"
             )
             validation_date, errors = cur.fetchone()
             assert validation_date
@@ -423,12 +403,11 @@ def test_validate_single_invalid_plan(validate_single_invalid_plan, main_db_para
         conn.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_permanent_plan_identifier(
     ryhti_client_url, complete_test_plan, another_test_plan, desired_plan_dict
-):
-    """
-    Get a permanent plan identifier from X-road. Another plan in the database should not
+) -> None:
+    """Get a permanent plan identifier from X-road. Another plan in the database should not
     get a permanent plan identifier.
 
     Since local tests or CI/CD cannot connect to X-Road servers, we use a Mock X-Road API
@@ -453,17 +432,15 @@ def get_permanent_plan_identifier(
     assert len(body["ryhti_responses"]) == 1
 
 
-def test_get_permanent_plan_identifier(get_permanent_plan_identifier, main_db_params):
-    """
-    Test the whole lambda endpoint with single_plan
-    """
+def test_get_permanent_plan_identifier(get_permanent_plan_identifier, main_db_params) -> None:
+    """Test the whole lambda endpoint with single_plan"""
     # getting permanent identifier from lambda should not run validations
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
             cur.execute(
-                f"SELECT validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
+                "SELECT validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
             )
             validation_date, errors, permanent_plan_identifier = cur.fetchone()
             assert not validation_date
@@ -477,12 +454,11 @@ def test_get_permanent_plan_identifier(get_permanent_plan_identifier, main_db_pa
         conn.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_single_plan_matter(
     ryhti_client_url, complete_test_plan, another_test_plan, desired_plan_matter_dict
-):
-    """
-    Get single plan matter JSON from lambda by id. Another plan in the database should
+) -> None:
+    """Get single plan matter JSON from lambda by id. Another plan in the database should
     not be serialized.
 
     Getting plan matter should make lambda return http 200 OK (to indicate that
@@ -533,16 +509,14 @@ def get_single_plan_matter(
     assert not body["ryhti_responses"]
 
 
-def test_get_single_plan_matter(get_single_plan_matter, main_db_params):
-    """
-    Test the whole lambda endpoint with single_plan_matter
-    """
+def test_get_single_plan_matter(get_single_plan_matter, main_db_params) -> None:
+    """Test the whole lambda endpoint with single_plan_matter"""
     # getting plan JSON from lambda should not run validations
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
             # Check that plans are NOT validated
-            cur.execute(f"SELECT validated_at, validation_errors FROM hame.plan")
+            cur.execute("SELECT validated_at, validation_errors FROM hame.plan")
             validation_date, errors = cur.fetchone()
             assert not validation_date
             assert not errors
@@ -553,10 +527,9 @@ def test_get_single_plan_matter(get_single_plan_matter, main_db_params):
         conn.close()
 
 
-@pytest.fixture()
-def validate_valid_plan_matter_in_preparation(ryhti_client_url, complete_test_plan):
-    """
-    Validate a valid Ryhti plan and plan matter against the Ryhti API. This guarantees
+@pytest.fixture
+def validate_valid_plan_matter_in_preparation(ryhti_client_url, complete_test_plan) -> None:
+    """Validate a valid Ryhti plan and plan matter against the Ryhti API. This guarantees
     that the Ryhti plan is formed according to spec and passes open Ryhti API validation.
 
     If the plan has a permanent plan identifier, the client proceeds to also validate
@@ -600,9 +573,8 @@ def validate_valid_plan_matter_in_preparation(ryhti_client_url, complete_test_pl
 
 def test_validate_valid_plan_matter_in_preparation(
     validate_valid_plan_matter_in_preparation, main_db_params
-):
-    """
-    Test the whole lambda endpoint with a valid plan and plan matter in preparation
+) -> None:
+    """Test the whole lambda endpoint with a valid plan and plan matter in preparation
     stage. Plan is validated with public Ryhti API. Validate plan matter with mock
     X-Road API.
 
@@ -614,7 +586,7 @@ def test_validate_valid_plan_matter_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT id, validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
+                "SELECT id, validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
             )
             (
                 exported_plan_id,
@@ -627,7 +599,7 @@ def test_validate_valid_plan_matter_in_preparation(
             assert permanent_plan_identifier == "MK-123456"
             # Document should be exported
             cur.execute(
-                f"SELECT plan_id, exported_at, exported_file_key FROM hame.document"
+                "SELECT plan_id, exported_at, exported_file_key FROM hame.document"
             )
             plan_id, exported_at, exported_file_key = cur.fetchone()
             assert plan_id == exported_plan_id
@@ -637,12 +609,11 @@ def test_validate_valid_plan_matter_in_preparation(
         conn.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def post_plan_matters_in_preparation(
     ryhti_client_url, complete_test_plan, another_test_plan
-):
-    """
-    POST all plans to the mock X-Road API. Plans need not be validated, but they need
+) -> None:
+    """POST all plans to the mock X-Road API. Plans need not be validated, but they need
     to have permanent identifiers set.
 
     POSTing plans should make lambda return http 200 OK (to indicate that POSTs
@@ -681,9 +652,8 @@ def post_plan_matters_in_preparation(
 
 def test_post_plan_matters_in_preparation(
     post_plan_matters_in_preparation, main_db_params
-):
-    """
-    Test the whole lambda endpoint with multiple plans and plan matters in preparation
+) -> None:
+    """Test the whole lambda endpoint with multiple plans and plan matters in preparation
     stage. POST plan matters with mock X-Road API.
 
     The mock X-Road should accept POSTed plan matter and report the plan matter as being
@@ -694,7 +664,7 @@ def test_post_plan_matters_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT id, validated_at, validation_errors, permanent_plan_identifier, exported_at FROM hame.plan ORDER BY modified_at DESC"
+                "SELECT id, validated_at, validation_errors, permanent_plan_identifier, exported_at FROM hame.plan ORDER BY modified_at DESC"
             )
             # Exported plan should also be reported validated
             (
@@ -710,7 +680,7 @@ def test_post_plan_matters_in_preparation(
             assert exported_at
             # Check that other plan is NOT modified because it had no identifier
             (
-                other_plan_id,
+                _other_plan_id,
                 validation_date,
                 errors,
                 permanent_plan_identifier,
@@ -722,7 +692,7 @@ def test_post_plan_matters_in_preparation(
             assert not exported_at
             # Document should be exported
             cur.execute(
-                f"SELECT plan_id, exported_at, exported_file_key FROM hame.document"
+                "SELECT plan_id, exported_at, exported_file_key FROM hame.document"
             )
             plan_id, exported_at, exported_file_key = cur.fetchone()
             assert plan_id == exported_plan_id
@@ -732,12 +702,11 @@ def test_post_plan_matters_in_preparation(
         conn.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def post_valid_plan_matter_in_preparation(
     ryhti_client_url, complete_test_plan, another_test_plan
-):
-    """
-    POST single valid plan to the mock X-Road API. Plan needs not be validated.
+) -> None:
+    """POST single valid plan to the mock X-Road API. Plan needs not be validated.
 
     A POSTed plan should make lambda return http 200 OK (to indicate that the POST
     has been run successfully), with the validation errors list empty and validation
@@ -775,9 +744,8 @@ def post_valid_plan_matter_in_preparation(
 
 def test_post_valid_plan_matter_in_preparation(
     post_valid_plan_matter_in_preparation, main_db_params
-):
-    """
-    Test the whole lambda endpoint with a valid plan and plan matter in preparation
+) -> None:
+    """Test the whole lambda endpoint with a valid plan and plan matter in preparation
     stage. POST plan matter with mock X-Road API.
 
     The mock X-Road should accept POSTed plan matter and report the plan matter as
@@ -788,7 +756,7 @@ def test_post_valid_plan_matter_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                f"SELECT id, validated_at, validation_errors, permanent_plan_identifier, exported_at FROM hame.plan ORDER BY modified_at DESC"
+                "SELECT id, validated_at, validation_errors, permanent_plan_identifier, exported_at FROM hame.plan ORDER BY modified_at DESC"
             )
             # Exported plan should also be reported validated
             (
@@ -804,7 +772,7 @@ def test_post_valid_plan_matter_in_preparation(
             assert exported_at
             # Check that other plan is NOT modified
             (
-                other_plan_id,
+                _other_plan_id,
                 validation_date,
                 errors,
                 permanent_plan_identifier,
@@ -816,7 +784,7 @@ def test_post_valid_plan_matter_in_preparation(
             assert not exported_at
             # Document should be exported
             cur.execute(
-                f"SELECT plan_id, exported_at, exported_file_key FROM hame.document"
+                "SELECT plan_id, exported_at, exported_file_key FROM hame.document"
             )
             plan_id, exported_at, exported_file_key = cur.fetchone()
             assert plan_id == exported_plan_id
@@ -853,7 +821,6 @@ def test_import_plan(
     simple_plan_json: str,
 ):
     """Test importing a plan"""
-
     import_payload["data"]["plan_json"] = simple_plan_json
 
     r = requests.post(ryhti_client_url, data=json.dumps(import_payload))
@@ -871,7 +838,6 @@ def test_import_duplicate_plan(
     simple_plan_json: str,
 ):
     """Test importing a plan"""
-
     import_payload["data"]["plan_json"] = simple_plan_json
 
     r = requests.post(ryhti_client_url, data=json.dumps(import_payload))

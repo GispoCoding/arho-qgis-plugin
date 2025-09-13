@@ -1,13 +1,11 @@
 import json
-import logging
+from collections.abc import Iterator
 from copy import deepcopy
-from typing import Iterator, Type
 
 import psycopg
 import pytest
 
 from database import codes
-from database.db_helper import DatabaseHelper
 from lambdas.koodistot_loader.koodistot_loader import KoodistotLoader, get_code_list_url
 
 lifecycle_status_response = {
@@ -376,12 +374,12 @@ name_of_plan_case_decision_response = {
 }
 
 
-def get_url(cls: Type[codes.CodeBase]) -> str:
+def get_url(cls: type[codes.CodeBase]) -> str:
     code_registry, name = cls.code_list_uri.rsplit("/", 2)[-2:None]
     return get_code_list_url("http://mock.url", code_registry, name)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_koodistot(requests_mock) -> None:
     requests_mock.get(
         get_url(codes.LifeCycleStatus), text=json.dumps(lifecycle_status_response)
@@ -416,7 +414,7 @@ def mock_koodistot(requests_mock) -> None:
     requests_mock.get(get_url(codes.TypeOfDecisionMaker), text="")
 
 
-@pytest.fixture()
+@pytest.fixture
 def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
     # override one response
     requests_mock.get(
@@ -433,7 +431,7 @@ def loader(admin_connection_string) -> KoodistotLoader:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def koodistot_data(mock_koodistot, loader):
     data = loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
@@ -449,7 +447,7 @@ def koodistot_data(mock_koodistot, loader):
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def changed_koodistot_data(changed_mock_koodistot, loader):
     data = loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
@@ -465,17 +463,15 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     return data
 
 
-def test_get_vireilletullut(loader, koodistot_data):
-    """
-    Check that remote code is imported
-    """
+def test_get_vireilletullut(loader, koodistot_data) -> None:
+    """Check that remote code is imported"""
     code = loader.get_object(
         codes.LifeCycleStatus,
         koodistot_data[codes.LifeCycleStatus]["02"],
     )
     assert code["id"]
     assert code["value"] == "02"
-    assert "short_name" not in code.keys()
+    assert "short_name" not in code
     assert code["name"]["fin"] == "Vireilletullut"
     assert (
         code["description"]["fin"]
@@ -483,13 +479,11 @@ def test_get_vireilletullut(loader, koodistot_data):
     )
     assert code["status"] == "VALID"
     assert code["level"] == 1
-    assert "parent_id" not in code.keys()
+    assert "parent_id" not in code
 
 
-def test_get_asumisen_alue(loader, koodistot_data):
-    """
-    Check that remote code with children is imported
-    """
+def test_get_asumisen_alue(loader, koodistot_data) -> None:
+    """Check that remote code with children is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulation]["asumisenAlue"],
@@ -504,13 +498,11 @@ def test_get_asumisen_alue(loader, koodistot_data):
     )
     assert code["status"] == "DRAFT"
     assert code["level"] == 1
-    assert "parent_id" not in code.keys()
+    assert "parent_id" not in code
 
 
-def test_get_asuinpientaloalue(loader, koodistot_data):
-    """
-    Check that remote code with parent and children is imported
-    """
+def test_get_asuinpientaloalue(loader, koodistot_data) -> None:
+    """Check that remote code with parent and children is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulation]["asuinpientaloalue"],
@@ -528,10 +520,8 @@ def test_get_asuinpientaloalue(loader, koodistot_data):
     assert code["parent_id"] == "15934bd8-419b-420b-9b1d-b12608bdf27a"
 
 
-def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data):
-    """
-    Check that remote code with parent is imported
-    """
+def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data) -> None:
+    """Check that remote code with parent is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulation]["erillistenAsuinpientalojenAlue"],
@@ -549,10 +539,8 @@ def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data):
     assert code["parent_id"] == "e6f03e18-f292-4068-b6a6-b9e52206accc"
 
 
-def test_get_yleismaaraysryhma(loader, koodistot_data):
-    """
-    Check that local code is imported
-    """
+def test_get_yleismaaraysryhma(loader, koodistot_data) -> None:
+    """Check that local code is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulationGroup][
@@ -560,21 +548,20 @@ def test_get_yleismaaraysryhma(loader, koodistot_data):
         ],
     )
     assert code["value"] == codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
-    assert "short_name" not in code.keys()
+    assert "short_name" not in code
     assert (
         code["name"]["fin"]
         == codes.TypeOfPlanRegulationGroup.local_codes[0]["name"]["fin"]
     )
-    assert "description" not in code.keys()
+    assert "description" not in code
     assert code["status"] == "LOCAL"
-    assert "level" not in code.keys()
-    assert "parent_id" not in code.keys()
+    assert "level" not in code
+    assert "parent_id" not in code
 
 
 @pytest.fixture(scope="module")
 def custom_code_loader(admin_connection_string) -> Iterator[KoodistotLoader]:
-    """
-    Use monkey patched local codes for testing local custom codes with
+    """Use monkey patched local codes for testing local custom codes with
     remote children. At the moment, no local custom codes with remote
     children are used in production.
     """
@@ -619,7 +606,7 @@ def custom_code_loader(admin_connection_string) -> Iterator[KoodistotLoader]:
     codes.TypeOfAdditionalInformation.local_codes = []
 
 
-@pytest.fixture()
+@pytest.fixture
 def custom_koodistot_data(mock_koodistot, custom_code_loader):
     data = custom_code_loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
@@ -636,7 +623,7 @@ def custom_koodistot_data(mock_koodistot, custom_code_loader):
     return data
 
 
-@pytest.fixture()
+@pytest.fixture
 def changed_custom_koodistot_data(changed_mock_koodistot, custom_code_loader):
     data = custom_code_loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
@@ -653,10 +640,8 @@ def changed_custom_koodistot_data(changed_mock_koodistot, custom_code_loader):
     return data
 
 
-def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data):
-    """
-    Check that custom local code with remote children is imported
-    """
+def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data) -> None:
+    """Check that custom local code with remote children is imported"""
     code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
         custom_koodistot_data[codes.TypeOfAdditionalInformation][
@@ -664,28 +649,26 @@ def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data):
         ],
     )
     assert code["value"] == codes.TypeOfAdditionalInformation.local_codes[0]["value"]
-    assert "short_name" not in code.keys()
+    assert "short_name" not in code
     assert (
         code["name"]["fin"]
         == codes.TypeOfAdditionalInformation.local_codes[0]["name"]["fin"]
     )
-    assert "description" not in code.keys()
+    assert "description" not in code
     assert code["status"] == "LOCAL"
-    assert "level" not in code.keys()
-    assert "parent_id" not in code.keys()
+    assert "level" not in code
+    assert "parent_id" not in code
 
 
-def test_get_custom_paakayttotarkoitus(custom_code_loader, custom_koodistot_data):
-    """
-    Check that remote code with custom local parent is imported
-    """
+def test_get_custom_paakayttotarkoitus(custom_code_loader, custom_koodistot_data) -> None:
+    """Check that remote code with custom local parent is imported"""
     code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
         custom_koodistot_data[codes.TypeOfAdditionalInformation]["paakayttotarkoitus"],
     )
     assert code["id"] == "19f05f06-b18f-4d06-917a-2041204266b1"
     assert code["value"] == "paakayttotarkoitus"
-    assert "short_name" not in code.keys()
+    assert "short_name" not in code
     assert code["name"]["fin"] == "Pääkäyttötarkoitus"
     assert (
         code["description"]["fin"]
@@ -695,84 +678,82 @@ def test_get_custom_paakayttotarkoitus(custom_code_loader, custom_koodistot_data
     assert code["level"] == 2
     # Code parent is still remote at this stage. We will have to check that parents are reassigned
     # correctly after the loader has finished saving objects.
-    assert "parent_id" in code.keys()
+    assert "parent_id" in code
 
 
-def check_code_parents(cur):
-    """
-    Check that remote codes are correctly assigned to remote or local parents as desired.
-    """
+def check_code_parents(cur) -> None:
+    """Check that remote codes are correctly assigned to remote or local parents as desired."""
     # remote code with remote parent
     cur.execute(
-        f"SELECT parent_id FROM codes.type_of_plan_regulation WHERE value='asuinpientaloalue'"
+        "SELECT parent_id FROM codes.type_of_plan_regulation WHERE value='asuinpientaloalue'"
     )
     asuinpientaloalue_parent_id = cur.fetchone()[0]
     cur.execute(
-        f"SELECT id FROM codes.type_of_plan_regulation WHERE value='asumisenAlue'"
+        "SELECT id FROM codes.type_of_plan_regulation WHERE value='asumisenAlue'"
     )
     asumisenalue_id = cur.fetchone()[0]
     assert asuinpientaloalue_parent_id == asumisenalue_id
     # remote code with local parent
     cur.execute(
-        f"SELECT parent_id FROM codes.type_of_additional_information WHERE value='paakayttotarkoitus'"
+        "SELECT parent_id FROM codes.type_of_additional_information WHERE value='paakayttotarkoitus'"
     )
     paakayttotarkoitus_parent_id = cur.fetchone()[0]
     cur.execute(
-        f"SELECT id FROM codes.type_of_additional_information WHERE value='kayttotarkoitus'"
+        "SELECT id FROM codes.type_of_additional_information WHERE value='kayttotarkoitus'"
     )
     kayttotarkoitus_id = cur.fetchone()[0]
     assert paakayttotarkoitus_parent_id == kayttotarkoitus_id
 
 
-def assert_data_is_imported(main_db_params):
+def assert_data_is_imported(main_db_params) -> None:
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT count(*) FROM codes.lifecycle_status")
+            cur.execute("SELECT count(*) FROM codes.lifecycle_status")
             assert cur.fetchone()[0] == 2
-            cur.execute(f"SELECT count(*) FROM codes.name_of_plan_case_decision")
+            cur.execute("SELECT count(*) FROM codes.name_of_plan_case_decision")
             assert cur.fetchone()[0] == 1
             # Relationship between decision and status should also be created
-            cur.execute(f"SELECT count(*) FROM codes.allowed_events")
+            cur.execute("SELECT count(*) FROM codes.allowed_events")
             assert cur.fetchone()[0] == 1
-            cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation")
+            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation")
             assert cur.fetchone()[0] == 4
-            cur.execute(f"SELECT count(*) FROM codes.plan_type")
+            cur.execute("SELECT count(*) FROM codes.plan_type")
             assert cur.fetchone()[0] == 0
-            cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation_group")
+            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation_group")
             assert cur.fetchone()[0] == 5
-            cur.execute(f"SELECT count(*) FROM codes.type_of_additional_information")
+            cur.execute("SELECT count(*) FROM codes.type_of_additional_information")
             assert cur.fetchone()[0] == 5
             check_code_parents(cur)
     finally:
         conn.close()
 
 
-def assert_changed_data_is_imported(main_db_params):
+def assert_changed_data_is_imported(main_db_params) -> None:
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute(f"SELECT count(*) FROM codes.lifecycle_status")
+            cur.execute("SELECT count(*) FROM codes.lifecycle_status")
             assert cur.fetchone()[0] == 3
-            cur.execute(f"SELECT count(*) FROM codes.name_of_plan_case_decision")
+            cur.execute("SELECT count(*) FROM codes.name_of_plan_case_decision")
             assert cur.fetchone()[0] == 1
             # Relationship between decision and status should also be created
-            cur.execute(f"SELECT count(*) FROM codes.allowed_events")
+            cur.execute("SELECT count(*) FROM codes.allowed_events")
             assert cur.fetchone()[0] == 1
-            cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation")
+            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation")
             assert cur.fetchone()[0] == 4
-            cur.execute(f"SELECT count(*) FROM codes.plan_type")
+            cur.execute("SELECT count(*) FROM codes.plan_type")
             assert cur.fetchone()[0] == 0
-            cur.execute(f"SELECT count(*) FROM codes.type_of_plan_regulation_group")
+            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation_group")
             assert cur.fetchone()[0] == 5
-            cur.execute(f"SELECT count(*) FROM codes.type_of_additional_information")
+            cur.execute("SELECT count(*) FROM codes.type_of_additional_information")
             assert cur.fetchone()[0] == 5
             check_code_parents(cur)
     finally:
         conn.close()
 
 
-def test_save_objects(custom_code_loader, custom_koodistot_data, main_db_params):
+def test_save_objects(custom_code_loader, custom_koodistot_data, main_db_params) -> None:
     custom_code_loader.save_objects(custom_koodistot_data)
     assert_data_is_imported(main_db_params)
 
@@ -781,7 +762,7 @@ def test_save_changed_objects(
     changed_custom_koodistot_data,
     admin_connection_string,
     main_db_params,
-):
+) -> None:
     # The database is already populated in the first test. Because
     # connection string (and therefore hame_database_created)
     # has module scope, the database persists between tests.

@@ -1,7 +1,7 @@
 import inspect
 import json
 import logging
-from typing import Any, Dict, List, Optional, Type, TypedDict
+from typing import Any, TypedDict
 from uuid import UUID
 
 import requests
@@ -22,23 +22,19 @@ LOGGER.setLevel(logging.INFO)
 
 
 class Response(TypedDict):
-    statusCode: int  # noqa N815
+    statusCode: int
     body: str
 
 
 class Event(TypedDict):
-    """
-    Supports creating codes both online and from local code classes.
-    """
+    """Supports creating codes both online and from local code classes."""
 
-    suomifi_codes: Optional[bool]
-    local_codes: Optional[bool]
+    suomifi_codes: bool | None
+    local_codes: bool | None
 
 
-def iso_639_two_to_three_letter(language_dict: Dict[str, str]) -> Dict[str, str]:
-    """
-    Koodistot.suomi.fi uses two letter iso codes, while we use three letter codes.
-    """
+def iso_639_two_to_three_letter(language_dict: dict[str, str]) -> dict[str, str]:
+    """Koodistot.suomi.fi uses two letter iso codes, while we use three letter codes."""
     language_map = {"fi": "fin", "sv": "swe", "en": "eng"}
     return {language_map[key]: value for key, value in language_dict.items()}
 
@@ -54,9 +50,9 @@ class KoodistotLoader:
     def __init__(
         self,
         connection_string: str,
-        api_url: Optional[str] = None,
-        load_suomifi_codes: Optional[bool] = True,
-        load_local_codes: Optional[bool] = True,
+        api_url: str | None = None,
+        load_suomifi_codes: bool | None = True,
+        load_local_codes: bool | None = True,
     ) -> None:
         if api_url:
             self.api_base = api_url
@@ -64,7 +60,7 @@ class KoodistotLoader:
         self.Session = sessionmaker(bind=engine)
 
         # Only load koodistot that have data source defined
-        self.koodistot: List[Type[codes.CodeBase]] = [
+        self.koodistot: list[type[codes.CodeBase]] = [
             code_class
             for name, code_class in inspect.getmembers(codes, inspect.isclass)
             if issubclass(code_class, codes.CodeBase)
@@ -80,14 +76,13 @@ class KoodistotLoader:
         LOGGER.info("Loader initialized with code classes:")
         LOGGER.info(self.koodistot)
 
-    def get_code_registry_data(self, koodisto: Type[codes.CodeBase]) -> Dict[str, Dict]:
-        """
-        Get code registry codes for given koodisto, or empty list if not present.
+    def get_code_registry_data(self, koodisto: type[codes.CodeBase]) -> dict[str, dict]:
+        """Get code registry codes for given koodisto, or empty list if not present.
         Index returned codes by code value. Also, order returned codes by hierarchy
         level to ease dependent code creation.
         """
         if not koodisto.code_list_uri:
-            return dict()
+            return {}
         code_registry, name = koodisto.code_list_uri.rsplit("/", 2)[-2:None]
         LOGGER.info(koodisto.code_list_uri)
         LOGGER.info(code_registry)
@@ -97,7 +92,7 @@ class KoodistotLoader:
         r = requests.get(url, headers=self.HEADERS)
         r.raise_for_status()
         try:
-            result_list: List[Dict] = r.json()["results"]
+            result_list: list[dict] = r.json()["results"]
             # Order external codes by hierarchyLevel
             result_dict = {
                 item["codeValue"]: item
@@ -106,13 +101,11 @@ class KoodistotLoader:
             return result_dict
         except (KeyError, requests.exceptions.JSONDecodeError):
             LOGGER.warning(f"{koodisto} response did not contain data")
-            return dict()
+            return {}
 
-    def get_objects(self) -> Dict[Type[codes.CodeBase], Dict[str, Dict]]:
-        """
-        Gets all koodistot data, divided by table and code value, ordered by code level.
-        """
-        data = dict()
+    def get_objects(self) -> dict[type[codes.CodeBase], dict[str, dict]]:
+        """Gets all koodistot data, divided by table and code value, ordered by code level."""
+        data = {}
         for koodisto in self.koodistot:
             # Fetch external codes
             data[koodisto] = self.get_code_registry_data(koodisto)
@@ -126,12 +119,11 @@ class KoodistotLoader:
 
     def get_object(
         self,
-        code_class: Type[codes.CodeBase],
-        element: Dict,
-        all_objects: Optional[Dict[Type[codes.CodeBase], Dict[str, Dict]]] = None,
-    ) -> Optional[Dict]:
-        """
-        Returns database-ready dict of object to import, or None if the data
+        code_class: type[codes.CodeBase],
+        element: dict,
+        all_objects: dict[type[codes.CodeBase], dict[str, dict]] | None = None,
+    ) -> dict | None:
+        """Returns database-ready dict of object to import, or None if the data
         was invalid.
 
         Optionally, you may include the dict containing all objects, to allow
@@ -140,16 +132,16 @@ class KoodistotLoader:
         # local codes are already in database-ready format
         if element["status"] == "LOCAL":
             return element
-        code_dict = dict()
+        code_dict = {}
         # Use uuids from koodistot.suomi.fi. This way, we can save all the children
         # easily by referring to their parents.
         code_dict["id"] = element["id"]
         code_dict["value"] = element["codeValue"]
-        short_name = element.get("shortName", None)
+        short_name = element.get("shortName")
         if short_name:
             code_dict["short_name"] = short_name
         code_dict["name"] = iso_639_two_to_three_letter(element["prefLabel"])
-        if "description" in element.keys():
+        if "description" in element:
             code_dict["description"] = iso_639_two_to_three_letter(
                 element["description"]
             )
@@ -158,7 +150,7 @@ class KoodistotLoader:
 
         # Elements have already been ordered by hierarchyLeve, so parent already
         # exists whenever we are adding a lower level code!
-        parent = element.get("broaderCode", None)
+        parent = element.get("broaderCode")
         if parent:
             code_dict["parent_id"] = parent["id"]
 
@@ -182,11 +174,10 @@ class KoodistotLoader:
     def update_remote_children_of_local_parents(
         self,
         instance: codes.CodeBase,
-        child_values: List[str],
+        child_values: list[str],
         session: Session,
     ) -> None:
-        """
-        After a local parent code is created, update any existing children to point
+        """After a local parent code is created, update any existing children to point
         to the local parent, overriding the remote parent. Everything is flushed
         to the database so that children are queryable.
         """
@@ -199,13 +190,12 @@ class KoodistotLoader:
 
     def update_or_create_object(
         self,
-        code_class: Type[codes.CodeBase],
-        incoming: Dict[str, Any],
+        code_class: type[codes.CodeBase],
+        incoming: dict[str, Any],
         session: Session,
-        saved_objects: Optional[Dict[UUID, codes.CodeBase]] = None,
+        saved_objects: dict[UUID, codes.CodeBase] | None = None,
     ) -> codes.CodeBase:
-        """
-        Find object based on its unique fields, or create new object. Update fields
+        """Find object based on its unique fields, or create new object. Update fields
         that are present in the incoming dict.
 
         However, do *not* try to update uuids. They may have references to them already,
@@ -215,7 +205,7 @@ class KoodistotLoader:
         creating relationships between different classes of code objects.
         """
         columns = code_class.__table__.columns
-        unique_keys = set(column.key for column in columns if column.unique)
+        unique_keys = {column.key for column in columns if column.unique}
         unique_values = {
             key: incoming[key] for key in set(incoming.keys()).intersection(unique_keys)
         }
@@ -229,7 +219,7 @@ class KoodistotLoader:
         # Relationships are stored in separate tables, so they will not be present in
         # the columns. Instead, we must provide the related objects to the relationship.
         # Any relationship names must be hardcoded here.
-        if "allowed_status_ids" in incoming.keys() and saved_objects:
+        if "allowed_status_ids" in incoming and saved_objects:
             values["allowed_statuses"] = [
                 saved_objects[id] for id in incoming["allowed_status_ids"]
             ]
@@ -247,7 +237,7 @@ class KoodistotLoader:
             session.add(instance)
 
         # If children are defined in the incoming dict, they must be updated manually.
-        if "child_values" in incoming.keys():
+        if "child_values" in incoming:
             self.update_remote_children_of_local_parents(
                 instance, incoming["child_values"], session
             )
@@ -255,11 +245,9 @@ class KoodistotLoader:
             print(instance.children)
         return instance
 
-    def save_objects(self, objects: Dict[Type[codes.CodeBase], Dict[str, dict]]) -> str:
-        """
-        Save all objects in the objects dict, grouped by object class.
-        """
-        saved_objects: Dict[UUID, codes.CodeBase] = dict()
+    def save_objects(self, objects: dict[type[codes.CodeBase], dict[str, dict]]) -> str:
+        """Save all objects in the objects dict, grouped by object class."""
+        saved_objects: dict[UUID, codes.CodeBase] = {}
         with self.Session() as session:
             for code_class, class_codes in objects.items():
                 LOGGER.info(f"Importing codes to {code_class}...")

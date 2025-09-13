@@ -15,7 +15,7 @@ def test_codes(
     session: Session,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
-):
+) -> None:
     # nullable code relations
     assert code_instance.parent is None
     assert code_instance.children == []
@@ -38,7 +38,7 @@ def test_plan(
     general_regulation_group_instance: models.PlanRegulationGroup,
     plan_type_instance: codes.PlanType,
     legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
-):
+) -> None:
     # non-nullable plan relations
     assert plan_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.plans == [plan_instance]
@@ -77,7 +77,7 @@ def test_land_use_area(
     plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
-):
+) -> None:
     # non-nullable plan object relations
     assert land_use_area_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.land_use_areas == [land_use_area_instance]
@@ -100,7 +100,7 @@ def test_other_area(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
     construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
-):
+) -> None:
     # non-nullable plan object relations
     assert other_area_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.other_areas == [other_area_instance]
@@ -122,7 +122,7 @@ def test_line(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
     plan_regulation_group_instance: models.PlanRegulationGroup,
-):
+) -> None:
     # non-nullable plan object relations
     assert line_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.lines == [line_instance]
@@ -140,7 +140,7 @@ def test_land_use_point(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
-):
+) -> None:
     # non-nullable plan object relations
     assert land_use_point_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.land_use_points == [land_use_point_instance]
@@ -163,7 +163,7 @@ def test_other_point(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
-):
+) -> None:
     # non-nullable plan object relations
     assert other_point_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.other_points == [other_point_instance]
@@ -181,7 +181,7 @@ def test_other_point(
 def test_plan_regulation_group(
     plan_regulation_group_instance: models.PlanRegulationGroup,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
-):
+) -> None:
     # non-nullable plan regulation group relations
     assert (
         plan_regulation_group_instance.type_of_plan_regulation_group
@@ -201,7 +201,7 @@ def test_plan_regulation(
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
     plan_theme_instance: codes.PlanTheme,
-):
+) -> None:
     # non-nullable plan regulation relations
     assert text_plan_regulation_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.plan_regulations == [
@@ -249,7 +249,7 @@ def test_additional_information(
     main_use_additional_information_instance: models.AdditionalInformation,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
-):
+) -> None:
     assert (
         main_use_additional_information_instance.type_of_additional_information
         is type_of_main_use_additional_information_instance
@@ -270,7 +270,7 @@ def test_plan_proposition(
     preparation_status_instance: codes.LifeCycleStatus,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     plan_theme_instance: codes.PlanTheme,
-):
+) -> None:
     # non-nullable plan proposition relations
     assert plan_proposition_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.plan_propositions == [plan_proposition_instance]
@@ -297,7 +297,7 @@ def test_source_data(
     source_data_instance: models.SourceData,
     type_of_source_data_instance: codes.TypeOfSourceData,
     plan_instance: models.Plan,
-):
+) -> None:
     # non-nullable source data relations
     assert source_data_instance.plan is plan_instance
     assert plan_instance.source_data == [source_data_instance]
@@ -309,7 +309,7 @@ def test_organisation(
     session: Session,
     organisation_instance: models.Organisation,
     administrative_region_instance: codes.AdministrativeRegion,
-):
+) -> None:
     # non-nullable organisation relations
     assert organisation_instance.administrative_region is administrative_region_instance
     assert administrative_region_instance.organisations == [organisation_instance]
@@ -325,7 +325,7 @@ def test_document(
     retention_time_permanent_instance: codes.RetentionTime,
     language_finnish_instance: codes.Language,
     plan_instance: models.Plan,
-):
+) -> None:
     # non-nullable document relations
     assert plan_map_instance.type_of_document is type_of_document_plan_map_instance
     assert type_of_document_plan_map_instance.documents == [plan_map_instance]
@@ -356,7 +356,7 @@ def test_lifecycle_date(
     plan_instance: models.Plan,
     text_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
-):
+) -> None:
     # non-nullable lifecycle date relations
     assert lifecycle_date_instance.lifecycle_status is code_instance
     assert code_instance.lifecycle_dates == [lifecycle_date_instance]
@@ -385,7 +385,7 @@ def test_decision_date(
     preparation_date_instance: models.LifeCycleDate,
     decision_date_instance: models.EventDate,
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-):
+) -> None:
     # non-nullable decision date relations
     assert decision_date_instance.lifecycle_date is preparation_date_instance
     assert preparation_date_instance.event_dates == [decision_date_instance]
@@ -405,7 +405,7 @@ def test_processing_event_date(
     preparation_date_instance: models.LifeCycleDate,
     processing_event_date_instance: models.EventDate,
     participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
-):
+) -> None:
     # non-nullable decision date relations
     assert processing_event_date_instance.lifecycle_date is preparation_date_instance
     assert preparation_date_instance.event_dates == [processing_event_date_instance]
@@ -425,7 +425,7 @@ def test_interaction_event_date(
     preparation_date_instance: models.LifeCycleDate,
     interaction_event_date_instance: models.EventDate,
     presentation_to_the_public_interaction: codes.TypeOfProcessingEvent,
-):
+) -> None:
     # non-nullable decision date relations
     assert interaction_event_date_instance.lifecycle_date is preparation_date_instance
     assert preparation_date_instance.event_dates == [interaction_event_date_instance]
@@ -454,11 +454,10 @@ def test_interaction_event_date(
 )
 def test_cascade_delete_of_lifecycle_dates_using_orm(
     session: Session, request: pytest.FixtureRequest, fixture_name: str
-):
+) -> None:
     """Test that deleting a plan object cascades to the lifecycle date when using ORM.
     This makes sure that the cascade options are configured correctly in the SqlAlchemy models.
     """
-
     plan_base_object = request.getfixturevalue(fixture_name)
     assert len(plan_base_object.lifecycle_dates) == 1
     lifecycle_date = plan_base_object.lifecycle_dates[0]
@@ -469,7 +468,7 @@ def test_cascade_delete_of_lifecycle_dates_using_orm(
 
 
 @pytest.mark.parametrize(
-    ["parent_fixture_name", "child_fixture_name", "child_collection_name"],
+    ("parent_fixture_name", "child_fixture_name", "child_collection_name"),
     [
         pytest.param(
             "plan_regulation_group_instance",
@@ -497,11 +496,10 @@ def test_cascade_delete_using_orm(
     parent_fixture_name: str,
     child_fixture_name: str,
     child_collection_name: str,
-):
+) -> None:
     """Test that deleting a parent object cascades to the child table when using ORM.
     This makes sure that the cascade options are configured correctly in the SqlAlchemy models.
     """
-
     parent_object = request.getfixturevalue(parent_fixture_name)
     child_object = request.getfixturevalue(child_fixture_name)
 
@@ -527,11 +525,10 @@ def test_cascade_delete_using_orm(
 )
 def test_cascade_delete_of_lifecycle_dates_using_db(
     session: Session, request: pytest.FixtureRequest, fixture_name: str
-):
+) -> None:
     """Test that deleting a plan object cascades to the lifecycle date when using raw SQL.
     This makes sure that the ON DELETE cascade options are configured correctly for the foreign keys in the database.
     """
-
     plan_base_object = request.getfixturevalue(fixture_name)
     lifecycle_object = plan_base_object.lifecycle_dates[0]
 
@@ -550,7 +547,7 @@ def test_cascade_delete_of_lifecycle_dates_using_db(
         row = cur.fetchone()
         return bool(row[0]) if row else False
 
-    def delete_plan_base_object():
+    def delete_plan_base_object() -> None:
         cur.execute(
             sql.SQL("DELETE FROM {table} WHERE id=%s").format(
                 table=sql.Identifier(
@@ -569,7 +566,7 @@ def test_cascade_delete_of_lifecycle_dates_using_db(
 
 
 @pytest.mark.parametrize(
-    ["parent_fixture_name", "child_fixture_name"],
+    ("parent_fixture_name", "child_fixture_name"),
     [
         pytest.param(
             "plan_regulation_group_instance",
@@ -593,11 +590,10 @@ def test_cascade_delete_using_db(
     request: pytest.FixtureRequest,
     parent_fixture_name: str,
     child_fixture_name: str,
-):
+) -> None:
     """Test that deleting a parent object cascades to the child table when using raw SQL.
     This makes sure that the ON DELETE cascade options are configured correctly for the foreign keys in the database.
     """
-
     parent_object = request.getfixturevalue(parent_fixture_name)
     child_object = request.getfixturevalue(child_fixture_name)
 
@@ -616,7 +612,7 @@ def test_cascade_delete_using_db(
         row = cur.fetchone()
         return bool(row[0]) if row else False
 
-    def delete_parent_object():
+    def delete_parent_object() -> None:
         cur.execute(
             sql.SQL("DELETE FROM {table} WHERE id=%s").format(
                 table=sql.Identifier(

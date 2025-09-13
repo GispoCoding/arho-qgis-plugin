@@ -1,7 +1,7 @@
 import email.utils
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TypedDict, cast
+from typing import Any, TypedDict, cast
 from uuid import UUID
 
 import requests
@@ -25,14 +25,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RyhtiResponse(TypedDict):
-    """
-    Represents the response of the Ryhti API to a single API all.
-    """
+    """Represents the response of the Ryhti API to a single API all."""
 
     status: int | None
-    detail: Optional[str]
-    errors: Optional[dict]
-    warnings: Optional[dict]
+    detail: str | None
+    errors: dict | None
+    warnings: dict | None
 
 
 def save_debug_json(filename: str, data: Any) -> None:
@@ -56,17 +54,17 @@ class RyhtiClient:
     def __init__(
         self,
         database_client: DatabaseClient,
-        public_api_url: Optional[str] = None,
+        public_api_url: str | None = None,
         public_api_key: str = "",
-        xroad_syke_client_id: Optional[str] = "",
-        xroad_syke_client_secret: Optional[str] = "",
-        xroad_server_address: Optional[str] = None,
+        xroad_syke_client_id: str | None = "",
+        xroad_syke_client_secret: str | None = "",
+        xroad_server_address: str | None = None,
         xroad_instance: str = "FI-TEST",
-        xroad_member_class: Optional[str] = "MUN",
-        xroad_member_code: Optional[str] = None,
-        xroad_member_client_name: Optional[str] = None,
-        xroad_port: Optional[int] = 8080,
-        debug_json: Optional[bool] = False,  # save JSON files for debugging
+        xroad_member_class: str | None = "MUN",
+        xroad_member_code: str | None = None,
+        xroad_member_client_name: str | None = None,
+        xroad_port: int | None = 8080,
+        debug_json: bool | None = False,  # save JSON files for debugging
     ) -> None:
         LOGGER.info("Initializing Ryhti client...")
         self.debug_json = debug_json
@@ -84,8 +82,7 @@ class RyhtiClient:
             self.xroad_server_address = xroad_server_address
             # do not require http in front of local dns record
             if not (
-                xroad_server_address.startswith("http://")
-                or xroad_server_address.startswith("https://")
+                xroad_server_address.startswith(("http://", "https://"))
             ):
                 self.xroad_server_address = "http://" + self.xroad_server_address
         if xroad_port:
@@ -103,10 +100,8 @@ class RyhtiClient:
         self.xroad_syke_client_id = xroad_syke_client_id
         self.xroad_syke_client_secret = xroad_syke_client_secret
 
-    def xroad_ryhti_authenticate(self):
-        """
-        Set the client authentication header for making X-Road API requests.
-        """
+    def xroad_ryhti_authenticate(self) -> None:
+        """Set the client authentication header for making X-Road API requests."""
         # Seems that Ryhti API does not use the standard OAuth2 client credentials
         # clientId:secret Bearer header in token endpoint. Instead, there is a custom
         # authentication endpoint /api/Authenticate that wishes us to deliver the
@@ -140,9 +135,7 @@ class RyhtiClient:
         self.xroad_headers["Authorization"] = f"Bearer {bearer_token}"
 
     def get_plan_matter_api_path(self, plan_type_uri: str) -> str:
-        """
-        Returns correct plan matter api path depending on the plan type URI.
-        """
+        """Returns correct plan matter api path depending on the plan type URI."""
         api_paths = {
             "1": "RegionalPlanMatter/",
             "2": "LocalMasterPlanMatter/",
@@ -151,12 +144,10 @@ class RyhtiClient:
         top_level_code = plan_type_uri.split("/")[-1][0]
         return api_paths[top_level_code]
 
-    def validate_plans(self) -> Dict[UUID, RyhtiResponse]:
-        """
-        Validates all plans serialized in client plan dictionaries.
-        """
+    def validate_plans(self) -> dict[UUID, RyhtiResponse]:
+        """Validates all plans serialized in client plan dictionaries."""
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
-        responses: Dict[UUID, RyhtiResponse] = {}
+        responses: dict[UUID, RyhtiResponse] = {}
         for plan_id, plan_dict in self.database_client.plan_dictionaries.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
 
@@ -207,12 +198,11 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
-    def upload_plan_documents(self) -> Dict[UUID, List[RyhtiResponse]]:
-        """
-        Upload any changed plan documents. If document has not been modified
+    def upload_plan_documents(self) -> dict[UUID, list[RyhtiResponse]]:
+        """Upload any changed plan documents. If document has not been modified
         since it was last uploaded, do nothing.
         """
-        responses: Dict[UUID, List[RyhtiResponse]] = dict()
+        responses: dict[UUID, list[RyhtiResponse]] = {}
         file_endpoint = self.xroad_server_address + self.xroad_api_path + "File"
         upload_headers = self.xroad_headers.copy()
         # We must *not* provide Content-Type header:
@@ -319,11 +309,9 @@ class RyhtiClient:
                         )
         return responses
 
-    def get_permanent_plan_identifiers(self) -> Dict[UUID, RyhtiResponse]:
-        """
-        Get permanent plan identifiers for all plans that do not have identifiers set.
-        """
-        responses: Dict[UUID, RyhtiResponse] = dict()
+    def get_permanent_plan_identifiers(self) -> dict[UUID, RyhtiResponse]:
+        """Get permanent plan identifiers for all plans that do not have identifiers set."""
+        responses: dict[UUID, RyhtiResponse] = {}
         for plan in self.database_client.plans.values():
             if not plan.permanent_plan_identifier:
                 plan_identifier_endpoint = (
@@ -399,11 +387,9 @@ class RyhtiClient:
                         )
         return responses
 
-    def validate_plan_matters(self) -> Dict[UUID, RyhtiResponse]:
-        """
-        Validates all plan matters that have their permanent identifiers set.
-        """
-        responses: Dict[UUID, RyhtiResponse] = dict()
+    def validate_plan_matters(self) -> dict[UUID, RyhtiResponse]:
+        """Validates all plan matters that have their permanent identifiers set."""
+        responses: dict[UUID, RyhtiResponse] = {}
         plan_matter_dictionaries = self.database_client.get_plan_matters()
         for plan_id, plan_matter in plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
@@ -454,9 +440,7 @@ class RyhtiClient:
     def create_new_resource(
         self, endpoint: str, resource_dict: RyhtiPlanMatter | RyhtiPlanMatterPhase
     ) -> RyhtiResponse:
-        """
-        POST new resource to Ryhti API.
-        """
+        """POST new resource to Ryhti API."""
         response = requests.post(
             endpoint,
             json=resource_dict,
@@ -479,14 +463,12 @@ class RyhtiClient:
             except json.JSONDecodeError:
                 # There is something wrong with the API
                 response.raise_for_status()
-        return cast(RyhtiResponse, ryhti_response)
+        return cast("RyhtiResponse", ryhti_response)
 
     def update_resource(
         self, endpoint: str, resource_dict: RyhtiPlanMatter | RyhtiPlanMatterPhase
     ) -> RyhtiResponse:
-        """
-        PUT resource to Ryhti API.
-        """
+        """PUT resource to Ryhti API."""
         response = requests.put(
             endpoint,
             json=resource_dict,
@@ -523,16 +505,15 @@ class RyhtiClient:
             except json.JSONDecodeError:
                 # There is something wrong with the API
                 response.raise_for_status()
-        return cast(RyhtiResponse, ryhti_response)
+        return cast("RyhtiResponse", ryhti_response)
 
     def post_plan_matters(self) -> dict[UUID, RyhtiResponse]:
-        """
-        POST all plan matter data with permanent identifiers to Ryhti.
+        """POST all plan matter data with permanent identifiers to Ryhti.
 
         This means either creating a new plan matter, updating the plan matter,
         creating a new plan matter phase, or updating the plan matter phase.
         """
-        responses: dict[UUID, RyhtiResponse] = dict()
+        responses: dict[UUID, RyhtiResponse] = {}
         plan_matter_dictionaries = self.database_client.get_plan_matters()
         for plan_id, plan_matter in plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
@@ -565,25 +546,28 @@ class RyhtiClient:
                 LOGGER.info(responses[plan_id])
                 continue
             # 2) If plan matter existed, check or create plan matter phase instead
-            elif get_response.status_code == 200:
+            if get_response.status_code == 200:
                 LOGGER.info(
                     f"Plan matter {permanent_id} found! "
                     "Checking if plan matter phase exists..."
                 )
-                phases: List[RyhtiPlanMatterPhase] = get_response.json()[
+                phases: list[RyhtiPlanMatterPhase] = get_response.json()[
                     "planMatterPhases"
                 ]
                 local_phase = plan_matter["planMatterPhases"][0]
                 local_lifecycle_status = local_phase["lifeCycleStatus"]
                 print(phases)
                 print(local_phase)
-                try:
-                    current_phase = [
+
+                current_phase = next(
+                    (
                         phase
                         for phase in phases
                         if phase["lifeCycleStatus"] == local_lifecycle_status
-                    ][0]
-                except IndexError:
+                    ),
+                    None
+                )
+                if not current_phase:
                     LOGGER.info(
                         f"Phase {local_lifecycle_status} not found! Creating..."
                     )

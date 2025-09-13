@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
@@ -51,19 +51,19 @@ LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
 
 class PlanAlreadyExistsError(Exception):
-    def __init__(self, plan_id: str):
+    def __init__(self, plan_id: str) -> None:
         self.plan_id = plan_id
         super().__init__(f"Plan '{plan_id}' already exists in the database.")
 
 
 class DatabaseClient:
-    def __init__(self, connection_string: str, plan_uuid: Optional[str] = None):
+    def __init__(self, connection_string: str, plan_uuid: str | None = None) -> None:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         # Cache plans fetched from database
-        self.plans: Dict[UUID, models.Plan] = dict()
+        self.plans: dict[UUID, models.Plan] = {}
         # Cache plan dictionaries
-        self.plan_dictionaries: Dict[UUID, RyhtiPlan] = dict()
+        self.plan_dictionaries: dict[UUID, RyhtiPlan] = {}
 
         # We only ever need code uri values, not codes themselves, so let's not bother
         # fetching codes from the database at all. URI is known from class and value.
@@ -106,9 +106,7 @@ class DatabaseClient:
             LOGGER.info(self.plans)
 
     def get_geojson(self, geometry: WKBElement) -> dict:
-        """
-        Returns geojson format dict with the correct SRID set.
-        """
+        """Returns geojson format dict with the correct SRID set."""
         # We cannot use postgis geojson functions here, because the data has already
         # been fetched from the database. So let's create geojson the python way, it's
         # probably faster than doing extra database queries for the conversion.
@@ -129,24 +127,19 @@ class DatabaseClient:
         }
 
     def get_isoformat_value_with_z(self, datetime_value: datetime.datetime) -> str:
-        """
-        Returns isoformatted datetime in UTC with Z instead of +00:00.
-        """
+        """Returns isoformatted datetime in UTC with Z instead of +00:00."""
         return datetime_value.isoformat().replace("+00:00", "Z")
 
     def get_date(self, datetime_value: datetime.datetime) -> str:
-        """
-        Returns isoformatted date for the given datetime in local timezone.
-        """
+        """Returns isoformatted date for the given datetime in local timezone."""
         return datetime_value.astimezone(LOCAL_TZ).date().isoformat()
 
     def get_periods(
         self,
-        dates_objects: List[models.LifeCycleDate] | List[models.EventDate],
+        dates_objects: list[models.LifeCycleDate] | list[models.EventDate],
         datetimes: bool = True,
-    ) -> List[Period]:
-        """
-        Returns the time periods of given date objects. Optionally, only dates instead
+    ) -> list[Period]:
+        """Returns the time periods of given date objects. Optionally, only dates instead
         of datetimes may be returned.
         """
         return [
@@ -171,10 +164,8 @@ class DatabaseClient:
 
     def get_lifecycle_dates_for_status(
         self, plan_base: models.PlanBase, status_value: str
-    ) -> List[models.LifeCycleDate]:
-        """
-        Returns the plan lifecycle date objects for the desired status.
-        """
+    ) -> list[models.LifeCycleDate]:
+        """Returns the plan lifecycle date objects for the desired status."""
         return [
             lifecycle_date
             for lifecycle_date in plan_base.lifecycle_dates
@@ -183,9 +174,8 @@ class DatabaseClient:
 
     def get_lifecycle_periods(
         self, plan_base: models.PlanBase, status_value: str, datetimes: bool = True
-    ) -> List[Period]:
-        """
-        Returns the start and end datetimes of lifecycle status for object. Optionally,
+    ) -> list[Period]:
+        """Returns the start and end datetimes of lifecycle status for object. Optionally,
         only dates instead of datetimes may be returned.
 
         Note that for some lifecycle statuses, we may return multiple periods.
@@ -196,12 +186,11 @@ class DatabaseClient:
     def get_event_periods(
         self,
         lifecycle_date: models.LifeCycleDate,
-        event_class: Type[codes.CodeBase],
+        event_class: type[codes.CodeBase],
         event_value: str,
         datetimes: bool = True,
-    ) -> List[Period]:
-        """
-        Returns the start and end datetimes of events with desired class and value
+    ) -> list[Period]:
+        """Returns the start and end datetimes of events with desired class and value
         linked to a lifecycle date object. Optionally, only dates instead of datetimes
         may be returned.
 
@@ -232,18 +221,14 @@ class DatabaseClient:
         ]
         return self.get_periods(event_dates, datetimes)
 
-    def get_last_period(self, periods: List[Period]) -> Optional[Period]:
-        """
-        Returns the last period in the list, or None if the list is empty.
-        """
+    def get_last_period(self, periods: list[Period]) -> Period | None:
+        """Returns the last period in the list, or None if the list is empty."""
         return periods[-1] if periods else None
 
     def get_plan_recommendation(
         self, plan_recommendation: models.PlanProposition
-    ) -> Dict:
-        """
-        Construct a dict of Ryhti compatible plan recommendation.
-        """
+    ) -> dict:
+        """Construct a dict of Ryhti compatible plan recommendation."""
         recommendation_dict: dict[str, Any] = {}
         recommendation_dict["planRecommendationKey"] = plan_recommendation.id
         recommendation_dict["lifeCycleStatus"] = (
@@ -280,8 +265,7 @@ class DatabaseClient:
                 AttributeValueDataType.SPOT_ELEVATION,
             ):
                 return int(number)
-            else:
-                return number
+            return number
 
         if attribute_value.value_data_type is AttributeValueDataType.CODE:
             if attribute_value.code_value is not None:
@@ -334,7 +318,7 @@ class DatabaseClient:
 
     def get_additional_information(
         self, additional_information: models.AdditionalInformation
-    ) -> Dict:
+    ) -> dict:
         additional_information_dict = {
             "type": additional_information.type_of_additional_information.uri
         }
@@ -344,10 +328,8 @@ class DatabaseClient:
 
         return additional_information_dict
 
-    def get_plan_regulation(self, plan_regulation: models.PlanRegulation) -> Dict:
-        """
-        Construct a dict of Ryhti compatible plan regulation.
-        """
+    def get_plan_regulation(self, plan_regulation: models.PlanRegulation) -> dict:
+        """Construct a dict of Ryhti compatible plan regulation."""
         regulation_dict: dict[str, Any] = {}
         regulation_dict["planRegulationKey"] = plan_regulation.id
         regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
@@ -385,9 +367,8 @@ class DatabaseClient:
 
     def get_plan_regulation_group(
         self, group: models.PlanRegulationGroup, general: bool = False
-    ) -> Dict:
-        """
-        Construct a dict of Ryhti compatible plan regulation group.
+    ) -> dict:
+        """Construct a dict of Ryhti compatible plan regulation group.
 
         Plan regulation groups and general regulation groups have some minor
         differences, so you can specify if you want to create a general
@@ -414,10 +395,8 @@ class DatabaseClient:
             group_dict["planRegulations"].append(self.get_plan_regulation(regulation))
         return group_dict
 
-    def get_plan_object(self, plan_object: models.PlanObjectBase) -> Dict:
-        """
-        Construct a dict of Ryhti compatible plan object.
-        """
+    def get_plan_object(self, plan_object: models.PlanObjectBase) -> dict:
+        """Construct a dict of Ryhti compatible plan object."""
         plan_object_dict: dict[str, Any] = {}
         plan_object_dict["planObjectKey"] = plan_object.id
         plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
@@ -451,12 +430,10 @@ class DatabaseClient:
     def _needs_containing_land_use_area(
         self, plan_object: models.PlanObjectBase
     ) -> bool:
-        """
-        Returns True if the plan object needs a containing land use area as related plan
+        """Returns True if the plan object needs a containing land use area as related plan
         object based on the validation rule
         58 quality/req-spatialplanregulationtype-reference-spatialplanobject.
         """
-
         return isinstance(plan_object, models.OtherArea) and any(
             regulation.type_of_plan_regulation.value
             in {
@@ -469,17 +446,15 @@ class DatabaseClient:
                 "korttelialueTaiKorttelialueenOsa",
             }
             for group in plan_object.plan_regulation_groups
-            for regulation in cast(models.PlanRegulationGroup, group).plan_regulations
+            for regulation in cast("models.PlanRegulationGroup", group).plan_regulations
         )
 
     def _get_containing_land_use_area(
         self, plan_object: models.PlanObjectBase
     ) -> Optional["uuid.UUID"]:
-        """
-        Returns a land use area id that contains this plan_object.
+        """Returns a land use area id that contains this plan_object.
         If not found, returns None.
         """
-
         with self.Session(expire_on_commit=False) as session:
             stmt = select(models.LandUseArea.id).where(
                 models.LandUseArea.plan_id == plan_object.plan_id,
@@ -489,7 +464,7 @@ class DatabaseClient:
 
     def _get_related_plan_object_keys(
         self, plan_object: models.PlanObjectBase
-    ) -> List["uuid.UUID"]:
+    ) -> list["uuid.UUID"]:
         # TODO: there might be other use cases for related plan objects
         related_plan_object_keys = []
 
@@ -504,9 +479,8 @@ class DatabaseClient:
 
         return related_plan_object_keys
 
-    def get_plan_object_dicts(self, plan_objects: List[models.PlanObjectBase]) -> List:
-        """
-        Construct a list of Ryhti compatible plan object dicts from plan objects
+    def get_plan_object_dicts(self, plan_objects: list[models.PlanObjectBase]) -> list:
+        """Construct a list of Ryhti compatible plan object dicts from plan objects
         in the local database.
         """
         plan_object_dicts = []
@@ -515,20 +489,19 @@ class DatabaseClient:
         return plan_object_dicts
 
     def get_plan_regulation_groups(
-        self, plan_objects: List[models.PlanObjectBase]
-    ) -> List:
-        """
-        Construct a list of Ryhti compatible plan regulation groups from plan objects
+        self, plan_objects: list[models.PlanObjectBase]
+    ) -> list:
+        """Construct a list of Ryhti compatible plan regulation groups from plan objects
         in the local database.
         """
         group_dicts = []
-        group_ids = set(
-            [
+        group_ids = {
+
                 regulation_group.id
                 for plan_object in plan_objects
                 for regulation_group in plan_object.plan_regulation_groups
-            ]
-        )
+
+        }
         # Let's fetch all the plan regulation groups for all the objects with a single
         # query. Hoping lazy loading does its trick with all the plan regulations.
         with self.Session(expire_on_commit=False) as session:
@@ -543,10 +516,9 @@ class DatabaseClient:
         return group_dicts
 
     def get_plan_regulation_group_relations(
-        self, plan_objects: List[models.PlanObjectBase]
-    ) -> List[Dict[str, "uuid.UUID"]]:
-        """
-        Construct a list of Ryhti compatible plan regulation group relations from plan
+        self, plan_objects: list[models.PlanObjectBase]
+    ) -> list[dict[str, "uuid.UUID"]]:
+        """Construct a list of Ryhti compatible plan regulation group relations from plan
         objects in the local database.
         """
         return [
@@ -559,8 +531,7 @@ class DatabaseClient:
         ]
 
     def get_plan_dictionary(self, plan: models.Plan) -> RyhtiPlan:
-        """
-        Construct a dict of single Ryhti compatible plan from plan in the
+        """Construct a dict of single Ryhti compatible plan from plan in the
         local database.
         """
         plan_dictionary = RyhtiPlan()
@@ -585,7 +556,7 @@ class DatabaseClient:
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
-        plan_objects: List[models.PlanObjectBase] = []
+        plan_objects: list[models.PlanObjectBase] = []
         with self.Session(expire_on_commit=False) as session:
             session.add(plan)
             plan_objects += plan.land_use_areas
@@ -632,20 +603,17 @@ class DatabaseClient:
 
         return plan_dictionary
 
-    def get_plan_dictionaries(self) -> Dict[UUID, RyhtiPlan]:
-        """
-        Construct a dict of valid Ryhti compatible plan dictionaries from plans in the
+    def get_plan_dictionaries(self) -> dict[UUID, RyhtiPlan]:
+        """Construct a dict of valid Ryhti compatible plan dictionaries from plans in the
         local database.
         """
-        plan_dictionaries = dict()
+        plan_dictionaries = {}
         for plan_id, plan in self.plans.items():
             plan_dictionaries[plan_id] = self.get_plan_dictionary(plan)
         return plan_dictionaries
 
-    def get_plan_map(self, document: models.Document) -> Dict:
-        """
-        Construct a dict of single Ryhti compatible plan map.
-        """
+    def get_plan_map(self, document: models.Document) -> dict:
+        """Construct a dict of single Ryhti compatible plan map."""
         plan_map: dict[str, Any] = {}
         plan_map["planMapKey"] = document.id
         plan_map["name"] = document.name
@@ -658,10 +626,8 @@ class DatabaseClient:
         )
         return plan_map
 
-    def get_plan_attachment_document(self, document: models.Document) -> Dict:
-        """
-        Construct a dict of single Ryhti compatible plan attachment document.
-        """
+    def get_plan_attachment_document(self, document: models.Document) -> dict:
+        """Construct a dict of single Ryhti compatible plan attachment document."""
         attachment_document: dict[str, Any] = {}
         attachment_document["attachmentDocumentKey"] = document.id
         attachment_document["documentIdentifier"] = (
@@ -682,10 +648,8 @@ class DatabaseClient:
         attachment_document["typeOfAttachment"] = document.type_of_document.uri
         return attachment_document
 
-    def get_other_plan_material(self, document: models.Document) -> Dict:
-        """
-        Construct a dict of single Ryhti compatible other plan material item.
-        """
+    def get_other_plan_material(self, document: models.Document) -> dict:
+        """Construct a dict of single Ryhti compatible other plan material item."""
         other_plan_material: dict[str, Any] = {}
         other_plan_material["otherPlanMaterialKey"] = document.id
         other_plan_material["name"] = document.name
@@ -699,8 +663,7 @@ class DatabaseClient:
     def add_plan_report_to_plan_dict(
         self, document: models.Document, plan_dictionary: RyhtiPlan
     ) -> RyhtiPlan:
-        """
-        Construct a dict of single Ryhti compatible plan report and add it to the
+        """Construct a dict of single Ryhti compatible plan report and add it to the
         provided plan dict. The plan dict may already have existing plan reports.
         """
         if not plan_dictionary["planReport"]:
@@ -717,8 +680,7 @@ class DatabaseClient:
     def add_document_to_plan_dict(
         self, document: models.Document, plan_dictionary: RyhtiPlan
     ) -> RyhtiPlan:
-        """
-        Construct a dict of single Ryhti compatible plan document and add it to the
+        """Construct a dict of single Ryhti compatible plan document and add it to the
         provided plan dict.
 
         The exact type of the dictionary to be added depends on the document type.
@@ -745,12 +707,11 @@ class DatabaseClient:
             )
         return plan_dictionary
 
-    def get_plan_decisions(self, plan: models.Plan) -> List[RyhtiPlanDecision]:
-        """
-        Construct a list of Ryhti compatible plan decisions from plan in the local
+    def get_plan_decisions(self, plan: models.Plan) -> list[RyhtiPlanDecision]:
+        """Construct a list of Ryhti compatible plan decisions from plan in the local
         database.
         """
-        decisions: List[RyhtiPlanDecision] = []
+        decisions: list[RyhtiPlanDecision] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
         print(decisions_by_status.get(plan.lifecycle_status.value, []))
@@ -806,12 +767,11 @@ class DatabaseClient:
             decisions.append(entry)
         return decisions
 
-    def get_plan_handling_events(self, plan: models.Plan) -> List[RyhtiHandlingEvent]:
-        """
-        Construct a list of Ryhti compatible plan handling events from plan in the local
+    def get_plan_handling_events(self, plan: models.Plan) -> list[RyhtiHandlingEvent]:
+        """Construct a list of Ryhti compatible plan handling events from plan in the local
         database.
         """
-        events: List[RyhtiHandlingEvent] = []
+        events: list[RyhtiHandlingEvent] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
         for event_value in processing_events_by_status.get(
@@ -864,12 +824,11 @@ class DatabaseClient:
             events.append(entry)
         return events
 
-    def get_interaction_events(self, plan: models.Plan) -> List[RyhtiInteractionEvent]:
-        """
-        Construct a list of Ryhti compatible interaction events from plan in the local
+    def get_interaction_events(self, plan: models.Plan) -> list[RyhtiInteractionEvent]:
+        """Construct a list of Ryhti compatible interaction events from plan in the local
         database.
         """
-        events: List[RyhtiInteractionEvent] = []
+        events: list[RyhtiInteractionEvent] = []
         # Decision name must correspond to the phase the plan is in. This requires
         # mapping from lifecycle statuses to decision names.
         for event_value in interaction_events_by_status.get(
@@ -926,9 +885,8 @@ class DatabaseClient:
             events.append(entry)
         return events
 
-    def get_plan_matter_phases(self, plan: models.Plan) -> List[RyhtiPlanMatterPhase]:
-        """
-        Construct a list of Ryhti compatible plan matter phases from plan in the local
+    def get_plan_matter_phases(self, plan: models.Plan) -> list[RyhtiPlanMatterPhase]:
+        """Construct a list of Ryhti compatible plan matter phases from plan in the local
         database.
 
         Currently, we only return the *current* phase, because our database does *not*
@@ -969,17 +927,15 @@ class DatabaseClient:
 
         return [phase]
 
-    def get_source_datas(self, plan: models.Plan) -> List[Dict]:
-        """
-        Construct a list of Ryhti compatible source datas from plan in the local
+    def get_source_datas(self, plan: models.Plan) -> list[dict]:
+        """Construct a list of Ryhti compatible source datas from plan in the local
         database.
         """
         # TODO
         return []
 
     def get_plan_matter(self, plan: models.Plan) -> RyhtiPlanMatter:
-        """
-        Construct a dict of single Ryhti compatible plan matter from plan in the local
+        """Construct a dict of single Ryhti compatible plan matter from plan in the local
         database.
         """
         plan_matter = RyhtiPlanMatter()
@@ -1035,8 +991,7 @@ class DatabaseClient:
         return plan_matter
 
     def get_plan_matters(self) -> dict[UUID, RyhtiPlanMatter]:
-        """
-        Construct a dict of Ryhti compatible plan matters from plans with
+        """Construct a dict of Ryhti compatible plan matters from plans with
         permanent identifiers in the local database. In case plan has no
         permanent identifier, it is not included in the dict.
         """
@@ -1045,8 +1000,7 @@ class DatabaseClient:
     def save_plan_validation_responses(
         self, responses: dict[UUID, "RyhtiResponse"]
     ) -> dict[UUID, str]:
-        """
-        Save open validation API response data to the database and return lambda
+        """Save open validation API response data to the database and return lambda
         response.
 
         If validation is successful, update validated_at field and validation_errors
@@ -1082,7 +1036,7 @@ class DatabaseClient:
                     LOGGER.info(details[plan_id])
                     LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                     continue
-                elif response["status"] == 200:
+                if response["status"] == 200:
                     details[plan_id] = f"Plan validation successful for {plan_id}!"
                     plan.validation_errors = (
                         "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
@@ -1097,9 +1051,8 @@ class DatabaseClient:
             session.commit()
         return details
 
-    def set_plan_documents(self, responses: Dict[UUID, List["RyhtiResponse"]]):
-        """
-        Save uploaded plan document keys, export times and etags to the database.
+    def set_plan_documents(self, responses: dict[UUID, list["RyhtiResponse"]]) -> None:
+        """Save uploaded plan document keys, export times and etags to the database.
         Also, append document data to the plan dictionaries.
         """
         with self.Session(expire_on_commit=False) as session:
@@ -1128,8 +1081,7 @@ class DatabaseClient:
     def set_permanent_plan_identifiers(
         self, responses: dict[UUID, "RyhtiResponse"]
     ) -> dict[UUID, str]:
-        """
-        Save permanent plan identifiers returned by RYHTI API to the database and
+        """Save permanent plan identifiers returned by RYHTI API to the database and
         return lambda response.
         """
         details: dict[UUID, str] = {}
@@ -1153,8 +1105,7 @@ class DatabaseClient:
     def save_plan_matter_validation_responses(
         self, responses: dict[UUID, "RyhtiResponse"]
     ) -> dict[UUID, str]:
-        """
-        Save X-Road validation API response data to the database and return lambda
+        """Save X-Road validation API response data to the database and return lambda
         response.
 
         If validation is successful, update validated_at field and validation_errors
@@ -1168,8 +1119,8 @@ class DatabaseClient:
         """
         details: dict[UUID, str] = {}
         with self.Session(expire_on_commit=False) as session:
-            for plan_id in self.plans.keys():
-                plan: Optional[models.Plan] = session.get(models.Plan, plan_id)
+            for plan_id in self.plans:
+                plan: models.Plan | None = session.get(models.Plan, plan_id)
                 if not plan:
                     # Plan has been deleted in the middle of validation. Nothing
                     # to see here, move on
@@ -1199,7 +1150,7 @@ class DatabaseClient:
                     LOGGER.info(details[plan_id])
                     LOGGER.info(f"Ryhti response: {json.dumps(response)}")
                     continue
-                elif response["status"] == 200:
+                if response["status"] == 200:
                     details[plan_id] = (
                         f"Plan matter validation successful for {plan_id}!"
                     )
@@ -1219,8 +1170,7 @@ class DatabaseClient:
     def save_plan_matter_post_responses(
         self, responses: dict[UUID, "RyhtiResponse"]
     ) -> dict[UUID, str]:
-        """
-        Save X-Road API POST response data to the database and return lambda response.
+        """Save X-Road API POST response data to the database and return lambda response.
 
         If POST is successful, update exported_at and validated_at fields.
 
@@ -1232,8 +1182,8 @@ class DatabaseClient:
         """
         details: dict[UUID, str] = {}
         with self.Session(expire_on_commit=False) as session:
-            for plan_id in self.plans.keys():
-                plan: Optional[models.Plan] = session.get(models.Plan, plan_id)
+            for plan_id in self.plans:
+                plan: models.Plan | None = session.get(models.Plan, plan_id)
                 if not plan:
                     # Plan has been deleted in the middle of POST. Nothing
                     # to see here, move on

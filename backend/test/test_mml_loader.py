@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from collections.abc import Callable
 
 import pytest
 from requests_mock.request import _RequestObjectProxy
@@ -9,7 +9,7 @@ from database import codes
 from lambdas.mml_loader.mml_loader import MMLLoader
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_mml(requests_mock):
     def match_request_body(request: _RequestObjectProxy):
         return request.json() == {
@@ -46,7 +46,7 @@ def mock_mml(requests_mock):
         yield
 
 
-@pytest.fixture()
+@pytest.fixture
 def loader(
     admin_connection_string: str,
     municipality_instance: codes.Municipality,
@@ -55,7 +55,7 @@ def loader(
     return MMLLoader(admin_connection_string, api_key="mock_apikey")
 
 
-def test_get_geometries(mock_mml: Callable, loader: MMLLoader):
+def test_get_geometries(mock_mml: Callable, loader: MMLLoader) -> None:
     geoms = loader.get_geometries()
     assert len(geoms) == 2
 
@@ -66,7 +66,7 @@ def test_save_geometries(
     loader: MMLLoader,
     municipality_instance: codes.Municipality,
     administrative_region_instance: codes.AdministrativeRegion,
-):
+) -> None:
     geoms = loader.get_geometries()
     msg = loader.save_geometries(geoms)
     assert msg == "2 inserted or updated. 0 deleted."

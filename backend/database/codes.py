@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING, Dict, List, Optional, Self, Type, TypeVar
+from typing import TYPE_CHECKING, Self, TypeVar
 
 from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Table, Uuid
@@ -71,20 +71,19 @@ allowed_events = Table(
 
 
 class CodeBase(VersionedBase):
-    """
-    Code tables in Ryhti should refer to national Ryhti code table URIs. They may
+    """Code tables in Ryhti should refer to national Ryhti code table URIs. They may
     have hierarchical structure.
     """
 
     __abstract__ = True
     __table_args__ = {"schema": "codes"}
     code_list_uri = ""  # the URI to use for looking for codes online
-    local_codes: List[Dict] = []  # local codes to add to the code list
+    local_codes: list[dict] = []  # local codes to add to the code list
 
     value: Mapped[unique_str]
     short_name: Mapped[str] = mapped_column(server_default="", index=True)
-    name: Mapped[Optional[language_str]]
-    description: Mapped[Optional[language_str]]
+    name: Mapped[language_str | None]
+    description: Mapped[language_str | None]
     # Let's import code status too. This tells our importer if the koodisto is final,
     # or if the code can be deleted and/or moved.
     status: Mapped[str]
@@ -95,103 +94,95 @@ class CodeBase(VersionedBase):
     # self-reference in abstract base class:
     @declared_attr
     @classmethod
-    def parent_id(cls) -> Mapped[Optional[uuid.UUID]]:
+    def parent_id(cls) -> Mapped[uuid.UUID | None]:
         return mapped_column(
             ForeignKey(cls.id, name=f"{cls.__tablename__}_parent_id_fkey"), index=True
         )
 
     @declared_attr
     @classmethod
-    def parent(cls) -> Mapped[Optional[Self]]:
+    def parent(cls) -> Mapped[Self | None]:
         return relationship(cls, remote_side=[cls.id], back_populates="children")
 
     @declared_attr
     @classmethod
-    def children(cls) -> Mapped[List[Self]]:
+    def children(cls) -> Mapped[list[Self]]:
         return relationship(cls, back_populates="parent")
 
     @property
-    def uri(self):
+    def uri(self) -> str:
         return f"{self.code_list_uri}/code/{self.value}"
 
 
 class LifeCycleStatus(CodeBase):
-    """
-    Elinkaaren vaihe
-    """
+    """Elinkaaren vaihe"""
 
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
-    lifecycle_dates: Mapped[List["LifeCycleDate"]] = relationship(
+    lifecycle_dates: Mapped[list["LifeCycleDate"]] = relationship(
         back_populates="lifecycle_status",
     )
-    allowed_interaction_events: Mapped[List["TypeOfInteractionEvent"]] = relationship(
+    allowed_interaction_events: Mapped[list["TypeOfInteractionEvent"]] = relationship(
         secondary="codes.allowed_events", back_populates="allowed_statuses"
     )
-    allowed_decisions: Mapped[List["NameOfPlanCaseDecision"]] = relationship(
+    allowed_decisions: Mapped[list["NameOfPlanCaseDecision"]] = relationship(
         secondary="codes.allowed_events",
         back_populates="allowed_statuses",
         overlaps="allowed_interaction_events",
     )
-    allowed_processing_events: Mapped[List["TypeOfProcessingEvent"]] = relationship(
+    allowed_processing_events: Mapped[list["TypeOfProcessingEvent"]] = relationship(
         secondary="codes.allowed_events",
         back_populates="allowed_statuses",
         overlaps="allowed_decisions,allowed_interaction_events",
     )
 
-    plans: Mapped[List["Plan"]] = relationship(back_populates="lifecycle_status")
+    plans: Mapped[list["Plan"]] = relationship(back_populates="lifecycle_status")
 
-    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+    land_use_areas: Mapped[list["LandUseArea"]] = relationship(
         back_populates="lifecycle_status"
     )
-    other_areas: Mapped[List["OtherArea"]] = relationship(
+    other_areas: Mapped[list["OtherArea"]] = relationship(
         back_populates="lifecycle_status"
     )
-    lines: Mapped[List["Line"]] = relationship(back_populates="lifecycle_status")
-    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+    lines: Mapped[list["Line"]] = relationship(back_populates="lifecycle_status")
+    land_use_points: Mapped[list["LandUsePoint"]] = relationship(
         back_populates="lifecycle_status"
     )
-    other_points: Mapped[List["OtherPoint"]] = relationship(
+    other_points: Mapped[list["OtherPoint"]] = relationship(
         back_populates="lifecycle_status"
     )
 
-    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+    plan_regulations: Mapped[list["PlanRegulation"]] = relationship(
         back_populates="lifecycle_status"
     )
-    plan_propositions: Mapped[List["PlanProposition"]] = relationship(
+    plan_propositions: Mapped[list["PlanProposition"]] = relationship(
         back_populates="lifecycle_status"
     )
 
 
 class PlanType(CodeBase):
-    """
-    Kaavalaji
-    """
+    """Kaavalaji"""
 
     __tablename__ = "plan_type"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji"
 
-    plans: Mapped[List["Plan"]] = relationship(back_populates="plan_type")
+    plans: Mapped[list["Plan"]] = relationship(back_populates="plan_type")
 
 
 class TypeOfPlanRegulation(CodeBase):
-    """
-    Kaavamääräyslaji
-    """
+    """Kaavamääräyslaji"""
 
     __tablename__ = "type_of_plan_regulation"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
 
-    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+    plan_regulations: Mapped[list["PlanRegulation"]] = relationship(
         back_populates="type_of_plan_regulation"
     )
 
 
 class TypeOfAdditionalInformation(CodeBase):
-    """
-    Kaavamääräyksen lisätiedon laji
-    """
+    """Kaavamääräyksen lisätiedon laji"""
 
     # Let's use a shortish table name, since the long name creates indexes that have
     # names that are too long for PostgreSQL, hooray :D
@@ -202,8 +193,7 @@ class TypeOfAdditionalInformation(CodeBase):
 
 
 class TypeOfVerbalPlanRegulation(CodeBase):
-    """
-    Sanallisen määräyksen laji
+    """Sanallisen määräyksen laji
 
     Epäselvää milloin tätä käytetään.
     """
@@ -213,65 +203,57 @@ class TypeOfVerbalPlanRegulation(CodeBase):
         "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji"
     )
 
-    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+    plan_regulations: Mapped[list["PlanRegulation"]] = relationship(
         secondary="hame.type_of_verbal_regulation_association",
         back_populates="types_of_verbal_plan_regulations",
     )
 
 
 class TypeOfSourceData(CodeBase):
-    """
-    Lähtöaineiston laji
-    """
+    """Lähtöaineiston laji"""
 
     __tablename__ = "type_of_source_data"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_LahtotietoaineistonLaji"
 
-    source_data: Mapped[List["SourceData"]] = relationship(
+    source_data: Mapped[list["SourceData"]] = relationship(
         back_populates="type_of_source_data"
     )
 
 
 class TypeOfUnderground(CodeBase):
-    """
-    Maanalaisuuden laji
-    """
+    """Maanalaisuuden laji"""
 
     __tablename__ = "type_of_underground"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji"
 
-    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+    land_use_areas: Mapped[list["LandUseArea"]] = relationship(
         back_populates="type_of_underground"
     )
-    other_areas: Mapped[List["OtherArea"]] = relationship(
+    other_areas: Mapped[list["OtherArea"]] = relationship(
         back_populates="type_of_underground"
     )
-    lines: Mapped[List["Line"]] = relationship(back_populates="type_of_underground")
-    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+    lines: Mapped[list["Line"]] = relationship(back_populates="type_of_underground")
+    land_use_points: Mapped[list["LandUsePoint"]] = relationship(
         back_populates="type_of_underground"
     )
-    other_points: Mapped[List["OtherPoint"]] = relationship(
+    other_points: Mapped[list["OtherPoint"]] = relationship(
         back_populates="type_of_underground"
     )
 
 
 class TypeOfDocument(CodeBase):
-    """
-    Asiakirjatyyppi
-    """
+    """Asiakirjatyyppi"""
 
     __tablename__ = "type_of_document"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_AsiakirjanLaji_YKAK"
 
-    documents: Mapped[List["Document"]] = relationship(
+    documents: Mapped[list["Document"]] = relationship(
         back_populates="type_of_document"
     )
 
 
 class Municipality(CodeBase):
-    """
-    Kunta
-    """
+    """Kunta"""
 
     __tablename__ = "municipality"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/kunta_1_20240101"
@@ -280,15 +262,13 @@ class Municipality(CodeBase):
         type_=Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True
     )
 
-    organisations: Mapped[List["Organisation"]] = relationship(
+    organisations: Mapped[list["Organisation"]] = relationship(
         back_populates="municipality"
     )
 
 
 class AdministrativeRegion(CodeBase):
-    """
-    Maakunta
-    """
+    """Maakunta"""
 
     __tablename__ = "administrative_region"
     code_list_uri = "http://uri.suomi.fi/codelist/jhs/maakunta_1_20240101"
@@ -297,14 +277,13 @@ class AdministrativeRegion(CodeBase):
         type_=Geometry(geometry_type="MULTIPOLYGON", srid=3067), nullable=True
     )
 
-    organisations: Mapped[List["Organisation"]] = relationship(
+    organisations: Mapped[list["Organisation"]] = relationship(
         back_populates="administrative_region"
     )
 
 
 class TypeOfPlanRegulationGroup(CodeBase):
-    """
-    Kaavamääräysryhmän tyyppi
+    """Kaavamääräysryhmän tyyppi
 
     This is our own code list. It does not exist in koodistot.suomi.fi.
     """
@@ -319,25 +298,23 @@ class TypeOfPlanRegulationGroup(CodeBase):
         {"value": "otherPointRegulations", "name": {"fin": "Muu piste"}},
     ]
 
-    plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+    plan_regulation_groups: Mapped[list["PlanRegulationGroup"]] = relationship(
         back_populates="type_of_plan_regulation_group"
     )
 
 
 class PlanTheme(CodeBase):
-    """
-    Kaavoitusteema
-    """
+    """Kaavoitusteema"""
 
     __tablename__ = "plan_theme"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavoitusteema"
 
-    plan_propositions: Mapped[List["PlanProposition"]] = relationship(
+    plan_propositions: Mapped[list["PlanProposition"]] = relationship(
         secondary="hame.plan_theme_association",
         overlaps="plan_regulations",
         back_populates="plan_themes",
     )
-    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+    plan_regulations: Mapped[list["PlanRegulation"]] = relationship(
         secondary="hame.plan_theme_association",
         overlaps="plan_propositions",
         back_populates="plan_themes",
@@ -345,62 +322,52 @@ class PlanTheme(CodeBase):
 
 
 class CategoryOfPublicity(CodeBase):
-    """
-    Asiakirjan julkisuusluokka
-    """
+    """Asiakirjan julkisuusluokka"""
 
     __tablename__ = "category_of_publicity"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/julkisuus"
 
-    documents: Mapped[List["Document"]] = relationship(
+    documents: Mapped[list["Document"]] = relationship(
         back_populates="category_of_publicity"
     )
 
 
 class PersonalDataContent(CodeBase):
-    """
-    Asiakirjan henkilötietosisältö
-    """
+    """Asiakirjan henkilötietosisältö"""
 
     __tablename__ = "personal_data_content"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto"
 
-    documents: Mapped[List["Document"]] = relationship(
+    documents: Mapped[list["Document"]] = relationship(
         back_populates="personal_data_content"
     )
 
 
 class RetentionTime(CodeBase):
-    """
-    Asiakirjan säilytysaika
-    """
+    """Asiakirjan säilytysaika"""
 
     __tablename__ = "retention_time"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/sailytysaika"
 
-    documents: Mapped[List["Document"]] = relationship(back_populates="retention_time")
+    documents: Mapped[list["Document"]] = relationship(back_populates="retention_time")
 
 
 class Language(CodeBase):
-    """
-    Rakennetun ympäristön tietojärjestelmän tukemat kielet
-    """
+    """Rakennetun ympäristön tietojärjestelmän tukemat kielet"""
 
     __tablename__ = "language"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/ryhtikielet"
 
-    documents: Mapped[List["Document"]] = relationship(back_populates="language")
+    documents: Mapped[list["Document"]] = relationship(back_populates="language")
 
 
 class LegalEffectsOfMasterPlan(CodeBase):
-    """
-    Yleiskaavan oikeusvaikutukset
-    """
+    """Yleiskaavan oikeusvaikutukset"""
 
     __tablename__ = "legal_effects_of_master_plan"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK"
 
-    plans: Mapped[List["Plan"]] = relationship(
+    plans: Mapped[list["Plan"]] = relationship(
         secondary="hame.legal_effects_association",
         back_populates="legal_effects_of_master_plan",
     )
@@ -469,66 +436,58 @@ interaction_events_by_status = {
 
 
 class TypeOfInteractionEvent(CodeBase):
-    """
-    Vuorovaikutustapahtuman laji (kaava)
-    """
+    """Vuorovaikutustapahtuman laji (kaava)"""
 
     __tablename__ = "type_of_interaction_event"
     code_list_uri = (
         "http://uri.suomi.fi/codelist/rytj/RY_KaavanVuorovaikutustapahtumanLaji"
     )
     allowed_status_dict = interaction_events_by_status
-    allowed_statuses: Mapped[List["LifeCycleStatus"]] = relationship(
+    allowed_statuses: Mapped[list["LifeCycleStatus"]] = relationship(
         secondary="codes.allowed_events",
         back_populates="allowed_interaction_events",
         overlaps="allowed_decisions,allowed_processing_events",
     )
 
-    event_dates: Mapped[List["EventDate"]] = relationship(
+    event_dates: Mapped[list["EventDate"]] = relationship(
         back_populates="interaction_event"
     )
 
 
 class NameOfPlanCaseDecision(CodeBase):
-    """
-    Kaava-asian päätöksen nimi
-    """
+    """Kaava-asian päätöksen nimi"""
 
     __tablename__ = "name_of_plan_case_decision"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavpaatnimi"
     allowed_status_dict = decisions_by_status
-    allowed_statuses: Mapped[List["LifeCycleStatus"]] = relationship(
+    allowed_statuses: Mapped[list["LifeCycleStatus"]] = relationship(
         secondary="codes.allowed_events",
         back_populates="allowed_decisions",
-        overlaps="allowed_interaction_events,allowed_processing_events,allowed_statuses",  # noqa
+        overlaps="allowed_interaction_events,allowed_processing_events,allowed_statuses",
     )
 
-    event_dates: Mapped[List["EventDate"]] = relationship(back_populates="decision")
+    event_dates: Mapped[list["EventDate"]] = relationship(back_populates="decision")
 
 
 class TypeOfProcessingEvent(CodeBase):
-    """
-    Käsittelytapahtuman laji
-    """
+    """Käsittelytapahtuman laji"""
 
     __tablename__ = "type_of_processing_event"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavakastap"
     allowed_status_dict = processing_events_by_status
-    allowed_statuses: Mapped[List["LifeCycleStatus"]] = relationship(
+    allowed_statuses: Mapped[list["LifeCycleStatus"]] = relationship(
         secondary="codes.allowed_events",
         back_populates="allowed_processing_events",
         overlaps="allowed_interaction_events,allowed_decisions,allowed_statuses",
     )
 
-    event_dates: Mapped[List["EventDate"]] = relationship(
+    event_dates: Mapped[list["EventDate"]] = relationship(
         back_populates="processing_event"
     )
 
 
 class TypeOfDecisionMaker(CodeBase):
-    """
-    Päätöksentekijän laji
-    """
+    """Päätöksentekijän laji"""
 
     __tablename__ = "type_of_decision_maker"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/PaatoksenTekija"
@@ -537,17 +496,13 @@ class TypeOfDecisionMaker(CodeBase):
 T = TypeVar("T", bound=CodeBase)
 
 
-def get_code(session: Session, code_class: Type[T], value: str) -> T | None:
-    """
-    Get code object by value.
-    """
+def get_code[T: CodeBase](session: Session, code_class: type[T], value: str) -> T | None:
+    """Get code object by value."""
     return session.query(code_class).filter_by(value=value).first()
 
 
-def get_code_uri(code_class: Type[CodeBase], value: str) -> str:
-    """
-    Get code URI by value, without querying the database.
-    """
+def get_code_uri(code_class: type[CodeBase], value: str) -> str:
+    """Get code URI by value, without querying the database."""
     return code_class(value=value).uri
 
 

@@ -15,7 +15,7 @@ def test_validate_polygon_geometry_triggers(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     organisation_instance: models.Organisation,
-):
+) -> None:
     invalid_polygon = MultiPolygon(
         [(((0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0)),)]
     )
@@ -59,7 +59,7 @@ def test_validate_line_geometry(
     code_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_regulation_group_instance: models.PlanRegulationGroup,
-):
+) -> None:
     # Create line_instance that intersects itself
     another_line_instance = models.Line(
         geom=from_shape(
@@ -81,7 +81,7 @@ def test_validate_lifecycle_dates(
     session: Session,
     plan_instance: models.Plan,
     lifecycle_date_instance: models.LifeCycleDate,
-):
+) -> None:
     assert (
         lifecycle_date_instance.ending_at
         and lifecycle_date_instance.starting_at < lifecycle_date_instance.ending_at
@@ -110,7 +110,7 @@ def test_validate_event_dates(
     session: Session,
     preparation_date_instance: models.LifeCycleDate,
     interaction_event_date_instance: models.EventDate,
-):
+) -> None:
     assert (
         interaction_event_date_instance.ending_at
         and interaction_event_date_instance.starting_at
@@ -140,7 +140,7 @@ def test_validate_event_dates_inside_status_dates(
     session: Session,
     preparation_date_instance: models.LifeCycleDate,
     interaction_event_date_instance: models.EventDate,
-):
+) -> None:
     assert (
         interaction_event_date_instance.starting_at
         > preparation_date_instance.starting_at
@@ -192,7 +192,7 @@ def test_validate_event_types(
     decision_date_instance: models.EventDate,
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-):
+) -> None:
     assert decision_date_instance.lifecycle_date == preparation_date_instance
     assert (
         decision_date_instance.decision

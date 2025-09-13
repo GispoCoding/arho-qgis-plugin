@@ -1,13 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Any, List, Optional, Union
+from typing import Annotated, Any, Union
 
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
-from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP
-from sqlalchemy.types import Enum as SQLAlchemyEnum
-from typing_extensions import Annotated
+from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP, Enum as SQLAlchemyEnum
 
 from database.enums import AttributeValueDataType
 
@@ -15,15 +13,13 @@ PROJECT_SRID = 3067
 
 
 class Base(DeclarativeBase):
-    """
-    Here we link any postgres specific data types to type annotations.
-    """
+    """Here we link any postgres specific data types to type annotations."""
 
     type_annotation_map = {
         uuid.UUID: postgresql.UUID(as_uuid=False),
         dict[str, str]: postgresql.JSONB,  # Used for multi language text fields
         Union[dict[str, Any], str]: postgresql.JSONB,  # Used for validation errors
-        List[str]: ARRAY(TEXT),
+        list[str]: ARRAY(TEXT),
         datetime: TIMESTAMP(timezone=True),
     }
 
@@ -42,9 +38,7 @@ metadata = Base.metadata
 
 
 class VersionedBase(Base):
-    """
-    Versioned data tables should have some uniform fields.
-    """
+    """Versioned data tables should have some uniform fields."""
 
     __abstract__ = True
     __table_args__: Any = {"schema": "hame"}
@@ -60,25 +54,25 @@ class VersionedBase(Base):
 
 
 class AttributeValueMixin:
-    """Common attributes for property values"""
+    """Common attributes for property values."""
 
-    value_data_type: Mapped[Optional[AttributeValueDataType]] = mapped_column(
+    value_data_type: Mapped[AttributeValueDataType | None] = mapped_column(
         SQLAlchemyEnum(
             AttributeValueDataType, values_callable=lambda e: [x.value for x in e]
         ),
     )
 
-    numeric_value: Mapped[Optional[float]]
-    numeric_range_min: Mapped[Optional[float]]
-    numeric_range_max: Mapped[Optional[float]]
+    numeric_value: Mapped[float | None]
+    numeric_range_min: Mapped[float | None]
+    numeric_range_max: Mapped[float | None]
 
-    unit: Mapped[Optional[str]]
+    unit: Mapped[str | None]
 
-    text_value: Mapped[Optional[language_str]]
-    text_syntax: Mapped[Optional[str]]
+    text_value: Mapped[language_str | None]
+    text_syntax: Mapped[str | None]
 
-    code_list: Mapped[Optional[str]]
-    code_value: Mapped[Optional[str]]
-    code_title: Mapped[Optional[language_str]]
+    code_list: Mapped[str | None]
+    code_value: Mapped[str | None]
+    code_title: Mapped[language_str | None]
 
-    height_reference_point: Mapped[Optional[str]]
+    height_reference_point: Mapped[str | None]

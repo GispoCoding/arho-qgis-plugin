@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
@@ -14,28 +14,30 @@ from database.base import (
     VersionedBase,
     language_str,
 )
-from database.codes import (
-    AdministrativeRegion,
-    CategoryOfPublicity,
-    Language,
-    LegalEffectsOfMasterPlan,
-    LifeCycleStatus,
-    Municipality,
-    NameOfPlanCaseDecision,
-    PersonalDataContent,
-    PlanTheme,
-    PlanType,
-    RetentionTime,
-    TypeOfAdditionalInformation,
-    TypeOfDocument,
-    TypeOfInteractionEvent,
-    TypeOfPlanRegulation,
-    TypeOfPlanRegulationGroup,
-    TypeOfProcessingEvent,
-    TypeOfSourceData,
-    TypeOfUnderground,
-    TypeOfVerbalPlanRegulation,
-)
+
+if TYPE_CHECKING:
+    from database.codes import (
+        AdministrativeRegion,
+        CategoryOfPublicity,
+        Language,
+        LegalEffectsOfMasterPlan,
+        LifeCycleStatus,
+        Municipality,
+        NameOfPlanCaseDecision,
+        PersonalDataContent,
+        PlanTheme,
+        PlanType,
+        RetentionTime,
+        TypeOfAdditionalInformation,
+        TypeOfDocument,
+        TypeOfInteractionEvent,
+        TypeOfPlanRegulation,
+        TypeOfPlanRegulationGroup,
+        TypeOfProcessingEvent,
+        TypeOfSourceData,
+        TypeOfUnderground,
+        TypeOfVerbalPlanRegulation,
+    )
 
 regulation_group_association = Table(
     "regulation_group_association",
@@ -172,9 +174,7 @@ plan_theme_association = Table(
 
 
 class PlanBase(VersionedBase):
-    """
-    All plan data tables should have additional date fields.
-    """
+    """All plan data tables should have additional date fields."""
 
     __abstract__ = True
 
@@ -182,7 +182,7 @@ class PlanBase(VersionedBase):
     # exported and others added after the plan has last been exported? This will
     # require finding all the exported objects in the database after export is done,
     # is it worth the trouble?
-    exported_at: Mapped[Optional[datetime]]
+    exported_at: Mapped[datetime | None]
 
     lifecycle_status_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
@@ -200,7 +200,7 @@ class PlanBase(VersionedBase):
     # Let's add backreference to allow lazy loading from this side.
     @declared_attr
     @classmethod
-    def lifecycle_dates(cls) -> Mapped[List["LifeCycleDate"]]:  # noqa
+    def lifecycle_dates(cls) -> Mapped[list["LifeCycleDate"]]:
         return relationship(
             "LifeCycleDate",
             back_populates=f"{cls.__tablename__}",
@@ -212,9 +212,7 @@ class PlanBase(VersionedBase):
 
 
 class Plan(PlanBase):
-    """
-    Maakuntakaava, compatible with Ryhti 2.0 specification
-    """
+    """Maakuntakaava, compatible with Ryhti 2.0 specification"""
 
     __tablename__ = "plan"
 
@@ -231,56 +229,56 @@ class Plan(PlanBase):
     # Let's load all the codes for objects joined.
     plan_type: Mapped["PlanType"] = relationship(back_populates="plans", lazy="joined")
     # Also join plan documents
-    documents: Mapped[List["Document"]] = relationship(
+    documents: Mapped[list["Document"]] = relationship(
         back_populates="plan", lazy="joined", cascade="all, delete-orphan"
     )
     # Load plan objects ordered
-    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+    land_use_areas: Mapped[list["LandUseArea"]] = relationship(
         order_by="LandUseArea.ordering",
         back_populates="plan",
         cascade="all, delete-orphan",
     )
-    other_areas: Mapped[List["OtherArea"]] = relationship(
+    other_areas: Mapped[list["OtherArea"]] = relationship(
         order_by="OtherArea.ordering",
         back_populates="plan",
         cascade="all, delete-orphan",
     )
-    lines: Mapped[List["Line"]] = relationship(
+    lines: Mapped[list["Line"]] = relationship(
         order_by="Line.ordering", back_populates="plan", cascade="all, delete-orphan"
     )
-    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+    land_use_points: Mapped[list["LandUsePoint"]] = relationship(
         order_by="LandUsePoint.ordering",
         back_populates="plan",
         cascade="all, delete-orphan",
     )
-    other_points: Mapped[List["OtherPoint"]] = relationship(
+    other_points: Mapped[list["OtherPoint"]] = relationship(
         order_by="OtherPoint.ordering",
         back_populates="plan",
         cascade="all, delete-orphan",
     )
 
-    permanent_plan_identifier: Mapped[Optional[str]]
-    producers_plan_identifier: Mapped[Optional[str]]
+    permanent_plan_identifier: Mapped[str | None]
+    producers_plan_identifier: Mapped[str | None]
     name: Mapped[language_str]
-    description: Mapped[Optional[language_str]]
-    scale: Mapped[Optional[int]]
-    matter_management_identifier: Mapped[Optional[str]]
-    record_number: Mapped[Optional[str]]
+    description: Mapped[language_str | None]
+    scale: Mapped[int | None]
+    matter_management_identifier: Mapped[str | None]
+    record_number: Mapped[str | None]
     geom: Mapped[WKBElement] = mapped_column(
         type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
     )
     # Only plan should have validated_at field, since validation is only done
     # for complete plan objects. Also validation errors might concern multiple
     # models, not just one field or one table in database.
-    validated_at: Mapped[Optional[datetime]]
-    validation_errors: Mapped[Optional[Union[dict[str, Any], str]]]
+    validated_at: Mapped[datetime | None]
+    validation_errors: Mapped[dict[str, Any] | str | None]
 
     # Regulation groups belonging to a plan
-    regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+    regulation_groups: Mapped[list["PlanRegulationGroup"]] = relationship(
         back_populates="plan", cascade="all, delete-orphan"
     )
 
-    general_plan_regulation_groups: Mapped[List["PlanRegulationGroup"]] = relationship(
+    general_plan_regulation_groups: Mapped[list["PlanRegulationGroup"]] = relationship(
         secondary=regulation_group_association,
         lazy="joined",
         overlaps=(
@@ -288,7 +286,7 @@ class Plan(PlanBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    legal_effects_of_master_plan: Mapped[List["LegalEffectsOfMasterPlan"]] = (
+    legal_effects_of_master_plan: Mapped[list["LegalEffectsOfMasterPlan"]] = (
         relationship(
             "LegalEffectsOfMasterPlan",
             secondary=legal_effects_association,
@@ -297,15 +295,13 @@ class Plan(PlanBase):
         )
     )
 
-    source_data: Mapped[List["SourceData"]] = relationship(
+    source_data: Mapped[list["SourceData"]] = relationship(
         back_populates="plan", cascade="all, delete-orphan"
     )
 
 
 class PlanObjectBase(PlanBase):
-    """
-    All plan object tables have the same fields, apart from geometry.
-    """
+    """All plan object tables have the same fields, apart from geometry."""
 
     __abstract__ = True
 
@@ -322,19 +318,19 @@ class PlanObjectBase(PlanBase):
             PlanBase.__table_args__,
         )
 
-    name: Mapped[Optional[language_str]]
-    description: Mapped[Optional[language_str]]
-    source_data_object: Mapped[Optional[str]]
-    height_min: Mapped[Optional[float]]
-    height_max: Mapped[Optional[float]]
-    height_unit: Mapped[Optional[str]]
-    height_reference_point: Mapped[Optional[str]]
-    ordering: Mapped[Optional[int]]
+    name: Mapped[language_str | None]
+    description: Mapped[language_str | None]
+    source_data_object: Mapped[str | None]
+    height_min: Mapped[float | None]
+    height_max: Mapped[float | None]
+    height_unit: Mapped[str | None]
+    height_reference_point: Mapped[str | None]
+    ordering: Mapped[int | None]
     type_of_underground_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
         index=True,
     )
-    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
     )
 
@@ -359,7 +355,7 @@ class PlanObjectBase(PlanBase):
     # class reference in abstract base class, with backreference to class name:
     @declared_attr
     @classmethod
-    def plan_regulation_groups(cls) -> Mapped[List["PlanRegulationGroup"]]:
+    def plan_regulation_groups(cls) -> Mapped[list["PlanRegulationGroup"]]:
         return relationship(
             "PlanRegulationGroup",
             secondary="hame.regulation_group_association",
@@ -373,9 +369,7 @@ class PlanObjectBase(PlanBase):
 
 
 class LandUseArea(PlanObjectBase):
-    """
-    Aluevaraus
-    """
+    """Aluevaraus"""
 
     __tablename__ = "land_use_area"
 
@@ -385,9 +379,7 @@ class LandUseArea(PlanObjectBase):
 
 
 class OtherArea(PlanObjectBase):
-    """
-    Osa-alue
-    """
+    """Osa-alue"""
 
     __tablename__ = "other_area"
 
@@ -397,9 +389,7 @@ class OtherArea(PlanObjectBase):
 
 
 class Line(PlanObjectBase):
-    """
-    Viivat
-    """
+    """Viivat"""
 
     __tablename__ = "line"
 
@@ -409,9 +399,7 @@ class Line(PlanObjectBase):
 
 
 class LandUsePoint(PlanObjectBase):
-    """
-    Maankäytön pisteet
-    """
+    """Maankäytön pisteet"""
 
     __tablename__ = "land_use_point"
 
@@ -421,9 +409,7 @@ class LandUsePoint(PlanObjectBase):
 
 
 class OtherPoint(PlanObjectBase):
-    """
-    Muut pisteet
-    """
+    """Muut pisteet"""
 
     __tablename__ = "other_point"
 
@@ -433,9 +419,7 @@ class OtherPoint(PlanObjectBase):
 
 
 class PlanRegulationGroup(VersionedBase):
-    """
-    Kaavamääräysryhmä
-    """
+    """Kaavamääräysryhmä"""
 
     __tablename__ = "plan_regulation_group"
     __table_args__ = (
@@ -448,8 +432,8 @@ class PlanRegulationGroup(VersionedBase):
         VersionedBase.__table_args__,
     )
 
-    short_name: Mapped[Optional[str]]
-    name: Mapped[Optional[language_str]]
+    short_name: Mapped[str | None]
+    name: Mapped[language_str | None]
 
     plan_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey(
@@ -463,7 +447,7 @@ class PlanRegulationGroup(VersionedBase):
     )
     plan: Mapped["Plan"] = relationship(back_populates="regulation_groups")
 
-    ordering: Mapped[Optional[int]]
+    ordering: Mapped[int | None]
 
     # värikoodi?
     type_of_plan_regulation_group_id: Mapped[uuid.UUID] = mapped_column(
@@ -477,7 +461,7 @@ class PlanRegulationGroup(VersionedBase):
     )
 
     # Let's add backreference to allow lazy loading from this side.
-    plan_regulations: Mapped[List["PlanRegulation"]] = relationship(
+    plan_regulations: Mapped[list["PlanRegulation"]] = relationship(
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanRegulation.ordering",  # list regulations in right order
@@ -492,7 +476,7 @@ class PlanRegulationGroup(VersionedBase):
     # lazy loaded, because they are already added to the existing session.
     # But why don't integration tests catch this missing, they contain propositions too?
     # Maybe has something to do with the lifecycle of pytest session fixture?
-    plan_propositions: Mapped[List["PlanProposition"]] = relationship(
+    plan_propositions: Mapped[list["PlanProposition"]] = relationship(
         back_populates="plan_regulation_group",
         lazy="joined",
         order_by="PlanProposition.ordering",  # list propositions in right order
@@ -500,7 +484,7 @@ class PlanRegulationGroup(VersionedBase):
         passive_deletes=True,
     )
 
-    land_use_areas: Mapped[List["LandUseArea"]] = relationship(
+    land_use_areas: Mapped[list["LandUseArea"]] = relationship(
         secondary="hame.regulation_group_association",
         back_populates="plan_regulation_groups",
         overlaps=(
@@ -508,7 +492,7 @@ class PlanRegulationGroup(VersionedBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    other_areas: Mapped[List["OtherArea"]] = relationship(
+    other_areas: Mapped[list["OtherArea"]] = relationship(
         secondary="hame.regulation_group_association",
         back_populates="plan_regulation_groups",
         overlaps=(
@@ -516,7 +500,7 @@ class PlanRegulationGroup(VersionedBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    lines: Mapped[List["Line"]] = relationship(
+    lines: Mapped[list["Line"]] = relationship(
         secondary="hame.regulation_group_association",
         back_populates="plan_regulation_groups",
         overlaps=(
@@ -524,7 +508,7 @@ class PlanRegulationGroup(VersionedBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    land_use_points: Mapped[List["LandUsePoint"]] = relationship(
+    land_use_points: Mapped[list["LandUsePoint"]] = relationship(
         secondary="hame.regulation_group_association",
         back_populates="plan_regulation_groups",
         overlaps=(
@@ -532,7 +516,7 @@ class PlanRegulationGroup(VersionedBase):
             "land_use_points,lines,plan_regulation_groups"
         ),
     )
-    other_points: Mapped[List["OtherPoint"]] = relationship(
+    other_points: Mapped[list["OtherPoint"]] = relationship(
         secondary="hame.regulation_group_association",
         back_populates="plan_regulation_groups",
         overlaps=(
@@ -598,9 +582,7 @@ type_of_verbal_regulation_association = Table(
 
 
 class PlanRegulation(PlanBase, AttributeValueMixin):
-    """
-    Kaavamääräys
-    """
+    """Kaavamääräys"""
 
     __tablename__ = "plan_regulation"
     __table_args__ = (
@@ -635,7 +617,7 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
         back_populates="plan_regulations", lazy="joined"
     )
     # Let's load all the codes for objects joined.
-    types_of_verbal_plan_regulations: Mapped[List["TypeOfVerbalPlanRegulation"]] = (
+    types_of_verbal_plan_regulations: Mapped[list["TypeOfVerbalPlanRegulation"]] = (
         relationship(
             "TypeOfVerbalPlanRegulation",
             secondary=type_of_verbal_regulation_association,
@@ -643,7 +625,7 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
             lazy="joined",
         )
     )
-    plan_themes: Mapped[List["PlanTheme"]] = relationship(
+    plan_themes: Mapped[list["PlanTheme"]] = relationship(
         secondary=plan_theme_association,
         overlaps="plan_propositions,plan_themes",
         back_populates="plan_regulations",
@@ -657,14 +639,12 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
         passive_deletes=True,
     )
 
-    ordering: Mapped[Optional[int]]
-    subject_identifiers: Mapped[Optional[List[str]]]
+    ordering: Mapped[int | None]
+    subject_identifiers: Mapped[list[str] | None]
 
 
 class PlanProposition(PlanBase):
-    """
-    Kaavasuositus
-    """
+    """Kaavasuositus"""
 
     __tablename__ = "plan_proposition"
     __table_args__ = (
@@ -689,20 +669,18 @@ class PlanProposition(PlanBase):
         back_populates="plan_propositions"
     )
     # Let's load all the codes for objects joined.
-    plan_themes: Mapped[List["PlanTheme"]] = relationship(
+    plan_themes: Mapped[list["PlanTheme"]] = relationship(
         secondary=plan_theme_association,
         overlaps="plan_regulations,plan_themes",
         back_populates="plan_propositions",
         lazy="joined",
     )
-    text_value: Mapped[Optional[language_str]]
-    ordering: Mapped[Optional[int]]
+    text_value: Mapped[language_str | None]
+    ordering: Mapped[int | None]
 
 
 class SourceData(VersionedBase):
-    """
-    Lähtötietoaineistot
-    """
+    """Lähtötietoaineistot"""
 
     __tablename__ = "source_data"
 
@@ -718,21 +696,19 @@ class SourceData(VersionedBase):
         back_populates="source_data", lazy="joined"
     )
     plan: Mapped["Plan"] = relationship(back_populates="source_data")
-    name: Mapped[Optional[language_str]]
+    name: Mapped[language_str | None]
     additional_information_uri: Mapped[str]
     detachment_date: Mapped[datetime]
 
 
 class Organisation(VersionedBase):
-    """
-    Toimija
-    """
+    """Toimija"""
 
     __tablename__ = "organisation"
 
-    name: Mapped[Optional[language_str]]
+    name: Mapped[language_str | None]
     business_id: Mapped[str]
-    municipality_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    municipality_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("codes.municipality.id", name="municipality_id_fkey")
     )
     administrative_region_id: Mapped[uuid.UUID] = mapped_column(
@@ -748,13 +724,11 @@ class Organisation(VersionedBase):
         back_populates="organisations", lazy="joined"
     )
 
-    plans: Mapped[List["Plan"]] = relationship(back_populates="organisation")
+    plans: Mapped[list["Plan"]] = relationship(back_populates="organisation")
 
 
 class Document(VersionedBase):
-    """
-    Asiakirja
-    """
+    """Asiakirja"""
 
     __tablename__ = "document"
 
@@ -799,25 +773,23 @@ class Document(VersionedBase):
         back_populates="documents", lazy="joined"
     )
 
-    permanent_document_identifier: Mapped[Optional[str]]  # e.g. diaarinumero
-    name: Mapped[Optional[language_str]]
-    exported_at: Mapped[Optional[datetime]]
+    permanent_document_identifier: Mapped[str | None]  # e.g. diaarinumero
+    name: Mapped[language_str | None]
+    exported_at: Mapped[datetime | None]
     # Ryhti key for the latest file version that was uploaded:
-    exported_file_key: Mapped[Optional[uuid.UUID]]
+    exported_file_key: Mapped[uuid.UUID | None]
     # Entity tag header for the latest file version that was uploaded:
-    exported_file_etag: Mapped[Optional[str]]
-    arrival_date: Mapped[Optional[datetime]]
-    confirmation_date: Mapped[Optional[datetime]]
+    exported_file_etag: Mapped[str | None]
+    arrival_date: Mapped[datetime | None]
+    confirmation_date: Mapped[datetime | None]
     accessibility: Mapped[bool] = mapped_column(default=False, server_default="0")
-    decision_date: Mapped[Optional[datetime]]
+    decision_date: Mapped[datetime | None]
     document_date: Mapped[datetime]
-    url: Mapped[Optional[str]]
+    url: Mapped[str | None]
 
 
 class LifeCycleDate(VersionedBase):
-    """
-    Elinkaaritilan päivämäärät
-    """
+    """Elinkaaritilan päivämäärät"""
 
     __tablename__ = "lifecycle_date"
 
@@ -828,38 +800,38 @@ class LifeCycleDate(VersionedBase):
         ),
         index=True,
     )
-    plan_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE")
     )
-    land_use_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    land_use_area_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
         )
     )
-    other_area_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    other_area_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE")
     )
-    line_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    line_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE")
     )
-    land_use_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    land_use_point_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "hame.land_use_point.id", name="land_use_point_id_fkey", ondelete="CASCADE"
         )
     )
-    other_point_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    other_point_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "hame.other_point.id", name="other_point_id_fkey", ondelete="CASCADE"
         )
     )
-    plan_regulation_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    plan_regulation_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "hame.plan_regulation.id",
             name="plan_regulation_id_fkey",
             ondelete="CASCADE",
         )
     )
-    plan_proposition_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    plan_proposition_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "hame.plan_proposition.id",
             name="plan_proposition_id_fkey",
@@ -868,17 +840,17 @@ class LifeCycleDate(VersionedBase):
     )
 
     plan: Mapped[Optional["Plan"]] = relationship(back_populates="lifecycle_dates")
-    land_use_area: Mapped[Optional[LandUseArea]] = relationship(
+    land_use_area: Mapped[LandUseArea | None] = relationship(
         back_populates="lifecycle_dates"
     )
-    other_area: Mapped[Optional[OtherArea]] = relationship(
+    other_area: Mapped[OtherArea | None] = relationship(
         back_populates="lifecycle_dates"
     )
-    line: Mapped[Optional[Line]] = relationship(back_populates="lifecycle_dates")
-    land_use_point: Mapped[Optional[LandUsePoint]] = relationship(
+    line: Mapped[Line | None] = relationship(back_populates="lifecycle_dates")
+    land_use_point: Mapped[LandUsePoint | None] = relationship(
         back_populates="lifecycle_dates"
     )
-    other_point: Mapped[Optional[OtherPoint]] = relationship(
+    other_point: Mapped[OtherPoint | None] = relationship(
         back_populates="lifecycle_dates"
     )
     plan_regulation: Mapped[Optional["PlanRegulation"]] = relationship(
@@ -892,7 +864,7 @@ class LifeCycleDate(VersionedBase):
         back_populates="lifecycle_dates", lazy="joined"
     )
     # Let's add backreference to allow lazy loading from this side.
-    event_dates: Mapped[List["EventDate"]] = relationship(
+    event_dates: Mapped[list["EventDate"]] = relationship(
         back_populates="lifecycle_date",
         lazy="joined",
         cascade="all, delete-orphan",
@@ -900,12 +872,11 @@ class LifeCycleDate(VersionedBase):
     )
 
     starting_at: Mapped[datetime]
-    ending_at: Mapped[Optional[datetime]]
+    ending_at: Mapped[datetime | None]
 
 
 class EventDate(VersionedBase):
-    """
-    Tapahtuman päivämäärät
+    """Tapahtuman päivämäärät
 
     Jokaisessa elinkaaritilassa voi olla tiettyjä tapahtumia. Liitetään tapahtuma
     sille sallittuun elinkaaritilaan. Tapahtuman päivämäärien tulee olla aina
@@ -922,18 +893,18 @@ class EventDate(VersionedBase):
         ),
         index=True,
     )
-    decision_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    decision_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "codes.name_of_plan_case_decision.id",
             name="name_of_plan_case_decision_id_fkey",
         )
     )
-    processing_event_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    processing_event_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "codes.type_of_processing_event.id", name="type_of_processing_event_fkey"
         )
     )
-    interaction_event_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    interaction_event_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey(
             "codes.type_of_interaction_event.id", name="type_of_interaction_event_fkey"
         )
@@ -954,4 +925,4 @@ class EventDate(VersionedBase):
     )
 
     starting_at: Mapped[datetime]
-    ending_at: Mapped[Optional[datetime]]
+    ending_at: Mapped[datetime | None]

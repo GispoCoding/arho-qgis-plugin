@@ -1,23 +1,25 @@
 """Module for deserializing Ryhti API plan data into SQLAlchemy models."""
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 from uuid import UUID
 
 from geoalchemy2.shape import from_shape
 from pydantic import BaseModel, ValidationError
-from ryhti_api_client import AdditionalInformation as RyhtiAdditionalInformation
-from ryhti_api_client import AttributeValue as RyhtiAttributeValue
-from ryhti_api_client import GeneralRegulationGroup as RyhtiGeneralRegulationGroup
-from ryhti_api_client import LanguageString as RyhtiLanguageString
-from ryhti_api_client import Plan as RyhtiPlan
-from ryhti_api_client import PlanAttachmentDocument as RyhtiPlanAttachmentDocument
-from ryhti_api_client import PlanMap as RyhtiPlanMap
-from ryhti_api_client import PlanObject as RyhtiPlanObject
-from ryhti_api_client import PlanRecommendation as RyhtiPlanRecommendation
-from ryhti_api_client import PlanRegulation as RyhtiPlanRegulation
-from ryhti_api_client import PlanRegulationGroup as RyhtiPlanRegulationGroup
-from ryhti_api_client import RyhtiGeometry
+from ryhti_api_client import (
+    AdditionalInformation as RyhtiAdditionalInformation,
+    AttributeValue as RyhtiAttributeValue,
+    GeneralRegulationGroup as RyhtiGeneralRegulationGroup,
+    LanguageString as RyhtiLanguageString,
+    Plan as RyhtiPlan,
+    PlanAttachmentDocument as RyhtiPlanAttachmentDocument,
+    PlanMap as RyhtiPlanMap,
+    PlanObject as RyhtiPlanObject,
+    PlanRecommendation as RyhtiPlanRecommendation,
+    PlanRegulation as RyhtiPlanRegulation,
+    PlanRegulationGroup as RyhtiPlanRegulationGroup,
+    RyhtiGeometry,
+)
 from shapely import (
     LineString,
     MultiLineString,
@@ -64,10 +66,10 @@ if TYPE_CHECKING:
         TextValue,
     )
 
-    RangeType: TypeAlias = (
+    type RangeType = (
         DecimalRange | NumericRange | PositiveDecimalRange | PositiveNumericRange
     )
-    NumberValue: TypeAlias = (
+    type NumberValue = (
         DecimalValue | NumericValue | PositiveDecimalValue | PositiveNumericValue
     )
 
@@ -76,8 +78,8 @@ class PlanMatterData(BaseModel):
     name: str
     plan_type_id: UUID
     organization_id: UUID
-    permanent_plan_identifier: Optional[str] = None
-    producers_plan_identifier: Optional[str] = None
+    permanent_plan_identifier: str | None = None
+    producers_plan_identifier: str | None = None
 
 
 def ryhti_plan_from_json(json_data: str) -> RyhtiPlan:
@@ -97,12 +99,12 @@ def plan_matter_data_from_extra_data_dict(extra_data: dict) -> PlanMatterData:
 
 
 class Deserializer:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self.session = session
 
-        self.code_id_cache: dict[tuple[type[CodeBase], str], Optional["UUID"]] = {}
+        self.code_id_cache: dict[tuple[type[CodeBase], str], UUID | None] = {}
         self.code_instance_cache: dict[
-            tuple[type[CodeBase], str], Optional[CodeBase]
+            tuple[type[CodeBase], str], CodeBase | None
         ] = {}
 
     def get_code_id(self, code_model: type[CodeBase], code: str) -> Optional["UUID"]:
@@ -118,7 +120,7 @@ class Deserializer:
 
     def get_code_instance(
         self, code_model: type[CodeBase], code: str
-    ) -> Optional[CodeBase]:
+    ) -> CodeBase | None:
         if (code_model, code) in self.code_instance_cache:
             return self.code_instance_cache[(code_model, code)]
 
@@ -156,7 +158,7 @@ class Deserializer:
         CodeModel, code = self._get_model_and_code(code_uri)  # noqa: N806
         return self.get_code_id(CodeModel, code)
 
-    def get_code_instance_from_uri(self, code_uri: str) -> Optional[CodeBase]:
+    def get_code_instance_from_uri(self, code_uri: str) -> CodeBase | None:
         if not code_uri:
             return None
 
@@ -181,11 +183,11 @@ class Deserializer:
         self, shape: BaseGeometry
     ) -> MultiPolygon | MultiPoint | MultiLineString | BaseGeometry:
         if shape.geom_type == "Polygon":
-            shape = MultiPolygon([cast(Polygon, shape)])
+            shape = MultiPolygon([cast("Polygon", shape)])
         elif shape.geom_type == "Point":
-            shape = MultiPoint([cast(Point, shape)])
+            shape = MultiPoint([cast("Point", shape)])
         elif shape.geom_type == "LineString":
-            shape = MultiLineString([cast(LineString, shape)])
+            shape = MultiLineString([cast("LineString", shape)])
 
         return shape
 
@@ -280,8 +282,7 @@ class Deserializer:
     def deserialize_regulation(
         self, ryhti_regulation: RyhtiPlanRegulation
     ) -> PlanRegulation:
-        """
-        "planRegulationKey", ✅
+        """"planRegulationKey", ✅
         "planRegulationUri",
         "value",  ✅
         "lifeCycleStatus", ✅
@@ -331,8 +332,7 @@ class Deserializer:
     def deserialize_recommendation(
         self, ryhti_plan_recommendation: RyhtiPlanRecommendation
     ) -> PlanProposition:
-        """
-        "planRecommendationKey", ✅
+        """"planRecommendationKey", ✅
         "planRecommendationUri",
         "value", ✅
         "lifeCycleStatus", ✅
@@ -359,8 +359,7 @@ class Deserializer:
     def deserialize_plan_regulation_group(
         self, regulation_group: RyhtiPlanRegulationGroup
     ):
-        """
-        "planRegulationGroupKey", ✅
+        """"planRegulationGroupKey", ✅
         "planRegulationGroupUri",
         "titleOfPlanRegulation", ✅
         "letterIdentifier", ✅
@@ -389,8 +388,7 @@ class Deserializer:
     def deserialize_general_regulation_group(
         self, ryhti_general_regulation_group: RyhtiGeneralRegulationGroup
     ) -> PlanRegulationGroup:
-        """
-        "generalRegulationGroupKey", ✅
+        """"generalRegulationGroupKey", ✅
         "generalRegulationGroupUri",
         "titleOfPlanRegulation", ✅
         "planRegulations", ✅
@@ -435,8 +433,7 @@ class Deserializer:
         )
         if has_primary_usage_regulation:
             return LandUseArea
-        else:
-            return OtherArea
+        return OtherArea
 
     def _determine_point_plan_object_type(
         self, regulation_groups: list[PlanRegulationGroup], plan_type: PlanType
@@ -524,8 +521,7 @@ class Deserializer:
         )
         if has_primary_usage_regulation:
             return LandUsePoint
-        else:
-            return OtherPoint
+        return OtherPoint
 
     def deserialize_plan_object(
         self,
@@ -533,8 +529,7 @@ class Deserializer:
         regulation_groups: list[PlanRegulationGroup],
         plan_type: PlanType,
     ) -> LandUseArea | OtherArea | LandUsePoint | OtherPoint | Line:
-        """
-        "planObjectKey", ✅
+        """"planObjectKey", ✅
         "planObjectUri",
         "lifeCycleStatus", ✅
         "undergroundStatus", ✅
@@ -548,23 +543,17 @@ class Deserializer:
         "objectNumber", ✅
         "relatedPlanObjectKeys",
         """
-
         geom = ryhti_plan_object.geometry.geometry
         geojson = geom.model_dump_json()
         try:
             shape = from_geojson(geojson)
-        except Exception as e:
+        except Exception:
             print(f"Error parsing geometry from geojson: '{geojson}'")
-            raise e
+            raise
 
         shape = self.convert_to_multi_geom(shape)
         PlanObjectClass: (  # noqa: N806
-            type[LandUseArea]
-            | type[OtherArea]
-            | type[LandUsePoint]
-            | type[OtherPoint]
-            | type[Line]
-            | None
+            type[LandUseArea | OtherArea | LandUsePoint | OtherPoint | Line] | None
         ) = None
         if shape.geom_type == "MultiPolygon":
             PlanObjectClass = self._determine_area_plan_object_type(  # noqa: N806
@@ -578,7 +567,7 @@ class Deserializer:
             PlanObjectClass = Line  # noqa: N806
 
         if PlanObjectClass is None:
-            raise ValueError()
+            raise ValueError
 
         plan_object = PlanObjectClass(
             id=ryhti_plan_object.plan_object_key,
@@ -614,8 +603,7 @@ class Deserializer:
     def deserialize_plan_annex(
         self, ryhti_document: RyhtiPlanAttachmentDocument
     ) -> Document:
-        """
-        "attachmentDocumentKey", ✅
+        """"attachmentDocumentKey", ✅
         "documentIdentifier", ✅
         "name", ✅
         "personalDataContent", ✅
@@ -634,7 +622,6 @@ class Deserializer:
         "documentCreatorOperators",
         "relatedPlanAttachmentDocuments",
         """
-
         return Document(
             id=ryhti_document.attachment_document_key,
             name=self.deserialize_language_string(ryhti_document.name),
@@ -665,14 +652,12 @@ class Deserializer:
         )
 
     def deserialise_plan_map(self, ryhti_plan_map: RyhtiPlanMap) -> Document:
-        """
-        "planMapKey", ✅
+        """"planMapKey", ✅
         "planMapUri",
         "name", ✅
         "fileKey", ✅
         "coordinateSystem",
         """
-
         return Document(
             id=ryhti_plan_map.plan_map_key,
             name=self.deserialize_language_string(ryhti_plan_map.name),
@@ -709,7 +694,6 @@ class Deserializer:
         "relatedPlanObjectRegulationGroupRelations",
         "relatedRegulationGroupPlanObjectRelations",
         """
-
         plan_type = self.session.get(PlanType, plan_matter_data.plan_type_id)
         if not plan_type:
             raise ValueError(f"Invalid plan type id: {plan_matter_data.plan_type_id}")
@@ -823,7 +807,7 @@ class Deserializer:
     ) -> Plan:
         plan_type_id = plan_matter_data.plan_type_id
         if not plan_type_id:
-            raise ValueError()
+            raise ValueError
         plan.plan_type_id = plan_type_id
         plan.name = {"fin": plan_matter_data.name}
         plan.permanent_plan_identifier = plan_matter_data.permanent_plan_identifier
