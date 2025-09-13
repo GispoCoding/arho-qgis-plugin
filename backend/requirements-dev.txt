@@ -9,11 +9,7 @@
 ansible-core==2.19.0
     # via -r requirements-dev.in
 attrs==25.3.0
-    # via
-    #   flake8-bugbear
-    #   pytest-docker
-black==25.1.0
-    # via -r requirements-dev.in
+    # via pytest-docker
 botocore-stubs==1.38.46
     # via types-boto3
 certifi==2025.7.14
@@ -28,21 +24,12 @@ charset-normalizer==3.4.2
     # via
     #   -c requirements.txt
     #   requests
-click==8.2.1
-    # via black
 cryptography==45.0.6
     # via ansible-core
 distlib==0.4.0
     # via virtualenv
 filelock==3.18.0
     # via virtualenv
-flake8==7.3.0
-    # via
-    #   -r requirements-dev.in
-    #   flake8-bugbear
-    #   pep8-naming
-flake8-bugbear==24.12.12
-    # via -r requirements-dev.in
 identify==2.6.12
     # via pre-commit
 idna==3.10
@@ -51,22 +38,16 @@ idna==3.10
     #   requests
 iniconfig==2.1.0
     # via pytest
-isort==6.0.1
-    # via -r requirements-dev.in
 jinja2==3.1.6
     # via ansible-core
 markupsafe==3.0.2
     # via
     #   -c requirements.txt
     #   jinja2
-mccabe==0.7.0
-    # via flake8
 mypy==1.17.0
     # via -r requirements-dev.in
 mypy-extensions==1.1.0
-    # via
-    #   black
-    #   mypy
+    # via mypy
 nodeenv==1.9.1
     # via pre-commit
 numpy==2.3.2
@@ -77,28 +58,17 @@ packaging==25.0
     # via
     #   -c requirements.txt
     #   ansible-core
-    #   black
     #   pytest
 pathspec==0.12.1
-    # via
-    #   black
-    #   mypy
-pep8-naming==0.15.1
-    # via -r requirements-dev.in
+    # via mypy
 platformdirs==4.3.8
-    # via
-    #   black
-    #   virtualenv
+    # via virtualenv
 pluggy==1.6.0
     # via pytest
 pre-commit==4.2.0
     # via -r requirements-dev.in
-pycodestyle==2.14.0
-    # via flake8
 pycparser==2.22
     # via cffi
-pyflakes==3.4.0
-    # via flake8
 pygments==2.19.2
     # via pytest
 pytest==8.4.1
@@ -126,6 +96,8 @@ requests-mock==1.12.1
     # via -r requirements-dev.in
 resolvelib==1.2.0
     # via ansible-core
+ruff==0.13.0
+    # via -r requirements-dev.in
 types-awscrt==0.27.5
     # via botocore-stubs
 types-boto3==1.40.2

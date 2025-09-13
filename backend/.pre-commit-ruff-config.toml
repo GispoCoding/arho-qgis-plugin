@@ -1,0 +1,12 @@
+extend = "pyproject.toml"
+
+[lint]
+extend-fixable=[
+    "F841",
+    "F401"
+]
+ignore=[
+    "TD002",
+    "TRY003",
+    "T201"
+]

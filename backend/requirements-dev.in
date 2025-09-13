@@ -1,12 +1,8 @@
 -c requirements.txt
 
 ansible-core
-black
-flake8
-flake8-bugbear
-isort
 mypy
-pep8-naming
+ruff
 pre-commit
 pytest
 pytest-dotenv

@@ -9,14 +9,17 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: mixed-line-ending
-  - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
     hooks:
-      - id: isort
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
+      # Run the linter.
+      - id: ruff-check
+        args: [
+          "--fix",
+          "--config=.pre-commit-ruff-config.toml"
+        ]
+      # Run the formatter.
+      - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.17.1
     hooks:
@@ -35,11 +38,3 @@ repos:
           - types-shapely
           - types-simplejson
           - git+https://github.com/GispoCoding/ryhti-api-client@v2025.33.1#egg=ryhti_api_client
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.3.0
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-bugbear~=24.1.17
-          - pep8-naming~=0.13.3
