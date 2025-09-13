@@ -1,14 +1,14 @@
 import enum
 import logging
 import os
-from typing import TYPE_CHECKING, Dict, Literal, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, TypedDict, cast
 from uuid import UUID
 
 import boto3
 import simplejson as json
 
 from database.db_helper import DatabaseHelper, User
-from ryhti_client.database_client import DatabaseClient
+from ryhti_client.database_client import DatabaseClient, PlanAlreadyExistsError
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
@@ -73,7 +73,7 @@ class Response(TypedDict):
     body: ResponseBody
 
 
-class Event(TypedDict):
+class Event(TypedDict, total=False):
     """
     Support validating, POSTing or getting a desired plan. If provided directly to
     lambda, the lambda request needs only contain these keys.
@@ -87,6 +87,8 @@ class Event(TypedDict):
     action: str  # Action
     plan_uuid: Optional[str]  # UUID for plan to be used
     save_json: Optional[bool]  # True if we want JSON files to be saved in ryhti_debug
+    data: Optional[dict]  # Additional data to be used in the action, if needed
+    force: Optional[bool]  # True if we want to force the action, if needed
 
 
 class AWSAPIGatewayPayload(TypedDict):
@@ -141,6 +143,7 @@ class Action(enum.Enum):
     GET_PLAN_MATTERS = "get_plan_matters"
     VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     POST_PLAN_MATTERS = "post_plan_matters"
+    IMPORT_PLAN = "import_plan"
 
 
 def handler(
@@ -244,7 +247,7 @@ def handler(
                 ),
             )
 
-        if event_type is Action.GET_PLAN_MATTERS:
+        elif event_type is Action.GET_PLAN_MATTERS:
             # just return the JSON to the user
             LOGGER.info("Formatting plan matter data...")
             plan_matters = database_client.get_plan_matters()
@@ -259,7 +262,7 @@ def handler(
                 ),
             )
 
-        if event_type is Action.VALIDATE_PLANS:
+        elif event_type is Action.VALIDATE_PLANS:
             # 1) Validate plans in database with public API
             LOGGER.info("Validating plans...")
             validation_responses = client.validate_plans()
@@ -277,7 +280,7 @@ def handler(
                 ),
             )
 
-        if event_type is Action.GET_PERMANENT_IDENTIFIERS:
+        elif event_type is Action.GET_PERMANENT_IDENTIFIERS:
             LOGGER.info("Authenticating to X-road Ryhti API...")
             client.xroad_ryhti_authenticate()
             # 1) Check or create permanent plan identifiers, from X-Road API
@@ -297,7 +300,7 @@ def handler(
                 ),
             )
 
-        if event_type is Action.VALIDATE_PLAN_MATTERS:
+        elif event_type is Action.VALIDATE_PLAN_MATTERS:
             LOGGER.info("Authenticating to X-road Ryhti API...")
             client.xroad_ryhti_authenticate()
             # Documents are exported separately from plan matter. Also, they need to be
@@ -329,7 +332,7 @@ def handler(
                 ),
             )
 
-        if event_type is Action.POST_PLAN_MATTERS:
+        elif event_type is Action.POST_PLAN_MATTERS:
             LOGGER.info("Authenticating to X-road Ryhti API...")
             client.xroad_ryhti_authenticate()
             # 1) If changed documents exist, upload documents
@@ -351,6 +354,60 @@ def handler(
                     ryhti_responses=responses,
                 ),
             )
+        else:
+            lambda_response = Response(
+                statusCode=400,
+                body=ResponseBody(
+                    title="No action taken.",
+                    details={},
+                    ryhti_responses={},
+                ),
+            )
+
+    elif event_type is Action.IMPORT_PLAN:
+        data = event.get("data") or {}
+        plan_json = data.get("plan_json")
+        extra_data = data.get("extra_data")
+
+        if plan_json is None or extra_data is None:
+            status_code = 400
+            title = "Missing plan data or extra data."
+            details: dict[str, Any] = {}
+        else:
+            plan_json = cast(str, plan_json)
+            extra_data = cast(dict, extra_data)
+            overwrite = True if event.get("force") is True else False
+
+            try:
+                imported_id = database_client.import_plan(
+                    plan_json, extra_data, overwrite
+                )
+                status_code = 200
+                title = "Plan imported."
+                details = {"plan_id": str(imported_id)}
+            except PlanAlreadyExistsError as e:
+                status_code = 200  # TODO change to to 409 after plugin fixed.
+                title = "Plan already exists."
+                details = {"plan_id": str(e.plan_id)}
+            except ValueError as e:
+                status_code = 400
+                title = "Error in provided data."
+                details = {"error": str(e)}
+            except Exception as e:
+                LOGGER.exception("Error importing plan.")
+                status_code = 500
+                title = "Error importing plan."
+                details = {"error": str(e)}
+
+        lambda_response = Response(
+            statusCode=status_code,
+            body=ResponseBody(
+                title=title,
+                details=details,  # type: ignore[typeddict-item]
+                ryhti_responses={},
+            ),
+        )
+
     else:
         lambda_response = Response(
             statusCode=200,

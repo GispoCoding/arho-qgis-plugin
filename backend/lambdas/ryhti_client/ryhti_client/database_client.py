@@ -24,6 +24,11 @@ from database.codes import (
     processing_events_by_status,
 )
 from database.enums import AttributeValueDataType
+from ryhti_client.deserializer import (
+    Deserializer,
+    plan_matter_data_from_extra_data_dict,
+    ryhti_plan_from_json,
+)
 from ryhti_client.ryhti_schema import (
     AttributeValue,
     Period,
@@ -43,6 +48,12 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
+
+
+class PlanAlreadyExistsError(Exception):
+    def __init__(self, plan_id: str):
+        self.plan_id = plan_id
+        super().__init__(f"Plan '{plan_id}' already exists in the database.")
 
 
 class DatabaseClient:
@@ -1273,3 +1284,29 @@ class DatabaseClient:
                 LOGGER.info(f"Ryhti response: {json.dumps(response)}")
             session.commit()
         return details
+
+    def import_plan(
+        self,
+        plan_json: str,
+        extra_data: dict,
+        overwrite: bool = False,
+    ) -> UUID | None:
+        ryhti_plan = ryhti_plan_from_json(plan_json)
+        plan_matter_data = plan_matter_data_from_extra_data_dict(extra_data)
+
+        with self.Session(autoflush=False, expire_on_commit=False) as session:
+            existing_plan = session.get(models.Plan, ryhti_plan.plan_key)
+            if existing_plan:
+                if overwrite is True:
+                    session.delete(existing_plan)
+                    session.flush()
+                else:
+                    raise PlanAlreadyExistsError(ryhti_plan.plan_key)
+
+            desesrializer = Deserializer(session)
+            plan = desesrializer.deserialise_ryhti_plan(ryhti_plan, plan_matter_data)
+
+            session.add(plan)
+            session.commit()
+
+        return plan.id
