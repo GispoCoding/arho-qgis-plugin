@@ -46,7 +46,7 @@ def gml_polygons_to_multipolygon(gml_polygons: list[str]) -> MultiPolygon:
         shapely_shape = shape(gml_object.__geo_interface__)
         if shapely_shape.geom_type != "Polygon":
             LOGGER.warning(
-                f"Expected Polygon geometry but got {shapely_shape.geom_type}"  # noqa
+                "Expected Polygon geometry but got %s", shapely_shape.geom_type
             )
             continue
         shapes.append(cast("Polygon", shapely_shape))
@@ -88,11 +88,11 @@ class MMLLoader:
         session = requests.Session()
 
         with tempfile.TemporaryDirectory() as output_dir:
-            year = str(self.payload["inputs"]["yearInput"])  # type: ignore
-            size = str(self.payload["inputs"]["dataSetInput"]).split("_")[-1]  # type: ignore # noqa
+            year = str(self.payload["inputs"]["yearInput"])
+            size = str(self.payload["inputs"]["dataSetInput"]).split("_")[-1]
 
             url = f"{self.api_base}/execution?api-key={self.api_key}"
-            LOGGER.info(f"Starting OGC API process on {self.api_base}/execution")
+            LOGGER.info("Starting OGC API process on %s/execution", self.api_base)
             r = session.post(url, headers=self.HEADERS, json=self.payload)
             r.raise_for_status()
             id_job = r.json()["jobID"]
@@ -203,21 +203,19 @@ class MMLLoader:
             municipalities = session.query(Municipality).all()
             for admin_region in admin_regions:
                 LOGGER.info(
-                    f"Adding geometry to administrative region {admin_region.value}..."
+                    "Adding geometry to administrative region %s...", admin_region.value
                 )
                 if geom := geoms.get(admin_region.value):
                     admin_region.geom = from_shape(geom)
                     LOGGER.info(
-                        f"Geometry added to administrative region {admin_region.value}"  # noqa
+                        "Geometry added to administrative region %s", admin_region.value
                     )
                     successful_actions += 1
             for municipality in municipalities:
-                LOGGER.info(f"Adding geometry to municipality {municipality.value}...")
+                LOGGER.info("Adding geometry to municipality %s...", municipality.value)
                 if geom := geoms.get(municipality.value):
                     municipality.geom = from_shape(geom)
-                    LOGGER.info(
-                        f"Geometry added to municipality {municipality.value}"  # noqa
-                    )
+                    LOGGER.info("Geometry added to municipality %s", municipality.value)
                     successful_actions += 1
             session.commit()
         msg = f"{successful_actions} inserted or updated. 0 deleted."
@@ -232,7 +230,7 @@ def handler(event, _) -> Response:
     api_key = os.environ.get("MML_APIKEY")
     if not api_key:
         raise ValueError(
-            "Please set MML_APIKEY environment variable to fetch geometries."  # noqa
+            "Please set MML_APIKEY environment variable to fetch geometries."
         )
 
     loader = MMLLoader(db_helper.get_connection_string(), api_key=api_key)

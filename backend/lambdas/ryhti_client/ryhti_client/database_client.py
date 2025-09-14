@@ -94,7 +94,7 @@ class DatabaseClient:
             # Only process specified plans
             stmt = select(models.Plan)
             if plan_uuid:
-                LOGGER.info(f"Only fetching plan {plan_uuid}")
+                LOGGER.info("Only fetching plan %s", plan_uuid)
                 stmt = stmt.where(models.Plan.id == plan_uuid)
 
             self.plans = {plan.id: plan for plan in session.scalars(stmt).unique()}
@@ -487,10 +487,7 @@ class DatabaseClient:
         """Construct a list of Ryhti compatible plan object dicts from plan objects
         in the local database.
         """
-        plan_object_dicts = []
-        for plan_object in plan_objects:
-            plan_object_dicts.append(self.get_plan_object(plan_object))
-        return plan_object_dicts
+        return [self.get_plan_object(plan_object) for plan_object in plan_objects]
 
     def get_plan_regulation_groups(
         self, plan_objects: list[models.PlanObjectBase]
@@ -498,7 +495,6 @@ class DatabaseClient:
         """Construct a list of Ryhti compatible plan regulation groups from plan objects
         in the local database.
         """
-        group_dicts = []
         group_ids = {
             regulation_group.id
             for plan_object in plan_objects
@@ -513,8 +509,11 @@ class DatabaseClient:
                 .order_by(models.PlanRegulationGroup.ordering)
                 .all()
             )
-            for group in plan_regulation_groups:
-                group_dicts.append(self.get_plan_regulation_group(group))
+            group_dicts = [
+                self.get_plan_regulation_group(group)
+                for group in plan_regulation_groups
+            ]
+
         return group_dicts
 
     def get_plan_regulation_group_relations(
@@ -624,7 +623,7 @@ class DatabaseClient:
         )
         # TODO: Take the coordinate system from the actual file?
         plan_map["coordinateSystem"] = (
-            f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{str(base.PROJECT_SRID)}"  # noqa
+            f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{base.PROJECT_SRID!s}"
         )
         return plan_map
 
@@ -770,8 +769,8 @@ class DatabaseClient:
         return decisions
 
     def get_plan_handling_events(self, plan: models.Plan) -> list[RyhtiHandlingEvent]:
-        """Construct a list of Ryhti compatible plan handling events from plan in the local
-        database.
+        """Construct a list of Ryhti compatible plan handling events from plan in the
+        local database.
         """
         events: list[RyhtiHandlingEvent] = []
         # Decision name must correspond to the phase the plan is in. This requires
@@ -1033,7 +1032,7 @@ class DatabaseClient:
                     )
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
                     LOGGER.info(details[plan_id])
-                    LOGGER.info(f"Ryhti response: {json.dumps(response)}")
+                    LOGGER.info("Ryhti response: %s", json.dumps(response))
                     continue
                 if response["status"] == 200:
                     details[plan_id] = f"Plan validation successful for {plan_id}!"
@@ -1045,7 +1044,7 @@ class DatabaseClient:
                     plan.validation_errors = response["errors"]
 
                 LOGGER.info(details[plan_id])
-                LOGGER.info(f"Ryhti response: {json.dumps(response)}")
+                LOGGER.info("Ryhti response: %s", json.dumps(response))
                 plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
             session.commit()
         return details
@@ -1147,7 +1146,7 @@ class DatabaseClient:
                     )
                     plan.validation_errors = f"RYHTI API ERROR: {response}"
                     LOGGER.info(details[plan_id])
-                    LOGGER.info(f"Ryhti response: {json.dumps(response)}")
+                    LOGGER.info("Ryhti response: %s", json.dumps(response))
                     continue
                 if response["status"] == 200:
                     details[plan_id] = (
@@ -1161,7 +1160,7 @@ class DatabaseClient:
                     plan.validation_errors = response["errors"]
 
                 LOGGER.info(details[plan_id])
-                LOGGER.info(f"Ryhti response: {json.dumps(response)}")
+                LOGGER.info("Ryhti response: %s", json.dumps(response))
                 plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
             session.commit()
         return details
@@ -1230,7 +1229,7 @@ class DatabaseClient:
                     plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
 
                 LOGGER.info(details[plan_id])
-                LOGGER.info(f"Ryhti response: {json.dumps(response)}")
+                LOGGER.info("Ryhti response: %s", json.dumps(response))
             session.commit()
         return details
 

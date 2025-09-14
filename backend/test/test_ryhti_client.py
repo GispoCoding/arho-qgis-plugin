@@ -19,7 +19,7 @@ from ryhti_client.ryhti_client import RyhtiClient
 from .conftest import deepcompare
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Generator
     from json.encoder import JSONEncoder as StdJSONEncoder
 
     from requests import PreparedRequest
@@ -85,7 +85,7 @@ def mock_public_ryhti_validate_valid(requests_mock: Mocker) -> None:
 
 
 @pytest.fixture
-def mock_public_map_document(requests_mock: Mocker):
+def mock_public_map_document(requests_mock: Mocker) -> Generator[None]:
     path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "test_ryhti_client_plan_map.tif"
     )

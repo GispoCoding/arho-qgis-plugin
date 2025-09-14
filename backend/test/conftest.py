@@ -242,6 +242,9 @@ def new_migration(
     hame_database_migrated: str | None,
     current_head_version_id: str | None,
 ):
+    if current_head_version_id is None:
+        raise Exception("Current head version id is None")
+
     revision = command.revision(
         alembic_cfg,
         message="Test migration",

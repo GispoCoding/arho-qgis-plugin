@@ -99,7 +99,7 @@ class KoodistotLoader:
         LOGGER.info(code_registry)
         LOGGER.info(name)
         url = get_code_list_url(self.api_base, code_registry, name)
-        LOGGER.info(f"Loading codes from {url}")
+        LOGGER.info("Loading codes from %s", url)
         r = requests.get(url, headers=self.HEADERS)
         r.raise_for_status()
         try:
@@ -109,10 +109,11 @@ class KoodistotLoader:
                 item["codeValue"]: item
                 for item in sorted(result_list, key=lambda item: item["hierarchyLevel"])
             }
-            return result_dict
         except (KeyError, requests.exceptions.JSONDecodeError):
-            LOGGER.warning(f"{koodisto} response did not contain data")
+            LOGGER.warning("%s response did not contain data", koodisto)
             return {}
+        else:
+            return result_dict
 
     def get_objects(self) -> dict[type[codes.CodeBase], dict[CodeValue, CodeDict]]:
         """Gets all koodistot data, divided by table and code value, ordered by code level."""
@@ -229,7 +230,7 @@ class KoodistotLoader:
         # Any relationship names must be hardcoded here.
         if "allowed_status_ids" in incoming and saved_objects:
             values["allowed_statuses"] = [
-                saved_objects[id] for id in incoming["allowed_status_ids"]
+                saved_objects[id_] for id_ in incoming["allowed_status_ids"]
             ]
 
         if instance:
@@ -258,11 +259,14 @@ class KoodistotLoader:
         saved_objects: dict[UUID, codes.CodeBase] = {}
         with self.Session() as session:
             for code_class, class_codes in objects.items():
-                LOGGER.info(f"Importing codes to {code_class}...")
+                LOGGER.info("Importing codes to %s...", code_class)
                 for i, element in enumerate(class_codes.values()):
                     if i % 10 == 0:
                         LOGGER.info(
-                            f"{100 * float(i) / len(class_codes)}% - {i}/{len(class_codes)}"  # noqa
+                            "%.2f%% - %d/%d",
+                            100 * float(i) / len(class_codes),
+                            i,
+                            len(class_codes),
                         )
                     code = self.get_object(code_class, element, objects)
                     if code is not None:
@@ -272,9 +276,9 @@ class KoodistotLoader:
                         if succeeded:
                             saved_objects[succeeded.id] = succeeded
                         else:
-                            LOGGER.debug(f"Could not save code data {element}")
+                            LOGGER.debug("Could not save code data %s", element)
                     else:
-                        LOGGER.debug(f"Invalid code data {element}")
+                        LOGGER.debug("Invalid code data %s", element)
             session.commit()
         msg = f"{len(saved_objects)} inserted or updated. 0 deleted."
         LOGGER.info(msg)

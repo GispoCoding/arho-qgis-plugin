@@ -95,7 +95,7 @@ class RyhtiClient:
         # https://docs.x-road.global/Protocols/pr-rest_x-road_message_protocol_for_rest.html#4-message-format
         if xroad_member_code and xroad_member_client_name:
             self.xroad_headers |= {
-                "X-Road-Client": f"{xroad_instance}/{xroad_member_class}/{xroad_member_code}/{xroad_member_client_name}"  # noqa
+                "X-Road-Client": f"{xroad_instance}/{xroad_member_class}/{xroad_member_code}/{xroad_member_client_name}"
             }
         # In addition, X-Road Ryhti API will require authentication token that
         # will be set later based on these:
@@ -340,7 +340,7 @@ class RyhtiClient:
                 LOGGER.info(response.headers)
                 LOGGER.info(response.text)
                 if response.status_code == 401:
-                    detail = "No permission to get plan identifier in this region or municipality!"  # noqa
+                    detail = "No permission to get plan identifier in this region or municipality!"  # noqa: E501
                     LOGGER.info(detail)
                     responses[plan.id] = {
                         "status": 401,
@@ -349,7 +349,7 @@ class RyhtiClient:
                         "warnings": None,
                     }
                 elif response.status_code == 400:
-                    detail = "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa
+                    detail = "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa: E501
                     LOGGER.info(detail)
                     responses[plan.id] = {
                         "status": 400,
@@ -359,7 +359,7 @@ class RyhtiClient:
                     }
                 else:
                     response.raise_for_status()
-                    LOGGER.info(f"Received identifier {response.json()}")
+                    LOGGER.info("Received identifier %s", response.json())
                     responses[plan.id] = {
                         "status": 200,
                         "detail": response.json(),

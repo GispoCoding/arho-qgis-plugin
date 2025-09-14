@@ -98,7 +98,8 @@ def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> 
                 # (hame and code tables etc.)
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} GRANT ALL PRIVILEGES ON TABLES TO {username};"  # noqa
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user}"
+                        "GRANT ALL PRIVILEGES ON TABLES TO {username};"
                     ).format(
                         SU_user=Identifier(users[User.SU]["username"]),
                         username=Identifier(user["username"]),
@@ -109,7 +110,9 @@ def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> 
                 # read code tables
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"  # noqa
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} "
+                        "IN SCHEMA hame "
+                        "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"
                     ).format(
                         SU_user=Identifier(users[User.SU]["username"]),
                         username=Identifier(user["username"]),
@@ -117,7 +120,9 @@ def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> 
                 )
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA codes GRANT SELECT ON TABLES TO {username};"  # noqa
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} "
+                        "IN SCHEMA codes "
+                        "GRANT SELECT ON TABLES TO {username};"
                     ).format(
                         SU_user=Identifier(users[User.SU]["username"]),
                         username=Identifier(user["username"]),
@@ -127,7 +132,9 @@ def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> 
                 # default user should be able to read hame tables and code tables
                 cur.execute(
                     SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} IN SCHEMA hame, codes GRANT SELECT ON TABLES TO {username};"  # noqa
+                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} "
+                        "IN SCHEMA hame, codes "
+                        "GRANT SELECT ON TABLES TO {username};"
                     ).format(
                         SU_user=Identifier(users[User.SU]["username"]),
                         username=Identifier(user["username"]),
