@@ -1,9 +1,14 @@
+# ruff: noqa: E501
+
 import json
 from collections.abc import Iterator
 from copy import deepcopy
+from typing import Any
 
 import psycopg
 import pytest
+from psycopg import sql
+from sqlalchemy import Table
 
 from database import codes
 from lambdas.koodistot_loader.koodistot_loader import KoodistotLoader, get_code_list_url
@@ -700,25 +705,37 @@ def check_code_parents(cur) -> None:
     assert paakayttotarkoitus_parent_id == kayttotarkoitus_id
 
 
+def _assert_count_in_table_equal(
+    table_model: type[codes.CodeBase] | Table,
+    expected: Any,  # noqa: ANN401
+    cur: psycopg.Cursor[tuple[Any, ...]],
+) -> None:
+    if isinstance(table_model, Table):
+        table_name = table_model.name
+    elif isinstance(table_model, type) and issubclass(table_model, codes.CodeBase):
+        table_name = table_model.__tablename__
+
+    query = sql.SQL("SELECT count(*) FROM codes.{table_name}").format(
+        table_name=sql.Identifier(table_name)
+    )
+    cur.execute(query)
+    row = cur.fetchone()
+    assert row is not None
+    assert row[0] == expected
+
+
 def assert_data_is_imported(main_db_params) -> None:
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM codes.lifecycle_status")
-            assert cur.fetchone()[0] == 2
-            cur.execute("SELECT count(*) FROM codes.name_of_plan_case_decision")
-            assert cur.fetchone()[0] == 1
-            # Relationship between decision and status should also be created
-            cur.execute("SELECT count(*) FROM codes.allowed_events")
-            assert cur.fetchone()[0] == 1
-            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation")
-            assert cur.fetchone()[0] == 4
-            cur.execute("SELECT count(*) FROM codes.plan_type")
-            assert cur.fetchone()[0] == 0
-            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation_group")
-            assert cur.fetchone()[0] == 5
-            cur.execute("SELECT count(*) FROM codes.type_of_additional_information")
-            assert cur.fetchone()[0] == 5
+            _assert_count_in_table_equal(codes.LifeCycleStatus, 2, cur)
+            _assert_count_in_table_equal(codes.NameOfPlanCaseDecision, 1, cur)
+            _assert_count_in_table_equal(codes.allowed_events, 1, cur)
+            _assert_count_in_table_equal(codes.TypeOfPlanRegulation, 4, cur)
+            _assert_count_in_table_equal(codes.PlanType, 0, cur)
+            _assert_count_in_table_equal(codes.TypeOfPlanRegulationGroup, 5, cur)
+            _assert_count_in_table_equal(codes.TypeOfAdditionalInformation, 5, cur)
+
             check_code_parents(cur)
     finally:
         conn.close()
@@ -728,21 +745,15 @@ def assert_changed_data_is_imported(main_db_params) -> None:
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT count(*) FROM codes.lifecycle_status")
-            assert cur.fetchone()[0] == 3
-            cur.execute("SELECT count(*) FROM codes.name_of_plan_case_decision")
-            assert cur.fetchone()[0] == 1
+            _assert_count_in_table_equal(codes.LifeCycleStatus, 3, cur)
+            _assert_count_in_table_equal(codes.NameOfPlanCaseDecision, 1, cur)
             # Relationship between decision and status should also be created
-            cur.execute("SELECT count(*) FROM codes.allowed_events")
-            assert cur.fetchone()[0] == 1
-            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation")
-            assert cur.fetchone()[0] == 4
-            cur.execute("SELECT count(*) FROM codes.plan_type")
-            assert cur.fetchone()[0] == 0
-            cur.execute("SELECT count(*) FROM codes.type_of_plan_regulation_group")
-            assert cur.fetchone()[0] == 5
-            cur.execute("SELECT count(*) FROM codes.type_of_additional_information")
-            assert cur.fetchone()[0] == 5
+            _assert_count_in_table_equal(codes.allowed_events, 1, cur)
+            _assert_count_in_table_equal(codes.TypeOfPlanRegulation, 4, cur)
+            _assert_count_in_table_equal(codes.PlanType, 0, cur)
+            _assert_count_in_table_equal(codes.TypeOfPlanRegulationGroup, 5, cur)
+            _assert_count_in_table_equal(codes.TypeOfAdditionalInformation, 5, cur)
+
             check_code_parents(cur)
     finally:
         conn.close()
@@ -758,6 +769,8 @@ def test_save_objects(
 def test_save_changed_objects(
     changed_custom_koodistot_data, admin_connection_string, main_db_params
 ) -> None:
+    # TODO: Make test independent of test_save_objects
+
     # The database is already populated in the first test. Because
     # connection string (and therefore hame_database_created)
     # has module scope, the database persists between tests.
