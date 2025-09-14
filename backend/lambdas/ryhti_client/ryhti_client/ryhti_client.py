@@ -1,14 +1,18 @@
+from __future__ import annotations
+
 import email.utils
 import logging
 from pathlib import Path
-from typing import Any, TypedDict, cast
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 import requests
-import simplejson as json  # type: ignore
+import simplejson as json
 
-from ryhti_client.database_client import DatabaseClient
-from ryhti_client.ryhti_schema import RyhtiPlanMatter, RyhtiPlanMatterPhase
+if TYPE_CHECKING:
+    from uuid import UUID
+
+    from ryhti_client.database_client import DatabaseClient
+    from ryhti_client.ryhti_schema import RyhtiPlanMatter, RyhtiPlanMatterPhase
 
 """
 Client for validating and POSTing all Maakuntakaava data to Ryhti API

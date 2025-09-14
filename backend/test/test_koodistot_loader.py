@@ -1,9 +1,10 @@
 # ruff: noqa: E501
 
+from __future__ import annotations
+
 import json
-from collections.abc import Iterator
 from copy import deepcopy
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import psycopg
 import pytest
@@ -11,7 +12,17 @@ from psycopg import sql
 from sqlalchemy import Table
 
 from database import codes
-from lambdas.koodistot_loader.koodistot_loader import KoodistotLoader, get_code_list_url
+from lambdas.koodistot_loader.koodistot_loader import (
+    CodeDict,
+    CodeValue,
+    KoodistotLoader,
+    get_code_list_url,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from database.db_helper import ConnectionParameters
 
 lifecycle_status_response = {
     "meta": {"code": 200, "from": 0, "resultCount": 2, "totalResults": 2},
@@ -420,7 +431,7 @@ def mock_koodistot(requests_mock) -> None:
 
 
 @pytest.fixture
-def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
+def changed_mock_koodistot(requests_mock, mock_koodistot: None) -> None:
     # override one response
     requests_mock.get(
         get_url(codes.LifeCycleStatus),
@@ -429,12 +440,14 @@ def changed_mock_koodistot(requests_mock, mock_koodistot) -> None:
 
 
 @pytest.fixture(scope="module")
-def loader(admin_connection_string) -> KoodistotLoader:
+def loader(admin_connection_string: str) -> KoodistotLoader:
     return KoodistotLoader(admin_connection_string, api_url="http://mock.url")
 
 
 @pytest.fixture
-def koodistot_data(mock_koodistot, loader):
+def koodistot_data(
+    mock_koodistot: None, loader: KoodistotLoader
+) -> dict[type[codes.CodeBase], dict[CodeValue, CodeDict]]:
     data = loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
@@ -450,7 +463,7 @@ def koodistot_data(mock_koodistot, loader):
 
 
 @pytest.fixture
-def changed_koodistot_data(changed_mock_koodistot, loader):
+def changed_koodistot_data(changed_mock_koodistot: None, loader: KoodistotLoader):
     data = loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
@@ -465,11 +478,12 @@ def changed_koodistot_data(changed_mock_koodistot, loader):
     return data
 
 
-def test_get_vireilletullut(loader, koodistot_data) -> None:
+def test_get_vireilletullut(loader: KoodistotLoader, koodistot_data) -> None:
     """Check that remote code is imported"""
     code = loader.get_object(
         codes.LifeCycleStatus, koodistot_data[codes.LifeCycleStatus]["02"]
     )
+    assert code is not None
     assert code["id"]
     assert code["value"] == "02"
     assert "short_name" not in code
@@ -483,12 +497,13 @@ def test_get_vireilletullut(loader, koodistot_data) -> None:
     assert "parent_id" not in code
 
 
-def test_get_asumisen_alue(loader, koodistot_data) -> None:
+def test_get_asumisen_alue(loader: KoodistotLoader, koodistot_data) -> None:
     """Check that remote code with children is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulation]["asumisenAlue"],
     )
+    assert code is not None
     assert code["id"] == "15934bd8-419b-420b-9b1d-b12608bdf27a"
     assert code["value"] == "asumisenAlue"
     assert code["short_name"] == "A"
@@ -502,12 +517,13 @@ def test_get_asumisen_alue(loader, koodistot_data) -> None:
     assert "parent_id" not in code
 
 
-def test_get_asuinpientaloalue(loader, koodistot_data) -> None:
+def test_get_asuinpientaloalue(loader: KoodistotLoader, koodistot_data) -> None:
     """Check that remote code with parent and children is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulation]["asuinpientaloalue"],
     )
+    assert code is not None
     assert code["id"] == "e6f03e18-f292-4068-b6a6-b9e52206accc"
     assert code["value"] == "asuinpientaloalue"
     assert code["short_name"] == "AP"
@@ -521,12 +537,15 @@ def test_get_asuinpientaloalue(loader, koodistot_data) -> None:
     assert code["parent_id"] == "15934bd8-419b-420b-9b1d-b12608bdf27a"
 
 
-def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data) -> None:
+def test_get_erillisten_asuinpientalojen_alue(
+    loader: KoodistotLoader, koodistot_data
+) -> None:
     """Check that remote code with parent is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
         koodistot_data[codes.TypeOfPlanRegulation]["erillistenAsuinpientalojenAlue"],
     )
+    assert code is not None
     assert code["id"] == "ba9a86d5-6944-4bc4-a86c-87a78c0cdc2a"
     assert code["value"] == "erillistenAsuinpientalojenAlue"
     assert code["short_name"] == "AO"
@@ -540,7 +559,7 @@ def test_get_erillisten_asuinpientalojen_alue(loader, koodistot_data) -> None:
     assert code["parent_id"] == "e6f03e18-f292-4068-b6a6-b9e52206accc"
 
 
-def test_get_yleismaaraysryhma(loader, koodistot_data) -> None:
+def test_get_yleismaaraysryhma(loader: KoodistotLoader, koodistot_data) -> None:
     """Check that local code is imported"""
     code = loader.get_object(
         codes.TypeOfPlanRegulation,
@@ -548,6 +567,7 @@ def test_get_yleismaaraysryhma(loader, koodistot_data) -> None:
             codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
         ],
     )
+    assert code is not None
     assert code["value"] == codes.TypeOfPlanRegulationGroup.local_codes[0]["value"]
     assert "short_name" not in code
     assert (
@@ -561,7 +581,7 @@ def test_get_yleismaaraysryhma(loader, koodistot_data) -> None:
 
 
 @pytest.fixture(scope="module")
-def custom_code_loader(admin_connection_string) -> Iterator[KoodistotLoader]:
+def custom_code_loader(admin_connection_string: str) -> Generator[KoodistotLoader]:
     """Use monkey patched local codes for testing local custom codes with
     remote children. At the moment, no local custom codes with remote
     children are used in production.
@@ -605,7 +625,7 @@ def custom_code_loader(admin_connection_string) -> Iterator[KoodistotLoader]:
 
 
 @pytest.fixture
-def custom_koodistot_data(mock_koodistot, custom_code_loader):
+def custom_koodistot_data(mock_koodistot: None, custom_code_loader: KoodistotLoader):
     data = custom_code_loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
@@ -622,7 +642,9 @@ def custom_koodistot_data(mock_koodistot, custom_code_loader):
 
 
 @pytest.fixture
-def changed_custom_koodistot_data(changed_mock_koodistot, custom_code_loader):
+def changed_custom_koodistot_data(
+    changed_mock_koodistot: None, custom_code_loader: KoodistotLoader
+) -> dict[type[codes.CodeBase], dict[CodeValue, CodeDict]]:
     data = custom_code_loader.get_objects()
     assert len(data) == 21  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
@@ -638,7 +660,9 @@ def changed_custom_koodistot_data(changed_mock_koodistot, custom_code_loader):
     return data
 
 
-def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data) -> None:
+def test_get_custom_kayttotarkoitus(
+    custom_code_loader: KoodistotLoader, custom_koodistot_data
+) -> None:
     """Check that custom local code with remote children is imported"""
     code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
@@ -646,6 +670,7 @@ def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data) -
             codes.TypeOfAdditionalInformation.local_codes[0]["value"]
         ],
     )
+    assert code is not None
     assert code["value"] == codes.TypeOfAdditionalInformation.local_codes[0]["value"]
     assert "short_name" not in code
     assert (
@@ -659,13 +684,14 @@ def test_get_custom_kayttotarkoitus(custom_code_loader, custom_koodistot_data) -
 
 
 def test_get_custom_paakayttotarkoitus(
-    custom_code_loader, custom_koodistot_data
+    custom_code_loader: KoodistotLoader, custom_koodistot_data
 ) -> None:
     """Check that remote code with custom local parent is imported"""
     code = custom_code_loader.get_object(
         codes.TypeOfAdditionalInformation,
         custom_koodistot_data[codes.TypeOfAdditionalInformation]["paakayttotarkoitus"],
     )
+    assert code is not None
     assert code["id"] == "19f05f06-b18f-4d06-917a-2041204266b1"
     assert code["value"] == "paakayttotarkoitus"
     assert "short_name" not in code
@@ -707,7 +733,7 @@ def check_code_parents(cur) -> None:
 
 def _assert_count_in_table_equal(
     table_model: type[codes.CodeBase] | Table,
-    expected: Any,  # noqa: ANN401
+    expected,
     cur: psycopg.Cursor[tuple[Any, ...]],
 ) -> None:
     if isinstance(table_model, Table):
@@ -760,14 +786,18 @@ def assert_changed_data_is_imported(main_db_params) -> None:
 
 
 def test_save_objects(
-    custom_code_loader, custom_koodistot_data, main_db_params
+    custom_code_loader: KoodistotLoader,
+    custom_koodistot_data,
+    main_db_params: ConnectionParameters,
 ) -> None:
     custom_code_loader.save_objects(custom_koodistot_data)
     assert_data_is_imported(main_db_params)
 
 
 def test_save_changed_objects(
-    changed_custom_koodistot_data, admin_connection_string, main_db_params
+    changed_custom_koodistot_data,
+    admin_connection_string: str,
+    main_db_params: ConnectionParameters,
 ) -> None:
     # TODO: Make test independent of test_save_objects
 

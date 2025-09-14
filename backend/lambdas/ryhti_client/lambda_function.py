@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import enum
 import logging
 import os
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
-from uuid import UUID
 
 import boto3
 import simplejson as json
@@ -12,6 +13,8 @@ from ryhti_client.database_client import DatabaseClient, PlanAlreadyExistsError
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from ryhti_client.ryhti_client import RyhtiResponse
 
 # All non-request specific initialization should be done *before* the handler
@@ -53,7 +56,7 @@ class ResponseBody(TypedDict):
 
     title: str
     details: dict[str | UUID, str | None]
-    ryhti_responses: dict[UUID, "RyhtiResponse"]
+    ryhti_responses: dict[UUID, RyhtiResponse]
 
 
 class Response(TypedDict):

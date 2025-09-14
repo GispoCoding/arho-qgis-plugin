@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 import os
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
-from requests_mock.request import _RequestObjectProxy
-from sqlalchemy.orm import Session
 
-from database import codes
 from lambdas.mml_loader.mml_loader import MMLLoader
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from requests_mock.request import _RequestObjectProxy
+    from sqlalchemy.orm import Session
+
+    from database import codes
 
 
 @pytest.fixture

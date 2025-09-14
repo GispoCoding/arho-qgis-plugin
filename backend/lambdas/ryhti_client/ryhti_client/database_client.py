@@ -1,11 +1,12 @@
+from __future__ import annotations
+
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-import simplejson as json  # type: ignore
-from geoalchemy2 import WKBElement
+import simplejson as json
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
 from sqlalchemy import create_engine, select
@@ -30,8 +31,9 @@ from ryhti_client.deserializer import (
     ryhti_plan_from_json,
 )
 from ryhti_client.ryhti_schema import (
-    AttributeValue,
     Period,
+    RyhtiAdditionalInformation,
+    RyhtiAttributeValue,
     RyhtiHandlingEvent,
     RyhtiInteractionEvent,
     RyhtiPlan,
@@ -42,6 +44,8 @@ from ryhti_client.ryhti_schema import (
 
 if TYPE_CHECKING:
     import uuid
+
+    from geoalchemy2 import WKBElement
 
     from ryhti_client.ryhti_client import RyhtiResponse
 
@@ -250,13 +254,13 @@ class DatabaseClient:
 
     def get_attribute_value(
         self, attribute_value: base.AttributeValueMixin
-    ) -> AttributeValue | None:
+    ) -> RyhtiAttributeValue | None:
         if attribute_value.value_data_type is None:
             return None
 
-        value: AttributeValue = {"dataType": attribute_value.value_data_type.value}
+        value: RyhtiAttributeValue = {"dataType": attribute_value.value_data_type.value}
 
-        def cast_numeric(number: float):
+        def cast_numeric(number: float) -> int | float:
             if attribute_value.value_data_type in (
                 AttributeValueDataType.NUMERIC,
                 AttributeValueDataType.POSITIVE_NUMERIC,
@@ -318,8 +322,8 @@ class DatabaseClient:
 
     def get_additional_information(
         self, additional_information: models.AdditionalInformation
-    ) -> dict:
-        additional_information_dict = {
+    ) -> RyhtiAdditionalInformation:
+        additional_information_dict: RyhtiAdditionalInformation = {
             "type": additional_information.type_of_additional_information.uri
         }
 
@@ -451,7 +455,7 @@ class DatabaseClient:
 
     def _get_containing_land_use_area(
         self, plan_object: models.PlanObjectBase
-    ) -> Optional["uuid.UUID"]:
+    ) -> uuid.UUID | None:
         """Returns a land use area id that contains this plan_object.
         If not found, returns None.
         """
@@ -464,7 +468,7 @@ class DatabaseClient:
 
     def _get_related_plan_object_keys(
         self, plan_object: models.PlanObjectBase
-    ) -> list["uuid.UUID"]:
+    ) -> list[uuid.UUID]:
         # TODO: there might be other use cases for related plan objects
         related_plan_object_keys = []
 
@@ -490,7 +494,7 @@ class DatabaseClient:
 
     def get_plan_regulation_groups(
         self, plan_objects: list[models.PlanObjectBase]
-    ) -> list:
+    ) -> list[dict]:
         """Construct a list of Ryhti compatible plan regulation groups from plan objects
         in the local database.
         """
@@ -515,7 +519,7 @@ class DatabaseClient:
 
     def get_plan_regulation_group_relations(
         self, plan_objects: list[models.PlanObjectBase]
-    ) -> list[dict[str, "uuid.UUID"]]:
+    ) -> list[dict[str, uuid.UUID]]:
         """Construct a list of Ryhti compatible plan regulation group relations from plan
         objects in the local database.
         """
@@ -993,7 +997,7 @@ class DatabaseClient:
         return {plan.id: self.get_plan_matter(plan) for plan in self.plans.values()}
 
     def save_plan_validation_responses(
-        self, responses: dict[UUID, "RyhtiResponse"]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> dict[UUID, str]:
         """Save open validation API response data to the database and return lambda
         response.
@@ -1046,7 +1050,7 @@ class DatabaseClient:
             session.commit()
         return details
 
-    def set_plan_documents(self, responses: dict[UUID, list["RyhtiResponse"]]) -> None:
+    def set_plan_documents(self, responses: dict[UUID, list[RyhtiResponse]]) -> None:
         """Save uploaded plan document keys, export times and etags to the database.
         Also, append document data to the plan dictionaries.
         """
@@ -1074,7 +1078,7 @@ class DatabaseClient:
                 session.commit()
 
     def set_permanent_plan_identifiers(
-        self, responses: dict[UUID, "RyhtiResponse"]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> dict[UUID, str]:
         """Save permanent plan identifiers returned by RYHTI API to the database and
         return lambda response.
@@ -1098,7 +1102,7 @@ class DatabaseClient:
         return details
 
     def save_plan_matter_validation_responses(
-        self, responses: dict[UUID, "RyhtiResponse"]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> dict[UUID, str]:
         """Save X-Road validation API response data to the database and return lambda
         response.
@@ -1163,7 +1167,7 @@ class DatabaseClient:
         return details
 
     def save_plan_matter_post_responses(
-        self, responses: dict[UUID, "RyhtiResponse"]
+        self, responses: dict[UUID, RyhtiResponse]
     ) -> dict[UUID, str]:
         """Save X-Road API POST response data to the database and return lambda response.
 

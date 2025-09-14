@@ -36,7 +36,7 @@ plan_object_tables = [
 ]
 
 
-def generate_modified_at_triggers():
+def generate_modified_at_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
     trgfunc_signature = "trgfunc_modified_at()"
     trgfunc_definition = """
         RETURNS TRIGGER AS $$
@@ -72,7 +72,9 @@ def generate_modified_at_triggers():
     return trgs, [trgfunc]
 
 
-def generate_new_object_add_lifecycle_date_triggers():
+def generate_new_object_add_lifecycle_date_triggers() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
     trgs = []
     trgfunc_signature = "trgfunc_new_object_add_lifecycle_date()"
     trgfunc_definition = """
@@ -114,7 +116,7 @@ def generate_new_object_add_lifecycle_date_triggers():
     return trgs, [trgfunc]
 
 
-def generate_new_lifecycle_date_triggers():
+def generate_new_lifecycle_date_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
     trgs = []
     trgfunc_signature = "trgfunc_new_lifecycle_date()"
     trgfunc_definition = """
@@ -167,7 +169,9 @@ def generate_new_lifecycle_date_triggers():
     return trgs, [trgfunc]
 
 
-def generate_update_lifecycle_status_triggers():
+def generate_update_lifecycle_status_triggers() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
     trgs = []
     trgfuncs = []
     for object_table in plan_object_tables:
@@ -254,7 +258,9 @@ def generate_update_lifecycle_status_triggers():
     return trgs, trgfuncs
 
 
-def generate_new_lifecycle_status_triggers():
+def generate_new_lifecycle_status_triggers() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
     trgs = []
     trgfuncs = []
     trgfunc_signature = "trgfunc_plan_object_new_lifecycle_status()"
@@ -331,7 +337,7 @@ def generate_new_lifecycle_status_triggers():
     return trgs, trgfuncs
 
 
-def generate_add_plan_id_fkey_triggers():
+def generate_add_plan_id_fkey_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
     trgfunc_signature = "trgfunc_add_plan_id_fkey()"
     trgfunc_definition = """
     RETURNS TRIGGER AS $$
@@ -375,7 +381,9 @@ def generate_add_plan_id_fkey_triggers():
     return trgs, [trgfunc]
 
 
-def generate_instead_of_triggers_for_visualization_views():
+def generate_instead_of_triggers_for_visualization_views() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
     trgfunc_signature = "trgf_iiud()"
     trgfunc_definition = dedent(
         """\

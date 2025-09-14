@@ -78,10 +78,12 @@ skip-magic-trailing-comma = true
 
 [tool.mypy]
 mypy_path = "./,./lambdas/ryhti_client"
-explicit_package_bases = true
+
 exclude = [
   "migrations"
 ]
+explicit_package_bases = true
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = ["pygml.*"]

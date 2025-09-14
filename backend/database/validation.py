@@ -3,31 +3,28 @@ import inspect
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 from geoalchemy2 import Geometry
+from sqlalchemy import Column
 
 from database import models
-
-# from codes import (
-#     decisions_by_status,
-#     interaction_events_by_status,
-#     processing_events_by_status,
-# )
-
 
 tables_with_polygon_geometry = []
 for _, klass in inspect.getmembers(models, inspect.isclass):
     if not hasattr(klass, "__table__") or inspect.getmodule(klass) != models:
         continue
-    columns = klass.__table__.c
-    geom_column = columns.get("geom", None)
+
+    columns: dict[str, Column] = klass.__table__.c
+    geom_column = columns.get("geom")
     if (
         geom_column is not None
         and isinstance(geom_column.type, Geometry)
-        and geom_column.type.geometry_type in ("MULTIPOLYGON")
+        and geom_column.type.geometry_type in ("MULTIPOLYGON", "POLYGON")
     ):
         tables_with_polygon_geometry.append(klass.__tablename__)
 
 
-def generate_validate_polygon_geometry_triggers():
+def generate_validate_polygon_geometry_triggers() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
     trgfunc_signature = "trgfunc_validate_polygon_geometry()"
     trgfunc_definition = """
     RETURNS TRIGGER AS $$

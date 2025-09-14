@@ -1,7 +1,9 @@
 """Module for deserializing Ryhti API plan data into SQLAlchemy models."""
 
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from geoalchemy2.shape import from_shape
@@ -29,9 +31,7 @@ from shapely import (
     Polygon,
     from_geojson,
 )
-from shapely.geometry.base import BaseGeometry
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from database.base import PROJECT_SRID
 from database.codes import CodeBase, PlanType, TypeOfDocument, TypeOfPlanRegulationGroup
@@ -65,6 +65,8 @@ if TYPE_CHECKING:
         PositiveNumericValue,
         TextValue,
     )
+    from shapely.geometry.base import BaseGeometry
+    from sqlalchemy.orm import Session
 
     type RangeType = (
         DecimalRange | NumericRange | PositiveDecimalRange | PositiveNumericRange
@@ -105,7 +107,7 @@ class Deserializer:
         self.code_id_cache: dict[tuple[type[CodeBase], str], UUID | None] = {}
         self.code_instance_cache: dict[tuple[type[CodeBase], str], CodeBase | None] = {}
 
-    def get_code_id(self, code_model: type[CodeBase], code: str) -> Optional["UUID"]:
+    def get_code_id(self, code_model: type[CodeBase], code: str) -> UUID | None:
         if (code_model, code) in self.code_id_cache:
             return self.code_id_cache[(code_model, code)]
 
@@ -149,7 +151,7 @@ class Deserializer:
 
         return (CodeModel, code)
 
-    def get_code_id_from_uri(self, code_uri: str) -> Optional["UUID"]:
+    def get_code_id_from_uri(self, code_uri: str) -> UUID | None:
         if not code_uri:
             return None
 
@@ -163,7 +165,7 @@ class Deserializer:
         CodeModel, code = self._get_model_and_code(code_uri)  # noqa: N806
         return self.get_code_instance(CodeModel, code)
 
-    def deserialize_ryhti_geometry(self, geometry: RyhtiGeometry) -> "WKBElement":
+    def deserialize_ryhti_geometry(self, geometry: RyhtiGeometry) -> WKBElement:
         if int(geometry.srid) != PROJECT_SRID:
             raise ValueError(
                 f"Unsupported SRID: {geometry.srid}, expected: {PROJECT_SRID}"
@@ -430,7 +432,7 @@ class Deserializer:
 
     def _determine_area_plan_object_type(
         self, regulation_groups: list[PlanRegulationGroup]
-    ) -> type[LandUseArea] | type[OtherArea]:
+    ) -> type[LandUseArea | OtherArea]:
         has_primary_usage_regulation = any(
             additional_info.type_of_additional_information.value == "paakayttotarkoitus"
             for group in regulation_groups
@@ -443,7 +445,7 @@ class Deserializer:
 
     def _determine_point_plan_object_type(
         self, regulation_groups: list[PlanRegulationGroup], plan_type: PlanType
-    ) -> type[LandUsePoint] | type[OtherPoint]:
+    ) -> type[LandUsePoint | OtherPoint]:
         def get_root_plan_type(plan_type: PlanType) -> PlanType:
             if plan_type.parent is None:
                 return plan_type

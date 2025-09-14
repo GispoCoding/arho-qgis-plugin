@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import enum
 import json
 import logging
@@ -32,7 +34,7 @@ class Response(TypedDict):
     body: str
 
 
-class Event(TypedDict):
+class Event(TypedDict, total=False):
     action: str  # EventType
     version: str | None  # Ansible version id
 

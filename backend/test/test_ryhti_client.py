@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import json
 import os
 import re
-from collections.abc import Callable
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 import pytest
@@ -17,6 +18,17 @@ from ryhti_client.ryhti_client import RyhtiClient
 
 from .conftest import deepcompare
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from json.encoder import JSONEncoder as StdJSONEncoder
+
+    from requests import PreparedRequest
+    from requests_mock import Mocker
+    from requests_mock.request import _RequestObjectProxy
+    from sqlalchemy.orm import Session
+
+    from database import codes, models
+
 mock_rule = "random_rule"
 mock_matter_rule = "another_random_rule"
 mock_error_string = "There is something wrong with your plan! Good luck!"
@@ -28,7 +40,7 @@ mock_matter_instance = "some field in your plan matter"
 
 
 @pytest.fixture
-def mock_public_ryhti_validate_invalid(requests_mock) -> None:
+def mock_public_ryhti_validate_invalid(requests_mock: Mocker) -> None:
     requests_mock.post(
         "http://mock.url/Plan/validate",
         text=json.dumps(
@@ -53,7 +65,7 @@ def mock_public_ryhti_validate_invalid(requests_mock) -> None:
 
 
 @pytest.fixture
-def mock_public_ryhti_validate_valid(requests_mock) -> None:
+def mock_public_ryhti_validate_valid(requests_mock: Mocker) -> None:
     requests_mock.post(
         "http://mock.url/Plan/validate",
         json={
@@ -73,7 +85,7 @@ def mock_public_ryhti_validate_valid(requests_mock) -> None:
 
 
 @pytest.fixture
-def mock_public_map_document(requests_mock):
+def mock_public_map_document(requests_mock: Mocker):
     path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "test_ryhti_client_plan_map.tif"
     )
@@ -93,7 +105,7 @@ def mock_public_map_document(requests_mock):
 
 
 @pytest.fixture
-def mock_public_attachment_document(requests_mock):
+def mock_public_attachment_document(requests_mock: Mocker):
     path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "test_ryhti_client_plan_attachment.pdf",
@@ -114,8 +126,8 @@ def mock_public_attachment_document(requests_mock):
 
 
 @pytest.fixture
-def mock_xroad_ryhti_authenticate(requests_mock) -> None:
-    def match_request_body(request: _RequestObjectProxy):
+def mock_xroad_ryhti_authenticate(requests_mock: Mocker) -> None:
+    def match_request_body(request: _RequestObjectProxy) -> bool:
         # Oh great, looks like requests json method will not parse minimal json consisting of just string.
         # Instead, we'll have to match the request text.
         return request.text == '"test-secret"'
@@ -134,8 +146,8 @@ def mock_xroad_ryhti_authenticate(requests_mock) -> None:
 
 
 @pytest.fixture
-def mock_xroad_ryhti_fileupload(requests_mock) -> None:
-    def match_request_body(request: PreparedRequest):
+def mock_xroad_ryhti_fileupload(requests_mock: Mocker) -> None:
+    def match_request_body(request: PreparedRequest) -> bool:
         # Check that the file is uploaded:
         assert "multipart/form-data; boundary=" in request.headers["Content-Type"]
         return (
@@ -155,13 +167,13 @@ def mock_xroad_ryhti_fileupload(requests_mock) -> None:
             "Authorization": "Bearer test-token",
             "Accept": "application/json",
         },
-        additional_matcher=match_request_body,
+        additional_matcher=match_request_body,  # type: ignore[arg-type]  # _RequestObjectProxy doesn't have body defined
         status_code=201,
     )
 
 
 @pytest.fixture
-def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
+def mock_xroad_ryhti_permanentidentifier(requests_mock: Mocker) -> None:
     def match_request_body_with_correct_region(request: _RequestObjectProxy):
         return request.json()["administrativeAreaIdentifier"] == "01"
 
@@ -201,7 +213,7 @@ def mock_xroad_ryhti_permanentidentifier(requests_mock) -> None:
 
 
 @pytest.fixture
-def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
+def mock_xroad_ryhti_validate_invalid(requests_mock: Mocker) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456/validate",
         json={
@@ -230,7 +242,7 @@ def mock_xroad_ryhti_validate_invalid(requests_mock) -> None:
 
 
 @pytest.fixture
-def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
+def mock_xroad_ryhti_validate_valid(requests_mock: Mocker) -> None:
     requests_mock.post(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-Service/planService/api/RegionalPlanMatter/MK-123456/validate",
         json={
@@ -256,7 +268,7 @@ def mock_xroad_ryhti_validate_valid(requests_mock) -> None:
 
 
 @pytest.fixture
-def mock_xroad_ryhti_post_new_plan_matter(requests_mock) -> None:
+def mock_xroad_ryhti_post_new_plan_matter(requests_mock: Mocker) -> None:
     requests_mock.get(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456",
         request_headers={
@@ -293,13 +305,15 @@ def mock_xroad_ryhti_post_new_plan_matter(requests_mock) -> None:
 
 @pytest.fixture
 def mock_xroad_ryhti_update_existing_plan_matter(
-    requests_mock, desired_plan_matter_dict
+    requests_mock: Mocker, desired_plan_matter_dict
 ) -> None:
     # The plan matter exists
     requests_mock.get(
         "http://mock2.url:8080/r1/FI/GOV/0996189-5/Ryhti-Syke-service/planService/api/RegionalPlanMatter/MK-123456",
         json=desired_plan_matter_dict,
-        json_encoder=JSONEncoder,  # We need simplejson to encode decimals!!
+        json_encoder=cast(
+            "type[StdJSONEncoder]", JSONEncoder
+        ),  # We need simplejson to encode decimals!!
         request_headers={
             "X-Road-Client": "FI/COM/2455538-5/ryhti-gispo-client",
             "Authorization": "Bearer test-token",

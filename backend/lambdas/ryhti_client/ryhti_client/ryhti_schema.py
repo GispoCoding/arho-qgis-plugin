@@ -71,7 +71,7 @@ class RyhtiPlanMatter(TypedDict, total=False):
     planMatterPhases: list[RyhtiPlanMatterPhase]
 
 
-class AttributeValue(TypedDict, total=False):
+class RyhtiAttributeValue(TypedDict, total=False):
     dataType: str
     code: str | None
     codeList: str | None
@@ -82,3 +82,8 @@ class AttributeValue(TypedDict, total=False):
     unitOfMeasure: str | None
     text: dict[str, str] | None
     syntax: str | None
+
+
+class RyhtiAdditionalInformation(TypedDict, total=False):
+    type: str
+    value: RyhtiAttributeValue

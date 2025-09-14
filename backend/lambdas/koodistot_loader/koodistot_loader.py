@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import inspect
 import json
 import logging
-from typing import Any, TypedDict
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 import requests
 from sqlalchemy import create_engine
@@ -12,6 +13,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from database import codes, models  # noqa: F401
 from database.db_helper import DatabaseHelper, User
 
+if TYPE_CHECKING:
+    from uuid import UUID
+
 """
 Koodistot.suomi.fi client for populating all code tables, adapted from
 Tarmo lambda functions
@@ -20,13 +24,16 @@ Tarmo lambda functions
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
+type CodeDict = dict[str, Any]
+type CodeValue = str
+
 
 class Response(TypedDict):
     statusCode: int
     body: str
 
 
-class Event(TypedDict):
+class Event(TypedDict, total=False):
     """Supports creating codes both online and from local code classes."""
 
     suomifi_codes: bool | None
@@ -44,7 +51,9 @@ def get_code_list_url(api_base: str, code_registry: str, code_list: str) -> str:
 
 
 class KoodistotLoader:
-    HEADERS = {"User-Agent": "HAME - Ryhti compatible Maakuntakaava database"}
+    HEADERS: ClassVar[dict[str, str]] = {
+        "User-Agent": "HAME - Ryhti compatible Maakuntakaava database"
+    }
     api_base = "https://koodistot.suomi.fi/codelist-api/api/v1/coderegistries"
 
     def __init__(
@@ -76,7 +85,9 @@ class KoodistotLoader:
         LOGGER.info("Loader initialized with code classes:")
         LOGGER.info(self.koodistot)
 
-    def get_code_registry_data(self, koodisto: type[codes.CodeBase]) -> dict[str, dict]:
+    def get_code_registry_data(
+        self, koodisto: type[codes.CodeBase]
+    ) -> dict[CodeValue, CodeDict]:
         """Get code registry codes for given koodisto, or empty list if not present.
         Index returned codes by code value. Also, order returned codes by hierarchy
         level to ease dependent code creation.
@@ -92,9 +103,9 @@ class KoodistotLoader:
         r = requests.get(url, headers=self.HEADERS)
         r.raise_for_status()
         try:
-            result_list: list[dict] = r.json()["results"]
+            result_list: list[CodeDict] = r.json()["results"]
             # Order external codes by hierarchyLevel
-            result_dict = {
+            result_dict: dict[CodeValue, CodeDict] = {
                 item["codeValue"]: item
                 for item in sorted(result_list, key=lambda item: item["hierarchyLevel"])
             }
@@ -103,7 +114,7 @@ class KoodistotLoader:
             LOGGER.warning(f"{koodisto} response did not contain data")
             return {}
 
-    def get_objects(self) -> dict[type[codes.CodeBase], dict[str, dict]]:
+    def get_objects(self) -> dict[type[codes.CodeBase], dict[CodeValue, CodeDict]]:
         """Gets all koodistot data, divided by table and code value, ordered by code level."""
         data = {}
         for koodisto in self.koodistot:

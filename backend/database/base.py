@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
-from typing import Annotated, Any, Union
+from typing import Annotated, Any, ClassVar
 
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -15,10 +17,10 @@ PROJECT_SRID = 3067
 class Base(DeclarativeBase):
     """Here we link any postgres specific data types to type annotations."""
 
-    type_annotation_map = {
+    type_annotation_map: ClassVar[dict[Any, Any]] = {
         uuid.UUID: postgresql.UUID(as_uuid=False),
         dict[str, str]: postgresql.JSONB,  # Used for multi language text fields
-        Union[dict[str, Any], str]: postgresql.JSONB,  # Used for validation errors
+        dict[str, Any] | str: postgresql.JSONB,  # Used for validation errors
         list[str]: ARRAY(TEXT),
         datetime: TIMESTAMP(timezone=True),
     }
@@ -41,7 +43,7 @@ class VersionedBase(Base):
     """Versioned data tables should have some uniform fields."""
 
     __abstract__ = True
-    __table_args__: Any = {"schema": "hame"}
+    __table_args__: Any = {"schema": "hame"}  # noqa: RUF012  # No can do, sqlalchemy has Any annotation for this
 
     # Go figure. We have to *explicitly state* id is a mapped column, because id will
     # have to be defined inside all the subclasses for relationship remote_side

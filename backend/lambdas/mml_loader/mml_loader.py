@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import json
 import logging
@@ -5,7 +7,7 @@ import os
 import tempfile
 import time
 import zipfile
-from typing import TYPE_CHECKING, TypedDict, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypedDict, cast
 from xml.etree import ElementTree
 
 import pygml
@@ -53,12 +55,15 @@ def gml_polygons_to_multipolygon(gml_polygons: list[str]) -> MultiPolygon:
 
 
 class MMLLoader:
-    HEADERS = {"Accept": "application/json", "Content-Type": "application/json"}
+    HEADERS: ClassVar[dict[str, str]] = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
     api_base = "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/ogcproc/v1/processes/hallinnolliset_aluejaot_vektori_koko_suomi"
     job_api_base = (
         "https://avoin-paikkatieto.maanmittauslaitos.fi/tiedostopalvelu/dl/v1/"
     )
-    payload = {
+    payload: ClassVar[dict[str, Any]] = {
         "id": "hallinnolliset_aluejaot_vektori_koko_suomi",
         "inputs": {
             "fileFormatInput": "GML",
