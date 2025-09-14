@@ -36,7 +36,7 @@ matview_count: int = 0  # adjust me when adding views
 USE_DOCKER = (
     "1"  # Use "" if you don't want pytest-docker to start and destroy the containers
 )
-SCHEMA_FILES_PATH = Path()
+
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
 
@@ -47,11 +47,6 @@ def pytest_addoption(parser, pluginmanager) -> None:
         default=False,
         help="Run tests without mounting dev files to containers.",
     )
-
-
-@pytest.fixture(scope="session", autouse=True)
-def set_env() -> None:
-    db_manager.SCHEMA_FILES_PATH = str(Path(__file__).parent.parent)
 
 
 @pytest.fixture(scope="session")
@@ -129,7 +124,7 @@ else:
 
 @pytest.fixture(scope="session")
 def alembic_cfg():
-    return Config(Path(SCHEMA_FILES_PATH, "alembic.ini"))
+    return Config(Path(__file__).parent.parent / "alembic.ini")
 
 
 @pytest.fixture(scope="session")
