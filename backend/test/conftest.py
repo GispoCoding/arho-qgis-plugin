@@ -2,9 +2,10 @@ import os
 import sys
 import time
 import timeit
+import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Iterable, List, Mapping, Optional, TypeVar
+from typing import Callable, Generator, Iterable, List, Mapping, Optional, TypeVar
 from zoneinfo import ZoneInfo
 
 import psycopg
@@ -510,6 +511,71 @@ def rollback_after(session: Session):
     session.rollback()
 
 
+@pytest.fixture
+def test_data_dir() -> Path:
+    return Path(__file__).parent / "test_data"
+
+
+@pytest.fixture
+def get_test_json(test_data_dir: Path) -> Callable[[str], str]:
+    def _get_test_json(file_name: str) -> str:
+        return (test_data_dir / file_name).read_text(encoding="utf-8")
+
+    return _get_test_json
+
+
+@pytest.fixture
+def complete_plan_json(
+    get_test_json: Callable[[str], str], remove_plan: Callable[[str], None]
+) -> Generator[str]:
+    yield get_test_json("complete_plan.json")
+
+    remove_plan("09c62caa-c56f-474d-9c0a-1ba4c4188cb2")
+
+
+@pytest.fixture
+def invalid_plan_json(
+    get_test_json: Callable[[str], str], remove_plan: Callable[[str], None]
+) -> Generator[str]:
+    yield get_test_json("invalid_plan.json")
+
+    remove_plan("5e928c8f-1a4d-4912-853b-c92c844ae8ec")
+
+
+@pytest.fixture
+def simple_plan_json(
+    get_test_json: Callable[[str], str], remove_plan: Callable[[str], None]
+) -> Generator[str]:
+    yield get_test_json("simple_plan.json")
+
+    remove_plan("7f522b2f-8b45-4a17-b433-5f47271b579e")
+
+
+@pytest.fixture
+def delete_plan_after_test(session: Session) -> Generator[Callable[[str], None]]:
+    plan_id = None
+
+    def _set_plan_id(id: str) -> None:
+        nonlocal plan_id
+        plan_id = id
+
+    yield _set_plan_id
+
+    if plan_id and (plan := session.get(models.Plan, plan_id)):
+        session.delete(plan)
+        print(f"Removed plan {plan_id} after test")
+
+
+@pytest.fixture
+def remove_plan(session: Session) -> Callable[[str], None]:
+    def _remove_plan(plan_id: str) -> None:
+        if plan := session.get(models.Plan, plan_id):
+            session.delete(plan)
+            session.commit()
+
+    return _remove_plan
+
+
 T = TypeVar("T")
 
 
@@ -608,6 +674,36 @@ def type_of_plan_regulation_group_instance(temp_session_feature):
 def type_of_general_plan_regulation_group_instance(temp_session_feature):
     instance = codes.TypeOfPlanRegulationGroup(
         value="generalRegulations", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_land_use_plan_regulation_group_instance(temp_session_feature):
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="landUseRegulations", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_other_area_plan_regulation_group_instance(temp_session_feature):
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="otherAreaRegulations", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_line_plan_regulation_group_instance(temp_session_feature):
+    instance = codes.TypeOfPlanRegulationGroup(value="lineRegulations", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture()
+def type_of_point_plan_regulation_group_instance(temp_session_feature):
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="otherPointRegulations", status="LOCAL"
     )
     return temp_session_feature(instance)
 
@@ -784,6 +880,68 @@ def plan_theme_instance(temp_session_feature):
     return temp_session_feature(instance)
 
 
+@pytest.fixture
+def codes_loaded(
+    code_instance,
+    another_code_instance,
+    pending_status_instance,
+    preparation_status_instance,
+    plan_proposal_status_instance,
+    approved_status_instance,
+    valid_status_instance,
+    plan_type_instance,
+    type_of_underground_instance,
+    type_of_plan_regulation_group_instance,
+    type_of_general_plan_regulation_group_instance,
+    type_of_land_use_plan_regulation_group_instance,
+    type_of_other_area_plan_regulation_group_instance,
+    type_of_line_plan_regulation_group_instance,
+    type_of_point_plan_regulation_group_instance,
+    type_of_plan_regulation_instance,
+    type_of_plan_regulation_allowed_area_instance,
+    type_of_plan_regulation_number_of_stories_instance,
+    type_of_plan_regulation_ground_elevation_instance,
+    type_of_plan_regulation_verbal_instance,
+    type_of_plan_regulation_street_instance,
+    type_of_plan_regulation_construction_area_instance,
+    type_of_verbal_plan_regulation_instance,
+    type_of_main_use_additional_information_instance,
+    type_of_proportion_of_intended_use_additional_information_instance,
+    type_of_sub_area_additional_information_instance,
+    type_of_intended_use_allocation_additional_information_instance,
+    type_of_source_data_instance,
+    type_of_document_plan_map_instance,
+    type_of_document_oas_instance,
+    type_of_document_plan_description_instance,
+    type_of_document_other_instance,
+    category_of_publicity_public_instance,
+    personal_data_content_no_personal_data_instance,
+    retention_time_permanent_instance,
+    language_finnish_instance,
+    legal_effects_of_master_plan_without_legal_effects_instance,
+    municipality_instance,
+    administrative_region_instance,
+    another_administrative_region_instance,
+    plan_theme_instance,
+    participation_plan_presenting_for_public_decision,
+    plan_material_presenting_for_public_decision,
+    draft_plan_presenting_for_public_decision,
+    plan_proposal_sending_out_for_opinions_decision,
+    plan_proposal_presenting_for_public_decision,
+    participation_plan_presenting_for_public_event,
+    plan_material_presenting_for_public_event,
+    plan_proposal_presenting_for_public_event,
+    plan_proposal_requesting_for_opinions_event,
+    presentation_to_the_public_interaction,
+    decisionmaker_type,
+) -> None:
+    """Fixture that ensures all codes are loaded to the database.
+
+    Used on import tests to ensure codes are there before import.
+    """
+    return
+
+
 # Plan fixtures
 
 
@@ -803,6 +961,7 @@ def plan_instance(
     # down too early and teardown will fail, because plan cannot have empty
     # status or organisation.
     instance = models.Plan(
+        id=uuid.uuid4(),
         name={"fin": "Test Plan 1"},
         geom=from_shape(
             shape(

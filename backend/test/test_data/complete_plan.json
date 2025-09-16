@@ -1,0 +1,562 @@
+{
+    "planKey": "09c62caa-c56f-474d-9c0a-1ba4c4188cb2",
+    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+    "legalEffectOfLocalMasterPlans": [
+        "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/2"
+    ],
+    "scale": 1,
+    "geographicalArea": {
+        "srid": "3067",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [
+                        381849.834412134,
+                        6677967.973336197
+                    ],
+                    [
+                        381849.834412134,
+                        6680613.38931286
+                    ],
+                    [
+                        386378.4278637088,
+                        6680613.38931286
+                    ],
+                    [
+                        386378.4278637088,
+                        6677967.973336197
+                    ],
+                    [
+                        381849.834412134,
+                        6677967.973336197
+                    ]
+                ]
+            ]
+        }
+    },
+    "planDescription": "test_plan",
+    "generalRegulationGroups": [
+        {
+            "generalRegulationGroupKey": "2757a7e0-df7d-4946-88ac-bf86579680d3",
+            "titleOfPlanRegulation": {
+                "fin": "test_general_regulation_group"
+            },
+            "groupNumber": 6,
+            "planRecommendations": [],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "ebacd48a-693f-47ed-a114-7e041e994824",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [],
+                    "value": {
+                        "dataType": "LocalizedText",
+                        "text": {
+                            "fin": "test_value"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "planObjects": [
+        {
+            "planObjectKey": "36178236-ead0-4e10-af3b-d9ce4e9ac330",
+            "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+            "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+            "geometry": {
+                "srid": "3067",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                381849.834412134,
+                                6677967.973336197
+                            ],
+                            [
+                                381849.834412134,
+                                6680000.0
+                            ],
+                            [
+                                386378.4278637088,
+                                6680000.0
+                            ],
+                            [
+                                386378.4278637088,
+                                6677967.973336197
+                            ],
+                            [
+                                381849.834412134,
+                                6677967.973336197
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "name": {
+                "fin": "test_land_use_area"
+            },
+            "description": {
+                "fin": "test_land_use_area"
+            },
+            "objectNumber": 1,
+            "periodOfValidity": null,
+            "verticalLimit": {
+                "dataType": "DecimalRange",
+                "minimumValue": 0.0,
+                "maximumValue": 1.0,
+                "unitOfMeasure": "m"
+            }
+        },
+        {
+            "planObjectKey": "9e5ce5a7-f1ec-4290-a8cc-17af306a6865",
+            "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+            "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+            "geometry": {
+                "srid": "3067",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                381849.834412134,
+                                6680000.0
+                            ],
+                            [
+                                381849.834412134,
+                                6680613.38931286
+                            ],
+                            [
+                                386378.4278637088,
+                                6680613.38931286
+                            ],
+                            [
+                                386378.4278637088,
+                                6680000.0
+                            ],
+                            [
+                                381849.834412134,
+                                6680000.0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "name": {
+                "fin": "test_pedestrian_street"
+            },
+            "description": {
+                "fin": "test_pedestrian_street"
+            },
+            "objectNumber": 2,
+            "periodOfValidity": null,
+            "verticalLimit": {
+                "dataType": "DecimalRange",
+                "minimumValue": 0.0,
+                "maximumValue": 1.0,
+                "unitOfMeasure": "m"
+            }
+        },
+        {
+            "planObjectKey": "40a54a87-c363-4a37-91bb-2f5f71fe7a53",
+            "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+            "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+            "geometry": {
+                "srid": "3067",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [
+                                382953.0,
+                                6678582.0
+                            ],
+                            [
+                                382953.0,
+                                6679385.0
+                            ],
+                            [
+                                383825.0,
+                                6679385.0
+                            ],
+                            [
+                                383825.0,
+                                6678582.0
+                            ],
+                            [
+                                382953.0,
+                                6678582.0
+                            ]
+                        ]
+                    ]
+                }
+            },
+            "name": null,
+            "description": null,
+            "objectNumber": null,
+            "periodOfValidity": null,
+            "relatedPlanObjectKeys": [
+                "36178236-ead0-4e10-af3b-d9ce4e9ac330"
+            ]
+        },
+        {
+            "planObjectKey": "bb50b5a0-ef60-40e7-bee0-a1ae927d020f",
+            "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+            "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+            "geometry": {
+                "srid": "3067",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        382000.0,
+                        6678000.0
+                    ]
+                }
+            },
+            "name": {
+                "fin": "test_land_use_point"
+            },
+            "description": {
+                "fin": "test_land_use_point"
+            },
+            "objectNumber": null,
+            "periodOfValidity": null
+        }
+    ],
+    "planRegulationGroups": [
+        {
+            "planRegulationGroupKey": "a804b7a3-eeb2-467e-a5fb-1d74d273e467",
+            "titleOfPlanRegulation": {
+                "fin": "test_point_plan_regulation_group"
+            },
+            "groupNumber": 1,
+            "letterIdentifier": "L",
+            "colorNumber": "#FFFFFF",
+            "planRecommendations": [],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "03f71bf5-e08c-4530-8e65-b86c20db26cf",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [],
+                    "value": {
+                        "dataType": "LocalizedText",
+                        "text": {
+                            "fin": "test_value"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "planRegulationGroupKey": "676745c3-60cc-4a5d-803b-faff0bed4544",
+            "titleOfPlanRegulation": {
+                "fin": "test_plan_regulation_group"
+            },
+            "groupNumber": 2,
+            "letterIdentifier": "K",
+            "colorNumber": "#FFFFFF",
+            "planRecommendations": [
+                {
+                    "planRecommendationKey": "c26c888d-21a9-46d0-a975-0b3312d8db12",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "recommendationNumber": null,
+                    "periodOfValidity": null,
+                    "value": {
+                        "fin": "test_recommendation"
+                    }
+                }
+            ],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "ca5bc558-9fa4-4896-a42f-df3a1c750632",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                        },
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituksenOsuusKerrosalastaK-m2",
+                            "value": {
+                                "dataType": "PositiveNumeric",
+                                "number": 2500,
+                                "unitOfMeasure": "k-m2"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "planRegulationKey": "bfc249c9-50d3-464e-bd9f-6e007b662e50",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpaallinenKerroslukuArvovali",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "3",
+                    "periodOfValidity": null,
+                    "additionalInformations": [],
+                    "value": {
+                        "dataType": "PositiveNumericRange",
+                        "minimumValue": 2,
+                        "maximumValue": 3
+                    }
+                },
+                {
+                    "planRegulationKey": "13b18a79-8f2e-49ee-8d2f-14a087568043",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "4",
+                    "periodOfValidity": null,
+                    "additionalInformations": [
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                        }
+                    ],
+                    "value": {
+                        "dataType": "LocalizedText",
+                        "text": {
+                            "fin": "test_value"
+                        }
+                    }
+                },
+                {
+                    "planRegulationKey": "0d777c2d-63ec-411a-9610-9d5695d2e080",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sanallinenMaarays",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "5",
+                    "periodOfValidity": null,
+                    "verbalRegulations": [
+                        "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/perustaminen"
+                    ],
+                    "additionalInformations": [],
+                    "value": {
+                        "dataType": "LocalizedText",
+                        "text": {
+                            "fin": "test_value"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "planRegulationGroupKey": "ca2bd884-995c-40f2-a6ed-875a4ea8bdd7",
+            "titleOfPlanRegulation": {
+                "fin": "test_numeric_plan_regulation_group"
+            },
+            "groupNumber": 3,
+            "letterIdentifier": "N",
+            "colorNumber": "#FFFFFF",
+            "planRecommendations": [],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "5074c5cf-e0b4-40df-8fb3-72d100e4b1e8",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sallittuKerrosala",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [],
+                    "value": {
+                        "dataType": "PositiveNumeric",
+                        "number": 1,
+                        "unitOfMeasure": "k-m2"
+                    }
+                }
+            ]
+        },
+        {
+            "planRegulationGroupKey": "71045e5b-3bf0-4e38-a97e-a4fae3d6a047",
+            "titleOfPlanRegulation": {
+                "fin": "test_decimal_plan_regulation_group"
+            },
+            "groupNumber": 4,
+            "letterIdentifier": "D",
+            "colorNumber": "#FFFFFF",
+            "planRecommendations": [],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "97d5d4cb-2018-4bbd-92bd-8a0830ef0a98",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpinnanKorkeusasema",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [],
+                    "value": {
+                        "dataType": "Decimal",
+                        "number": 1.0,
+                        "unitOfMeasure": "m"
+                    }
+                }
+            ]
+        },
+        {
+            "planRegulationGroupKey": "193cb173-0bc4-4f29-bdcf-4839c200e618",
+            "titleOfPlanRegulation": {
+                "fin": "test_pedestrian_plan_regulation_group"
+            },
+            "groupNumber": 5,
+            "letterIdentifier": "jk/pp",
+            "colorNumber": "#FFFFFF",
+            "planRecommendations": [],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "3ced751f-a069-400e-a0aa-82cb4f143662",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/katu",
+                    "planThemes": [
+                        "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                    ],
+                    "subjectIdentifiers": [
+                        "#test_regulation"
+                    ],
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                        },
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituskohdistus",
+                            "value": {
+                                "dataType": "Code",
+                                "code": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/pyorailyalue",
+                                "codeList": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                                "title": {
+                                    "eng": "Cycling area",
+                                    "fin": "Pyöräilyalue",
+                                    "swe": "Cykelområde"
+                                }
+                            }
+                        },
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituskohdistus",
+                            "value": {
+                                "dataType": "Code",
+                                "code": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/jalankulkualue",
+                                "codeList": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                                "title": {
+                                    "eng": "Pedestrian area",
+                                    "fin": "Jalankulkualue",
+                                    "swe": "Fotgångarområde"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "planRegulationGroupKey": "4284fa65-ad56-4b20-b23f-33a8965e4e34",
+            "titleOfPlanRegulation": {
+                "fin": "test_construction_area_plan_regulation_group"
+            },
+            "groupNumber": 6,
+            "letterIdentifier": "R",
+            "colorNumber": "#FFFFFF",
+            "planRecommendations": [],
+            "planRegulations": [
+                {
+                    "planRegulationKey": "a80694aa-7b88-4756-b537-1f26be538f9d",
+                    "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                    "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/rakennusala",
+                    "subjectIdentifiers": null,
+                    "regulationNumber": "1",
+                    "periodOfValidity": null,
+                    "additionalInformations": [
+                        {
+                            "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/osaAlue"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "planRegulationGroupRelations": [
+        {
+            "planObjectKey": "36178236-ead0-4e10-af3b-d9ce4e9ac330",
+            "planRegulationGroupKey": "676745c3-60cc-4a5d-803b-faff0bed4544"
+        },
+        {
+            "planObjectKey": "36178236-ead0-4e10-af3b-d9ce4e9ac330",
+            "planRegulationGroupKey": "ca2bd884-995c-40f2-a6ed-875a4ea8bdd7"
+        },
+        {
+            "planObjectKey": "36178236-ead0-4e10-af3b-d9ce4e9ac330",
+            "planRegulationGroupKey": "71045e5b-3bf0-4e38-a97e-a4fae3d6a047"
+        },
+        {
+            "planObjectKey": "9e5ce5a7-f1ec-4290-a8cc-17af306a6865",
+            "planRegulationGroupKey": "193cb173-0bc4-4f29-bdcf-4839c200e618"
+        },
+        {
+            "planObjectKey": "40a54a87-c363-4a37-91bb-2f5f71fe7a53",
+            "planRegulationGroupKey": "4284fa65-ad56-4b20-b23f-33a8965e4e34"
+        },
+        {
+            "planObjectKey": "bb50b5a0-ef60-40e7-bee0-a1ae927d020f",
+            "planRegulationGroupKey": "a804b7a3-eeb2-467e-a5fb-1d74d273e467"
+        }
+    ],
+    "periodOfValidity": null,
+    "approvalDate": null,
+    "planMaps": [],
+    "planAnnexes": [],
+    "otherPlanMaterials": [],
+    "planReport": null
+}

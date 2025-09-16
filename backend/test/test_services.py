@@ -1,10 +1,12 @@
 import inspect
 import json
+import uuid
+from http import HTTPStatus
+from typing import Any
 
 import psycopg
 import pytest
 import requests
-from sqlalchemy.orm import Session
 
 from database import codes
 
@@ -822,3 +824,84 @@ def test_post_valid_plan_matter_in_preparation(
             assert exported_file_key
     finally:
         conn.close()
+
+
+@pytest.fixture
+def extra_data(plan_type_instance, organisation_instance) -> dict:
+    return {
+        "name": "test_plan",
+        "plan_type_id": plan_type_instance.id,
+        "organization_id": organisation_instance.id,
+    }
+
+
+@pytest.fixture
+def import_payload(extra_data):
+    return {
+        "action": "import_plan",
+        "plan_uuid": str(
+            uuid.uuid4()
+        ),  # Dummy non existing UUID that must be added for now
+        "data": {"plan_json": None, "extra_data": extra_data},
+    }
+
+
+def test_import_plan(
+    codes_loaded,
+    import_payload,
+    ryhti_client_url,
+    simple_plan_json: str,
+):
+    """Test importing a plan"""
+
+    import_payload["data"]["plan_json"] = simple_plan_json
+
+    r = requests.post(ryhti_client_url, data=json.dumps(import_payload))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["body"]["title"] == "Plan imported."
+    assert data["body"]["details"]["plan_id"] == "7f522b2f-8b45-4a17-b433-5f47271b579e"
+
+
+def test_import_duplicate_plan(
+    codes_loaded,
+    import_payload: dict[str, Any],
+    ryhti_client_url: str,
+    simple_plan_json: str,
+):
+    """Test importing a plan"""
+
+    import_payload["data"]["plan_json"] = simple_plan_json
+
+    r = requests.post(ryhti_client_url, data=json.dumps(import_payload))
+    assert r.status_code == HTTPStatus.OK
+
+    r = requests.post(ryhti_client_url, data=json.dumps(import_payload))
+    assert (
+        r.status_code == HTTPStatus.OK
+    )  # TODO: This should be a 400 or 409. Fix after plugin fixed.
+
+    data = r.json()
+    assert data["body"]["title"] == "Plan already exists."
+
+
+def test_import_invalid_plan(
+    ryhti_client_url,
+    import_payload,
+    invalid_plan_json: str,
+):
+    import_payload["data"]["plan_json"] = invalid_plan_json
+
+    r = requests.post(ryhti_client_url, data=json.dumps(import_payload))
+
+    # Status code from the lambda container
+    # (API Gateway would follow the status code returned from the lambda function)
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert (
+        data["statusCode"] == HTTPStatus.BAD_REQUEST
+    )  # Status code from our lambda function
+    assert data["body"]["title"] == "Error in provided data."
+    assert "Invalid plan data:" in data["body"]["details"]["error"]
