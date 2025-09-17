@@ -152,7 +152,7 @@ class Plugin:
             self.plan_manager.new_feature_dock, self.plan_manager.regulation_groups_dock
         )
 
-        self.validation_dock = ValidationDock()
+        self.validation_dock = ValidationDock(self.plan_manager)
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
         iface.mainWindow().tabifyDockWidget(self.plan_manager.new_feature_dock, self.validation_dock)
 
