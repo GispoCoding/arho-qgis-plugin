@@ -11,7 +11,8 @@ from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkRe
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import iface
 
-from arho_feature_template.utils.misc_utils import get_active_plan_id, get_settings
+from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.utils.misc_utils import get_active_plan_id
 
 
 class LambdaService(QObject):
@@ -70,7 +71,9 @@ class LambdaService(QObject):
 
     def _send_request(self, action: str, plan_id: str | None = None, payload: dict | None = None):
         """Sends a request to the lambda function."""
-        proxy_host, proxy_port, self.lambda_url = get_settings()
+        proxy_host = SettingsManager.get_proxy_host()
+        proxy_port = SettingsManager.get_proxy_port()
+        self.lambda_url = SettingsManager.get_lambda_url()
 
         # Initialize or reset proxy each time a request is sent. Incase settings have changed.
         if proxy_host and proxy_port:
