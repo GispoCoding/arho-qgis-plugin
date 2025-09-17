@@ -399,6 +399,7 @@ class PlanManager(QObject):
         self.set_active_plan(None)
         self.set_permanent_identifier(None)
 
+        iface.setActiveLayer(plan_layer)
         plan_layer.startEditing()
         self.plan_digitize_map_tool.setLayer(plan_layer)
         iface.mapCanvas().setMapTool(self.plan_digitize_map_tool)
@@ -476,6 +477,8 @@ class PlanManager(QObject):
             msg = f"Could not find plan feature layer class for layer name {layer_name}"
             raise ValueError(msg)
         layer = layer_class.get_from_project()
+
+        iface.setActiveLayer(layer)
         layer.startEditing()
 
         self.initialize_feature_digitize_map_tool(layer)
