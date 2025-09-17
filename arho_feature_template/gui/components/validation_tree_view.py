@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from textwrap import dedent
 from typing import cast
@@ -5,20 +7,38 @@ from typing import cast
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QTreeView
 
+from arho_feature_template.project.layers.plan_layers import (
+    AdditionalInformationLayer,
+    PlanPropositionLayer,
+    PlanRegulationLayer,
+    RegulationGroupLayer,
+)
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
+from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 category_map = {
     "plan": "Kaava",
-    "geographicalArea": "Kaavan ulkoraja",
-    "planObjects": "Kaavakohteet",
-    "planRegulationGroups": "Kaavamääräysryhmät",
+    "geographicalarea": "Kaavan ulkoraja",
+    "planobjects": "Kaavakohteet",
+    "planregulationgroups": "Kaavamääräysryhmät",
+    "planregulations": "Kaavamääräykset",
+    "planrecommendations": "Kaavasuositukset",
+    "lifecyclestatus": "Elinkaaritila",
+    "additionalinformations": "Lisätiedot",
+    "legaleffectoflocalmasterplans": "Yleiskaavan oikeusvaikutus",
+    "letteridentifier": "Kirjaintunnus",
+    "planmatter": "Kaava-asia",
+    "planmatterphases": "Kaava-asian vaiheet",
+    "plandecision": "Kaava-asian päätös",
 }
 
 
 class ValidationItem(QStandardItem):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, text: str, feature_id: str | None = None):
+        super().__init__(text)
         self.setEditable(False)
+
+        self.feature_id = feature_id
 
 
 class ValidationModel(QStandardItemModel):
@@ -28,44 +48,108 @@ class ValidationModel(QStandardItemModel):
     def __init__(self) -> None:
         super().__init__()
 
-        self._parent_items: dict[str, ValidationItem] = {}
+        self.parent_items: dict[str, ValidationItem] = {}
 
-        self.setColumnCount(3)
-        self.setHorizontalHeaderLabels(["", "Attribuutti", "Viesti"])
+        self.setColumnCount(2)
+        self.setHorizontalHeaderLabels(["", "Viesti"])
 
         self.root = self.invisibleRootItem()
-        self.root.appendRow([ValidationItem("Virheet"), ValidationItem(""), ValidationItem("")])
-        self.root.appendRow([ValidationItem("Varoitukset"), ValidationItem(""), ValidationItem("")])
+        self.root.appendRow([ValidationItem("Virheet"), ValidationItem("")])
+        self.root.appendRow([ValidationItem("Varoitukset"), ValidationItem("")])
 
     def clear(self):
         self.item(self.ERROR_INDEX, 0).removeRows(0, self.item(self.ERROR_INDEX, 0).rowCount())
         self.item(self.WARNING_INDEX, 0).removeRows(0, self.item(self.WARNING_INDEX, 0).rowCount())
         self._parent_items = {}
 
-    def _add_item(self, root_index: int, error: str, instance: str, message: str) -> None:
+    def _add_item(
+        self,
+        root_index: int,
+        error: str,
+        object_path: str,
+        message: str,
+        feature_id: str,
+        layer_features: dict,
+    ) -> None:
         current_parent = cast(ValidationItem, self.item(root_index, 0))
-        # replace '.planObjects[index]' with '.planObjects.index' so it is splittable by '.'
-        instance = re.sub(r"\.(?P<object>\w+)\[(?P<object_num>\d+)\]", r".\g<object>.\g<object_num>", instance)
+        # Remove square brackets so the string is splittable by '.'
+        object_path = re.sub(r"\[(\d+)\]", r".\1", object_path).lower()
         path_parts = []
-        attribute_index = None
-        attribute = ""
-        for i, instance_part in enumerate(instance.split(".")):
-            if instance_part == "planObjects":
-                attribute_index = i + 2
+        parts = object_path.split(".")
+        feature_name = None
+        if object_path not in ("planobjects", "planregulationgroups"):
+            for part in parts:
+                # Ignore following attributes to reduce layer complexity in tree
+                if part in ("type", "value", "number", "geometrydata"):  # TODO: Add more if encountered
+                    continue
 
-            path_parts.append(instance_part)
-            path = ".".join(path_parts)
-            if i == attribute_index:
-                attribute = instance_part
-                self._parent_items[path] = current_parent
-            elif path not in self._parent_items:
-                new_item = ValidationItem(category_map.get(instance_part, instance_part))
-                current_parent.appendRow([new_item, ValidationItem(""), ValidationItem("")])
-                self._parent_items[path] = new_item
-            current_parent = self._parent_items[path]
+                if part == "planobjects":
+                    feature, _ = layer_features[feature_id]
+                    feature_name = deserialize_localized_text(feature["name"])
 
-        current_parent = self._parent_items[instance]
-        message_item = ValidationItem(message)
+                elif part == "planregulationgroups":
+                    if not feature_id:
+                        feature_name = None
+                    else:
+                        feature, layer = layer_features[feature_id]
+                        if layer == AdditionalInformationLayer:
+                            plan_regulation_id = AdditionalInformationLayer.get_attribute_by_id(
+                                target_attribute="plan_regulation_id", id_=feature_id
+                            )
+                            if plan_regulation_id:
+                                regulation_feature = PlanRegulationLayer.get_feature_by_id(plan_regulation_id)
+                                if regulation_feature:
+                                    regulation_group_id = regulation_feature["plan_regulation_group_id"]
+                        elif layer in (PlanRegulationLayer, PlanPropositionLayer):
+                            regulation_group_id = feature["plan_regulation_group_id"]
+                        elif layer == RegulationGroupLayer:
+                            regulation_group_id = feature_id
+
+                        if regulation_group_id:
+                            feature, _ = layer_features[regulation_group_id]
+                            feature_name = deserialize_localized_text(feature["name"])
+                        else:
+                            feature_name = None
+
+                elif part == "planregulations":
+                    if "additionalinformations" in parts and feature_id is not None and feature_id in layer_features:
+                        feature, _ = layer_features[feature_id]
+                        feature_name = deserialize_localized_text(feature["name"])
+                    else:
+                        feature_name = None
+
+                elif part == "planrecommendations":
+                    feature_name = None
+
+                path_parts.append(part)
+                path = ".".join(path_parts)
+                if path not in self._parent_items:
+                    # If part is digit, replace it with name or ID
+                    if part.isdigit():
+                        # Show only 20 characters in the first column
+                        max_length = 20
+                        if feature_name:
+                            tooltip_text = feature_name
+                            if len(feature_name) > max_length:
+                                feature_name = feature_name[:max_length] + "..."
+                            new_item = ValidationItem(
+                                text=feature_name,
+                                feature_id=feature_id,
+                            )
+                            new_item.setToolTip(tooltip_text)
+                        else:
+                            new_item = ValidationItem(text=feature_id[:6], feature_id=feature_id)
+                    else:
+                        new_item = ValidationItem(category_map.get(part, part))
+                    current_parent.appendRow([new_item, ValidationItem("")])
+                    self._parent_items[path] = new_item
+                current_parent = self._parent_items[path]
+
+        else:  # If object_path is simply "planobjects" or "planregulationgroups", plan has no plan features or regulation groups, respectively. Then, validation error has no feature_id.
+            new_item = ValidationItem(category_map.get(object_path, object_path))
+            current_parent.appendRow([new_item, ValidationItem("")])
+
+        message_item = ValidationItem(text=message, feature_id=feature_id)
 
         processed_rule_id = error.replace("__", "/").replace("_", "-")
         try:
@@ -89,27 +173,27 @@ class ValidationModel(QStandardItemModel):
             """
         )
         message_item.setToolTip(message_tooltip)
-        current_parent.appendRow([ValidationItem(""), ValidationItem(attribute), message_item])
+        current_parent.appendRow([ValidationItem(""), message_item])
 
-    def add_error(self, error: str, instance: str, message: str) -> None:
-        self._add_item(self.ERROR_INDEX, error, instance, message)
+    def add_error(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
+        self._add_item(self.ERROR_INDEX, error, object_path, message, feature_id, feature_names)
 
-    def add_warning(self, error: str, instance: str, message: str) -> None:
-        self._add_item(self.WARNING_INDEX, error, instance, message)
+    def add_warning(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
+        self._add_item(self.WARNING_INDEX, error, object_path, message, feature_id, feature_names)
 
 
 class ValidationTreeView(QTreeView):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
 
-        self._model = ValidationModel()
-        self.setModel(self._model)
+        self.model = ValidationModel()
+        self.setModel(self.model)
 
     def clear_errors(self) -> None:
-        self._model.clear()
+        self.model.clear()
 
-    def add_error(self, error: str, instance: str, message: str) -> None:
-        self._model.add_error(error, instance, message)
+    def add_error(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
+        self.model.add_error(error, object_path, message, feature_id, feature_names)
 
-    def add_warning(self, error: str, instance: str, message: str) -> None:
-        self._model.add_warning(error, instance, message)
+    def add_warning(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
+        self.model.add_warning(error, object_path, message, feature_id, feature_names)
