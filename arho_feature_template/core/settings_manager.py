@@ -35,7 +35,7 @@ class SettingsManager:
         return cls._get("proxy_port", default)
 
     @classmethod
-    def set_proxy_port(cls, value: str):
+    def set_proxy_port(cls, value: int):
         cls._set("proxy_port", value)
 
     @classmethod
@@ -58,7 +58,7 @@ class SettingsManager:
 
         proxy_port = settings.value("proxy_port", None)
         if proxy_port is not None:
-            cls.set_proxy_port(proxy_port)
+            cls.set_proxy_port(int(proxy_port))
             settings.remove("proxy_port")
 
         lambda_url = settings.value("lambda_url", None)
