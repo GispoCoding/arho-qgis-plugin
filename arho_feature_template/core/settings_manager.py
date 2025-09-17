@@ -22,6 +22,7 @@ class SettingsManager:
             cls._migrate_keys()
         return QgsSettings().value(cls._full_key(key), default)
 
+    # LAMBDA SETTINGS
     @classmethod
     def get_proxy_host(cls, default: str = "localhost") -> str:
         return cls._get("proxy_host", default)
@@ -45,6 +46,15 @@ class SettingsManager:
     @classmethod
     def set_lambda_url(cls, value: str):
         cls._set("lambda_url", value)
+
+    # SERVICE BUS SETTINGS
+    @classmethod
+    def get_service_bus_enabled(cls, default: bool = True) -> bool:  # noqa: FBT001, FBT002
+        return cls._get("service_bus_enabled", default)
+
+    @classmethod
+    def set_service_bus_enabled(cls, value: bool):  # noqa: FBT001
+        cls._set("service_bus_enabled", value)
 
     @classmethod
     def _migrate_keys(cls):

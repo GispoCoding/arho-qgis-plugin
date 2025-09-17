@@ -2,7 +2,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit
+from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QLineEdit
 
 from arho_feature_template.core.settings_manager import SettingsManager
 
@@ -22,6 +22,7 @@ class PluginSettings(QDialog, FormClass):  # type: ignore
         self.host: QLineEdit
         self.port: QgsSpinBox
         self.lambda_address: QLineEdit
+        self.service_bus_enabled: QCheckBox
         self.button_box: QDialogButtonBox
 
         # INIT
@@ -35,10 +36,12 @@ class PluginSettings(QDialog, FormClass):  # type: ignore
         self.host.setText(SettingsManager.get_proxy_host())
         self.port.setValue(SettingsManager.get_proxy_port())
         self.lambda_address.setText(SettingsManager.get_lambda_url())
+        self.service_bus_enabled.setChecked(SettingsManager.get_service_bus_enabled())
 
     def save_settings(self):
         SettingsManager.set_proxy_host(self.host.text())
         SettingsManager.set_proxy_port(self.port.value())
         SettingsManager.set_lambda_url(self.lambda_address.text())
+        SettingsManager.set_service_bus_enabled(self.service_bus_enabled.isChecked())
 
         self.accept()
