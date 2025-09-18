@@ -34,6 +34,8 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         SettingsManager.set_lambda_url(self.lambda_address.text())
         SettingsManager.set_service_bus_enabled(self.service_bus_enabled.isChecked())
 
+        SettingsManager.finish()
+
     def load_settings(self):
         self.host.setText(SettingsManager.get_proxy_host())
         self.port.setValue(SettingsManager.get_proxy_port() or 0)

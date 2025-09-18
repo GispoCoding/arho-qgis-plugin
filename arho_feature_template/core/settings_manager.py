@@ -3,12 +3,18 @@ from __future__ import annotations
 from typing import Any
 
 from qgis.core import QgsSettings
-from qgis.PyQt.QtCore import QSettings
+from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
+
+
+class SettingsNotifier(QObject):
+    settings_saved = pyqtSignal()
 
 
 class SettingsManager:
     GROUP = "plugins/arho"
     MIGRATIONS_RUN = False
+
+    notifier = SettingsNotifier()
 
     @classmethod
     def _full_key(cls, key: str) -> str:
@@ -23,6 +29,16 @@ class SettingsManager:
         if not cls.MIGRATIONS_RUN:
             cls._migrate_keys()
         return QgsSettings().value(cls._full_key(key), default, type(default))
+
+    @classmethod
+    def finish(cls):
+        """Call after setting keys to emit the `settings_saved` signal via `notifier`."""
+
+        # Wait a tick to ensure settings are saved and applied
+        def _emit_changed_signal():
+            SettingsManager.notifier.settings_saved.emit()
+
+        QTimer.singleShot(0, _emit_changed_signal)
 
     # LAMBDA SETTINGS
     @classmethod

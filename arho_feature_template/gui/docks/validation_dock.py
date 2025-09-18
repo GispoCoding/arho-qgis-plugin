@@ -9,6 +9,7 @@ from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
@@ -40,6 +41,9 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.validate_plan_matter_button.clicked.connect(self.validate_plan_matter)
 
         self.enable_validation()
+
+        if not SettingsManager.get_service_bus_enabled():
+            self.validate_plan_matter_button.hide()
 
     def handle_validation_call_errors(self, error: str):
         self.validation_label.setText("Kaavan validoinnissa tapahtui virhe.")
