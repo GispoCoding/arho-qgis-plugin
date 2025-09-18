@@ -215,7 +215,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         if feature_found:
             if feature_found.geometry():
-                self.plan_manager.edit_plan_feature(feature=feature_found, layer_name=layer.name())
+                if "plan_type_id" in feature_found.fields().names():
+                    self.plan_manager.edit_plan()
+                else:
+                    self.plan_manager.edit_plan_feature(feature=feature_found, layer_name=layer.name())
             else:
                 if layer.name() == "Kaavamääräys":
                     regulation_feature = PlanRegulationLayer.get_feature_by_id(feature_found["id"])
@@ -223,13 +226,15 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                 elif layer.name() == "Kaavasuositus":
                     proposition_feature = PlanPropositionLayer.get_feature_by_id(feature_found["id"])
                     regulation_group_id = proposition_feature["plan_regulation_group_id"]
+                elif layer.name() == "Kaavamääräysryhmät":
+                    regulation_group_id = feature_found["id"]
 
                 regulation_group_feature = RegulationGroupLayer.get_feature_by_id(regulation_group_id)
                 if regulation_group_feature:
                     regulation_group = RegulationGroupLayer.model_from_feature(regulation_group_feature)
                     self.plan_manager.edit_regulation_group(regulation_group)
         else:
-            iface.messageBar().pushWarning("", "Kohdetta ei löytynyt.")
+            iface.messageBar().pushWarning("Lomakkeen avaaminen epäonnistui", "Kohteen ID puuttuu validointivirheestä.")
 
     def _find_feature(self, feature_id: str | None) -> tuple[QgsFeature | None, QgsMapLayer | None]:
         if feature_id is None:
