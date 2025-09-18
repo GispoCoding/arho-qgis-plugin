@@ -6,7 +6,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
-from qgis.PyQt.QtCore import NULL, QSettings, Qt, pyqtBoundSignal
+from qgis.PyQt.QtCore import NULL, Qt, pyqtBoundSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
 
@@ -97,15 +97,6 @@ def set_active_plan_id(plan_id: str | None):
 def get_active_plan_id():
     """Retrieve the active plan ID stored as a project variable."""
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
-
-
-def get_settings():
-    """Retrieve stored settings, using defaults if not set."""
-    settings = QSettings("ArhoFeatureTemplate")
-    proxy_host = settings.value("proxy_host", "localhost")
-    proxy_port = settings.value("proxy_port", "5443")
-    lambda_url = settings.value("lambda_url", "https://t5w26iqnsf.execute-api.eu-central-1.amazonaws.com/v0/ryhti")
-    return proxy_host, proxy_port, lambda_url
 
 
 def disconnect_signal(signal: pyqtBoundSignal) -> None:
