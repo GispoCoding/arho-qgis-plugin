@@ -1,19 +1,20 @@
 from importlib import resources
 from typing import TYPE_CHECKING
 
+from qgis.gui import QgsOptionsPageWidget, QgsOptionsWidgetFactory
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QLineEdit
 
 from arho_feature_template.core.settings_manager import SettingsManager
 
 if TYPE_CHECKING:
     from qgis.gui import QgsSpinBox
+    from qgis.PyQt.QtWidgets import QCheckBox, QLineEdit
 
 ui_path = resources.files(__package__) / "plugin_settings.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class PluginSettings(QDialog, FormClass):  # type: ignore
+class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -23,14 +24,15 @@ class PluginSettings(QDialog, FormClass):  # type: ignore
         self.port: QgsSpinBox
         self.lambda_address: QLineEdit
         self.service_bus_enabled: QCheckBox
-        self.button_box: QDialogButtonBox
 
         # INIT
         self.load_settings()
 
-        self.button_box.button(QDialogButtonBox.Ok)
-        self.button_box.accepted.connect(self.save_settings)
-        self.button_box.rejected.connect(self.reject)
+    def apply(self):
+        SettingsManager.set_proxy_host(self.host.text())
+        SettingsManager.set_proxy_port(self.port.value())
+        SettingsManager.set_lambda_url(self.lambda_address.text())
+        SettingsManager.set_service_bus_enabled(self.service_bus_enabled.isChecked())
 
     def load_settings(self):
         self.host.setText(SettingsManager.get_proxy_host())
@@ -38,10 +40,12 @@ class PluginSettings(QDialog, FormClass):  # type: ignore
         self.lambda_address.setText(SettingsManager.get_lambda_url())
         self.service_bus_enabled.setChecked(SettingsManager.get_service_bus_enabled())
 
-    def save_settings(self):
-        SettingsManager.set_proxy_host(self.host.text())
-        SettingsManager.set_proxy_port(self.port.value())
-        SettingsManager.set_lambda_url(self.lambda_address.text())
-        SettingsManager.set_service_bus_enabled(self.service_bus_enabled.isChecked())
 
-        self.accept()
+class ArhoOptionsPageFactory(QgsOptionsWidgetFactory):
+    def __init__(self):
+        super().__init__()
+        self.setTitle("ARHO")
+        self.setKey("ARHO")
+
+    def createWidget(self, parent):  # noqa: N802
+        return ArhoOptionsPage(parent)

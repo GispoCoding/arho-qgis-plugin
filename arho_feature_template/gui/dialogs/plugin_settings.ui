@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>PluginSettings</class>
- <widget class="QDialog" name="PluginSettings">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>696</width>
-    <height>248</height>
+    <height>295</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Asetukset</string>
+   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -49,6 +49,16 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="1">
+       <widget class="QgsSpinBox" name="port">
+        <property name="specialValueText">
+         <string> </string>
+        </property>
+        <property name="maximum">
+         <number>99999</number>
+        </property>
+       </widget>
+      </item>
       <item row="2" column="0">
        <widget class="QLabel" name="lambda_address_label">
         <property name="minimumSize">
@@ -64,16 +74,6 @@
       </item>
       <item row="2" column="1">
        <widget class="QLineEdit" name="lambda_address"/>
-      </item>
-      <item row="1" column="1">
-       <widget class="QgsSpinBox" name="port">
-        <property name="specialValueText">
-         <string> </string>
-        </property>
-        <property name="maximum">
-         <number>99999</number>
-        </property>
-       </widget>
       </item>
      </layout>
     </widget>
@@ -120,11 +120,17 @@
     </widget>
    </item>
    <item>
-    <widget class="QDialogButtonBox" name="button_box">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>675</width>
+       <height>69</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

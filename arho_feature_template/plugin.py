@@ -11,7 +11,7 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
-from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
+from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
@@ -358,9 +358,11 @@ class Plugin:
             status_tip="Tarkastele pluginin tietoja",
         )
 
+        self._arho_options_page_factory = ArhoOptionsPageFactory()
+        iface.registerOptionsWidgetFactory(self._arho_options_page_factory)
         self.plugin_settings_action = self.add_action(
             text="Asetukset",
-            triggered_callback=self.open_settings,
+            triggered_callback=lambda _: iface.showOptionsDialog(iface.mainWindow(), "ARHO"),
             add_to_menu=True,
             add_to_toolbar=False,
             status_tip="Muokkaa pluginin asetuksia",
@@ -427,11 +429,6 @@ class Plugin:
         """Open the plugin about dialog."""
         about = PluginAbout()
         about.exec()
-
-    def open_settings(self):
-        """Open the plugin settings dialog."""
-        settings = PluginSettings()
-        settings.exec_()
 
     def edit_lifecycles(self):
         """Edit lifecycles of currently active plan."""
