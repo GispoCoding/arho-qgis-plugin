@@ -850,3 +850,9 @@ plan_layers.remove(PlanFeatureLayer)
 
 plan_feature_layers = PlanFeatureLayer.__subclasses__()
 plan_layers.extend(plan_feature_layers)
+
+plan_features_and_regulations: list = []
+plan_features_and_regulations.extend(PlanFeatureLayer.__subclasses__())
+plan_features_and_regulations.extend(
+    [PlanRegulationLayer, RegulationGroupLayer, PlanPropositionLayer, AdditionalInformationLayer]
+)
