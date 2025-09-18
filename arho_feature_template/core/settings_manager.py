@@ -87,7 +87,10 @@ class SettingsManager:
 
         proxy_port = settings.value("proxy_port", None)
         if proxy_port is not None:
-            cls.set_proxy_port(int(proxy_port))
+            try:
+                cls.set_proxy_port(int(proxy_port))
+            except ValueError:
+                cls.set_proxy_port(0)
             settings.remove("proxy_port")
 
         lambda_url = settings.value("lambda_url", None)
