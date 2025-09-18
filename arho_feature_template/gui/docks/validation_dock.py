@@ -79,7 +79,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
     def validate_plan(self):
         """Handles the button press to trigger the validation process."""
         # Get IDs from all layers
-        self.layer_features = self.get_plan_features()
+        self.layer_features = self.get_all_features()
 
         self.validation_label.setText("Kaavan validointivirheet:")
         self.validation_label.setStyleSheet("")
@@ -183,8 +183,8 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         # Always enable validation at the end
         self.enable_validation()
 
-    def get_plan_features(self) -> dict:
-        """Returns all IDs and related geometries."""
+    def get_all_features(self) -> dict:
+        """Returns all IDs, names and geometries."""
         result: dict[str, list] = {}
         project = QgsProject.instance()
         for feature_layer in plan_features_and_regulations:

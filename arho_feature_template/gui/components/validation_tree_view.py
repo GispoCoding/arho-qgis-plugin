@@ -8,7 +8,7 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QTreeView
 
 from arho_feature_template.project.layers.plan_layers import (
-    # AdditionalInformationLayer,
+    AdditionalInformationLayer,
     PlanPropositionLayer,
     PlanRegulationLayer,
     RegulationGroupLayer,
@@ -18,12 +18,13 @@ from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 category_map = {
     "plan": "Kaava",
-    "geographicalArea": "Kaavan ulkoraja",
-    "planObjects": "Kaavakohteet",
-    "planRegulationGroups": "Kaavamääräysryhmät",
-    "planRegulations": "Kaavamääräykset",
-    "planRecommendations": "Kaavasuositukset,",
-    "lifeCycleStatus": "Elinkaaritila",
+    "geographicalarea": "Kaavan ulkoraja",
+    "planobjects": "Kaavakohteet",
+    "planregulationgroups": "Kaavamääräysryhmät",
+    "planregulations": "Kaavamääräykset",
+    "planrecommendations": "Kaavasuositukset",
+    "lifecyclestatus": "Elinkaaritila",
+    "additionalinformations": "Lisätiedot",
 }
 
 
@@ -70,30 +71,32 @@ class ValidationModel(QStandardItemModel):
                 break
 
         current_parent = cast(ValidationItem, self.item(root_index, 0))
-        # replace '.planObjects[index]' with '.planObjects.index' so it is splittable by '.'
-        instance = re.sub(r"\.(?P<object>\w+)\[(?P<object_num>\d+)\]", r".\g<object>.\g<object_num>", instance)
+        # Remove square brackets so the string is splittable by '.'
+        instance = re.sub(r"\[(\d+)\]", r".\1", instance).lower()
         # print(f"Instance: {instance}")
         path_parts = []
         attribute = ""
         parts = instance.split(".")
-        for i, instance_part in enumerate(parts):
-            if instance_part == "planRegulationGroups":
-                # Check whether child is regulation or proposition
-                child_type = parts[i + 2]
-                if child_type == "planRegulations":
-                    regulation_feature = PlanRegulationLayer.get_feature_by_id(feature_id)
-                    if regulation_feature:
-                        regulation_group_id = regulation_feature["plan_regulation_group_id"]
-                elif child_type == "planRecommendations":
-                    proposition_feature = PlanPropositionLayer.get_feature_by_id(feature_id)
-                    if proposition_feature:
-                        regulation_group_id = proposition_feature["plan_regulation_group_id"]
+        regulation_group_id = None
+        for instance_part in parts:
+            if instance_part == "planregulations":
+                if "additionalinformations" in parts:
+                    info_feature = AdditionalInformationLayer.get_feature_by_id(feature_id)
+                    if info_feature:
+                        feature_id = info_feature["plan_regulation_id"]
+                regulation_feature = PlanRegulationLayer.get_feature_by_id(feature_id)
+                if regulation_feature:
+                    regulation_group_id = regulation_feature["plan_regulation_group_id"]
+            elif instance_part == "planrecommendations":
+                proposition_feature = PlanPropositionLayer.get_feature_by_id(feature_id)
+                if proposition_feature:
+                    regulation_group_id = proposition_feature["plan_regulation_group_id"]
 
-                # Get regulation group name
-                regulation_group_feature = RegulationGroupLayer.get_feature_by_id(regulation_group_id)
-                if regulation_group_feature:
-                    feature_name = deserialize_localized_text(regulation_group_feature["name"])
-            elif instance_part in ["planRegulations", "planRecommendations"]:
+            # Get regulation group name
+            regulation_group_feature = RegulationGroupLayer.get_feature_by_id(regulation_group_id)
+            if regulation_group_feature:
+                feature_name = deserialize_localized_text(regulation_group_feature["name"])
+            elif instance_part in ["planregulations", "planrecommendations"]:
                 feature_name = None  # regulations and propositions do not have names -> use ID
 
             path_parts.append(instance_part)
@@ -146,6 +149,7 @@ class ValidationModel(QStandardItemModel):
         )
         message_item.setToolTip(message_tooltip)
         current_parent.appendRow([ValidationItem(""), ValidationItem(attribute), message_item])
+        print(f"Current parent: {current_parent}")
 
     def add_error(self, error: str, instance: str, message: str, feature_id: str, layer_features: dict) -> None:
         self._add_item(self.ERROR_INDEX, error, instance, message, feature_id, layer_features)
