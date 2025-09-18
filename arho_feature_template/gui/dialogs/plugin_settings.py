@@ -34,7 +34,7 @@ class PluginSettings(QDialog, FormClass):  # type: ignore
 
     def load_settings(self):
         self.host.setText(SettingsManager.get_proxy_host())
-        self.port.setValue(SettingsManager.get_proxy_port())
+        self.port.setValue(SettingsManager.get_proxy_port() or 0)
         self.lambda_address.setText(SettingsManager.get_lambda_url())
         self.service_bus_enabled.setChecked(SettingsManager.get_service_bus_enabled())
 

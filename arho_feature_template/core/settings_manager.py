@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from qgis.core import QgsSettings
@@ -20,7 +22,7 @@ class SettingsManager:
     def _get(cls, key: str, default: Any) -> Any:
         if not cls.MIGRATIONS_RUN:
             cls._migrate_keys()
-        return QgsSettings().value(cls._full_key(key), default)
+        return QgsSettings().value(cls._full_key(key), default, type(default))
 
     # LAMBDA SETTINGS
     @classmethod
@@ -32,12 +34,13 @@ class SettingsManager:
         cls._set("proxy_host", value)
 
     @classmethod
-    def get_proxy_port(cls, default: int = 5443) -> int:
-        return cls._get("proxy_port", default)
+    def get_proxy_port(cls, default: int = 5443) -> int | None:
+        port = cls._get("proxy_port", default)
+        return port if port > 0 else None
 
     @classmethod
-    def set_proxy_port(cls, value: int):
-        cls._set("proxy_port", value)
+    def set_proxy_port(cls, value: int | None):
+        cls._set("proxy_port", 0 if value is None else value)
 
     @classmethod
     def get_lambda_url(cls, default: str = "https://t5w26iqnsf.execute-api.eu-central-1.amazonaws.com/v0/ryhti") -> str:
