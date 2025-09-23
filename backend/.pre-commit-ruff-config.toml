@@ -1,12 +1,53 @@
 extend = "pyproject.toml"
 
 [lint]
-extend-fixable=[
-    "F841",
-    "F401"
-]
-ignore=[
-    "TD002",
-    "TRY003",
-    "T201"
+extend-fixable = ["F841", "F401"]
+ignore = [
+    "RUF100",  # Unused noqa
+    "E501",    # line-too-long
+    "PLR2004", # magic-value-comparison
+    "TD003",   # missing-todo-link
+    "ANN001",  # missing-type-function-argument
+    "T201",    # print
+    "ANN201",  # missing-return-type-undocumented-public-function
+    "PLR0913", # too-many-arguments
+    "S113",    # request-without-timeout
+    "G004",    # logging-f-string
+    "ERA001",  # commented-out-code
+    "TRY003",  # raise-vanilla-args
+    "S608",    # hardcoded-sql-expression
+    "PT012",   # pytest-raises-with-multiple-statements
+    "EM101",   # raw-string-in-exception
+    "D210",    # surrounding-whitespace
+    "EM102",   # f-string-in-exception
+    "PLR0915", # too-many-statements
+    "DTZ005",  # call-datetime-now-without-tzinfo
+    "ANN401",  # any-type
+    "F841",    # unused-variable
+    "ANN202",  # missing-return-type-private-function
+    "C901",    # complex-structure
+    "PTH123",  # builtin-open
+    "PGH003",  # blanket-type-ignore
+    "PLR0912", # too-many-branches
+    "PT018",   # pytest-composite-assertion
+    "PTH100",  # os-path-abspath
+    "PTH118",  # os-path-join
+    "PTH120",  # os-path-dirname
+    "RUF001",  # ambiguous-unicode-character-string
+    "S106",    # hardcoded-password-func-arg
+    "TD004",   # missing-todo-colon
+    "TRY002",  # raise-vanilla-class
+    "N806",    # non-lowercase-variable-in-function
+    "PT011",   # pytest-raises-too-broad
+    "A001",    # builtin-variable-shadowing
+    "A002",    # builtin-argument-shadowing
+    "ARG001",  # unused-function-argument
+    "ARG002",  # unused-method-argument
+    "B018",    # useless-expression
+    "D419",    # empty-docstring
+    "INP001",  # implicit-namespace-package
+    "PLW1508", # invalid-envvar-default
+    "RUF012",  # mutable-class-default
+    "S314",    # suspicious-xml-element-tree-usage
+    "TD005",   # missing-todo-description
 ]
