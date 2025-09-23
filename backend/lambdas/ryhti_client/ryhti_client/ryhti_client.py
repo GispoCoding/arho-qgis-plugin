@@ -156,12 +156,12 @@ class RyhtiClient:
             # dictionary. In the context of plan validation, they must be provided as
             # query parameters.
             plan = self.database_client.plans[plan_id]
-            plan_type_parameter = plan.plan_type.value
+            plan_type_parameter = plan.plan_matter.plan_type.value
             # We only support one area id, no need for commas and concat:
             admin_area_id_parameter = (
-                plan.organisation.municipality.value
-                if plan.organisation.municipality
-                else plan.organisation.administrative_region.value
+                plan.plan_matter.organisation.municipality.value
+                if plan.plan_matter.organisation.municipality
+                else plan.plan_matter.organisation.administrative_region.value
             )
             if self.debug_json:
                 save_debug_json(f"{plan_id}.json", plan_dict)
@@ -211,15 +211,15 @@ class RyhtiClient:
         del upload_headers["Content-Type"]
         for plan in self.database_client.plans.values():
             # Only upload documents for plans that are actually going to Ryhti
-            if not plan.permanent_plan_identifier:
+            if not plan.plan_matter.permanent_plan_identifier:
                 continue
             responses[plan.id] = []
             municipality = (
-                plan.organisation.municipality.value
-                if plan.organisation.municipality
+                plan.plan_matter.organisation.municipality.value
+                if plan.plan_matter.organisation.municipality
                 else None
             )
-            region = plan.organisation.administrative_region.value
+            region = plan.plan_matter.organisation.administrative_region.value
             for document in plan.documents:
                 if document.url:
                     # No need to upload if document hasn't changed
@@ -305,25 +305,28 @@ class RyhtiClient:
         return responses
 
     def get_permanent_plan_identifiers(self) -> dict[DbId, RyhtiResponse]:
-        """Get permanent plan identifiers for all plans that do not have identifiers set."""
+        """Get permanent plan identifiers for all plan matters that do not have identifiers set."""
         responses: dict[DbId, RyhtiResponse] = {}
-        for plan in self.database_client.plans.values():
-            if not plan.permanent_plan_identifier:
+
+        for plan_matter in self.database_client.get_unique_plan_matters():
+            if not plan_matter.permanent_plan_identifier:
                 plan_identifier_endpoint = (
                     self.xroad_server_address
                     + self.xroad_api_path
-                    + self.get_plan_matter_api_path(plan.plan_type.uri)
+                    + self.get_plan_matter_api_path(plan_matter.plan_type.uri)
                     + "permanentPlanIdentifier"
                 )
-                LOGGER.info(f"Getting permanent identifier for plan {plan.id}...")
+                LOGGER.info(
+                    "Getting permanent identifier for plan_matter %s...", plan_matter.id
+                )
                 administrative_area_identifier = (
-                    plan.organisation.municipality.value
-                    if plan.organisation.municipality
-                    else plan.organisation.administrative_region.value
+                    plan_matter.organisation.municipality.value
+                    if plan_matter.organisation.municipality
+                    else plan_matter.organisation.administrative_region.value
                 )
                 data = {
                     "administrativeAreaIdentifier": administrative_area_identifier,
-                    "projectName": plan.producers_plan_identifier,
+                    "projectName": plan_matter.producers_plan_identifier,
                 }
                 LOGGER.info("Request headers")
                 LOGGER.info(self.xroad_headers)
@@ -341,7 +344,7 @@ class RyhtiClient:
                 if response.status_code == 401:
                     detail = "No permission to get plan identifier in this region or municipality!"  # noqa: E501
                     LOGGER.info(detail)
-                    responses[plan.id] = {
+                    responses[plan_matter.id] = {
                         "status": 401,
                         "errors": response.json(),
                         "detail": detail,
@@ -350,7 +353,7 @@ class RyhtiClient:
                 elif response.status_code == 400:
                     detail = "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa: E501
                     LOGGER.info(detail)
-                    responses[plan.id] = {
+                    responses[plan_matter.id] = {
                         "status": 400,
                         "errors": response.json(),
                         "detail": detail,
@@ -359,7 +362,7 @@ class RyhtiClient:
                 else:
                     response.raise_for_status()
                     LOGGER.info("Received identifier %s", response.json())
-                    responses[plan.id] = {
+                    responses[plan_matter.id] = {
                         "status": 200,
                         "detail": response.json(),
                         "errors": None,
@@ -367,7 +370,7 @@ class RyhtiClient:
                     }
                 if self.debug_json:
                     with open(
-                        f"ryhti_debug/{plan.id}.identifier.response.json",
+                        f"ryhti_debug/{plan_matter.id}.identifier.response.json",
                         "w",
                         encoding="utf-8",
                     ) as response_file:
@@ -375,7 +378,7 @@ class RyhtiClient:
                         response_file.write(str(self.xroad_headers) + "\n")
                         response_file.write(str(data) + "\n")
                         json.dump(
-                            responses[plan.id],
+                            responses[plan_matter.id],
                             response_file,
                             indent=4,
                             ensure_ascii=False,

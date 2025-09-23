@@ -27,7 +27,7 @@ from database.codes import (
 from database.enums import AttributeValueDataType
 from ryhti_client.deserializer import (
     Deserializer,
-    plan_matter_data_from_extra_data_dict,
+    extra_import_data_from_dict,
     ryhti_plan_from_json,
 )
 from ryhti_client.ryhti_schema import (
@@ -43,6 +43,8 @@ from ryhti_client.ryhti_schema import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from geoalchemy2 import WKBElement
 
     from database.base import DbId
@@ -57,6 +59,12 @@ class PlanAlreadyExistsError(Exception):
     def __init__(self, plan_id: str) -> None:
         self.plan_id = plan_id
         super().__init__(f"Plan '{plan_id}' already exists in the database.")
+
+
+class PlanMatterNotFoundError(Exception):
+    def __init__(self, plan_matter_id: UUID) -> None:
+        self.plan_matter_id = plan_matter_id
+        super().__init__(f"Plan matter '{plan_matter_id}' not found in the database.")
 
 
 class DatabaseClient:
@@ -107,6 +115,13 @@ class DatabaseClient:
             self.plan_dictionaries = self.get_plan_dictionaries()
             LOGGER.info("Client initialized with plans to process:")
             LOGGER.info(self.plans)
+
+    def get_unique_plan_matters(self) -> Generator[models.PlanMatter]:
+        seen_plan_matter_ids: set[DbId] = set()
+        for plan in self.plans.values():
+            if plan.plan_matter.id not in seen_plan_matter_ids:
+                seen_plan_matter_ids.add(plan.plan_matter.id)
+                yield plan.plan_matter
 
     def get_geojson(self, geometry: WKBElement) -> dict:
         """Returns geojson format dict with the correct SRID set."""
@@ -965,49 +980,55 @@ class DatabaseClient:
         """Construct a dict of single Ryhti compatible plan matter from plan in the local
         database.
         """
-        plan_matter = RyhtiPlanMatter()
+        ryhti_plan_matter = RyhtiPlanMatter()
+
+        plan_matter = plan.plan_matter
 
         # TODO: permanentPlanIdentifier should be mandatory in this stage
-        plan_matter["permanentPlanIdentifier"] = plan.permanent_plan_identifier
+        ryhti_plan_matter["permanentPlanIdentifier"] = (
+            plan_matter.permanent_plan_identifier
+        )
 
         # Plan type has to be proper URI (not just value) here, *unlike* when only
         # validating plan. Go figure.
-        plan_matter["planType"] = plan.plan_type.uri
+        ryhti_plan_matter["planType"] = plan_matter.plan_type.uri
         # For reasons unknown, name is needed for plan matter but not for plan. Plan
         # only contains description, and only in one language.
         # TODO: name should be mandatory in this stage
-        plan_matter["name"] = self.format_language_string_value(plan.name)
+        ryhti_plan_matter["name"] = self.format_language_string_value(plan_matter.name)
 
         # we should only have one pending period. If there are several, pick last
         dates_of_initiation = self.get_last_period(
             self.get_lifecycle_periods(plan, self.pending_status_value, datetimes=False)
         )
-        plan_matter["timeOfInitiation"] = (
+        ryhti_plan_matter["timeOfInitiation"] = (
             dates_of_initiation["begin"] if dates_of_initiation else None
         )
         # Hooray, unlike plan, the plan *matter* description allows multilanguage data!
-        plan_matter["description"] = self.format_language_string_value(plan.description)
-        plan_matter["producerPlanIdentifier"] = plan.producers_plan_identifier
-        plan_matter["caseIdentifiers"] = (
-            [plan.matter_management_identifier]
-            if plan.matter_management_identifier
-            else []
+        ryhti_plan_matter["description"] = self.format_language_string_value(
+            plan_matter.description
         )
-        plan_matter["recordNumbers"] = (
-            [plan.record_number] if plan.record_number else []
+        ryhti_plan_matter["producerPlanIdentifier"] = (
+            plan_matter.producers_plan_identifier
+        )
+        ryhti_plan_matter["caseIdentifiers"] = (
+            [plan_matter.case_identifier] if plan_matter.case_identifier else []
+        )
+        ryhti_plan_matter["recordNumbers"] = (
+            [plan_matter.record_number] if plan_matter.record_number else []
         )
         # Apparently Ryhti plans may cover multiple administrative areas, so the region
         # identifier has to be embedded in a list.
-        plan_matter["administrativeAreaIdentifiers"] = [
+        ryhti_plan_matter["administrativeAreaIdentifiers"] = [
             (
-                plan.organisation.municipality.value
-                if plan.organisation.municipality
-                else plan.organisation.administrative_region.value
+                plan_matter.organisation.municipality.value
+                if plan_matter.organisation.municipality
+                else plan_matter.organisation.administrative_region.value
             )
         ]
         # We have no need of importing the digital origin code list as long as we are
         # not digitizing old plans:
-        plan_matter["digitalOrigin"] = (
+        ryhti_plan_matter["digitalOrigin"] = (
             "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera/code/01"
         )
         # TODO: kaava-asian liitteet
@@ -1015,8 +1036,8 @@ class DatabaseClient:
         # plan_matter["matterAnnexes"] = self.get_plan_matter_annexes(plan)
         # TODO: lähdeaineistot
         # plan_matter["sourceDatas"] = self.get_source_datas(plan)
-        plan_matter["planMatterPhases"] = self.get_plan_matter_phases(plan)
-        return plan_matter
+        ryhti_plan_matter["planMatterPhases"] = self.get_plan_matter_phases(plan)
+        return ryhti_plan_matter
 
     def get_plan_matters(self) -> dict[DbId, RyhtiPlanMatter]:
         """Construct a dict of Ryhti compatible plan matters from plans with
@@ -1109,24 +1130,28 @@ class DatabaseClient:
     def set_permanent_plan_identifiers(
         self, responses: dict[DbId, RyhtiResponse]
     ) -> dict[DbId, str]:
-        """Save permanent plan identifiers returned by RYHTI API to the database and
-        return lambda response.
-        """
+        """Save permanent plan identifiers returned by RYHTI API to the database."""
         details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
-            for plan_id, response in responses.items():
+            for plan_matter_id, response in responses.items():
+                plan_matter = next(
+                    pm
+                    for pm in self.get_unique_plan_matters()
+                    if pm.id == plan_matter_id
+                )
                 # Make sure that the plan dict stays up to date
-                plan = self.plans[plan_id]
-                session.add(plan)
+                session.add(plan_matter)
                 if response["status"] == 200:
-                    plan.permanent_plan_identifier = response["detail"]
-                    details[plan_id] = response["detail"]  # type: ignore[assignment]
+                    plan_matter.permanent_plan_identifier = response["detail"]
+                    details[plan_matter_id] = response["detail"]  # type: ignore[assignment]
                 elif response["status"] == 401:
-                    details[plan_id] = (
+                    details[plan_matter_id] = (
                         "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
                     )
                 elif response["status"] == 400:
-                    details[plan_id] = "Kaavalta puuttuu tuottajan kaavatunnus."
+                    details[plan_matter_id] = (
+                        "Kaava-asialta puuttuu tuottajan kaavatunnus."
+                    )
             session.commit()
         return details
 
@@ -1264,12 +1289,16 @@ class DatabaseClient:
         return details
 
     def import_plan(
-        self, plan_json: str, extra_data: dict, overwrite: bool = False
+        self, plan_json: str, extra_data_dict: dict, overwrite: bool = False
     ) -> DbId | None:
         ryhti_plan = ryhti_plan_from_json(plan_json)
-        plan_matter_data = plan_matter_data_from_extra_data_dict(extra_data)
+        extra_data = extra_import_data_from_dict(extra_data_dict)
 
         with self.Session(autoflush=False, expire_on_commit=False) as session:
+            plan_matter = session.get(models.PlanMatter, extra_data.plan_matter_id)
+            if not plan_matter:
+                raise PlanMatterNotFoundError(extra_data.plan_matter_id)
+
             existing_plan = session.get(models.Plan, ryhti_plan.plan_key)
             if existing_plan:
                 if overwrite is True:
@@ -1279,9 +1308,12 @@ class DatabaseClient:
                     raise PlanAlreadyExistsError(ryhti_plan.plan_key)
 
             desesrializer = Deserializer(session)
-            plan = desesrializer.deserialise_ryhti_plan(ryhti_plan, plan_matter_data)
+            plan = desesrializer.deserialise_ryhti_plan(
+                ryhti_plan, plan_matter.plan_type, extra_data.name
+            )
 
-            session.add(plan)
+            plan_matter.plans.append(plan)
+            session.add(plan_matter)
             session.commit()
 
         return plan.id

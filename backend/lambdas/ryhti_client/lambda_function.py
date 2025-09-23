@@ -9,7 +9,11 @@ import boto3
 import simplejson as json
 
 from database.db_helper import DatabaseHelper, User
-from ryhti_client.database_client import DatabaseClient, PlanAlreadyExistsError
+from ryhti_client.database_client import (
+    DatabaseClient,
+    PlanAlreadyExistsError,
+    PlanMatterNotFoundError,
+)
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
@@ -377,6 +381,10 @@ def handler(
                 status_code = 200  # TODO change to to 409 after plugin fixed.
                 title = "Plan already exists."
                 details = {"plan_id": str(e.plan_id)}
+            except PlanMatterNotFoundError as e:
+                status_code = 400
+                title = "Plan matter not found."
+                details = {"plan_matter_id": str(e.plan_matter_id)}
             except ValueError as e:
                 status_code = 400
                 title = "Error in provided data."

@@ -75,12 +75,9 @@ if TYPE_CHECKING:
     )
 
 
-class PlanMatterData(BaseModel):
+class ExtraImportData(BaseModel):
+    plan_matter_id: UUID
     name: str
-    plan_type_id: UUID
-    organization_id: UUID
-    permanent_plan_identifier: str | None = None
-    producers_plan_identifier: str | None = None
 
 
 def ryhti_plan_from_json(json_data: str) -> RyhtiPlan:
@@ -91,9 +88,9 @@ def ryhti_plan_from_json(json_data: str) -> RyhtiPlan:
     return ryhti_plan
 
 
-def plan_matter_data_from_extra_data_dict(extra_data: dict) -> PlanMatterData:
+def extra_import_data_from_dict(extra_data: dict) -> ExtraImportData:
     try:
-        plan_matter_data = PlanMatterData.model_validate(extra_data)
+        plan_matter_data = ExtraImportData.model_validate(extra_data)
     except ValidationError as e:
         raise ValueError(f"Invalid extra data: \n{e}") from e
     return plan_matter_data
@@ -588,7 +585,7 @@ class Deserializer:
         )
 
     def deserialise_ryhti_plan(
-        self, ryhti_plan: RyhtiPlan, plan_matter_data: PlanMatterData
+        self, ryhti_plan: RyhtiPlan, plan_type: PlanType, name: str
     ) -> Plan:
         """Deserializes a RyhtiPlan into a Plan SQLAlchemy model instance.
 
@@ -616,10 +613,6 @@ class Deserializer:
         "relatedPlanObjectRegulationGroupRelations",
         "relatedRegulationGroupPlanObjectRelations",
         """
-        plan_type = self.session.get(PlanType, plan_matter_data.plan_type_id)
-        if not plan_type:
-            raise ValueError(f"Invalid plan type id: {plan_matter_data.plan_type_id}")
-
         plan_regulation_groups = {
             regulation_group.id: regulation_group
             for ryhti_group in ryhti_plan.plan_regulation_groups or []
@@ -676,16 +669,9 @@ class Deserializer:
         documents.extend(plan_maps)
         documents.extend(plan_reports)
 
-        ryhti_plan.other_plan_materials
-
         plan = Plan(
             id=UUID(ryhti_plan.plan_key),
-            plan_type=plan_type,
-            # organisation # not included in plan, part of plan matter
-            # plan_type # not included in plan, part of plan matter
-            # permanent_plan_identifier # not included in plan, part of plan matter
-            # producers_plan_identifier # not included in plan, part of plan matter
-            # name # not included in plan, part of plan matter
+            name={"fin": name},
             description={"fin": ryhti_plan.plan_description},
             scale=ryhti_plan.scale,
             lifecycle_status_id=self.get_code_id_from_uri(ryhti_plan.life_cycle_status),
@@ -709,26 +695,9 @@ class Deserializer:
             documents=documents,
         )
 
-        plan.name = {"fin": plan_matter_data.name}
-        plan.permanent_plan_identifier = plan_matter_data.permanent_plan_identifier
-        plan.producers_plan_identifier = plan_matter_data.producers_plan_identifier
-        plan.organisation_id = plan_matter_data.organization_id
+        plan.name = {"fin": name}
 
         plan = self._determine_and_update_regulation_group_types(plan)
-
-        return plan
-
-    def _add_plan_matter_data_to_plan(
-        self, plan: Plan, plan_matter_data: PlanMatterData
-    ) -> Plan:
-        plan_type_id = plan_matter_data.plan_type_id
-        if not plan_type_id:
-            raise ValueError
-        plan.plan_type_id = plan_type_id
-        plan.name = {"fin": plan_matter_data.name}
-        plan.permanent_plan_identifier = plan_matter_data.permanent_plan_identifier
-        plan.producers_plan_identifier = plan_matter_data.producers_plan_identifier
-        plan.organisation_id = plan_matter_data.organization_id
 
         return plan
 
