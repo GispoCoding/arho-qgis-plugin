@@ -14,28 +14,22 @@ def database_client(rw_connection_string: str) -> DatabaseClient:
 
 
 @pytest.fixture
-def extra_data(plan_type_instance, organisation_instance) -> dict:
-    return {
-        "name": "test_plan",
-        "plan_type_id": plan_type_instance.id,
-        "organization_id": organisation_instance.id,
-    }
+def extra_data(plan_matter_instance: models.PlanMatter) -> dict:
+    return {"name": "test_plan", "plan_matter_id": plan_matter_instance.id}
 
 
 def test_import_plan(
     codes_loaded: None,
     database_client: DatabaseClient,
     session: Session,
-    extra_data: dict,
     complete_plan_json: str,
+    extra_data: dict,
 ):
     """Imports complete_test_plan.json and checks that the data was imported correctly."""
     COMPLETE_PLAN_ID = "09c62caa-c56f-474d-9c0a-1ba4c4188cb2"
     # delete_plan_after_test(COMPLETE_PLAN_ID)
 
-    imported_plan_id = database_client.import_plan(
-        complete_plan_json, extra_data=extra_data
-    )
+    imported_plan_id = database_client.import_plan(complete_plan_json, extra_data)
     assert imported_plan_id == UUID(COMPLETE_PLAN_ID)
 
     plan = session.get(models.Plan, COMPLETE_PLAN_ID)
@@ -177,9 +171,9 @@ def test_import_duplicate_plan(
     extra_data: dict,
     simple_plan_json: str,
 ):
-    database_client.import_plan(simple_plan_json, extra_data=extra_data)
+    database_client.import_plan(simple_plan_json, extra_data)
     with pytest.raises(PlanAlreadyExistsError):
-        database_client.import_plan(simple_plan_json, extra_data=extra_data)
+        database_client.import_plan(simple_plan_json, extra_data)
 
 
 def test_import_duplicate_plan_with_overwriting(
@@ -191,12 +185,12 @@ def test_import_duplicate_plan_with_overwriting(
 ):
     SIMPLE_PLAN_ID = "7f522b2f-8b45-4a17-b433-5f47271b579e"
 
-    database_client.import_plan(simple_plan_json, extra_data=extra_data)
+    database_client.import_plan(simple_plan_json, extra_data)
     original_created = session.scalars(
         select(models.Plan.created_at).where(models.Plan.id == SIMPLE_PLAN_ID)
     ).one()
 
-    database_client.import_plan(simple_plan_json, extra_data=extra_data, overwrite=True)
+    database_client.import_plan(simple_plan_json, extra_data, overwrite=True)
     overwritten_created = session.scalars(
         select(models.Plan.created_at).where(models.Plan.id == SIMPLE_PLAN_ID)
     ).one()
@@ -221,14 +215,13 @@ def test_import_invalid_plan(
     assert "lifeCycleStatus" in error_message
 
 
-def test_import_invalid_extra_data(
+def test_import_when_extra_data_missing(
     database_client: DatabaseClient, simple_plan_json: str
-):
+) -> None:
     """Tries to import a plan with invalid extra_data and checks that the import fails."""
     extra_data = {
-        "name": "test_plan",
-        # "plan_type_id" is missing
-        "organization_id": "invalid-uuid",  # invalid UUID
+        "name": "test_plan"
+        # "plan_matter_id" is missing
     }
 
     with pytest.raises(ValueError) as excinfo:
@@ -236,5 +229,21 @@ def test_import_invalid_extra_data(
 
     error_message = str(excinfo.value)
     assert "Invalid extra data" in error_message
-    assert "plan_type_id" in error_message
-    assert "organization_id" in error_message
+    assert "plan_matter_id" in error_message
+
+
+def test_import_when_extra_data_wrong_type(
+    database_client: DatabaseClient, simple_plan_json: str
+) -> None:
+    """Tries to import a plan with invalid extra_data and checks that the import fails."""
+    extra_data = {
+        "name": "test_plan",
+        "plan_matter_id": "invalid-uuid",  # invalid UUID
+    }
+
+    with pytest.raises(ValueError) as excinfo:
+        database_client.import_plan(simple_plan_json, extra_data)
+
+    error_message = str(excinfo.value)
+    assert "Invalid extra data" in error_message
+    assert "plan_matter_id" in error_message

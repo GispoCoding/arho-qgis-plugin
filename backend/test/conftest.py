@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 # A little hack to make sure the ryhti_client package can be found during tests
 sys.path.append("lambdas/ryhti_client")
 
-hame_count: int = 18  # adjust me when adding tables
+hame_count: int = 19  # adjust me when adding tables
 codes_count: int = 22  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -1030,15 +1030,28 @@ def codes_loaded(
 
 
 @pytest.fixture
+def plan_matter_instance(
+    temp_session_feature: ReturnSame,
+    organisation_instance: codes.Organisation,
+    another_organisation_instance: codes.Organisation,
+    plan_type_instance: codes.PlanType,
+) -> models.PlanMatter:
+    instance = models.PlanMatter(
+        name={"fin": "Test Plan Matter"},
+        organisation=organisation_instance,
+        plan_type=plan_type_instance,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
 def plan_instance(
     temp_session_feature: ReturnSame,
+    plan_matter_instance: models.PlanMatter,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
     preparation_status_instance: codes.LifeCycleStatus,
     plan_proposal_status_instance: codes.LifeCycleStatus,
-    organisation_instance: codes.Organisation,
-    another_organisation_instance: codes.Organisation,
-    plan_type_instance: codes.PlanType,
 ) -> models.Plan:
     # Any status and organisation instances that may be added to the plan later
     # have to be included above. If they are only created later, they will be torn
@@ -1046,6 +1059,7 @@ def plan_instance(
     # status or organisation.
     instance = models.Plan(
         id=uuid.uuid4(),
+        plan_matter=plan_matter_instance,
         name={"fin": "Test Plan 1"},
         geom=from_shape(
             shape(
@@ -1070,6 +1084,19 @@ def plan_instance(
         scale=1,
         description={"fin": "test_plan"},
         lifecycle_status=preparation_status_instance,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_plan_matter_instance(
+    temp_session_feature: ReturnSame,
+    organisation_instance: codes.Organisation,
+    another_organisation_instance: codes.Organisation,
+    plan_type_instance: codes.PlanType,
+) -> models.PlanMatter:
+    instance = models.PlanMatter(
+        name={"fin": "Test Plan Matter"},
         organisation=organisation_instance,
         plan_type=plan_type_instance,
     )
@@ -1079,19 +1106,18 @@ def plan_instance(
 @pytest.fixture
 def another_plan_instance(
     temp_session_feature: ReturnSame,
+    another_plan_matter_instance: models.PlanMatter,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
     preparation_status_instance: codes.LifeCycleStatus,
     plan_proposal_status_instance: codes.LifeCycleStatus,
-    organisation_instance: codes.Organisation,
-    another_organisation_instance: codes.Organisation,
-    plan_type_instance: codes.PlanType,
 ) -> models.Plan:
     # Any status and organisation instances that may be added to the plan later
     # have to be included above. If they are only created later, they will be torn
     # down too early and teardown will fail, because plan cannot have empty
     # status or organisation.
     instance = models.Plan(
+        plan_matter=another_plan_matter_instance,
         name={"fin": "Test Plan 2"},
         geom=from_shape(
             shape(
@@ -1116,8 +1142,6 @@ def another_plan_instance(
         scale=1,
         description={"fin": "another_test_plan"},
         lifecycle_status=preparation_status_instance,
-        organisation=organisation_instance,
-        plan_type=plan_type_instance,
     )
     return temp_session_feature(instance)
 
@@ -1664,13 +1688,13 @@ def plan_proposition_instance(
 @pytest.fixture
 def source_data_instance(
     temp_session_feature: ReturnSame,
-    plan_instance: codes.Plan,
+    plan_matter_instance: codes.PlanMatter,
     type_of_source_data_instance: codes.TypeOfSourceData,
 ) -> models.SourceData:
     instance = models.SourceData(
         additional_information_uri="http://test.fi",
         detachment_date=datetime.now(tz=LOCAL_TZ),
-        plan=plan_instance,
+        plan_matter=plan_matter_instance,
         type_of_source_data=type_of_source_data_instance,
     )
     return temp_session_feature(instance)
@@ -2843,10 +2867,10 @@ def desired_plan_matter_dict(
     return {
         "permanentPlanIdentifier": "MK-123456",
         "planType": "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji/code/11",
-        "name": complete_test_plan.name,
+        "name": complete_test_plan.plan_matter.name,
         "timeOfInitiation": "2024-01-01",
-        "description": complete_test_plan.description,
-        "producerPlanIdentifier": complete_test_plan.producers_plan_identifier,
+        "description": complete_test_plan.plan_matter.description,
+        "producerPlanIdentifier": complete_test_plan.plan_matter.producers_plan_identifier,
         "caseIdentifiers": [],
         "recordNumbers": [],
         "administrativeAreaIdentifiers": ["01"],

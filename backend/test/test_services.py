@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pytest_docker.plugin import Services
 
     from database.db_helper import ConnectionParameters
-    from database.models import Plan
+    from database.models import Plan, PlanMatter
     from lambdas.koodistot_loader import koodistot_loader
 
 
@@ -514,7 +514,12 @@ def test_get_permanent_plan_identifier(
         with conn.cursor() as cur:
             # Check that plans are NOT validated
             cur.execute(
-                "SELECT validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
+                """
+                SELECT validated_at, validation_errors, pm.permanent_plan_identifier
+                FROM hame.plan p JOIN hame.plan_matter pm
+                ON p.plan_matter_id = pm.id
+                ORDER BY p.modified_at DESC
+                """
             )
             row = cur.fetchone()
             assert row is not None
@@ -678,7 +683,9 @@ def test_validate_valid_plan_matter_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, validated_at, validation_errors, permanent_plan_identifier FROM hame.plan"
+                "SELECT p.id, validated_at, validation_errors, pm.permanent_plan_identifier "
+                "FROM hame.plan p JOIN hame.plan_matter pm "
+                "ON p.plan_matter_id = pm.id"
             )
             row = cur.fetchone()
             assert row is not None
@@ -756,7 +763,17 @@ def test_post_plan_matters_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, validated_at, validation_errors, permanent_plan_identifier, exported_at FROM hame.plan ORDER BY modified_at DESC"
+                """
+                SELECT
+                    p.id,
+                    validated_at,
+                    validation_errors,
+                    pm.permanent_plan_identifier,
+                    exported_at
+                FROM hame.plan p JOIN hame.plan_matter pm
+                ON p.plan_matter_id = pm.id
+                ORDER BY p.modified_at DESC
+                """
             )
             # Exported plan should also be reported validated
             row = cur.fetchone()
@@ -854,7 +871,17 @@ def test_post_valid_plan_matter_in_preparation(
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, validated_at, validation_errors, permanent_plan_identifier, exported_at FROM hame.plan ORDER BY modified_at DESC"
+                """
+                SELECT
+                    p.id,
+                    validated_at,
+                    validation_errors,
+                    pm.permanent_plan_identifier,
+                    exported_at
+                FROM hame.plan p JOIN hame.plan_matter pm
+                ON p.plan_matter_id = pm.id
+                ORDER BY p.modified_at DESC
+                """
             )
             # Exported plan should also be reported validated
             row = cur.fetchone()
@@ -899,12 +926,8 @@ def test_post_valid_plan_matter_in_preparation(
 
 
 @pytest.fixture
-def extra_data(plan_type_instance, organisation_instance) -> dict:
-    return {
-        "name": "test_plan",
-        "plan_type_id": plan_type_instance.id,
-        "organization_id": organisation_instance.id,
-    }
+def extra_data(plan_matter_instance: PlanMatter) -> dict:
+    return {"name": "test_plan", "plan_matter_id": plan_matter_instance.id}
 
 
 @pytest.fixture

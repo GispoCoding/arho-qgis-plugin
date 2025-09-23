@@ -30,22 +30,28 @@ def test_codes(
     session.rollback()
 
 
+def test_plan_matter(
+    organisation_instance: models.Organisation,
+    plan_type_instance: codes.PlanType,
+    plan_matter_instance: models.PlanMatter,
+) -> None:
+    assert plan_matter_instance.organisation is organisation_instance
+    assert organisation_instance.plan_matters == [plan_matter_instance]
+
+    assert plan_matter_instance.plan_type is plan_type_instance
+    assert plan_type_instance.plan_matters == [plan_matter_instance]
+
+
 def test_plan(
     session: Session,
     plan_instance: models.Plan,
     preparation_status_instance: codes.LifeCycleStatus,
-    organisation_instance: models.Organisation,
     general_regulation_group_instance: models.PlanRegulationGroup,
-    plan_type_instance: codes.PlanType,
     legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
 ) -> None:
     # non-nullable plan relations
     assert plan_instance.lifecycle_status is preparation_status_instance
     assert preparation_status_instance.plans == [plan_instance]
-    assert plan_instance.organisation is organisation_instance
-    assert organisation_instance.plans == [plan_instance]
-    assert plan_instance.plan_type is plan_type_instance
-    assert plan_type_instance.plans == [plan_instance]
 
     # Let's not change plan instance lifecycle status here. It's just asking
     # for trouble, and we will test all those triggers in test_triggers anyway.
@@ -55,6 +61,8 @@ def test_plan(
     ]
     # General regulation group belongs to the plan
     assert general_regulation_group_instance.plan == plan_instance
+
+    # Add a legal effects of master plan to the plan
     plan_instance.legal_effects_of_master_plan.append(
         legal_effects_of_master_plan_without_legal_effects_instance
     )
@@ -273,11 +281,11 @@ def test_source_data(
     session: Session,
     source_data_instance: models.SourceData,
     type_of_source_data_instance: codes.TypeOfSourceData,
-    plan_instance: models.Plan,
+    plan_matter_instance: models.PlanMatter,
 ) -> None:
     # non-nullable source data relations
-    assert source_data_instance.plan is plan_instance
-    assert plan_instance.source_data == [source_data_instance]
+    assert source_data_instance.plan_matter is plan_matter_instance
+    assert plan_matter_instance.source_data == [source_data_instance]
     assert source_data_instance.type_of_source_data is type_of_source_data_instance
     assert type_of_source_data_instance.source_data == [source_data_instance]
 

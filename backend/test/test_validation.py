@@ -14,7 +14,6 @@ def test_validate_polygon_geometry_triggers(
     code_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_regulation_group_instance: models.PlanRegulationGroup,
-    organisation_instance: models.Organisation,
 ) -> None:
     invalid_polygon = MultiPolygon(
         [(((0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0)),)]
@@ -24,7 +23,6 @@ def test_validate_polygon_geometry_triggers(
         name={"fin": "Invalid Plan"},
         geom=from_shape(invalid_polygon),
         lifecycle_status=code_instance,
-        organisation=organisation_instance,
     )
     session.add(invalid_plan_instance)
     with pytest.raises(ProgrammingError):

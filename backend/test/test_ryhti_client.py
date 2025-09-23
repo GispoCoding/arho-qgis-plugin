@@ -444,7 +444,7 @@ def client_with_plan_data_in_wrong_region(
     # Client will cache plan phase when it is initialized, so we have to make
     # sure to update the plan owner in the database *before* that.
     session.add(complete_test_plan)
-    complete_test_plan.organisation = another_organisation_instance
+    complete_test_plan.plan_matter.organisation = another_organisation_instance
     session.commit()
 
     # Let's mock production x-road with gispo organization client here.
@@ -634,10 +634,10 @@ def test_set_permanent_plan_identifiers_in_wrong_region(
         id_responses
     )
     session.refresh(plan_instance)
-    assert plan_instance.organisation is another_organisation_instance
-    assert not plan_instance.permanent_plan_identifier
+    assert plan_instance.plan_matter.organisation is another_organisation_instance
+    assert not plan_instance.plan_matter.permanent_plan_identifier
     assert (
-        message[plan_instance.id]
+        message[plan_instance.plan_matter.id]
         == "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
     )
 
@@ -645,7 +645,7 @@ def test_set_permanent_plan_identifiers_in_wrong_region(
 def test_set_permanent_plan_identifiers(
     session: Session,
     authenticated_client_with_plan: RyhtiClient,
-    plan_instance: models.Plan,
+    plan_matter_instance: models.PlanMatter,
     mock_xroad_ryhti_permanentidentifier: Callable,
 ) -> None:
     """Check that Ryhti permanent plan identifier is received and saved to the database, if
@@ -657,11 +657,10 @@ def test_set_permanent_plan_identifiers(
             id_responses
         )
     )
-    session.refresh(plan_instance)
+    session.refresh(plan_matter_instance)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
-    assert plan_instance.permanent_plan_identifier
-    assert plan_instance.permanent_plan_identifier == received_plan_identifier
-    assert message[plan_instance.id] == received_plan_identifier
+    assert plan_matter_instance.permanent_plan_identifier == received_plan_identifier
+    assert message[plan_matter_instance.id] == received_plan_identifier
 
 
 @pytest.fixture
@@ -680,8 +679,9 @@ def client_with_plan_with_permanent_identifier(
     )
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
-    assert plan_instance.permanent_plan_identifier
-    assert plan_instance.permanent_plan_identifier == received_plan_identifier
+    assert (
+        plan_instance.plan_matter.permanent_plan_identifier == received_plan_identifier
+    )
     return authenticated_client_with_plan
 
 
@@ -701,8 +701,10 @@ def client_with_plan_with_permanent_identifier_in_proposal_phase(
     )
     session.refresh(plan_instance)
     received_plan_identifier = next(iter(id_responses.values()))["detail"]
-    assert plan_instance.permanent_plan_identifier
-    assert plan_instance.permanent_plan_identifier == received_plan_identifier
+    assert plan_instance.plan_matter.permanent_plan_identifier
+    assert (
+        plan_instance.plan_matter.permanent_plan_identifier == received_plan_identifier
+    )
     return authenticated_client_with_plan_in_proposal_phase
 
 
