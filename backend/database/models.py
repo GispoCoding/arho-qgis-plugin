@@ -146,6 +146,45 @@ plan_theme_association = Table(
 )
 
 
+class PlanMatter(VersionedBase):
+    __tablename__ = "plan_matter"
+
+    name: Mapped[language_str]
+    description: Mapped[language_str | None]
+    permanent_plan_identifier: Mapped[str | None]
+    producers_plan_identifier: Mapped[str | None]
+    case_identifier: Mapped[str | None]  # TODO: change to list
+    record_number: Mapped[str | None]  # TODO: change to list
+    # TODO: Add mandatory time_of_initiation: Mapped[datetime]
+    # TODO: Add related_binding_plot_division_matter_uris
+
+    plan_type_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
+    )
+    # TODO: #Allow multiple administrative areas
+    organisation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hame.organisation.id", name="organisation_id_fkey")
+    )
+    # TODO: Add matter_annexes/attachment documents
+    # TODO: Add responsible_party
+    # TODO: Add participation_and_assessment_scheme
+    # TODO: Add related_plan_matters
+
+    source_data: Mapped[list[SourceData]] = relationship(
+        back_populates="plan_matter", cascade="all, delete-orphan"
+    )
+
+    plans: Mapped[list[Plan]] = relationship(back_populates="plan_matter")
+
+    # Let's load all the codes for objects joined.
+    plan_type: Mapped[PlanType] = relationship(
+        back_populates="plan_matters", lazy="joined"
+    )
+    organisation: Mapped[Organisation] = relationship(
+        back_populates="plan_matters", lazy="joined"
+    )
+
+
 class PlanBase(VersionedBase):
     """All plan data tables should have additional date fields."""
 
@@ -189,18 +228,30 @@ class Plan(PlanBase):
 
     __tablename__ = "plan"
 
-    organisation_id: Mapped[UUID] = mapped_column(
-        ForeignKey("hame.organisation.id", name="organisation_id_fkey")
+    plan_matter_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "hame.plan_matter.id", onupdate="CASCADE", name="plan_matter_id_fkey"
+        ),
+        index=True,
     )
-    organisation: Mapped[Organisation] = relationship(
+
+    name: Mapped[language_str]
+    description: Mapped[language_str | None]
+    scale: Mapped[int | None]
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
+    # Only plan should have validated_at field, since validation is only done
+    # for complete plan objects. Also validation errors might concern multiple
+    # models, not just one field or one table in database.
+    validated_at: Mapped[datetime | None]
+    validation_errors: Mapped[dict[str, Any] | str | None]
+
+    plan_matter: Mapped[PlanMatter] = relationship(
         back_populates="plans", lazy="joined"
     )
 
-    plan_type_id: Mapped[UUID] = mapped_column(
-        ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
-    )
-    # Let's load all the codes for objects joined.
-    plan_type: Mapped[PlanType] = relationship(back_populates="plans", lazy="joined")
     # Also join plan documents
     documents: Mapped[list[Document]] = relationship(
         back_populates="plan", lazy="joined", cascade="all, delete-orphan"
@@ -223,22 +274,6 @@ class Plan(PlanBase):
         order_by="Point.ordering", back_populates="plan", cascade="all, delete-orphan"
     )
 
-    permanent_plan_identifier: Mapped[str | None]
-    producers_plan_identifier: Mapped[str | None]
-    name: Mapped[language_str]
-    description: Mapped[language_str | None]
-    scale: Mapped[int | None]
-    matter_management_identifier: Mapped[str | None]
-    record_number: Mapped[str | None]
-    geom: Mapped[WKBElement] = mapped_column(
-        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
-    )
-    # Only plan should have validated_at field, since validation is only done
-    # for complete plan objects. Also validation errors might concern multiple
-    # models, not just one field or one table in database.
-    validated_at: Mapped[datetime | None]
-    validation_errors: Mapped[dict[str, Any] | str | None]
-
     # Regulation groups belonging to a plan
     regulation_groups: Mapped[list[PlanRegulationGroup]] = relationship(
         back_populates="plan", cascade="all, delete-orphan"
@@ -257,10 +292,6 @@ class Plan(PlanBase):
         secondary=legal_effects_association,
         lazy="joined",
         back_populates="plans",
-    )
-
-    source_data: Mapped[list[SourceData]] = relationship(
-        back_populates="plan", cascade="all, delete-orphan"
     )
 
 
@@ -626,15 +657,18 @@ class SourceData(VersionedBase):
     type_of_source_data_id: Mapped[UUID] = mapped_column(
         ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
     )
-    plan_id: Mapped[UUID] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
+    plan_matter_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_matter.id", onupdate="CASCADE", name="plan_matter_id_fkey"
+        ),
+        index=True,
     )
 
     # Let's load all the codes for objects joined.
     type_of_source_data: Mapped[TypeOfSourceData] = relationship(
         back_populates="source_data", lazy="joined"
     )
-    plan: Mapped[Plan] = relationship(back_populates="source_data")
+    plan_matter: Mapped[PlanMatter] = relationship(back_populates="source_data")
     name: Mapped[language_str | None]
     additional_information_uri: Mapped[str]
     detachment_date: Mapped[datetime]
@@ -663,7 +697,7 @@ class Organisation(VersionedBase):
         back_populates="organisations", lazy="joined"
     )
 
-    plans: Mapped[list[Plan]] = relationship(back_populates="organisation")
+    plan_matters: Mapped[list[PlanMatter]] = relationship(back_populates="organisation")
 
 
 class Document(VersionedBase):

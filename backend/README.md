@@ -133,14 +133,14 @@ hame_tables = [
 ### Data backup and restore
 To back up the database data, use the following command:
 ```shell
-docker compose -f docker-compose.dev.yml run --rm db pg_dump -h db -d hame -U postgres --data-only --schema=codes --schema=hame -Fc -f /opt/pg_backups/data.dump
+docker compose -f docker-compose.dev.yml run --rm db pg_dump -h db -d hame -U postgres --data-only --schema=codes --schema=hame -Fc -f /opt/pg_backups/sample_data.dump
 ```
 
 The backup folder on the server `/opt/pg_backups` is mounted to the host machine's `./pg_dumps` folder, so you can find the backup file `data.dump` in the `pg_dumps` folder on your host machine.
 
 To restore the database data, use:
 ```shell
-docker compose -f docker-compose.dev.yml run --rm db pg_restore -h db -d hame -U postgres --disable-triggers /opt/pg_backups/data.dump
+docker compose -f docker-compose.dev.yml run --rm db pg_restore -h db -d hame -U postgres --disable-triggers /opt/pg_backups/sample_data.dump
 ```
 
 ### Adding requirements

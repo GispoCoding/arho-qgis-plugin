@@ -20,6 +20,7 @@ if TYPE_CHECKING:
         Organisation,
         OtherArea,
         Plan,
+        PlanMatter,
         PlanProposition,
         PlanRegulation,
         PlanRegulationGroup,
@@ -165,7 +166,7 @@ class PlanType(CodeBase):
     __tablename__ = "plan_type"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji"
 
-    plans: Mapped[list[Plan]] = relationship(back_populates="plan_type")
+    plan_matters: Mapped[list[PlanMatter]] = relationship(back_populates="plan_type")
 
 
 class TypeOfPlanRegulation(CodeBase):
