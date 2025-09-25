@@ -10,8 +10,9 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
-from arho_feature_template.gui.dialogs.plugin_settings import PluginSettings
+from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
@@ -330,25 +331,26 @@ class Plugin:
             status_tip="Tuo kaavakohteita tietokantaan toisilta vektoritasoilta",
         )
 
-        self.post_plan_matter_action = self.add_action(
-            text="Vie kaava-asia",
-            icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
-            triggered_callback=self.post_plan_matter,
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Vie kaava-asia Ryhtiin",
-        )
-        self.post_plan_matter_action.setEnabled(False)  # Disable button by default
+        if SettingsManager.get_data_exchange_layer_enabled():
+            self.post_plan_matter_action = self.add_action(
+                text="Vie kaava-asia",
+                icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
+                triggered_callback=self.post_plan_matter,
+                add_to_menu=True,
+                add_to_toolbar=True,
+                status_tip="Vie kaava-asia Ryhtiin",
+            )
+            self.post_plan_matter_action.setEnabled(False)  # Disable button by default
 
-        self.get_permanent_identifier_action = self.add_action(
-            text="Hae pysyvä kaavatunnus",
-            # icon=QgsApplication.getThemeIcon(""),
-            triggered_callback=self.plan_manager.get_permanent_plan_identifier,
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Hae kaavalle pysyvä kaavatunnus",
-        )
-        self.get_permanent_identifier_action.setEnabled(False)  # Disable button by default
+            self.get_permanent_identifier_action = self.add_action(
+                text="Hae pysyvä kaavatunnus",
+                # icon=QgsApplication.getThemeIcon(""),
+                triggered_callback=self.plan_manager.get_permanent_plan_identifier,
+                add_to_menu=True,
+                add_to_toolbar=True,
+                status_tip="Hae kaavalle pysyvä kaavatunnus",
+            )
+            self.get_permanent_identifier_action.setEnabled(False)  # Disable button by default
 
         self.plugin_about = self.add_action(
             text="Tietoja",
@@ -358,9 +360,11 @@ class Plugin:
             status_tip="Tarkastele pluginin tietoja",
         )
 
+        self._arho_options_page_factory = ArhoOptionsPageFactory()
+        iface.registerOptionsWidgetFactory(self._arho_options_page_factory)
         self.plugin_settings_action = self.add_action(
             text="Asetukset",
-            triggered_callback=self.open_settings,
+            triggered_callback=lambda _: iface.showOptionsDialog(iface.mainWindow(), "ARHO"),
             add_to_menu=True,
             add_to_toolbar=False,
             status_tip="Muokkaa pluginin asetuksia",
@@ -377,9 +381,9 @@ class Plugin:
             self.serialize_plan_action,
             self.create_geotiff_action,
             self.import_features_action,
-            self.get_permanent_identifier_action,
-            self.post_plan_matter_action,
         ]
+        if SettingsManager.get_data_exchange_layer_enabled():
+            self.plan_depending_actions += [self.get_permanent_identifier_action, self.post_plan_matter_action]
 
         # Initially actions are disabled because no plan is selected
         self.on_active_plan_unset()
@@ -395,7 +399,8 @@ class Plugin:
         self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
         self.plan_manager.project_loaded.connect(self.on_project_loaded)
         self.plan_manager.project_cleared.connect(self.on_project_cleared)
-        self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
+        if SettingsManager.get_data_exchange_layer_enabled():
+            self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
         self.plan_manager.plan_identifier_set.connect(self.validation_dock.on_permanent_identifier_set)
 
         # (Re)initialize whenever a project is opened
@@ -427,11 +432,6 @@ class Plugin:
         """Open the plugin about dialog."""
         about = PluginAbout()
         about.exec()
-
-    def open_settings(self):
-        """Open the plugin settings dialog."""
-        settings = PluginSettings()
-        settings.exec_()
 
     def edit_lifecycles(self):
         """Edit lifecycles of currently active plan."""

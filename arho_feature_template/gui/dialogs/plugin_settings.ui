@@ -1,58 +1,146 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>PluginSettings</class>
- <widget class="QDialog" name="PluginSettings">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>205</height>
+    <width>696</width>
+    <height>295</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Asetukset</string>
+   <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="labelHost">
-     <property name="text">
-      <string>Proxy isäntä:</string>
+    <widget class="QGroupBox" name="lambda_settings_box">
+     <property name="title">
+      <string>Lambdan asetukset</string>
      </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="host_label">
+        <property name="minimumSize">
+         <size>
+          <width>113</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Proxy isäntä:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="host"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="port_label">
+        <property name="minimumSize">
+         <size>
+          <width>113</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Proxy portti:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QgsSpinBox" name="port">
+        <property name="specialValueText">
+         <string> </string>
+        </property>
+        <property name="maximum">
+         <number>99999</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="lambda_address_label">
+        <property name="minimumSize">
+         <size>
+          <width>113</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Lambdan osoite:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lambda_address"/>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
-    <widget class="QLineEdit" name="hostInput"/>
-   </item>
-   <item>
-    <widget class="QLabel" name="labelPort">
-     <property name="text">
-      <string>Proxy portti:</string>
+    <widget class="QGroupBox" name="data_exchange_layer_box">
+     <property name="title">
+      <string>Palveluväylä</string>
      </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="data_exchange_layer_enabled_label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>113</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Palveluväylä käytössä:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="data_exchange_layer_enabled">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
-    <widget class="QLineEdit" name="portInput"/>
-   </item>
-   <item>
-    <widget class="QLabel" name="labelLambda">
-     <property name="text">
-      <string>Lambdan osoite:</string>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLineEdit" name="lambdaInput"/>
-   </item>
-   <item>
-    <widget class="QPushButton" name="saveButton">
-     <property name="text">
-      <string>Tallenna asetukset</string>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>675</width>
+       <height>69</height>
+      </size>
      </property>
-    </widget>
+    </spacer>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>qgsspinbox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
