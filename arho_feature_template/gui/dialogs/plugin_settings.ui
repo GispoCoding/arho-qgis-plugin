@@ -79,13 +79,13 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="service_bus_box">
+    <widget class="QGroupBox" name="data_exchange_layer_box">
      <property name="title">
       <string>Palveluväylä</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLabel" name="service_bus_enabled_label">
+       <widget class="QLabel" name="data_exchange_layer_enabled_label">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
           <horstretch>0</horstretch>
@@ -104,7 +104,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="service_bus_enabled">
+       <widget class="QCheckBox" name="data_exchange_layer_enabled">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
           <horstretch>0</horstretch>

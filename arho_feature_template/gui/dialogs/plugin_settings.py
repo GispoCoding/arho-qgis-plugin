@@ -23,7 +23,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self.host: QLineEdit
         self.port: QgsSpinBox
         self.lambda_address: QLineEdit
-        self.service_bus_enabled: QCheckBox
+        self.data_exchange_layer_enabled: QCheckBox
 
         # INIT
         self.load_settings()
@@ -32,7 +32,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         SettingsManager.set_proxy_host(self.host.text())
         SettingsManager.set_proxy_port(self.port.value())
         SettingsManager.set_lambda_url(self.lambda_address.text())
-        SettingsManager.set_service_bus_enabled(self.service_bus_enabled.isChecked())
+        SettingsManager.set_data_exchange_layer_enabled(self.data_exchange_layer_enabled.isChecked())
 
         SettingsManager.finish()
 
@@ -40,7 +40,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self.host.setText(SettingsManager.get_proxy_host())
         self.port.setValue(SettingsManager.get_proxy_port() or 0)
         self.lambda_address.setText(SettingsManager.get_lambda_url())
-        self.service_bus_enabled.setChecked(SettingsManager.get_service_bus_enabled())
+        self.data_exchange_layer_enabled.setChecked(SettingsManager.get_data_exchange_layer_enabled())
 
 
 class ArhoOptionsPageFactory(QgsOptionsWidgetFactory):

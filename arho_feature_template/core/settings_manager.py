@@ -68,12 +68,12 @@ class SettingsManager:
 
     # SERVICE BUS SETTINGS
     @classmethod
-    def get_service_bus_enabled(cls, default: bool = True) -> bool:  # noqa: FBT001, FBT002
-        return cls._get("service_bus_enabled", default)
+    def get_data_exchange_layer_enabled(cls, default: bool = True) -> bool:  # noqa: FBT001, FBT002
+        return cls._get("data_exchange_layer_enabled", default)
 
     @classmethod
-    def set_service_bus_enabled(cls, value: bool):  # noqa: FBT001
-        cls._set("service_bus_enabled", value)
+    def set_data_exchange_layer_enabled(cls, value: bool):  # noqa: FBT001
+        cls._set("data_exchange_layer_enabled", value)
 
     @classmethod
     def _migrate_keys(cls):

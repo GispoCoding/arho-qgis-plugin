@@ -42,7 +42,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.enable_validation()
 
-        if not SettingsManager.get_service_bus_enabled():
+        if not SettingsManager.get_data_exchange_layer_enabled():
             self.validate_plan_matter_button.hide()
 
     def handle_validation_call_errors(self, error: str):

@@ -331,7 +331,7 @@ class Plugin:
             status_tip="Tuo kaavakohteita tietokantaan toisilta vektoritasoilta",
         )
 
-        if SettingsManager.get_service_bus_enabled():
+        if SettingsManager.get_data_exchange_layer_enabled():
             self.post_plan_matter_action = self.add_action(
                 text="Vie kaava-asia",
                 icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
@@ -382,7 +382,7 @@ class Plugin:
             self.create_geotiff_action,
             self.import_features_action,
         ]
-        if SettingsManager.get_service_bus_enabled():
+        if SettingsManager.get_data_exchange_layer_enabled():
             self.plan_depending_actions += [self.get_permanent_identifier_action, self.post_plan_matter_action]
 
         # Initially actions are disabled because no plan is selected
@@ -399,7 +399,7 @@ class Plugin:
         self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
         self.plan_manager.project_loaded.connect(self.on_project_loaded)
         self.plan_manager.project_cleared.connect(self.on_project_cleared)
-        if SettingsManager.get_service_bus_enabled():
+        if SettingsManager.get_data_exchange_layer_enabled():
             self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
         self.plan_manager.plan_identifier_set.connect(self.validation_dock.on_permanent_identifier_set)
 
