@@ -9,7 +9,6 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem
 
 from arho_feature_template.gui.components.new_feature_grid_widget import NewFeatureGridWidget
-from arho_feature_template.project.layers.plan_layers import PlanLayer
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
@@ -57,20 +56,6 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.library_selection.clear()
         self.library_selection.addItems([library.name for library in self.plan_feature_libraries])
         self.set_active_plan_feature_library(0)
-
-    def set_plan(self, plan_id: str):
-        regional_plan_type_names = ["Kokonaismaakuntakaava", "Vaihemaakuntakaava"]
-        general_plan_type_names = [
-            "Yleiskaava",
-            "Vaiheyleiskaava",
-            "Osayleiskaava",
-            "Kuntien yhteinen yleiskaava",
-            "Maanalainen yleiskaava",
-        ]
-        if plan_id and PlanLayer.get_plan_type_name(plan_id) not in regional_plan_type_names + general_plan_type_names:
-            self.new_feature_grid.initialize_buttons(exclude=["Maankäytön kohde"])
-        else:
-            self.new_feature_grid.initialize_buttons()
 
     def on_active_feature_type_changed(self, feature_name: str, layer_name: str):
         self.active_feature_type = feature_name if feature_name else None

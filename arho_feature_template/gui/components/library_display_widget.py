@@ -46,8 +46,7 @@ FEATURE_TYPE_TO_LAYER_NAME = {
     "Viiva": "Viivat",
     "Osa-alue": "Osa-alue",
     "Aluevaraus": "Aluevaraus",
-    "Maankäytön kohde": "Maankäytön kohteet",
-    "Muu piste": "Muut pisteet",
+    "Piste": "Pisteet",
 }
 
 DATA_ROLE = Qt.UserRole

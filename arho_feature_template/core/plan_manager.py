@@ -93,8 +93,7 @@ QML_MAP = {
     "Aluevaraus": "land_use_area.qml",
     "Osa-alue": "other_area.qml",
     "Viivat": "line.qml",
-    "Maankäytön kohteet": "land_use_point.qml",
-    "Muut pisteet": "other_point.qml",
+    "Pisteet": "point.qml",
 }
 
 
@@ -445,7 +444,6 @@ class PlanManager(QObject):
             plan_id = save_plan(attribute_form.model)
             if plan_id is not None:
                 self.update_active_plan_regulation_group_library()
-                self.new_feature_dock.set_plan(plan_id)  # Update feature dock in case plan type changed
 
     def edit_lifecycles(self):
         plan_layer = PlanLayer.get_from_project()
@@ -587,7 +585,6 @@ class PlanManager(QObject):
         if previously_in_edit_mode:
             plan_layer.startEditing()
 
-        self.new_feature_dock.set_plan(plan_id)
         self.update_active_plan_regulation_group_library()
 
         if plan_id:

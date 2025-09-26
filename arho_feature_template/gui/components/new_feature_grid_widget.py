@@ -4,13 +4,12 @@ from qgis.PyQt.QtCore import QSize, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QPalette
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QPushButton
 
-FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Maankäytön kohde", "Muu piste"]
+FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Piste"]
 FEATURE_TYPE_TO_LAYER_NAME = {
     "Viiva": "Viivat",
     "Osa-alue": "Osa-alue",
     "Aluevaraus": "Aluevaraus",
-    "Maankäytön\nkohde": "Maankäytön kohteet",
-    "Muu\npiste": "Muut pisteet",
+    "Piste": "Pisteet",
 }
 
 FEATURE_BUTTON_WIDTH = 90
@@ -33,13 +32,8 @@ class NewFeatureGridWidget(QListWidget):
 
         self.initialize_buttons()
 
-    def initialize_buttons(self, exclude: list | None = None):
-        self.clear()
-
-        exclude = exclude or []
-        self.buttons = {
-            feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES if feature_type not in exclude
-        }
+    def initialize_buttons(self):
+        self.buttons = {feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES}
         for btn in self.buttons.values():
             self.add_button(btn)
             btn.clicked.connect(lambda _, button=btn: self.handle_button_click(button))

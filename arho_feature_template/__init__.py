@@ -15,7 +15,7 @@ if debugger in {"debugpy", "ptvsd", "pydevd"}:
     locals()["setup_" + debugger]()
 
 
-SUPPORTED_PROJECT_VERSION = 0.1
+SUPPORTED_PROJECT_VERSION = 0.2
 
 
 def classFactory(iface: "QgisInterface"):  # noqa N802
