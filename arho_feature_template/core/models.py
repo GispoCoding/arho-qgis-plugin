@@ -395,8 +395,7 @@ class LifeCycle(PlanBaseModel):
     land_use_are_id: str | None = None
     other_area_id: str | None = None
     line_id: str | None = None
-    land_use_point_id: str | None = None
-    other_point_id: str | None = None
+    point_id: str | None = None
     modified: bool = field(compare=False, default=True)
 
 

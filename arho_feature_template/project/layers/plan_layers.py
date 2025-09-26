@@ -209,13 +209,8 @@ class PlanFeatureLayer(AbstractPlanLayer):
         )
 
 
-class LandUsePointLayer(PlanFeatureLayer):
-    name = "Maankäytön kohteet"
-    filter_template = Template("plan_id = '$plan_id'")
-
-
-class OtherPointLayer(PlanFeatureLayer):
-    name = "Muut pisteet"
+class PointLayer(PlanFeatureLayer):
+    name = "Pisteet"
     filter_template = Template("plan_id = '$plan_id'")
 
 
@@ -289,9 +284,8 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
     )
 
     layer_name_to_attribute_map: ClassVar[dict[str, str]] = {
-        LandUsePointLayer.name: "land_use_point_id",
         OtherAreaLayer.name: "other_area_id",
-        OtherPointLayer.name: "other_point_id",
+        PointLayer.name: "point_id",
         LandUseAreaLayer.name: "land_use_area_id",
         LineLayer.name: "line_id",
         PlanLayer.name: "plan_id",
@@ -807,8 +801,7 @@ class LifeCycleLayer(AbstractPlanLayer):
         feature["land_use_area_id"] = model.land_use_are_id
         feature["other_area_id"] = model.other_area_id
         feature["line_id"] = model.line_id
-        feature["land_use_point_id"] = model.land_use_point_id
-        feature["other_point_id"] = model.other_point_id
+        feature["point_id"] = model.point_id
         feature["plan_regulation_id"] = model.plan_regulation_id
         feature["plan_proposition_id"] = model.plan_proposition_id
 
@@ -825,8 +818,7 @@ class LifeCycleLayer(AbstractPlanLayer):
             land_use_are_id=feature["land_use_area_id"],
             other_area_id=feature["other_area_id"],
             line_id=feature["line_id"],
-            land_use_point_id=feature["land_use_point_id"],
-            other_point_id=feature["other_point_id"],
+            point_id=feature["point_id"],
             plan_regulation_id=feature["plan_regulation_id"],
             plan_proposition_id=feature["plan_proposition_id"],
             modified=False,
@@ -838,8 +830,7 @@ class LifeCycleLayer(AbstractPlanLayer):
 
 
 FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
-    LandUsePointLayer.name: LandUsePointLayer,
-    OtherPointLayer.name: OtherPointLayer,
+    PointLayer.name: PointLayer,
     LineLayer.name: LineLayer,
     OtherAreaLayer.name: OtherAreaLayer,
     LandUseAreaLayer.name: LandUseAreaLayer,

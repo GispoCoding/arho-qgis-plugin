@@ -259,8 +259,7 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
         "Aluevaraus": "landUseRegulations",
         "Osa-alue": "otherAreaRegulations",
         "Viivat": "lineRegulations",
-        "Muut pisteet": "otherPointRegulations",
-        "Maankäytön kohteet": "landUseRegulations",
+        "Pisteet": "pointRegulations",
     }
 
     @classmethod
