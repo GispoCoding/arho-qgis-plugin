@@ -237,6 +237,9 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
     def get_feature_from_validation_error(self, validation_json: dict):
         key = validation_json.get("classKey", "")
+        if not key:
+            return
+
         object_path = validation_json.get("instance")
         if object_path:
             object_path = object_path.lower()
@@ -247,9 +250,6 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             if object_with_id:
                 # Remove square brackets and the number within
                 object_with_id = re.sub(r"\[(\d+)\]", "", object_with_id)
-
-        if not key:
-            return
 
         # If "plan" is in object path parts while there is no object with square brackets, it is likely we need plan feature for signal connections.
         if not object_with_id and "plan" in parts:
