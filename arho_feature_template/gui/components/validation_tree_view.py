@@ -84,8 +84,11 @@ class ValidationModel(QStandardItemModel):
                     continue
 
                 if part == "planobjects":
-                    feature, _ = layer_features[feature_id]
-                    feature_name = deserialize_localized_text(feature["name"])
+                    if not feature_id:
+                        feature_name = None
+                    else:
+                        feature, _ = layer_features[feature_id]
+                        feature_name = deserialize_localized_text(feature["name"])
 
                 elif part == "planregulationgroups":
                     if not feature_id:
