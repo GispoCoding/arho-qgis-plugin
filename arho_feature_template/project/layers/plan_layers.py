@@ -12,6 +12,7 @@ from arho_feature_template.core.models import (
     AdditionalInformation,
     AttributeValue,
     Document,
+    EventDate,
     LifeCycle,
     Plan,
     PlanFeature,
@@ -804,7 +805,7 @@ class LifeCycleLayer(AbstractPlanLayer):
         feature["starting_at"] = model.starting_at
         feature["ending_at"] = model.ending_at if model.ending_at else None
         feature["plan_id"] = model.plan_id
-        feature["land_use_area_id"] = model.land_use_are_id
+        feature["land_use_area_id"] = model.land_use_area_id
         feature["other_area_id"] = model.other_area_id
         feature["line_id"] = model.line_id
         feature["land_use_point_id"] = model.land_use_point_id
@@ -822,19 +823,55 @@ class LifeCycleLayer(AbstractPlanLayer):
             starting_at=feature["starting_at"].date() if feature["starting_at"] else None,
             ending_at=feature["ending_at"].date() if feature["ending_at"] else None,
             plan_id=feature["plan_id"],
-            land_use_are_id=feature["land_use_area_id"],
+            land_use_area_id=feature["land_use_area_id"],
             other_area_id=feature["other_area_id"],
             line_id=feature["line_id"],
             land_use_point_id=feature["land_use_point_id"],
             other_point_id=feature["other_point_id"],
             plan_regulation_id=feature["plan_regulation_id"],
             plan_proposition_id=feature["plan_proposition_id"],
+            event_dates=[
+                EventDateLayer.model_from_feature(event_feat)
+                for event_feat in EventDateLayer.get_features_by_attribute_value("lifecycle_date_id", feature["id"])
+            ],
             modified=False,
         )
 
     @classmethod
     def get_features_by_plan_id(cls, plan_id: str) -> list[QgsFeature]:
         return list(cls.get_features_by_attribute_value("plan_id", plan_id))
+
+
+class EventDateLayer(AbstractPlanLayer):
+    name = "Tapahtuman päiväykset"
+    filter_template = None
+
+    @classmethod
+    def feature_from_model(cls, model: EventDate) -> QgsFeature:
+        feature = cls.initialize_feature_from_model(model)
+
+        feature["id"] = model.id_ if model.id_ else feature["id"]
+        feature["lifecycle_date_id"] = model.lifecycle_date_id
+        feature["decision_id"] = model.decision_id
+        feature["processing_event_id"] = model.processing_event_id
+        feature["interaction_event_id"] = model.interaction_event_id
+        feature["starting_at"] = model.starting_at
+        feature["ending_at"] = model.ending_at if model.ending_at else None
+
+        return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> EventDate:
+        return EventDate(
+            id_=feature["id"],
+            lifecycle_date_id=feature["lifecycle_date_id"],
+            decision_id=feature["decision_id"],
+            processing_event_id=feature["processing_event_id"],
+            interaction_event_id=feature["interaction_event_id"],
+            starting_at=feature["starting_at"].date() if feature["starting_at"] else None,
+            ending_at=feature["ending_at"].date() if feature["ending_at"] else None,
+            modified=False,
+        )
 
 
 FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
