@@ -237,19 +237,18 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
     def get_feature_from_validation_error(self, validation_json: dict):
         key = validation_json.get("classKey", "")
-        if not key:
+        object_path = validation_json.get("instance", "")
+        if not key or not object_path:
             return
 
-        object_path = validation_json.get("instance")
-        if object_path:
-            object_path = object_path.lower()
-            parts = object_path.split(".")
-            match = [item for item in parts if re.search(r"\[\d+\]$", item)]
-            # classKey is for the last object with square brackets, i.e. planRegulations[1] in plan.planRegulationGroups[0].planRegulations[1]
-            object_with_id = match[-1] if match else None
-            if object_with_id:
-                # Remove square brackets and the number within
-                object_with_id = re.sub(r"\[(\d+)\]", "", object_with_id)
+        object_path = object_path.lower()
+        parts = object_path.split(".")
+        match = [item for item in parts if re.search(r"\[\d+\]$", item)]
+        # classKey is for the last object with square brackets, i.e. planRegulations[1] in plan.planRegulationGroups[0].planRegulations[1]
+        object_with_id = match[-1] if match else None
+        if object_with_id:
+            # Remove square brackets and the number within
+            object_with_id = re.sub(r"\[(\d+)\]", "", object_with_id)
 
         # If "plan" is in object path parts while there is no object with square brackets, it is likely we need plan feature for signal connections.
         if not object_with_id and "plan" in parts:
