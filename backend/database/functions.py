@@ -76,35 +76,46 @@ primary_use_regulations = PGFunction(
             select
                 jsonb_object_agg(
                     tpr.value,
-                    (
-                        select
-                            json_object_agg(
-                                tai.value,
-                                (
-                                    select
-                                    jsonb_strip_nulls(to_jsonb(ai_values))
-                                    from
+                    coalesce(
+                        (
+                            select
+                            jsonb_object_agg(
+                                ai_type,
+                                ai_values_array
+                            )
+                            from (
+                                select
+                                    tai.value ai_type,
+                                    jsonb_agg(
                                         (
-                                        select
-                                            ai.numeric_value,
-                                            ai.unit,
-                                            ai.numeric_range_min,
-                                            ai.numeric_range_max,
-                                            ai.text_value,
-                                            ai.text_syntax,
-                                            ai.code_title,
-                                            ai.code_list,
-                                            ai.code_value
-                                        ) as ai_values
-                                )
-                            ) as ai_json
-                        from
-                            hame.additional_information ai
-                            join codes.type_of_additional_information tai
-                                on ai.type_additional_information_id = tai.id
-                        where
-                            ai.plan_regulation_id = r.id
-                            AND tai.value != 'paakayttotarkoitus'
+                                            select
+                                                jsonb_strip_nulls(to_jsonb(ai_values))
+                                            from
+                                                (
+                                                select
+                                                    ai.numeric_value,
+                                                    ai.unit,
+                                                    ai.numeric_range_min,
+                                                    ai.numeric_range_max,
+                                                    ai.text_value,
+                                                    ai.text_syntax,
+                                                    ai.code_title,
+                                                    ai.code_list,
+                                                    ai.code_value
+                                                ) as ai_values
+                                        )
+                                    ) ai_values_array
+                                from
+                                    hame.additional_information ai
+                                    join codes.type_of_additional_information tai
+                                        on ai.type_additional_information_id = tai.id
+                                where
+                                    ai.plan_regulation_id = r.id
+                                    AND tai.value != 'paakayttotarkoitus'
+                                group by tai.value
+                            ) ai_values
+                        ),
+                        '{}'::jsonb
                     )
                 )
             from
@@ -146,36 +157,47 @@ sub_area_regulations = PGFunction(
         AS
         $$
             select
-                json_object_agg(
+                jsonb_object_agg(
                     tpr.value,
-                    (
-                        select
-                            json_object_agg(
-                                tai.value,
-                                (
-                                    select
-                                        jsonb_strip_nulls(to_jsonb(ai_values))
-                                    from (
-                                        select
-                                                ai.numeric_value,
-                                                ai.unit,
-                                                ai.numeric_range_min,
-                                                ai.numeric_range_max,
-                                                ai.text_value,
-                                                ai.text_syntax,
-                                                ai.code_title,
-                                                ai.code_list,
-                                                ai.code_value
-                                    ) as ai_values
+                    coalesce(
+                        (
+                            select
+                                jsonb_object_agg(
+                                    ai_type,
+                                    ai_values_array
                                 )
-                            ) as ai_json
-                        from
-                            hame.additional_information ai
-                            join codes.type_of_additional_information tai
-                                on ai.type_additional_information_id = tai.id
-                        where
-                            ai.plan_regulation_id = r.id
-                            AND tai.value != 'osaAlue'
+                            from (
+                                select
+                                    tai.value ai_type,
+                                    jsonb_agg(
+                                        (
+                                            select
+                                                jsonb_strip_nulls(to_jsonb(ai_values))
+                                            from (
+                                                select
+                                                        ai.numeric_value,
+                                                        ai.unit,
+                                                        ai.numeric_range_min,
+                                                        ai.numeric_range_max,
+                                                        ai.text_value,
+                                                        ai.text_syntax,
+                                                        ai.code_title,
+                                                        ai.code_list,
+                                                        ai.code_value
+                                            ) as ai_values
+                                        )
+                                    ) as ai_values_array
+                                from
+                                    hame.additional_information ai
+                                    join codes.type_of_additional_information tai
+                                        on ai.type_additional_information_id = tai.id
+                                where
+                                    ai.plan_regulation_id = r.id
+                                    AND tai.value != 'osaAlue'
+                                group by tai.value
+                            ) ai_values
+                        ),
+                        '{}'::jsonb
                     )
                 )
             from
@@ -262,36 +284,47 @@ type_regulations = PGFunction(
             EXECUTE format(
                 $SQL$
                 select
-                    json_object_agg(
+                    jsonb_object_agg(
                         tpr.value,
-                        (
-                            select
-                                json_object_agg(
-                                    tai.value,
-                                    (
-                                        select
-                                        jsonb_strip_nulls(to_jsonb(ai_values))
-                                        from
-                                            (
-                                            select
-                                                ai.numeric_value,
-                                                ai.unit,
-                                                ai.numeric_range_min,
-                                                ai.numeric_range_max,
-                                                ai.text_value,
-                                                ai.text_syntax,
-                                                ai.code_title,
-                                                ai.code_list,
-                                                ai.code_value
-                                            ) as ai_values
+                        coalesce(
+                            (
+                                select
+                                    jsonb_object_agg(
+                                        ai_type,
+                                        ai_values_array
                                     )
-                                ) as ai_json
-                            from
-                                hame.additional_information ai
-                                join codes.type_of_additional_information tai
-                                    on ai.type_additional_information_id = tai.id
-                            where
-                                ai.plan_regulation_id = r.id
+                                from (
+                                    select
+                                        tai.value ai_type,
+                                        jsonb_agg(
+                                            (
+                                                select
+                                                jsonb_strip_nulls(to_jsonb(ai_values))
+                                                from
+                                                    (
+                                                    select
+                                                        ai.numeric_value,
+                                                        ai.unit,
+                                                        ai.numeric_range_min,
+                                                        ai.numeric_range_max,
+                                                        ai.text_value,
+                                                        ai.text_syntax,
+                                                        ai.code_title,
+                                                        ai.code_list,
+                                                        ai.code_value
+                                                    ) as ai_values
+                                            )
+                                        ) as ai_values_array
+                                    from
+                                        hame.additional_information ai
+                                        join codes.type_of_additional_information tai
+                                            on ai.type_additional_information_id = tai.id
+                                    where
+                                        ai.plan_regulation_id = r.id
+                                    group by tai.value
+                                ) ai_values
+                            ),
+                            '{}'::jsonb
                         )
                     )
                 from
