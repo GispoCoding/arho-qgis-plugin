@@ -500,7 +500,7 @@ class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
 
 class LegalEffectAssociationLayer(AbstractPlanLayer):
     name = "Yleiskaavan oikeusvaikutusten assosiaatiot"
-    filter_template = None
+    filter_template = Template("plan_id = '$plan_id'")
 
     @classmethod
     def feature_from(cls, plan_id: str, legal_effect_id: str) -> QgsFeature | None:
