@@ -573,7 +573,10 @@ class PlanManager(QObject):
         if plan_id:
             self.plan_set.emit()
             for layer in plan_layers:
-                layer.filter_layer_by_plan_id(plan_id)
+                if layer.filter_template:
+                    layer.filter_layer_by_plan_id(plan_id)
+                else:
+                    layer.show_all_features()
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
