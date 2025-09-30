@@ -243,6 +243,15 @@ class Plugin:
             status_tip="Lataa/avaa kaava",
         )
 
+        self.manage_plans_dialog = self.add_action(
+            text="Kaavasuunnitelmat",
+            triggered_callback=self.open_manage_plans,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Kaavasuunnitelmien hallinta",
+        )
+
         self.edit_plan_tool_button = QToolButton()
         self.edit_plan_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.edit_plan_tool_button.setMenu(QMenu())
@@ -479,6 +488,9 @@ class Plugin:
     def export_plan(self):
         """Export the active plan to json."""
         self.plan_manager.export_plan()
+
+    def open_manage_plans(self):
+        self.plan_manager.open_manage_plans()
 
     def export_plan_matter(self):
         """Export the plan matter of the activate plan."""

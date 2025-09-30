@@ -46,6 +46,7 @@ from arho_feature_template.gui.dialogs.lifecycle_editor import LifecycleEditor
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
+from arho_feature_template.gui.dialogs.manage_plans import ManagePlans
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMatterAttributeForm
@@ -261,6 +262,14 @@ class PlanManager(QObject):
             for file_path in get_user_plan_feature_library_config_files()
         ]
         self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
+
+    def open_manage_plans(self):
+        dialog = ManagePlans(self.regulation_group_libraries)
+        if dialog.exec():
+            selected_plan = dialog.selected_plan
+            # If the active plan was changed, update state
+            if selected_plan.id_ and selected_plan.id_ != get_active_plan_id():
+                self.set_active_plan(selected_plan.id_)
 
     def open_import_plan_dialog(self):
         dialog = ImportPlanForm(iface.mainWindow())
