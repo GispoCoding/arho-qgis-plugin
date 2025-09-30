@@ -27,7 +27,7 @@ from shapely import (
     MultiLineString,
     MultiPoint,
     MultiPolygon,
-    Point,
+    Point as ShapelyPoint,
     Polygon,
     from_geojson,
 )
@@ -40,14 +40,13 @@ from database.models import (
     AdditionalInformation,
     Document,
     LandUseArea,
-    LandUsePoint,
     Line,
     OtherArea,
-    OtherPoint,
     Plan,
     PlanProposition,
     PlanRegulation,
     PlanRegulationGroup,
+    Point,
 )
 
 if TYPE_CHECKING:
@@ -185,7 +184,7 @@ class Deserializer:
         if shape.geom_type == "Polygon":
             shape = MultiPolygon([cast("Polygon", shape)])
         elif shape.geom_type == "Point":
-            shape = MultiPoint([cast("Point", shape)])
+            shape = MultiPoint([cast("ShapelyPoint", shape)])
         elif shape.geom_type == "LineString":
             shape = MultiLineString([cast("LineString", shape)])
 
@@ -443,99 +442,11 @@ class Deserializer:
             return LandUseArea
         return OtherArea
 
-    def _determine_point_plan_object_type(
-        self, regulation_groups: list[PlanRegulationGroup], plan_type: PlanType
-    ) -> type[LandUsePoint | OtherPoint]:
-        def get_root_plan_type(plan_type: PlanType) -> PlanType:
-            if plan_type.parent is None:
-                return plan_type
-            return get_root_plan_type(plan_type.parent)
-
-        root_plan_type = get_root_plan_type(plan_type)
-        if root_plan_type.value == "3":  # Asemakaava
-            return OtherPoint
-
-        possible_land_use_regulations = {
-            "ampumarataAlue",
-            "asuinkerrostaloalue",
-            "asuinpientaloalue",
-            "asumisenAlue",
-            "asuntovaunualue",
-            "energiahuollonAlue",
-            "erityisalue",
-            "hautausmaa",
-            "henkiloliikenteenTerminaalialue",
-            "huoltoasemaAlue",
-            "jatteenkasittelyalue",
-            "kaivosalue",
-            "keskustatoimintojenAlakeskus",
-            "keskustatoimintojenAlue",
-            "kiertotaloudenAlue",
-            "kotielaintaloudenSuuryksikonAlue",
-            "kylaAlue",
-            "lahivirkistysalue",
-            "leirintaAlue",
-            "lentoliikenteenAlue",
-            "liikennealue",
-            "luonnonsuojelualue",
-            "maaAinestenOttoalue",
-            "maaJaMetsatalousAlue",
-            "maaJaMetsatalousalueJollaErityisiaYmparistoarvoja",
-            "maaJaMetsatalousalueJollaErityistaUlkoilunOhjaamistarvetta",
-            "maaliikenteenAlue",
-            "maatalousalue",
-            "maisemallisestiArvokasAlue",
-            "matkailupalvelujenAlue",
-            "metsatalousalue",
-            "moottoriurheilualue",
-            "muinaismuistoAlue",
-            "palstaviljelyalue",
-            "palvelujenAlue",
-            "pelto",
-            "puolustusvoimienAlue",
-            "raideliikenteenAlue",
-            "rakennusperinnonSuojelemisestaAnnetunLainNojallaSuojeltuRakennus",
-            "rakennussuojelualue",
-            "retkeilyJaUlkoiluAlue",
-            "satama-alue",
-            "siirtolapuutarhaAlue",
-            "suojaviheralue",
-            "suojelualue",
-            "taajamatoimintojenAlue",
-            "tavaraliikenteenTerminaalialue",
-            "teollisuusalue",
-            "turvetuotantoalue",
-            "tyopaikkojenAlue",
-            "uimaranta",
-            "urheiluJaVirkistyspalvelujenAlue",
-            "vahittaiskaupanMyymalakeskittyma",
-            "vahittaiskaupanSuuryksikko",
-            "vapaaAjanAsumisenAlue",
-            "vapaaAjanAsumisenJaMatkailunAlue",
-            "varastoalue",
-            "varikko",
-            "venesatama",
-            "venevalkama",
-            "vesialue",
-            "virkistysalue",
-            "yhdyskuntateknisenHuollonAlue",
-        }
-
-        has_primary_usage_regulation = any(
-            regulation.type_of_plan_regulation.value in possible_land_use_regulations
-            for group in regulation_groups
-            for regulation in group.plan_regulations
-        )
-        if has_primary_usage_regulation:
-            return LandUsePoint
-        return OtherPoint
-
     def deserialize_plan_object(
         self,
         ryhti_plan_object: RyhtiPlanObject,
         regulation_groups: list[PlanRegulationGroup],
-        plan_type: PlanType,
-    ) -> LandUseArea | OtherArea | LandUsePoint | OtherPoint | Line:
+    ) -> LandUseArea | OtherArea | Point | Line:
         """Deserializes a RyhtiPlanObject into a PlanObject SQLAlchemy model instance.
 
         "planObjectKey", ✅
@@ -562,16 +473,14 @@ class Deserializer:
 
         shape = self.convert_to_multi_geom(shape)
         PlanObjectClass: (  # noqa: N806
-            type[LandUseArea | OtherArea | LandUsePoint | OtherPoint | Line] | None
+            type[LandUseArea | OtherArea | Point | Line] | None
         ) = None
         if shape.geom_type == "MultiPolygon":
             PlanObjectClass = self._determine_area_plan_object_type(  # noqa: N806
                 regulation_groups
             )
         elif shape.geom_type == "MultiPoint":
-            PlanObjectClass = self._determine_point_plan_object_type(  # noqa: N806
-                regulation_groups, plan_type
-            )
+            PlanObjectClass = Point  # noqa: N806
         elif shape.geom_type == "MultiLineString":
             PlanObjectClass = Line  # noqa: N806
 
@@ -745,7 +654,6 @@ class Deserializer:
                 plan_object := self.deserialize_plan_object(
                     ryhti_plan_object,
                     groups_of_plan_objects.get(ryhti_plan_object.plan_object_key, []),
-                    plan_type,
                 )
             )
         }
@@ -796,12 +704,7 @@ class Deserializer:
             other_areas=[
                 p_o for p_o in plan_objects.values() if isinstance(p_o, OtherArea)
             ],
-            land_use_points=[
-                p_o for p_o in plan_objects.values() if isinstance(p_o, LandUsePoint)
-            ],
-            other_points=[
-                p_o for p_o in plan_objects.values() if isinstance(p_o, OtherPoint)
-            ],
+            points=[p_o for p_o in plan_objects.values() if isinstance(p_o, Point)],
             lines=[p_o for p_o in plan_objects.values() if isinstance(p_o, Line)],
             documents=documents,
         )
@@ -836,7 +739,7 @@ class Deserializer:
                     (len(group.land_use_areas), "landUseRegulations"),
                     (len(group.other_areas), "otherAreaRegulations"),
                     (len(group.lines), "lineRegulations"),
-                    (len(group.land_use_points), "landUseRegulations"),
+                    (len(group.points), "pointRegulations"),
                 ),
                 key=lambda x: x[0],
             )[1]

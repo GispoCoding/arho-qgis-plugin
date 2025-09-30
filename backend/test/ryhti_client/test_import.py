@@ -104,18 +104,16 @@ def test_import_plan(
     assert sub_area.name is None
     assert sub_area.description is None
 
-    land_use_point = session.get(
-        models.LandUsePoint, "bb50b5a0-ef60-40e7-bee0-a1ae927d020f"
-    )
-    assert land_use_point is not None
-    assert land_use_point.lifecycle_status.value == "03"
-    assert land_use_point.type_of_underground.value == "01"
-    assert land_use_point.name == {"fin": "test_land_use_point"}
-    assert land_use_point.description == {"fin": "test_land_use_point"}
-    assert land_use_point.ordering is None
+    point = session.get(models.Point, "bb50b5a0-ef60-40e7-bee0-a1ae927d020f")
+    assert point is not None
+    assert point.lifecycle_status.value == "03"
+    assert point.type_of_underground.value == "01"
+    assert point.name == {"fin": "test_point"}
+    assert point.description == {"fin": "test_point"}
+    assert point.ordering is None
 
     assert plan.land_use_areas == [land_use_area_1, pedestrian_street]
-    assert plan.land_use_points == [land_use_point]
+    assert plan.points == [point]
     assert plan.other_areas == [sub_area]
 
     point_plan_regulation_group = session.get(

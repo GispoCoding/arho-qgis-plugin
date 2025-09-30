@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 # A little hack to make sure the ryhti_client package can be found during tests
 sys.path.append("lambdas/ryhti_client")
 
-hame_count: int = 19  # adjust me when adding tables
+hame_count: int = 18  # adjust me when adding tables
 codes_count: int = 22  # adjust me when adding tables
 matview_count: int = 0  # adjust me when adding views
 
@@ -409,13 +409,7 @@ def assert_database_is_alright(
                     f"CREATE UNIQUE INDEX ix_{table_name}_plan_regulation_group_id_ordering "
                     f"ON hame.{table_name} USING btree (plan_regulation_group_id, ordering)"
                 ) in index_defs
-            elif table_name in (
-                "land_use_area",
-                "other_area",
-                "line",
-                "land_use_point",
-                "other_point",
-            ):
+            elif table_name in ("land_use_area", "other_area", "line", "point"):
                 assert (
                     f"CREATE UNIQUE INDEX ix_{table_name}_plan_id_ordering "
                     f"ON hame.{table_name} USING btree (plan_id, ordering)"
@@ -754,9 +748,7 @@ def type_of_line_plan_regulation_group_instance(
 def type_of_point_plan_regulation_group_instance(
     temp_session_feature: ReturnSame,
 ) -> codes.TypeOfPlanRegulationGroup:
-    instance = codes.TypeOfPlanRegulationGroup(
-        value="otherPointRegulations", status="LOCAL"
-    )
+    instance = codes.TypeOfPlanRegulationGroup(value="pointRegulations", status="LOCAL")
     return temp_session_feature(instance)
 
 
@@ -1309,35 +1301,15 @@ def line_instance(
 
 
 @pytest.fixture
-def land_use_point_instance(
+def point_instance(
     temp_session_feature: ReturnSame,
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
     point_plan_regulation_group_instance: codes.PlanRegulationGroup,
-):
-    instance = models.LandUsePoint(
+) -> models.Point:
+    instance = models.Point(
         geom=from_shape(MultiPoint([[382000, 6678000]])),
-        name={"fin": "test_land_use_point"},
-        description={"fin": "test_land_use_point"},
-        lifecycle_status=preparation_status_instance,
-        type_of_underground=type_of_underground_instance,
-        plan=plan_instance,
-        plan_regulation_groups=[point_plan_regulation_group_instance],
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def other_point_instance(
-    temp_session_feature: ReturnSame,
-    preparation_status_instance: codes.LifeCycleStatus,
-    type_of_underground_instance: codes.TypeOfUnderground,
-    plan_instance: codes.Plan,
-    point_plan_regulation_group_instance: codes.PlanRegulationGroup,
-) -> models.OtherPoint:
-    instance = models.OtherPoint(
-        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
         lifecycle_status=preparation_status_instance,
         type_of_underground=type_of_underground_instance,
         plan=plan_instance,
@@ -2008,7 +1980,7 @@ def complete_test_plan(
     land_use_area_instance: models.LandUseArea,
     pedestrian_street_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
-    land_use_point_instance: models.LandUsePoint,
+    point_instance: models.Point,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
     construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
@@ -2286,7 +2258,7 @@ def desired_plan_dict(
     land_use_area_instance: models.LandUseArea,
     pedestrian_street_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
-    land_use_point_instance: models.LandUsePoint,
+    point_instance: models.Point,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
     decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
@@ -2461,16 +2433,16 @@ def desired_plan_dict(
                 "periodOfValidity": None,
             },
             {
-                "planObjectKey": land_use_point_instance.id,
+                "planObjectKey": point_instance.id,
                 "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                 "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
                 "geometry": {
                     "srid": str(PROJECT_SRID),
                     "geometry": {"type": "Point", "coordinates": [382000.0, 6678000.0]},
                 },
-                "name": land_use_point_instance.name,
-                "description": land_use_point_instance.description,
-                "objectNumber": land_use_point_instance.ordering,
+                "name": point_instance.name,
+                "description": point_instance.description,
+                "objectNumber": point_instance.ordering,
                 "periodOfValidity": None,
             },
         ],
@@ -2808,7 +2780,7 @@ def desired_plan_dict(
                 "planRegulationGroupKey": pedestrian_plan_regulation_group_instance.id,
             },
             {
-                "planObjectKey": land_use_point_instance.id,
+                "planObjectKey": point_instance.id,
                 "planRegulationGroupKey": point_plan_regulation_group_instance.id,
             },
         ],

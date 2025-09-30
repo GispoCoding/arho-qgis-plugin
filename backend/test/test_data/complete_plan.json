@@ -224,10 +224,10 @@
                 }
             },
             "name": {
-                "fin": "test_land_use_point"
+                "fin": "test_point"
             },
             "description": {
-                "fin": "test_land_use_point"
+                "fin": "test_point"
             },
             "objectNumber": null,
             "periodOfValidity": null

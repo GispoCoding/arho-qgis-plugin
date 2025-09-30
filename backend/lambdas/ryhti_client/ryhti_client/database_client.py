@@ -563,8 +563,7 @@ class DatabaseClient:
             plan_objects += plan.land_use_areas
             plan_objects += plan.other_areas
             plan_objects += plan.lines
-            plan_objects += plan.land_use_points
-            plan_objects += plan.other_points
+            plan_objects += plan.points
 
         plan_dictionary["generalRegulationGroups"] = [
             self.get_plan_regulation_group(regulation_group, general=True)

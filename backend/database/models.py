@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime  # noqa: TC003  # Sqlalchemy uses this runtime
+from datetime import datetime  # Sqlalchemy uses this runtime
 from typing import TYPE_CHECKING, Any
-from uuid import UUID  # noqa: TC003  # Sqlalchemy uses this runtime
+from uuid import UUID  # Sqlalchemy uses this runtime
 
 from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
@@ -75,22 +75,13 @@ regulation_group_association = Table(
         index=True,
     ),
     Column(
-        "land_use_point_id",
-        ForeignKey(
-            "hame.land_use_point.id", name="land_use_point_id_fkey", ondelete="CASCADE"
-        ),
-        index=True,
-    ),
-    Column(
         "line_id",
         ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE"),
         index=True,
     ),
     Column(
-        "other_point_id",
-        ForeignKey(
-            "hame.other_point.id", name="other_point_id_fkey", ondelete="CASCADE"
-        ),
+        "point_id",
+        ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE"),
         index=True,
     ),
     schema="hame",
@@ -228,15 +219,8 @@ class Plan(PlanBase):
     lines: Mapped[list[Line]] = relationship(
         order_by="Line.ordering", back_populates="plan", cascade="all, delete-orphan"
     )
-    land_use_points: Mapped[list[LandUsePoint]] = relationship(
-        order_by="LandUsePoint.ordering",
-        back_populates="plan",
-        cascade="all, delete-orphan",
-    )
-    other_points: Mapped[list[OtherPoint]] = relationship(
-        order_by="OtherPoint.ordering",
-        back_populates="plan",
-        cascade="all, delete-orphan",
+    points: Mapped[list[Point]] = relationship(
+        order_by="Point.ordering", back_populates="plan", cascade="all, delete-orphan"
     )
 
     permanent_plan_identifier: Mapped[str | None]
@@ -265,7 +249,7 @@ class Plan(PlanBase):
         lazy="joined",
         overlaps=(
             "general_plan_regulation_groups,land_use_areas,other_areas,"
-            "land_use_points,lines,plan_regulation_groups"
+            "points,lines,plan_regulation_groups"
         ),
     )
     legal_effects_of_master_plan: Mapped[list[LegalEffectsOfMasterPlan]] = relationship(
@@ -342,7 +326,7 @@ class PlanObjectBase(PlanBase):
             back_populates=f"{cls.__tablename__}s",
             overlaps=(
                 "general_plan_regulation_groups,land_use_areas,other_areas,"
-                "land_use_points,lines,plan_regulation_groups"
+                "points,lines,plan_regulation_groups"
             ),
             lazy="joined",
         )
@@ -378,20 +362,10 @@ class Line(PlanObjectBase):
     )
 
 
-class LandUsePoint(PlanObjectBase):
-    """Maankäytön pisteet"""
+class Point(PlanObjectBase):
+    """Pisteet"""
 
-    __tablename__ = "land_use_point"
-
-    geom: Mapped[WKBElement] = mapped_column(
-        type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
-    )
-
-
-class OtherPoint(PlanObjectBase):
-    """Muut pisteet"""
-
-    __tablename__ = "other_point"
+    __tablename__ = "point"
 
     geom: Mapped[WKBElement] = mapped_column(
         type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
@@ -461,7 +435,7 @@ class PlanRegulationGroup(VersionedBase):
         back_populates="plan_regulation_groups",
         overlaps=(
             "general_plan_regulation_groups,land_use_areas,other_areas,"
-            "land_use_points,lines,plan_regulation_groups"
+            "points,lines,plan_regulation_groups"
         ),
     )
     other_areas: Mapped[list[OtherArea]] = relationship(
@@ -469,7 +443,7 @@ class PlanRegulationGroup(VersionedBase):
         back_populates="plan_regulation_groups",
         overlaps=(
             "general_plan_regulation_groups,land_use_areas,other_areas,"
-            "land_use_points,lines,plan_regulation_groups"
+            "points,lines,plan_regulation_groups"
         ),
     )
     lines: Mapped[list[Line]] = relationship(
@@ -477,23 +451,15 @@ class PlanRegulationGroup(VersionedBase):
         back_populates="plan_regulation_groups",
         overlaps=(
             "general_plan_regulation_groups,land_use_areas,other_areas,"
-            "land_use_points,lines,plan_regulation_groups"
+            "points,lines,plan_regulation_groups"
         ),
     )
-    land_use_points: Mapped[list[LandUsePoint]] = relationship(
+    points: Mapped[list[Point]] = relationship(
         secondary="hame.regulation_group_association",
         back_populates="plan_regulation_groups",
         overlaps=(
             "general_plan_regulation_groups,land_use_areas,other_areas,"
-            "land_use_points,lines,plan_regulation_groups"
-        ),
-    )
-    other_points: Mapped[list[OtherPoint]] = relationship(
-        secondary="hame.regulation_group_association",
-        back_populates="plan_regulation_groups",
-        overlaps=(
-            "general_plan_regulation_groups,land_use_areas,other_areas,"
-            "land_use_points,lines,plan_regulation_groups"
+            "points,lines,plan_regulation_groups"
         ),
     )
 
@@ -781,15 +747,8 @@ class LifeCycleDate(VersionedBase):
     line_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE")
     )
-    land_use_point_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "hame.land_use_point.id", name="land_use_point_id_fkey", ondelete="CASCADE"
-        )
-    )
-    other_point_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "hame.other_point.id", name="other_point_id_fkey", ondelete="CASCADE"
-        )
+    point_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE")
     )
     plan_regulation_id: Mapped[UUID | None] = mapped_column(
         ForeignKey(
@@ -814,12 +773,7 @@ class LifeCycleDate(VersionedBase):
         back_populates="lifecycle_dates"
     )
     line: Mapped[Line | None] = relationship(back_populates="lifecycle_dates")
-    land_use_point: Mapped[LandUsePoint | None] = relationship(
-        back_populates="lifecycle_dates"
-    )
-    other_point: Mapped[OtherPoint | None] = relationship(
-        back_populates="lifecycle_dates"
-    )
+    point: Mapped[Point | None] = relationship(back_populates="lifecycle_dates")
     plan_regulation: Mapped[PlanRegulation | None] = relationship(
         back_populates="lifecycle_dates"
     )

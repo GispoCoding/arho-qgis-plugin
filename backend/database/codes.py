@@ -15,16 +15,15 @@ if TYPE_CHECKING:
         Document,
         EventDate,
         LandUseArea,
-        LandUsePoint,
         LifeCycleDate,
         Line,
         Organisation,
         OtherArea,
-        OtherPoint,
         Plan,
         PlanProposition,
         PlanRegulation,
         PlanRegulationGroup,
+        Point,
         SourceData,
     )
 
@@ -150,12 +149,7 @@ class LifeCycleStatus(CodeBase):
         back_populates="lifecycle_status"
     )
     lines: Mapped[list[Line]] = relationship(back_populates="lifecycle_status")
-    land_use_points: Mapped[list[LandUsePoint]] = relationship(
-        back_populates="lifecycle_status"
-    )
-    other_points: Mapped[list[OtherPoint]] = relationship(
-        back_populates="lifecycle_status"
-    )
+    points: Mapped[list[Point]] = relationship(back_populates="lifecycle_status")
 
     plan_regulations: Mapped[list[PlanRegulation]] = relationship(
         back_populates="lifecycle_status"
@@ -237,12 +231,7 @@ class TypeOfUnderground(CodeBase):
         back_populates="type_of_underground"
     )
     lines: Mapped[list[Line]] = relationship(back_populates="type_of_underground")
-    land_use_points: Mapped[list[LandUsePoint]] = relationship(
-        back_populates="type_of_underground"
-    )
-    other_points: Mapped[list[OtherPoint]] = relationship(
-        back_populates="type_of_underground"
-    )
+    points: Mapped[list[Point]] = relationship(back_populates="type_of_underground")
 
 
 class TypeOfDocument(CodeBase):
@@ -297,7 +286,7 @@ class TypeOfPlanRegulationGroup(CodeBase):
         {"value": "landUseRegulations", "name": {"fin": "Aluevaraus"}},
         {"value": "otherAreaRegulations", "name": {"fin": "Osa-alue"}},
         {"value": "lineRegulations", "name": {"fin": "Viiva"}},
-        {"value": "otherPointRegulations", "name": {"fin": "Muu piste"}},
+        {"value": "pointRegulations", "name": {"fin": "Piste"}},
     ]
 
     plan_regulation_groups: Mapped[list[PlanRegulationGroup]] = relationship(

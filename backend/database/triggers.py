@@ -444,13 +444,7 @@ def generate_instead_of_triggers_for_visualization_views() -> tuple[
     )
 
     trgs = []
-    for view in (
-        "land_use_area_v",
-        "land_use_point_v",
-        "other_area_v",
-        "other_point_v",
-        "line_v",
-    ):
+    for view in ("land_use_area_v", "other_area_v", "point_v", "line_v"):
         trg_signature = f"trg_iiud_{view}"
         trg_definition = dedent(
             f"""\

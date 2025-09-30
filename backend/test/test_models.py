@@ -134,48 +134,25 @@ def test_line(
     assert plan_regulation_group_instance.lines == [line_instance]
 
 
-def test_land_use_point(
-    land_use_point_instance: models.LandUsePoint,
+def test_point(
+    point_instance: models.Point,
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: models.Plan,
     point_plan_regulation_group_instance: models.PlanRegulationGroup,
 ) -> None:
     # non-nullable plan object relations
-    assert land_use_point_instance.lifecycle_status is preparation_status_instance
-    assert preparation_status_instance.land_use_points == [land_use_point_instance]
-    assert land_use_point_instance.type_of_underground is type_of_underground_instance
-    assert type_of_underground_instance.land_use_points == [land_use_point_instance]
-    assert land_use_point_instance.plan is plan_instance
-    assert plan_instance.land_use_points == [land_use_point_instance]
-    assert land_use_point_instance.plan_regulation_groups == [
+    assert point_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.points == [point_instance]
+    assert point_instance.type_of_underground is type_of_underground_instance
+    assert type_of_underground_instance.points == [point_instance]
+    assert point_instance.plan is plan_instance
+    assert plan_instance.points == [point_instance]
+    assert point_instance.plan_regulation_groups == [
         point_plan_regulation_group_instance
     ]
 
-    assert point_plan_regulation_group_instance.land_use_points == [
-        land_use_point_instance
-    ]
-
-
-def test_other_point(
-    other_point_instance: models.OtherPoint,
-    preparation_status_instance: codes.LifeCycleStatus,
-    type_of_underground_instance: codes.TypeOfUnderground,
-    plan_instance: models.Plan,
-    point_plan_regulation_group_instance: models.PlanRegulationGroup,
-) -> None:
-    # non-nullable plan object relations
-    assert other_point_instance.lifecycle_status is preparation_status_instance
-    assert preparation_status_instance.other_points == [other_point_instance]
-    assert other_point_instance.type_of_underground is type_of_underground_instance
-    assert type_of_underground_instance.other_points == [other_point_instance]
-    assert other_point_instance.plan is plan_instance
-    assert plan_instance.other_points == [other_point_instance]
-    assert other_point_instance.plan_regulation_groups == [
-        point_plan_regulation_group_instance
-    ]
-
-    assert point_plan_regulation_group_instance.other_points == [other_point_instance]
+    assert point_plan_regulation_group_instance.points == [point_instance]
 
 
 def test_plan_regulation_group(
@@ -444,9 +421,8 @@ def test_interaction_event_date(
     "fixture_name",
     [
         pytest.param("land_use_area_instance", id="land_use_area"),
-        pytest.param("land_use_point_instance", id="land_use_point"),
         pytest.param("line_instance", id="line"),
-        pytest.param("other_point_instance", id="other_point"),
+        pytest.param("point_instance", id="point"),
         pytest.param("other_area_instance", id="other_area"),
         pytest.param("plan_proposition_instance", id="plan_proposition"),
         pytest.param("empty_value_plan_regulation_instance", id="plan_regulation"),
@@ -515,9 +491,8 @@ def test_cascade_delete_using_orm(
     "fixture_name",
     [
         pytest.param("land_use_area_instance", id="land_use_area"),
-        pytest.param("land_use_point_instance", id="land_use_point"),
         pytest.param("line_instance", id="line"),
-        pytest.param("other_point_instance", id="other_point"),
+        pytest.param("point_instance", id="point"),
         pytest.param("other_area_instance", id="other_area"),
         pytest.param("plan_proposition_instance", id="plan_proposition"),
         pytest.param("empty_value_plan_regulation_instance", id="plan_regulation"),

@@ -13,8 +13,7 @@ def test_modified_at_triggers(
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
     line_instance: models.Line,
-    land_use_point_instance: models.LandUsePoint,
-    other_point_instance: models.OtherPoint,
+    point_instance: models.Point,
     plan_regulation_group_instance: models.PlanRegulationGroup,
     text_plan_regulation_instance: models.PlanRegulation,
     plan_proposition_instance: models.PlanProposition,
@@ -28,8 +27,7 @@ def test_modified_at_triggers(
     land_use_area_instance_old_modified_at = land_use_area_instance.modified_at
     other_area_instance_old_modified_at = other_area_instance.modified_at
     line_instance_old_modified_at = line_instance.modified_at
-    land_use_point_instance_old_modified_at = land_use_point_instance.modified_at
-    other_point_instance_old_modified_at = other_point_instance.modified_at
+    point_instance_old_modified_at = point_instance.modified_at
     plan_regulation_group_instance_old_modified_at = (
         plan_regulation_group_instance.modified_at
     )
@@ -45,8 +43,7 @@ def test_modified_at_triggers(
     land_use_area_instance.height_unit = "blah"
     other_area_instance.height_unit = "blah"
     line_instance.height_unit = "blah"
-    land_use_point_instance.height_unit = "blah"
-    other_point_instance.height_unit = "blah"
+    point_instance.height_unit = "blah"
     plan_regulation_group_instance.short_name = "foo"
     text_plan_regulation_instance.text_value = {"fin": "foo"}
     plan_proposition_instance.text_value = {"fin": "foo"}
@@ -59,8 +56,7 @@ def test_modified_at_triggers(
     session.refresh(land_use_area_instance)
     session.refresh(other_area_instance)
     session.refresh(line_instance)
-    session.refresh(land_use_point_instance)
-    session.refresh(other_point_instance)
+    session.refresh(point_instance)
     session.refresh(plan_regulation_group_instance)
     session.refresh(text_plan_regulation_instance)
     session.refresh(plan_proposition_instance)
@@ -73,10 +69,7 @@ def test_modified_at_triggers(
     assert land_use_area_instance.modified_at != land_use_area_instance_old_modified_at
     assert other_area_instance.modified_at != other_area_instance_old_modified_at
     assert line_instance.modified_at != line_instance_old_modified_at
-    assert (
-        land_use_point_instance.modified_at != land_use_point_instance_old_modified_at
-    )
-    assert other_point_instance.modified_at != other_point_instance_old_modified_at
+    assert point_instance.modified_at != point_instance_old_modified_at
     assert (
         plan_regulation_group_instance.modified_at
         != plan_regulation_group_instance_old_modified_at
@@ -101,8 +94,7 @@ def test_new_object_add_lifecycle_date_triggers(
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
     line_instance: models.Line,
-    land_use_point_instance: models.LandUsePoint,
-    other_point_instance: models.OtherPoint,
+    point_instance: models.Point,
 ) -> None:
     assert plan_instance.lifecycle_dates
     lifecycle_date = next(iter(plan_instance.lifecycle_dates))
@@ -143,15 +135,9 @@ def test_new_object_add_lifecycle_date_triggers(
     assert lifecycle_date.starting_at
     assert not lifecycle_date.ending_at
 
-    assert land_use_point_instance.lifecycle_dates
-    lifecycle_date = next(iter(land_use_point_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == land_use_point_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert other_point_instance.lifecycle_dates
-    lifecycle_date = next(iter(other_point_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == other_point_instance.lifecycle_status
+    assert point_instance.lifecycle_dates
+    lifecycle_date = next(iter(point_instance.lifecycle_dates))
+    assert lifecycle_date.lifecycle_status == point_instance.lifecycle_status
     assert lifecycle_date.starting_at
     assert not lifecycle_date.ending_at
 
@@ -164,8 +150,7 @@ def test_new_lifecycle_date_triggers(
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
     line_instance: models.Line,
-    land_use_point_instance: models.LandUsePoint,
-    other_point_instance: models.OtherPoint,
+    point_instance: models.Point,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
 ) -> None:
@@ -175,8 +160,7 @@ def test_new_lifecycle_date_triggers(
     assert land_use_area_instance.lifecycle_status_id != another_code_instance.id
     assert other_area_instance.lifecycle_status_id != another_code_instance.id
     assert line_instance.lifecycle_status_id != another_code_instance.id
-    assert land_use_point_instance.lifecycle_status_id != another_code_instance.id
-    assert other_point_instance.lifecycle_status_id != another_code_instance.id
+    assert point_instance.lifecycle_status_id != another_code_instance.id
 
     # Update lifecycle_statuses to populate starting_at fields
     plan_instance.lifecycle_status = another_code_instance
@@ -185,8 +169,7 @@ def test_new_lifecycle_date_triggers(
     land_use_area_instance.lifecycle_status = another_code_instance
     other_area_instance.lifecycle_status = another_code_instance
     line_instance.lifecycle_status = another_code_instance
-    land_use_point_instance.lifecycle_status = another_code_instance
-    other_point_instance.lifecycle_status = another_code_instance
+    point_instance.lifecycle_status = another_code_instance
     session.flush()
 
     # Update again to populate ending_at fields
@@ -196,8 +179,7 @@ def test_new_lifecycle_date_triggers(
     land_use_area_instance.lifecycle_status = code_instance
     other_area_instance.lifecycle_status = code_instance
     line_instance.lifecycle_status = code_instance
-    land_use_point_instance.lifecycle_status = code_instance
-    other_point_instance.lifecycle_status = code_instance
+    point_instance.lifecycle_status = code_instance
     session.flush()
     session.refresh(plan_instance)
     session.refresh(text_plan_regulation_instance)
@@ -205,8 +187,7 @@ def test_new_lifecycle_date_triggers(
     session.refresh(land_use_area_instance)
     session.refresh(other_area_instance)
     session.refresh(line_instance)
-    session.refresh(land_use_point_instance)
-    session.refresh(other_point_instance)
+    session.refresh(point_instance)
 
     # Get old and new entries in lifecycle_date table
     def get_new_lifecycle_date(instance: models.PlanBase) -> models.LifeCycleDate:
@@ -233,8 +214,7 @@ def test_new_lifecycle_date_triggers(
     land_use_area_new_lifecycle_date = get_new_lifecycle_date(land_use_area_instance)
     other_area_new_lifecycle_date = get_new_lifecycle_date(other_area_instance)
     line_new_lifecycle_date = get_new_lifecycle_date(line_instance)
-    land_use_point_new_lifecycle_date = get_new_lifecycle_date(land_use_point_instance)
-    other_point_new_lifecycle_date = get_new_lifecycle_date(other_point_instance)
+    point_new_lifecycle_date = get_new_lifecycle_date(point_instance)
     plan_old_lifecycle_date = get_old_lifecycle_date(plan_instance)
     plan_regulation_old_lifecycle_date = get_old_lifecycle_date(
         text_plan_regulation_instance
@@ -245,8 +225,7 @@ def test_new_lifecycle_date_triggers(
     land_use_area_old_lifecycle_date = get_old_lifecycle_date(land_use_area_instance)
     other_area_old_lifecycle_date = get_old_lifecycle_date(other_area_instance)
     line_old_lifecycle_date = get_old_lifecycle_date(line_instance)
-    land_use_point_old_lifecycle_date = get_old_lifecycle_date(land_use_point_instance)
-    other_point_old_lifecycle_date = get_old_lifecycle_date(other_point_instance)
+    point_old_lifecycle_date = get_old_lifecycle_date(point_instance)
 
     assert plan_new_lifecycle_date.lifecycle_status_id == code_instance.id
     assert plan_new_lifecycle_date.starting_at is not None
@@ -272,13 +251,9 @@ def test_new_lifecycle_date_triggers(
     assert line_new_lifecycle_date.starting_at is not None
     assert line_old_lifecycle_date.ending_at is not None
 
-    assert land_use_point_instance.lifecycle_status_id == code_instance.id
-    assert land_use_point_new_lifecycle_date.starting_at is not None
-    assert land_use_point_old_lifecycle_date.ending_at is not None
-
-    assert other_point_instance.lifecycle_status_id == code_instance.id
-    assert other_point_new_lifecycle_date.starting_at is not None
-    assert other_point_old_lifecycle_date.ending_at is not None
+    assert point_instance.lifecycle_status_id == code_instance.id
+    assert point_new_lifecycle_date.starting_at is not None
+    assert point_old_lifecycle_date.ending_at is not None
 
 
 def test_new_lifecycle_status_triggers(
@@ -354,14 +329,7 @@ def test_new_lifecycle_status_triggers(
         type_of_underground=type_of_underground_instance,
         plan_regulation_groups=[plan_regulation_group_instance],
     )
-    land_use_point_instance = models.LandUsePoint(
-        lifecycle_status=code_instance,
-        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
-        plan=plan_instance,
-        type_of_underground=type_of_underground_instance,
-        plan_regulation_groups=[plan_regulation_group_instance],
-    )
-    other_point_instance = models.OtherPoint(
+    point_instance = models.Point(
         lifecycle_status=code_instance,
         geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
         plan=plan_instance,
@@ -371,8 +339,7 @@ def test_new_lifecycle_status_triggers(
     session.add(land_use_area_instance)
     session.add(other_area_instance)
     session.add(line_instance)
-    session.add(land_use_point_instance)
-    session.add(other_point_instance)
+    session.add(point_instance)
     session.flush()
 
     # Create new regulations in regulation groups already linked to plan
@@ -403,8 +370,7 @@ def test_new_lifecycle_status_triggers(
     session.refresh(land_use_area_instance)
     session.refresh(other_area_instance)
     session.refresh(line_instance)
-    session.refresh(land_use_point_instance)
-    session.refresh(other_point_instance)
+    session.refresh(point_instance)
     session.refresh(general_regulation_instance)
     session.refresh(general_proposition_instance)
     session.refresh(plan_regulation_instance)
@@ -416,8 +382,7 @@ def test_new_lifecycle_status_triggers(
     assert land_use_area_instance.lifecycle_status == another_code_instance
     assert other_area_instance.lifecycle_status == another_code_instance
     assert line_instance.lifecycle_status == another_code_instance
-    assert land_use_point_instance.lifecycle_status == another_code_instance
-    assert other_point_instance.lifecycle_status == another_code_instance
+    assert point_instance.lifecycle_status == another_code_instance
     assert general_regulation_instance.lifecycle_status == another_code_instance
     assert general_proposition_instance.lifecycle_status == another_code_instance
     assert plan_regulation_instance.lifecycle_status == another_code_instance
@@ -439,8 +404,7 @@ def test_update_lifecycle_status_triggers(
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
     line_instance: models.Line,
-    land_use_point_instance: models.LandUsePoint,
-    other_point_instance: models.OtherPoint,
+    point_instance: models.Point,
     empty_value_plan_regulation_instance: models.PlanRegulation,
     construction_area_plan_regulation_instance: models.PlanRegulation,
     numeric_plan_regulation_instance: models.PlanRegulation,
@@ -493,8 +457,7 @@ def test_update_lifecycle_status_triggers(
     assert land_use_area_instance.lifecycle_status != another_code_instance
     assert other_area_instance.lifecycle_status != another_code_instance
     assert line_instance.lifecycle_status != another_code_instance
-    assert land_use_point_instance.lifecycle_status != another_code_instance
-    assert other_point_instance.lifecycle_status != another_code_instance
+    assert point_instance.lifecycle_status != another_code_instance
     assert plan_instance.general_plan_regulation_groups == [
         general_regulation_group_instance
     ]
@@ -507,10 +470,7 @@ def test_update_lifecycle_status_triggers(
         construction_area_plan_regulation_group_instance
     ]
     assert line_instance.plan_regulation_groups == [plan_regulation_group_instance]
-    assert land_use_point_instance.plan_regulation_groups == [
-        point_plan_regulation_group_instance
-    ]
-    assert other_point_instance.plan_regulation_groups == [
+    assert point_instance.plan_regulation_groups == [
         point_plan_regulation_group_instance
     ]
 
@@ -520,8 +480,7 @@ def test_update_lifecycle_status_triggers(
     session.refresh(land_use_area_instance)
     session.refresh(other_area_instance)
     session.refresh(line_instance)
-    session.refresh(land_use_point_instance)
-    session.refresh(other_point_instance)
+    session.refresh(point_instance)
     session.refresh(empty_value_plan_regulation_instance)
     session.refresh(construction_area_plan_regulation_instance)
     session.refresh(numeric_plan_regulation_instance)
@@ -535,8 +494,7 @@ def test_update_lifecycle_status_triggers(
     assert land_use_area_instance.lifecycle_status == another_code_instance
     assert other_area_instance.lifecycle_status == another_code_instance
     assert line_instance.lifecycle_status == another_code_instance
-    assert land_use_point_instance.lifecycle_status == another_code_instance
-    assert other_point_instance.lifecycle_status == another_code_instance
+    assert point_instance.lifecycle_status == another_code_instance
     assert (
         empty_value_plan_regulation_instance.lifecycle_status == another_code_instance
     )
@@ -623,15 +581,7 @@ def test_add_plan_id_fkey_triggers(
     )
     session.add(another_another_line_instance)
 
-    another_land_use_point_instance = models.LandUsePoint(
-        geom=from_shape(point_1),
-        lifecycle_status=code_instance,
-        type_of_underground=type_of_underground_instance,
-        plan_regulation_groups=[plan_regulation_group_instance],
-    )
-    session.add(another_land_use_point_instance)
-
-    another_point_instance = models.OtherPoint(
+    another_point_instance = models.Point(
         geom=from_shape(point_2),
         lifecycle_status=code_instance,
         type_of_underground=type_of_underground_instance,
@@ -644,14 +594,12 @@ def test_add_plan_id_fkey_triggers(
     session.refresh(another_area_instance)
     session.refresh(another_line_instance)
     session.refresh(another_another_line_instance)
-    session.refresh(another_land_use_point_instance)
     session.refresh(another_point_instance)
 
     assert another_land_use_area_instance.plan_id == plan_instance.id
     assert another_area_instance.plan_id == another_plan_instance.id
     assert another_line_instance.plan_id == plan_instance.id
     assert another_another_line_instance.plan_id == another_plan_instance.id
-    assert another_land_use_point_instance.plan_id == plan_instance.id
     assert another_point_instance.plan_id == another_plan_instance.id
 
     # Delete created objects from the test database
