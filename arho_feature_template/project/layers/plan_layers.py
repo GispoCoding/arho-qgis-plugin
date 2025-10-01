@@ -907,6 +907,27 @@ class LifeCycleLayer(AbstractPlanLayer):
         return list(cls.get_features_by_attribute_value("plan_id", plan_id))
 
 
+def get_plan_feature_layer_class_by_model(plan_feature: PlanFeature) -> type[PlanFeatureLayer]:
+    layer_name = plan_feature.layer_name
+    if not layer_name:
+        msg = "Cannot save plan feature without a target layer"
+        raise ValueError(msg)
+    layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
+    if not layer_class:
+        msg = f"Could not find plan feature layer class for layer name {layer_name}"
+        raise ValueError(msg)
+
+    return layer_class
+
+
+def get_plan_feature_layer_class_by_layer_name(layer_name: str) -> type[PlanFeatureLayer]:
+    layer = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
+    if not layer:
+        msg = f"Could not find plan feature layer class for layer name {layer_name}"
+        raise ValueError(msg)
+    return layer
+
+
 FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
     PointLayer.name: PointLayer,
     LineLayer.name: LineLayer,
