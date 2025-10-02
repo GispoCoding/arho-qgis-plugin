@@ -41,6 +41,7 @@ from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanReg
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.dialogs.serialize_plan_matter import SerializePlanMatter
 from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
+from arho_feature_template.gui.docks.plan_features_dock import PlanFeaturesDock
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import (
@@ -135,6 +136,10 @@ class PlanManager(QObject):
 
         self.update_active_plan_regulation_group_library()
         self.regulation_groups_dock.hide()
+
+        # Initialize plan features dock
+        self.features_dock = PlanFeaturesDock(self, iface.mainWindow())
+        self.features_dock.hide()
 
         # Initialize digitize tools
         self.plan_digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
@@ -583,6 +588,7 @@ class PlanManager(QObject):
             plan_layer.startEditing()
 
         self.update_active_plan_regulation_group_library()
+        self.features_dock.create_plan_feature_view()
 
         if plan_id:
             identifier = PlanLayer.get_attribute_value_by_another_attribute_value(
@@ -726,6 +732,7 @@ class PlanManager(QObject):
             return
 
         self.initialize_from_project()
+        self.features_dock.initialize()
 
         if self.check_compatible_project_version() and self.check_required_layers():
             QgsProject.instance().cleared.connect(self.on_project_cleared)
@@ -775,6 +782,8 @@ class PlanManager(QObject):
 
         # Plan features dock
         self.features_dock.unload()
+
+        disconnect_signal(self.plan_set)
 
 
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
