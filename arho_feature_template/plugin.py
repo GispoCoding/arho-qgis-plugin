@@ -152,6 +152,9 @@ class Plugin:
             self.plan_manager.new_feature_dock, self.plan_manager.regulation_groups_dock
         )
 
+        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.features_dock)
+        iface.mainWindow().tabifyDockWidget(self.plan_manager.regulation_groups_dock, self.plan_manager.features_dock)
+
         self.validation_dock = ValidationDock(self.plan_manager)
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
         iface.mainWindow().tabifyDockWidget(self.plan_manager.new_feature_dock, self.validation_dock)
@@ -159,6 +162,7 @@ class Plugin:
         # Hide the docks because they cannot be used before a plan has been selected/activated
         self.plan_manager.new_feature_dock.hide()
         self.plan_manager.regulation_groups_dock.hide()
+        self.plan_manager.features_dock.hide()
         self.validation_dock.hide()
 
         # Actions
@@ -247,6 +251,15 @@ class Plugin:
             # icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
             icon=QIcon(resources_path("icons", "toolbar", "luo_kaavakohde.svg")),
             triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.new_feature_dock),
+            add_to_menu=True,
+            add_to_toolbar=True,
+        )
+
+        self.plan_features_dock_action = self.add_action(
+            text="Kaavakohteet",
+            # icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
+            # icon=QIcon(resources_path("icons", "toolbar", "luo_kaavakohde.svg")),
+            triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.features_dock),
             add_to_menu=True,
             add_to_toolbar=True,
         )
@@ -375,6 +388,7 @@ class Plugin:
             self.edit_plan_action,
             self.edit_lifecycles_action,
             self.new_feature_dock_action,
+            self.plan_features_dock_action,
             self.identify_plan_features_action,
             self.regulation_groups_dock_action,
             self.validation_dock_action,
