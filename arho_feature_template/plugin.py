@@ -251,6 +251,15 @@ class Plugin:
             add_to_toolbar=True,
         )
 
+        self.plan_features_dock_action = self.add_action(
+            text="Kaavakohteet",
+            # icon=QgsApplication.getThemeIcon("mIconFieldGeometry.svg"),
+            # icon=QIcon(resources_path("icons", "toolbar", "luo_kaavakohde.svg")),
+            triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.features_dock),
+            add_to_menu=True,
+            add_to_toolbar=True,
+        )
+
         self.identify_plan_features_action = self.add_action(
             text="Muokkaa kaavakohdetta",
             icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavakohdetta1.svg")),
@@ -375,6 +384,7 @@ class Plugin:
             self.edit_plan_action,
             self.edit_lifecycles_action,
             self.new_feature_dock_action,
+            self.plan_features_dock_action,
             self.identify_plan_features_action,
             self.regulation_groups_dock_action,
             self.validation_dock_action,
