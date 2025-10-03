@@ -729,6 +729,7 @@ class PlanManager(QObject):
             return
 
         self.initialize_from_project()
+        self.features_dock.initialize()
 
         if self.check_compatible_project_version() and self.check_required_layers():
             QgsProject.instance().cleared.connect(self.on_project_cleared)

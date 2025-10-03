@@ -80,6 +80,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         # Used for avoiding looping updates between table and map canvas (
         # table select -> trigger map select -> trigger table select.. etc.)
         self._syncing_selections = False
+        self._initialized = False
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)
@@ -101,6 +102,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         self.table.customContextMenuRequested.connect(self._open_context_menu)
         self.filter_line.textChanged.connect(self._filter_table)
 
+    def initialize(self):
         for layer in plan_feature_layers:
             vector_layer = layer.get_from_project()
             vector_layer.selectionChanged.connect(self._on_feature_selection_changed)
