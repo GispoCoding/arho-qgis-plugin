@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, ClassVar
 
+from sqlalchemy import FetchedValue
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -29,12 +30,9 @@ class Base(DeclarativeBase):
 """
 Here we define any custom type annotations we want to use for columns
 """
-uuid_pk = Annotated[
-    uuid.UUID, mapped_column(primary_key=True, server_default=func.gen_random_uuid())
-]
+
 unique_str = Annotated[str, mapped_column(unique=True, index=True)]
 language_str = dict[str, str]
-timestamp = Annotated[datetime, mapped_column(server_default=func.now())]
 
 metadata = Base.metadata
 
@@ -49,10 +47,15 @@ class VersionedBase(Base):
     # have to be defined inside all the subclasses for relationship remote_side
     # definition to work. So even if there is an id field in all the classes,
     # self-relationships will later break if id is only defined by type annotation.
-    id: Mapped[uuid_pk] = mapped_column()
-    created_at: Mapped[timestamp]
-    # TODO: postgresql has no default onupdate. Must implement this with trigger.
-    modified_at: Mapped[timestamp]
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, server_default=func.gen_random_uuid()
+    )
+    created_at: Mapped[datetime | None] = mapped_column(
+        server_default=FetchedValue()
+    )  # Set always in before insert trigger. Must be nullable for clients
+    modified_at: Mapped[datetime | None] = mapped_column(
+        server_default=FetchedValue(), server_onupdate=FetchedValue()
+    )  # Set always in before insert/update trigger. Must be nullable for clients
 
 
 class AttributeValueMixin:
