@@ -201,6 +201,8 @@ def test_import_duplicate_plan_with_overwriting(
         select(models.Plan.created_at).where(models.Plan.id == SIMPLE_PLAN_ID)
     ).one()
 
+    assert original_created is not None
+    assert overwritten_created is not None
     assert original_created < overwritten_created
 
 
