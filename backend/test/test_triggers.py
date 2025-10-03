@@ -1,10 +1,88 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
+import pytest
 from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, shape
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, Polygon, shape
 from sqlalchemy.orm import Session
 
 from database import codes, models
+
+
+@pytest.fixture
+def plan(
+    preparation_status_instance: codes.LifeCycleStatus,
+    organisation_instance: models.Organisation,
+    plan_type_instance: codes.PlanType,
+) -> models.Plan:
+    return models.Plan(
+        name={"fin": "Test Plan"},
+        geom=from_shape(
+            MultiPolygon(
+                [
+                    Polygon(
+                        (
+                            (381849, 6677967),
+                            (381849, 6680000),
+                            (386378, 6680000),
+                            (386378, 6677967),
+                            (381849, 6677967),
+                        )
+                    )
+                ]
+            ),
+            srid=3067,
+        ),
+        lifecycle_status=preparation_status_instance,
+        organisation=organisation_instance,
+        plan_type=plan_type_instance,
+    )
+
+
+def test_trigger_adds_a_created_at(session: Session, plan: models.Plan) -> None:
+    """Test that the created_at trigger adds a timestamp on insert."""
+    session.add(plan)
+    session.flush()
+    session.refresh(plan)
+
+    try:
+        assert plan.created_at is not None
+    finally:
+        session.rollback()
+
+
+def test_trigger_ignores_client_set_created_at(
+    session: Session, plan: models.Plan
+) -> None:
+    """Test that the created_at trigger overrides any client set value."""
+    initial_created_at = datetime(2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+    plan.created_at = initial_created_at
+    session.add(plan)
+    session.flush()
+    session.refresh(plan)
+
+    try:
+        assert plan.created_at is not None
+        assert plan.created_at != initial_created_at
+    finally:
+        session.rollback()
+
+
+def test_created_at_is_unmodifiable(session: Session, plan: models.Plan) -> None:
+    """Test that the created_at trigger prevents any updates to created_at."""
+    session.add(plan)
+    session.flush()
+    session.refresh(plan)
+
+    original_created_at = plan.created_at
+
+    plan.created_at = datetime(2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+    session.flush()
+    session.refresh(plan)
+    try:
+        assert plan.created_at is not None
+        assert plan.created_at == original_created_at
+    finally:
+        session.rollback()
 
 
 def test_modified_at_triggers(
