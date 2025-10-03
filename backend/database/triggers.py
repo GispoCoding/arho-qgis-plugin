@@ -137,18 +137,18 @@ def generate_modified_at_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
     )
 
     trgs = []
-    for table in hame_tables:
+    for schema, table in all_versioned_tables:
         trg_signature = f"trg_{table}_modified_at"
         trg_definition = f"""
-        BEFORE INSERT OR UPDATE ON {table}
+        BEFORE INSERT OR UPDATE ON {schema}.{table}
         FOR EACH ROW
         EXECUTE FUNCTION hame.{trgfunc_signature}
         """
 
         trg = PGTrigger(
-            schema="hame",
+            schema=schema,
             signature=trg_signature,
-            on_entity=f"hame.{table}",
+            on_entity=f"{schema}.{table}",
             is_constraint=False,
             definition=trg_definition,
         )
