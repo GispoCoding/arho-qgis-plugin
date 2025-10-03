@@ -3,10 +3,18 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING, Iterable, cast
 
-from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
+from qgis.core import Qgis, QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsDockWidget, QgsFilterLineEdit
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QModelIndex, QPoint, QRegularExpression, QSortFilterProxyModel, Qt
+from qgis.PyQt.QtCore import (
+    QItemSelection,
+    QItemSelectionModel,
+    QModelIndex,
+    QPoint,
+    QRegularExpression,
+    QSortFilterProxyModel,
+    Qt,
+)
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QMenu, QTableView
 
@@ -18,6 +26,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_feature_layers,
 )
 from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -66,8 +75,11 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         # INIT
         # Reference to get regulation group libraries for PlanFeatureForm
         self.plan_manager_ref = plan_manager_ref
-        # Used for finding rows to delete when a plan feature is deleted
-        self.feat_id_to_model_id_map: dict[int, str] = {}
+        # Used to reapply selections after filtering
+        self.selected_plan_feature_ids: set[str] = set()
+        # Used for avoiding looping updates between table and map canvas (
+        # table select -> trigger map select -> trigger table select.. etc.)
+        self._syncing_selections = False
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(2)
@@ -80,20 +92,32 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         self.filter_proxy_model = PlanFeaturesDockFilterProxyModel(self.model)
         self.table.setModel(self.filter_proxy_model)
 
+        self.selection_model = self.table.selectionModel()
+
+        # Connect signals
         self.table.doubleClicked.connect(self._open_form)
+        self.selection_model.selectionChanged.connect(self._on_table_selection_changed)
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._open_context_menu)
         self.filter_line.textChanged.connect(self._filter_table)
 
         for layer in plan_feature_layers:
             vector_layer = layer.get_from_project()
+            vector_layer.selectionChanged.connect(self._on_feature_selection_changed)
             vector_layer.committedFeaturesAdded.connect(self._on_feats_added)
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
             vector_layer.committedAttributeValuesChanges.connect(self._on_feat_attributes_changed)
 
     def unload(self) -> None:
+        # Disconnect signals
+        self.table.doubleClicked.disconnect(self._open_form)
+        self.selection_model.selectionChanged.disconnect(self._on_table_selection_changed)
+        self.table.customContextMenuRequested.disconnect(self._open_context_menu)
+        self.filter_line.textChanged.disconnect(self._filter_table)
+
         for layer in plan_feature_layers:
             vector_layer = layer.get_from_project()
+            vector_layer.selectionChanged.disconnect(self._on_feature_selection_changed)
             vector_layer.committedFeaturesAdded.disconnect(self._on_feats_added)
             vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
             vector_layer.committedAttributeValuesChanges.disconnect(self._on_feat_attributes_changed)
@@ -101,7 +125,6 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
     def create_plan_feature_view(self):
         # Clear table
         self.model.setRowCount(0)
-        self.feat_id_to_model_id_map.clear()
 
         # Add all plan features to table view
         # Idea: add `get_models` method for all layer classes
@@ -110,15 +133,21 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
                 plan_feature_model = layer.model_from_feature(feature)
                 self._add_plan_feature_to_view(plan_feature_model, feature.id())
 
+    def update_selected_rows(self):
+        self.selection_model.clearSelection()
+
+        for row in range(self.filter_proxy_model.rowCount()):
+            item = self.model.item(row, DATA_COLUMN)
+            plan_feature: PlanFeature = item.data(DATA_ROLE)[0]
+            if plan_feature.id_ in self.selected_plan_feature_ids:
+                proxy_index = self.filter_proxy_model.index(row, 0)
+                self.selection_model.select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+
     def _add_plan_feature_to_view(self, plan_feature_model: PlanFeature, feat_id: int):
         self.model.appendRow(self._plan_feature_into_items(plan_feature_model, feat_id))
-        self.feat_id_to_model_id_map[feat_id] = cast(str, plan_feature_model.id_)
 
-    def _remove_plan_feature_from_view(self, plan_feature_id: str, feat_id: int):
-        row = self._find_row_by_plan_feature_id(plan_feature_id)
-        if row is not None:
-            self.model.removeRow(row)
-            self.feat_id_to_model_id_map.pop(feat_id)
+    def _remove_plan_feature_from_view(self, row: int):
+        self.model.removeRow(row)
 
     def _filter_table(self):
         search_text = self.filter_line.text()
@@ -127,12 +156,50 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         else:
             self.filter_proxy_model.setFilterRegularExpression("")
 
+        self.update_selected_rows()
+
     def _update_row(self, row: int, plan_feature_model: PlanFeature):
         self.model.item(row, 0).setText(plan_feature_model.name or "")
         self.model.item(row, 1).setText(plan_feature_model.description or "")
         # Feat ID remains the same
         feat_id = self.model.item(row, DATA_COLUMN).data(DATA_ROLE)[1]
         self.model.item(row, DATA_COLUMN).setData((plan_feature_model, feat_id), DATA_ROLE)
+
+    def _plan_feature_into_items(self, plan_feature_model: PlanFeature, feat_id: int) -> list[QStandardItem]:
+        items = [
+            QStandardItem(plan_feature_model.name or ""),
+            QStandardItem(plan_feature_model.description or ""),
+        ]
+
+        # Set the whole PlanFeature model and QGIS feature ID as data tuple
+        items[DATA_COLUMN].setData((plan_feature_model, feat_id), DATA_ROLE)
+        return items
+
+    def _data_from_index(self, proxy_index: QModelIndex) -> tuple[PlanFeature, int] | None:
+        row_items = self._row_items_from_index(proxy_index)
+        if len(row_items) == 0:
+            return None
+        return row_items[DATA_COLUMN].data(DATA_ROLE)
+
+    def _plan_feature_from_index(self, proxy_index: QModelIndex) -> PlanFeature | None:
+        data = self._data_from_index(proxy_index)
+        return data[0] if data else None
+
+    def _row_items_from_index(self, proxy_index: QModelIndex) -> list[QStandardItem]:
+        if not proxy_index.isValid():
+            return []
+        model_index = self.filter_proxy_model.mapToSource(proxy_index)
+        row = model_index.row()
+        return [self.model.item(row, i) for i in range(self.model.columnCount())]
+
+    def _find_row_by_plan_feature_id(self, plan_feature_id: str) -> int | None:
+        # Loop all rows
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row, DATA_COLUMN)
+            plan_feature_model: PlanFeature = item.data(DATA_ROLE)[0]
+            if plan_feature_model and plan_feature_model.id_ == plan_feature_id:
+                return row
+        return None
 
     def _open_form(self, index: QModelIndex):
         plan_feature_model = self._plan_feature_from_index(index)
@@ -185,40 +252,6 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         iface.mapCanvas().flashGeometries(geometries=[plan_feature_model.geom])
         iface.mapCanvas().redrawAllLayers()
 
-    # Helpers
-    def _plan_feature_into_items(self, plan_feature_model: PlanFeature, feat_id: int) -> list[QStandardItem]:
-        items = [
-            QStandardItem(plan_feature_model.name or ""),
-            QStandardItem(plan_feature_model.description or ""),
-        ]
-
-        # Set the whole PlanFeature model and QGIS feature ID as data tuple
-        items[DATA_COLUMN].setData((plan_feature_model, feat_id), DATA_ROLE)
-
-        return items
-
-    def _plan_feature_from_index(self, proxy_index: QModelIndex) -> PlanFeature | None:
-        row_items = self._row_items_from_index(proxy_index)
-        if len(row_items) == 0:
-            return None
-        return row_items[DATA_COLUMN].data(DATA_ROLE)[0]
-
-    def _row_items_from_index(self, proxy_index: QModelIndex) -> list[QStandardItem]:
-        if not proxy_index.isValid():
-            return []
-        model_index = self.filter_proxy_model.mapToSource(proxy_index)
-        row = model_index.row()
-        return [self.model.item(row, i) for i in range(self.model.columnCount())]
-
-    def _find_row_by_plan_feature_id(self, plan_feature_id: str) -> int | None:
-        # Loop all rows
-        for row in range(self.model.rowCount()):
-            item = self.model.item(row, DATA_COLUMN)
-            plan_feature_model: PlanFeature = item.data(DATA_ROLE)[0]
-            if plan_feature_model and plan_feature_model.id_ == plan_feature_id:
-                return row
-        return None
-
     def _on_feats_added(self, layer_id: str, added_features: Iterable[QgsFeature]):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
         layer = get_plan_feature_layer_class_by_layer_name(vector_layer.name())
@@ -226,11 +259,25 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
             plan_feature_model = layer.model_from_feature(feat)
             self._add_plan_feature_to_view(plan_feature_model, feat.id())
 
-    def _on_feats_removed(self, _layer_id: int, feature_ids: Iterable[int]):
-        for feat_id in feature_ids:
-            model_id = self.feat_id_to_model_id_map.get(feat_id)
-            if model_id:
-                self._remove_plan_feature_from_view(model_id, feat_id)
+    def _on_feats_removed(self, layer_id: int, feature_ids: Iterable[int]):
+        vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
+        layer_name = vector_layer.name()
+
+        feats_to_delete = list(feature_ids)
+        # Loop all rows
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row, DATA_COLUMN)
+            plan_feature_model: PlanFeature = item.data(DATA_ROLE)[0]
+            if plan_feature_model.layer_name != layer_name:
+                continue
+            plan_feat_id = item.data(DATA_ROLE)[1]
+            if plan_feat_id in feature_ids:
+                self._remove_plan_feature_from_view(row)
+                feats_to_delete.remove(plan_feat_id)
+
+            # We have deleted all features that needed to be deleted
+            if len(feats_to_delete) == 0:
+                return
 
     def _on_feat_attributes_changed(self, layer_id: int, changed_attribute_values_map: dict):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
@@ -242,3 +289,51 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
             row = self._find_row_by_plan_feature_id(cast(str, plan_feature_model.id_))
             if row:
                 self._update_row(row, plan_feature_model)
+
+    def _on_feature_selection_changed(self, selected: Iterable[int], deselected: Iterable[int], _):
+        if self._syncing_selections:
+            return
+        self._syncing_selections = True
+        try:
+            vector_layer: QgsVectorLayer = self.sender()
+            self.selected_plan_feature_ids |= {
+                vector_layer.getFeature(selected_feat_id)["id"] for selected_feat_id in selected
+            }
+            self.selected_plan_feature_ids -= {
+                vector_layer.getFeature(deselected_feat_id)["id"] for deselected_feat_id in deselected
+            }
+
+            self.update_selected_rows()
+        finally:
+            self._syncing_selections = False
+
+    def _on_table_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
+        if self._syncing_selections:
+            return
+        self._syncing_selections = True
+        try:
+            # SELECT
+            # NOTE: It seems every time we select a table row, two selected indexes are returned that
+            # give the same plan feature
+            for index in selected.indexes():
+                data = self._data_from_index(index)
+                if data is None:
+                    continue
+                plan_feature = data[0]
+                feat_id = data[1]
+                layer = get_vector_layer_from_project(cast(str, plan_feature.layer_name))
+                layer.selectByIds([feat_id], Qgis.SelectBehavior.AddToSelection)
+                self.selected_plan_feature_ids.add(cast(str, plan_feature.id_))
+
+            # DESELECT
+            for index in deselected.indexes():
+                data = self._data_from_index(index)
+                if data is None:
+                    continue
+                plan_feature = data[0]
+                feat_id = data[1]
+                layer = get_vector_layer_from_project(cast(str, plan_feature.layer_name))
+                layer.deselect(feat_id)
+                self.selected_plan_feature_ids.discard(cast(str, plan_feature.id_))
+        finally:
+            self._syncing_selections = False
