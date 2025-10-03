@@ -1209,7 +1209,7 @@ def pedestrian_street_instance(
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
     pedestrian_plan_regulation_group_instance: codes.PlanRegulationGroup,
-):
+) -> models.LandUseArea:
     instance = models.LandUseArea(
         geom=from_shape(
             shape(
@@ -1871,7 +1871,7 @@ def decision_date_instance(
     temp_session_feature: ReturnSame,
     preparation_date_instance: models.LifeCycleDate,
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-):
+) -> models.EventDate:
     instance = models.EventDate(
         lifecycle_date=preparation_date_instance,
         decision=participation_plan_presenting_for_public_decision,
@@ -1885,7 +1885,7 @@ def processing_event_date_instance(
     temp_session_feature: ReturnSame,
     preparation_date_instance: models.LifeCycleDate,
     participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
-):
+) -> models.EventDate:
     instance = models.EventDate(
         lifecycle_date=preparation_date_instance,
         processing_event=participation_plan_presenting_for_public_event,
@@ -1899,7 +1899,7 @@ def interaction_event_date_instance(
     temp_session_feature: ReturnSame,
     preparation_date_instance: models.LifeCycleDate,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
-):
+) -> models.EventDate:
     instance = models.EventDate(
         lifecycle_date=preparation_date_instance,
         interaction_event=presentation_to_the_public_interaction,
@@ -1917,7 +1917,7 @@ def main_use_additional_information_instance(
     temp_session_feature: ReturnSame,
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     empty_value_plan_regulation_instance: codes.PlanRegulation,
-):
+) -> models.AdditionalInformation:
     instance = models.AdditionalInformation(
         plan_regulation=empty_value_plan_regulation_instance,
         type_of_additional_information=type_of_main_use_additional_information_instance,
@@ -1930,7 +1930,7 @@ def proportion_of_intended_use_additional_information_instance(
     temp_session_feature: ReturnSame,
     type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     empty_value_plan_regulation_instance: codes.PlanRegulation,
-):
+) -> models.AdditionalInformation:
     instance = models.AdditionalInformation(
         plan_regulation=empty_value_plan_regulation_instance,
         type_of_additional_information=type_of_proportion_of_intended_use_additional_information_instance,
