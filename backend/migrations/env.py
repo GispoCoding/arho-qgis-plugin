@@ -20,6 +20,8 @@ from database.triggers import (
     generate_new_lifecycle_status_triggers,
     generate_new_object_add_lifecycle_date_triggers,
     generate_update_lifecycle_status_triggers,
+    generate_created_at_triggers,
+    generate_no_created_at_update_triggers
 )
 from database.validation import (
     generate_validate_polygon_geometry_triggers,
@@ -66,6 +68,16 @@ add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_tri
 ) = generate_validate_polygon_geometry_triggers()
 
 (
+    created_at_trgs,
+    created_at_trgfuncs,
+) =generate_created_at_triggers()
+
+(
+    no_created_at_update_trgs,
+    no_created_at_update_trgfuncs,
+) =generate_no_created_at_update_triggers()
+
+(
     instead_of_trigger_func_for_visualization_view,
     instead_of_triggers_for_visualization_views,
 ) = generate_instead_of_triggers_for_visualization_views()
@@ -88,6 +100,10 @@ imported_triggers = (
     + validate_polygon_geometry_trgs
     + instead_of_trigger_func_for_visualization_view
     + instead_of_triggers_for_visualization_views
+    + created_at_trgs
+    + created_at_trgfuncs
+    + no_created_at_update_trgs
+    + no_created_at_update_trgfuncs
     + [trg_validate_line_geometry]
     + [trgfunc_validate_line_geometry]
     + [trgfunc_validate_lifecycle_date]

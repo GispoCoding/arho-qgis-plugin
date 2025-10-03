@@ -5,6 +5,7 @@ from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 
 from database import models
+from database.base import VersionedBase
 
 # All hame tables
 hame_tables = [
@@ -12,6 +13,20 @@ hame_tables = [
     for _, klass in inspect.getmembers(models, inspect.isclass)
     if inspect.getmodule(klass) == models  # Ignore imported classes
     and hasattr(klass, "__tablename__")  # Ignore classes without __tablename__
+]
+
+
+def all_subclasses(cls: type) -> set[type]:
+    """Recursively find all subclasses of a class."""
+    return set(cls.__subclasses__()).union(
+        [s for c in cls.__subclasses__() for s in all_subclasses(c)]
+    )
+
+
+all_versioned_tables = [
+    (cls.__table__.schema, cls.__table__.name)
+    for cls in all_subclasses(VersionedBase)
+    if hasattr(cls, "__table__")
 ]
 
 # All tables that inherit PlanBase
@@ -34,6 +49,76 @@ plan_object_tables = [
     and issubclass(klass, models.PlanObjectBase)
     and hasattr(klass, "__tablename__")  # Ignore classes without __tablename__
 ]
+
+
+def generate_created_at_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
+    trgfunc_signature = "trgfunc_created_at()"
+    trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.created_at = CURRENT_TIMESTAMP;
+            return NEW;
+        END;
+        $$ language 'plpgsql'
+        """
+    trgfunc = PGFunction(
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+    )
+
+    trgs = []
+    for schema, table in all_versioned_tables:
+        trg_signature = f"trg_{table}_created_at"
+        trg_definition = f"""
+        BEFORE INSERT ON {schema}.{table}
+        FOR EACH ROW
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+
+        trg = PGTrigger(
+            schema=schema,
+            signature=trg_signature,
+            on_entity=f"{schema}.{table}",
+            definition=trg_definition,
+        )
+        trgs.append(trg)
+
+    return trgs, [trgfunc]
+
+
+def generate_no_created_at_update_triggers() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
+    trgfunc_signature = "trgfunc_no_created_at_update()"
+    trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        BEGIN
+            NEW.created_at = OLD.created_at;
+            return NEW;
+        END;
+        $$ language 'plpgsql'
+        """
+    trgfunc = PGFunction(
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+    )
+
+    trgs = []
+    for schema, table in all_versioned_tables:
+        trg_signature = f"trg_{table}_001_no_created_at_update"
+        trg_definition = f"""
+        BEFORE UPDATE ON {schema}.{table}
+        FOR EACH ROW
+        EXECUTE FUNCTION hame.{trgfunc_signature}
+        """
+
+        trg = PGTrigger(
+            schema=schema,
+            signature=trg_signature,
+            on_entity=f"{schema}.{table}",
+            definition=trg_definition,
+        )
+        trgs.append(trg)
+
+    return trgs, [trgfunc]
 
 
 def generate_modified_at_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
