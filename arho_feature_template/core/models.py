@@ -249,7 +249,7 @@ class AdditionalInformation(PlanBaseModel):
 class Regulation(PlanBaseModel):
     regulation_type_id: str
     value: AttributeValue | None = None
-    additional_information: list[AdditionalInformation] = field(default_factory=list)
+    additional_information: list[AdditionalInformation] = field(default_factory=list, compare=False)
     regulation_number: int | None = None
     files: list[str] = field(default_factory=list, compare=False)
     theme_ids: list[str] = field(default_factory=list, compare=False)
