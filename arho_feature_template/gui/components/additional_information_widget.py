@@ -49,7 +49,6 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
         self.additional_info.setText(text)
 
         self.value_widget_manager: ValueWidgetManager | None = None
-
         default_value = AdditionalInformationTypeLayer.get_default_value_by_id(
             additional_information.additional_information_type_id
         )
@@ -68,7 +67,9 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
             id_=self.additional_information.id_,
             plan_regulation_id=self.additional_information.plan_regulation_id,
             modified=self.additional_information.modified,
-            value=self.value_widget_manager.into_model() if self.value_widget_manager else None,
+            value=self.value_widget_manager.into_model()
+            if self.value_widget_manager
+            else self.additional_information.value,
         )
         if not model.modified and model != self.additional_information:
             model.modified = True
