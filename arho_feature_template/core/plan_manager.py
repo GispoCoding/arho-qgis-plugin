@@ -787,11 +787,11 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
                 "id", "value", "generalRegulations"
             )
         )
-        regulation_groups = [
-            RegulationGroupLayer.model_from_feature(feat)
-            for feat in RegulationGroupLayer.get_features()
-            if feat["type_of_plan_regulation_group_id"] != id_of_general_regulation_group_type
+        iterator = RegulationGroupLayer.get_features()
+        features = [
+            feat for feat in iterator if feat["type_of_plan_regulation_group_id"] != id_of_general_regulation_group_type
         ]
+        regulation_groups = RegulationGroupLayer.models_from_features(features)
     else:
         regulation_groups = []
 
@@ -834,8 +834,7 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     active_plan = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
     if not active_plan:
         return
-    model = PlanLayer.model_from_feature(active_plan)
-    plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
+    plan_type = PlanTypeLayer.get_plan_type(active_plan["plan_type_id"])
     if plan_type == PlanType.REGIONAL:
         path = plugin_path("resources", "styles", "maakuntakaava")
     # elif plan_type == PlanType.GENERAL:
