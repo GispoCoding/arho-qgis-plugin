@@ -55,11 +55,11 @@ class AbstractLayer(ABC):
     def get_features_by_attribute_value(
         cls,
         attribute: str,
-        value: str,
+        value: str | list | tuple | set | None,
         no_geometries: bool = True,  # noqa: FBT001, FBT002
     ) -> Generator[QgsFeature]:
         layer = cls.get_from_project()
-        request = QgsFeatureRequest().setFilterExpression(f"\"{attribute}\"='{value}'")
+        request = QgsFeatureRequest().setFilterExpression(cls.create_filter_expression(attribute, value))
         if no_geometries:
             request.setFlags(QgsFeatureRequest.NoGeometry)
         yield from layer.getFeatures(request)
@@ -76,13 +76,10 @@ class AbstractLayer(ABC):
 
     @classmethod
     def get_attribute_values_by_another_attribute_value(
-        cls, target_attribute: str, filter_attribute: str, filter_value: str
+        cls, target_attribute: str, filter_attribute: str, filter_value: str | list | tuple | set | None
     ) -> Generator[Any]:
         layer = cls.get_from_project()
-        if filter_value is None:
-            expression = f'"{filter_attribute}" IS NULL'
-        else:
-            expression = f"\"{filter_attribute}\"='{filter_value}'"
+        expression = cls.create_filter_expression(filter_attribute, filter_value)
 
         request = QgsFeatureRequest().setFilterExpression(expression)
         request.setSubsetOfAttributes([target_attribute], layer.fields())
@@ -109,3 +106,15 @@ class AbstractLayer(ABC):
     def get_id_by_attribute(cls, attribute: str, attribute_value: str) -> str | None:
         id_ = cls.get_attribute_value_by_another_attribute_value("id", attribute, attribute_value)
         return cast(str, id_) if id_ else id_
+
+    @classmethod
+    def create_filter_expression(cls, attribute: str, value: str | list | tuple | set | None) -> str:
+        if value is None:
+            expression = f'"{attribute}" IS NULL'
+        elif isinstance(value, str):
+            expression = f"\"{attribute}\"='{value}'"
+        elif isinstance(value, (list, tuple, set)):
+            quoted_values = [f"'{val}'" for val in value]
+            expression = f'"{attribute}" IN ({", ".join(map(str, quoted_values))})'
+
+        return expression
