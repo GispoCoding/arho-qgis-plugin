@@ -500,7 +500,7 @@ plan_regulation_groups:
     geometry: [Alue, Piste, Viiva]
     letter_code: rky
     plan_regulations:
-      - regulation_code: merkittavaRakennettuKulttuuriymparisto
+      - regulation_code: valtakunnallisestiMerkittavaRakennettuKulttuuriymparisto
         additional_information:
           - type: osaAlue
           - type: valtakunnallinen
