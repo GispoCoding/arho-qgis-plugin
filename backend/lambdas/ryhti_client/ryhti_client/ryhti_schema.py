@@ -59,8 +59,8 @@ class RyhtiPlanMatterPhase(TypedDict, total=False):
 
 class RyhtiPlanMatter(TypedDict, total=False):
     permanentPlanIdentifier: str | None  # TODO: make mandatory, handle None in the code
-    planType: str
-    name: dict[str, str]
+    planType: str  # TODO: make mandatory, handle None in the code
+    name: dict[str, str] | None
     timeOfInitiation: str | None
     description: dict[str, str] | None
     producerPlanIdentifier: str | None
