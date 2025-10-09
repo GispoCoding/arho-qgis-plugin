@@ -4,9 +4,21 @@ on:
   pull_request:
     branches:
       - "main"
+    paths:
+      - "database/**"
+      - "migrations/**"
+      - "lambdas/**"
+      - "test/**"
+      - ".github/workflows/tests.yml"
   push:
     branches:
       - "main"
+    paths:
+      - "database/**"
+      - "migrations/**"
+      - "lambdas/**"
+      - "test/**"
+      - ".github/workflows/tests.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
