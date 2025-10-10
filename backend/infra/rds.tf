@@ -28,23 +28,3 @@ resource "aws_db_instance" "main_db" {
   deletion_protection    = true
   tags                   = local.default_tags
 }
-
-resource "aws_db_instance" "xroad_db" {
-  identifier             = "${var.hame_db_name}-xroad-db"
-  instance_class         = var.db_instance_type
-  allocated_storage      = var.db_storage
-  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
-  engine                 = "postgres"
-  engine_version         = var.db_postgres_version
-  username               = "postgres"
-  password               = var.x-road_db_password
-  db_subnet_group_name   = aws_db_subnet_group.db.name
-  vpc_security_group_ids = [aws_security_group.rds.id]
-  parameter_group_name   = aws_db_parameter_group.hame.name
-  multi_az               = false
-  apply_immediately      = false
-  publicly_accessible    = false
-  skip_final_snapshot    = true
-  deletion_protection    = true
-  tags                   = local.default_tags
-}

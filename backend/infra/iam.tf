@@ -41,13 +41,13 @@ resource "aws_iam_policy" "secrets-policy" {
           "secretsmanager:ListSecretVersionIds"
         ],
         Effect   = "Allow",
-        Resource = [
+        Resource = compact([
           aws_secretsmanager_secret.hame-db-su.arn,
           aws_secretsmanager_secret.hame-db-admin.arn,
           aws_secretsmanager_secret.hame-db-rw.arn,
           aws_secretsmanager_secret.hame-db-r.arn,
-          aws_secretsmanager_secret.syke-xroad-client-secret.arn
-        ]
+          var.enable_x_road ? module.x-road[0].client_secret_arn : null
+        ])
       }
     ]
   })

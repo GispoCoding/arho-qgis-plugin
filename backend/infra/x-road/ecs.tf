@@ -7,7 +7,7 @@ resource "aws_ecs_cluster" "x-road_securityserver" {
     value = "enabled"
   }
 
-  tags = merge(local.default_tags, {Name = "${var.prefix}-cluster"})
+  tags = merge(var.default_tags, {Name = "${var.prefix}-cluster"})
 }
 
 # Task definition is a description of parameters given to docker daemon, in order to run a container
@@ -16,7 +16,7 @@ resource "aws_ecs_task_definition" "x-road_securityserver" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   # This is the IAM role that the docker daemon will use, e.g. for pulling the image from ECR (AWS's own docker repository)
-  execution_role_arn       = aws_iam_role.backend-task-execution.arn
+  execution_role_arn       = var.docker_execution_role_arn
   # If the containers in the task definition need to access AWS services, we'd specify a role via task_role_arn.
   # task_role_arn = ...
   cpu                      = var.x-road_securityserver_cpu
@@ -138,7 +138,7 @@ resource "aws_ecs_task_definition" "x-road_securityserver" {
     }
   }
 
-  tags = merge(local.default_tags, {Name = "${var.prefix}-x-road_securityserver-definition"})
+  tags = merge(var.default_tags, {Name = "${var.prefix}-x-road_securityserver-definition"})
 }
 
 resource "aws_ecs_service" "x-road_securityserver" {
@@ -161,7 +161,7 @@ resource "aws_ecs_service" "x-road_securityserver" {
   network_configuration {
     # Fargate uses awspvc networking, we tell here into what subnets to attach the service
     # Security server does not need to be publicly accessible if it's only client
-    subnets          = aws_subnet.private.*.id
+    subnets          = var.private_subnet_ids
     # Ditto for security groups
     security_groups  = [aws_security_group.x-road.id]
     assign_public_ip = false
@@ -171,5 +171,5 @@ resource "aws_ecs_service" "x-road_securityserver" {
     registry_arn   = aws_service_discovery_service.x-road_securityserver.arn
   }
 
-  tags = merge(local.default_tags, {Name = "${var.prefix}_-x-road_securityserver"})
+  tags = merge(var.default_tags, {Name = "${var.prefix}_-x-road_securityserver"})
 }

@@ -24,11 +24,7 @@ resource "aws_cloudwatch_log_group" "lambda_mml_loader" {
   tags = local.default_tags
 }
 
-resource "aws_cloudwatch_log_group" "x-road_securityserver" {
-  name              = "/aws/ecs/${aws_ecs_task_definition.x-road_securityserver.family}"
-  retention_in_days = 30
-  tags = local.default_tags
-}
+
 
 resource "aws_cloudwatch_log_group" "api_gateway_log_group" {
   name              = "/aws/apigateway/${aws_api_gateway_rest_api.lambda_api.name}"

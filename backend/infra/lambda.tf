@@ -95,22 +95,7 @@ resource "aws_lambda_function" "ryhti_client" {
   }
 
   environment {
-    variables = {
-      AWS_REGION_NAME     = var.AWS_REGION_NAME
-      DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
-      DB_MAIN_NAME        = var.hame_db_name
-      DB_MAINTENANCE_NAME = "postgres"
-      READ_FROM_AWS       = 1
-      DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
-      SYKE_APIKEY         = var.syke_apikey
-      XROAD_SERVER_ADDRESS = local.xroad_dns_record
-      XROAD_INSTANCE = var.x-road_instance
-      XROAD_MEMBER_CLASS = var.x-road_member_class
-      XROAD_MEMBER_CODE   = var.x-road_member_code
-      XROAD_MEMBER_CLIENT_NAME = var.x-road_subdomain
-      XROAD_SYKE_CLIENT_ID = var.syke_xroad_client_id
-      XROAD_SYKE_CLIENT_SECRET_ARN = aws_secretsmanager_secret.syke-xroad-client-secret.arn
-    }
+    variables = local.ryhti_client_env
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })
 }
@@ -187,4 +172,29 @@ resource "aws_ecr_repository" "mml_loader" {
   }
 
   tags = merge(local.default_tags, { Name = "${var.prefix}-mml_loader" })
+}
+
+locals {
+  ryhti_client_base_environment = {
+      AWS_REGION_NAME     = var.AWS_REGION_NAME
+      DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
+      DB_MAIN_NAME        = var.hame_db_name
+      DB_MAINTENANCE_NAME = "postgres"
+      READ_FROM_AWS       = 1
+      DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
+      SYKE_APIKEY         = var.syke_apikey
+  }
+  ryhti_client_x-road_environment = var.enable_x_road ?{
+      XROAD_SERVER_ADDRESS = local.xroad_dns_record
+      XROAD_INSTANCE = module.x-road[0].instance
+      XROAD_MEMBER_CLASS = module.x-road[0].member_class
+      XROAD_MEMBER_CODE   = module.x-road[0].member_code
+      XROAD_MEMBER_CLIENT_NAME = module.x-road[0].subdomain
+      XROAD_SYKE_CLIENT_ID = module.x-road[0].client_id
+      XROAD_SYKE_CLIENT_SECRET_ARN = module.x-road[0].client_secret_arn
+  } : {}
+  ryhti_client_env = merge(
+    local.ryhti_client_base_environment,
+    local.ryhti_client_x-road_environment
+  )
 }

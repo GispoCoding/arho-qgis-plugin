@@ -13,6 +13,11 @@ variable "AWS_HOSTED_DOMAIN" {
   type        = string
 }
 
+variable enable_x_road {
+  description = "Whether to enable X-road server or not"
+  type        = bool
+  default     = true
+}
 variable "bastion_subdomain" {
   description = "Subdomain for ssh tunneling server"
   type        = string
