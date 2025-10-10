@@ -327,6 +327,7 @@ class PlanObjectBase(PlanBase):
                 "general_plan_regulation_groups,land_use_areas,other_areas,"
                 "points,lines,plan_regulation_groups"
             ),
+            order_by="PlanRegulationGroup.ordering",
             lazy="joined",
         )
 

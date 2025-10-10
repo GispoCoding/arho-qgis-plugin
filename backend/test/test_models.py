@@ -86,9 +86,9 @@ def test_land_use_area(
     assert land_use_area_instance.plan is plan_instance
     assert plan_instance.land_use_areas == [land_use_area_instance]
     assert land_use_area_instance.plan_regulation_groups == [
-        decimal_plan_regulation_group_instance,
-        numeric_plan_regulation_group_instance,
         plan_regulation_group_instance,
+        numeric_plan_regulation_group_instance,
+        decimal_plan_regulation_group_instance,
     ]
 
     assert plan_regulation_group_instance.land_use_areas == [land_use_area_instance]
