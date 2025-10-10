@@ -36,6 +36,8 @@ language_str = dict[str, str]
 
 metadata = Base.metadata
 
+type DbId = str
+
 
 class VersionedBase(Base):
     """Versioned data tables should have some uniform fields."""
@@ -47,8 +49,10 @@ class VersionedBase(Base):
     # have to be defined inside all the subclasses for relationship remote_side
     # definition to work. So even if there is an id field in all the classes,
     # self-relationships will later break if id is only defined by type annotation.
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, server_default=func.gen_random_uuid()
+    id: Mapped[DbId] = mapped_column(
+        type_=postgresql.UUID(as_uuid=False),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
     )
     created_at: Mapped[datetime | None] = mapped_column(
         server_default=FetchedValue()

@@ -33,7 +33,7 @@ from shapely import (
 )
 from sqlalchemy import select
 
-from database.base import PROJECT_SRID
+from database.base import PROJECT_SRID, DbId
 from database.codes import CodeBase, PlanType, TypeOfDocument, TypeOfPlanRegulationGroup
 from database.enums import AttributeValueDataType
 from database.models import (
@@ -103,10 +103,10 @@ class Deserializer:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-        self.code_id_cache: dict[tuple[type[CodeBase], str], UUID | None] = {}
+        self.code_id_cache: dict[tuple[type[CodeBase], str], DbId | None] = {}
         self.code_instance_cache: dict[tuple[type[CodeBase], str], CodeBase | None] = {}
 
-    def get_code_id(self, code_model: type[CodeBase], code: str) -> UUID | None:
+    def get_code_id(self, code_model: type[CodeBase], code: str) -> DbId | None:
         if (code_model, code) in self.code_id_cache:
             return self.code_id_cache[(code_model, code)]
 
@@ -150,7 +150,7 @@ class Deserializer:
 
         return (CodeModel, code)
 
-    def get_code_id_from_uri(self, code_uri: str) -> UUID | None:
+    def get_code_id_from_uri(self, code_uri: str) -> DbId | None:
         if not code_uri:
             return None
 
@@ -747,6 +747,6 @@ class Deserializer:
             group_type_code_id = self.get_code_id(TypeOfPlanRegulationGroup, group_type)
             if group_type_code_id is None:
                 raise ValueError(f"Could not find code id for type {group_type}")
-            group.type_of_plan_regulation_group_id = group_type_code_id
+            group.type_of_plan_regulation_group_id = group_type_code_id  # type: ignore[assignment] # id-fields use str even if typed as UUID
 
         return plan

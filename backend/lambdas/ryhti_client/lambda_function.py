@@ -13,8 +13,7 @@ from ryhti_client.database_client import DatabaseClient, PlanAlreadyExistsError
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
+    from database.base import DbId
     from ryhti_client.ryhti_client import RyhtiResponse
 
 # All non-request specific initialization should be done *before* the handler
@@ -55,8 +54,8 @@ class ResponseBody(TypedDict):
     """Data returned in lambda function response."""
 
     title: str
-    details: dict[str | UUID, str | None]
-    ryhti_responses: dict[UUID, RyhtiResponse]
+    details: dict[str | DbId, str | None]
+    ryhti_responses: dict[DbId, RyhtiResponse]
 
 
 class Response(TypedDict):

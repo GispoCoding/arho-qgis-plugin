@@ -9,8 +9,7 @@ import requests
 import simplejson as json
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
+    from database.base import DbId
     from ryhti_client.database_client import DatabaseClient
     from ryhti_client.ryhti_schema import RyhtiPlanMatter, RyhtiPlanMatterPhase
 
@@ -146,10 +145,10 @@ class RyhtiClient:
         top_level_code = plan_type_uri.split("/")[-1][0]
         return api_paths[top_level_code]
 
-    def validate_plans(self) -> dict[UUID, RyhtiResponse]:
+    def validate_plans(self) -> dict[DbId, RyhtiResponse]:
         """Validates all plans serialized in client plan dictionaries."""
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
-        responses: dict[UUID, RyhtiResponse] = {}
+        responses: dict[DbId, RyhtiResponse] = {}
         for plan_id, plan_dict in self.database_client.plan_dictionaries.items():
             LOGGER.info(f"Validating JSON for plan {plan_id}...")
 
@@ -200,11 +199,11 @@ class RyhtiClient:
             LOGGER.info(responses[plan_id])
         return responses
 
-    def upload_plan_documents(self) -> dict[UUID, list[RyhtiResponse]]:
+    def upload_plan_documents(self) -> dict[DbId, list[RyhtiResponse]]:
         """Upload any changed plan documents. If document has not been modified
         since it was last uploaded, do nothing.
         """
-        responses: dict[UUID, list[RyhtiResponse]] = {}
+        responses: dict[DbId, list[RyhtiResponse]] = {}
         file_endpoint = self.xroad_server_address + self.xroad_api_path + "File"
         upload_headers = self.xroad_headers.copy()
         # We must *not* provide Content-Type header:
@@ -305,9 +304,9 @@ class RyhtiClient:
                         )
         return responses
 
-    def get_permanent_plan_identifiers(self) -> dict[UUID, RyhtiResponse]:
+    def get_permanent_plan_identifiers(self) -> dict[DbId, RyhtiResponse]:
         """Get permanent plan identifiers for all plans that do not have identifiers set."""
-        responses: dict[UUID, RyhtiResponse] = {}
+        responses: dict[DbId, RyhtiResponse] = {}
         for plan in self.database_client.plans.values():
             if not plan.permanent_plan_identifier:
                 plan_identifier_endpoint = (
@@ -383,9 +382,9 @@ class RyhtiClient:
                         )
         return responses
 
-    def validate_plan_matters(self) -> dict[UUID, RyhtiResponse]:
+    def validate_plan_matters(self) -> dict[DbId, RyhtiResponse]:
         """Validates all plan matters that have their permanent identifiers set."""
-        responses: dict[UUID, RyhtiResponse] = {}
+        responses: dict[DbId, RyhtiResponse] = {}
         plan_matter_dictionaries = self.database_client.get_plan_matters()
         for plan_id, plan_matter in plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]
@@ -499,13 +498,13 @@ class RyhtiClient:
                 response.raise_for_status()
         return cast("RyhtiResponse", ryhti_response)
 
-    def post_plan_matters(self) -> dict[UUID, RyhtiResponse]:
+    def post_plan_matters(self) -> dict[DbId, RyhtiResponse]:
         """POST all plan matter data with permanent identifiers to Ryhti.
 
         This means either creating a new plan matter, updating the plan matter,
         creating a new plan matter phase, or updating the plan matter phase.
         """
-        responses: dict[UUID, RyhtiResponse] = {}
+        responses: dict[DbId, RyhtiResponse] = {}
         plan_matter_dictionaries = self.database_client.get_plan_matters()
         for plan_id, plan_matter in plan_matter_dictionaries.items():
             permanent_id = plan_matter["permanentPlanIdentifier"]

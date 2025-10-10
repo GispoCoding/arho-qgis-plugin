@@ -43,10 +43,9 @@ from ryhti_client.ryhti_schema import (
 )
 
 if TYPE_CHECKING:
-    import uuid
-
     from geoalchemy2 import WKBElement
 
+    from database.base import DbId
     from ryhti_client.ryhti_client import RyhtiResponse
 
 LOGGER = logging.getLogger(__name__)
@@ -65,9 +64,9 @@ class DatabaseClient:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         # Cache plans fetched from database
-        self.plans: dict[UUID, models.Plan] = {}
+        self.plans: dict[DbId, models.Plan] = {}
         # Cache plan dictionaries
-        self.plan_dictionaries: dict[UUID, RyhtiPlan] = {}
+        self.plan_dictionaries: dict[DbId, RyhtiPlan] = {}
 
         # We only ever need code uri values, not codes themselves, so let's not bother
         # fetching codes from the database at all. URI is known from class and value.
@@ -486,7 +485,7 @@ class DatabaseClient:
 
     def _get_containing_land_use_area(
         self, plan_object: models.PlanObjectBase
-    ) -> uuid.UUID | None:
+    ) -> DbId | None:
         """Returns a land use area id that contains this plan_object.
         If not found, returns None.
         """
@@ -499,7 +498,7 @@ class DatabaseClient:
 
     def _get_related_plan_object_keys(
         self, plan_object: models.PlanObjectBase
-    ) -> list[uuid.UUID]:
+    ) -> list[DbId]:
         # TODO: there might be other use cases for related plan objects
         related_plan_object_keys = []
 
@@ -549,7 +548,7 @@ class DatabaseClient:
 
     def get_plan_regulation_group_relations(
         self, plan_objects: list[models.PlanObjectBase]
-    ) -> list[dict[str, uuid.UUID]]:
+    ) -> list[dict[str, DbId]]:
         """Construct a list of Ryhti compatible plan regulation group relations from plan
         objects in the local database.
         """
@@ -634,7 +633,7 @@ class DatabaseClient:
 
         return plan_dictionary
 
-    def get_plan_dictionaries(self) -> dict[UUID, RyhtiPlan]:
+    def get_plan_dictionaries(self) -> dict[DbId, RyhtiPlan]:
         """Construct a dict of valid Ryhti compatible plan dictionaries from plans in the
         local database.
         """
@@ -1019,7 +1018,7 @@ class DatabaseClient:
         plan_matter["planMatterPhases"] = self.get_plan_matter_phases(plan)
         return plan_matter
 
-    def get_plan_matters(self) -> dict[UUID, RyhtiPlanMatter]:
+    def get_plan_matters(self) -> dict[DbId, RyhtiPlanMatter]:
         """Construct a dict of Ryhti compatible plan matters from plans with
         permanent identifiers in the local database. In case plan has no
         permanent identifier, it is not included in the dict.
@@ -1027,8 +1026,8 @@ class DatabaseClient:
         return {plan.id: self.get_plan_matter(plan) for plan in self.plans.values()}
 
     def save_plan_validation_responses(
-        self, responses: dict[UUID, RyhtiResponse]
-    ) -> dict[UUID, str]:
+        self, responses: dict[DbId, RyhtiResponse]
+    ) -> dict[DbId, str]:
         """Save open validation API response data to the database and return lambda
         response.
 
@@ -1041,7 +1040,7 @@ class DatabaseClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: dict[UUID, str] = {}
+        details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 # Refetch plan from db in case it has been deleted
@@ -1080,7 +1079,7 @@ class DatabaseClient:
             session.commit()
         return details
 
-    def set_plan_documents(self, responses: dict[UUID, list[RyhtiResponse]]) -> None:
+    def set_plan_documents(self, responses: dict[DbId, list[RyhtiResponse]]) -> None:
         """Save uploaded plan document keys, export times and etags to the database.
         Also, append document data to the plan dictionaries.
         """
@@ -1108,12 +1107,12 @@ class DatabaseClient:
                 session.commit()
 
     def set_permanent_plan_identifiers(
-        self, responses: dict[UUID, RyhtiResponse]
-    ) -> dict[UUID, str]:
+        self, responses: dict[DbId, RyhtiResponse]
+    ) -> dict[DbId, str]:
         """Save permanent plan identifiers returned by RYHTI API to the database and
         return lambda response.
         """
-        details: dict[UUID, str] = {}
+        details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id, response in responses.items():
                 # Make sure that the plan dict stays up to date
@@ -1132,8 +1131,8 @@ class DatabaseClient:
         return details
 
     def save_plan_matter_validation_responses(
-        self, responses: dict[UUID, RyhtiResponse]
-    ) -> dict[UUID, str]:
+        self, responses: dict[DbId, RyhtiResponse]
+    ) -> dict[DbId, str]:
         """Save X-Road validation API response data to the database and return lambda
         response.
 
@@ -1146,7 +1145,7 @@ class DatabaseClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: dict[UUID, str] = {}
+        details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id in self.plans:
                 plan: models.Plan | None = session.get(models.Plan, plan_id)
@@ -1197,8 +1196,8 @@ class DatabaseClient:
         return details
 
     def save_plan_matter_post_responses(
-        self, responses: dict[UUID, RyhtiResponse]
-    ) -> dict[UUID, str]:
+        self, responses: dict[DbId, RyhtiResponse]
+    ) -> dict[DbId, str]:
         """Save X-Road API POST response data to the database and return lambda response.
 
         If POST is successful, update exported_at and validated_at fields.
@@ -1209,7 +1208,7 @@ class DatabaseClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: dict[UUID, str] = {}
+        details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
             for plan_id in self.plans:
                 plan: models.Plan | None = session.get(models.Plan, plan_id)
@@ -1266,7 +1265,7 @@ class DatabaseClient:
 
     def import_plan(
         self, plan_json: str, extra_data: dict, overwrite: bool = False
-    ) -> UUID | None:
+    ) -> DbId | None:
         ryhti_plan = ryhti_plan_from_json(plan_json)
         plan_matter_data = plan_matter_data_from_extra_data_dict(extra_data)
 

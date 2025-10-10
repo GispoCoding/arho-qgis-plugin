@@ -14,7 +14,7 @@ from database import codes, models  # noqa: F401
 from database.db_helper import DatabaseHelper, User
 
 if TYPE_CHECKING:
-    from uuid import UUID
+    from database.base import DbId
 
 """
 Koodistot.suomi.fi client for populating all code tables, adapted from
@@ -202,7 +202,7 @@ class KoodistotLoader:
         code_class: type[codes.CodeBase],
         incoming: dict[str, Any],
         session: Session,
-        saved_objects: dict[UUID, codes.CodeBase] | None = None,
+        saved_objects: dict[DbId, codes.CodeBase] | None = None,
     ) -> codes.CodeBase:
         """Find object based on its unique fields, or create new object. Update fields
         that are present in the incoming dict.
@@ -256,7 +256,7 @@ class KoodistotLoader:
 
     def save_objects(self, objects: dict[type[codes.CodeBase], dict[str, dict]]) -> str:
         """Save all objects in the objects dict, grouped by object class."""
-        saved_objects: dict[UUID, codes.CodeBase] = {}
+        saved_objects: dict[DbId, codes.CodeBase] = {}
         with self.Session() as session:
             for code_class, class_codes in objects.items():
                 LOGGER.info("Importing codes to %s...", code_class)
