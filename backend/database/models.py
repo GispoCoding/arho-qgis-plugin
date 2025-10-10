@@ -538,7 +538,8 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
             "hame.plan_regulation_group.id",
             name="plan_regulation_group_id_fkey",
             ondelete="CASCADE",
-        )
+        ),
+        index=True,
     )
 
     type_of_plan_regulation_id: Mapped[UUID] = mapped_column(
@@ -600,7 +601,8 @@ class PlanProposition(PlanBase):
             "hame.plan_regulation_group.id",
             name="plan_regulation_group_id_fkey",
             ondelete="CASCADE",
-        )
+        ),
+        index=True,
     )
 
     plan_regulation_group: Mapped[PlanRegulationGroup] = relationship(
@@ -626,7 +628,7 @@ class SourceData(VersionedBase):
         ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
     )
     plan_id: Mapped[UUID] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey")
+        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
     )
 
     # Let's load all the codes for objects joined.
@@ -674,7 +676,7 @@ class Document(VersionedBase):
         ForeignKey("codes.type_of_document.id", name="type_of_document_id_fkey")
     )
     plan_id: Mapped[UUID] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE")
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"), index=True
     )
     category_of_publicity_id: Mapped[UUID] = mapped_column(
         ForeignKey(
@@ -734,35 +736,40 @@ class LifeCycleDate(VersionedBase):
         index=True,
     )
     plan_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE")
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"), index=True
     )
     land_use_area_id: Mapped[UUID | None] = mapped_column(
         ForeignKey(
             "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
-        )
+        ),
+        index=True,
     )
     other_area_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE")
+        ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE"),
+        index=True,
     )
     line_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE")
+        ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE"), index=True
     )
     point_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE")
+        ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE"),
+        index=True,
     )
     plan_regulation_id: Mapped[UUID | None] = mapped_column(
         ForeignKey(
             "hame.plan_regulation.id",
             name="plan_regulation_id_fkey",
             ondelete="CASCADE",
-        )
+        ),
+        index=True,
     )
     plan_proposition_id: Mapped[UUID | None] = mapped_column(
         ForeignKey(
             "hame.plan_proposition.id",
             name="plan_proposition_id_fkey",
             ondelete="CASCADE",
-        )
+        ),
+        index=True,
     )
 
     plan: Mapped[Plan | None] = relationship(back_populates="lifecycle_dates")
