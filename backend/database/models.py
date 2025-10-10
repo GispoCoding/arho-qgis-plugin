@@ -291,8 +291,7 @@ class PlanObjectBase(PlanBase):
     height_reference_point: Mapped[str | None]
     ordering: Mapped[int | None]
     type_of_underground_id: Mapped[UUID] = mapped_column(
-        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey"),
-        index=True,
+        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey")
     )
     plan_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
@@ -481,8 +480,7 @@ class AdditionalInformation(VersionedBase, AttributeValueMixin):
         ForeignKey(
             "codes.type_of_additional_information.id",
             name="type_additional_information_id_fkey",
-        ),
-        index=True,
+        )
     )
 
     plan_regulation: Mapped[PlanRegulation] = relationship(
