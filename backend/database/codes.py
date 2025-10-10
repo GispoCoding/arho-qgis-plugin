@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeVar
 from uuid import UUID  # noqa: TC003  # Sqlalchemy uses UUID type annotation runtime
 
 from geoalchemy2 import Geometry, WKBElement
-from sqlalchemy import Column, ForeignKey, Table, Uuid
+from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
 from sqlalchemy.orm import Mapped, Session, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -77,7 +77,7 @@ class CodeBase(VersionedBase):
     """
 
     __abstract__ = True
-    __table_args__ = {"schema": "codes"}  # noqa: RUF012  # No can do, sqlalchemy has Any annotation for this
+    __table_args__: Any = {"schema": "codes"}  # noqa: RUF012  # No can do, sqlalchemy has Any annotation for this
     code_list_uri = ""  # the URI to use for looking for codes online
     local_codes: ClassVar[
         list[dict[str, Any]]
@@ -280,6 +280,11 @@ class TypeOfPlanRegulationGroup(CodeBase):
     """
 
     __tablename__ = "type_of_plan_regulation_group"
+    __table_args__ = (
+        Index("ix_type_of_plan_regulation_group_value", "value"),
+        CodeBase.__table_args__,
+    )
+
     code_list_uri = ""
     local_codes: ClassVar[list[dict[str, Any]]] = [
         {"value": "generalRegulations", "name": {"fin": "Yleismääräykset"}},
