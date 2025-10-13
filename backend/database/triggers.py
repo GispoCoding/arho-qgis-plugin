@@ -7,14 +7,6 @@ from alembic_utils.pg_trigger import PGTrigger
 from database import models
 from database.base import VersionedBase
 
-# All hame tables
-hame_tables = [
-    klass.__tablename__
-    for _, klass in inspect.getmembers(models, inspect.isclass)
-    if inspect.getmodule(klass) == models  # Ignore imported classes
-    and hasattr(klass, "__tablename__")  # Ignore classes without __tablename__
-]
-
 
 def all_subclasses(cls: type) -> set[type]:
     """Recursively find all subclasses of a class."""
@@ -27,6 +19,10 @@ all_versioned_tables = [
     (cls.__table__.schema, cls.__table__.name)
     for cls in all_subclasses(VersionedBase)
     if hasattr(cls, "__table__")
+    # If new table are added a new revision must be created in two steps.
+    # First to create the table, second to add triggers to it.
+    # To skip triggers for a new table, uncomment the next line and fill the table name.
+    # and cls.__table__.name != "<table name>"
 ]
 
 # All tables that inherit PlanBase

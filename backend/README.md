@@ -116,18 +116,18 @@ If creating tables with triggers, creation of triggers automatically should be d
 1. Add a model for new table.
 2. Add a temporary exception for the trigger creation in the [triggers.py](database/triggers.py) in the block that defines the hame tables as following (the last line):
 ```python
-# All hame tables
-hame_tables = [
-    klass.__tablename__
-    for _, klass in inspect.getmembers(models, inspect.isclass)
-    if inspect.getmodule(klass) == models
-    and klass.__tablename__ != "<new table name>"
+all_versioned_tables = [
+    (cls.__table__.schema, cls.__table__.name)
+    for cls in all_subclasses(VersionedBase)
+    if hasattr(cls, "__table__")
+    and cls.__table__.name != "<table name>"
 ]
 ```
 3. Run `make revision name="add a new table"` to create a migration file for table creation.
 4. Apply the migrations by running `make test-migrate-db`
 5. Remove the temporary exception
 6. Run `make revision name="add triggers"` to create a migration file for trigger creation.
+7. Optionally, you can combine the two migration files into one file by copying the operations from the `upgrade` and `downgrade` functions from the second revision to the first one (upgrade operations after the original ones and downgrade before the originals) and deleting the second revision file.
 
 
 ### Data backup and restore
