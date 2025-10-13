@@ -4,7 +4,12 @@ test-create-db:
 
 test-migrate-db:
 	@echo "Migrating Hame database..."
-	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d '{"action" : "migrate_db"}'
+	@if [ -n "$(version)" ]; then \
+		DATA='{"action": "migrate_db", "version": "$(version)"}'; \
+	else \
+		DATA='{"action": "migrate_db"}'; \
+	fi; \
+	curl -XPOST "http://localhost:8081/2015-03-31/functions/function/invocations" -d "$$DATA"
 
 test-populate-test-data:
 	@echo "Populating database with test data..."
