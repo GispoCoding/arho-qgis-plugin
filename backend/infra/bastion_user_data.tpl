@@ -17,6 +17,8 @@ users:
 %{ for key in ec2_user_public_keys ~}
       - ${key}
 %{ endfor ~}
+  - name: ec2-tunnel
+    sudo: False
 
 --//
 Content-Type: text/x-shellscript; charset="us-ascii"
