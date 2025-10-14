@@ -23,13 +23,13 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import (
     Library,
-    PlanFeature,
+    PlanObject,
     PlanFeatureLibrary,
     RegulationGroup,
     RegulationGroupLibrary,
 )
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
+from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.utils.misc_utils import iface
 
@@ -324,7 +324,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
     def get_current_libraries(self) -> list[Library]:
         return [self.library_selection.itemData(i, DATA_ROLE) for i in range(self.library_selection.count())]
 
-    def _add_library_element_to_list(self, element: RegulationGroup | PlanFeature):
+    def _add_library_element_to_list(self, element: RegulationGroup | PlanObject):
         item = QListWidgetItem(str(element))
         item.setToolTip(element.as_tooltip())
         item.setData(DATA_ROLE, element)
@@ -373,8 +373,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if not self.active_library:
             return
 
-        form = PlanFeatureForm(
-            plan_feature=PlanFeature(layer_name=plan_feature_layer),
+        form = PlanObjectForm(
+            plan_feature=PlanObject(layer_name=plan_feature_layer),
             form_title=f"Luo kaavakohdepohja ({plan_feature_type})",
             regulation_group_libraries=self.regulation_group_libraries,
             template_form=True,
@@ -402,7 +402,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 if plan_feature_layer == element.layer_name:
                     title = f"Muokkaa kaavakohdepohjaa ({plan_feature_type})"
                     break
-            form = PlanFeatureForm(element, title, self.regulation_group_libraries)
+            form = PlanObjectForm(element, title, self.regulation_group_libraries)
         elif self.library_type_class is RegulationGroupLibrary:
             form = PlanRegulationGroupForm(element, None)
             form.setWindowTitle("Muokkaa kaavamääräysryhmäpohjaa")

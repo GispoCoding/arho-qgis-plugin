@@ -21,7 +21,7 @@ from qgis.PyQt.QtWidgets import (
     QTreeWidgetItem,
 )
 
-from arho_feature_template.core.models import PlanFeature, RegulationGroup
+from arho_feature_template.core.models import PlanObject, RegulationGroup
 from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
@@ -45,12 +45,12 @@ ui_path = resources.files(__package__) / "plan_feature_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
-class PlanFeatureForm(QDialog, FormClass):  # type: ignore
+class PlanObjectForm(QDialog, FormClass):  # type: ignore
     """Parent class for feature forms for adding and modifying feature attribute data."""
 
     def __init__(
         self,
-        plan_feature: PlanFeature,
+        plan_feature: PlanObject,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
@@ -242,8 +242,8 @@ class PlanFeatureForm(QDialog, FormClass):  # type: ignore
                 str(group), group, self.template_categories[category]
             )
 
-    def into_model(self) -> PlanFeature:
-        model = PlanFeature(
+    def into_model(self) -> PlanObject:
+        model = PlanObject(
             name=self.feature_name.text() if self.feature_name.text() != "" else None,
             type_of_underground_id=self.feature_type_of_underground.value(),
             description=self.feature_description.toPlainText()

@@ -21,7 +21,7 @@ from qgis.PyQt.QtWidgets import QMenu, QTableView
 
 from arho_feature_template.core.feature_editing import save_plan_feature
 from arho_feature_template.exceptions import LayerNotFoundError
-from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
+from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.project.layers.plan_layers import (
     get_plan_feature_layer_class_by_layer_name,
     get_plan_feature_layer_class_by_model,
@@ -34,7 +34,7 @@ ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import PlanFeature
+    from arho_feature_template.core.models import PlanObject
     from arho_feature_template.core.plan_manager import PlanManager
 
 DATA_COLUMN = 0
@@ -47,7 +47,7 @@ LAYER_NAME_TO_FEATURE_TYPE = {
 }
 
 
-class PlanFeaturesDockFilterProxyModel(QSortFilterProxyModel):
+class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, model: QStandardItemModel):
         super().__init__()
         self.setSourceModel(model)
@@ -71,7 +71,7 @@ class PlanFeaturesDockFilterProxyModel(QSortFilterProxyModel):
         return False
 
 
-class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
+class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def __init__(self, plan_manager_ref: PlanManager, parent=None):
         super().__init__(parent)
         self.setupUi(self)
@@ -81,7 +81,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         self.filter_line: QgsFilterLineEdit
 
         # INIT
-        # Reference to get regulation group libraries for PlanFeatureForm
+        # Reference to get regulation group libraries for PlanObjectForm
         self.plan_manager_ref = plan_manager_ref
         # Used to reapply selections after filtering
         self.selected_plan_feature_ids: set[str] = set()
@@ -99,7 +99,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
                 "Kuvaus",
             ]
         )
-        self.filter_proxy_model = PlanFeaturesDockFilterProxyModel(self.model)
+        self.filter_proxy_model = PlanObjectsDockFilterProxyModel(self.model)
         self.table.setModel(self.filter_proxy_model)
 
         self.selection_model = self.table.selectionModel()
@@ -153,12 +153,12 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
 
         for row in range(self.filter_proxy_model.rowCount()):
             item = self.model.item(row, DATA_COLUMN)
-            plan_feature: PlanFeature = item.data(DATA_ROLE)[0]
+            plan_feature: PlanObject = item.data(DATA_ROLE)[0]
             if plan_feature.id_ in self.selected_plan_feature_ids:
                 proxy_index = self.filter_proxy_model.index(row, 0)
                 self.selection_model.select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
-    def _add_plan_feature_to_view(self, plan_feature_model: PlanFeature, feat_id: int):
+    def _add_plan_feature_to_view(self, plan_feature_model: PlanObject, feat_id: int):
         self.model.appendRow(self._plan_feature_into_items(plan_feature_model, feat_id))
 
     def _remove_plan_feature_from_view(self, row: int):
@@ -173,31 +173,31 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
 
         self.update_selected_rows()
 
-    def _update_row(self, row: int, plan_feature_model: PlanFeature):
+    def _update_row(self, row: int, plan_feature_model: PlanObject):
         self.model.item(row, 0).setText(plan_feature_model.name or "")
         self.model.item(row, 2).setText(plan_feature_model.description or "")
         # Feat ID remains the same
         feat_id = self.model.item(row, DATA_COLUMN).data(DATA_ROLE)[1]
         self.model.item(row, DATA_COLUMN).setData((plan_feature_model, feat_id), DATA_ROLE)
 
-    def _plan_feature_into_items(self, plan_feature_model: PlanFeature, feat_id: int) -> list[QStandardItem]:
+    def _plan_feature_into_items(self, plan_feature_model: PlanObject, feat_id: int) -> list[QStandardItem]:
         items = [
             QStandardItem(plan_feature_model.name or ""),
             QStandardItem(LAYER_NAME_TO_FEATURE_TYPE.get(plan_feature_model.layer_name or "", "")),
             QStandardItem(plan_feature_model.description or ""),
         ]
 
-        # Set the whole PlanFeature model and QGIS feature ID as data tuple
+        # Set the whole PlanObject model and QGIS feature ID as data tuple
         items[DATA_COLUMN].setData((plan_feature_model, feat_id), DATA_ROLE)
         return items
 
-    def _data_from_index(self, proxy_index: QModelIndex) -> tuple[PlanFeature, int] | None:
+    def _data_from_index(self, proxy_index: QModelIndex) -> tuple[PlanObject, int] | None:
         row_items = self._row_items_from_index(proxy_index)
         if len(row_items) == 0:
             return None
         return row_items[DATA_COLUMN].data(DATA_ROLE)
 
-    def _plan_feature_from_index(self, proxy_index: QModelIndex) -> PlanFeature | None:
+    def _plan_feature_from_index(self, proxy_index: QModelIndex) -> PlanObject | None:
         data = self._data_from_index(proxy_index)
         return data[0] if data else None
 
@@ -212,7 +212,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         # Loop all rows
         for row in range(self.model.rowCount()):
             item = self.model.item(row, DATA_COLUMN)
-            plan_feature_model: PlanFeature = item.data(DATA_ROLE)[0]
+            plan_feature_model: PlanObject = item.data(DATA_ROLE)[0]
             if plan_feature_model and plan_feature_model.id_ == plan_feature_id:
                 return row
         return None
@@ -223,7 +223,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
             iface.messageBar().pushWarning("", "Kaavakohdetta ei löydetty.")
             return
 
-        form = PlanFeatureForm(
+        form = PlanObjectForm(
             plan_feature=plan_feature_model,
             form_title=plan_feature_model.name or plan_feature_model.layer_name or "",
             regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
@@ -250,21 +250,21 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         menu.addAction("Väläytä kohdetta", lambda: self._on_highlight_feature(plan_feature_model))
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
-    def _on_zoom_to_feature(self, plan_feature_model: PlanFeature):
+    def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
         layer_class = get_plan_feature_layer_class_by_model(plan_feature_model)
         feat = layer_class.feature_from_model(plan_feature_model)
 
         iface.mapCanvas().setExtent(feat.geometry().boundingBox().buffered(1000))
         iface.mapCanvas().redrawAllLayers()
 
-    def _on_pan_to_feature(self, plan_feature_model: PlanFeature):
+    def _on_pan_to_feature(self, plan_feature_model: PlanObject):
         layer_class = get_plan_feature_layer_class_by_model(plan_feature_model)
         feat = layer_class.feature_from_model(plan_feature_model)
 
         iface.mapCanvas().setCenter(feat.geometry().centroid().asPoint())
         iface.mapCanvas().redrawAllLayers()
 
-    def _on_highlight_feature(self, plan_feature_model: PlanFeature):
+    def _on_highlight_feature(self, plan_feature_model: PlanObject):
         iface.mapCanvas().flashGeometries(geometries=[plan_feature_model.geom])
         iface.mapCanvas().redrawAllLayers()
 
@@ -283,7 +283,7 @@ class PlanFeaturesDock(QgsDockWidget, FormClass):  # type: ignore
         # Loop all rows
         for row in range(self.model.rowCount()):
             item = self.model.item(row, DATA_COLUMN)
-            plan_feature_model: PlanFeature = item.data(DATA_ROLE)[0]
+            plan_feature_model: PlanObject = item.data(DATA_ROLE)[0]
             if plan_feature_model.layer_name != layer_name:
                 continue
             plan_feat_id = item.data(DATA_ROLE)[1]

@@ -30,8 +30,8 @@ if TYPE_CHECKING:
         Document,
         LifeCycle,
         Plan,
-        PlanFeature,
         PlanMatter,
+        PlanObject,
         Proposition,
         Regulation,
         RegulationGroup,
@@ -151,7 +151,7 @@ def save_plan(plan: Plan) -> str | None:
 
 
 @use_wait_cursor
-def save_plan_feature(plan_feature: PlanFeature, plan_id: str | None = None) -> str | None:
+def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> str | None:
     layer_class = get_plan_feature_layer_class_by_model(plan_feature)
     layer_name = cast(str, plan_feature.layer_name)
 

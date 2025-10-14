@@ -15,7 +15,7 @@ from arho_feature_template.core.models import (
     Document,
     LifeCycle,
     Plan,
-    PlanFeature,
+    PlanObject,
     PlanMatter,
     Proposition,
     Regulation,
@@ -254,10 +254,9 @@ class PlanLayer(AbstractPlanLayer):
             return None
         return cast(str, producers_id)
 
-
-class PlanFeatureLayer(AbstractPlanLayer):
+class PlanObjectLayer(AbstractPlanLayer):
     @classmethod
-    def feature_from_model(cls, model: PlanFeature, plan_id: str | None = None) -> QgsFeature:
+    def feature_from_model(cls, model: PlanObject, plan_id: str | None = None) -> QgsFeature:
         if not model.geom:
             message = "Plan feature must have a geometry to be added to the layer"
             raise ValueError(message)
@@ -272,7 +271,7 @@ class PlanFeatureLayer(AbstractPlanLayer):
         return feature
 
     @classmethod
-    def models_from_features(cls, features: list[QgsFeature]) -> list[PlanFeature]:
+    def models_from_features(cls, features: list[QgsFeature]) -> list[PlanObject]:
         plan_object_ids = {feat["id"] for feat in features}
         plan_object_field_name = RegulationGroupAssociationLayer.layer_name_to_attribute_map.get(cls.name)
         if not plan_object_field_name:
@@ -302,7 +301,7 @@ class PlanFeatureLayer(AbstractPlanLayer):
                     groups_by_plan_object_id[plan_object_id].append(group)
 
         return [
-            PlanFeature(
+            PlanObject(
                 geom=feature.geometry(),
                 type_of_underground_id=feature["type_of_underground_id"],
                 layer_name=cls.get_from_project().name(),
@@ -317,26 +316,26 @@ class PlanFeatureLayer(AbstractPlanLayer):
         ]
 
     @classmethod
-    def model_from_feature(cls, feature: QgsFeature) -> PlanFeature:
+    def model_from_feature(cls, feature: QgsFeature) -> PlanObject:
         return cls.models_from_features([feature])[0]
 
 
-class PointLayer(PlanFeatureLayer):
+class PointLayer(PlanObjectLayer):
     name = "Pisteet"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class LineLayer(PlanFeatureLayer):
+class LineLayer(PlanObjectLayer):
     name = "Viivat"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class LandUseAreaLayer(PlanFeatureLayer):
+class LandUseAreaLayer(PlanObjectLayer):
     name = "Aluevaraus"
     filter_template = Template("plan_id = '$plan_id'")
 
 
-class OtherAreaLayer(PlanFeatureLayer):
+class OtherAreaLayer(PlanObjectLayer):
     name = "Osa-alue"
     filter_template = Template("plan_id = '$plan_id'")
 
@@ -1015,7 +1014,7 @@ class LifeCycleLayer(AbstractPlanLayer):
         return list(cls.get_features_by_attribute_value("plan_id", plan_id))
 
 
-def get_plan_feature_layer_class_by_model(plan_feature: PlanFeature) -> type[PlanFeatureLayer]:
+def get_plan_feature_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:
     layer_name = plan_feature.layer_name
     if not layer_name:
         msg = "Cannot save plan feature without a target layer"
@@ -1028,7 +1027,7 @@ def get_plan_feature_layer_class_by_model(plan_feature: PlanFeature) -> type[Pla
     return layer_class
 
 
-def get_plan_feature_layer_class_by_layer_name(layer_name: str) -> type[PlanFeatureLayer]:
+def get_plan_feature_layer_class_by_layer_name(layer_name: str) -> type[PlanObjectLayer]:
     layer = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
     if not layer:
         msg = f"Could not find plan feature layer class for layer name {layer_name}"
@@ -1036,7 +1035,7 @@ def get_plan_feature_layer_class_by_layer_name(layer_name: str) -> type[PlanFeat
     return layer
 
 
-FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
+FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanObjectLayer]] = {
     PointLayer.name: PointLayer,
     LineLayer.name: LineLayer,
     OtherAreaLayer.name: OtherAreaLayer,
@@ -1044,7 +1043,7 @@ FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanFeatureLayer]] = {
 }
 
 plan_layers = AbstractPlanLayer.__subclasses__()
-plan_layers.remove(PlanFeatureLayer)
+plan_layers.remove(PlanObjectLayer)
 
-plan_feature_layers = PlanFeatureLayer.__subclasses__()
+plan_feature_layers = PlanObjectLayer.__subclasses__()
 plan_layers.extend(plan_feature_layers)
