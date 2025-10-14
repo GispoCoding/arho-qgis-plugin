@@ -16,6 +16,7 @@ from arho_feature_template.core.models import (
     LifeCycle,
     Plan,
     PlanFeature,
+    PlanMatter,
     Proposition,
     Regulation,
     RegulationGroup,
@@ -87,6 +88,93 @@ class AbstractPlanLayer(AbstractLayer):
         return feature
 
 
+# Uusi
+class PlanMatterLayer(AbstractPlanLayer):
+    name = "Kaava-asia"
+    filter_template = Template("id = '$plan_matter_id'")
+
+    @classmethod
+    def feature_from_model(cls, model: PlanMatter) -> QgsFeature:
+        feature = cls.initialize_feature_from_model(model)
+        feature["name"] = serialize_localized_text(model.name)
+        feature["description"] = serialize_localized_text(model.description)
+        feature["permanent_plan_identifier"] = model.permanent_plan_identifier
+        feature["record_number"] = model.record_number
+        feature["producers_plan_identifier"] = model.producers_plan_identifier
+        feature["case_identifier"] = model.case_identifier
+        feature["plan_type_id"] = model.plan_type_id
+        feature["organisation_id"] = model.organisation_id
+
+        return feature
+
+    @classmethod
+    def model_from_feature(cls, feature: QgsFeature) -> PlanMatter:
+        return PlanMatter(
+            name=deserialize_localized_text(feature["name"]),
+            description=deserialize_localized_text(feature["description"]),
+            permanent_plan_identifier=feature["permanent_plan_identifier"],
+            record_number=feature["record_number"],
+            producers_plan_identifier=feature["producers_plan_identifier"],
+            case_identifier=feature["case_identifier"],
+            plan_type_id=feature["plan_type_id"],
+            organisation_id=feature["organisation_id"],
+            id_=feature["id"],
+            modified=False,
+        )
+
+    @classmethod
+    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
+        """Filter PlanMatterLayer by the plan's related plan_matter_id."""
+        if cls.filter_template is None or plan_id is None:
+            return
+
+        try:
+            plan_matter_id = PlanLayer.get_attribute_value_by_another_attribute_value(
+                "plan_matter_id",
+                "id",
+                plan_id
+            )
+
+            if not plan_matter_id:
+                cls.hide_all_features()
+                return
+
+            filter_expression = cls.filter_template.substitute(plan_matter_id=plan_matter_id)
+            cls.apply_filter(filter_expression)
+
+        except Exception as e:
+            iface.messageBar().pushMessage(
+                "Virhe",
+                f"Kaava-asian suodatus epäonnistui: {e}",
+                level=3,
+            )
+            cls.hide_all_features()
+
+    @classmethod
+    def get_plan_matter_name(cls, plan_matter_id: str) -> str:
+        attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_matter_id)
+        name = deserialize_localized_text(attribute_value)
+
+        return name or "Nimetön"
+
+    @classmethod
+    def get_plan_matter_type_name(cls, plan_matter_id: str) -> str | None:
+        type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_matter_id)
+        if type_id is None:
+            return None
+        attribute_value = PlanTypeLayer.get_attribute_value_by_another_attribute_value("name", "id", cast(str, type_id))
+        return deserialize_localized_text(attribute_value)
+
+    @classmethod
+    def get_plan_matter_producers_plan_identifier(cls, plan_matter_id: str) -> str | None:
+        producers_id = cls.get_attribute_value_by_another_attribute_value(
+            "producers_plan_identifier", "id", plan_matter_id
+        )
+        if producers_id is None:
+            return None
+        return cast(str, producers_id)
+
+
 class PlanLayer(AbstractPlanLayer):
     name = "Kaava"
     filter_template = Template("id = '$plan_id'")
@@ -102,13 +190,13 @@ class PlanLayer(AbstractPlanLayer):
         feature["name"] = serialize_localized_text(model.name)
         feature["description"] = serialize_localized_text(model.description)
         feature["scale"] = model.scale
-        feature["permanent_plan_identifier"] = model.permanent_plan_identifier
-        feature["record_number"] = model.record_number
-        feature["producers_plan_identifier"] = model.producers_plan_identifier
-        feature["matter_management_identifier"] = model.matter_management_identifier
-        feature["plan_type_id"] = model.plan_type_id
+        # feature["permanent_plan_identifier"] = model.permanent_plan_identifier
+        # feature["record_number"] = model.record_number
+        # feature["producers_plan_identifier"] = model.producers_plan_identifier
+        # feature["matter_management_identifier"] = model.matter_management_identifier
+        # feature["plan_type_id"] = model.plan_type_id
         feature["lifecycle_status_id"] = model.lifecycle_status_id
-        feature["organisation_id"] = model.organisation_id
+        # feature["organisation_id"] = model.organisation_id
 
         return feature
 
@@ -122,13 +210,13 @@ class PlanLayer(AbstractPlanLayer):
             name=deserialize_localized_text(feature["name"]),
             description=deserialize_localized_text(feature["description"]),
             scale=feature["scale"],
-            permanent_plan_identifier=feature["permanent_plan_identifier"],
-            record_number=feature["record_number"],
-            producers_plan_identifier=feature["producers_plan_identifier"],
-            matter_management_identifier=feature["matter_management_identifier"],
-            plan_type_id=feature["plan_type_id"],
+            # permanent_plan_identifier=feature["permanent_plan_identifier"],
+            # record_number=feature["record_number"],
+            # producers_plan_identifier=feature["producers_plan_identifier"],
+            # matter_management_identifier=feature["matter_management_identifier"],
+            # plan_type_id=feature["plan_type_id"],
             lifecycle_status_id=feature["lifecycle_status_id"],
-            organisation_id=feature["organisation_id"],
+            # organisation_id=feature["organisation_id"],
             general_regulations=RegulationGroupLayer.models_from_features(general_regulation_features),
             legal_effect_ids=list(LegalEffectAssociationLayer.get_legal_effect_ids_for_plan(feature["id"])),
             documents=[
@@ -800,9 +888,29 @@ class DocumentLayer(AbstractPlanLayer):
         ]
 
 
+# class SourceDataLayer(AbstractPlanLayer):
+    # name = "Lähtötietoaineistot"
+    # filter_template = Template("plan_id = '$plan_id'")
+
+
 class SourceDataLayer(AbstractPlanLayer):
     name = "Lähtötietoaineistot"
-    filter_template = Template("plan_id = '$plan_id'")
+    filter_template = Template("plan_matter_id = '$plan_matter_id'")
+
+    @classmethod
+    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
+        if not plan_id or cls.filter_template is None:
+            return cls.hide_all_features()
+
+        try:
+            plan_matter_id = PlanLayer.get_attribute_value_by_another_attribute_value("plan_matter_id", "id", plan_id)
+            if not plan_matter_id:
+                return cls.hide_all_features()
+
+            cls.apply_filter(cls.filter_template.substitute(plan_matter_id=plan_matter_id))
+        except Exception as e:
+            iface.messageBar().pushMessage("Virhe", f"Lähtötietoaineiston suodatus epäonnistui: {e}", level=3)
+            cls.hide_all_features()
 
 
 class AdditionalInformationLayer(AbstractPlanLayer):

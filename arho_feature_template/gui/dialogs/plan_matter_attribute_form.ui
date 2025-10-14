@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="windowModality">
+   <enum>Qt::ApplicationModal</enum>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>531</width>
+    <height>405</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Kaava-asia</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_5">
+   <item>
+    <layout class="QFormLayout" name="formLayout_2">
+     <item row="0" column="0">
+      <widget class="QLabel" name="permanent_identifier_label">
+       <property name="text">
+        <string>Pysyvä kaavatunnus:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="name_label">
+       <property name="text">
+        <string>Nimi:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="description_label">
+       <property name="text">
+        <string>Kuvaus:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="permanent_identifier_edit"/>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="name_edit"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QTextEdit" name="description_edit"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="organisation_label">
+       <property name="text">
+        <string>Organisaatio:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="plan_type_label">
+       <property name="text">
+        <string>Kaavalaji:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="case_id_label">
+       <property name="text">
+        <string>Asianhallintatunnus:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="record_number_label">
+       <property name="text">
+        <string>Diaarinumero</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="producers_id_label">
+       <property name="text">
+        <string>Tuottajan kaavatunnus:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="CodeComboBox" name="organisation_combo_box"/>
+     </item>
+     <item row="4" column="1">
+      <widget class="HierarchicalCodeComboBox" name="plan_type_combo_box"/>
+     </item>
+     <item row="5" column="1">
+      <widget class="QLineEdit" name="case_id_edit"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLineEdit" name="record_number_edit"/>
+     </item>
+     <item row="7" column="1">
+      <widget class="QLineEdit" name="producers_id_edit"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CodeComboBox</class>
+   <extends>QComboBox</extends>
+   <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>HierarchicalCodeComboBox</class>
+   <extends>QComboBox</extends>
+   <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>button_box</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>button_box</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

@@ -122,13 +122,14 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         row_to_select = None
         plans = self.get_plans_from_db(selected_connection)
         for i, plan in enumerate(plans):
-            id_, producers_plan_identifier, name, lifecycle_status, plan_type = plan
+            id_, name, lifecycle_status = plan
+            # id_, producers_plan_identifier, name, lifecycle_status, plan_type = plan
             self.model.appendRow(
                 [
                     QStandardItem(name or ""),
-                    QStandardItem(plan_type or ""),
+                    # QStandardItem(plan_type or ""),
                     QStandardItem(lifecycle_status or ""),
-                    QStandardItem(producers_plan_identifier or ""),
+                    # QStandardItem(producers_plan_identifier or ""),
                     # QStandardItem(id_ or ""),
                 ]
             )
@@ -152,29 +153,44 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         if postgres_provider_metadata is None:
             raise UnexpectedNoneError
 
+        # try:
+        # connection = postgres_provider_metadata.createConnection(selected_connection)
+        # plans = connection.executeSql("""
+        # SELECT
+        # p.id,
+        # p.producers_plan_identifier,
+        # p.name ->> 'fin' AS name_fin,
+        # l.name ->> 'fin' AS lifecycle_status_fin,
+        # pt.name ->> 'fin' AS plan_type_fin
+        # FROM
+        # hame.plan p
+        # LEFT JOIN
+        # codes.lifecycle_status l
+        # ON
+        # p.lifecycle_status_id = l.id
+        # LEFT JOIN
+        # codes.plan_type pt
+        # ON
+        # p.plan_type_id = pt.id;
+        # """)
+        # except Exception as e:  # noqa: BLE001
+        # QMessageBox.critical(self, "Error", f"Failed to load plans: {e}")
+        # self.clear_table()
+
         try:
             connection = postgres_provider_metadata.createConnection(selected_connection)
             plans = connection.executeSql("""
                 SELECT
                     p.id,
-                    p.producers_plan_identifier,
-                    p.name ->> 'fin' AS name_fin,
-                    l.name ->> 'fin' AS lifecycle_status_fin,
-                    pt.name ->> 'fin' AS plan_type_fin
+                    p.name,
+                    p.lifecycle_status_id
                 FROM
-                    hame.plan p
-                LEFT JOIN
-                    codes.lifecycle_status l
-                ON
-                    p.lifecycle_status_id = l.id
-                LEFT JOIN
-                    codes.plan_type pt
-                ON
-                    p.plan_type_id = pt.id;
+                    hame.plan p;
             """)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Error", f"Failed to load plans: {e}")
+            QMessageBox.critical(self, "Virhe", f"Kaavojen lataus epäonnistui: {e}")
             self.clear_table()
+
         return plans
 
     def filter_plans(self):
