@@ -78,7 +78,7 @@ class Library(ABC):
 class PlanFeatureLibrary(Library):
     """A collection of plan features."""
 
-    plan_features: list[PlanFeature] = field(default_factory=list, compare=False)
+    plan_features: list[PlanObject] = field(default_factory=list, compare=False)
 
     @classmethod
     def from_template_dict(
@@ -96,7 +96,7 @@ class PlanFeatureLibrary(Library):
                 status=True,
                 library_type=library_type,  # NOTE: All PlanFeatureLibraries are CUSTOM now
                 plan_features=[
-                    PlanFeature.from_template_dict(plan_feature_data) for plan_feature_data in data["plan_features"]
+                    PlanObject.from_template_dict(plan_feature_data) for plan_feature_data in data["plan_features"]
                 ]
                 if data.get("plan_features")
                 else [],
@@ -401,7 +401,7 @@ class LifeCycle(PlanBaseModel):
 
 
 @dataclass
-class PlanFeature(PlanBaseModel):
+class PlanObject(PlanBaseModel):
     geom: QgsGeometry | None = None  # Need to allow None for feature templates
     type_of_underground_id: str | None = None
     layer_name: str | None = None
@@ -413,7 +413,7 @@ class PlanFeature(PlanBaseModel):
     id_: str | None = None
 
     @classmethod
-    def from_template_dict(cls, data: dict) -> PlanFeature:
+    def from_template_dict(cls, data: dict) -> PlanObject:
         get_underground_id = UndergroundTypeLayer.get_attribute_value_by_another_attribute_value
         return cls(
             geom=None,

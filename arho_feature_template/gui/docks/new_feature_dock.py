@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QComboBox, QWidget
 
-    from arho_feature_template.core.models import PlanFeature, PlanFeatureLibrary
+    from arho_feature_template.core.models import PlanObject, PlanFeatureLibrary
 
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
@@ -40,7 +40,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         # 2. Feature templates
         self.active_feature_type: str | None = None
         self.active_feature_layer: str | None = None
-        self.active_template: PlanFeature | None = None
+        self.active_template: PlanObject | None = None
         self.plan_feature_libraries: list[PlanFeatureLibrary] | None = None
         self.library_selection.currentIndexChanged.connect(self.set_active_plan_feature_library)
 
@@ -72,7 +72,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         for index in range(self.template_list.count()):
             item = self.template_list.item(index)
             item_text = item.text().lower()
-            plan_feature: PlanFeature = item.data(Qt.UserRole)
+            plan_feature: PlanObject = item.data(Qt.UserRole)
             text_matches = search_text in item_text
             feature_type_matches = (
                 plan_feature.layer_name == self.active_feature_layer if self.active_feature_layer else True
@@ -85,7 +85,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
     def on_template_item_clicked(self, index: int):
         item = self.template_list.itemFromIndex(index)
-        template: PlanFeature = item.data(Qt.UserRole)
+        template: PlanObject = item.data(Qt.UserRole)
         # Clicked new list item => activate new template
         if template != self.active_template:
             self.active_template = template

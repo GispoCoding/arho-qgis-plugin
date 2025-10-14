@@ -9,7 +9,7 @@ from qgis.PyQt.QtCore import pyqtSignal
 from qgis.PyQt.QtGui import QIcon, QPixmap
 from qgis.PyQt.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
-from arho_feature_template.core.models import PlanFeature, Proposition, Regulation, RegulationGroup
+from arho_feature_template.core.models import PlanObject, Proposition, Regulation, RegulationGroup
 from arho_feature_template.exceptions import LayerNameNotFoundError
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
@@ -30,7 +30,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     open_as_form_signal = pyqtSignal(QWidget)
     delete_signal = pyqtSignal(QWidget)
 
-    def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanFeature):
+    def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanObject):
         super().__init__()
         self.setupUi(self)
 

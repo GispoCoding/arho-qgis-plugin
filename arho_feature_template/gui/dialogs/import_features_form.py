@@ -16,7 +16,7 @@ from qgis.core import (
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressBar
 
-from arho_feature_template.core.models import PlanFeature, RegulationGroupLibrary
+from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
 from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer, code_layers
 from arho_feature_template.project.layers.plan_layers import (
     FEATURE_LAYER_NAME_TO_CLASS_MAP,
@@ -203,7 +203,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
             plan_features.append(
                 layer_class.feature_from_model(
-                    PlanFeature(
+                    PlanObject(
                         geom=geom,
                         type_of_underground_id=type_of_underground_id,
                         layer_name=self.target_layer_name,

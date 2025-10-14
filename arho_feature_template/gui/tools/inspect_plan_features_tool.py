@@ -9,13 +9,13 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
-    from arho_feature_template.project.layers.plan_layers import PlanFeatureLayer
+    from arho_feature_template.project.layers.plan_layers import PlanObjectLayer
 
 
 class InspectPlanFeatures(QgsMapToolIdentify):
     edit_feature_requested = pyqtSignal(QgsFeature, str)
 
-    def __init__(self, canvas: QgsMapCanvas, layer_classes: list[PlanFeatureLayer]):
+    def __init__(self, canvas: QgsMapCanvas, layer_classes: list[PlanObjectLayer]):
         super().__init__(canvas)
         self.canvas = canvas
 

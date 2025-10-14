@@ -17,15 +17,16 @@ from arho_feature_template.core.feature_editing import (
     delete_regulation_group,
     save_plan,
     save_plan_feature,
+    save_plan_matter,
     save_regulation_group,
     save_regulation_group_association,
 )
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import (
     Plan,
-    PlanFeature,
     PlanFeatureLibrary,
     PlanMatter,
+    PlanObject,
     RegulationGroup,
     RegulationGroupLibrary,
 )
@@ -37,13 +38,13 @@ from arho_feature_template.gui.dialogs.lifecycle_editor import LifecycleEditor
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
-from arho_feature_template.gui.dialogs.plan_feature_form import PlanFeatureForm
+from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMatterAttributeForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.dialogs.serialize_plan_matter import SerializePlanMatter
 from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
-from arho_feature_template.gui.docks.plan_features_dock import PlanFeaturesDock
+from arho_feature_template.gui.docks.plan_features_dock import PlanObjectsDock
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import (
@@ -145,7 +146,7 @@ class PlanManager(QObject):
         self.regulation_groups_dock.hide()
 
         # Initialize plan features dock
-        self.features_dock = PlanFeaturesDock(self, iface.mainWindow())
+        self.features_dock = PlanObjectsDock(self, iface.mainWindow())
         self.features_dock.hide()
 
         # Initialize digitize tools
@@ -578,7 +579,7 @@ class PlanManager(QObject):
         # NOTE: What if user has changed dock selections while digitizng?
         if self.new_feature_dock.active_template:
             plan_feat_template = self.new_feature_dock.active_template
-            plan_feature = PlanFeature(
+            plan_feature = PlanObject(
                 type_of_underground_id=plan_feat_template.type_of_underground_id,
                 layer_name=plan_feat_template.layer_name,
                 name=plan_feat_template.name,
@@ -587,11 +588,11 @@ class PlanManager(QObject):
             )
             title = plan_feature.name
         else:
-            plan_feature = PlanFeature(layer_name=self.new_feature_dock.active_feature_layer)
+            plan_feature = PlanObject(layer_name=self.new_feature_dock.active_feature_layer)
             title = self.new_feature_dock.active_feature_type
 
         plan_feature.geom = feature.geometry()
-        attribute_form = PlanFeatureForm(
+        attribute_form = PlanObjectForm(
             plan_feature,
             title if title else "",
             self.regulation_group_libraries,
@@ -605,7 +606,7 @@ class PlanManager(QObject):
         plan_feature = layer_class.model_from_feature(feature)
 
         title = plan_feature.name if plan_feature.name else layer_name
-        attribute_form = PlanFeatureForm(
+        attribute_form = PlanObjectForm(
             plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
