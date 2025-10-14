@@ -79,15 +79,11 @@ resource "aws_api_gateway_deployment" "api_deployment" {
   rest_api_id = aws_api_gateway_rest_api.lambda_api.id
 
   triggers = {
-    # TODO: we should trigger redeployment when rest api policy changes!
-    # However, we cannot add aws_api_gateway_rest_api.lambda_api due to
-    # terraform provider bug reformatting policy ids :(
-    # Therefore, the api deployment must be replaced manually whenever
-    # changing the policy at aws_api_gateway_rest_api.lambda_api.
     redeployment = sha1(join(",",[
       jsonencode(aws_api_gateway_resource.ryhti_client),
       jsonencode(aws_api_gateway_method.ryhti_call),
       jsonencode(aws_api_gateway_integration.lambda_integration),
+      data.aws_iam_policy_document.lambda_api_policy.json,
     ]))
   }
 
