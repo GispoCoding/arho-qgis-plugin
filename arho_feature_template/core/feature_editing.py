@@ -8,6 +8,7 @@ from arho_feature_template.project.layers.plan_layers import (
     LegalEffectAssociationLayer,
     LifeCycleLayer,
     PlanLayer,
+    PlanMatterLayer,
     PlanPropositionLayer,
     PlanRegulationLayer,
     PlanThemeAssociationLayer,
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
         LifeCycle,
         Plan,
         PlanFeature,
+        PlanMatter,
         Proposition,
         Regulation,
         RegulationGroup,
@@ -59,6 +61,27 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
 
     layer.endEditCommand()
     return layer.commitChanges(stopEditing=False)
+
+
+
+
+@use_wait_cursor
+def save_plan_matter(plan_matter: PlanMatter) -> str | None:
+    plan_matter_id = plan_matter.id_
+    editing = plan_matter_id is not None
+    if plan_matter is None or plan_matter.modified:
+        feature = PlanMatterLayer.feature_from_model(plan_matter)
+        if not save_feature(
+            feature=feature,
+            layer=PlanMatterLayer.get_from_project(),
+            id_=plan_matter_id,
+            edit_text="Kaava-asian muokkaus" if editing else "Kaava-asian luominen",
+        ):
+            iface.messageBar().pushCritical("", "Kaava-asian tallentaminen epäonnistui")
+            return None
+        plan_matter_id = cast(str, feature["id"])
+
+    return plan_matter_id
 
 
 @use_wait_cursor

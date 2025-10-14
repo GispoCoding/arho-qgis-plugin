@@ -66,22 +66,22 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
         self.organisation_combo_box.populate_from_code_layer(OrganisationLayer)
 
-        self.plan_type_combo_box.set_value(plan.plan_type_id)
+        # self.plan_type_combo_box.set_value(plan.plan_type_id)
         self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
-        self.organisation_combo_box.set_value(plan.organisation_id)
+        # self.organisation_combo_box.set_value(plan.organisation_id)
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
         self.name_line_edit.setText(plan.name if plan.name else "")
         self.description_text_edit.setText(plan.description if plan.description else "")
-        self.permanent_identifier_line_edit.setText(
-            plan.permanent_plan_identifier if plan.permanent_plan_identifier else ""
-        )
-        self.record_number_line_edit.setText(plan.record_number if plan.record_number else "")
-        self.producers_plan_identifier_line_edit.setText(
-            plan.producers_plan_identifier if plan.producers_plan_identifier else ""
-        )
-        self.matter_management_identifier_line_edit.setText(
-            plan.matter_management_identifier if plan.matter_management_identifier else ""
-        )
+        #self.permanent_identifier_line_edit.setText(
+            #plan.permanent_plan_identifier if plan.permanent_plan_identifier else ""
+        #)
+        #self.record_number_line_edit.setText(plan.record_number if plan.record_number else "")
+        #self.producers_plan_identifier_line_edit.setText(
+            #plan.producers_plan_identifier if plan.producers_plan_identifier else ""
+        #)
+        #self.matter_management_identifier_line_edit.setText(
+            #plan.matter_management_identifier if plan.matter_management_identifier else ""
+        #)
 
         self.name_line_edit.textChanged.connect(self._check_required_fields)
         self.organisation_combo_box.currentIndexChanged.connect(self._check_required_fields)
@@ -255,12 +255,12 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             name=self.name_line_edit.text(),
             description=self.description_text_edit.toPlainText() or None,
             scale=self.scale_spin_box.value() or None,
-            plan_type_id=self.plan_type_combo_box.value(),
-            organisation_id=self.organisation_combo_box.value(),
-            permanent_plan_identifier=self.permanent_identifier_line_edit.text() or None,
-            record_number=self.record_number_line_edit.text() or None,
-            producers_plan_identifier=self.producers_plan_identifier_line_edit.text() or None,
-            matter_management_identifier=self.matter_management_identifier_line_edit.text() or None,
+            # plan_type_id=self.plan_type_combo_box.value(),
+            # organisation_id=self.organisation_combo_box.value(),
+            # permanent_plan_identifier=self.permanent_identifier_line_edit.text() or None,
+            # record_number=self.record_number_line_edit.text() or None,
+            # producers_plan_identifier=self.producers_plan_identifier_line_edit.text() or None,
+            # matter_management_identifier=self.matter_management_identifier_line_edit.text() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),
             general_regulations=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
             legal_effect_ids=[value for value in legal_effect_ids if value is not None],

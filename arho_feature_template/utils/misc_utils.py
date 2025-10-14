@@ -99,6 +99,18 @@ def get_active_plan_id():
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
 
 
+def set_active_plan_matter_id(plan_matter_id: str | None):
+    """Store the given plan matter ID as the active plan matter ID as a project variable."""
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "active_plan_matter_id", plan_matter_id if plan_matter_id is not None else ""
+    )
+
+
+def get_active_plan_matter_id():
+    """Retrieve the active plan matter ID stored as a project variable."""
+    return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_matter_id")
+
+
 def disconnect_signal(signal: pyqtBoundSignal) -> None:
     """
     Disconnects all existing connections of a given signal.
