@@ -472,6 +472,7 @@ class Plan(PlanBaseModel):
     documents: list[Document] = field(default_factory=list, compare=False)
     legal_effect_ids: list[str] = field(default_factory=list)
     geom: QgsGeometry | None = None
+    plan_matter_id: str | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = None
 

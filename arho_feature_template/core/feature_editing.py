@@ -18,6 +18,7 @@ from arho_feature_template.project.layers.plan_layers import (
     get_plan_feature_layer_class_by_model,
 )
 from arho_feature_template.utils.misc_utils import (
+    get_active_plan_matter_id,
     iface,
     use_wait_cursor,
 )
@@ -87,6 +88,8 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
 @use_wait_cursor
 def save_plan(plan: Plan) -> str | None:
     plan_id = plan.id_
+    if not plan.plan_matter_id:
+        plan.plan_matter_id = get_active_plan_matter_id()
     editing = plan_id is not None
     if plan_id is None or plan.modified:
         feature = PlanLayer.feature_from_model(plan)

@@ -32,8 +32,13 @@ from arho_feature_template.project.layers.code_layers import (
     PlanTypeLayer,
     UndergroundTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import PlanLayer
-from arho_feature_template.utils.misc_utils import LANGUAGE, disconnect_signal, get_active_plan_id
+from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
+from arho_feature_template.utils.misc_utils import (
+    LANGUAGE,
+    disconnect_signal,
+    get_active_plan_id,
+    get_active_plan_matter_id,
+)
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QWidget
@@ -132,9 +137,10 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
     def select_library_by_active_plan_type(self):
         feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         if feature is not None:
-            model = PlanLayer.model_from_feature(feature)
+            active_plan_matter_id = get_active_plan_matter_id()
+            plan_type_id = PlanMatterLayer.get_attribute_value_by_another_attribute_value("plan_type_id", "id", active_plan_matter_id)
 
-            plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
+            plan_type = PlanTypeLayer.get_plan_type(plan_type_id)
             library_name = ""
             if plan_type == PlanType.REGIONAL:
                 library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"

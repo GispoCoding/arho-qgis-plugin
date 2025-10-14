@@ -19,7 +19,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.exceptions import UnexpectedNoneError
-from arho_feature_template.utils.misc_utils import get_active_plan_id
+from arho_feature_template.utils.misc_utils import get_active_plan_id, get_active_plan_matter_id
 
 ui_path = resources.files(__package__) / "load_plan_dialog.ui"
 
@@ -41,7 +41,7 @@ class PlanFilterProxyModel(QSortFilterProxyModel):
         if not filter_text:
             return True
 
-        for column in range(5):
+        for column in range(2):
             index = model.index(source_row, column, source_parent)
             data = model.data(index)
             if data and filter_text.lower() in data.lower():
@@ -81,14 +81,11 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         self.plan_table_view.setSortingEnabled(True)
 
         self.model = QStandardItemModel()
-        self.model.setColumnCount(4)
+        self.model.setColumnCount(2)
         self.model.setHorizontalHeaderLabels(
             [
                 "Nimi",
-                "Kaavalaji",
                 "Kaavan elinkaaren tila",
-                "Tuottajan kaavatunnus",
-                # "ID",
             ]
         )
 
@@ -99,9 +96,8 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         # self.plan_table_view.setSortingEnabled(True)
 
         header = self.plan_table_view.horizontalHeader()
-        for i in range(3):
-            header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.Stretch)
 
         # Show plans for the first connections by default
         # NOTE: Could be changed to the previously used connection if/when plugin can remember it
@@ -176,16 +172,21 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         # except Exception as e:  # noqa: BLE001
         # QMessageBox.critical(self, "Error", f"Failed to load plans: {e}")
         # self.clear_table()
+        active_plan_matter = get_active_plan_matter_id()
 
         try:
             connection = postgres_provider_metadata.createConnection(selected_connection)
-            plans = connection.executeSql("""
+            plans = connection.executeSql(f"""
                 SELECT
                     p.id,
-                    p.name,
-                    p.lifecycle_status_id
+                    p.name ->> 'fin',
+                    ls.name ->> 'fin'
                 FROM
-                    hame.plan p;
+                    hame.plan p
+                    JOIN codes.lifecycle_status ls
+                        ON p.lifecycle_status_id = ls.id
+                WHERE
+                    p.plan_matter_id = '{active_plan_matter}'
             """)
         except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Virhe", f"Kaavojen lataus epäonnistui: {e}")

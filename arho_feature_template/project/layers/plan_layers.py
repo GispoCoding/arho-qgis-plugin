@@ -15,8 +15,8 @@ from arho_feature_template.core.models import (
     Document,
     LifeCycle,
     Plan,
-    PlanObject,
     PlanMatter,
+    PlanObject,
     Proposition,
     Regulation,
     RegulationGroup,
@@ -34,18 +34,8 @@ from arho_feature_template.utils.misc_utils import (
 logger = logging.getLogger(__name__)
 
 
-class AbstractPlanLayer(AbstractLayer):
+class AbstractFeatureLayer(AbstractLayer):
     filter_template: ClassVar[Template | None]
-
-    @classmethod
-    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
-        """Apply filter to the layer by plan id."""
-        if cls.filter_template is None:
-            return
-
-        filter_expression = cls.filter_template.substitute(plan_id=plan_id)
-
-        cls.apply_filter(filter_expression)
 
     @classmethod
     def hide_all_features(cls) -> None:
@@ -88,8 +78,36 @@ class AbstractPlanLayer(AbstractLayer):
         return feature
 
 
-# Uusi
-class PlanMatterLayer(AbstractPlanLayer):
+class AbstractPlanLayer(AbstractFeatureLayer):
+    filter_template: ClassVar[Template | None]
+
+    @classmethod
+    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
+        """Apply filter to the layer by plan id."""
+        if cls.filter_template is None:
+            return
+
+        filter_expression = cls.filter_template.substitute(plan_id=plan_id)
+
+        cls.apply_filter(filter_expression)
+
+
+class AbstractPlanMatterLayer(AbstractFeatureLayer):
+    filter_template: ClassVar[Template | None]
+
+    @classmethod
+    def filter_layer_by_plan_matter_id(cls, plan_matter_id: str | None) -> None:
+        """Apply filter to the layer by plan matter id."""
+        if cls.filter_template is None:
+            return
+
+        filter_expression = cls.filter_template.substitute(plan_matter_id=plan_matter_id)
+
+        cls.apply_filter(filter_expression)
+
+
+
+class PlanMatterLayer(AbstractPlanMatterLayer):
     name = "Kaava-asia"
     filter_template = Template("id = '$plan_matter_id'")
 
@@ -121,34 +139,6 @@ class PlanMatterLayer(AbstractPlanLayer):
             id_=feature["id"],
             modified=False,
         )
-
-    @classmethod
-    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
-        """Filter PlanMatterLayer by the plan's related plan_matter_id."""
-        if cls.filter_template is None or plan_id is None:
-            return
-
-        try:
-            plan_matter_id = PlanLayer.get_attribute_value_by_another_attribute_value(
-                "plan_matter_id",
-                "id",
-                plan_id
-            )
-
-            if not plan_matter_id:
-                cls.hide_all_features()
-                return
-
-            filter_expression = cls.filter_template.substitute(plan_matter_id=plan_matter_id)
-            cls.apply_filter(filter_expression)
-
-        except Exception as e:
-            iface.messageBar().pushMessage(
-                "Virhe",
-                f"Kaava-asian suodatus epäonnistui: {e}",
-                level=3,
-            )
-            cls.hide_all_features()
 
     @classmethod
     def get_plan_matter_name(cls, plan_matter_id: str) -> str:
@@ -190,13 +180,8 @@ class PlanLayer(AbstractPlanLayer):
         feature["name"] = serialize_localized_text(model.name)
         feature["description"] = serialize_localized_text(model.description)
         feature["scale"] = model.scale
-        # feature["permanent_plan_identifier"] = model.permanent_plan_identifier
-        # feature["record_number"] = model.record_number
-        # feature["producers_plan_identifier"] = model.producers_plan_identifier
-        # feature["matter_management_identifier"] = model.matter_management_identifier
-        # feature["plan_type_id"] = model.plan_type_id
         feature["lifecycle_status_id"] = model.lifecycle_status_id
-        # feature["organisation_id"] = model.organisation_id
+        feature["plan_matter_id"] = model.plan_matter_id
 
         return feature
 
@@ -210,13 +195,7 @@ class PlanLayer(AbstractPlanLayer):
             name=deserialize_localized_text(feature["name"]),
             description=deserialize_localized_text(feature["description"]),
             scale=feature["scale"],
-            # permanent_plan_identifier=feature["permanent_plan_identifier"],
-            # record_number=feature["record_number"],
-            # producers_plan_identifier=feature["producers_plan_identifier"],
-            # matter_management_identifier=feature["matter_management_identifier"],
-            # plan_type_id=feature["plan_type_id"],
             lifecycle_status_id=feature["lifecycle_status_id"],
-            # organisation_id=feature["organisation_id"],
             general_regulations=RegulationGroupLayer.models_from_features(general_regulation_features),
             legal_effect_ids=list(LegalEffectAssociationLayer.get_legal_effect_ids_for_plan(feature["id"])),
             documents=[
@@ -229,6 +208,7 @@ class PlanLayer(AbstractPlanLayer):
                 for feat in LifeCycleLayer.get_features_by_plan_id(feature["id"])
                 if feat is not None
             ],
+            plan_matter_id=feature["plan_matter_id"],
             modified=False,
         )
 
@@ -239,20 +219,6 @@ class PlanLayer(AbstractPlanLayer):
 
         return name or "Nimetön"
 
-    @classmethod
-    def get_plan_type_name(cls, plan_id: str) -> str | None:
-        type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_id)
-        if type_id is None:
-            return None
-        attribute_value = PlanTypeLayer.get_attribute_value_by_another_attribute_value("name", "id", cast(str, type_id))
-        return deserialize_localized_text(attribute_value)
-
-    @classmethod
-    def get_plan_producers_plan_identifier(cls, plan_id: str) -> str | None:
-        producers_id = cls.get_attribute_value_by_another_attribute_value("producers_plan_identifier", "id", plan_id)
-        if producers_id is None:
-            return None
-        return cast(str, producers_id)
 
 class PlanObjectLayer(AbstractPlanLayer):
     @classmethod
@@ -888,29 +854,13 @@ class DocumentLayer(AbstractPlanLayer):
 
 
 # class SourceDataLayer(AbstractPlanLayer):
-    # name = "Lähtötietoaineistot"
-    # filter_template = Template("plan_id = '$plan_id'")
+# name = "Lähtötietoaineistot"
+# filter_template = Template("plan_id = '$plan_id'")
 
 
-class SourceDataLayer(AbstractPlanLayer):
+class SourceDataLayer(AbstractPlanMatterLayer):
     name = "Lähtötietoaineistot"
     filter_template = Template("plan_matter_id = '$plan_matter_id'")
-
-    @classmethod
-    def filter_layer_by_plan_id(cls, plan_id: str | None) -> None:
-        if not plan_id or cls.filter_template is None:
-            return cls.hide_all_features()
-
-        try:
-            plan_matter_id = PlanLayer.get_attribute_value_by_another_attribute_value("plan_matter_id", "id", plan_id)
-            if not plan_matter_id:
-                return cls.hide_all_features()
-
-            cls.apply_filter(cls.filter_template.substitute(plan_matter_id=plan_matter_id))
-        except Exception as e:
-            iface.messageBar().pushMessage("Virhe", f"Lähtötietoaineiston suodatus epäonnistui: {e}", level=3)
-            cls.hide_all_features()
-
 
 class AdditionalInformationLayer(AbstractPlanLayer):
     name = "Kaavamääräyksen lisätiedot"
@@ -1041,6 +991,9 @@ FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanObjectLayer]] = {
     OtherAreaLayer.name: OtherAreaLayer,
     LandUseAreaLayer.name: LandUseAreaLayer,
 }
+
+
+plan_matter_layers = AbstractPlanMatterLayer.__subclasses__()
 
 plan_layers = AbstractPlanLayer.__subclasses__()
 plan_layers.remove(PlanObjectLayer)
