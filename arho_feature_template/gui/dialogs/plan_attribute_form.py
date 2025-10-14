@@ -15,38 +15,27 @@ from arho_feature_template.gui.components.plan_document_widget import DocumentWi
 from arho_feature_template.gui.components.value_input_widgets import LegalEffectWidget
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
-    OrganisationLayer,
     PlanTypeLayer,
 )
-from arho_feature_template.utils.misc_utils import disconnect_signal
+from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
+from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
 
-    from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
+    from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_attribute_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 
 class PlanAttributeForm(QDialog, FormClass):  # type: ignore
-    permanent_identifier_line_edit: QLineEdit
     name_line_edit: QLineEdit
     description_text_edit: QTextEdit
     scale_spin_box: QSpinBox
-    organisation_combo_box: CodeComboBox
-    plan_type_combo_box: HierarchicalCodeComboBox
     lifecycle_status_combo_box: CodeComboBox
-    record_number_line_edit: QLineEdit
-    producers_plan_identifier_line_edit: QLineEdit
-    matter_management_identifier_line_edit: QLineEdit
-
     regulations_layout: QVBoxLayout
     add_general_regulation_group_btn: QPushButton
-    # plan_regulation_group_scrollarea_contents: QWidget
-    # plan_regulation_group_libraries_combobox: QComboBox
-    # regulation_groups_tree_layout: QVBoxLayout
-
     documents_layout: QVBoxLayout
     add_document_btn: QPushButton
 
@@ -57,36 +46,22 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.setupUi(self)
 
+        self.is_general_plan_type=self._is_general_plan_type()
+
         self.general_data_layout: QFormLayout
 
         self.plan = plan
         self.lifecycle_models = plan.lifecycles
 
-        self.plan_type_combo_box.populate_from_code_layer(PlanTypeLayer)
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
-        self.organisation_combo_box.populate_from_code_layer(OrganisationLayer)
 
-        # self.plan_type_combo_box.set_value(plan.plan_type_id)
+
         self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
-        # self.organisation_combo_box.set_value(plan.organisation_id)
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
         self.name_line_edit.setText(plan.name if plan.name else "")
         self.description_text_edit.setText(plan.description if plan.description else "")
-        #self.permanent_identifier_line_edit.setText(
-            #plan.permanent_plan_identifier if plan.permanent_plan_identifier else ""
-        #)
-        #self.record_number_line_edit.setText(plan.record_number if plan.record_number else "")
-        #self.producers_plan_identifier_line_edit.setText(
-            #plan.producers_plan_identifier if plan.producers_plan_identifier else ""
-        #)
-        #self.matter_management_identifier_line_edit.setText(
-            #plan.matter_management_identifier if plan.matter_management_identifier else ""
-        #)
 
         self.name_line_edit.textChanged.connect(self._check_required_fields)
-        self.organisation_combo_box.currentIndexChanged.connect(self._check_required_fields)
-        self.plan_type_combo_box.currentIndexChanged.connect(self._check_required_fields)
-        self.plan_type_combo_box.currentIndexChanged.connect(self._update_legal_effect_widgets_visibility)
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         self.scroll_area_spacer = None
@@ -128,8 +103,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
         if (
             self.name_line_edit.text() != ""
-            and self.plan_type_combo_box.value() is not None
-            and self.organisation_combo_box.value() is not None
             and self.lifecycle_status_combo_box.value() is not None
             and all(document_widget.is_ok() for document_widget in self.document_widgets)
         ):
@@ -137,9 +110,14 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         else:
             ok_button.setEnabled(False)
 
+    def _is_general_plan_type(self):
+        active_plan_matter_id = get_active_plan_matter_id()
+        plan_type_id = PlanMatterLayer.get_attribute_value_by_another_attribute_value("plan_type_id", "id", active_plan_matter_id)
+        return PlanTypeLayer.is_general_plan_type(plan_type_id)
+
+
     def _update_legal_effect_widgets_visibility(self):
-        plan_type_id = self.plan_type_combo_box.value()
-        if PlanTypeLayer.is_general_plan_type(plan_type_id):
+        if self.is_general_plan_type:
             self._show_legal_effect_widgets()
         else:
             self._hide_legal_effect_widgets()
@@ -245,7 +223,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     # ---
 
     def into_model(self) -> Plan:
-        if PlanTypeLayer.is_general_plan_type(self.plan_type_combo_box.value()):
+        if self.is_general_plan_type:
             legal_effect_ids = [legal_effect_widget[1].get_value() for legal_effect_widget in self.legal_effect_widgets]
         else:
             legal_effect_ids = []
@@ -255,17 +233,12 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             name=self.name_line_edit.text(),
             description=self.description_text_edit.toPlainText() or None,
             scale=self.scale_spin_box.value() or None,
-            # plan_type_id=self.plan_type_combo_box.value(),
-            # organisation_id=self.organisation_combo_box.value(),
-            # permanent_plan_identifier=self.permanent_identifier_line_edit.text() or None,
-            # record_number=self.record_number_line_edit.text() or None,
-            # producers_plan_identifier=self.producers_plan_identifier_line_edit.text() or None,
-            # matter_management_identifier=self.matter_management_identifier_line_edit.text() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),
             general_regulations=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
             legal_effect_ids=[value for value in legal_effect_ids if value is not None],
             documents=[document_widget.into_model() for document_widget in self.document_widgets],
             modified=self.plan.modified,
+            plan_matter_id=self.plan.plan_matter_id,
             geom=self.plan.geom,
         )
         if not model.modified and model != self.plan:

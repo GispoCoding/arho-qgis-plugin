@@ -6,7 +6,15 @@ import os
 from pathlib import Path
 from typing import Generator, Iterable, cast
 
-from qgis.core import QgsExpressionContextUtils, QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer, QgsWkbTypes
+from qgis.core import (
+    QgsExpressionContextUtils,
+    QgsFeature,
+    QgsGeometry,
+    QgsProject,
+    QgsVariantUtils,
+    QgsVectorLayer,
+    QgsWkbTypes,
+)
 from qgis.gui import QgsMapToolDigitizeFeature
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
@@ -63,6 +71,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
     plan_feature_layers,
     plan_layers,
+    plan_matter_layers,
 )
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import (
@@ -404,7 +413,6 @@ class PlanManager(QObject):
         self.previously_editable = plan_layer.isEditable()
 
         self.set_active_plan(None)
-        # self.set_permanent_identifier(None)
 
         iface.setActiveLayer(plan_layer)
         plan_layer.startEditing()
@@ -472,7 +480,6 @@ class PlanManager(QObject):
     # This is new
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
-        self.previous_active_plan_id = get_active_plan_id()
 
         # Handle unsaved changes first
         if not handle_unsaved_changes():
@@ -484,25 +491,20 @@ class PlanManager(QObject):
             iface.messageBar().pushWarning("", "Kaava-asia tasoa ei löytynyt projektista.")
             return
 
-        # Remember whether it was editable
         self.previously_editable = plan_matter_layer.isEditable()
 
-        # Make it the active layer
         iface.setActiveLayer(plan_matter_layer)
 
-        # Ensure it’s editable
         if not plan_matter_layer.isEditable():
             plan_matter_layer.startEditing()
 
-        # Create an empty PlanMatter model (no geometry)
         plan_matter_model = PlanMatter()
-
-        # Open the attribute form
         attribute_form = PlanMatterAttributeForm(plan_matter_model, parent=iface.mainWindow())
 
-        # If user confirms, save the model
         if attribute_form.exec_():
             saved_id = save_plan_matter(attribute_form.model)
+
+        self.set_active_plan_matter(saved_id)
 
     def edit_lifecycles(self):
         plan_layer = PlanLayer.get_from_project()
@@ -612,6 +614,45 @@ class PlanManager(QObject):
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
 
+    def set_active_plan_matter(self, plan_matter_id: str) -> None:
+        previous_active_plan_matter_id = get_active_plan_matter_id()
+        if previous_active_plan_matter_id == plan_matter_id:
+            return None
+
+        if check_layer_changes():
+            raise UnsavedChangesError
+
+        plan_matter_layer = PlanMatterLayer.get_from_project()
+        previously_in_edit_mode = plan_matter_layer.isEditable()
+        if previously_in_edit_mode:
+            plan_matter_layer.rollBack()
+
+        set_active_plan_matter_id(plan_matter_id)
+
+        # Plan matter filtering
+        if plan_matter_id:
+            self.plan_matter_set.emit()
+            for layer in plan_matter_layers:
+                layer.filter_layer_by_plan_matter_id(plan_matter_id)
+        else:
+            for layer in plan_matter_layers:
+                layer.hide_all_features()
+            self.plan_matter_unset.emit()
+
+        self.set_active_plan(None)
+
+        if previously_in_edit_mode:
+            plan_matter_layer.startEditing()
+
+        permanent_plan_identifier = PlanMatterLayer.get_attribute_by_id("permanent_plan_identifier", plan_matter_id)
+        if QgsVariantUtils.isNull(permanent_plan_identifier):
+            permanent_plan_identifier = None
+        print(f"{plan_matter_id=}")
+        print(f"permanent plan identifier: {permanent_plan_identifier},{type(permanent_plan_identifier)}")
+
+        self.set_permanent_identifier(permanent_plan_identifier)
+
+
     def set_active_plan(self, plan_id: str | None) -> None:
         """Update the project layers based on the selected land use plan and its plan matter.
 
@@ -627,36 +668,8 @@ class PlanManager(QObject):
         if previously_in_edit_mode:
             plan_layer.rollBack()
 
-        plan_matter_id = None
-        identifier = None
-
-        if plan_id:
-            try:
-                plan_matter_id = PlanLayer.get_attribute_value_by_another_attribute_value(
-                    "plan_matter_id", "id", plan_id
-                )
-                print(f"plan_matter_id is now: {plan_matter_id}")
-
-                if plan_matter_id:
-                    identifier = PlanMatterLayer.get_attribute_value_by_another_attribute_value(
-                        "case_identifier", "id", plan_matter_id
-                    )
-
-                    if identifier is None or str(identifier).upper() == "NULL":
-                        identifier = None
-
-            except Exception as e:
-                iface.messageBar().pushMessage(
-                    "Virhe",
-                    f"Kaava-asian tietojen haku epäonnistui: {e}",
-                    level=3,
-                )
-                plan_matter_id = None
-                identifier = None
-
         set_active_plan_id(plan_id)
-        print(f"setting plan_matter_id: {plan_matter_id}")
-        set_active_plan_matter_id(plan_matter_id)
+        print(f"{plan_id=}")
 
         if plan_id:
             self.plan_set.emit()
@@ -668,23 +681,12 @@ class PlanManager(QObject):
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
+                print(f"{layer=}")
                 if layer.name == "Kaava":
                     layer.show_all_features()
                 else:
                     layer.hide_all_features()
 
-        # Plan matter filtering
-        if plan_matter_id:
-            self.plan_matter_set.emit()
-            PlanMatterLayer.filter_layer_by_plan_id(plan_id)
-        else:
-            self.plan_matter_unset.emit()
-            PlanMatterLayer.hide_all_features()
-
-        if previously_in_edit_mode:
-            plan_layer.startEditing()
-
-        self.set_permanent_identifier(identifier)
         self.update_active_plan_regulation_group_library()
         self.features_dock.create_plan_feature_view()
 

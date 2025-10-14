@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>820</width>
-    <height>655</height>
+    <width>637</width>
+    <height>363</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -61,8 +61,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>778</width>
-            <height>555</height>
+            <width>593</width>
+            <height>270</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -78,40 +78,26 @@
            <item>
             <layout class="QFormLayout" name="general_data_layout">
              <item row="0" column="0">
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pysyvä kaavatunnus:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-               <property name="buddy">
-                <cstring>permanent_identifier_line_edit</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="permanent_identifier_line_edit">
-               <property name="toolTip">
-                <string>Kaava-asian pysyvä kaavatunnus</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
               <widget class="QLabel" name="nimiLabel">
+               <property name="toolTip">
+                <string>Tämä tieto ei mene Ryhtiin viennin yhteydessä</string>
+               </property>
                <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Nimi:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; color:#757575;&quot;&gt; Nimi:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="buddy">
                 <cstring>name_line_edit</cstring>
                </property>
               </widget>
              </item>
-             <item row="1" column="1">
+             <item row="0" column="1">
               <widget class="QLineEdit" name="name_line_edit">
                <property name="toolTip">
                 <string>Kaava-asian nimi</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
+             <item row="1" column="0">
               <widget class="QLabel" name="kuvausLabel">
                <property name="text">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Kuvaus:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -121,7 +107,7 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
+             <item row="1" column="1">
               <widget class="QTextEdit" name="description_text_edit">
                <property name="maximumSize">
                 <size>
@@ -134,51 +120,7 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Organisaatio:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="CodeComboBox" name="organisation_combo_box"/>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="tyyppiLabel">
-               <property name="text">
-                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Kaavalaji:</string>
-               </property>
-               <property name="buddy">
-                <cstring>plan_type_combo_box</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="1">
-              <widget class="HierarchicalCodeComboBox" name="plan_type_combo_box">
-               <property name="toolTip">
-                <string>Kaava-asian kaavalaji</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="elinkaarenTilaLabel">
-               <property name="text">
-                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Elinkaaren tila:</string>
-               </property>
-               <property name="buddy">
-                <cstring>lifecycle_status_combo_box</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="1">
-              <widget class="CodeComboBox" name="lifecycle_status_combo_box">
-               <property name="toolTip">
-                <string>Kaavan elinkaaren tila</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
+             <item row="2" column="0">
               <widget class="QLabel" name="scale_label">
                <property name="mouseTracking">
                 <bool>true</bool>
@@ -188,78 +130,31 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="1">
+             <item row="2" column="1">
               <widget class="QSpinBox" name="scale_spin_box">
                <property name="maximum">
                 <number>999999999</number>
                </property>
               </widget>
              </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="elinkaarenTilaLabel">
+               <property name="text">
+                <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Elinkaaren tila:</string>
+               </property>
+               <property name="buddy">
+                <cstring>lifecycle_status_combo_box</cstring>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="CodeComboBox" name="lifecycle_status_combo_box">
+               <property name="toolTip">
+                <string>Kaavan elinkaaren tila</string>
+               </property>
+              </widget>
+             </item>
             </layout>
-           </item>
-           <item>
-            <widget class="QgsCollapsibleGroupBox" name="mGroupBox">
-             <property name="title">
-              <string>Muut tunnukset</string>
-             </property>
-             <property name="collapsed">
-              <bool>false</bool>
-             </property>
-             <layout class="QFormLayout" name="formLayout_2">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>Diaarinumero:</string>
-                </property>
-                <property name="buddy">
-                 <cstring>record_number_line_edit</cstring>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="record_number_line_edit"/>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="producers_plan_identifier_line_edit">
-                <property name="toolTip">
-                 <string>Tuottajan kaavatunnus vaaditaan kaava-asian muodostamiseen ja pysyvän kaavatunnuksen hakemiseen.</string>
-                </property>
-                <property name="whatsThis">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_3">
-                <property name="toolTip">
-                 <string>Tuottajan kaavatunnus vaaditaan kaava-asian muodostamiseen ja pysyvän kaavatunnuksen hakemiseen.</string>
-                </property>
-                <property name="whatsThis">
-                 <string/>
-                </property>
-                <property name="text">
-                 <string>&lt;span style=&quot;color: #FF7518;&quot;&gt;*&lt;/span&gt; Tuottajan kaavatunnus:</string>
-                </property>
-                <property name="buddy">
-                 <cstring>producers_plan_identifier_line_edit</cstring>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_4">
-                <property name="text">
-                 <string>Asianhallintatunnus:</string>
-                </property>
-                <property name="buddy">
-                 <cstring>matter_management_identifier_line_edit</cstring>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QLineEdit" name="matter_management_identifier_line_edit"/>
-              </item>
-             </layout>
-            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_3">
@@ -295,8 +190,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>778</width>
-            <height>555</height>
+            <width>593</width>
+            <height>366</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="regulations_layout">
@@ -350,8 +245,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>778</width>
-            <height>555</height>
+            <width>593</width>
+            <height>366</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="documents_layout">
@@ -403,18 +298,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QgsCollapsibleGroupBox</class>
-   <extends>QGroupBox</extends>
-   <header>qgscollapsiblegroupbox.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>CodeComboBox</class>
-   <extends>QComboBox</extends>
-   <header>arho_feature_template.gui.components.code_combobox</header>
-  </customwidget>
-  <customwidget>
-   <class>HierarchicalCodeComboBox</class>
    <extends>QComboBox</extends>
    <header>arho_feature_template.gui.components.code_combobox</header>
   </customwidget>
@@ -424,7 +308,6 @@
   <tabstop>general_info_scroll_area</tabstop>
   <tabstop>name_line_edit</tabstop>
   <tabstop>description_text_edit</tabstop>
-  <tabstop>plan_type_combo_box</tabstop>
   <tabstop>lifecycle_status_combo_box</tabstop>
  </tabstops>
  <resources/>
