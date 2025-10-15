@@ -119,14 +119,10 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         plans = self.get_plans_from_db(selected_connection)
         for i, plan in enumerate(plans):
             id_, name, lifecycle_status = plan
-            # id_, producers_plan_identifier, name, lifecycle_status, plan_type = plan
             self.model.appendRow(
                 [
                     QStandardItem(name or ""),
-                    # QStandardItem(plan_type or ""),
                     QStandardItem(lifecycle_status or ""),
-                    # QStandardItem(producers_plan_identifier or ""),
-                    # QStandardItem(id_ or ""),
                 ]
             )
             self.model.item(i, 0).setData(id_, Qt.UserRole)

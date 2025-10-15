@@ -55,7 +55,6 @@ class Library(ABC):
         DEFAULT = "default"
         CUSTOM = "custom"
         ACTIVE_PLAN = "active_plan"
-        # ACTIVE_PLAN_MATTER = "active_plan_matter"
 
     name: str = ""
     file_path: str | None = None
@@ -460,14 +459,8 @@ class Plan(PlanBaseModel):
     name: str | None = None
     description: str | None = None
     scale: int | None = None
-    # plan_type_id: str | None = None
     lifecycle_status_id: str | None = None
     lifecycles: list[LifeCycle] = field(default_factory=list, compare=False)
-    # record_number: str | None = None
-    # matter_management_identifier: str | None = None
-    # permanent_plan_identifier: str | None = None
-    # producers_plan_identifier: str | None = None
-    # organisation_id: str | None = None
     general_regulations: list[RegulationGroup] = field(default_factory=list, compare=False)
     documents: list[Document] = field(default_factory=list, compare=False)
     legal_effect_ids: list[str] = field(default_factory=list)
@@ -482,7 +475,6 @@ class PlanMatter(PlanBaseModel):
     name: str | None = None
     description: str | None = None
     plan_type_id: str | None = None
-    # lifecycles: list [LifeCycle] = field(default_factory=list, compare=False)
     record_number: str | None = None
     case_identifier: str | None = None
     permanent_plan_identifier: str | None = None

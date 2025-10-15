@@ -141,8 +141,6 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
         if postgres_provider_metadata is None:
             raise UnexpectedNoneError
 
-        # active_plan_matter = get_active_plan_matter_id()
-
         try:
             connection = postgres_provider_metadata.createConnection(selected_connection)
             plan_matters = connection.executeSql("""
