@@ -396,7 +396,7 @@ class Plugin:
                 triggered_callback=self.plan_manager.get_permanent_plan_identifier,
                 add_to_menu=True,
                 add_to_toolbar=True,
-                status_tip="Hae kaavalle pysyvä kaavatunnus",
+                status_tip="Hae kaava-asialle pysyvä kaavatunnus",
             )
             self.get_permanent_identifier_action.setEnabled(False)  # Disable button by default
 
