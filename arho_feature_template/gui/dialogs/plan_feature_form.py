@@ -138,7 +138,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         if feature is not None:
             active_plan_matter_id = get_active_plan_matter_id()
-            plan_type_id = PlanMatterLayer.get_attribute_value_by_another_attribute_value("plan_type_id", "id", active_plan_matter_id)
+            plan_type_id = PlanMatterLayer.get_attribute_value_by_another_attribute_value(
+                "plan_type_id", "id", active_plan_matter_id
+            )
 
             plan_type = PlanTypeLayer.get_plan_type(plan_type_id)
             library_name = ""

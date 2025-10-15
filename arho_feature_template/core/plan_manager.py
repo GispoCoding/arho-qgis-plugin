@@ -44,6 +44,7 @@ from arho_feature_template.gui.dialogs.import_features_form import ImportFeature
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.lifecycle_editor import LifecycleEditor
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
+from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
@@ -475,7 +476,7 @@ class PlanManager(QObject):
 
         attribute_form = PlanMatterAttributeForm(plan_matter_model)
         if attribute_form.exec_():
-            plan_matter_id = save_plan_matter(attribute_form.model)
+            save_plan_matter(attribute_form.model)
 
     # This is new
     def new_plan_matter(self):
@@ -647,11 +648,8 @@ class PlanManager(QObject):
         permanent_plan_identifier = PlanMatterLayer.get_attribute_by_id("permanent_plan_identifier", plan_matter_id)
         if QgsVariantUtils.isNull(permanent_plan_identifier):
             permanent_plan_identifier = None
-        print(f"{plan_matter_id=}")
-        print(f"permanent plan identifier: {permanent_plan_identifier},{type(permanent_plan_identifier)}")
 
         self.set_permanent_identifier(permanent_plan_identifier)
-
 
     def set_active_plan(self, plan_id: str | None) -> None:
         """Update the project layers based on the selected land use plan and its plan matter.
@@ -669,7 +667,6 @@ class PlanManager(QObject):
             plan_layer.rollBack()
 
         set_active_plan_id(plan_id)
-        print(f"{plan_id=}")
 
         if plan_id:
             self.plan_set.emit()
@@ -681,7 +678,6 @@ class PlanManager(QObject):
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
-                print(f"{layer=}")
                 if layer.name == "Kaava":
                     layer.show_all_features()
                 else:
@@ -723,6 +719,24 @@ class PlanManager(QObject):
             self.commit_all_editable_layers()
 
             self.set_active_plan(selected_plan_id)
+
+    def load_plan_matter(self):
+        """Load an existing plan matter using a dialog selection."""
+        connection_names = get_existing_database_connection_names()
+
+        if not connection_names:
+            iface.messageBar().pushCritical("", "Tietokantayhteyksiä ei löytynyt.")
+            return
+
+        if not handle_unsaved_changes():
+            return
+
+        dialog = LoadPlanMatterDialog(None, connection_names)
+
+        if dialog.exec_() == QDialog.Accepted:
+            selected_plan_matter_id = dialog.get_selected_plan_matter_id()
+            self.set_active_plan_matter(selected_plan_matter_id)
+            PlanLayer.hide_all_features()
 
     def commit_all_editable_layers(self):
         """Commit all changes in any editable layers."""

@@ -106,7 +106,6 @@ class AbstractPlanMatterLayer(AbstractFeatureLayer):
         cls.apply_filter(filter_expression)
 
 
-
 class PlanMatterLayer(AbstractPlanMatterLayer):
     name = "Kaava-asia"
     filter_template = Template("id = '$plan_matter_id'")
@@ -861,6 +860,7 @@ class DocumentLayer(AbstractPlanLayer):
 class SourceDataLayer(AbstractPlanMatterLayer):
     name = "Lähtötietoaineistot"
     filter_template = Template("plan_matter_id = '$plan_matter_id'")
+
 
 class AdditionalInformationLayer(AbstractPlanLayer):
     name = "Kaavamääräyksen lisätiedot"

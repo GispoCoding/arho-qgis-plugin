@@ -23,8 +23,8 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import (
     Library,
-    PlanObject,
     PlanFeatureLibrary,
+    PlanObject,
     RegulationGroup,
     RegulationGroupLibrary,
 )
