@@ -8,6 +8,7 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import (
     QComboBox,
     QGroupBox,
+    QLabel,
     QMessageBox,
     QScrollArea,
     QSizePolicy,
@@ -55,6 +56,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.plan_regulation_group_scrollarea_contents: QWidget
         self.plan_regulation_group_libraries_combobox: QComboBox
         self.plan_regulation_groups_tree: QTreeWidget
+        self.regulation_groups_label: QLabel
 
         # INIT
         self.layout().removeWidget(self.libraries_widget)
