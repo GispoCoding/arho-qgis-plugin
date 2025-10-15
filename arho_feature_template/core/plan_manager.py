@@ -791,7 +791,7 @@ class PlanManager(QObject):
             )
             return
 
-        self.lambda_service.get_permanent_identifier(plan_matter_id)
+        self.lambda_service.get_permanent_identifier(get_active_plan_id())
 
     def set_permanent_identifier(self, identifier):
         QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "permanent_identifier", identifier)
