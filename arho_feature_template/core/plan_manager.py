@@ -503,7 +503,7 @@ class PlanManager(QObject):
         if attribute_form.exec_():
             saved_id = save_plan_matter(attribute_form.model)
 
-        self.set_active_plan_matter(saved_id)
+            self.set_active_plan_matter(saved_id)
 
     def edit_lifecycles(self):
         plan_layer = PlanLayer.get_from_project()
@@ -639,6 +639,7 @@ class PlanManager(QObject):
             self.plan_matter_unset.emit()
 
         self.set_active_plan(None)
+        PlanLayer.hide_all_features()
 
         if previously_in_edit_mode:
             plan_matter_layer.startEditing()
@@ -737,7 +738,6 @@ class PlanManager(QObject):
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_matter_id = dialog.get_selected_plan_matter_id()
             self.set_active_plan_matter(selected_plan_matter_id)
-            PlanLayer.hide_all_features()
 
     def commit_all_editable_layers(self):
         """Commit all changes in any editable layers."""
