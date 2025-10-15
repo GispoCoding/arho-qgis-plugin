@@ -852,11 +852,6 @@ class DocumentLayer(AbstractPlanLayer):
         ]
 
 
-# class SourceDataLayer(AbstractPlanLayer):
-# name = "Lähtötietoaineistot"
-# filter_template = Template("plan_id = '$plan_id'")
-
-
 class SourceDataLayer(AbstractPlanMatterLayer):
     name = "Lähtötietoaineistot"
     filter_template = Template("plan_matter_id = '$plan_matter_id'")

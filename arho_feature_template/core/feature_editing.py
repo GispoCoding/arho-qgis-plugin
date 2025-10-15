@@ -64,8 +64,6 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
     return layer.commitChanges(stopEditing=False)
 
 
-
-
 @use_wait_cursor
 def save_plan_matter(plan_matter: PlanMatter) -> str | None:
     plan_matter_id = plan_matter.id_
