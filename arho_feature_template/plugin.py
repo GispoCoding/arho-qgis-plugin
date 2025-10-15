@@ -168,7 +168,6 @@ class Plugin:
         # Actions
         self.new_plan_matter_action = self.add_action(
             text="Uusi kaava-asia",
-            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
             triggered_callback=self.plan_manager.new_plan_matter,
             add_to_menu=True,
             add_to_toolbar=True,
@@ -176,7 +175,6 @@ class Plugin:
         )
         self.load_plan_matter_action = self.add_action(
             text="Avaa kaava-asia",
-            icon=QIcon(resources_path("icons", "toolbar", "avaa_kaava4.svg")),
             triggered_callback=self.load_existing_plan_matter,
             parent=iface.mainWindow(),
             add_to_menu=True,
@@ -185,7 +183,6 @@ class Plugin:
         )
         self.edit_plan_matter_action = self.add_action(
             text="Muokkaa kaava-asiaa",
-            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
             triggered_callback=self.plan_manager.edit_plan_matter,
             parent=iface.mainWindow(),
             add_to_menu=True,
