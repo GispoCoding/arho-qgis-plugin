@@ -76,62 +76,6 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="regulation_groups_groupbox">
-     <property name="title">
-      <string>Kaavamääräysryhmät</string>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QWidget" name="libraries_widget" native="true">
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>Kaavamääräysryhmäkirjastot</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="plan_regulation_group_libraries_combobox"/>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QWidget" name="regulation_groups_widget" native="true">
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Kaavakohteen kaavamääräysryhmät</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QScrollArea" name="plan_regulation_group_scrollarea">
-           <property name="widgetResizable">
-            <bool>true</bool>
-           </property>
-           <widget class="QWidget" name="plan_regulation_group_scrollarea_contents">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>667</width>
-              <height>426</height>
-             </rect>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2"/>
-           </widget>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
     <widget class="QDialogButtonBox" name="button_box">
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
