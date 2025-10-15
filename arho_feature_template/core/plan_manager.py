@@ -462,7 +462,6 @@ class PlanManager(QObject):
             if plan_id is not None:
                 self.update_active_plan_regulation_group_library()
 
-    # This is new
     def edit_plan_matter(self):
         plan_matter_layer = PlanMatterLayer.get_from_project()
         if not plan_matter_layer:
@@ -478,7 +477,6 @@ class PlanManager(QObject):
         if attribute_form.exec_():
             save_plan_matter(attribute_form.model)
 
-    # This is new
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
 
@@ -658,6 +656,7 @@ class PlanManager(QObject):
         This method disables edit mode temporarily if needed.
         Therefore if there are unsaved changes, this method will raise an exception.
         """
+
         if check_layer_changes():
             raise UnsavedChangesError
 
@@ -667,7 +666,6 @@ class PlanManager(QObject):
             plan_layer.rollBack()
 
         set_active_plan_id(plan_id)
-
         if plan_id:
             self.plan_set.emit()
             for layer in plan_layers:
@@ -682,6 +680,9 @@ class PlanManager(QObject):
                     layer.show_all_features()
                 else:
                     layer.hide_all_features()
+
+        if previously_in_edit_mode:
+            plan_layer.startEditing()
 
         self.update_active_plan_regulation_group_library()
         self.features_dock.create_plan_feature_view()
