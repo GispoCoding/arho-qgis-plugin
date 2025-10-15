@@ -228,8 +228,6 @@ class Plugin:
         self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
 
         menu = QMenu()
-        menu.addAction(self.new_plan_matter_action)
-        menu.addSeparator()
         menu.addAction(self.draw_new_plan_action)
         menu.addAction(self.new_plan_from_border)
         menu.addSeparator()
