@@ -8,6 +8,7 @@ from qgis.core import (
     QgsCoordinateTransform,
     QgsFeature,
     QgsFieldProxyModel,
+    QgsGeometry,
     QgsMapLayerProxyModel,
     QgsProject,
     QgsVectorLayer,
@@ -16,19 +17,23 @@ from qgis.core import (
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressBar
 
+from arho_feature_template.core.feature_editing import save_plan_feature, save_regulation_group
 from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
-from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer, code_layers
+from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
+from arho_feature_template.project.layers.code_layers import (
+    PlanRegulationGroupTypeLayer,
+    UndergroundTypeLayer,
+    code_layers,
+)
 from arho_feature_template.project.layers.plan_layers import (
-    FEATURE_LAYER_NAME_TO_CLASS_MAP,
     PlanLayer,
-    RegulationGroupAssociationLayer,
     plan_feature_layers,
     plan_layers,
 )
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 
 if TYPE_CHECKING:
-    from qgis.gui import QgsCheckableComboBox, QgsFieldComboBox, QgsMapLayerComboBox
+    from qgis.gui import QgsFieldComboBox, QgsMapLayerComboBox
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
@@ -38,7 +43,11 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 
 class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
-    def __init__(self, active_plan_regulation_groups_library: RegulationGroupLibrary):
+    def __init__(
+        self,
+        regulation_group_libraries: list[RegulationGroupLibrary],
+        active_plan_regulation_groups_library: RegulationGroupLibrary,
+    ):
         super().__init__()
         self.setupUi(self)
 
@@ -49,7 +58,6 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.name_selection: QgsFieldComboBox
         self.description_selection: QgsFieldComboBox
         self.feature_type_of_underground_selection: CodeComboBox
-        self.regulation_groups_selection: QgsCheckableComboBox
 
         self.target_layer_selection: QgsMapLayerComboBox
 
@@ -97,12 +105,10 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground_selection.remove_item_by_text("NULL")
         self.feature_type_of_underground_selection.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
-        # Regulation groups initialization
-        # Only regulation group already in DB are shown and they are not categorized right now
-        # NOTE: This means groups that are "Aluevaraus" groups can be given to "Osa-alue" for example
-        for i, group in enumerate(active_plan_regulation_groups_library.regulation_groups):
-            self.regulation_groups_selection.addItem(str(group))
-            self.regulation_groups_selection.setItemData(i, group.id_)
+        self.regulation_groups_view = RegulationGroupsView(
+            regulation_group_libraries, active_plan_regulation_groups_library
+        )
+        self.layout().insertWidget(3, self.regulation_groups_view)
 
         self._on_layer_selections_changed(self.source_layer_selection.currentLayer())
 
@@ -147,92 +153,65 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             return
 
         # Create and add new plan features
-        plan_features = self.create_plan_features(source_features)
-        total_count = len(plan_features)
-        failed_count = 0
-        success_count = 0
-        for i, feat in enumerate(plan_features):
-            self.progress_bar.setValue(int((i + 1) / total_count * 100))
-            if self._save_feature(feat, self.target_layer, None, "Kaavakohteen lisääminen"):
-                success_count += 1
-            else:
-                failed_count += 1
-
-        # If regulation groups are defined, associate them with the plan features
-        if len(self.regulation_groups_selection.checkedItems()) > 0:
-            associations = self.create_regulation_group_associations(plan_features)
-            associations_layer = RegulationGroupAssociationLayer.get_from_project()
-            for association in associations:
-                self._save_feature(association, associations_layer, None, "Kaavamääräysryhmän assosiaation lisääminen")
-
-        if failed_count == 0:
-            iface.messageBar().pushSuccess("", "Kaavakohteet tuotiin onnistuneesti.")
-        else:
-            iface.messageBar().pushInfo("", f"Osa kaavakohteista tuotiin epäonnistuneesti ({failed_count}).")
-
-        self.progress_bar.setValue(100)
+        self.create_and_save_plan_features(source_features)
 
     def get_source_features(self, source_layer: QgsVectorLayer) -> list[QgsFeature]:
         return (
             source_layer.selectedFeatures() if self.selected_features_only.isChecked() else source_layer.getFeatures()
         )
 
-    def create_plan_features(self, source_features: list[QgsFeature]) -> list[QgsFeature]:
-        layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(self.target_layer_name)
-        if not layer_class:
-            msg = f"Could not find plan feature layer class for layer name {self.target_layer_name}"
-            raise ValueError(msg)
-
+    def create_and_save_plan_features(self, source_features: list[QgsFeature]):
         crs_mismatch = self.source_layer.crs() != self.target_crs
         transform = QgsCoordinateTransform(
             self.source_layer.crs(), PlanLayer.get_from_project().crs(), QgsProject.instance()
         )
 
+        def _check_geom(geometry: QgsGeometry):
+            if crs_mismatch:
+                geometry.transform(transform)
+
+            if not geometry.isMultipart():
+                geometry.convertToMultiType()
+            return geometry
+
         type_of_underground_id = self.feature_type_of_underground_selection.value()
         source_layer_name_field = self.name_selection.currentField()
         source_layer_description_field = self.description_selection.currentField()
+        regulation_groups = self.regulation_groups_view.into_model()
+        target_layer_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.target_layer_name)
+        for group in regulation_groups:
+            # Assign feature layer type for each group based on target layer (will overwrite type_code_id for
+            # existing regulation groups)
+            group.type_code_id = target_layer_id
+            # If the group is not yet in DB, save it now to get an ID and use the same group object for each
+            # plan feature
+            if group.id_ is None:
+                id_ = save_regulation_group(group)
+                group.id_ = id_
+                group.modified = False
 
-        plan_features = []
-        for feature in source_features:
-            geom = feature.geometry()
-            if crs_mismatch:
-                geom.transform(transform)
-
-            if not geom.isMultipart():
-                geom.convertToMultiType()
-
-            plan_features.append(
-                layer_class.feature_from_model(
-                    PlanObject(
-                        geom=geom,
-                        type_of_underground_id=type_of_underground_id,
-                        layer_name=self.target_layer_name,
-                        name=feature[source_layer_name_field] if source_layer_name_field else None,
-                        description=feature[source_layer_description_field] if source_layer_description_field else None,
-                    )
-                )
+        # Save plan features and track progress
+        total_count = len(source_features)
+        failed_count = 0
+        success_count = 0
+        for i, feature in enumerate(source_features):
+            model = PlanObject(
+                geom=_check_geom(feature.geometry()),
+                type_of_underground_id=type_of_underground_id,
+                layer_name=self.target_layer_name,
+                name=feature[source_layer_name_field] if source_layer_name_field else None,
+                description=feature[source_layer_description_field] if source_layer_description_field else None,
+                regulation_groups=regulation_groups,
             )
-        return plan_features
+            self.progress_bar.setValue(int((i + 1) / total_count * 100))
+            if save_plan_feature(model):
+                success_count += 1
+            else:
+                failed_count += 1
 
-    def create_regulation_group_associations(self, plan_features: list[QgsFeature]) -> list[QgsFeature]:
-        return [
-            RegulationGroupAssociationLayer.feature_from(
-                regulation_group_id, self.target_layer_name, plan_feature["id"]
-            )
-            for regulation_group_id in self.regulation_groups_selection.checkedItemsData()
-            for plan_feature in plan_features
-        ]
+        self.progress_bar.setValue(100)
 
-    @staticmethod
-    def _save_feature(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = "") -> bool:
-        if not layer.isEditable():
-            layer.startEditing()
-        layer.beginEditCommand(edit_text)
-
-        if id_ is None:
-            layer.addFeature(feature)
+        if failed_count == 0:
+            iface.messageBar().pushSuccess("", "Kaavakohteet tuotiin onnistuneesti.")
         else:
-            layer.updateFeature(feature)
-
-        layer.endEditCommand()
-        return layer.commitChanges(stopEditing=False)
+            iface.messageBar().pushInfo("", f"Osa kaavakohteista tuotiin epäonnistuneesti ({failed_count}).")
