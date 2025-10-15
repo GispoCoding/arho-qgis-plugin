@@ -46,7 +46,7 @@
     <widget class="QWidget" name="regulation_groups_widget" native="true">
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QLabel" name="label_9">
+       <widget class="QLabel" name="regulation_groups_label">
         <property name="text">
          <string>Kaavakohteen kaavamääräysryhmät</string>
         </property>

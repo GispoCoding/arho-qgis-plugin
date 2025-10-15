@@ -108,6 +108,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.regulation_groups_view = RegulationGroupsView(
             regulation_group_libraries, active_plan_regulation_groups_library
         )
+        self.regulation_groups_view.regulation_groups_label.setText("Kaavakohteiden kaavamääräysryhmät")
         self.layout().insertWidget(3, self.regulation_groups_view)
 
         self._on_layer_selections_changed(self.source_layer_selection.currentLayer())
