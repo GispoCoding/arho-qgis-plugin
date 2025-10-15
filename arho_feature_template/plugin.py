@@ -166,6 +166,35 @@ class Plugin:
         self.validation_dock.hide()
 
         # Actions
+        self.new_plan_matter_action = self.add_action(
+            text="Uusi kaava-asia",
+            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
+            triggered_callback=self.plan_manager.new_plan_matter,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Luo uusi kaava-asia",
+        )
+        self.load_plan_matter_action = self.add_action(
+            text="Avaa kaava-asia",
+            icon=QIcon(resources_path("icons", "toolbar", "avaa_kaava4.svg")),
+            triggered_callback=self.load_existing_plan_matter,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Lataa/avaa kaava-asia",
+        )
+        self.edit_plan_matter_action = self.add_action(
+            text="Muokkaa kaava-asiaa",
+            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
+            triggered_callback=self.plan_manager.edit_plan_matter,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Muokkaa aktiivisen kaava-asian tietoja",
+        )
+
+        self.toolbar.addSeparator()
+
         self.draw_new_plan_action = self.add_action(
             text="Piirrä kaavan ulkoraja",
             icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
@@ -191,14 +220,6 @@ class Plugin:
             add_to_toolbar=False,
             status_tip="Tuo kaavan JSON tietokantaan",
         )
-        self.new_plan_matter_action = self.add_action(
-            text="Uusi kaava-asia",
-            icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
-            triggered_callback=self.plan_manager.new_plan_matter,
-            add_to_menu=False,
-            add_to_toolbar=False,
-            status_tip="Luo uusi kaava-asia",
-        )
 
         self.new_plan_button = QToolButton()
         self.new_plan_button.setText("Luo kaava")
@@ -207,10 +228,12 @@ class Plugin:
         self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
 
         menu = QMenu()
+        menu.addAction(self.new_plan_matter_action)
+        menu.addSeparator()
         menu.addAction(self.draw_new_plan_action)
         menu.addAction(self.new_plan_from_border)
+        menu.addSeparator()
         menu.addAction(self.import_plan)
-        menu.addAction(self.new_plan_matter_action)
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
@@ -242,17 +265,6 @@ class Plugin:
             status_tip="Muokkaa aktiivisen kaavan tietoja",
         )
 
-        # Uusi, lisää tohon muokkaa kaavaan dropdowniin
-        self.edit_plan_matter_action = self.add_action(
-            text="Muokkaa kaava-asiaa",
-            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
-            triggered_callback=self.plan_manager.edit_plan_matter,
-            parent=iface.mainWindow(),
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Muokkaa aktiivisen kaava-asian tietoja",
-        )
-
         self.edit_plan_tool_button.menu().addAction(self.edit_plan_action)
         self.edit_plan_tool_button.setDefaultAction(self.edit_plan_action)
 
@@ -266,6 +278,8 @@ class Plugin:
             status_tip="Muokkaa kaavan elinkaarien päivämääriä",
         )
         self.edit_plan_tool_button.menu().addAction(self.edit_lifecycles_action)
+
+        self.toolbar.addSeparator()
 
         self.new_feature_dock_action = self.add_action(
             text="Luo kaavakohde",
@@ -404,7 +418,15 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
-        self.project_depending_actions = [self.draw_new_plan_action, self.new_plan_from_border, self.load_plan_action]
+        self.project_depending_actions = [self.new_plan_matter_action, self.load_plan_matter_action]
+        self.plan_matter_depending_actions = [
+            self.draw_new_plan_action,
+            self.new_plan_from_border,
+            self.load_plan_action,
+            self.edit_plan_matter_action,
+            self.import_plan,
+            self.new_plan_action,
+        ]
         self.plan_depending_actions = [
             self.edit_plan_action,
             self.edit_lifecycles_action,
@@ -431,6 +453,7 @@ class Plugin:
             lambda: self.identify_plan_features_action.setChecked(False)
         )
         self.plan_manager.plan_set.connect(self.on_active_plan_set)
+        self.plan_manager.plan_matter_set.connect(self.on_active_plan_matter_set)
         self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
         self.plan_manager.project_loaded.connect(self.on_project_loaded)
         self.plan_manager.project_cleared.connect(self.on_project_cleared)
@@ -454,6 +477,9 @@ class Plugin:
 
     def load_existing_plan(self):
         self.plan_manager.load_plan()
+
+    def load_existing_plan_matter(self):
+        self.plan_manager.load_plan_matter()
 
     def export_plan(self):
         """Export the active plan to json."""
@@ -499,6 +525,10 @@ class Plugin:
             self.get_permanent_identifier_action.setEnabled(True)
             self.get_permanent_identifier_action.setToolTip("Hae pysyvä kaavatunnus")
 
+    def on_active_plan_matter_set(self):
+        for action in self.plan_matter_depending_actions:
+            action.setEnabled(True)
+
     def on_active_plan_set(self):
         for action in self.plan_depending_actions:
             action.setEnabled(True)
@@ -515,6 +545,8 @@ class Plugin:
         for action in self.project_depending_actions:
             action.setEnabled(False)
         for action in self.plan_depending_actions:
+            action.setEnabled(False)
+        for action in self.plan_matter_depending_actions:
             action.setEnabled(False)
 
     def unload(self) -> None:

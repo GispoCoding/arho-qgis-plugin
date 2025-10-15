@@ -46,7 +46,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.setupUi(self)
 
-        self.is_general_plan_type=self._is_general_plan_type()
+        self.is_general_plan_type = self._is_general_plan_type()
 
         self.general_data_layout: QFormLayout
 
@@ -54,7 +54,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.lifecycle_models = plan.lifecycles
 
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
-
 
         self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
@@ -112,9 +111,10 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     def _is_general_plan_type(self):
         active_plan_matter_id = get_active_plan_matter_id()
-        plan_type_id = PlanMatterLayer.get_attribute_value_by_another_attribute_value("plan_type_id", "id", active_plan_matter_id)
+        plan_type_id = PlanMatterLayer.get_attribute_value_by_another_attribute_value(
+            "plan_type_id", "id", active_plan_matter_id
+        )
         return PlanTypeLayer.is_general_plan_type(plan_type_id)
-
 
     def _update_legal_effect_widgets_visibility(self):
         if self.is_general_plan_type:

@@ -268,7 +268,6 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
         if not regulation_group_type:
             raise LayerNameNotFoundError(layer_name)
         regulation_type_id = cls.get_attribute_value_by_another_attribute_value("id", "value", regulation_group_type)
-        print(f"{regulation_type_id=}")
         if regulation_type_id:
             return cast(str, regulation_type_id)
         return None
