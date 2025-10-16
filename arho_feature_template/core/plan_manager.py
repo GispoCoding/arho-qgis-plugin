@@ -892,6 +892,8 @@ class PlanManager(QObject):
 
         # Plan features dock
         self.features_dock.unload()
+        iface.removeDockWidget(self.features_dock)
+        self.features_dock.deleteLater()
 
         disconnect_signal(self.plan_set)
 
