@@ -25,15 +25,14 @@ from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     PlanRegulationGroupTypeLayer,
     PlanType,
-    PlanTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import PlanLayer
-from arho_feature_template.utils.misc_utils import LANGUAGE, disconnect_signal, get_active_plan_id
+from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
+from arho_feature_template.utils.misc_utils import LANGUAGE, disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QWidget
 
-    from arho_feature_template.core.models import PlanFeature, RegulationGroup, RegulationGroupLibrary
+    from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
 
 ui_path = resources.files(__package__) / "regulation_groups_view.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -44,7 +43,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self,
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
-        plan_feature: PlanFeature | None = None,
+        plan_object: PlanObject | None = None,
     ):
         super().__init__()
         self.setupUi(self)
@@ -67,7 +66,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         splitter.setSizes([300, 550])
         self.layout().addWidget(splitter)
 
-        self.plan_feature = plan_feature
+        self.plan_object = plan_object
         self.template_categories: dict[str, QTreeWidgetItem] = {}
 
         self.regulation_group_libraries = [*(library for library in regulation_group_libraries if library.status)]
@@ -96,11 +95,11 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.show_regulation_group_library(self.plan_regulation_group_libraries_combobox.currentIndex())
 
     def select_library_by_active_plan_type(self):
-        feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
+        feature = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
         if feature is not None:
-            model = PlanLayer.model_from_feature(feature)
+            model = PlanMatterLayer.model_from_feature(feature)
 
-            plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
+            plan_type = PlanMatterLayer.get_plan_matter_type_name(model.plan_type_id)
             library_name = ""
             if plan_type == PlanType.REGIONAL:
                 library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
@@ -151,7 +150,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, definition: RegulationGroup):
-        regulation_group_widget = RegulationGroupWidget(definition, self.plan_feature)
+        regulation_group_widget = RegulationGroupWidget(definition, self.plan_object)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         self._remove_spacer()
