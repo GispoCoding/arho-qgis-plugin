@@ -10,12 +10,14 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QPushButton, QTableWidget, QTableWidgetItem
 
 from arho_feature_template.core.feature_editing import save_plan
+from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import (
+    check_layer_changes,
     deserialize_localized_text,
     get_active_plan_id,
     get_active_plan_matter_id,
@@ -48,7 +50,10 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         # INIT
         self.regulation_group_libraries = regulation_group_libraries
         self.selected_plan = None
+        self.plan_layer = PlanLayer.get_from_project()
+        self.previously_in_edit_mode = self.plan_layer.isEditable()
         self.show_plans_in_table()
+
         # If no plans exist in the plan matter yet, disable new plan button and tell user
         # to make the first plan by drawing the geometry from the toolbar
         if self.plans_table.rowCount() == 0:
@@ -64,6 +69,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.plans_table.itemDoubleClicked.connect(self._on_row_double_clicked)
         self.new_plan_button.clicked.connect(self._on_new_plan_button_clicked)
         self.button_box.accepted.connect(self._on_ok_clicked)
+        self.button_box.rejected.connect(self._on_cancel_clicked)
 
         self.new_plan_button.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
@@ -74,12 +80,17 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.plans_table.resizeColumnsToContents()
 
     def _get_plans(self) -> list[Plan]:
+        if check_layer_changes():
+            raise UnsavedChangesError
+
         active_plan_matter_id = get_active_plan_matter_id()
         layer = PlanLayer.get_from_project()
         original_filter = layer.subsetString()
         plans = []
         try:
-            layer.setSubsetString("")
+            # Make sure plan layer is in edit state to set new filter
+            if self.previously_in_edit_mode:
+                self.plan_layer.rollBack()
             layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # set temporary filter
             plans = [PlanLayer.model_from_feature(feature) for feature in PlanLayer.get_features()]
         finally:
@@ -134,10 +145,24 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         form = NewPlanDialog()
         if form.exec():
             new_plan: Plan = form.plan
-            if save_plan(new_plan):
+            plan_id = save_plan(new_plan)
+            if plan_id:
+                new_plan.id_ = plan_id
                 self._add_plan_row(new_plan)
 
+    def _restore_plan_layer_edit_state(self):
+        is_now_in_edit_mode = self.plan_layer.isEditable()
+        if self.previously_in_edit_mode and not is_now_in_edit_mode:
+            self.plan_layer.startEditing()
+        elif not self.previously_in_edit_mode and is_now_in_edit_mode:
+            self.plan_layer.rollBack()
+
     def _on_ok_clicked(self):
+        self._restore_plan_layer_edit_state()
         row = self.plans_table.currentRow()
         self.selected_plan = self.plans_table.item(row, 0).data(DATA_ROLE)
         self.accept()
+
+    def _on_cancel_clicked(self):
+        self._restore_plan_layer_edit_state()
+        self.reject()
