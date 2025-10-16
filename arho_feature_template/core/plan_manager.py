@@ -928,10 +928,10 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
     if plan_type == PlanType.REGIONAL:
         path = plugin_path("resources", "styles", "maakuntakaava")
-    # elif plan_type == PlanType.GENERAL:
-    #     path = plugin_path("resources", "styles", "yleiskaava")
-    # elif plan_type == PlanType.TOWN:
-    #     path = plugin_path("resources", "styles", "asemakaava")
+    elif plan_type == PlanType.GENERAL:
+        path = plugin_path("resources", "styles", "yleiskaava")
+    elif plan_type == PlanType.TOWN:
+        path = plugin_path("resources", "styles", "asemakaava")
     else:
         return
 
