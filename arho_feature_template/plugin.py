@@ -209,17 +209,9 @@ class Plugin:
             add_to_toolbar=False,
             status_tip="Luo uusi kaava tuomalla kaavarajaus toiselta tasolta",
         )
-        self.import_plan = self.add_action(
-            text="Tuo kaava",
-            icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
-            triggered_callback=self.plan_manager.open_import_plan_dialog,
-            add_to_menu=False,
-            add_to_toolbar=False,
-            status_tip="Tuo kaavan JSON tietokantaan",
-        )
 
         self.new_plan_button = QToolButton()
-        self.new_plan_button.setText("Luo kaava")
+        self.new_plan_button.setText("Uusi kaava")
         self.new_plan_button.setIcon(QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")))
         self.new_plan_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
@@ -227,52 +219,28 @@ class Plugin:
         menu = QMenu()
         menu.addAction(self.draw_new_plan_action)
         menu.addAction(self.new_plan_from_border)
-        menu.addSeparator()
-        menu.addAction(self.import_plan)
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
-        self.load_plan_action = self.add_action(
-            text="Avaa kaava",
-            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "avaa_kaava4.svg")),
-            triggered_callback=self.load_existing_plan,
-            parent=iface.mainWindow(),
-            add_to_menu=True,
-            add_to_toolbar=True,
-            status_tip="Lataa/avaa kaava",
-        )
+        self.manage_plans_tool_button = QToolButton()
+        self.manage_plans_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.manage_plans_tool_button.setMenu(QMenu())
+        self.manage_plans_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
+        self.manage_plans_tool_action = self.toolbar.addWidget(self.manage_plans_tool_button)
 
-        self.manage_plans_dialog = self.add_action(
+        self.manage_plans_action = self.add_action(
             text="Kaavasuunnitelmat",
             triggered_callback=self.open_manage_plans,
             parent=iface.mainWindow(),
             add_to_menu=True,
-            add_to_toolbar=True,
+            add_to_toolbar=False,
             status_tip="Kaavasuunnitelmien hallinta",
         )
 
-        self.edit_plan_tool_button = QToolButton()
-        self.edit_plan_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.edit_plan_tool_button.setMenu(QMenu())
-        self.edit_plan_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
-        self.edit_plan_tool_action = self.toolbar.addWidget(self.edit_plan_tool_button)
+        self.manage_plans_tool_button.menu().addAction(self.manage_plans_action)
+        self.manage_plans_tool_button.setDefaultAction(self.manage_plans_action)
 
-        self.edit_plan_action = self.add_action(
-            text="Muokkaa kaavaa",
-            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
-            icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
-            triggered_callback=self.plan_manager.edit_plan,
-            parent=iface.mainWindow(),
-            add_to_menu=True,
-            add_to_toolbar=False,
-            status_tip="Muokkaa aktiivisen kaavan tietoja",
-        )
-
-        self.edit_plan_tool_button.menu().addAction(self.edit_plan_action)
-        self.edit_plan_tool_button.setDefaultAction(self.edit_plan_action)
-
-        self.edit_lifecycles_action = self.add_action(
+        self.lifecycles_action = self.add_action(
             text="Muokkaa kaavan elinkaarien päivämääriä",
             icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
             # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
@@ -281,7 +249,27 @@ class Plugin:
             add_to_toolbar=False,
             status_tip="Muokkaa kaavan elinkaarien päivämääriä",
         )
-        self.edit_plan_tool_button.menu().addAction(self.edit_lifecycles_action)
+        self.manage_plans_tool_button.menu().addAction(self.lifecycles_action)
+
+        self.edit_plan_action = self.add_action(
+            text="Muokkaa kaavaa",
+            # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
+            # icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
+            triggered_callback=self.plan_manager.edit_plan,
+            parent=iface.mainWindow(),
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip="Muokkaa aktiivisen kaavan tietoja",
+        )
+
+        self.import_plan = self.add_action(
+            text="Tuo kaava",
+            # icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
+            triggered_callback=self.plan_manager.open_import_plan_dialog,
+            add_to_menu=False,
+            add_to_toolbar=True,
+            status_tip="Tuo kaavan JSON tietokantaan",
+        )
 
         self.toolbar.addSeparator()
 
@@ -426,14 +414,14 @@ class Plugin:
         self.plan_matter_depending_actions = [
             self.draw_new_plan_action,
             self.new_plan_from_border,
-            self.load_plan_action,
+            self.manage_plans_tool_action,
             self.edit_plan_matter_action,
             self.import_plan,
             self.new_plan_action,
         ]
         self.plan_depending_actions = [
             self.edit_plan_action,
-            self.edit_lifecycles_action,
+            self.lifecycles_action,
             self.new_feature_dock_action,
             self.plan_features_dock_action,
             self.identify_plan_features_action,

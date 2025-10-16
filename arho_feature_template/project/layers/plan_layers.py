@@ -218,6 +218,11 @@ class PlanLayer(AbstractPlanLayer):
 
         return name or "Nimetön"
 
+    @classmethod
+    def get_active_plan(cls) -> Plan | None:
+        feat = cls.get_feature_by_id(get_active_plan_id(), no_geometries=False)
+        return cls.model_from_feature(feat) if feat else None
+
 
 class PlanObjectLayer(AbstractPlanLayer):
     @classmethod

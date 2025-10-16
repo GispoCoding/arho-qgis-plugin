@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtGui import QColor, QIcon
+from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QPushButton, QTableWidget, QTableWidgetItem
 
 from arho_feature_template.core.feature_editing import save_plan
@@ -15,7 +15,12 @@ from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeF
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.misc_utils import deserialize_localized_text, get_active_plan_id
+from arho_feature_template.utils.misc_utils import (
+    deserialize_localized_text,
+    get_active_plan_id,
+    get_active_plan_matter_id,
+    iface,
+)
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
@@ -44,6 +49,16 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.regulation_group_libraries = regulation_group_libraries
         self.selected_plan = None
         self.show_plans_in_table()
+        # If no plans exist in the plan matter yet, disable new plan button and tell user
+        # to make the first plan by drawing the geometry from the toolbar
+        if self.plans_table.rowCount() == 0:
+            self.new_plan_button.setEnabled(False)
+            self.new_plan_button.setToolTip("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja.")
+            iface.messageBar().pushWarning(
+                "",
+                "Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma "
+                " piirtämällä tai tuomalla ulkoraja.",
+            )
 
         self.filter_line.valueChanged.connect(self._filter_plans)
         self.plans_table.itemDoubleClicked.connect(self._on_row_double_clicked)
@@ -59,13 +74,13 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.plans_table.resizeColumnsToContents()
 
     def _get_plans(self) -> list[Plan]:
-        active_plan_matter_id = ...  # TODO
+        active_plan_matter_id = get_active_plan_matter_id()
         layer = PlanLayer.get_from_project()
         original_filter = layer.subsetString()
         plans = []
         try:
             layer.setSubsetString("")
-            # layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # set temporary filter
+            layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # set temporary filter
             plans = [PlanLayer.model_from_feature(feature) for feature in PlanLayer.get_features()]
         finally:
             layer.setSubsetString(original_filter)  # restore filter
@@ -96,8 +111,6 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             self.plans_table.selectRow(row)
             # Set icon
             plan_name_item.setIcon(QIcon(resources_path("icons", "green_dot.png")))
-            # Set background color
-            # plan_name_cell.setBackground(QColor("#cffbe5"))
 
     def _filter_plans(self) -> None:
         text = self.filter_line.text().lower().strip()

@@ -9,6 +9,8 @@ from qgis.PyQt.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLineEdit
 
 from arho_feature_template.core.models import Plan
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
+from arho_feature_template.project.layers.plan_layers import PlanLayer
+from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
 
 if TYPE_CHECKING:
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
@@ -49,7 +51,12 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
             ok_button.setEnabled(False)
 
     def _on_ok_clicked(self):
-        self.plan = Plan(name=self.plan_name.text(), lifecycle_status_id=self.plan_lifecycle.value())
-        # Copy from version TODO
+        self.plan = Plan(
+            name=self.plan_name.text(),
+            lifecycle_status_id=self.plan_lifecycle.value(),
+            plan_matter_id=get_active_plan_matter_id(),
+        )
+        self.plan.geom = PlanLayer.get_active_plan().geom  # Always copy geometry from active plan for now
+        # TODO: Copy details and child ojbect details from selected version
 
         self.accept()
