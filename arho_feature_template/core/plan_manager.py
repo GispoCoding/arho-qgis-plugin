@@ -616,10 +616,6 @@ class PlanManager(QObject):
             self.update_active_plan_regulation_group_library()
 
     def set_active_plan_matter(self, plan_matter_id: str) -> None:
-        previous_active_plan_matter_id = get_active_plan_matter_id()
-        if previous_active_plan_matter_id == plan_matter_id:
-            return None
-
         if check_layer_changes():
             raise UnsavedChangesError
 
@@ -848,9 +844,13 @@ class PlanManager(QObject):
             QgsProject.instance().cleared.connect(self.on_project_cleared)
             self.project_loaded.emit()
 
-            active_plan = next(PlanLayer.get_features(), None)
-            if active_plan:
-                self.set_active_plan(active_plan["id"])
+            active_plan_matter_id = get_active_plan_matter_id()
+            active_plan_id = get_active_plan_id()
+
+            if active_plan_matter_id:
+                self.set_active_plan_matter(active_plan_matter_id)
+            if active_plan_id:
+                self.set_active_plan(active_plan_id)
 
     def on_project_cleared(self):
         QgsProject.instance().cleared.disconnect(self.on_project_cleared)
