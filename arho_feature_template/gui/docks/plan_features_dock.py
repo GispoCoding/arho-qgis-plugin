@@ -310,12 +310,14 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self._syncing_selections = True
         try:
             vector_layer: QgsVectorLayer = self.sender()
-            self.selected_plan_feature_ids |= {
-                vector_layer.getFeature(selected_feat_id)["id"] for selected_feat_id in selected
-            }
-            self.selected_plan_feature_ids -= {
-                vector_layer.getFeature(deselected_feat_id)["id"] for deselected_feat_id in deselected
-            }
+            for selected_feat_id in selected:
+                feat = vector_layer.getFeature(selected_feat_id)
+                if feat.isValid():
+                    self.selected_plan_feature_ids |= {feat["id"]}
+            for deselected_feat_id in deselected:
+                feat = vector_layer.getFeature(deselected_feat_id)
+                if feat.isValid():
+                    self.selected_plan_feature_ids -= {feat["id"]}
 
             self.update_selected_rows()
         finally:
