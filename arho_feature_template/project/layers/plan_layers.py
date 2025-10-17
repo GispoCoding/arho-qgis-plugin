@@ -212,6 +212,73 @@ class PlanLayer(AbstractPlanLayer):
         )
 
     @classmethod
+    def models_from_features(cls, features: list[QgsFeature]) -> list[Plan]:
+        # General regulation groups
+        # COPIED FROM PlanObject's models_from_features
+        plan_ids = {feat["id"] for feat in features}
+        plan_object_field_name = RegulationGroupAssociationLayer.layer_name_to_attribute_map.get(cls.name)
+        if not plan_object_field_name:
+            return []
+
+        association_features = RegulationGroupAssociationLayer.get_features_by_attribute_value(
+            plan_object_field_name, plan_ids
+        )
+
+        plan_object_ids_by_group_id: dict[str, list[str]] = defaultdict(list)
+        for association in association_features:
+            plan_object_ids_by_group_id[association["plan_regulation_group_id"]].append(
+                association[plan_object_field_name]
+            )
+
+        regulation_group_ids = set(plan_object_ids_by_group_id)
+        regulation_group_features = list(
+            RegulationGroupLayer.get_features_by_attribute_value("id", regulation_group_ids)
+        )
+        regulation_group_models = RegulationGroupLayer.models_from_features(regulation_group_features)
+
+        groups_by_plan_object_id: dict[str, list[RegulationGroup]] = defaultdict(list)
+        for group in regulation_group_models:
+            group_id = group.id_
+            if group_id:
+                for plan_object_id in plan_object_ids_by_group_id.get(group_id, []):
+                    groups_by_plan_object_id[plan_object_id].append(group)
+
+        # Legal effects
+        legal_effects_by_plan_id: dict[str, list[str]] = defaultdict(list)
+        for feat in LegalEffectAssociationLayer.get_features_by_attribute_value("plan_id", plan_ids):
+            legal_effects_by_plan_id[feat["plan_id"]].append(feat["legal_effect_id"])
+
+        # Docs
+        documents_by_plan_id: dict[str, list[Document]] = defaultdict(list)
+        all_doc_features = DocumentLayer.get_features_by_attribute_value("plan_id", plan_ids)
+        for model in DocumentLayer.models_from_features(list(all_doc_features)):
+            documents_by_plan_id[cast(str, model.plan_id)].append(model)
+
+        # Lifecycles
+        lifecycles_by_plan_id: dict[str, list[LifeCycle]] = defaultdict(list)
+        all_lifecycle_features = LifeCycleLayer.get_features_by_attribute_value("plan_id", plan_ids)
+        for model in LifeCycleLayer.models_from_features(list(all_lifecycle_features)):  # type: ignore
+            lifecycles_by_plan_id[cast(str, model.plan_id)].append(model)  # type: ignore
+
+        return [
+            Plan(
+                geom=feature.geometry(),
+                name=deserialize_localized_text(feature["name"]),
+                description=deserialize_localized_text(feature["description"]),
+                scale=feature["scale"],
+                lifecycle_status_id=feature["lifecycle_status_id"],
+                general_regulations=groups_by_plan_object_id[feature["id"]],
+                legal_effect_ids=legal_effects_by_plan_id[feature["id"]],
+                documents=documents_by_plan_id[feature["id"]],
+                id_=feature["id"],
+                lifecycles=lifecycles_by_plan_id[feature["id"]],
+                plan_matter_id=feature["plan_matter_id"],
+                modified=False,
+            )
+            for feature in features
+        ]
+
+    @classmethod
     def get_plan_name(cls, plan_id: str) -> str:
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_id)
         name = deserialize_localized_text(attribute_value)
@@ -848,6 +915,29 @@ class DocumentLayer(AbstractPlanLayer):
         )
 
     @classmethod
+    def models_from_features(cls, features: list[QgsFeature]) -> list[Document]:
+        return [
+            Document(
+                name=deserialize_localized_text(feature["name"]),
+                url=feature["url"],
+                identifier=feature["permanent_document_identifier"],
+                type_of_document_id=feature["type_of_document_id"],
+                accessibility=feature["accessibility"],
+                category_of_publicity_id=feature["category_of_publicity_id"],
+                personal_data_content_id=feature["personal_data_content_id"],
+                retention_time_id=feature["retention_time_id"],
+                language_id=feature["language_id"],
+                document_date=feature["document_date"].date() if feature["document_date"] else None,
+                arrival_date=feature["arrival_date"].date() if feature["confirmation_date"] else None,
+                confirmation_date=feature["confirmation_date"].date() if feature["confirmation_date"] else None,
+                plan_id=feature["plan_id"],
+                modified=False,
+                id_=feature["id"],
+            )
+            for feature in features
+        ]
+
+    @classmethod
     def get_documents_to_delete(cls, documents: list[Document], plan_id: str) -> list[QgsFeature]:
         updated_document_ids = [doc.id_ for doc in documents]
         return [
@@ -958,6 +1048,26 @@ class LifeCycleLayer(AbstractPlanLayer):
             plan_proposition_id=feature["plan_proposition_id"],
             modified=False,
         )
+
+    @classmethod
+    def models_from_features(cls, features: list[QgsFeature]) -> list[LifeCycle]:
+        return [
+            LifeCycle(
+                id_=feature["id"],
+                status_id=feature["lifecycle_status_id"],
+                starting_at=feature["starting_at"].date() if feature["starting_at"] else None,
+                ending_at=feature["ending_at"].date() if feature["ending_at"] else None,
+                plan_id=feature["plan_id"],
+                land_use_are_id=feature["land_use_area_id"],
+                other_area_id=feature["other_area_id"],
+                line_id=feature["line_id"],
+                point_id=feature["point_id"],
+                plan_regulation_id=feature["plan_regulation_id"],
+                plan_proposition_id=feature["plan_proposition_id"],
+                modified=False,
+            )
+            for feature in features
+        ]
 
     @classmethod
     def get_features_by_plan_id(cls, plan_id: str) -> list[QgsFeature]:
