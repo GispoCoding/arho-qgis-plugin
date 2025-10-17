@@ -88,11 +88,11 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         original_filter = layer.subsetString()
         plans = []
         try:
-            # Make sure plan layer is in edit state to set new filter
+            # Make sure plan layer is not in edit state to set new filter
             if self.previously_in_edit_mode:
                 self.plan_layer.rollBack()
             layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # set temporary filter
-            plans = [PlanLayer.model_from_feature(feature) for feature in PlanLayer.get_features()]
+            plans = PlanLayer.models_from_features(list(PlanLayer.get_features()))
         finally:
             layer.setSubsetString(original_filter)  # restore filter
         return plans
