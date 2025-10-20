@@ -1,4 +1,4 @@
-# ARHO-Ryhti
+# ARHO Backend
 
 [![Tests](https://github.com/GispoCoding/hame-ryhti/actions/workflows/tests.yml/badge.svg)](https://github.com/GispoCoding/hame-ryhti/actions/workflows/tests.yml)
 [![Code-style](https://github.com/GispoCoding/hame-ryhti/actions/workflows/code-style.yml/badge.svg)](https://github.com/GispoCoding/hame-ryhti/actions/workflows/code-style.yml)
@@ -30,15 +30,15 @@ ARHO land use planning database compatible with [national Ryhti data model](http
 
 ## Architecture
 
-ARHO-Ryhti consists of
+ARHO Backend consists of
 1. a PostGIS database,
 2. various AWS Lambda functions to manage the database and import or export planning data,
 3. [X-Road security server sidecar container](https://gofore.com/en/benefits-of-the-x-road-security-server-sidecar/) to connect to Ryhti through Finnish X-Road, and
-4. [QGIS plugin](https://github.com/GispoCoding/arho-feature-template) to connect to the database and create regional land use plans.
+4. [QGIS plugin](https://github.com/GispoCoding/arho-qgis-plugin) to connect to the database and create regional land use plans.
 
 ![diagram of AWS resources and their connections to software and APIs](infra/architecture.svg)
 
-To manage ARHO-Ryhti AWS resources, check the [infra README](https://github.com/GispoCoding/hame-ryhti/blob/main/infra/README.md#hame-infra) in the infra directory.
+To manage ARHO Backend AWS resources, check the [infra README](https://github.com/GispoCoding/hame-ryhti/blob/main/infra/README.md#hame-infra) in the infra directory.
 
 ## Data model
 

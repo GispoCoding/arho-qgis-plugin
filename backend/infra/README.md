@@ -1,4 +1,4 @@
-# ARHO-Ryhti infra
+# ARHO Backend infra
 
 ![diagram of AWS resources and their connections to software and APIs](architecture.svg)
 
@@ -83,7 +83,7 @@ ansible-playbook ansible/playbook.yml \
 
 ## Configuring new instances
 
-1. To create a new instance of ARHO-Ryhti, copy [arho.tfvars.sample.json](arho.tfvars.sample.json) to a new file called `your-deployment.tfvars.json`.
+1. To create a new instance of ARHO Backend, copy [arho.tfvars.sample.json](arho.tfvars.sample.json) to a new file called `your-deployment.tfvars.json`.
 2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in Github secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY`.
 3. Change the values in `your-deployment.tfvars.json` as required
 4. Create zip packages for the lambda functions by running `make build-lambda -C ..` (this
@@ -103,7 +103,7 @@ Note: Setting up the instances takes a couple of minutes.
 
 ### Configuring X-Road (Suomi.fi Palveluväylä) access
 
-A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your ARHO-Ryhti instance to Suomi.fi Palveluväylä to transfer official plan data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
+A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your ARHO Backend instance to Suomi.fi Palveluväylä to transfer official plan data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
 
 This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä, as well as a separate permit to connect to the Ryhti X-Road APIs once your X-Road server works. Follow the steps below:
 
