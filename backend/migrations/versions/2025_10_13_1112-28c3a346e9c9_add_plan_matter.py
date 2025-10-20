@@ -128,6 +128,41 @@ def upgrade() -> None:
         referent_schema="hame",
         onupdate="CASCADE",
     )
+
+    op.add_column(
+        "source_data",
+        sa.Column("plan_matter_id", sa.UUID(as_uuid=False), nullable=True),
+        schema="hame",
+    )
+    op.execute("""
+        UPDATE hame.source_data
+               SET plan_matter_id = plan_id
+    """
+    )
+    op.alter_column(
+        "source_data",
+        "plan_matter_id",
+        nullable=False,
+        schema="hame",
+    )
+    op.create_index(
+        op.f("ix_hame_source_data_plan_matter_id"),
+        "source_data",
+        ["plan_matter_id"],
+        unique=False,
+        schema="hame",
+    )
+    op.create_foreign_key(
+        "plan_matter_id_fkey",
+        "source_data",
+        "plan_matter",
+        ["plan_matter_id"],
+        ["id"],
+        source_schema="hame",
+        referent_schema="hame",
+        onupdate="CASCADE",
+    )
+
     op.execute("""
         UPDATE hame.plan_matter
         SET id = gen_random_uuid()
@@ -154,30 +189,9 @@ def upgrade() -> None:
     op.drop_column("plan", "matter_management_identifier", schema="hame")
     op.drop_column("plan", "organisation_id", schema="hame")
     op.drop_column("plan", "permanent_plan_identifier", schema="hame")
-    op.add_column(
-        "source_data",
-        sa.Column("plan_matter_id", sa.UUID(as_uuid=False), nullable=False),
-        schema="hame",
-    )
+    
     op.drop_constraint(
         op.f("plan_id_fkey"), "source_data", schema="hame", type_="foreignkey"
-    )
-    op.create_foreign_key(
-        "plan_matter_id_fkey",
-        "source_data",
-        "plan_matter",
-        ["plan_matter_id"],
-        ["id"],
-        source_schema="hame",
-        referent_schema="hame",
-        onupdate="CASCADE",
-    )
-    op.create_index(
-        op.f("ix_hame_source_data_plan_matter_id"),
-        "source_data",
-        ["plan_matter_id"],
-        unique=False,
-        schema="hame",
     )
     op.drop_index(
         op.f("ix_hame_source_data_plan_id"),
