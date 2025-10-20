@@ -25,6 +25,7 @@ from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     PlanRegulationGroupTypeLayer,
     PlanType,
+    PlanTypeLayer,
 )
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
 from arho_feature_template.utils.misc_utils import LANGUAGE, disconnect_signal, get_active_plan_matter_id
@@ -98,8 +99,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         feature = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
         if feature is not None:
             model = PlanMatterLayer.model_from_feature(feature)
+            plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
 
-            plan_type = PlanMatterLayer.get_plan_matter_type_name(model.plan_type_id)
             library_name = ""
             if plan_type == PlanType.REGIONAL:
                 library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
@@ -107,6 +108,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
                 library_name = "Yleiskaavan kaavamääräysryhmät (Katja)"
             elif plan_type == PlanType.TOWN:
                 library_name = "Asemakaavan kaavamääräysryhmät (Katja)"
+            else:
+                return
 
             for i, library in enumerate(self.regulation_group_libraries):
                 if library.name == library_name:
