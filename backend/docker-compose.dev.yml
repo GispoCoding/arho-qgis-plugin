@@ -1,3 +1,5 @@
+name: arho
+
 volumes:
   postgis-data:
 
