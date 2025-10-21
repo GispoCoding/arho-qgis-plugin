@@ -17,7 +17,7 @@ from qgis.PyQt.QtCore import (
     Qt,
 )
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
-from qgis.PyQt.QtWidgets import QMenu, QTableView
+from qgis.PyQt.QtWidgets import QMenu, QPushButton, QTableView
 
 from arho_feature_template.core.feature_editing import save_plan_feature
 from arho_feature_template.exceptions import LayerNotFoundError
@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from arho_feature_template.core.plan_manager import PlanManager
 
 DATA_COLUMN = 0
+PLAN_OBJECT_TYPE_COLUMN = 1
 DATA_ROLE = Qt.UserRole
 LAYER_NAME_TO_FEATURE_TYPE = {
     LineLayer.name: "Viiva",
@@ -56,23 +57,36 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
         super().__init__()
         self.setSourceModel(model)
         self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.allowed_types: set[str] = set()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:  # noqa: N802
         model: QStandardItemModel = self.sourceModel()
         if not model:
             return False
 
+        # 1. Filter by text
+        text_match = False
         filter_text = self.filterRegularExpression().pattern()
         if not filter_text:
-            return True
+            text_match = True
+        else:
+            for column in range(model.columnCount()):
+                index = model.index(source_row, column, source_parent)
+                data = model.data(index)
+                if data and filter_text.lower() in data.lower():
+                    text_match = True
+                    break
 
-        for column in range(model.columnCount()):
-            index = model.index(source_row, column, source_parent)
-            data = model.data(index)
-            if data and filter_text.lower() in data.lower():
-                return True
+        # 2. Filter by type
+        type_match = False
+        if not self.allowed_types:
+            type_match = True
+        else:
+            type_index = model.index(source_row, PLAN_OBJECT_TYPE_COLUMN, source_parent)
+            feature_type = model.data(type_index)
+            type_match = feature_type in self.allowed_types
 
-        return False
+        return text_match and type_match
 
 
 class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
@@ -81,6 +95,11 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
+        self.land_use_area_btn: QPushButton
+        self.other_area_btn: QPushButton
+        self.line_btn: QPushButton
+        self.point_btn: QPushButton
+
         self.table: QTableView
         self.filter_line: QgsFilterLineEdit
 
@@ -115,6 +134,14 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._open_context_menu)
         self.filter_line.textChanged.connect(self._filter_table)
+
+        for btn in (
+            self.land_use_area_btn,
+            self.other_area_btn,
+            self.line_btn,
+            self.point_btn,
+        ):
+            btn.toggled.connect(self._filter_table)
 
     def initialize(self):
         for layer in plan_feature_layers:
@@ -169,11 +196,23 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.model.removeRow(row)
 
     def _filter_table(self):
+        # Set text filter
         search_text = self.filter_line.text()
-        if search_text:
-            self.filter_proxy_model.setFilterRegularExpression(QRegularExpression(search_text))
-        else:
-            self.filter_proxy_model.setFilterRegularExpression("")
+        regex = QRegularExpression(search_text) if search_text else QRegularExpression("")
+        self.filter_proxy_model.setFilterRegularExpression(regex)
+
+        # Set type filter
+        allowed_types = set()
+        if self.land_use_area_btn.isChecked():
+            allowed_types.add("Aluevaraus")
+        if self.other_area_btn.isChecked():
+            allowed_types.add("Osa-alue")
+        if self.line_btn.isChecked():
+            allowed_types.add("Viiva")
+        if self.point_btn.isChecked():
+            allowed_types.add("Piste")
+        self.filter_proxy_model.allowed_types = allowed_types
+        self.filter_proxy_model.invalidateFilter()
 
         self.update_selected_rows()
 
