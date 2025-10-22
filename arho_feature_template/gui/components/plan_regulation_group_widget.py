@@ -120,7 +120,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     def set_existing_regulation_group_style(self, other_linked_features_count: int):
         tooltip = (
-            "Kaavamääräysryhmä on tallennettu kaavaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin "
+            "Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin "
             "kaavakohteisiin, joille ryhmä on lisätty."
         )
         layout = QHBoxLayout()

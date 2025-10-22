@@ -179,12 +179,14 @@ class LambdaService(QObject):
 
         if value and value.get("status") == HTTPStatus.OK:
             identifier = value.get("detail")
-            iface.messageBar().pushSuccess("Success", f"Pysyvän kaavatunnuksen haku onnistui kaavalle {plan_id}.")
+            iface.messageBar().pushSuccess(
+                "Success", f"Pysyvän kaavatunnuksen haku onnistui kaavasuunnitelman {plan_id} kaava-asialle."
+            )
             self.plan_identifier_received.emit({"plan_id": plan_id, "status": "success", "identifier": identifier})
         else:
             iface.messageBar().pushWarning(
                 "Virhe",
-                f"Kaavatunnuksen haku epäonnistui. Kaava {plan_id} statuksella {value.get('status') if value else 'N/A'}.",
+                f"Pysyvän kaavatunnuksen haku epäonnistui kaavasuunnitelmalla {plan_id} kaava-asialle statuksella {value.get('status') if value else 'N/A'}.",
             )
             # self.plan_identifiers_received.emit({"plan_id": plan_id, "status": "failure"})
 

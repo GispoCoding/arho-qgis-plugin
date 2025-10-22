@@ -165,7 +165,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
 
 
 class PlanLayer(AbstractPlanLayer):
-    name = "Kaava"
+    name = "Kaavasuunnitelma"
     filter_template = Template("id = '$plan_id'")
 
     @classmethod

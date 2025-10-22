@@ -131,7 +131,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
                 list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(self.regulation_group.id_))
             )
             tooltip = (
-                "Kaavamääräysryhmä on tallennettu kaavaan. Ryhmän tietojen muokkaaminen vaikuttaa "
+                "Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa "
                 "kaavakohteisiin, joille ryhmä on lisätty."
             )
             layout = QHBoxLayout()

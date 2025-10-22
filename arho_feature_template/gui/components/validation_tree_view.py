@@ -17,8 +17,8 @@ from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 category_map = {
-    "plan": "Kaava",
-    "geographicalarea": "Kaavan ulkoraja",
+    "plan": "Kaavasuunnitelma",
+    "geographicalarea": "Kaavasuunnitelman ulkoraja",
     "planobjects": "Kaavakohteet",
     "planregulationgroups": "Kaavamääräysryhmät",
     "planregulations": "Kaavamääräykset",
