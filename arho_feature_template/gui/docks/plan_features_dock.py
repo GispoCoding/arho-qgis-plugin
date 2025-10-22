@@ -4,7 +4,7 @@ from contextlib import suppress
 from importlib import resources
 from typing import TYPE_CHECKING, Iterable, cast
 
-from qgis.core import Qgis, QgsFeature, QgsProject, QgsVectorLayer
+from qgis.core import Qgis, QgsApplication, QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsDockWidget, QgsFilterLineEdit
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import (
@@ -283,10 +283,24 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             return
 
         menu = QMenu()
-        menu.addAction("Näytä lomake", lambda: self._open_form(index))
-        menu.addAction("Zoomaa kohteeseen", lambda: self._on_zoom_to_feature(plan_feature_model))
-        menu.addAction("Vieritä kohteeseen", lambda: self._on_pan_to_feature(plan_feature_model))
-        menu.addAction("Väläytä kohdetta", lambda: self._on_highlight_feature(plan_feature_model))
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionOpenTable.svg"), "Näytä lomake", lambda: self._open_form(index)
+        )
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionZoomTo.svg"),
+            "Zoomaa kohteeseen",
+            lambda: self._on_zoom_to_feature(plan_feature_model),
+        )
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionPanTo.svg"),
+            "Vieritä kohteeseen",
+            lambda: self._on_pan_to_feature(plan_feature_model),
+        )
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionHighlightFeature.svg"),
+            "Väläytä kohdetta",
+            lambda: self._on_highlight_feature(plan_feature_model),
+        )
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
     def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
