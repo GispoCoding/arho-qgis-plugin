@@ -48,7 +48,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         plan_id = get_active_plan_id()
         if not plan_id:
-            QMessageBox.critical(self, "Virhe", "Ei aktiivista kaavaa.")
+            QMessageBox.critical(self, "Virhe", "Ei aktiivista kaavasuunnitelmaa.")
             self.reject()
             return
 

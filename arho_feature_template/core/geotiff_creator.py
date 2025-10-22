@@ -25,13 +25,13 @@ class GeoTiffCreator:
         self.plan_layer = PlanLayer.get_from_project()
 
         if not self.plan_layer:
-            iface.messageBar().pushWarning("", "Ei aktiivista kaavaa.")
+            iface.messageBar().pushWarning("", "Ei aktiivista kaavasuunnitelmaa.")
             return
 
         self.feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
 
         if not self.feature:
-            iface.messageBar().pushWarning("", "Ei aktiivista kaavaa.")
+            iface.messageBar().pushWarning("", "Ei aktiivista kaavasuunnitelmaa.")
             return
 
     def select_output_file(self):
