@@ -442,14 +442,14 @@ class PlanManager(QObject):
         layer: QgsVectorLayer = iface.activeLayer()
         plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
         if layer.name() in plan_layer_names:
-            iface.messageBar().pushWarning("", "Kaavan ulkorajaa ei voi tuoda ARHOn tasoilta.")
+            iface.messageBar().pushWarning("", "Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta.")
             return
         if layer.geometryType() != QgsWkbTypes.PolygonGeometry:
-            iface.messageBar().pushWarning("", "Kaavan ulkorajaksi valittu geometria ei ole polygoni.")
+            iface.messageBar().pushWarning("", "Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni.")
             return
         features = layer.selectedFeatures()
         if not features:
-            iface.messageBar().pushWarning("", "Ei valittuja kohteita kaavan ulkorajaksi.")
+            iface.messageBar().pushWarning("", "Ei valittuja kohteita kaavasuunnitelman ulkorajaksi.")
             return
 
         plan_saved = self._plan_geom_ready(features)
@@ -463,7 +463,7 @@ class PlanManager(QObject):
 
         feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         if feature is None:
-            iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
+            iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
@@ -554,7 +554,7 @@ class PlanManager(QObject):
         iface.mapCanvas().setMapTool(self.feature_digitize_map_tool)
 
     def _plan_geom_ready(self, features: QgsFeature | list[QgsFeature]) -> bool:
-        """Callback for when new feature(s) is added to the Kaava layer."""
+        """Callback for when new feature(s) is added to the plan layer."""
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
             return False
@@ -684,7 +684,7 @@ class PlanManager(QObject):
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
-                if layer.name == "Kaava":
+                if layer.name == "Kaavasuunnitelma":
                     layer.show_all_features()
                 else:
                     layer.hide_all_features()
@@ -759,7 +759,7 @@ class PlanManager(QObject):
         The plan_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
-            iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
+            iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
 
         dialog = SerializePlan()
@@ -776,7 +776,7 @@ class PlanManager(QObject):
         The plan_matter_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
-            iface.messageBar().pushWarning("", "Mikään kaava ei ole avattuna.")
+            iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
 
         dialog = SerializePlanMatter()
@@ -807,7 +807,7 @@ class PlanManager(QObject):
     def save_exported_plan(self, plan_data: dict, outline_data: dict):
         """This slot saves the plan and outline data to JSON files."""
         if plan_data is None or outline_data is None:
-            iface.messageBar().pushCritical("", "Kaavaa tai sen ulkorajaa ei löytynyt.")
+            iface.messageBar().pushCritical("", "Kaavasuunnitelmaa tai sen ulkorajaa ei löytynyt.")
             return
 
         # Retrieve paths
@@ -822,7 +822,7 @@ class PlanManager(QObject):
         with open(self.json_plan_outline_path, "w", encoding="utf-8") as outline_file:
             json.dump(outline_data, outline_file, ensure_ascii=False, indent=2)
 
-        iface.messageBar().pushSuccess("", "Kaava ja kaavan ulkoraja tallennettu.")
+        iface.messageBar().pushSuccess("", "Kaavasuunnitelma ja sen ulkoraja tallennettu.")
 
     def save_exported_plan_matter(self, plan_matter_data):
         """Saves the plan matter data to a JSON file."""

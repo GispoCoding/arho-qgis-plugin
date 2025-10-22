@@ -63,10 +63,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             self.validate_plan_matter_button.hide()
 
     def handle_validation_call_errors(self, error: str):
-        self.validation_label.setText("Kaavan validoinnissa tapahtui virhe.")
+        self.validation_label.setText("Validoinnissa tapahtui virhe.")
         self.validation_label.setStyleSheet("QLabel {color: red}")
 
-        logger.warning("Kaavan validoinnissa tapahtui virhe: %s", error)
+        logger.warning("Validoinnissa tapahtui virhe: %s", error)
 
         self.enable_validation()
 
@@ -84,7 +84,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         # Get IDs from all layers
         # self.layer_features = self.get_all_features()
 
-        self.validation_label.setText("Kaavan validointivirheet:")
+        self.validation_label.setText("Kaavasuunnitelman validointivirheet:")
         self.validation_label.setStyleSheet("")
 
         # Clear the existing errors from the list view
@@ -92,7 +92,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
-            iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavaa.", level=3)
+            iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavasuunnitelmaa.", level=3)
             return
 
         # Disable buttons and show progress bar
@@ -113,7 +113,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
-            iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavaa-asiaa.", level=3)
+            iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavasuunnitelmaa.", level=3)
             return
 
         # Disable buttons and show progress bar

@@ -85,7 +85,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         self.model.setHorizontalHeaderLabels(
             [
                 "Nimi",
-                "Kaavan elinkaaren tila",
+                "Kaavasuunnitelman elinkaaren tila",
             ]
         )
 

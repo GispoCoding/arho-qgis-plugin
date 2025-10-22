@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Tallenna kaava JSON</string>
+   <string>Tallenna kaavasuunnitelma JSON</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
