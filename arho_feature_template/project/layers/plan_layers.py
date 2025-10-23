@@ -246,7 +246,7 @@ class PlanLayer(AbstractPlanLayer):
         # Legal effects
         legal_effects_by_plan_id: dict[str, list[str]] = defaultdict(list)
         for feat in LegalEffectAssociationLayer.get_features_by_attribute_value("plan_id", plan_ids):
-            legal_effects_by_plan_id[feat["plan_id"]].append(feat["legal_effect_id"])
+            legal_effects_by_plan_id[feat["plan_id"]].append(feat["legal_effects_of_master_plan_id"])
 
         # Docs
         documents_by_plan_id: dict[str, list[Document]] = defaultdict(list)
