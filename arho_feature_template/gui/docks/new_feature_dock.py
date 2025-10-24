@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
-from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem
-
-from arho_feature_template.gui.components.new_feature_grid_widget import NewFeatureGridWidget
+from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QPushButton
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
@@ -18,6 +16,14 @@ if TYPE_CHECKING:
 
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
+
+FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Piste"]
+FEATURE_TYPE_TO_LAYER_NAME = {
+    "Viiva": "Viivat",
+    "Osa-alue": "Osa-alue",
+    "Aluevaraus": "Aluevaraus",
+    "Piste": "Pisteet",
+}
 
 
 class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
@@ -33,9 +39,15 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.setupUi(self)
 
         # INIT
-        # 1. New feature grid
-        self.new_feature_grid = NewFeatureGridWidget()
-        self.dockWidgetContents.layout().insertWidget(1, self.new_feature_grid)
+        # 1. Plan feature types
+        self.land_use_area_btn: QPushButton
+        self.other_area_btn: QPushButton
+        self.line_btn: QPushButton
+        self.point_btn: QPushButton
+
+        self.feature_type_buttons = [self.land_use_area_btn, self.other_area_btn, self.line_btn, self.point_btn]
+        for btn in self.feature_type_buttons:
+            btn.clicked.connect(lambda _, button=btn: self.handle_button_click(button))
 
         # 2. Feature templates
         self.active_feature_type: str | None = None
@@ -49,7 +61,14 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
         # NOTE: If user moves selection with arrow keys, this is not registered currently
         self.template_list.clicked.connect(self.on_template_item_clicked)
-        self.new_feature_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
+
+    def handle_button_click(self, clicked_button: QPushButton):
+        for btn in self.feature_type_buttons:
+            if btn == clicked_button:
+                btn.setChecked(True)
+            else:
+                btn.setChecked(False)
+        self.update_activate_feature_type(clicked_button.text(), FEATURE_TYPE_TO_LAYER_NAME[clicked_button.text()])
 
     def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanFeatureLibrary]):
         self.plan_feature_libraries = plan_feature_libraries
@@ -57,7 +76,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.library_selection.addItems([library.name for library in self.plan_feature_libraries])
         self.set_active_plan_feature_library(0)
 
-    def on_active_feature_type_changed(self, feature_name: str, layer_name: str):
+    def update_activate_feature_type(self, feature_name: str, layer_name: str):
         self.active_feature_type = feature_name if feature_name else None
         self.active_feature_layer = layer_name if layer_name else None
         self.clear_template_selection()
@@ -98,8 +117,9 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
             self.template_list.clearSelection()
 
     def deactivate_and_clear_selections(self):
-        self.on_active_feature_type_changed("", "")
-        self.new_feature_grid.clear_selections()
+        self.update_activate_feature_type("", "")
+        for btn in self.feature_type_buttons:
+            btn.setChecked(False)
         self.clear_template_selection()
 
     def clear_template_selection(self):
