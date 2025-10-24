@@ -291,7 +291,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             return
 
         # If we are deleting a new and empty library, skip asking for confirmation to delete
-        if self._is_new_library(self.active_library) and len(self.library_element_list.count()) == 0:
+        if self._is_new_library(self.active_library) and self.library_element_list.count() == 0:
             self._delete_library(self.active_library)
             return
 
