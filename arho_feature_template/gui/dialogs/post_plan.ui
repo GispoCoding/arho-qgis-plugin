@@ -20,7 +20,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Vie kaava</string>
+   <string>Vie kaavasuunnitelma</string>
   </property>
   <property name="sizeGripEnabled">
    <bool>false</bool>

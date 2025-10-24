@@ -193,25 +193,25 @@ class Plugin:
         self.toolbar.addSeparator()
 
         self.draw_new_plan_action = self.add_action(
-            text="Piirrä kaavan ulkoraja",
+            text="Piirrä kaavasuunnitelman ulkoraja",
             icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
             # icon=QgsApplication.getThemeIcon("mActionNewMap.svg"),
             triggered_callback=self.plan_manager.digitize_plan_geometry,
             add_to_menu=False,
             add_to_toolbar=False,
-            status_tip="Luo uusi kaava piirtämällä kaavarajaus",
+            status_tip="Luo uusi kaavasuunnitelma piirtämällä kaavarajaus",
         )
         self.new_plan_from_border = self.add_action(
-            text="Tuo kaavan ulkoraja",
+            text="Tuo kaavasuunnitelman ulkoraja",
             icon=QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")),
             triggered_callback=self.plan_manager.import_plan_geometry,
             add_to_menu=False,
             add_to_toolbar=False,
-            status_tip="Luo uusi kaava tuomalla kaavarajaus toiselta tasolta",
+            status_tip="Luo uusi kaavasuunnitelma tuomalla kaavarajaus toiselta tasolta",
         )
 
         self.new_plan_button = QToolButton()
-        self.new_plan_button.setText("Uusi kaava")
+        self.new_plan_button.setText("Uusi kaavasuunnitelma")
         self.new_plan_button.setIcon(QIcon(resources_path("icons", "toolbar", "luo_kaava2.svg")))
         self.new_plan_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         self.new_plan_button.setPopupMode(QToolButton.InstantPopup)
@@ -241,34 +241,34 @@ class Plugin:
         self.manage_plans_tool_button.setDefaultAction(self.manage_plans_action)
 
         self.lifecycles_action = self.add_action(
-            text="Muokkaa kaavan elinkaarien päivämääriä",
+            text="Muokkaa kaavasuunnitelman elinkaarien päivämääriä",
             icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
             # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
             triggered_callback=self.edit_lifecycles,
             add_to_menu=True,
             add_to_toolbar=False,
-            status_tip="Muokkaa kaavan elinkaarien päivämääriä",
+            status_tip="Muokkaa kaavasuunnitelman elinkaarien päivämääriä",
         )
         self.manage_plans_tool_button.menu().addAction(self.lifecycles_action)
 
         self.edit_plan_action = self.add_action(
-            text="Muokkaa kaavaa",
+            text="Muokkaa kaavasuunitelmaa",
             # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
             # icon=QIcon(resources_path("icons", "toolbar", "muokkaa_kaavaa2.svg")),
             triggered_callback=self.plan_manager.edit_plan,
             parent=iface.mainWindow(),
             add_to_menu=True,
             add_to_toolbar=True,
-            status_tip="Muokkaa aktiivisen kaavan tietoja",
+            status_tip="Muokkaa aktiivisen kaavasuunnitelman tietoja",
         )
 
         self.import_plan = self.add_action(
-            text="Tuo kaava",
+            text="Tuo kaavasuunnitelma",
             # icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
             triggered_callback=self.plan_manager.open_import_plan_dialog,
             add_to_menu=False,
             add_to_toolbar=True,
-            status_tip="Tuo kaavan JSON tietokantaan",
+            status_tip="Tuo kaavasuunnitelman JSON tietokantaan",
         )
 
         self.toolbar.addSeparator()
@@ -332,13 +332,13 @@ class Plugin:
         self.serialize_tool_action = self.toolbar.addWidget(self.serialize_tool_button)
 
         self.serialize_plan_action = self.add_action(
-            text="Tallenna kaava JSON",
+            text="Tallenna kaavasuunnitelma JSON",
             # icon=QgsApplication.getThemeIcon("mActionFileSaveAs.svg"),
             icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
             triggered_callback=self.export_plan,
             add_to_menu=True,
             add_to_toolbar=False,
-            status_tip="Tallenna aktiivinen kaava JSON muodossa",
+            status_tip="Tallenna aktiivinen kaavasuunnitelma JSON muodossa",
         )
         self.serialize_tool_button.menu().addAction(self.serialize_plan_action)
         self.serialize_tool_button.setDefaultAction(self.serialize_plan_action)
@@ -349,7 +349,7 @@ class Plugin:
             triggered_callback=self.export_plan_matter,
             add_to_menu=True,
             add_to_toolbar=False,
-            status_tip="Tallenna aktiivisen kaavan kaava-asia JSON muodossa",
+            status_tip="Tallenna aktiivinen kaava-asia JSON muodossa",
         )
         self.serialize_tool_button.menu().addAction(self.serialize_plan_matter_action)
 
@@ -359,7 +359,7 @@ class Plugin:
             triggered_callback=self.create_geotiff,
             add_to_menu=True,
             add_to_toolbar=True,
-            status_tip="Tallenna aktiivinen kaava geotiff muodossa",
+            status_tip="Tallenna aktiivinen kaavasuunnitelma geotiff muodossa",
         )
 
         self.import_features_action = self.add_action(
@@ -516,7 +516,7 @@ class Plugin:
             self.post_plan_matter_action.setToolTip("Vie kaava-asia Ryhtiin")
         else:
             self.post_plan_matter_action.setEnabled(False)
-            self.post_plan_matter_action.setToolTip("Hae kaavalle ensin pysyvä kaavatunnus")
+            self.post_plan_matter_action.setToolTip("Hae kaava-asialle ensin pysyvä kaavatunnus")
             self.get_permanent_identifier_action.setEnabled(True)
             self.get_permanent_identifier_action.setToolTip("Hae pysyvä kaavatunnus")
 

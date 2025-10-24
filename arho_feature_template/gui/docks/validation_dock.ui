@@ -20,7 +20,7 @@
       <item>
        <widget class="QPushButton" name="validate_button">
         <property name="text">
-         <string>Validoi kaava</string>
+         <string>Validoi kaavasuunnitelma</string>
         </property>
        </widget>
       </item>
@@ -36,7 +36,7 @@
     <item>
      <widget class="QLabel" name="validation_label">
       <property name="text">
-       <string>Kaavan validointivirheet:</string>
+       <string>Validointivirheet:</string>
       </property>
      </widget>
     </item>
