@@ -66,7 +66,7 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
 def save_plan_matter(plan_matter: PlanMatter) -> str | None:
     plan_matter_id = plan_matter.id_
     editing = plan_matter_id is not None
-    if plan_matter is None or plan_matter.modified:
+    if plan_matter.id_ is None or plan_matter.modified:
         feature = PlanMatterLayer.feature_from_model(plan_matter)
         if not save_feature(
             feature=feature,
