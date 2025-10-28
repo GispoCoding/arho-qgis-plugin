@@ -202,11 +202,6 @@ class PlanLayer(AbstractPlanLayer):
                 for feat in DocumentLayer.get_features_by_attribute_value("plan_id", feature["id"])
             ],
             id_=feature["id"],
-            lifecycles=[
-                LifeCycleLayer.model_from_feature(feat)
-                for feat in LifeCycleLayer.get_features_by_plan_id(feature["id"])
-                if feat is not None
-            ],
             plan_matter_id=feature["plan_matter_id"],
             modified=False,
         )
@@ -255,10 +250,10 @@ class PlanLayer(AbstractPlanLayer):
             documents_by_plan_id[cast(str, model.plan_id)].append(model)
 
         # Lifecycles
-        lifecycles_by_plan_id: dict[str, list[LifeCycle]] = defaultdict(list)
-        all_lifecycle_features = LifeCycleLayer.get_features_by_attribute_value("plan_id", plan_ids)
-        for model in LifeCycleLayer.models_from_features(list(all_lifecycle_features)):  # type: ignore
-            lifecycles_by_plan_id[cast(str, model.plan_id)].append(model)  # type: ignore
+        # lifecycles_by_plan_id: dict[str, list[LifeCycle]] = defaultdict(list)
+        # all_lifecycle_features = LifeCycleLayer.get_features_by_attribute_value("plan_id", plan_ids)
+        # for model in LifeCycleLayer.models_from_features(list(all_lifecycle_features)):  # type: ignore
+        # lifecycles_by_plan_id[cast(str, model.plan_id)].append(model)  # type: ignore
 
         return [
             Plan(
@@ -271,7 +266,6 @@ class PlanLayer(AbstractPlanLayer):
                 legal_effect_ids=legal_effects_by_plan_id[feature["id"]],
                 documents=documents_by_plan_id[feature["id"]],
                 id_=feature["id"],
-                lifecycles=lifecycles_by_plan_id[feature["id"]],
                 plan_matter_id=feature["plan_matter_id"],
                 modified=False,
             )

@@ -51,7 +51,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.general_data_layout: QFormLayout
 
         self.plan = plan
-        self.lifecycle_models = plan.lifecycles
 
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
 
