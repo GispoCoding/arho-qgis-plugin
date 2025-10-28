@@ -42,7 +42,6 @@ from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
-from arho_feature_template.gui.dialogs.lifecycle_editor import LifecycleEditor
 from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
@@ -515,21 +514,6 @@ class PlanManager(QObject):
             saved_id = save_plan_matter(attribute_form.model)
 
             self.set_active_plan_matter(saved_id)
-
-    def edit_lifecycles(self):
-        plan_layer = PlanLayer.get_from_project()
-        if not plan_layer:
-            return
-
-        feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
-        if feature is None:
-            return
-        plan_model = PlanLayer.model_from_feature(feature)
-
-        lifecycle_editor = LifecycleEditor(plan=plan_model)
-
-        if lifecycle_editor.exec_():
-            save_plan(plan_model)
 
     def add_new_plan_feature(self):
         if not handle_unsaved_changes():

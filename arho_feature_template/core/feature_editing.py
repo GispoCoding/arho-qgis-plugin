@@ -143,11 +143,6 @@ def save_plan(plan: Plan) -> str | None:
         document.plan_id = plan_id
         save_document(document)
 
-    # Save lifecycles
-    for lifecycle in plan.lifecycles:
-        lifecycle.plan_id = plan_id
-        save_lifecycle(lifecycle)
-
     return plan_id
 
 

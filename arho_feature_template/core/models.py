@@ -460,7 +460,6 @@ class Plan(PlanBaseModel):
     description: str | None = None
     scale: int | None = None
     lifecycle_status_id: str | None = None
-    lifecycles: list[LifeCycle] = field(default_factory=list, compare=False)
     general_regulations: list[RegulationGroup] = field(default_factory=list, compare=False)
     documents: list[Document] = field(default_factory=list, compare=False)
     legal_effect_ids: list[str] = field(default_factory=list)
