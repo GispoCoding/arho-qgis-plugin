@@ -240,17 +240,6 @@ class Plugin:
         self.manage_plans_tool_button.menu().addAction(self.manage_plans_action)
         self.manage_plans_tool_button.setDefaultAction(self.manage_plans_action)
 
-        self.lifecycles_action = self.add_action(
-            text="Muokkaa kaavasuunnitelman elinkaarien päivämääriä",
-            icon=QgsApplication.getThemeIcon("mIconFieldDate.svg"),
-            # icon=QIcon(resources_path("icons", "toolbar", "tallenna_jsonina2.svg")),
-            triggered_callback=self.edit_lifecycles,
-            add_to_menu=True,
-            add_to_toolbar=False,
-            status_tip="Muokkaa kaavasuunnitelman elinkaarien päivämääriä",
-        )
-        self.manage_plans_tool_button.menu().addAction(self.lifecycles_action)
-
         self.edit_plan_action = self.add_action(
             text="Muokkaa kaavasuunitelmaa",
             # icon=QgsApplication.getThemeIcon("mActionFileOpen.svg"),
@@ -421,7 +410,6 @@ class Plugin:
         ]
         self.plan_depending_actions = [
             self.edit_plan_action,
-            self.lifecycles_action,
             self.new_feature_dock_action,
             self.plan_features_dock_action,
             self.identify_plan_features_action,
@@ -488,10 +476,6 @@ class Plugin:
         """Open the plugin about dialog."""
         about = PluginAbout()
         about.exec()
-
-    def edit_lifecycles(self):
-        """Edit lifecycles of currently active plan."""
-        self.plan_manager.edit_lifecycles()
 
     def create_geotiff(self):
         """Create geotiff from currently active plan."""
