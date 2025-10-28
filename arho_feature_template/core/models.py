@@ -221,14 +221,31 @@ class AttributeValue(PlanBaseModel):
             "height_reference_point": self.height_reference_point,
         }
 
+    def __hash__(self):
+        return hash(
+            (
+                self.value_data_type,
+                self.numeric_value,
+                self.numeric_range_min,
+                self.numeric_range_max,
+                self.unit,
+                self.text_value,
+                self.text_syntax,
+                self.code_list,
+                self.code_value,
+                self.code_title,
+                self.height_reference_point,
+            )
+        )
+
 
 @dataclass
 class AdditionalInformation(PlanBaseModel):
     additional_information_type_id: str
     value: AttributeValue | None = None
-    plan_regulation_id: str | None = None
+    plan_regulation_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
 
     @staticmethod
     def from_template_dict(data: dict) -> AdditionalInformation:
@@ -243,6 +260,9 @@ class AdditionalInformation(PlanBaseModel):
             **(self.value.into_template_dict() if self.value else {}),
         }
 
+    def __hash__(self):
+        return hash((self.additional_information_type_id, self.value))
+
 
 @dataclass
 class Regulation(PlanBaseModel):
@@ -254,9 +274,9 @@ class Regulation(PlanBaseModel):
     theme_ids: list[str] = field(default_factory=list, compare=False)
     subject_identifiers: list[str] = field(default_factory=list)
     verbal_regulation_type_ids: list[str] = field(default_factory=list)
-    regulation_group_id: str | None = None
+    regulation_group_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
 
     @classmethod
     def from_template_dict(cls, data: dict) -> Regulation:
@@ -315,7 +335,7 @@ class Proposition(PlanBaseModel):
     proposition_number: int | None = None
     regulation_group_id: str | None = None
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
 
     def into_template_dict(self) -> dict:
         return {
@@ -335,8 +355,8 @@ class RegulationGroup(PlanBaseModel):
     regulations: list[Regulation] = field(default_factory=list, compare=False)
     propositions: list[Proposition] = field(default_factory=list, compare=False)
     modified: bool = field(compare=False, default=True)
-    category: str | None = None
-    id_: str | None = None
+    category: str | None = field(compare=False, default=None)
+    id_: str | None = field(compare=False, default=None)
 
     @classmethod
     def from_template_dict(cls, data: dict) -> RegulationGroup:
@@ -390,7 +410,7 @@ class PlanObject(PlanBaseModel):
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
     plan_id: int | None = None
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
 
     @classmethod
     def from_template_dict(cls, data: dict) -> PlanObject:
@@ -447,7 +467,7 @@ class Plan(PlanBaseModel):
     geom: QgsGeometry | None = None
     plan_matter_id: str | None = None
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
 
 
 @dataclass
@@ -461,7 +481,7 @@ class PlanMatter(PlanBaseModel):
     producers_plan_identifier: str | None = None
     organisation_id: str | None = None
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
 
 
 @dataclass
@@ -482,4 +502,4 @@ class Document(PlanBaseModel):
     arrival_date: datetime | None = None
     plan_id: str | None = None
     modified: bool = field(compare=False, default=True)
-    id_: str | None = None
+    id_: str | None = field(compare=False, default=None)
