@@ -28,6 +28,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     open_as_form_signal = pyqtSignal(QWidget)
     delete_signal = pyqtSignal(QWidget)
+    request_linking = pyqtSignal(QWidget)
 
     def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
         super().__init__()
@@ -37,6 +38,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.frame: QFrame
         self.heading: QLineEdit
         self.letter_code: QLineEdit
+        self.link_btn: QPushButton
         self.edit_btn: QPushButton
         self.del_btn: QPushButton
         self.regulation_group_details_layout: QFormLayout
@@ -55,10 +57,14 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         self.from_model(regulation_group)
 
+        self.link_btn.clicked.connect(lambda: self.request_linking.emit(self))
         self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
+
+    def disable_linking(self):
+        self.link_btn.hide()
 
     def from_model(self, regulation_group: RegulationGroup):
         self.regulation_group = regulation_group
@@ -144,6 +150,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.frame.layout().insertLayout(1, layout)
 
         self.setStyleSheet("#frame { border: 2px solid #4b8db2; }")
+        self.link_btn.setIcon(QIcon(resources_path("icons", "delinked_img.png")))
+        self.link_btn.setToolTip("Tee kaavamääräysryhmästä uniikki / pura linkitys muihin kaavakohteisiin.")
 
     def unset_existing_regulation_group_style(self):
         if self.link_label_icon:
@@ -155,6 +163,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.link_label_text = None
 
         self.setStyleSheet("")
+        self.link_btn.setIcon(QIcon(resources_path("icons", "linked_img.png")))
+        self.link_btn.setToolTip("Yritä korvata kaavamääräysryhmä tietokannasta löytyvällä identtisellä ryhmällä.")
 
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
