@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
@@ -30,6 +30,7 @@ from ryhti_client.deserializer import (
     extra_import_data_from_dict,
     ryhti_plan_from_json,
 )
+from ryhti_client.plan_copier import PlanCopier
 from ryhti_client.ryhti_schema import (
     Period,
     RyhtiAdditionalInformation,
@@ -54,6 +55,8 @@ LOGGER = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
+MODEL = TypeVar("MODEL", bound=models.Base)
+
 
 class PlanAlreadyExistsError(Exception):
     def __init__(self, plan_id: str) -> None:
@@ -65,6 +68,18 @@ class PlanMatterNotFoundError(Exception):
     def __init__(self, plan_matter_id: UUID) -> None:
         self.plan_matter_id = plan_matter_id
         super().__init__(f"Plan matter '{plan_matter_id}' not found in the database.")
+
+
+class PlanNotFoundError(Exception):
+    def __init__(self, plan_id: UUID) -> None:
+        super().__init__(f"Plan '{plan_id}' not found in the database")
+
+
+class LifeCycleStatusNotFoundError(Exception):
+    def __init__(self, lifecycle_status_id: UUID) -> None:
+        super().__init__(
+            f"Lifecycle status '{lifecycle_status_id} not found in the database"
+        )
 
 
 class DatabaseClient:
@@ -1317,3 +1332,26 @@ class DatabaseClient:
             session.commit()
 
         return plan.id
+
+    def copy_plan(
+        self, plan_id: str, lifecycle_status_id: str, plan_name: dict[str, str]
+    ) -> DbId | None:
+        """Deep copy plan instance with all associated child objects and relationships."""
+        with self.Session(autoflush=False, expire_on_commit=False) as session:
+            plan = session.get(models.Plan, plan_id)
+            if plan is None:
+                raise PlanNotFoundError(UUID(plan_id))
+
+            new_lifecycle_status = session.get(
+                codes.LifeCycleStatus, lifecycle_status_id
+            )
+            if new_lifecycle_status is None:
+                raise LifeCycleStatusNotFoundError(UUID(lifecycle_status_id))
+
+            plan_copier = PlanCopier(plan, new_lifecycle_status, plan_name)
+            copied_plan = plan_copier.copy_plan()
+
+            session.add(copied_plan)
+            session.commit()
+
+        return copied_plan.id

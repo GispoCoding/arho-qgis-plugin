@@ -13,8 +13,10 @@ import simplejson as json
 from database.db_helper import DatabaseHelper, User
 from ryhti_client.database_client import (
     DatabaseClient,
+    LifeCycleStatusNotFoundError,
     PlanAlreadyExistsError,
     PlanMatterNotFoundError,
+    PlanNotFoundError,
 )
 from ryhti_client.ryhti_client import RyhtiClient
 
@@ -92,6 +94,7 @@ class Event(TypedDict, total=False):
 
     action: str  # Action
     plan_uuid: str | None  # UUID for plan to be used
+    lifecycle_status_uuid: str | None  # UUID for lifecycle status to be used
     save_json: bool | None  # True if we want JSON files to be saved in ryhti_debug
     data: dict | None  # Additional data to be used in the action, if needed
     force: bool | None  # True if we want to force the action, if needed
@@ -132,6 +135,7 @@ class Action(enum.Enum):
     VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     POST_PLAN_MATTERS = "post_plan_matters"
     IMPORT_PLAN = "import_plan"
+    COPY_PLAN = "copy_plan"
 
 
 def responsify(
@@ -389,6 +393,54 @@ def handler(
                     ryhti_responses=responses,
                 ),
             )
+        elif event_type is Action.COPY_PLAN:
+            data = event.get("data") or {}
+            LOGGER.debug("data: %s", data)
+            lifecycle_status_uuid = data.get("lifecycle_status_uuid")
+            LOGGER.debug("lifecycle_status_uuid: %s", lifecycle_status_uuid)
+            plan_name = data.get("plan_name")
+            if plan_uuid is None or lifecycle_status_uuid is None or plan_name is None:
+                LOGGER.warning("Copying plan failed. Required parameters missing.")
+                status_code = 400
+                title = "Error copying plan."
+                copy_details = {
+                    "error": "Missing some required parameter: 'plan_uuid', 'data.lifecycle_status_uuid' or 'data.plan_name'"
+                }
+
+            else:
+                LOGGER.info("Copying plan...")
+                try:
+                    copied_plan_id = database_client.copy_plan(
+                        plan_uuid, lifecycle_status_uuid, plan_name
+                    )
+                    status_code = 200
+                    title = "Plan copied."
+                    copy_details = {"copied_plan_id": str(copied_plan_id)}
+
+                except Exception as e:
+                    title = "Error copying plan."
+                    if isinstance(e, PlanNotFoundError):
+                        status_code = 404
+                        copy_details = {"error": f'plan "{plan_uuid}" not found'}
+                    if isinstance(e, LifeCycleStatusNotFoundError):
+                        status_code = 404
+                        copy_details = {
+                            "error": f'lifecycle_status_uuid" {lifecycle_status_uuid} not found'
+                        }
+                    else:
+                        LOGGER.exception("Error copying plan.")
+                        status_code = 500
+                        copy_details = {"error": "Please contact support"}
+
+            lambda_response = Response(
+                statusCode=status_code,
+                body=ResponseBody(
+                    title=title,
+                    details=copy_details,  # type: ignore[typeddict-item]
+                    ryhti_responses={},
+                ),
+            )
+
         else:
             lambda_response = Response(
                 statusCode=400,
