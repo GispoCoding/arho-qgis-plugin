@@ -69,6 +69,19 @@
          </spacer>
         </item>
         <item>
+         <widget class="QPushButton" name="link_btn">
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QPushButton" name="edit_btn">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">

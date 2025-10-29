@@ -156,10 +156,17 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         regulation_group_widget = RegulationGroupWidget(definition, self.plan_object)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
+        regulation_group_widget.request_linking.connect(self.change_regulation_group_linking)
         self._remove_spacer()
         self.plan_regulation_group_scrollarea_contents.layout().addWidget(regulation_group_widget)
         self.regulation_group_widgets.append(regulation_group_widget)
         self._add_spacer()
+
+        # If active plan regulation groups library is not given, disable linking functionality in
+        # plan regulation group widget. This should be the case only when the view is accessed
+        # through plan feature template library manager
+        if not self.active_plan_regulation_groups_library:
+            regulation_group_widget.disable_linking()
 
     def open_plan_regulation_group_form(self, regulation_group_widget: RegulationGroupWidget):
         group_as_form = PlanRegulationGroupForm(
@@ -200,6 +207,53 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
             _ = self.regulation_groups_selection_widget.add_item_to_tree(
                 str(group), group, self.template_categories[category]
             )
+
+    def change_regulation_group_linking(self, regulation_group_widget: RegulationGroupWidget):
+        # Group with ID, delink
+        if regulation_group_widget.regulation_group.id_ is not None:
+            delinked_group = regulation_group_widget.into_model()
+            delinked_group.id_ = None
+            regulation_group_widget.from_model(delinked_group)
+
+        # Group without ID, attempt to link with a matching group in DB
+        else:
+            matching_group = self.find_matching_group(regulation_group_widget.into_model())
+            if matching_group:
+                regulation_group_widget.from_model(matching_group)
+            else:
+                QMessageBox.warning(
+                    None, "Kaavamääräysryhmän linkitys", "Tietokannasta ei löytynyt identtistä kaavamääräysryhmää."
+                )
+
+    def find_matching_group(self, original_group: RegulationGroup) -> RegulationGroup | None:
+        unmatched_regulations = original_group.regulations
+        if self.active_plan_regulation_groups_library is None:
+            msg = "Active plan regulation groups library is not defined."
+            raise ValueError(msg)
+
+        for group in self.active_plan_regulation_groups_library.regulation_groups:
+            # Group models mismatch, not a matching group
+            if group != original_group:
+                continue
+
+            # Proposition models mismatch, not a matching group
+            if set(group.propositions) != set(original_group.propositions):
+                continue
+
+            # Check if all regulations match (on additional info level)
+            for regulation in group.regulations:
+                for original_regulation in unmatched_regulations:
+                    # Found a matching regulation
+                    if regulation == original_regulation and set(regulation.additional_information) == set(
+                        original_regulation.additional_information
+                    ):
+                        unmatched_regulations.remove(original_regulation)
+
+            # All regulations were matched and we got this far, it's a matching group
+            if len(unmatched_regulations) == 0:
+                return group
+
+        return None
 
     def into_model(self) -> list[RegulationGroup]:
         return [reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets]
