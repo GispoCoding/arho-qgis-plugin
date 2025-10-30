@@ -115,6 +115,14 @@ class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature):
     def __init__(self, mode: QgsMapToolDigitizeFeature.CaptureMode):
         super().__init__(iface.mapCanvas(), iface.cadDockWidget(), mode)
 
+    def deactivate(self):
+        super().deactivate()
+
+        # If a layer is set manually for the map tool, deactivate() reverts the current
+        # layer of the map canvas to the previous layer, which might be different from the
+        # activated layer. Force the current layer to be the same as the active layer.
+        iface.mapCanvas().setCurrentLayer(iface.activeLayer())
+
 
 class PlanManager(QObject):
     plan_set = pyqtSignal()
