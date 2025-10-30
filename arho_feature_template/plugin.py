@@ -142,7 +142,6 @@ class Plugin:
     def initGui(self) -> None:  # noqa N802
         # Plan manager
         self.plan_manager = PlanManager()
-        iface.mapCanvas().mapToolSet.connect(self.plan_manager.plan_digitize_map_tool.deactivate)
 
         # Docks
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
@@ -548,7 +547,6 @@ class Plugin:
         """Removes the plugin menu item and icon from QGIS GUI."""
         # Handle signals
         disconnect_signal(self.plan_manager.new_feature_dock.visibilityChanged)
-        iface.mapCanvas().mapToolSet.disconnect()
         iface.projectRead.disconnect()
 
         # Handle actions
