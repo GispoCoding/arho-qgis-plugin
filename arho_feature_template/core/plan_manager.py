@@ -108,12 +108,13 @@ QML_MAP = {
 }
 
 
-class PlanDigitizeMapTool(QgsMapToolDigitizeFeature): ...
+class PlanLayerDigitizeMapTool(QgsMapToolDigitizeFeature):
+    """Class for digitizing features on plan and plan object layers.
 
+    When deactivating, resets the current layer of the map canvas to the active layer."""
 
-class PlanFeatureDigitizeMapTool(QgsMapToolDigitizeFeature):
-    def __init__(self, mode: QgsMapToolDigitizeFeature.CaptureMode):
-        super().__init__(iface.mapCanvas(), iface.cadDockWidget(), mode)
+    def __init__(self):
+        super().__init__(iface.mapCanvas(), iface.cadDockWidget(), QgsMapToolDigitizeFeature.CaptureMode.CaptureNone)
 
     def deactivate(self):
         super().deactivate()
@@ -168,11 +169,12 @@ class PlanManager(QObject):
         self.features_dock.hide()
 
         # Initialize digitize tools
-        self.plan_digitize_map_tool = PlanDigitizeMapTool(iface.mapCanvas(), iface.cadDockWidget())
+        self.plan_digitize_map_tool = PlanLayerDigitizeMapTool()
         self.plan_digitize_map_tool.digitizingCompleted.connect(self._plan_geom_ready)
 
-        self.feature_digitize_map_tool = None
-        self.initialize_feature_digitize_map_tool()
+        self.feature_digitize_map_tool = PlanLayerDigitizeMapTool()
+        self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
+        self.feature_digitize_map_tool.digitizingFinished.connect(self.new_feature_dock.deactivate_and_clear_selections)
 
         # Initialize plan feature inspect tool
         self.inspect_plan_feature_tool = InspectPlanFeatures(
@@ -393,31 +395,6 @@ class PlanManager(QObject):
         else:
             iface.mapCanvas().setMapTool(self.previous_map_tool)
 
-    def initialize_feature_digitize_map_tool(self, layer: QgsVectorLayer | None = None):
-        # Get matcing capture mode for given layer
-        if layer is None:
-            mode = PlanFeatureDigitizeMapTool.CaptureMode.CaptureNone
-        elif layer.geometryType() == QgsWkbTypes.PointGeometry:
-            mode = PlanFeatureDigitizeMapTool.CaptureMode.CapturePoint
-        elif layer.geometryType() == QgsWkbTypes.LineGeometry:
-            mode = PlanFeatureDigitizeMapTool.CaptureMode.CaptureLine
-        elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
-            mode = PlanFeatureDigitizeMapTool.CaptureMode.CapturePolygon
-
-        # Disconnect signals first to not trigger them unwantedly
-        if self.feature_digitize_map_tool:
-            disconnect_signal(self.feature_digitize_map_tool.digitizingCompleted)
-            disconnect_signal(self.feature_digitize_map_tool.digitizingFinished)
-
-        # Reinitialize and reconnect signals
-        self.feature_digitize_map_tool = PlanFeatureDigitizeMapTool(mode)
-        self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
-        self.feature_digitize_map_tool.digitizingFinished.connect(self.new_feature_dock.deactivate_and_clear_selections)
-
-        # Set layer if given
-        if layer:
-            self.feature_digitize_map_tool.setLayer(layer)
-
     # check this
     def digitize_plan_geometry(self):
         self.previous_map_tool = iface.mapCanvas().mapTool()
@@ -435,7 +412,9 @@ class PlanManager(QObject):
 
         iface.setActiveLayer(plan_layer)
         plan_layer.startEditing()
-        self.plan_digitize_map_tool.setLayer(plan_layer)
+        self.plan_digitize_map_tool.setLayer(
+            plan_layer
+        )  # Locks the digitizing target layer even when activating different layer
         iface.mapCanvas().setMapTool(self.plan_digitize_map_tool)
 
     def import_plan_geometry(self):
@@ -539,10 +518,12 @@ class PlanManager(QObject):
             raise ValueError(msg)
         layer = layer_class.get_from_project()
 
-        iface.setActiveLayer(layer)
         layer.startEditing()
-
-        self.initialize_feature_digitize_map_tool(layer)
+        self.feature_digitize_map_tool.clean()
+        iface.setActiveLayer(layer)
+        self.feature_digitize_map_tool.setLayer(
+            layer
+        )  # Locks the digitizing target layer even when activating different layer
         iface.mapCanvas().setMapTool(self.feature_digitize_map_tool)
 
     def _plan_geom_ready(self, features: QgsFeature | list[QgsFeature]) -> bool:
