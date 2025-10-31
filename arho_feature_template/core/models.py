@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import logging
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from dataclasses import dataclass, field, fields
 from typing import TYPE_CHECKING, cast
 
@@ -151,6 +152,12 @@ class RegulationGroupLibrary(Library):
             "plan_regulation_groups": [group.into_template_dict() for group in self.regulation_groups],
         }
 
+    def into_hash_map(self) -> defaultdict[int, list]:
+        regulation_group_hash_map: defaultdict[int, list] = defaultdict(list)
+        for group in self.regulation_groups:
+            regulation_group_hash_map[hash(group)].append(group)
+        return regulation_group_hash_map
+
     def get_letter_codes(self) -> set[str]:
         """Returns set of non-empty short names (letter codes) of regulation groups part of the library."""
         return {group.letter_code for group in self.regulation_groups if group.letter_code}
@@ -164,7 +171,7 @@ class PlanBaseModel:
             setattr(self, _field.name, null_to_none(value))
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class AttributeValue(PlanBaseModel):
     value_data_type: AttributeValueDataType | None = None
 
@@ -221,25 +228,8 @@ class AttributeValue(PlanBaseModel):
             "height_reference_point": self.height_reference_point,
         }
 
-    def __hash__(self):
-        return hash(
-            (
-                self.value_data_type,
-                self.numeric_value,
-                self.numeric_range_min,
-                self.numeric_range_max,
-                self.unit,
-                self.text_value,
-                self.text_syntax,
-                self.code_list,
-                self.code_value,
-                self.code_title,
-                self.height_reference_point,
-            )
-        )
 
-
-@dataclass
+@dataclass(unsafe_hash=True)
 class AdditionalInformation(PlanBaseModel):
     additional_information_type_id: str
     value: AttributeValue | None = None
@@ -260,11 +250,8 @@ class AdditionalInformation(PlanBaseModel):
             **(self.value.into_template_dict() if self.value else {}),
         }
 
-    def __hash__(self):
-        return hash((self.additional_information_type_id, self.value))
 
-
-@dataclass
+@dataclass(unsafe_hash=True)
 class Regulation(PlanBaseModel):
     regulation_type_id: str
     value: AttributeValue | None = None
@@ -328,7 +315,7 @@ class Regulation(PlanBaseModel):
         }
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Proposition(PlanBaseModel):
     value: str | None
     theme_ids: list[str] = field(default_factory=list, compare=False)
@@ -345,7 +332,7 @@ class Proposition(PlanBaseModel):
         }
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class RegulationGroup(PlanBaseModel):
     type_code_id: str | None = None
     heading: str | None = None  # Called "regulation_heading" / "kaavamääräyksen otsikko" in UI and data model
@@ -484,7 +471,7 @@ class PlanMatter(PlanBaseModel):
     id_: str | None = field(compare=False, default=None)
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Document(PlanBaseModel):
     name: str | None = None
     url: str | None = None
