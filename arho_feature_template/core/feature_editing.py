@@ -95,9 +95,9 @@ def save_plan(plan: Plan) -> str | None:
             feature=feature,
             layer=PlanLayer.get_from_project(),
             id_=plan_id,
-            edit_text="Kaavan muokkaus" if editing else "Kaavan luominen",
+            edit_text="Kaavasuunnitelman muokkaus" if editing else "Kaavasuunnitelman luominen",
         ):
-            iface.messageBar().pushCritical("", "Kaavan tallentaminen epäonnistui")
+            iface.messageBar().pushCritical("", "Kaavasuunnitelman tallentaminen epäonnistui")
             return None
         plan_id = cast(str, feature["id"])
 

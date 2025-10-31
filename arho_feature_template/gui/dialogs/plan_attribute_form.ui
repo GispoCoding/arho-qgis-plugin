@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Kaava</string>
+   <string>Kaavasuunnitelma</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
@@ -93,7 +93,7 @@
              <item row="0" column="1">
               <widget class="QLineEdit" name="name_line_edit">
                <property name="toolTip">
-                <string>Kaava-asian nimi</string>
+                <string>Kaavasuunnitelman nimi</string>
                </property>
               </widget>
              </item>
@@ -116,7 +116,7 @@
                 </size>
                </property>
                <property name="toolTip">
-                <string>Kaava-asian kuvaus</string>
+                <string>Kaavasuunnitelman kuvaus</string>
                </property>
               </widget>
              </item>
@@ -150,7 +150,7 @@
              <item row="3" column="1">
               <widget class="CodeComboBox" name="lifecycle_status_combo_box">
                <property name="toolTip">
-                <string>Kaavan elinkaaren tila</string>
+                <string>Kaavasuunitelman elinkaaren tila</string>
                </property>
               </widget>
              </item>
