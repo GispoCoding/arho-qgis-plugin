@@ -13,7 +13,7 @@ provider "aws" {
 
 module "x-road" {
   source = "./x-road"
-  count = var.enable_x_road  ? 1 : 0
+  for_each = var.enable_x_road ? { "this" = true } : {}
 
   providers = {
     aws = aws
@@ -58,110 +58,4 @@ module "x-road" {
   bastion_security_group_id = aws_security_group.bastion.id
 
   default_tags = local.default_tags
-}
-
-
-moved {
-  from = aws_cloudwatch_log_group.x-road_securityserver
-  to = module.x-road[0].aws_cloudwatch_log_group.x-road_securityserver
-}
-
-moved {
-  from = aws_route53_record.xroad-verification
-  to = module.x-road[0].aws_route53_record.xroad-verification
-}
-
-moved {
-  from = aws_service_discovery_private_dns_namespace.private
-  to = module.x-road[0].aws_service_discovery_private_dns_namespace.private
-}
-
-moved {
-  from = aws_service_discovery_service.x-road_securityserver
-  to = module.x-road[0].aws_service_discovery_service.x-road_securityserver
-}
-
-moved {
-  from = aws_ecs_task_definition.x-road_securityserver
-  to = module.x-road[0].aws_ecs_task_definition.x-road_securityserver
-}
-
-moved {
-  from = aws_db_instance.xroad_db
-  to = module.x-road[0].aws_db_instance.xroad_db
-}
-
-moved {
-  from = aws_ecs_cluster.x-road_securityserver
-  to = module.x-road[0].aws_ecs_cluster.x-road_securityserver
-}
-
-moved {
-  from = aws_ecs_service.x-road_securityserver
-  to = module.x-road[0].aws_ecs_service.x-road_securityserver
-}
-
-moved {
-  from = aws_efs_file_system.x-road_archive_volume
-  to = module.x-road[0].aws_efs_file_system.x-road_archive_volume
-}
-
-moved {
-  from = aws_efs_file_system.x-road_configuration_volume
-  to = module.x-road[0].aws_efs_file_system.x-road_configuration_volume
-}
-
-moved {
-  from = aws_efs_mount_target.x-road_archive_volume
-  to = module.x-road[0].aws_efs_mount_target.x-road_archive_volume
-}
-
-moved {
-  from = aws_efs_mount_target.x-road_configuration_volume
-  to = module.x-road[0].aws_efs_mount_target.x-road_configuration_volume
-}
-
-moved {
-  from = aws_secretsmanager_secret.syke-xroad-client-secret
-  to = module.x-road[0].aws_secretsmanager_secret.syke-xroad-client-secret
-}
-
-moved {
-  from = aws_secretsmanager_secret.xroad-db-pwd
-  to = module.x-road[0].aws_secretsmanager_secret.xroad-db-pwd
-}
-
-moved {
-  from = aws_secretsmanager_secret_version.syke-xroad-client-secret
-  to = module.x-road[0].aws_secretsmanager_secret_version.syke-xroad-client-secret
-}
-
-moved {
-  from = aws_secretsmanager_secret_version.xroad-db-pwd
-  to = module.x-road[0].aws_secretsmanager_secret_version.xroad-db-pwd
-}
-
-moved {
-  from = aws_security_group.x-road
-  to = module.x-road[0].aws_security_group.x-road
-}
-
-moved {
-  from = aws_security_group_rule.bastion-x-road
-  to = module.x-road[0].aws_security_group_rule.bastion-x-road
-}
-
-moved {
-  from = aws_security_group_rule.lambda-x-road
-  to = module.x-road[0].aws_security_group_rule.lambda-x-road
-}
-
-moved {
-  from = aws_security_group_rule.rds-x-road
-  to = module.x-road[0].aws_security_group_rule.rds-x-road
-}
-
-moved {
-  from = aws_security_group_rule.x-road-filesystem
-  to = module.x-road[0].aws_security_group_rule.x-road-filesystem
 }

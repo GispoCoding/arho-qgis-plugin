@@ -30,7 +30,7 @@ output "bastion_address" {
 
 output "xroad_fqdn" {
   description = "X-Road Security Server fully qualified domain name"
-  value       = local.xroad_dns_record
+  value       = try(module.x-road["this"].dns_record, null)
 }
 
 output "xroad_ip_address" {

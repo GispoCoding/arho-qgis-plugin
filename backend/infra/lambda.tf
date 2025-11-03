@@ -184,14 +184,14 @@ locals {
       DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
       SYKE_APIKEY         = var.syke_apikey
   }
-  ryhti_client_x-road_environment = var.enable_x_road ?{
-      XROAD_SERVER_ADDRESS = local.xroad_dns_record
-      XROAD_INSTANCE = module.x-road[0].instance
-      XROAD_MEMBER_CLASS = module.x-road[0].member_class
-      XROAD_MEMBER_CODE   = module.x-road[0].member_code
-      XROAD_MEMBER_CLIENT_NAME = module.x-road[0].subdomain
-      XROAD_SYKE_CLIENT_ID = module.x-road[0].client_id
-      XROAD_SYKE_CLIENT_SECRET_ARN = module.x-road[0].client_secret_arn
+  ryhti_client_x-road_environment = var.enable_x_road ? {
+      XROAD_SERVER_ADDRESS = module.x-road["this"].dns_record
+      XROAD_INSTANCE = module.x-road["this"].instance
+      XROAD_MEMBER_CLASS = module.x-road["this"].member_class
+      XROAD_MEMBER_CODE   = module.x-road["this"].member_code
+      XROAD_MEMBER_CLIENT_NAME = module.x-road["this"].subdomain
+      XROAD_SYKE_CLIENT_ID = module.x-road["this"].client_id
+      XROAD_SYKE_CLIENT_SECRET_ARN = module.x-road["this"].client_secret_arn
   } : {}
   ryhti_client_env = merge(
     local.ryhti_client_base_environment,

@@ -32,16 +32,19 @@ variable "apigateway_subdomain" {
 variable "x-road_host" {
   description = "Host name for X-Road security server"
   type        = string
+  default = null
 }
 
 variable "x-road_subdomain" {
   description = "Subdomain for X-road security server"
   type     = string
+  default = null
 }
 
 variable "x-road_verification_record" {
   description = "Domain verification string to set for x-road DNS record"
   type     = string
+  default = null
 }
 
 variable "x-road_instance" {
@@ -59,6 +62,7 @@ variable "x-road_member_class" {
 variable "x-road_member_code" {
   description = "Member code to set for x-road client instance. Usually this is Y-tunnus of your organization."
   type     = string
+  default = null
 }
 
 variable "enable_route53_record" {
@@ -129,11 +133,13 @@ variable "mml_apikey" {
 variable "syke_xroad_client_id" {
   description = "Syke client id for Ryhti X-road API client"
   type        = string
+  default = null
 }
 
 variable "syke_xroad_client_secret" {
   description = "Syke secret for Ryhti X-road API client"
   type        = string
+  default = null
 }
 
 variable "public-subnet-count" {
@@ -166,12 +172,21 @@ variable "x-road_securityserver_image" {
 }
 
 variable "x-road_secrets" {
+  description = "Admin username and password for X-Road Security Server"
+  type        = map(string)
+  default     = null
 }
 
 variable "x-road_db_password" {
+  description = "Password for the X-Road database."
+  type        = string
+  default     = null
 }
 
 variable "x-road_token_pin" {
+  description = "PIN for accessing x-road authentication tokens"
+  type        = string
+  default     = null
 }
 
 variable "prefix" {
@@ -188,8 +203,7 @@ variable "extra_tags" {
 locals {
   bastion_dns_alias    = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
   apigateway_dns_record = "${var.prefix}.${var.apigateway_subdomain}.${var.AWS_HOSTED_DOMAIN}"
-  xroad_private_domain = "${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
-  xroad_dns_record     = "${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix
     "Name"      = var.prefix
