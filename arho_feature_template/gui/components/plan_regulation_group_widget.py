@@ -12,9 +12,11 @@ from qgis.PyQt.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 from arho_feature_template.core.models import PlanObject, Proposition, Regulation, RegulationGroup
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
+from arho_feature_template.gui.dialogs.regulation_group_selection_view import RegulationGroupSelectionView
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.utils.signal_utils import SignalDebouncer
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
@@ -28,7 +30,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     open_as_form_signal = pyqtSignal(QWidget)
     delete_signal = pyqtSignal(QWidget)
-    request_linking = pyqtSignal(QWidget)
+    update_matching_groups = pyqtSignal(QWidget)
 
     def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
         super().__init__()
@@ -55,16 +57,55 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.layer_name = self.plan_feature.layer_name
             regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
 
+        self.matching_groups_in_db: list[RegulationGroup] = []
         self.from_model(regulation_group)
 
-        self.link_btn.clicked.connect(lambda: self.request_linking.emit(self))
+        self.link_btn.clicked.connect(self._on_link_btn_clicked)
         self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))
 
+        self.group_contents_update_debouncer = SignalDebouncer(delay_ms=300)
+        self.group_contents_update_debouncer.triggered.connect(self._on_group_details_changed)
+        self.heading.textEdited.connect(lambda _: self.group_contents_update_debouncer.restart_timer())
+        self.letter_code.textEdited.connect(lambda _: self.group_contents_update_debouncer.restart_timer())
+
     def disable_linking(self):
         self.link_btn.hide()
+
+    def setup_linking_to_matching_groups(self, matching_groups: list[RegulationGroup]):
+        # This function should only be called if the regulation group is not in DB yet
+        if self.regulation_group.id_ is not None:
+            return
+
+        self.link_btn.show()
+        self.matching_groups_in_db = matching_groups
+        nr_of_matching_groups = len(matching_groups)
+        if nr_of_matching_groups == 0:
+            self.link_btn.setEnabled(False)
+            self.link_btn.setText(str(0))
+            self.link_btn.setToolTip(
+                "Yhdistämistä ei voi suorittaa, tietokannasta ei löydy vastaavia kaavamääräysryhmiä."
+            )
+        elif nr_of_matching_groups == 1:
+            self.link_btn.setEnabled(True)
+            self.link_btn.setText("")
+            self.link_btn.setMaximumWidth(30)
+            self.link_btn.setToolTip("Yhdistä kaavamääräysryhmä tietokannan vastaavaan kaavamääräysryhmään.")
+        else:
+            self.link_btn.setEnabled(True)
+            self.link_btn.setText(f"{nr_of_matching_groups!s}!")
+            self.link_btn.setToolTip(
+                "Tietokannasta löytyy useita vastaavia kaavamääräysryhmiä, valitse yhdistettävä ryhmä."
+            )
+            # Determine width based on characters in the button text
+            if nr_of_matching_groups < 10:  # noqa: PLR2004
+                self.link_btn.setMaximumWidth(45)
+            elif nr_of_matching_groups < 100:  # noqa: PLR2004
+                self.link_btn.setMaximumWidth(52)
+            else:
+                self.link_btn.setMaximumWidth(60)
 
     def from_model(self, regulation_group: RegulationGroup):
         self.regulation_group = regulation_group
@@ -96,9 +137,10 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
                         regulation_group.id_, self.plan_feature.id_, self.layer_name
                     )
                 )
-            if other_linked_features_count > 0:
-                # Set indicators that regulation group exists in the plan already and is assigned for other features
-                self.set_existing_regulation_group_style(other_linked_features_count)
+            self.set_existing_regulation_group_style(other_linked_features_count)
+
+        else:
+            self.update_matching_groups.emit(self)
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
         widget = RegulationWidget(regulation=regulation, parent=self.frame)
@@ -125,6 +167,24 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         proposition_widget.deleteLater()
 
     def set_existing_regulation_group_style(self, other_linked_features_count: int):
+        # Always use blue frame if regulation group is in DB
+        self.setStyleSheet("#frame { border: 2px solid #4b8db2; }")
+
+        # Link button should show delink image
+        self.link_btn.setIcon(QIcon(resources_path("icons", "delinked_img.png")))
+        self.link_btn.setText("")
+
+        # Case group exists in DB but no other plan object uses it
+        if other_linked_features_count == 0:
+            self.link_btn.setEnabled(False)
+            self.link_btn.setToolTip("Ei purettavia linkkejä, kaavamääräysryhmää ei ole annettu muille kaavakohteelle.")
+            # Return early, don't add other existing group indicators if not linked to other plan objects
+            return
+
+        # Case group exists in DB and N other plan object use it too
+        self.link_btn.setEnabled(True)
+        self.link_btn.setToolTip("Tee kaavamääräysryhmästä uniikki / pura linkitys muihin kaavakohteisiin.")
+
         tooltip = (
             "Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin "
             "kaavakohteisiin, joille ryhmä on lisätty."
@@ -149,10 +209,6 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         self.frame.layout().insertLayout(1, layout)
 
-        self.setStyleSheet("#frame { border: 2px solid #4b8db2; }")
-        self.link_btn.setIcon(QIcon(resources_path("icons", "delinked_img.png")))
-        self.link_btn.setToolTip("Tee kaavamääräysryhmästä uniikki / pura linkitys muihin kaavakohteisiin.")
-
     def unset_existing_regulation_group_style(self):
         if self.link_label_icon:
             self.link_label_icon.deleteLater()
@@ -164,7 +220,29 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         self.setStyleSheet("")
         self.link_btn.setIcon(QIcon(resources_path("icons", "linked_img.png")))
-        self.link_btn.setToolTip("Yritä korvata kaavamääräysryhmä tietokannasta löytyvällä identtisellä ryhmällä.")
+
+    def _on_link_btn_clicked(self):
+        # Group with ID, delink
+        if self.regulation_group.id_ is not None:
+            delinked_group = self.into_model()
+            delinked_group.id_ = None
+            self.from_model(delinked_group)
+
+        # Group without ID, link with a matching group in DB
+        # Only 1 option, immediately perform linking / replacing
+        elif len(self.matching_groups_in_db) == 1:
+            group = self.matching_groups_in_db[0]
+            self.from_model(group)
+        # Multiple choices, make user choose which group to use
+        elif len(self.matching_groups_in_db) > 1:
+            dialog = RegulationGroupSelectionView(self.matching_groups_in_db)
+            if dialog.exec():
+                self.from_model(dialog.get_selected_group())
+
+    def _on_group_details_changed(self):
+        # Only ask for update if group is new / not in DB
+        if self.regulation_group.id_ is None:
+            self.update_matching_groups.emit(self)
 
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
