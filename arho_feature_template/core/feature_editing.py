@@ -6,7 +6,6 @@ from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
     DocumentLayer,
     LegalEffectAssociationLayer,
-    LifeCycleLayer,
     PlanLayer,
     PlanMatterLayer,
     PlanPropositionLayer,
@@ -29,7 +28,6 @@ if TYPE_CHECKING:
     from arho_feature_template.core.models import (
         AdditionalInformation,
         Document,
-        LifeCycle,
         Plan,
         PlanMatter,
         PlanObject,
@@ -464,23 +462,6 @@ def save_document(document: Document) -> str | None:
         edit_text="Asiakirjan lisäys" if document.id_ is None else "Asiakirjan muokkaus",
     ):
         iface.messageBar().pushCritical("", "Asiakirjan tallentaminen epäonnistui.")
-        return None
-
-    return feature["id"]
-
-
-def save_lifecycle(lifecycle: LifeCycle) -> str | None:
-    if lifecycle.id_ is not None and not lifecycle.modified:
-        return lifecycle.id_
-
-    feature = LifeCycleLayer.feature_from_model(lifecycle)
-    if not save_feature(
-        feature=feature,
-        layer=LifeCycleLayer.get_from_project(),
-        id_=lifecycle.id_,
-        edit_text="Elinkaaren lisäys" if lifecycle.id_ is None else "Elinkaaren muokkaus",
-    ):
-        iface.messageBar().pushCritical("", "Elinkaaren tallentaminen epäonnistui.")
         return None
 
     return feature["id"]
