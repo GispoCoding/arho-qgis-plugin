@@ -13,7 +13,6 @@ from arho_feature_template.core.models import (
     AdditionalInformation,
     AttributeValue,
     Document,
-    LifeCycle,
     Plan,
     PlanMatter,
     PlanObject,
@@ -248,12 +247,6 @@ class PlanLayer(AbstractPlanLayer):
         all_doc_features = DocumentLayer.get_features_by_attribute_value("plan_id", plan_ids)
         for model in DocumentLayer.models_from_features(list(all_doc_features)):
             documents_by_plan_id[cast(str, model.plan_id)].append(model)
-
-        # Lifecycles
-        # lifecycles_by_plan_id: dict[str, list[LifeCycle]] = defaultdict(list)
-        # all_lifecycle_features = LifeCycleLayer.get_features_by_attribute_value("plan_id", plan_ids)
-        # for model in LifeCycleLayer.models_from_features(list(all_lifecycle_features)):  # type: ignore
-        # lifecycles_by_plan_id[cast(str, model.plan_id)].append(model)  # type: ignore
 
         return [
             Plan(
@@ -1002,70 +995,6 @@ class AdditionalInformationLayer(AbstractPlanLayer):
             for info in cls.get_features_by_attribute_value("plan_regulation_id", regulation_id)
             if info["id"] not in updated_info_ids
         ]
-
-
-class LifeCycleLayer(AbstractPlanLayer):
-    name = "Elinkaaren päiväykset"
-    filter_template = None
-
-    @classmethod
-    def feature_from_model(cls, model: LifeCycle) -> QgsFeature:
-        feature = cls.initialize_feature_from_model(model)
-
-        feature["id"] = model.id_ if model.id_ else feature["id"]
-        feature["lifecycle_status_id"] = model.status_id
-        feature["starting_at"] = model.starting_at
-        feature["ending_at"] = model.ending_at if model.ending_at else None
-        feature["plan_id"] = model.plan_id
-        feature["land_use_area_id"] = model.land_use_are_id
-        feature["other_area_id"] = model.other_area_id
-        feature["line_id"] = model.line_id
-        feature["point_id"] = model.point_id
-        feature["plan_regulation_id"] = model.plan_regulation_id
-        feature["plan_proposition_id"] = model.plan_proposition_id
-
-        return feature
-
-    @classmethod
-    def model_from_feature(cls, feature: QgsFeature) -> LifeCycle:
-        return LifeCycle(
-            id_=feature["id"],
-            status_id=feature["lifecycle_status_id"],
-            starting_at=feature["starting_at"].date() if feature["starting_at"] else None,
-            ending_at=feature["ending_at"].date() if feature["ending_at"] else None,
-            plan_id=feature["plan_id"],
-            land_use_are_id=feature["land_use_area_id"],
-            other_area_id=feature["other_area_id"],
-            line_id=feature["line_id"],
-            point_id=feature["point_id"],
-            plan_regulation_id=feature["plan_regulation_id"],
-            plan_proposition_id=feature["plan_proposition_id"],
-            modified=False,
-        )
-
-    @classmethod
-    def models_from_features(cls, features: list[QgsFeature]) -> list[LifeCycle]:
-        return [
-            LifeCycle(
-                id_=feature["id"],
-                status_id=feature["lifecycle_status_id"],
-                starting_at=feature["starting_at"].date() if feature["starting_at"] else None,
-                ending_at=feature["ending_at"].date() if feature["ending_at"] else None,
-                plan_id=feature["plan_id"],
-                land_use_are_id=feature["land_use_area_id"],
-                other_area_id=feature["other_area_id"],
-                line_id=feature["line_id"],
-                point_id=feature["point_id"],
-                plan_regulation_id=feature["plan_regulation_id"],
-                plan_proposition_id=feature["plan_proposition_id"],
-                modified=False,
-            )
-            for feature in features
-        ]
-
-    @classmethod
-    def get_features_by_plan_id(cls, plan_id: str) -> list[QgsFeature]:
-        return list(cls.get_features_by_attribute_value("plan_id", plan_id))
 
 
 def get_plan_feature_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:

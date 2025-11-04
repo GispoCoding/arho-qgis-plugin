@@ -18,7 +18,6 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from qgis.core import QgsGeometry
-    from qgis.PyQt.QtCore import QDate
 
 
 logger = logging.getLogger(__name__)
@@ -379,24 +378,6 @@ class RegulationGroup(PlanBaseModel):
             f"Kaavamääräysten määrä: {len(self.regulations)}\n"
             f"Suositusten määrä: {len(self.propositions)}"
         )
-
-
-@dataclass
-class LifeCycle(PlanBaseModel):
-    status_id: str | None = None
-    id_: str | None = None
-    # No need to compare `plan_id` since lifecycles can't be reassigned for another plan after creation
-    plan_id: str | None = field(compare=False, default=None)
-    plan_regulation_id: str | None = None
-    plan_proposition_id: str | None = None
-    starting_at: QDate | None = None
-    ending_at: QDate | None = None
-    # might not need the following
-    land_use_are_id: str | None = None
-    other_area_id: str | None = None
-    line_id: str | None = None
-    point_id: str | None = None
-    modified: bool = field(compare=False, default=True)
 
 
 @dataclass

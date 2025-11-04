@@ -222,23 +222,14 @@ class Plugin:
         self.new_plan_button.setMenu(menu)
         self.new_plan_action = self.toolbar.addWidget(self.new_plan_button)
 
-        self.manage_plans_tool_button = QToolButton()
-        self.manage_plans_tool_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        self.manage_plans_tool_button.setMenu(QMenu())
-        self.manage_plans_tool_button.setPopupMode(QToolButton.MenuButtonPopup)
-        self.manage_plans_tool_action = self.toolbar.addWidget(self.manage_plans_tool_button)
-
         self.manage_plans_action = self.add_action(
             text="Kaavasuunnitelmat",
             triggered_callback=self.open_manage_plans,
             parent=iface.mainWindow(),
             add_to_menu=True,
-            add_to_toolbar=False,
+            add_to_toolbar=True,
             status_tip="Kaavasuunnitelmien hallinta",
         )
-
-        self.manage_plans_tool_button.menu().addAction(self.manage_plans_action)
-        self.manage_plans_tool_button.setDefaultAction(self.manage_plans_action)
 
         self.edit_plan_action = self.add_action(
             text="Muokkaa kaavasuunitelmaa",
@@ -403,7 +394,7 @@ class Plugin:
         self.plan_matter_depending_actions = [
             self.draw_new_plan_action,
             self.new_plan_from_border,
-            self.manage_plans_tool_action,
+            self.manage_plans_action,
             self.edit_plan_matter_action,
             self.import_plan,
             self.new_plan_action,
