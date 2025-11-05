@@ -296,6 +296,7 @@ class PlanManager(QObject):
         if import_features_form.exec_():
             pass
 
+    @use_wait_cursor
     def update_active_plan_regulation_group_library(self):
         self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
         self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
@@ -601,6 +602,7 @@ class PlanManager(QObject):
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
 
+    @use_wait_cursor
     def set_active_plan_matter(self, plan_matter_id: str) -> None:
         if check_layer_changes():
             raise UnsavedChangesError
@@ -634,6 +636,7 @@ class PlanManager(QObject):
 
         self.set_permanent_identifier(permanent_plan_identifier)
 
+    @use_wait_cursor
     def set_active_plan(self, plan_id: str | None) -> None:
         """Update the project layers based on the selected land use plan and its plan matter.
 

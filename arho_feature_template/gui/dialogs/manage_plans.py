@@ -22,6 +22,7 @@ from arho_feature_template.utils.misc_utils import (
     get_active_plan_id,
     get_active_plan_matter_id,
     iface,
+    use_wait_cursor,
 )
 
 if TYPE_CHECKING:
@@ -36,6 +37,7 @@ DATA_ROLE = Qt.UserRole
 
 
 class ManagePlans(QDialog, FormClass):  # type: ignore
+    @use_wait_cursor
     def __init__(self, regulation_group_libraries):
         super().__init__()
         self.setupUi(self)
