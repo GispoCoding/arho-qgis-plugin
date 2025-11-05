@@ -220,7 +220,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
     def find_matching_groups(self, regulation_group: RegulationGroup) -> list[RegulationGroup]:
         if self.regulation_groups_hash_map:
-            return self.regulation_groups_hash_map.get(hash(regulation_group), [])
+            return self.regulation_groups_hash_map.get(regulation_group.data_hash(), [])
         return []
 
     def into_model(self) -> list[RegulationGroup]:
