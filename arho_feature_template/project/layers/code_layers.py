@@ -259,7 +259,7 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
         "Aluevaraus": "landUseRegulations",
         "Osa-alue": "otherAreaRegulations",
         "Viivat": "lineRegulations",
-        "Pisteet": "otherPointRegulations",
+        "Pisteet": "pointRegulations",
     }
 
     @classmethod
