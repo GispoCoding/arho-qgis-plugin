@@ -32,14 +32,17 @@ LOGGER.setLevel(logging.INFO)
 db_helper = DatabaseHelper(user=User.READ_WRITE)
 # Let's fetch the syke secret from AWS secrets, so it cannot be read in plain
 # text when looking at lambda env variables.
-if os.environ.get("READ_FROM_AWS", "1") == "1":
+
+if os.environ.get("READ_FROM_AWS", "1") == "1" and (
+    client_secret_arn := os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN")
+):
     session = boto3.session.Session()
     client = session.client(
         service_name="secretsmanager", region_name=os.environ.get("AWS_REGION_NAME", "")
     )
-    xroad_syke_client_secret = client.get_secret_value(
-        SecretId=os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN", "")
-    )["SecretString"]
+    xroad_syke_client_secret = client.get_secret_value(SecretId=client_secret_arn)[
+        "SecretString"
+    ]
 else:
     xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET", "")
 public_api_key = os.environ.get("SYKE_APIKEY", "")
