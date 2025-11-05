@@ -3,6 +3,8 @@ from __future__ import annotations
 import enum
 import logging
 import os
+from collections.abc import Callable
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 
 import boto3
@@ -147,6 +149,42 @@ def responsify(
     )
 
 
+type HandlerType = Callable[
+    [Event | AWSAPIGatewayPayload, Any], Response | AWSAPIGatewayResponse
+]
+
+
+def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType:
+    """Decorator to catch unhandled exceptions and return a 500 response."""
+
+    @wraps(func)
+    def wrapper(
+        payload: Event | AWSAPIGatewayPayload, _
+    ) -> Response | AWSAPIGatewayResponse:
+        try:
+            return func(payload, _)
+        except Exception:
+            LOGGER.exception("Unhandled exception in lambda handler.")
+            response_title = "Internal Server Error."
+            return responsify(
+                Response(
+                    statusCode=500,
+                    body=ResponseBody(
+                        title=response_title,
+                        details={
+                            "error": "Internal server error. Please contact support."
+                        },
+                        ryhti_responses={},
+                    ),
+                ),
+                using_api_gateway=isinstance(payload, dict)
+                and "requestContext" in payload,
+            )
+
+    return wrapper
+
+
+@return_500_on_unhandled_exceptions
 def handler(
     payload: Event | AWSAPIGatewayPayload, _
 ) -> Response | AWSAPIGatewayResponse:
