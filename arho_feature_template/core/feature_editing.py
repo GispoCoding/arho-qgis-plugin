@@ -229,7 +229,6 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     return group_id
 
 
-@use_wait_cursor
 def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> bool:
     if regulation_group.id_ is None:
         iface.messageBar().pushCritical("", "Kaavamääräysryhmän poistaminen epäonnistui (ei IDtä).")
