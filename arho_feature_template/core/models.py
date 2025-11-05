@@ -155,7 +155,7 @@ class RegulationGroupLibrary(Library):
     def into_hash_map(self) -> defaultdict[int, list]:
         regulation_group_hash_map: defaultdict[int, list] = defaultdict(list)
         for group in self.regulation_groups:
-            regulation_group_hash_map[hash(group)].append(group)
+            regulation_group_hash_map[group.data_hash()].append(group)
         return regulation_group_hash_map
 
     def get_letter_codes(self) -> set[str]:
@@ -163,6 +163,7 @@ class RegulationGroupLibrary(Library):
         return {group.letter_code for group in self.regulation_groups if group.letter_code}
 
 
+@dataclass
 class PlanBaseModel:
     def __post_init__(self):
         # Set all found NULLs to None
@@ -170,8 +171,30 @@ class PlanBaseModel:
             value = getattr(self, _field.name)
             setattr(self, _field.name, null_to_none(value))
 
+    def data_hash(self) -> int:
+        hash_components = []
+        for _field in fields(self):
+            # Hash fields unless they are marked with compare=False and don't have hash=True in metadata
+            if not _field.compare and not _field.metadata.get("hash", False):
+                continue
 
-@dataclass(unsafe_hash=True)
+            value = getattr(self, _field.name)
+            # Convert lists into frozensets, consider if list has PlanBaseModels
+            if isinstance(value, list):
+                if len(value) > 0 and isinstance(value[0], PlanBaseModel):
+                    value = frozenset(element.data_hash() for element in value)
+                else:
+                    value = frozenset(value)
+            # Call data_hash recursively
+            elif isinstance(value, PlanBaseModel):
+                value = value.data_hash()
+
+            hash_components.append(value)
+
+        return hash(tuple(hash_components))
+
+
+@dataclass
 class AttributeValue(PlanBaseModel):
     value_data_type: AttributeValueDataType | None = None
 
@@ -189,6 +212,15 @@ class AttributeValue(PlanBaseModel):
     code_title: str | None = None
 
     height_reference_point: str | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        for _field in fields(self):
+            value = getattr(self, _field.name)
+            # Convert empty strings and such to None, otherwise hash comparisons fail
+            if not value:
+                setattr(self, _field.name, None)
 
     @staticmethod
     def from_template_dict(data: dict, default_value: AttributeValue | None = None) -> AttributeValue:
@@ -229,7 +261,7 @@ class AttributeValue(PlanBaseModel):
         }
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class AdditionalInformation(PlanBaseModel):
     additional_information_type_id: str
     value: AttributeValue | None = None
@@ -251,14 +283,16 @@ class AdditionalInformation(PlanBaseModel):
         }
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class Regulation(PlanBaseModel):
     regulation_type_id: str
     value: AttributeValue | None = None
-    additional_information: list[AdditionalInformation] = field(default_factory=list, compare=False)
+    additional_information: list[AdditionalInformation] = field(
+        default_factory=list, compare=False, metadata={"hash": True}
+    )
     regulation_number: int | None = None
-    files: list[str] = field(default_factory=list, compare=False)
-    theme_ids: list[str] = field(default_factory=list, compare=False)
+    files: list[str] = field(default_factory=list, compare=False)  # hash?
+    theme_ids: list[str] = field(default_factory=list, compare=False, metadata={"hash": True})
     subject_identifiers: list[str] = field(default_factory=list)
     verbal_regulation_type_ids: list[str] = field(default_factory=list)
     regulation_group_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
@@ -315,12 +349,12 @@ class Regulation(PlanBaseModel):
         }
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class Proposition(PlanBaseModel):
     value: str | None
-    theme_ids: list[str] = field(default_factory=list, compare=False)
+    theme_ids: list[str] = field(default_factory=list, compare=False, metadata={"hash": True})
     proposition_number: int | None = None
-    regulation_group_id: str | None = None
+    regulation_group_id: str | None = field(compare=False, default=None)
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -332,15 +366,15 @@ class Proposition(PlanBaseModel):
         }
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
 class RegulationGroup(PlanBaseModel):
     type_code_id: str | None = None
     heading: str | None = None  # Called "regulation_heading" / "kaavamääräyksen otsikko" in UI and data model
     letter_code: str | None = None
     color_code: str | None = None
     group_number: int | None = None
-    regulations: list[Regulation] = field(default_factory=list, compare=False)
-    propositions: list[Proposition] = field(default_factory=list, compare=False)
+    regulations: list[Regulation] = field(default_factory=list, compare=False, metadata={"hash": True})
+    propositions: list[Proposition] = field(default_factory=list, compare=False, metadata={"hash": True})
     modified: bool = field(compare=False, default=True)
     category: str | None = field(compare=False, default=None)
     id_: str | None = field(compare=False, default=None)
