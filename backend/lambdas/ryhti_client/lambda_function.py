@@ -122,6 +122,16 @@ class AWSAPIGatewayResponse(TypedDict):
     body: str  # Response body must be stringified for API gateway
 
 
+class Action(enum.Enum):
+    GET_PLANS = "get_plans"
+    VALIDATE_PLANS = "validate_plans"
+    GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
+    GET_PLAN_MATTERS = "get_plan_matters"
+    VALIDATE_PLAN_MATTERS = "validate_plan_matters"
+    POST_PLAN_MATTERS = "post_plan_matters"
+    IMPORT_PLAN = "import_plan"
+
+
 def responsify(
     response: Response, using_api_gateway: bool = False
 ) -> Response | AWSAPIGatewayResponse:
@@ -135,16 +145,6 @@ def responsify(
         if using_api_gateway
         else response
     )
-
-
-class Action(enum.Enum):
-    GET_PLANS = "get_plans"
-    VALIDATE_PLANS = "validate_plans"
-    GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
-    GET_PLAN_MATTERS = "get_plan_matters"
-    VALIDATE_PLAN_MATTERS = "validate_plan_matters"
-    POST_PLAN_MATTERS = "post_plan_matters"
-    IMPORT_PLAN = "import_plan"
 
 
 def handler(
