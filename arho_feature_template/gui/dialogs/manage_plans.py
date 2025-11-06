@@ -73,11 +73,12 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
 
         self.new_plan_button.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
-    def show_plans_in_table(self):
+    def show_plans_in_table(self, resize: bool = True):  # noqa: FBT001, FBT002
         self.plans_table.setRowCount(0)
         for plan in self._get_plans():
             self._add_plan_row(plan)
-        self.plans_table.resizeColumnsToContents()
+        if resize:
+            self.plans_table.resizeColumnsToContents()
 
     def _get_plans(self) -> list[Plan]:
         if check_layer_changes():
@@ -143,12 +144,17 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
 
     def _on_new_plan_button_clicked(self):
         form = NewPlanDialog()
-        if form.exec():
+        form.plan_copied.connect(self._handle_plan_copied)
+        if form.exec() and form.plan:
             new_plan: Plan = form.plan
             plan_id = save_plan(new_plan)
             if plan_id:
                 new_plan.id_ = plan_id
                 self._add_plan_row(new_plan)
+
+    def _handle_plan_copied(self, copied_plan_id: str):
+        if copied_plan_id:
+            self.show_plans_in_table(resize=False)
 
     def _restore_plan_layer_edit_state(self):
         is_now_in_edit_mode = self.plan_layer.isEditable()

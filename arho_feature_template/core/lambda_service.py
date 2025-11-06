@@ -24,6 +24,8 @@ class LambdaService(QObject):
     plan_identifier_received = pyqtSignal(dict)
     plan_imported = pyqtSignal(str)
     plan_import_failed = pyqtSignal(str)
+    plan_copied = pyqtSignal(str)
+    plan_copy_failed = pyqtSignal(str)
 
     ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.User + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
@@ -33,6 +35,7 @@ class LambdaService(QObject):
     ACTION_POST_PLAN_MATTERS = "post_plan_matters"
     ACTION_GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
     ACTION_IMPORT_PLAN = "import_plan"
+    ACTION_COPY_PLAN = "copy_plan"
 
     def __init__(self):
         super().__init__()
@@ -68,6 +71,18 @@ class LambdaService(QObject):
             payload["force"] = True
 
         self._send_request(action=self.ACTION_IMPORT_PLAN, payload=payload)
+
+    def copy_plan(self, plan_id: str, lifecycle_status_id: str, plan_name: str):
+        payload: dict[str, Any] = {
+            # For now use a random non existing UUID so backend won't find any existing plan
+            # TODO: Change this when backend supports importing without UUID
+            "plan_uuid": plan_id,
+            "data": {
+                "lifecycle_status_uuid": lifecycle_status_id,
+                "plan_name": {"fin": plan_name},
+            },
+        }
+        self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
 
     def _send_request(self, action: str, plan_id: str | None = None, payload: dict | None = None):
         """Sends a request to the lambda function."""
@@ -110,6 +125,7 @@ class LambdaService(QObject):
             self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_response,
             self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_response,
             self.ACTION_GET_PERMANENT_IDENTIFIERS: self._process_identifier_response,
+            self.ACTION_COPY_PLAN: self._process_copy_plan_response,
         }
         return handlers[action]
 
@@ -122,6 +138,7 @@ class LambdaService(QObject):
             self.ACTION_VALIDATE_PLAN_MATTERS: self._handle_validation_error,
             self.ACTION_POST_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
             self.ACTION_GET_PERMANENT_IDENTIFIERS: lambda x: None,  # noqa: ARG005
+            self.ACTION_COPY_PLAN: self._handle_copy_error,
         }
         return handlers[action]
 
@@ -257,3 +274,15 @@ class LambdaService(QObject):
 
     def _handle_import_error(self, error: str):
         self.plan_import_failed.emit(f"error: {error}")
+
+    def _process_copy_plan_response(self, response_body: dict):
+        title = response_body.get("title")
+        if title == "Plan copied.":
+            details = response_body.get("details") or {}
+            plan_id = details.get("copied_plan_id")
+            self.plan_copied.emit(plan_id)
+        else:
+            self._handle_copy_error(str(response_body))
+
+    def _handle_copy_error(self, error: str):
+        self.plan_copy_failed.emit(f"error: {error}")
