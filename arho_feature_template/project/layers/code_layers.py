@@ -254,8 +254,10 @@ class AdditionalInformationTypeLayer(AbstractCodeLayer):
 class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
     name = "Kaavamääräysryhmän tyyppi"
 
+    # TODO: Use PlanObjectLayer.name constants instead of hardcoding layer names
+    # Currently there is a circular import issue if we try to import PlanObjectLayers here
     LAYER_NAME_TO_REGULATION_GROUP_TYPE_MAP: ClassVar[dict[str, str]] = {
-        "Kaava": "generalRegulations",
+        "Kaavasuunnitelma": "generalRegulations",
         "Aluevaraus": "landUseRegulations",
         "Osa-alue": "otherAreaRegulations",
         "Viivat": "lineRegulations",
