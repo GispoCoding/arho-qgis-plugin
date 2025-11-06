@@ -6,11 +6,12 @@ from typing import TYPE_CHECKING
 from qgis.core import NULL, QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
-from qgis.PyQt.QtWidgets import QFormLayout, QLabel, QMenu, QTextEdit, QToolButton, QWidget
+from qgis.PyQt.QtWidgets import QFormLayout, QLabel, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.models import Proposition
+from arho_feature_template.gui.components.required_field_label import RequiredFieldLabel
 from arho_feature_template.gui.components.theme_widget import ThemeWidget
-from arho_feature_template.gui.components.value_input_widgets import IntegerInputWidget
+from arho_feature_template.gui.components.value_input_widgets import IntegerInputWidget, MultilineTextInputWidget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
@@ -23,14 +24,13 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan proposition."""
 
     delete_signal = pyqtSignal(QWidget)
+    changed = pyqtSignal()
 
     def __init__(self, proposition: Proposition, parent=None):
         super().__init__(parent)
         self.setupUi(self)
 
         # TYPES
-        self.value_label: QLabel
-        self.text_input: QTextEdit
         self.add_field_btn: QPushButton
         self.del_btn: QPushButton
         self.form_layout: QFormLayout
@@ -43,7 +43,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.theme_widgets: list[ThemeWidget] = []
 
         # List of widgets for hiding / showing
-        self.widgets: list[tuple[QLabel, QWidget]] = [(self.value_label, self.text_input)]
+        self.widgets: list[tuple[QLabel, QWidget]] = []
 
         add_field_menu = QMenu(self)
         add_field_menu.addAction("Suositusnumero").triggered.connect(self._add_proposition_number)
@@ -57,8 +57,8 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.expanded = True
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
-        # self.name.setText(proposition.name)
-        self.text_input.setText(proposition.value)
+        self.text_input = MultilineTextInputWidget(self.proposition.value)
+        self._add_widget(RequiredFieldLabel("Sisältö:"), self.text_input)
         if self.proposition.theme_ids not in [None, NULL]:
             for theme_id in self.proposition.theme_ids:
                 self._add_theme(theme_id)
@@ -71,6 +71,9 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         if not self.expanded:
             self._on_expand_hide_btn_clicked()
 
+        widget.changed.connect(lambda: self.changed.emit())
+        self.changed.emit()
+
     def _delete_widget(self, widget_to_delete: QWidget) -> bool:
         for label, widget in self.widgets:
             if widget == widget_to_delete:
@@ -78,6 +81,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
                     self.theme_widgets.remove(widget)
                 self.form_layout.removeRow(widget_to_delete)
                 self.widgets.remove((label, widget))
+                self.changed.emit()
                 return True
         return False
 
@@ -112,7 +116,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
     def into_model(self) -> Proposition:
         model = Proposition(
             regulation_group_id=self.proposition.regulation_group_id,
-            value=self.text_input.toPlainText(),
+            value=self.text_input.get_value(),
             theme_ids=[
                 theme_widget.get_value() for theme_widget in self.theme_widgets if theme_widget.get_value() != NULL
             ],

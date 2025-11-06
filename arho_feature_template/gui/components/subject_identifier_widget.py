@@ -19,6 +19,7 @@ class SubjectIdentifierWidget(QWidget, FormClass):  # type: ignore
     """A subject identifier input for plan regulation."""
 
     delete_signal = pyqtSignal(QWidget)
+    changed = pyqtSignal()
 
     def __init__(self, value: str | None = None, parent=None):
         super().__init__(parent)
@@ -33,6 +34,8 @@ class SubjectIdentifierWidget(QWidget, FormClass):  # type: ignore
 
         if value:
             self.set_value(value)
+
+        self.subject.textChanged.connect(lambda _: self.changed.emit())
 
     def get_value(self) -> str:
         return self.subject.text()
