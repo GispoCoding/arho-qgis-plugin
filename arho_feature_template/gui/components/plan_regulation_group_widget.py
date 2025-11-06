@@ -144,6 +144,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
         widget = RegulationWidget(regulation=regulation, parent=self.frame)
+        widget.changed.connect(lambda: self.group_contents_update_debouncer.restart_timer())
         widget.delete_signal.connect(self.delete_regulation_widget)
         self.frame.layout().addWidget(widget)
         self.regulation_widgets.append(widget)
@@ -153,9 +154,11 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.frame.layout().removeWidget(regulation_widget)
         self.regulation_widgets.remove(regulation_widget)
         regulation_widget.deleteLater()
+        self.group_contents_update_debouncer.restart_timer()
 
     def add_proposition_widget(self, proposition: Proposition) -> PropositionWidget:
         widget = PropositionWidget(proposition=proposition, parent=self.frame)
+        widget.changed.connect(lambda: self.group_contents_update_debouncer.restart_timer())
         widget.delete_signal.connect(self.delete_proposition_widget)
         self.frame.layout().addWidget(widget)
         self.proposition_widgets.append(widget)
@@ -165,6 +168,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.frame.layout().removeWidget(proposition_widget)
         self.proposition_widgets.remove(proposition_widget)
         proposition_widget.deleteLater()
+        self.group_contents_update_debouncer.restart_timer()
 
     def set_existing_regulation_group_style(self, other_linked_features_count: int):
         # Always use blue frame if regulation group is in DB

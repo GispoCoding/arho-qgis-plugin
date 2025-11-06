@@ -39,6 +39,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of a plan regulation."""
 
     delete_signal = pyqtSignal(QWidget)
+    changed = pyqtSignal()
 
     def __init__(self, regulation: Regulation, parent=None):
         super().__init__(parent)
@@ -55,9 +56,11 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         # INIT
         self.regulation = regulation
         self.default_value = PlanRegulationTypeLayer.get_default_value_by_id(self.regulation.regulation_type_id)
-        self.value_widget_manager = (
-            ValueWidgetManager(self.regulation.value, self.default_value) if self.default_value else None
-        )
+
+        self.value_widget_manager = None
+        if self.default_value:
+            self.value_widget_manager = ValueWidgetManager(self.regulation.value, self.default_value)
+            self.value_widget_manager.value_changed.connect(lambda: self.changed.emit())
 
         # List of widgets for hiding / showing
         self.widgets: list[tuple[QLabel, QWidget]] = []
@@ -159,6 +162,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         if not self.expanded:
             self._on_expand_hide_btn_clicked()
 
+        widget.changed.connect(lambda: self.changed.emit())
+        self.changed.emit()
+
     def _delete_widget(self, widget_to_delete: QWidget) -> bool:
         for label, widget in self.widgets:
             if widget == widget_to_delete:
@@ -173,6 +179,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
                 if len(self.widgets) == 0:
                     self.regulation_details_container.hide()
                     self.expand_hide_btn.hide()
+                self.changed.emit()
                 return True
         return False
 

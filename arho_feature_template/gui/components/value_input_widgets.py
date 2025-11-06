@@ -4,6 +4,7 @@ import logging
 
 from qgis.core import QgsApplication
 from qgis.gui import QgsDoubleSpinBox, QgsSpinBox
+from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
@@ -57,6 +58,8 @@ def initialize_text_input_widget(
 
 
 class DecimalInputWidget(QgsDoubleSpinBox):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         default_value: float | None = None,
@@ -67,11 +70,15 @@ class DecimalInputWidget(QgsDoubleSpinBox):
         self.unit = unit
         initialize_numeric_input_widget(self, default_value, unit, positive)
 
+        self.valueChanged.connect(lambda _: self.changed.emit())
+
     def get_value(self) -> float:
         return self.value()
 
 
 class IntegerInputWidget(QgsSpinBox):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         default_value: int | None = None,
@@ -82,11 +89,15 @@ class IntegerInputWidget(QgsSpinBox):
         self.unit = unit
         initialize_numeric_input_widget(self, default_value, unit, positive)
 
+        self.valueChanged.connect(lambda _: self.changed.emit())
+
     def get_value(self) -> int:
         return self.value()
 
 
 class IntegerRangeInputWidget(QWidget):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         range_min: int | None = None,
@@ -104,11 +115,16 @@ class IntegerRangeInputWidget(QWidget):
         layout.addWidget(self.max_widget)
         self.setLayout(layout)
 
+        self.min_widget.changed.connect(lambda: self.changed.emit())
+        self.max_widget.changed.connect(lambda: self.changed.emit())
+
     def get_value(self) -> tuple[int, int]:
         return (self.min_widget.get_value(), self.max_widget.get_value())
 
 
 class SinglelineTextInputWidget(QLineEdit):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         default_value: str | None = None,
@@ -117,11 +133,15 @@ class SinglelineTextInputWidget(QLineEdit):
         super().__init__()
         initialize_text_input_widget(self, default_value, editable)
 
+        self.textChanged.connect(lambda _: self.changed.emit())
+
     def get_value(self) -> str | None:
         return self.text() if self.text() else None
 
 
 class MultilineTextInputWidget(QTextEdit):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         default_value: str | None = None,
@@ -130,6 +150,8 @@ class MultilineTextInputWidget(QTextEdit):
         super().__init__()
         initialize_text_input_widget(self, default_value, editable)
         self.setMaximumHeight(75)
+
+        self.textChanged.connect(lambda: self.changed.emit())
 
     def get_value(self) -> str | None:
         text = self.toPlainText()
@@ -150,6 +172,10 @@ class CodeInputWidget(QWidget):
         layout.addRow('<span style="color: red;">*</span> Koodiarvo:', self.code_value_widget)
         self.setLayout(layout)
 
+        self.title_widget.changed.connect(lambda: self.changed.emit())
+        self.code_list_widget.changed.connect(lambda: self.changed.emit())
+        self.code_value_widget.changed.connect(lambda: self.changed.emit())
+
     def get_value(self) -> tuple[str | None, str | None, str | None]:
         title = self.title_widget.get_value()
         code_list = self.code_list_widget.get_value()
@@ -158,6 +184,8 @@ class CodeInputWidget(QWidget):
 
 
 class TypeOfVerbalRegulationWidget(QWidget):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         with_add_btn: bool = False,  # noqa: FBT001, FBT002
@@ -188,6 +216,8 @@ class TypeOfVerbalRegulationWidget(QWidget):
 
         self.setLayout(layout)
 
+        self.input_widget.currentIndexChanged.connect(lambda _: self.changed.emit())
+
     def set_value(self, value: str | None):
         self.input_widget.set_value(value)
 
@@ -196,6 +226,8 @@ class TypeOfVerbalRegulationWidget(QWidget):
 
 
 class LegalEffectWidget(QWidget):
+    changed = pyqtSignal()
+
     def __init__(
         self,
         with_add_btn: bool = False,  # noqa: FBT001, FBT002
@@ -226,6 +258,8 @@ class LegalEffectWidget(QWidget):
 
         self.setLayout(layout)
 
+        self.input_widget.currentIndexChanged.connect(lambda _: self.changed.emit())
+
     def set_value(self, value: str | None):
         self.input_widget.set_value(value)
 
@@ -233,8 +267,12 @@ class LegalEffectWidget(QWidget):
         return self.input_widget.value()
 
 
-class ValueWidgetManager:
+class ValueWidgetManager(QObject):
+    value_changed = pyqtSignal()
+
     def __init__(self, value: AttributeValue | None, default_value: AttributeValue):
+        super().__init__()
+
         if value is None:
             value = AttributeValue()
         self.value_data_type = default_value.value_data_type
@@ -286,6 +324,9 @@ class ValueWidgetManager:
 
         else:
             logger.warning("No value input implemented for data type: %s", default_value.value_data_type)
+
+        if self.value_widget:
+            self.value_widget.changed.connect(lambda: self.value_changed.emit())
 
     def into_model(self) -> AttributeValue:
         if self.value_data_type in (

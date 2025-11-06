@@ -26,6 +26,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
     """A widget representation of an additional information of plan regulation."""
 
     delete_signal = pyqtSignal(QWidget)
+    changed = pyqtSignal()
 
     def __init__(self, additional_information: AdditionalInformation, parent=None):
         super().__init__(parent)
@@ -54,6 +55,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
         )
         if default_value:
             self.value_widget_manager = ValueWidgetManager(self.additional_information.value, default_value)
+            self.value_widget_manager.value_changed.connect(lambda: self.changed.emit())
             widget = (
                 self.value_widget_manager.value_widget
                 if self.value_widget_manager.value_widget is not None

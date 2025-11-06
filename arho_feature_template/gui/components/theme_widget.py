@@ -23,6 +23,7 @@ class ThemeWidget(QWidget, FormClass):  # type: ignore
     """A theme for plan regulation."""
 
     delete_signal = pyqtSignal(QWidget)
+    changed = pyqtSignal()
 
     def __init__(self, value: str | None = None, parent=None):
         super().__init__(parent)
@@ -39,6 +40,8 @@ class ThemeWidget(QWidget, FormClass):  # type: ignore
 
         if value:
             self.set_value(value)
+
+        self.theme.currentIndexChanged.connect(lambda _: self.changed.emit())
 
     def get_value(self) -> str:
         return self.theme.value()
