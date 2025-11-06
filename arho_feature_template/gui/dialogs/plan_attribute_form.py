@@ -17,7 +17,7 @@ from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     PlanTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
+from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
 from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
@@ -173,7 +173,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation_group(RegulationGroup())
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = GeneralRegulationGroupWidget(regulation_group, layer_name="Kaavasuunnitelma")
+        regulation_group_widget = GeneralRegulationGroupWidget(regulation_group, layer_name=PlanLayer.name)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         # regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         self.regulations_layout.insertWidget(1, regulation_group_widget)

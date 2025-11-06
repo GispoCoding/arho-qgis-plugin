@@ -23,6 +23,10 @@ from arho_feature_template.core.feature_editing import save_plan_feature
 from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.project.layers.plan_layers import (
+    LandUseAreaLayer,
+    LineLayer,
+    OtherAreaLayer,
+    PointLayer,
     get_plan_feature_layer_class_by_layer_name,
     get_plan_feature_layer_class_by_model,
     plan_feature_layers,
@@ -40,10 +44,10 @@ if TYPE_CHECKING:
 DATA_COLUMN = 0
 DATA_ROLE = Qt.UserRole
 LAYER_NAME_TO_FEATURE_TYPE = {
-    "Viivat": "Viiva",
-    "Osa-alue": "Osa-alue",
-    "Aluevaraus": "Aluevaraus",
-    "Pisteet": "Piste",
+    LineLayer.name: "Viiva",
+    OtherAreaLayer.name: "Osa-alue",
+    LandUseAreaLayer.name: "Aluevaraus",
+    PointLayer.name: "Piste",
 }
 
 
