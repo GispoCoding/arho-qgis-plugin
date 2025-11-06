@@ -31,6 +31,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
+from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, LineLayer, OtherAreaLayer, PointLayer
 from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
@@ -43,10 +44,10 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 # TODO: Now almost duplicate version exists in NewFeatureGridWidget, both should be moved to a generic place
 FEATURE_TYPE_TO_LAYER_NAME = {
-    "Viiva": "Viivat",
-    "Osa-alue": "Osa-alue",
-    "Aluevaraus": "Aluevaraus",
-    "Piste": "Pisteet",
+    "Viiva": LineLayer.name,
+    "Osa-alue": OtherAreaLayer.name,
+    "Aluevaraus": LandUseAreaLayer.name,
+    "Piste": PointLayer.name,
 }
 
 DATA_ROLE = Qt.UserRole

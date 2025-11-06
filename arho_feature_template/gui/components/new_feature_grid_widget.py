@@ -4,12 +4,14 @@ from qgis.PyQt.QtCore import QSize, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QPalette
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QPushButton
 
+from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, LineLayer, OtherAreaLayer, PointLayer
+
 FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Piste"]
 FEATURE_TYPE_TO_LAYER_NAME = {
-    "Viiva": "Viivat",
-    "Osa-alue": "Osa-alue",
-    "Aluevaraus": "Aluevaraus",
-    "Piste": "Pisteet",
+    "Viiva": LineLayer.name,
+    "Osa-alue": OtherAreaLayer.name,
+    "Aluevaraus": LandUseAreaLayer.name,
+    "Piste": PointLayer.name,
 }
 
 FEATURE_BUTTON_WIDTH = 90

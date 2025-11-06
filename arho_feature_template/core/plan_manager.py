@@ -65,9 +65,13 @@ from arho_feature_template.project.layers.code_layers import (
 )
 from arho_feature_template.project.layers.plan_layers import (
     FEATURE_LAYER_NAME_TO_CLASS_MAP,
+    LandUseAreaLayer,
+    LineLayer,
+    OtherAreaLayer,
     PlanLayer,
     PlanMatterLayer,
     PlanTypeLayer,
+    PointLayer,
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     plan_feature_layers,
@@ -101,10 +105,10 @@ from arho_feature_template.utils.misc_utils import (
 logger = logging.getLogger(__name__)
 
 QML_MAP = {
-    "Aluevaraus": "land_use_area.qml",
-    "Osa-alue": "other_area.qml",
-    "Viivat": "line.qml",
-    "Pisteet": "point.qml",
+    LandUseAreaLayer.name: "land_use_area.qml",
+    OtherAreaLayer.name: "other_area.qml",
+    LineLayer.name: "line.qml",
+    PointLayer.name: "point.qml",
 }
 
 
@@ -657,7 +661,7 @@ class PlanManager(QObject):
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
-                if layer.name == "Kaavasuunnitelma":
+                if layer is PlanLayer:
                     layer.show_all_features()
                 else:
                     layer.hide_all_features()
