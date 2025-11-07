@@ -137,12 +137,31 @@ def deserialize_localized_text(text_value: dict[str, str] | None | Any) -> str |
 
 
 def use_wait_cursor(func):
+    """Decorator for showing wait cursor during function execution."""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         with OverrideCursor(Qt.WaitCursor):
             return func(*args, **kwargs)
 
     return wrapper
+
+
+def status_message(message: str, timeout: int = 0):
+    """Decorator for displaying a message in the QGIS status bar during function execution."""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            iface.statusBarIface().showMessage(message, timeout)
+            try:
+                return func(*args, **kwargs)
+            finally:
+                iface.statusBarIface().clearMessage()
+
+        return wrapper
+
+    return decorator
 
 
 def null_to_none(value) -> Any:

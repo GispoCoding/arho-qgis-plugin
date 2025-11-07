@@ -19,6 +19,7 @@ from arho_feature_template.project.layers.plan_layers import (
 from arho_feature_template.utils.misc_utils import (
     get_active_plan_matter_id,
     iface,
+    status_message,
     use_wait_cursor,
 )
 
@@ -63,6 +64,7 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
 
 
 @use_wait_cursor
+@status_message("Tallennetaan kaava-asiaa ...")
 def save_plan_matter(plan_matter: PlanMatter) -> str | None:
     plan_matter_id = plan_matter.id_
     editing = plan_matter_id is not None
@@ -82,6 +84,7 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
 
 
 @use_wait_cursor
+@status_message("Tallennetaan kaavasuunnitelmaa ...")
 def save_plan(plan: Plan) -> str | None:
     plan_id = plan.id_
     if not plan.plan_matter_id:
@@ -145,6 +148,7 @@ def save_plan(plan: Plan) -> str | None:
 
 
 @use_wait_cursor
+@status_message("Tallennetaan kaavakohdetta ...")
 def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> str | None:
     layer_class = get_plan_feature_layer_class_by_model(plan_feature)
     layer_name = cast(str, plan_feature.layer_name)
