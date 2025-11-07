@@ -63,10 +63,10 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
             )
             self.layout().addWidget(widget)
 
-    def into_model(self) -> AdditionalInformation:
+    def into_model(self, force_new: bool = False) -> AdditionalInformation:  # noqa: FBT001, FBT002
         model = AdditionalInformation(
             additional_information_type_id=self.additional_information.additional_information_type_id,
-            id_=self.additional_information.id_,
+            id_=self.additional_information.id_ if not force_new else None,
             plan_regulation_id=self.additional_information.plan_regulation_id,
             modified=self.additional_information.modified,
             value=self.value_widget_manager.into_model()

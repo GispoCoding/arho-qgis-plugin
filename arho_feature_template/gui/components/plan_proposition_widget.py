@@ -113,7 +113,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
             self.expand_hide_btn.setArrowType(Qt.ArrowType.UpArrow)
             self.expanded = True
 
-    def into_model(self) -> Proposition:
+    def into_model(self, force_new: bool = False) -> Proposition:  # noqa: FBT001, FBT002
         model = Proposition(
             regulation_group_id=self.proposition.regulation_group_id,
             value=self.text_input.get_value(),
@@ -122,7 +122,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
             ],
             proposition_number=self.proposition_number_widget.get_value() if self.proposition_number_widget else None,
             modified=self.proposition.modified,
-            id_=self.proposition.id_,
+            id_=self.proposition.id_ if not force_new else None,
         )
         if not model.modified and model != self.proposition:
             model.modified = True

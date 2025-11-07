@@ -225,13 +225,15 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
                 widget.deleteLater()
                 label.deleteLater()
 
-    def into_model(self) -> Regulation:
+    def into_model(self, force_new: bool = False) -> Regulation:  # noqa: FBT001, FBT002
         verbal_regulation_type_ids = [widget.get_value() for widget in self.type_of_verbal_regulation_widgets]
         model = Regulation(
             regulation_type_id=self.regulation.regulation_type_id,
             value=self.value_widget_manager.into_model() if self.value_widget_manager else AttributeValue(),
             regulation_number=None,
-            additional_information=[ai_widget.into_model() for ai_widget in self.additional_information_widgets],
+            additional_information=[
+                ai_widget.into_model(force_new) for ai_widget in self.additional_information_widgets
+            ],
             files=[],
             theme_ids=[
                 theme_widget.get_value() for theme_widget in self.theme_widgets if theme_widget.get_value() != NULL
@@ -242,7 +244,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             verbal_regulation_type_ids=[value for value in verbal_regulation_type_ids if value is not None],
             regulation_group_id=self.regulation.regulation_group_id,
             modified=self.regulation.modified,
-            id_=self.regulation.id_,
+            id_=self.regulation.id_ if not force_new else None,
         )
         if not model.modified and model != self.regulation:
             model.modified = True

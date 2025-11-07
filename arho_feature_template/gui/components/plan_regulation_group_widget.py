@@ -114,9 +114,10 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.letter_code.setText(regulation_group.letter_code if regulation_group.letter_code else "")
 
         # Remove existing child widgets if reinitializing
-        for widget in self.regulation_widgets:
+        # create copies of widget lists to avoid mutations while iterating
+        for widget in list(self.regulation_widgets):
             self.delete_regulation_widget(widget)
-        for widget in self.proposition_widgets:
+        for widget in list(self.proposition_widgets):
             self.delete_proposition_widget(widget)
         for regulation in regulation_group.regulations:
             self.add_regulation_widget(regulation)
@@ -228,8 +229,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def _on_link_btn_clicked(self):
         # Group with ID, delink
         if self.regulation_group.id_ is not None:
-            delinked_group = self.into_model()
-            delinked_group.id_ = None
+            delinked_group = self.into_model(force_new=True)
             self.from_model(delinked_group)
 
         # Group without ID, link with a matching group in DB
@@ -248,16 +248,16 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         if self.regulation_group.id_ is None:
             self.update_matching_groups.emit(self)
 
-    def into_model(self) -> RegulationGroup:
+    def into_model(self, force_new: bool = False) -> RegulationGroup:  # noqa: FBT001, FBT002
         model = RegulationGroup(
             type_code_id=self.regulation_group.type_code_id,
             heading=self.heading.text(),
             letter_code=self.letter_code.text(),
             color_code=self.regulation_group.color_code,
-            regulations=[widget.into_model() for widget in self.regulation_widgets],
-            propositions=[widget.into_model() for widget in self.proposition_widgets],
+            regulations=[widget.into_model(force_new) for widget in self.regulation_widgets],
+            propositions=[widget.into_model(force_new) for widget in self.proposition_widgets],
             modified=self.regulation_group.modified,
-            id_=self.regulation_group.id_,
+            id_=self.regulation_group.id_ if not force_new else None,
         )
         if not model.modified and model != self.regulation_group:
             model.modified = True
