@@ -159,6 +159,8 @@ class MultilineTextInputWidget(QTextEdit):
 
 
 class CodeInputWidget(QWidget):
+    changed = pyqtSignal()
+
     def __init__(self, title: str | None = None, code_list: str | None = None, code_value: str | None = None):
         super().__init__()
 
