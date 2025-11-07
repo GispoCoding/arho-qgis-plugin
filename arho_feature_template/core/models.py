@@ -182,8 +182,10 @@ class PlanBaseModel:
             # Convert lists into frozensets, consider if list has PlanBaseModels
             if isinstance(value, list):
                 if len(value) > 0 and isinstance(value[0], PlanBaseModel):
+                    # value = tuple(sorted(element.data_hash() for element in value))
                     value = frozenset(element.data_hash() for element in value)
                 else:
+                    # value = tuple(sorted(element for element in value))
                     value = frozenset(value)
             # Call data_hash recursively
             elif isinstance(value, PlanBaseModel):
@@ -268,6 +270,13 @@ class AdditionalInformation(PlanBaseModel):
     plan_regulation_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        # Replace empty AttributeValue with None to stay consistent for hashing
+        if self.value == AttributeValue():
+            self.value = None
 
     @staticmethod
     def from_template_dict(data: dict) -> AdditionalInformation:
