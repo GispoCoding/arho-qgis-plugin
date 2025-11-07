@@ -99,6 +99,7 @@ from arho_feature_template.utils.misc_utils import (
     set_active_plan_id,
     set_active_plan_matter_id,
     set_imported_layer_invisible,
+    status_message,
     use_wait_cursor,
 )
 
@@ -603,6 +604,7 @@ class PlanManager(QObject):
             self.update_active_plan_regulation_group_library()
 
     @use_wait_cursor
+    @status_message("Avataan kaava-asia ...")
     def set_active_plan_matter(self, plan_matter_id: str) -> None:
         if check_layer_changes():
             raise UnsavedChangesError
@@ -637,6 +639,7 @@ class PlanManager(QObject):
         self.set_permanent_identifier(permanent_plan_identifier)
 
     @use_wait_cursor
+    @status_message("Avataan kaavasuunnitelma ...")
     def set_active_plan(self, plan_id: str | None) -> None:
         """Update the project layers based on the selected land use plan and its plan matter.
 
@@ -887,6 +890,7 @@ class PlanManager(QObject):
         disconnect_signal(self.plan_set)
 
 
+@status_message("Haetaan kaavasuunitelman kaavamääräysryhmiä ...")
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     if get_active_plan_id():
         id_of_general_regulation_group_type = (
