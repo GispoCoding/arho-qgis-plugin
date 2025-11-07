@@ -228,12 +228,12 @@ class Plugin:
             plan_matter_menu.addAction(self.get_permanent_identifier_action)
 
             self.post_plan_matter_action = self.add_action(
-                text="Vie kaava-asia",
+                text="Lähetä kaava-asia Ryhtiin",
                 icon=QgsApplication.getThemeIcon("mActionSharingExport.svg"),
                 triggered_callback=self.post_plan_matter,
                 add_to_menu=False,
                 add_to_toolbar=False,
-                status_tip="Vie kaava-asia Ryhtiin",
+                status_tip="Lähetä kaava-asia Ryhtiin",
             )
             self.post_plan_matter_action.setEnabled(False)  # Disable action by default
             plan_matter_menu.addAction(self.post_plan_matter_action)
