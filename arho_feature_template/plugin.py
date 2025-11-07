@@ -356,7 +356,7 @@ class Plugin:
         )
 
         self.identify_plan_features_action = self.add_action(
-            text="Valitse kaavakohteita",
+            text="Muokkaa kaavakohteita",
             icon=QIcon(resources_path("icons", "toolbar", "planObjectsEdit.svg")),
             toggled_callback=self.plan_manager.toggle_identify_plan_features,
             add_to_menu=False,
