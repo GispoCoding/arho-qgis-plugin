@@ -53,6 +53,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.plan_layer = PlanLayer.get_from_project()
         self.previously_in_edit_mode = self.plan_layer.isEditable()
         self.show_plans_in_table()
+        self.plans_table.setFocus()
 
         # If no plans exist in the plan matter yet, disable new plan button and tell user
         # to make the first plan by drawing the geometry from the toolbar
@@ -98,7 +99,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             layer.setSubsetString(original_filter)  # restore filter
         return plans
 
-    def _add_plan_row(self, plan: Plan):
+    def _add_plan_row(self, plan: Plan, select: bool = False):  # noqa: FBT001, FBT002
         row = self.plans_table.rowCount()
         self.plans_table.insertRow(row)
 
@@ -117,12 +118,12 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         description_item = QTableWidgetItem(plan.description or "")
         self.plans_table.setItem(row, 2, description_item)
 
-        # If plan is currently active one
-        if plan.id_ == get_active_plan_id():
-            # Select row
-            self.plans_table.selectRow(row)
-            # Set icon
+        active_plan_id = get_active_plan_id()
+        if plan.id_ == active_plan_id:
             plan_name_item.setIcon(QIcon(resources_path("icons", "green_dot.png")))
+        if select or plan.id_ == active_plan_id:
+            self.plans_table.selectRow(row)
+        self.plans_table.setFocus()
 
     def _filter_plans(self) -> None:
         text = self.filter_line.text().lower().strip()
@@ -150,11 +151,19 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             plan_id = save_plan(new_plan)
             if plan_id:
                 new_plan.id_ = plan_id
-                self._add_plan_row(new_plan)
+                self._add_plan_row(new_plan, select=True)
 
     def _handle_plan_copied(self, copied_plan_id: str):
         if copied_plan_id:
             self.show_plans_in_table(resize=False)
+
+            for row in range(self.plans_table.rowCount()):
+                plan_item = self.plans_table.item(row, 0)
+                plan = plan_item.data(DATA_ROLE) if plan_item else None
+                if plan and plan.id_ == copied_plan_id:
+                    self.plans_table.selectRow(row)
+                    break
+            self.plans_table.setFocus()
 
     def _restore_plan_layer_edit_state(self):
         is_now_in_edit_mode = self.plan_layer.isEditable()
