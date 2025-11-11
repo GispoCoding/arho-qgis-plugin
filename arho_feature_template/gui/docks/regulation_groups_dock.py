@@ -169,7 +169,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         ]
 
         # Set tooltips
-        tooltip_text = str(group)
+        tooltip_text = group.as_tooltip(long=True)
         for item in items:
             item.setToolTip(tooltip_text)
 
