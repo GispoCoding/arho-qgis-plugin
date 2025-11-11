@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>322</width>
-    <height>503</height>
+    <width>441</width>
+    <height>617</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -87,17 +87,32 @@
      </layout>
     </item>
     <item>
-     <widget class="QgsFilterLineEdit" name="search_box">
+     <widget class="QgsFilterLineEdit" name="filter_line">
       <property name="showSearchIcon">
        <bool>true</bool>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QListWidget" name="regulation_group_list">
+     <widget class="QTableView" name="table">
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
       <property name="selectionMode">
        <enum>QAbstractItemView::ExtendedSelection</enum>
       </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
+      <property name="sortingEnabled">
+       <bool>true</bool>
+      </property>
+      <attribute name="horizontalHeaderStretchLastSection">
+       <bool>true</bool>
+      </attribute>
+      <attribute name="verticalHeaderVisible">
+       <bool>false</bool>
+      </attribute>
      </widget>
     </item>
    </layout>
