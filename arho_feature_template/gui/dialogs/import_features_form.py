@@ -76,8 +76,15 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         # NOTE: Some project layers are not included in either `plan_layers` or `code_layers`?
         self.source_layer_selection.setFilters(QgsMapLayerProxyModel.VectorLayer)
         excluded_layers = [layer.get_from_project() for layer in plan_layers + code_layers]
+        excluded_layers += [
+            layer
+            for layer in QgsProject.instance().mapLayers().values()
+            if isinstance(layer, QgsVectorLayer) and not layer.isSpatial()
+        ]
+
         self.source_layer_selection.setExceptedLayerList(excluded_layers)
-        if type(iface.activeLayer()) is QgsVectorLayer:
+
+        if isinstance(iface.activeLayer(), QgsVectorLayer) and iface.activeLayer().isSpatial():
             self.source_layer_selection.setLayer(iface.activeLayer())
         self.source_layer_selection.layerChanged.connect(self._on_layer_selections_changed)
 
