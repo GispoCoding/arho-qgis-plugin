@@ -254,6 +254,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             heading=self.heading.text(),
             letter_code=self.letter_code.text(),
             color_code=self.regulation_group.color_code,
+            group_number=self.regulation_group.group_number,
             regulations=[widget.into_model(force_new) for widget in self.regulation_widgets],
             propositions=[widget.into_model(force_new) for widget in self.proposition_widgets],
             modified=self.regulation_group.modified,

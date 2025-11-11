@@ -11,7 +11,7 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QHeaderView, QMenu, QMessageBox, QPushButton, QTableView
 
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
-from arho_feature_template.project.layers.plan_layers import plan_feature_layers
+from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer, plan_feature_layers
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
@@ -108,18 +108,12 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         # Create the model
         self.model = QStandardItemModel()
-        self.model.setColumnCount(3)
-        self.model.setHorizontalHeaderLabels(
-            [
-                "Kirjaintunnus",
-                "Otsikko",
-                "Määräysten lkm.",
-            ]
-        )
+        self.model.setColumnCount(4)
+        self.model.setHorizontalHeaderLabels(["#", "Kirjaintunnus", "Otsikko", "Kohteiden lkm."])
         self.filter_proxy_model = RegulationGroupsDockFilterProxyModel(self.model)
         self.table.setModel(self.filter_proxy_model)
         self.table.resizeColumnsToContents()
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
 
         self.selection_model = self.table.selectionModel()
 
@@ -161,11 +155,16 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             self.model.appendRow(self._regulation_group_into_items(group))
 
     def _regulation_group_into_items(self, group: RegulationGroup) -> list[QStandardItem]:
+        if group.id_ is None:
+            return []
+
+        associated_plan_object_ids = RegulationGroupAssociationLayer.get_associated_plan_object_ids(group.id_)
         # Create items
         items = [
+            QStandardItem(str(group.group_number) if group.group_number else ""),
             QStandardItem(group.letter_code or ""),
             QStandardItem(group.heading or ""),
-            QStandardItem(str(len(group.regulations))),
+            QStandardItem(str(sum(len(v) for v in associated_plan_object_ids.values()))),
         ]
 
         # Set tooltips
@@ -174,7 +173,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             item.setToolTip(tooltip_text)
 
         # Set data
-        items[DATA_COLUMN].setData(group, DATA_ROLE)
+        items[DATA_COLUMN].setData((group, associated_plan_object_ids), DATA_ROLE)
         return items
 
     def get_selected_plan_object_ids(self) -> list[tuple[str, Generator[str]]]:
@@ -205,11 +204,15 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         row = model_index.row()
         return [self.model.item(row, i) for i in range(self.model.columnCount())]
 
-    def _regulation_group_from_index(self, proxy_index: QModelIndex) -> RegulationGroup | None:
+    def _data_from_index(self, proxy_index: QModelIndex) -> tuple[RegulationGroup, list[str]] | None:
         row_items = self._row_items_from_index(proxy_index)
         if len(row_items) == 0:
             return None
-        return row_items[DATA_COLUMN].data(DATA_ROLE) or None
+        return row_items[DATA_COLUMN].data(DATA_ROLE)
+
+    def _regulation_group_from_index(self, proxy_index: QModelIndex) -> RegulationGroup | None:
+        data = self._data_from_index(proxy_index)
+        return data[0] if data else None
 
     def _open_form(self, index: QModelIndex):
         group_model = self._regulation_group_from_index(index)
