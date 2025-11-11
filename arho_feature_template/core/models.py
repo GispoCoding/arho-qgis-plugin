@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import enum
 import logging
+import textwrap
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field, fields
@@ -13,7 +14,7 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
-from arho_feature_template.utils.misc_utils import null_to_none
+from arho_feature_template.utils.misc_utils import deserialize_localized_text, null_to_none
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -425,14 +426,32 @@ class RegulationGroup(PlanBaseModel):
     def __str__(self):
         return " - ".join(part for part in (self.letter_code, self.heading) if part)
 
-    def as_tooltip(self) -> str:
-        letter_code = self.letter_code if self.letter_code else ""
+    def as_tooltip(self, long: bool = True) -> str:  # noqa: FBT001, FBT002
+        """If long format, show regulation names."""
+        wrapper = textwrap.TextWrapper(width=70, subsequent_indent="    ")
+
+        def wrap_line(label: str, value: str) -> str:
+            text = f"{label}: {value}"
+            return "\n".join(wrapper.fill(line) for line in text.splitlines())
+
+        if long:
+            names = [
+                deserialize_localized_text(PlanRegulationTypeLayer.get_name_by_id(reg.regulation_type_id))
+                for reg in self.regulations
+            ]
+            return (
+                f"{wrap_line('Kaavamääräyksen otsikko', self.heading or '')}\n"
+                f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
+                # f"{wrap_line('Kategoria', self.category)}\n"
+                f"{wrap_line('Kaavamääräykset', ', '.join(name for name in names if name))}\n"
+                f"{wrap_line('Suositusten määrä', str(len(self.propositions)))}"
+            )
         return (
-            f"Kaavamääräyksen otsikko: {self.heading}\n"
-            f"Kirjaintunnus: {letter_code}\n"
-            f"Kategoria: {self.category}\n"
-            f"Kaavamääräysten määrä: {len(self.regulations)}\n"
-            f"Suositusten määrä: {len(self.propositions)}"
+            f"{wrap_line('Kaavamääräyksen otsikko', self.heading or '')}\n"
+            f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
+            # f"{wrap_line('Kategoria', self.category)}\n"
+            f"{wrap_line('Kaavamääräysten määrä', str(len(self.regulations)))}\n"
+            f"{wrap_line('Suositusten määrä', str(len(self.propositions)))}"
         )
 
 
