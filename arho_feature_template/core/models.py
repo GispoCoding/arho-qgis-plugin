@@ -436,6 +436,7 @@ class RegulationGroup(PlanBaseModel):
             return (
                 f"{wrap_line('Kaavamääräyksen otsikko', self.heading or '')}\n"
                 f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
+                f"{wrap_line('Järjestysnumero', str(self.group_number) if self.group_number else '')}\n"
                 # f"{wrap_line('Kategoria', self.category)}\n"
                 f"{wrap_line('Kaavamääräykset', ', '.join(name for name in names if name))}\n"
                 f"{wrap_line('Suositusten määrä', str(len(self.propositions)))}"
@@ -443,6 +444,7 @@ class RegulationGroup(PlanBaseModel):
         return (
             f"{wrap_line('Kaavamääräyksen otsikko', self.heading or '')}\n"
             f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
+            f"{wrap_line('Järjestysnumero', str(self.group_number) if self.group_number else '')}\n"
             # f"{wrap_line('Kategoria', self.category)}\n"
             f"{wrap_line('Kaavamääräysten määrä', str(len(self.regulations)))}\n"
             f"{wrap_line('Suositusten määrä', str(len(self.propositions)))}"
