@@ -470,11 +470,9 @@ class Plugin:
         self.check_timezone_variable()
 
     def toggle_dock_visibility(self, dock_widget: QgsDockWidget):
-        if dock_widget.isUserVisible():
-            dock_widget.hide()
-        else:
+        if not dock_widget.isUserVisible():
             dock_widget.show()
-            dock_widget.raise_()
+        dock_widget.raise_()
 
     def load_existing_plan_matter(self):
         self.plan_manager.load_plan_matter()
