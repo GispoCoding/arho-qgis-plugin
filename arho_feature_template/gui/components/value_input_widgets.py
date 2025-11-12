@@ -37,7 +37,10 @@ def initialize_numeric_input_widget(
     else:
         widget.setMinimum(-999999999)
 
-    widget.setMaximum(999999999)
+    if unit == "%":
+        widget.setMaximum(100)
+    else:
+        widget.setMaximum(999999999)
 
     if default_value:
         widget.setValue(default_value)
