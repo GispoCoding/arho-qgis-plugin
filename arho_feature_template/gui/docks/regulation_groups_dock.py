@@ -3,15 +3,19 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING, Generator
 
-from qgis.core import QgsApplication
+from qgis.core import Qgis, QgsApplication, QgsGeometry
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QModelIndex, QRegularExpression, QSortFilterProxyModel, Qt, pyqtSignal
+from qgis.PyQt.QtCore import QModelIndex, QPoint, QRegularExpression, QSortFilterProxyModel, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QHeaderView, QMenu, QMessageBox, QPushButton, QTableView
 
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
-from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer, plan_feature_layers
+from arho_feature_template.project.layers.plan_layers import (
+    RegulationGroupAssociationLayer,
+    get_plan_feature_layer_class_by_layer_name,
+    plan_feature_layers,
+)
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
@@ -111,14 +115,15 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.model.setColumnCount(4)
         self.model.setHorizontalHeaderLabels(["#", "Kirjaintunnus", "Otsikko", "Kohteiden lkm."])
         self.filter_proxy_model = RegulationGroupsDockFilterProxyModel(self.model)
+
         self.table.setModel(self.filter_proxy_model)
         self.table.resizeColumnsToContents()
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._open_context_menu)
+        self.table.doubleClicked.connect(self._open_form)
 
         self.selection_model = self.table.selectionModel()
-
-        self.filter_line.textChanged.connect(self._filter_table)
-        self.table.doubleClicked.connect(self._open_form)
 
     def _disconnect_signals(self):
         disconnect_signal(self.new_group_empty_action.triggered)
@@ -128,6 +133,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.remove_all_action.triggered)
         disconnect_signal(self.remove_selected_action.triggered)
         disconnect_signal(self.add_selected_action.triggered)
+        disconnect_signal(self.filter_line.textChanged)
 
     def _connect_signals(self):
         self._disconnect_signals()
@@ -139,6 +145,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.remove_all_action.triggered.connect(self.on_remove_all_btn_clicked)
         self.remove_selected_action.triggered.connect(self.on_remove_selected_btn_clicked)
         self.add_selected_action.triggered.connect(self.on_add_selected_btn_clicked)
+        self.filter_line.textChanged.connect(self._filter_table)
 
     def _filter_table(self):
         # Set text filter
@@ -172,8 +179,15 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         for item in items:
             item.setToolTip(tooltip_text)
 
+        # Save FIDS of associated plan objects
+        associated_plan_object_fids_and_geoms: dict[str, list[tuple[int, QgsGeometry]]] = {}
+        for layer_name, ids in associated_plan_object_ids.items():
+            layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
+            fids_and_geoms = layer_class.get_fids_and_geometries_by_ids(set(ids))
+            associated_plan_object_fids_and_geoms[layer_name] = fids_and_geoms
+
         # Set data
-        items[DATA_COLUMN].setData((group, associated_plan_object_ids), DATA_ROLE)
+        items[DATA_COLUMN].setData((group, associated_plan_object_fids_and_geoms), DATA_ROLE)
         return items
 
     def get_selected_plan_object_ids(self) -> list[tuple[str, Generator[str]]]:
@@ -204,7 +218,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         row = model_index.row()
         return [self.model.item(row, i) for i in range(self.model.columnCount())]
 
-    def _data_from_index(self, proxy_index: QModelIndex) -> tuple[RegulationGroup, list[str]] | None:
+    def _data_from_index(
+        self, proxy_index: QModelIndex
+    ) -> tuple[RegulationGroup, dict[str, list[tuple[int, QgsGeometry]]]] | None:
+        """
+        Data is tuple of RegulationGroup model and dictionary of associated plan object FIDs and geoms
+        (keys are plan object layer names).
+        """
         row_items = self._row_items_from_index(proxy_index)
         if len(row_items) == 0:
             return None
@@ -246,6 +266,42 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         selected_groups = self.get_selected_regulation_groups()
         if len(selected_groups) > 0:
             self.request_add_groups_to_features.emit(selected_groups, self.get_selected_plan_object_ids())
+
+    def _open_context_menu(self, pos: QPoint):
+        index = self.table.indexAt(pos)
+        data = self._data_from_index(index)
+        if not data:
+            return
+
+        associated_plan_object_fids_and_geoms = data[1]
+
+        menu = QMenu()
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionOpenTable.svg"), "Näytä lomake", lambda: self._open_form(index)
+        )
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionZoomTo.svg"),
+            "Valitse kaavakohteet joilla on kaavamääräysryhmä",
+            lambda: self._on_select_plan_objects(associated_plan_object_fids_and_geoms),
+        )
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionHighlightFeature.svg"),
+            "Väläytä kaavakohteita, joilla on kaavamääräysryhmä",
+            lambda: self._on_highlight_plan_objects(associated_plan_object_fids_and_geoms),
+        )
+        menu.exec_(self.table.viewport().mapToGlobal(pos))
+
+    def _on_select_plan_objects(self, fids_and_geoms_map: dict[str, list[tuple[int, QgsGeometry]]]):
+        for layer_name, fids_and_geoms in fids_and_geoms_map.items():
+            layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
+            layer_class.get_from_project().selectByIds(
+                [fid_and_geom[0] for fid_and_geom in fids_and_geoms], Qgis.SelectBehavior.SetSelection
+            )
+
+    def _on_highlight_plan_objects(self, fids_and_geoms_map: dict[str, list[tuple[int, QgsGeometry]]]):
+        for fids_and_geoms in fids_and_geoms_map.values():
+            iface.mapCanvas().flashGeometries(geometries=[fid_and_geom[1] for fid_and_geom in fids_and_geoms])
+        iface.mapCanvas().redrawAllLayers()
 
     def unload(self):
         self._disconnect_signals()

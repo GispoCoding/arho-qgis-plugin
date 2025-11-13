@@ -7,7 +7,7 @@ from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator, cast
 
-from qgis.core import NULL, QgsFeature, QgsVectorLayerUtils
+from qgis.core import NULL, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -76,6 +76,13 @@ class AbstractFeatureLayer(AbstractLayer):
         else:
             feature = QgsVectorLayerUtils.createFeature(cls.get_from_project())
         return feature
+
+    @classmethod
+    def get_fids_and_geometries_by_ids(cls, ids_: set[str]) -> list[tuple[int, QgsGeometry]]:
+        layer = cls.get_from_project()
+        request = QgsFeatureRequest()
+        request.setSubsetOfAttributes(["id"], layer.fields())
+        return [(feat.id(), feat.geometry()) for feat in layer.getFeatures(request) if str(feat["id"]) in ids_]
 
 
 class AbstractPlanLayer(AbstractFeatureLayer):
