@@ -67,7 +67,7 @@
       <item>
        <widget class="QPushButton" name="modify_selected_features_btn">
         <property name="text">
-         <string> Muokkaa kaavakohteiden määräysryhmiä</string>
+         <string>Kaavakohdetoiminnot</string>
         </property>
        </widget>
       </item>
