@@ -7,7 +7,7 @@ from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator, cast
 
-from qgis.core import QgsFeature, QgsVectorLayerUtils
+from qgis.core import NULL, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsVectorLayerUtils
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -75,6 +75,13 @@ class AbstractFeatureLayer(AbstractLayer):
         else:
             feature = QgsVectorLayerUtils.createFeature(cls.get_from_project())
         return feature
+
+    @classmethod
+    def get_fids_and_geometries_by_ids(cls, ids_: set[str]) -> list[tuple[int, QgsGeometry]]:
+        layer = cls.get_from_project()
+        request = QgsFeatureRequest()
+        request.setSubsetOfAttributes(["id"], layer.fields())
+        return [(feat.id(), feat.geometry()) for feat in layer.getFeatures(request) if str(feat["id"]) in ids_]
 
 
 class AbstractPlanLayer(AbstractFeatureLayer):
@@ -480,6 +487,25 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
     @classmethod
     def get_associations_for_regulation_group(cls, group_id: str) -> Generator[QgsFeature]:
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
+
+    @classmethod
+    def get_associated_plan_object_ids(cls, group_id: str) -> dict[str, list[str]]:
+        # key is layer name, value is list of plan object IDs of that layer
+        plan_object_ids: dict[str, list[str]] = {
+            layer_name: [] for layer_name in cls.layer_name_to_attribute_map if layer_name != PlanLayer.name
+        }
+        associations = cls.get_associations_for_regulation_group(group_id)
+        for association in associations:
+            for layer_name, attribute_name in cls.layer_name_to_attribute_map.items():
+                if layer_name == PlanLayer.name:
+                    continue
+                id_ = association[attribute_name]
+                association.attribute(attribute_name)
+                if id_ is not None and id_ != NULL:
+                    plan_object_ids[layer_name].append(id_)
+                    continue
+
+        return plan_object_ids
 
     @classmethod
     def get_associations_for_regulation_group_exclude_feature(
