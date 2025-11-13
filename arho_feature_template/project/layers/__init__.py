@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Generator, cast
 
-from qgis.core import QgsFeatureRequest, QgsProject, QgsVectorLayer
+from qgis.core import Qgis, QgsFeatureRequest, QgsMessageLog, QgsProject, QgsVectorLayer, QgsVectorLayerCache
 
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
 
+logger = logging.getLogger(__name__)
+
 
 class AbstractLayer(ABC):
     name: ClassVar[str]
+    cache: QgsVectorLayerCache | None = None  # NOTE: Now there isn't a way to disable cache for a subclass
+    cache_max_feats: int = 500  # Override in subclasses if desired cache size is different
 
     @classmethod
     def exists(cls) -> bool:
@@ -31,8 +36,42 @@ class AbstractLayer(ABC):
         return get_vector_layer_from_project(cls.name)
 
     @classmethod
-    def get_features(cls):
-        return cls.get_from_project().getFeatures()
+    def init_cache(cls, layer: QgsVectorLayer):
+        if not hasattr(cls, "cache"):
+            msg = f"Failed to initialize cache for layer {layer.name()}. Cache attribute not defined for layer class."
+            raise AttributeError(msg)
+        if not hasattr(cls, "cache_max_feats"):
+            msg = f"Failed to initialize cache for layer {layer.name()}. Max feats for cache is not defined."
+            raise AttributeError(msg)
+
+        # Make sure to delete old cache if it exists for some reason
+        cls.clear_cache()
+
+        cls.cache = QgsVectorLayerCache(layer, cls.cache_max_feats)
+        QgsProject().instance().layersWillBeRemoved.connect(lambda _: cls.clear_cache())
+        QgsMessageLog.logMessage(
+            f"Initialized QgsVectorLayerCache for '{layer.name()}' (max {cls.cache_max_feats}).",
+            "",
+            Qgis.MessageLevel.Info,
+        )
+
+    @classmethod
+    def clear_cache(cls):
+        if cls.cache is not None:
+            QgsMessageLog.logMessage(f"Clearing QgsVectorLayerCache for '{cls.name}'.", "", Qgis.MessageLevel.Info)
+            try:
+                cls.cache.deleteLater()
+            finally:
+                cls.cache = None
+
+    @classmethod
+    def get_features(cls, request: QgsFeatureRequest | None = None):
+        layer = cls.get_from_project()
+        if hasattr(cls, "cache"):
+            if cls.cache is None:
+                cls.init_cache(layer)
+            return cls.cache.getFeatures(request) if request else cls.cache.getFeatures()  # type: ignore
+        return layer.getFeatures(request) if request else layer.getFeatures()
 
     @classmethod
     def get_selected_features(cls, no_geometries: bool = True) -> Generator[QgsFeature]:  # noqa: FBT001, FBT002
@@ -58,11 +97,10 @@ class AbstractLayer(ABC):
         value: str | list | tuple | set | None,
         no_geometries: bool = True,  # noqa: FBT001, FBT002
     ) -> Generator[QgsFeature]:
-        layer = cls.get_from_project()
         request = QgsFeatureRequest().setFilterExpression(cls.create_filter_expression(attribute, value))
         if no_geometries:
             request.setFlags(QgsFeatureRequest.NoGeometry)
-        yield from layer.getFeatures(request)
+        yield from cls.get_features(request)
 
     @classmethod
     def get_feature_by_attribute_value(
@@ -84,7 +122,7 @@ class AbstractLayer(ABC):
         request = QgsFeatureRequest().setFilterExpression(expression)
         request.setSubsetOfAttributes([target_attribute], layer.fields())
         request.setFlags(QgsFeatureRequest.NoGeometry)
-        for feature in layer.getFeatures(request):
+        for feature in cls.get_features(request):
             yield feature[target_attribute]
 
     @classmethod
