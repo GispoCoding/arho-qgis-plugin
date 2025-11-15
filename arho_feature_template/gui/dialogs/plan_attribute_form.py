@@ -41,9 +41,9 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     button_box: QDialogButtonBox
 
-    def __init__(self, plan: Plan, _regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
+    def __init__(self, tr, plan: Plan, _regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
         super().__init__(parent)
-
+        self.tr = tr
         self.setupUi(self)
 
         self.is_general_plan_type = self._is_general_plan_type()
@@ -173,14 +173,14 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.add_plan_regulation_group(RegulationGroup())
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = GeneralRegulationGroupWidget(regulation_group, layer_name=PlanLayer.name)
+        regulation_group_widget = GeneralRegulationGroupWidget(self.tr, regulation_group, layer_name=PlanLayer.name)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         # regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         self.regulations_layout.insertWidget(1, regulation_group_widget)
         self.regulation_group_widgets.append(regulation_group_widget)
 
     # def open_plan_regulation_group_form(self, regulation_group_widget: GeneralRegulationGroupWidget):
-    #     group_as_form = PlanRegulationGroupForm(regulation_group_widget.into_model())
+    #     group_as_form = PlanRegulationGroupForm(self.tr, regulation_group_widget.into_model())
     #     if group_as_form.exec_():
     #         regulation_group_widget.from_model(group_as_form.model)
 

@@ -91,8 +91,9 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
 
 
 class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
-    def __init__(self, plan_manager_ref: PlanManager, parent=None):
+    def __init__(self, plan_manager_ref: PlanManager, tr, parent=None):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -268,6 +269,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             return
 
         form = PlanObjectForm(
+            self.tr,
             plan_feature=plan_feature_model,
             form_title=plan_feature_model.name or plan_feature_model.layer_name or "",
             plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
@@ -276,7 +278,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         )
         if form.exec():
             updated_plan_feature_model = form.model
-            if save_plan_feature(updated_plan_feature_model) is not None:
+            if save_plan_feature(updated_plan_feature_model, self.tr) is not None:
                 # Update table row if saving was succesfull
                 model_index = self.filter_proxy_model.mapToSource(index)
                 row = model_index.row()

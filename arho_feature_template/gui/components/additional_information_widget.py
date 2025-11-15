@@ -28,8 +28,9 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     changed = pyqtSignal()
 
-    def __init__(self, additional_information: AdditionalInformation, parent=None):
+    def __init__(self, additional_information: AdditionalInformation, tr, parent=None):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -59,7 +60,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
             widget = (
                 self.value_widget_manager.value_widget
                 if self.value_widget_manager.value_widget is not None
-                else QLabel("Syötekenttää tälle tyypille ei ole vielä toteutettu")
+                else QLabel(self.tr("Syötekenttää tälle tyypille ei ole vielä toteutettu"))
             )
             self.layout().addWidget(widget)
 

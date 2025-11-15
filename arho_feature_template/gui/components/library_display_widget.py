@@ -58,6 +58,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def __init__(
         self,
+        tr,
         libraries: list[PlanFeatureLibrary | RegulationGroupLibrary],
         library_type_class: type[PlanFeatureLibrary | RegulationGroupLibrary],
         # regulation_group_libraries is needed to open PlanFeatureForm
@@ -65,6 +66,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
     ):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -185,7 +187,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
     def _on_reload_library_file_clicked(self):
         file_path = self.library_file_path.filePath()
         loaded_library = self.library_type_class.from_template_dict(
-            data=TemplateManager.read_library_config_file(file_path, self.library_type),
+            data=TemplateManager.read_library_config_file(file_path, self.library_type, self.tr),
             library_type=Library.LibraryType.CUSTOM,
             file_path=str(file_path),
         )
@@ -274,7 +276,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
             # Attempt import
             library = self.library_type_class.from_template_dict(
-                data=TemplateManager.read_library_config_file(file_path, self.library_type),
+                data=TemplateManager.read_library_config_file(file_path, self.library_type, self.tr),
                 library_type=Library.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
@@ -327,7 +329,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def _add_library_element_to_list(self, element: RegulationGroup | PlanObject):
         item = QListWidgetItem(str(element))
-        item.setToolTip(element.as_tooltip())
+        item.setToolTip(element.as_tooltip(self.tr))
         item.setData(DATA_ROLE, element)
         self.library_element_list.addItem(item)
 
@@ -362,7 +364,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if not self.active_library:
             return
 
-        form = PlanRegulationGroupForm(RegulationGroup(), None)
+        form = PlanRegulationGroupForm(self.tr, RegulationGroup(), None)
         form.setWindowTitle("Luo kaavamääräysryhmäpohja")
 
         # TODO: Let user select a category for their regulation group template?
@@ -375,6 +377,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             return
 
         form = PlanObjectForm(
+            self.tr,
             plan_feature=PlanObject(layer_name=plan_feature_layer),
             form_title=f"Luo kaavakohdepohja ({plan_feature_type})",
             regulation_group_libraries=self.regulation_group_libraries,
@@ -405,7 +408,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                     break
             form = PlanObjectForm(element, title, self.regulation_group_libraries)
         elif self.library_type_class is RegulationGroupLibrary:
-            form = PlanRegulationGroupForm(element, None)
+            form = PlanRegulationGroupForm(self.tr, element, None)
             form.setWindowTitle("Muokkaa kaavamääräysryhmäpohjaa")
         else:
             return

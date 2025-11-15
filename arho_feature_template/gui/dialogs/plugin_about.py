@@ -15,14 +15,15 @@ FOLDER_PATH = PLUGIN_PATH / "resources" / "libraries" / "regulation_groups"
 
 
 class PluginAbout(QDialog, FormClass):  # type: ignore
-    def __init__(self, parent=None):
+    def __init__(self, tr, parent=None):
+        self.tr = tr
         super().__init__(parent)
         self.setupUi(self)
 
         self.version_labels: dict[str, QLabel] = {
-            "asemakaava": self.katja_version_town,
-            "yleiskaava": self.katja_version_general,
-            "maakuntakaava": self.katja_version_regional,
+            self.tr("asemakaava"): self.katja_version_town,
+            self.tr("yleiskaava"): self.katja_version_general,
+            self.tr("maakuntakaava"): self.katja_version_regional,
         }
 
         self.show_versions()

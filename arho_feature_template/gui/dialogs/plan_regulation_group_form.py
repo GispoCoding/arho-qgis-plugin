@@ -49,10 +49,12 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def __init__(
         self,
+        tr,
         regulation_group: RegulationGroup,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None,
     ):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -186,7 +188,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.add_regulation(Regulation(regulation_type_id))
 
     def add_regulation(self, regulation: Regulation):
-        widget = RegulationWidget(regulation, parent=self.regulations_scroll_area_contents)
+        widget = RegulationWidget(self.tr, regulation, parent=self.regulations_scroll_area_contents)
         widget.delete_signal.connect(self.delete_regulation)
         index = self.regulations_layout.count() - 1
         self.regulations_layout.insertWidget(index, widget)

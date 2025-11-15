@@ -46,10 +46,12 @@ FormClass, _ = uic.loadUiType(ui_path)
 class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
     def __init__(
         self,
+        tr,
         regulation_group_libraries: list[RegulationGroupLibrary],
-        active_plan_regulation_groups_library: RegulationGroupLibrary,
+        active_plan_regulation_groups_library: RegulationGroupLibrary
     ):
         super().__init__(parent=iface.mainWindow())
+        self.tr = tr
         self.setupUi(self)
         self.setWindowFlags(self.windowFlags() | Qt.Window)
 
@@ -115,7 +117,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground_selection.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
         self.regulation_groups_view = RegulationGroupsView(
-            regulation_group_libraries, active_plan_regulation_groups_library
+            self.tr, regulation_group_libraries, active_plan_regulation_groups_library
         )
         self.regulation_groups_view.regulation_groups_label.setText("Kaavakohteiden kaavamääräysryhmät")
         self.layout().insertWidget(3, self.regulation_groups_view)
@@ -196,7 +198,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             # If the group is not yet in DB, save it now to get an ID and use the same group object for each
             # plan feature
             if group.id_ is None:
-                id_ = save_regulation_group(group)
+                id_ = save_regulation_group(group, self.tr)
                 group.id_ = id_
                 group.modified = False
 
@@ -214,7 +216,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 regulation_groups=regulation_groups,
             )
             self.progress_bar.setValue(int((i + 1) / total_count * 100))
-            if save_plan_feature(model):
+            if save_plan_feature(model, self.tr):
                 success_count += 1
             else:
                 failed_count += 1

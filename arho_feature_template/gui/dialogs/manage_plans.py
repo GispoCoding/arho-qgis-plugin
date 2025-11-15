@@ -38,8 +38,9 @@ DATA_ROLE = Qt.UserRole
 
 class ManagePlans(QDialog, FormClass):  # type: ignore
     @use_wait_cursor
-    def __init__(self, regulation_group_libraries):
+    def __init__(self, regulation_group_libraries, tr):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -61,11 +62,11 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         # to make the first plan by drawing the geometry from the toolbar
         if self.plans_table.rowCount() == 0:
             self.new_plan_button.setEnabled(False)
-            self.new_plan_button.setToolTip("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja.")
+            self.new_plan_button.setToolTip(self.tr("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja."))
             iface.messageBar().pushWarning(
                 "",
-                "Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma "
-                " piirtämällä tai tuomalla ulkoraja.",
+                self.tr("Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma ") +
+                self.tr(" piirtämällä tai tuomalla ulkoraja."),
             )
 
         self.filter_line.valueChanged.connect(self._filter_plans)
@@ -141,16 +142,16 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     def _on_row_double_clicked(self, item: QTableWidgetItem):
         row = item.row()
         plan = self.plans_table.item(row, 0).data(DATA_ROLE)
-        form = PlanAttributeForm(plan, self.regulation_group_libraries)
+        form = PlanAttributeForm(self.tr, plan, self.regulation_group_libraries)
         if form.exec():
-            save_plan(form.model)
+            save_plan(form.model, self.tr)
 
     def _on_new_plan_button_clicked(self):
-        form = NewPlanDialog()
+        form = NewPlanDialog(self.tr)
         form.plan_copied.connect(self._handle_plan_copied)
         if form.exec() and form.plan:
             new_plan: Plan = form.plan
-            plan_id = save_plan(new_plan)
+            plan_id = save_plan(new_plan, self.tr)
             if plan_id:
                 new_plan.id_ = plan_id
                 self._add_plan_row(new_plan, select=True)

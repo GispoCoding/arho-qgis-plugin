@@ -81,14 +81,14 @@ class TemplateManager:
     #     return data
 
     @classmethod
-    def read_library_config_file(cls, file_path: Path | str, expected_library_type: str) -> dict:
+    def read_library_config_file(cls, file_path: Path | str, expected_library_type: str, tr) -> dict:
         data = cls._read_from_yaml_file(
             file_path=file_path if type(file_path) is Path else Path(file_path),
-            fail_msg=f"Kirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
+            fail_msg=tr("Kirjastoa ei löytynyt määritellystä tiedostopolusta:") + f" {file_path}",
         )
         library_type = data.get("library_type")
         if not library_type or library_type != expected_library_type:
-            iface.messageBar().pushCritical("", f"Kirjaston tyyppiä ei löytynyt tai se oli väärä: {library_type}")
+            iface.messageBar().pushCritical("", tr("Kirjaston tyyppiä ei löytynyt tai se oli väärä:") + f" {library_type}")
             return {}
         return data
 

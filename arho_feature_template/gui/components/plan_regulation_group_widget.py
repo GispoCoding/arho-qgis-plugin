@@ -32,8 +32,9 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     update_matching_groups = pyqtSignal(QWidget)
 
-    def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
+    def __init__(self, tr, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -144,7 +145,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.update_matching_groups.emit(self)
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
-        widget = RegulationWidget(regulation=regulation, parent=self.frame)
+        widget = RegulationWidget(regulation=regulation, tr=self.tr, parent=self.frame)
         widget.changed.connect(lambda: self.group_contents_update_debouncer.restart_timer())
         widget.delete_signal.connect(self.delete_regulation_widget)
         self.frame.layout().addWidget(widget)

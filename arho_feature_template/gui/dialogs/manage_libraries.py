@@ -18,10 +18,12 @@ DATA_ROLE = Qt.UserRole
 class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
     def __init__(
         self,
+        tr,
         regulation_group_libraries: list[RegulationGroupLibrary],
         custom_plan_feature_libraries: list[PlanFeatureLibrary],
     ):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -40,10 +42,10 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         ]
 
         # Create tabs for regulation group libraries and plan feature libraries
-        self.regulation_group_library_widget = LibaryDisplayWidget(
+        self.regulation_group_library_widget = LibaryDisplayWidget(self.tr,
             list(custom_regulation_group_libraries), RegulationGroupLibrary, list(regulation_group_libraries)
         )
-        self.plan_feature_library_widget = LibaryDisplayWidget(
+        self.plan_feature_library_widget = LibaryDisplayWidget(self.tr,
             list(custom_plan_feature_libraries), PlanFeatureLibrary, list(regulation_group_libraries)
         )
         self.library_tabs.addTab(self.regulation_group_library_widget, "Kaavamääräysryhmäpohjat")

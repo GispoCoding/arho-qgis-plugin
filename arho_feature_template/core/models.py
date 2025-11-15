@@ -425,14 +425,14 @@ class RegulationGroup(PlanBaseModel):
     def __str__(self):
         return " - ".join(part for part in (self.letter_code, self.heading) if part)
 
-    def as_tooltip(self) -> str:
+    def as_tooltip(self, tr) -> str:
         letter_code = self.letter_code if self.letter_code else ""
         return (
-            f"Kaavamääräyksen otsikko: {self.heading}\n"
-            f"Kirjaintunnus: {letter_code}\n"
-            f"Kategoria: {self.category}\n"
-            f"Kaavamääräysten määrä: {len(self.regulations)}\n"
-            f"Suositusten määrä: {len(self.propositions)}"
+            tr("Kaavamääräyksen otsikko:") + f" {self.heading}\n" +
+            tr("Kirjaintunnus:") + f" {letter_code}\n" +
+            tr("Kategoria:") + f" {self.category}\n" +
+            tr("Kaavamääräysten määrä:") + f" {len(self.regulations)}\n" +
+            tr("Suositusten määrä:") + f" {len(self.propositions)}"
         )
 
 
@@ -483,11 +483,11 @@ class PlanObject(PlanBaseModel):
     def __str__(self):
         return self.name if self.name else ""
 
-    def as_tooltip(self) -> str:
+    def as_tooltip(self, tr) -> str:
         return (
-            f"Nimi: {self.name}\n"
-            f"Kuvaus: {self.description}\n"
-            f"Kaavamääräysryhmien määrä: {len(self.regulation_groups)}"
+            tr("Nimi:") + f" {self.name}\n" +
+            tr("Kuvaus:") + f" {self.description}\n" +
+            tr("Kaavamääräysryhmien määrä:") + f" {len(self.regulation_groups)}"
         )
 
 

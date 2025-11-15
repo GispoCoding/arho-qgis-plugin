@@ -41,8 +41,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     changed = pyqtSignal()
 
-    def __init__(self, regulation: Regulation, parent=None):
+    def __init__(self, tr, regulation: Regulation, parent=None):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -184,7 +185,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         return False
 
     def _add_additional_info(self, additional_information: AdditionalInformation):
-        ai_widget = AdditionalInformationWidget(additional_information, self)
+        ai_widget = AdditionalInformationWidget(additional_information, self.tr, self)
         ai_widget.delete_signal.connect(self._delete_widget)
         self.additional_information_widgets.append(ai_widget)
         self._add_widget(QLabel("Lisätieto:"), ai_widget)

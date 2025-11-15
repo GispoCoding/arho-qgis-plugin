@@ -40,8 +40,9 @@ class FileWidgetConfig(NamedTuple):
 
 
 class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
-    def __init__(self, parent=None):
+    def __init__(self, tr, parent=None):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES

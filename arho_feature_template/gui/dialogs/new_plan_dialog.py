@@ -31,8 +31,9 @@ DATA_ROLE = Qt.UserRole
 class NewPlanDialog(QDialog, FormClass):  # type: ignore
     plan_copied = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, tr):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
         self.setModal(True)
         self.setFixedWidth(550)
@@ -59,7 +60,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.plan_lifecycle.currentIndexChanged.connect(self._check_required_fields)
         self.button_box.accepted.connect(self._on_ok_clicked)
 
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self.tr)
         self.lambda_service.plan_copied.connect(self._plan_copied)
         self.lambda_service.plan_copy_failed.connect(self._handle_copy_failed)
 
