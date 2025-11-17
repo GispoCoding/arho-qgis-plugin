@@ -48,8 +48,8 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self.plan_feature_library_widget = LibaryDisplayWidget(self.tr,
             list(custom_plan_feature_libraries), PlanFeatureLibrary, list(regulation_group_libraries)
         )
-        self.library_tabs.addTab(self.regulation_group_library_widget, "Kaavamääräysryhmäpohjat")
-        self.library_tabs.addTab(self.plan_feature_library_widget, "Kaavakohdepohjat")
+        self.library_tabs.addTab(self.regulation_group_library_widget, self.tr("Kaavamääräysryhmäpohjat"))
+        self.library_tabs.addTab(self.plan_feature_library_widget, self.tr("Kaavakohdepohjat"))
 
         self.updated_regulation_group_libraries: list[RegulationGroupLibrary] = []
         self.updated_plan_feature_libraries: list[PlanFeatureLibrary] = []
@@ -66,16 +66,16 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
                 if library.file_path in file_paths:
                     QMessageBox.critical(
                         self,
-                        "Virhe",
-                        f"Useammalle kirjastolle on määritelty sama tallennuspolku ({library.file_path}).",
+                        self.tr("Virhe"),
+                        self.tr("Useammalle kirjastolle on määritelty sama tallennuspolku") + f" ({library.file_path}).",
                     )
                     return False
                 # Check for duplicate names
                 if library.name in names:
                     QMessageBox.critical(
                         self,
-                        "Virhe",
-                        f"Useammalle kirjastolle on määritelty sama nimi ({library.name}).",
+                        self.tr("Virhe"),
+                        self.tr("Useammalle kirjastolle on määritelty sama nimi") + f" ({library.name}).",
                     )
                     return False
                 file_paths.add(library.file_path)

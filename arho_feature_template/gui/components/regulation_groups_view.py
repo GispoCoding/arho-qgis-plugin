@@ -109,11 +109,11 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
             library_name = ""
             if plan_type == PlanType.REGIONAL:
-                library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
+                library_name = self.tr("Maakuntakaavan kaavamääräysryhmät (Katja)")
             elif plan_type == PlanType.GENERAL:
-                library_name = "Yleiskaavan kaavamääräysryhmät (Katja)"
+                library_name = self.tr("Yleiskaavan kaavamääräysryhmät (Katja)")
             elif plan_type == PlanType.TOWN:
-                library_name = "Asemakaavan kaavamääräysryhmät (Katja)"
+                library_name = self.tr("Asemakaavan kaavamääräysryhmät (Katja)")
             else:
                 return
 
@@ -146,8 +146,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         }
 
         if len(principal_intended_use_groups) > 1:
-            msg = "Kaavakohteella voi olla vain yksi kaavamääräysryhmä, jossa pääkäyttötarkoituksia."
-            QMessageBox.critical(self, "Virhe", msg)
+            msg = self.tr("Kaavakohteella voi olla vain yksi kaavamääräysryhmä, jossa pääkäyttötarkoituksia.")
+            QMessageBox.critical(self, self.tr("Virhe"), msg)
             return False
 
         return True

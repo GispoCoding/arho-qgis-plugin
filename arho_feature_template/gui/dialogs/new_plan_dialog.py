@@ -128,4 +128,4 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.accept()
 
     def _handle_copy_failed(self, error_message: str):
-        iface.messageBar().pushCritical("", f"Kaavasuunnitelman kopiointi epäonnistui: {error_message}")
+        iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelman kopiointi epäonnistui:") + f" {error_message}")

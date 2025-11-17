@@ -59,8 +59,9 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
 
     # ID_COLUMN = 4
 
-    def __init__(self, parent, connection_names: list[str]):
+    def __init__(self, parent, tr, connection_names: list[str]):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         self._selected_plan_id = None
@@ -84,8 +85,8 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         self.model.setColumnCount(2)
         self.model.setHorizontalHeaderLabels(
             [
-                "Nimi",
-                "Kaavasuunnitelman elinkaaren tila",
+                self.tr("Nimi"),
+                self.tr("Kaavasuunnitelman elinkaaren tila"),
             ]
         )
 
@@ -162,7 +163,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
                     p.plan_matter_id = '{active_plan_matter}'
             """)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Virhe", f"Kaavojen lataus epäonnistui: {e}")
+            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Kaavojen lataus epäonnistui:") + f" {e}")
             self.clear_table()
 
         return plans

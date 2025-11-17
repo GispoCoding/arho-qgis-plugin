@@ -161,7 +161,7 @@ class PlanManager(QObject):
         self.new_feature_dock.hide()
 
         # Initialize regulation groups dock
-        self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
+        self.regulation_groups_dock = RegulationGroupsDock(self.tr, iface.mainWindow())
         # self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
         self.regulation_groups_dock.request_new_regulation_group_empty.connect(
             lambda: self.create_new_regulation_group(from_template=False)
@@ -183,7 +183,7 @@ class PlanManager(QObject):
         self.regulation_groups_dock.hide()
 
         # Initialize plan features dock
-        self.features_dock = PlanObjectsDock(self, self.tr, iface.mainWindow())
+        self.features_dock = PlanObjectsDock(self, iface.mainWindow())
         self.features_dock.hide()
 
         # Initialize digitize tools
@@ -424,7 +424,7 @@ class PlanManager(QObject):
         self.previous_map_tool = iface.mapCanvas().mapTool()
         self.previous_active_plan_id = get_active_plan_id()
 
-        if not handle_unsaved_changes():
+        if not handle_unsaved_changes(self.tr):
             return
 
         plan_layer = PlanLayer.get_from_project()
@@ -502,7 +502,7 @@ class PlanManager(QObject):
         """Creates and saves a new geometryless Plan Matter feature."""
 
         # Handle unsaved changes first
-        if not handle_unsaved_changes():
+        if not handle_unsaved_changes(self.tr):
             return
 
         # Get the layer
@@ -527,7 +527,7 @@ class PlanManager(QObject):
             self.set_active_plan_matter(saved_id)
 
     def add_new_plan_feature(self):
-        if not handle_unsaved_changes():
+        if not handle_unsaved_changes(self.tr):
             return
 
         layer_name = self.new_feature_dock.active_feature_layer
@@ -721,10 +721,10 @@ class PlanManager(QObject):
             iface.messageBar().pushCritical("", self.tr("Tietokantayhteyksiä ei löytynyt."))
             return
 
-        if not handle_unsaved_changes():
+        if not handle_unsaved_changes(self.tr):
             return
 
-        dialog = LoadPlanDialog(None, connection_names)
+        dialog = LoadPlanDialog(None, self.tr, connection_names)
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_id = dialog.get_selected_plan_id()
@@ -740,10 +740,10 @@ class PlanManager(QObject):
             iface.messageBar().pushCritical("", self.tr("Tietokantayhteyksiä ei löytynyt."))
             return
 
-        if not handle_unsaved_changes():
+        if not handle_unsaved_changes(self.tr):
             return
 
-        dialog = LoadPlanMatterDialog(None, connection_names)
+        dialog = LoadPlanMatterDialog(None, self.tr, connection_names)
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_matter_id = dialog.get_selected_plan_matter_id()

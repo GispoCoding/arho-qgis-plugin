@@ -95,5 +95,5 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
             self.adjustSize()
 
         else:
-            iface.messageBar().pushCritical("", f"Kaavasuunnitelman tuonti epäonnistui: {error_message}")
+            iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelman tuonti epäonnistui:") + f" {error_message}")
             self.reject()

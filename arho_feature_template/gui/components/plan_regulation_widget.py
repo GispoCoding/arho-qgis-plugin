@@ -60,7 +60,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
         self.value_widget_manager = None
         if self.default_value:
-            self.value_widget_manager = ValueWidgetManager(self.regulation.value, self.default_value)
+            self.value_widget_manager = ValueWidgetManager(self.tr, self.regulation.value, self.default_value)
             self.value_widget_manager.value_changed.connect(lambda: self.changed.emit())
 
         # List of widgets for hiding / showing
@@ -93,7 +93,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
     def _init_widgets(self):
         # Value input
         if self.default_value:
-            self._add_widget(RequiredFieldLabel("Arvo"), self.value_widget_manager.value_widget)
+            self._add_widget(RequiredFieldLabel(self.tr("Arvo")), self.value_widget_manager.value_widget)
 
         regulation_type = PlanRegulationTypeLayer.get_type_by_id(self.regulation.regulation_type_id)
         if regulation_type in PlanRegulationTypeLayer.verbal_regulation_types:
@@ -138,9 +138,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
     def _init_additional_attributes_and_information_btn(self):
         attributes_and_information_menu = QMenu(self)
-        attributes_and_information_menu.addAction("Aihetunniste").triggered.connect(self._add_subject_identifier)
-        attributes_and_information_menu.addAction("Kaavoitusteema").triggered.connect(self._add_theme)
-        attributes_and_information_menu.addAction("Lisätieto").setMenu(self._create_additional_information_menu())
+        attributes_and_information_menu.addAction(self.tr("Aihetunniste")).triggered.connect(self._add_subject_identifier)
+        attributes_and_information_menu.addAction(self.tr("Kaavoitusteema")).triggered.connect(self._add_theme)
+        attributes_and_information_menu.addAction(self.tr("Lisätieto")).setMenu(self._create_additional_information_menu())
 
         self.add_attribute_or_information_btn.setMenu(attributes_and_information_menu)
         self.add_attribute_or_information_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
@@ -188,20 +188,20 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         ai_widget = AdditionalInformationWidget(additional_information, self.tr, self)
         ai_widget.delete_signal.connect(self._delete_widget)
         self.additional_information_widgets.append(ai_widget)
-        self._add_widget(QLabel("Lisätieto:"), ai_widget)
+        self._add_widget(QLabel(self.tr("Lisätieto:")), ai_widget)
 
     def _add_subject_identifier(self, subject: str | None = None):
         # self.topic_tag_widget = SinglelineTextInputWidget(None, True)
         subject_widget = SubjectIdentifierWidget(subject)
         subject_widget.delete_signal.connect(self._delete_widget)
         self.subject_identifier_widgets.append(subject_widget)
-        self._add_widget(QLabel("Aihetunniste:"), subject_widget)
+        self._add_widget(QLabel(self.tr("Aihetunniste:")), subject_widget)
 
     def _add_theme(self, theme_name: str):
         theme_widget = ThemeWidget(theme_name)
         self.theme_widgets.append(theme_widget)
         theme_widget.delete_signal.connect(self._delete_widget)
-        self._add_widget(QLabel("Kaavoitusteema:"), theme_widget)
+        self._add_widget(QLabel(self.tr("Kaavoitusteema:")), theme_widget)
 
     def _add_type_of_verbal_regulation(self, type_id: str | None = None):
         if len(self.type_of_verbal_regulation_widgets) == 0:
@@ -217,7 +217,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             widget.set_value(type_id)
 
         self.type_of_verbal_regulation_widgets.append(widget)
-        self._add_widget(RequiredFieldLabel("Sanallisen määräyksen laji"), widget)
+        self._add_widget(RequiredFieldLabel(self.tr("Sanallisen määräyksen laji")), widget)
 
     def _delete_type_of_verbal_regulation(self, widget_to_delete: TypeOfVerbalRegulationWidget):
         self.type_of_verbal_regulation_widgets.remove(widget_to_delete)

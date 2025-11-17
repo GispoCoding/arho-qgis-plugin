@@ -44,18 +44,18 @@ def check_layer_changes() -> bool:
     return any(layer.isModified() for layer in layers if isinstance(layer, QgsVectorLayer))
 
 
-def prompt_commit_changes() -> bool:
+def prompt_commit_changes(tr) -> bool:
     """Ask user if changes should be committed."""
     response = QMessageBox.question(
         None,
-        "Tallentamattomat muutokset",
-        "Tasoilla on tallentamattomia muutoksia. Tallenetaanko muutokset?",
+        tr("Tallentamattomat muutokset"),
+        tr("Tasoilla on tallentamattomia muutoksia. Tallenetaanko muutokset?"),
         QMessageBox.Yes | QMessageBox.No,
     )
     return response == QMessageBox.Yes
 
 
-def commit_all_layer_changes() -> bool:
+def commit_all_layer_changes(tr) -> bool:
     """
     Commit changes to all modified layers in the QGIS project.
     Returns True if all changes were successfully committed, False if any failed.
@@ -66,13 +66,13 @@ def commit_all_layer_changes() -> bool:
 
     for layer in layers:
         if isinstance(layer, QgsVectorLayer) and layer.isModified() and not layer.commitChanges():
-            QMessageBox.critical(None, "Virhe", f"Tason {layer.name()} muutosten tallentaminen epäonnistui.")
+            QMessageBox.critical(None, tr("Virhe"), tr("Tason") + f" {layer.name()} " + tr("muutosten tallentaminen epäonnistui."))
             all_committed = False
 
     return all_committed
 
 
-def handle_unsaved_changes() -> bool:
+def handle_unsaved_changes(tr) -> bool:
     """
     Wrapper function to check for unsaved changes, prompt user to commit, and commit changes if chosen.
     Returns:
@@ -80,9 +80,9 @@ def handle_unsaved_changes() -> bool:
             False if user does not want to commit or if commit fails.
     """
     if check_layer_changes():
-        if not prompt_commit_changes():
+        if not prompt_commit_changes(tr):
             return False
-        if not commit_all_layer_changes():
+        if not commit_all_layer_changes(tr):
             return False
     return True
 

@@ -164,17 +164,18 @@ class MultilineTextInputWidget(QTextEdit):
 class CodeInputWidget(QWidget):
     changed = pyqtSignal()
 
-    def __init__(self, title: str | None = None, code_list: str | None = None, code_value: str | None = None):
+    def __init__(self, tr, title: str | None = None, code_list: str | None = None, code_value: str | None = None):
         super().__init__()
+        self.tr = tr
 
         self.title_widget = SinglelineTextInputWidget(default_value=title, editable=True)
         self.code_list_widget = SinglelineTextInputWidget(default_value=code_list, editable=True)
         self.code_value_widget = SinglelineTextInputWidget(default_value=code_value, editable=True)
 
         layout = QFormLayout()
-        layout.addRow("Otsikko:", self.title_widget)
-        layout.addRow("Koodisto:", self.code_list_widget)
-        layout.addRow('<span style="color: red;">*</span> Koodiarvo:', self.code_value_widget)
+        layout.addRow(self.tr("Otsikko:"), self.title_widget)
+        layout.addRow(self.tr("Koodisto:"), self.code_list_widget)
+        layout.addRow(self.tr('<span style="color: red;">*</span> Koodiarvo:'), self.code_value_widget)
         self.setLayout(layout)
 
         self.title_widget.changed.connect(lambda: self.changed.emit())
@@ -275,8 +276,9 @@ class LegalEffectWidget(QWidget):
 class ValueWidgetManager(QObject):
     value_changed = pyqtSignal()
 
-    def __init__(self, value: AttributeValue | None, default_value: AttributeValue):
+    def __init__(self, tr, value: AttributeValue | None, default_value: AttributeValue):
         super().__init__()
+        self.tr = tr
 
         if value is None:
             value = AttributeValue()
@@ -322,6 +324,7 @@ class ValueWidgetManager(QObject):
 
         elif self.value_data_type == AttributeValueDataType.CODE:
             self.value_widget = CodeInputWidget(
+                self.tr,
                 value.code_title or default_value.code_title,
                 value.code_list or default_value.code_list,
                 value.code_value or default_value.code_value,

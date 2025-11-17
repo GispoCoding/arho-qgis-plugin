@@ -205,7 +205,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.add_proposition(proposition)
 
     def add_proposition(self, proposition: Proposition):
-        widget = PropositionWidget(proposition, parent=self.propositions_scroll_contents)
+        widget = PropositionWidget(proposition, parent=self.propositions_scroll_contents, tr=self.tr)
         widget.delete_signal.connect(self.delete_proposition)
         self.propositions_layout.insertWidget(1, widget)
         self.proposition_widgets.append(widget)

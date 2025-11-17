@@ -150,7 +150,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         if legal_effect_id:
             widget.set_value(legal_effect_id)
 
-        label = QLabel("Oikeusvaikutus:")
+        label = QLabel(self.tr("Oikeusvaikutus:"))
         self.legal_effect_widgets.append((label, widget))
         self.general_data_layout.addRow(label, widget)
 
@@ -205,7 +205,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self._check_required_fields()
 
     def add_document(self, document: Document):
-        widget = DocumentWidget(document)
+        widget = DocumentWidget(document, self.tr)
         widget.delete_signal.connect(self.delete_document)
         widget.document_edited.connect(self._check_required_fields)
         self.documents_layout.insertWidget(1, widget)

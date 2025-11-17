@@ -51,8 +51,8 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         # self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         # self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
         add_field_menu = QMenu()
-        add_field_menu.addAction("Lisää kaavamääräys").triggered.connect(self.add_new_regulation)
-        add_field_menu.addAction("Lisää kaavasuositus").triggered.connect(self.add_new_proposition)
+        add_field_menu.addAction(self.tr("Lisää kaavamääräys")).triggered.connect(self.add_new_regulation)
+        add_field_menu.addAction(self.tr("Lisää kaavasuositus")).triggered.connect(self.add_new_proposition)
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
@@ -95,7 +95,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.add_proposition_widget(proposition)
 
     def add_proposition_widget(self, proposition: Proposition) -> PropositionWidget:
-        widget = PropositionWidget(proposition=proposition, parent=self.frame)
+        widget = PropositionWidget(proposition=proposition, parent=self.frame, tr=self.tr)
         widget.delete_signal.connect(self.delete_proposition_widget)
         self.frame.layout().addWidget(widget)
         self.proposition_widgets.append(widget)

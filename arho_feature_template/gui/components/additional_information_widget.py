@@ -55,7 +55,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
             additional_information.additional_information_type_id
         )
         if default_value:
-            self.value_widget_manager = ValueWidgetManager(self.additional_information.value, default_value)
+            self.value_widget_manager = ValueWidgetManager(self.tr, self.additional_information.value, default_value)
             self.value_widget_manager.value_changed.connect(lambda: self.changed.emit())
             widget = (
                 self.value_widget_manager.value_widget

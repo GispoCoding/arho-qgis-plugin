@@ -36,8 +36,9 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
     document_edited = pyqtSignal()
     delete_signal = pyqtSignal(QWidget)
 
-    def __init__(self, document: Document, parent=None):
+    def __init__(self, document: Document, tr, parent=None):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -100,8 +101,8 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.confirmation_date_widget: QgsDateTimeEdit | None = None
 
         add_field_menu = QMenu(self)
-        add_field_menu.addAction("Saapumispäivämäärä").triggered.connect(self._add_arrival_date)
-        add_field_menu.addAction("Vahvistuspäivämäärä").triggered.connect(self._add_confirmation_date)
+        add_field_menu.addAction(self.tr("Saapumispäivämäärä")).triggered.connect(self._add_arrival_date)
+        add_field_menu.addAction(self.tr("Vahvistuspäivämäärä")).triggered.connect(self._add_confirmation_date)
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
@@ -149,7 +150,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
             self.arrival_date_widget.setDisplayFormat("d.M.yyyy")
             if default_value:
                 self.arrival_date_widget.setDateTime(default_value)
-            self._add_widgets(QLabel("Saapumispäivämäärä"), self.arrival_date_widget)
+            self._add_widgets(QLabel(self.tr("Saapumispäivämäärä")), self.arrival_date_widget)
 
     def _add_confirmation_date(self, default_value: datetime | None = None):
         if not self.confirmation_date_widget:
@@ -157,7 +158,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
             self.confirmation_date_widget.setDisplayFormat("d.M.yyyy")
             if default_value:
                 self.confirmation_date_widget.setDateTime(default_value)
-            self._add_widgets(QLabel("Vahvistuspäivämäärä"), self.confirmation_date_widget)
+            self._add_widgets(QLabel(self.tr("Vahvistuspäivämäärä")), self.confirmation_date_widget)
 
     def _on_expand_hide_btn_clicked(self):
         if self.expanded:
