@@ -2334,7 +2334,6 @@ def desired_plan_dict(
         "otherPlanMaterials": [],
         "planReport": None,
         "periodOfValidity": None,
-        "approvalDate": None,
         "generalRegulationGroups": [
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
@@ -2836,7 +2835,6 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
         },
         # TODO: plan documents to be added.
         "periodOfValidity": None,
-        "approvalDate": None,
         "generalRegulationGroups": [],
         "planDescription": (
             another_plan_instance.description["fin"]

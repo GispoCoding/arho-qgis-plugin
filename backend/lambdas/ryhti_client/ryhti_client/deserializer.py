@@ -605,7 +605,7 @@ class Deserializer:
         "generalRegulationGroups", ✅
         "presentationAlignments",
         "periodOfValidity",
-        "approvalDate",
+        "approvalDate", ✅
         "planners",
         "planObjects", ✅
         "planRegulationGroups", ✅
@@ -694,6 +694,7 @@ class Deserializer:
             lines=[p_o for p_o in plan_objects.values() if isinstance(p_o, Line)],
             documents=documents,
             official_use_only=ryhti_plan.official_use_only,
+            approval_date=ryhti_plan.approval_date,
         )
 
         plan.name = {"fin": name}

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime  # Sqlalchemy uses this runtime
+from datetime import date, datetime  # Sqlalchemy uses this runtime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID  # Sqlalchemy uses this runtime
 
@@ -239,6 +239,7 @@ class Plan(PlanBase):
     description: Mapped[language_str | None]
     scale: Mapped[int | None]
     official_use_only: Mapped[bool | None]
+    approval_date: Mapped[date | None]
 
     geom: Mapped[WKBElement] = mapped_column(
         type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)

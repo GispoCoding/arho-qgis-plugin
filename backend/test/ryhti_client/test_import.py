@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 
 import pytest
@@ -155,6 +156,8 @@ def test_import_plan(
     assert ai_with_value.value_data_type == "PositiveNumeric"
     assert ai_with_value.numeric_value == 2500
     assert ai_with_value.unit == "k-m2"
+
+    assert plan.approval_date == date(2023, 3, 8)
 
     # TODO: rest of plan_regulation_groups
     # TODO: periodOfValidity - not implemented yet

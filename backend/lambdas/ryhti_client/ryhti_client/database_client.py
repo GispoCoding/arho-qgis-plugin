@@ -646,14 +646,9 @@ class DatabaseClient:
         plan_dictionary["periodOfValidity"] = self.get_last_period(
             self.get_lifecycle_periods(plan, self.valid_status_value, datetimes=False)
         )
-        # we should only have one approved period. If there are several, pick last
-        period_of_approval = self.get_last_period(
-            self.get_lifecycle_periods(
-                plan, self.approved_status_value, datetimes=False
-            )
-        )
+
         plan_dictionary["approvalDate"] = (
-            period_of_approval["begin"] if period_of_approval else None
+            plan.approval_date.isoformat() if plan.approval_date else None
         )
 
         # Documents are divided into different categories. They may only be added
