@@ -594,7 +594,7 @@ class Deserializer:
         "lifeCycleStatus", ✅
         "legalEffectOfLocalMasterPlans", ✅
         "scale", ✅
-        "officialUseOnly",
+        "officialUseOnly", ✅
         "planMaps", ✅
         "geographicalArea", ✅
         "planDescription", ✅
@@ -693,6 +693,7 @@ class Deserializer:
             points=[p_o for p_o in plan_objects.values() if isinstance(p_o, Point)],
             lines=[p_o for p_o in plan_objects.values() if isinstance(p_o, Line)],
             documents=documents,
+            official_use_only=ryhti_plan.official_use_only,
         )
 
         plan.name = {"fin": name}

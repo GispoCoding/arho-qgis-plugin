@@ -238,6 +238,7 @@ class Plan(PlanBase):
     name: Mapped[language_str]
     description: Mapped[language_str | None]
     scale: Mapped[int | None]
+    official_use_only: Mapped[bool | None]
 
     geom: Mapped[WKBElement] = mapped_column(
         type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)

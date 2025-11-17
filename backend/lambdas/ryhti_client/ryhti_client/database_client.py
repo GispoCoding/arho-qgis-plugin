@@ -614,6 +614,8 @@ class DatabaseClient:
             plan.description.get("fin") if isinstance(plan.description, dict) else None
         )
         plan_dictionary["planDescription"] = plan_description
+        if plan.official_use_only:
+            plan_dictionary["officialUseOnly"] = plan.official_use_only
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.

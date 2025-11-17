@@ -13,6 +13,7 @@ class RyhtiPlan(TypedDict, total=False):
     scale: int | None
     legalEffectOfLocalMasterPlans: list | None
     geographicalArea: dict
+    officialUseOnly: bool | None
     periodOfValidity: Period | None
     approvalDate: str | None
     planMaps: list
