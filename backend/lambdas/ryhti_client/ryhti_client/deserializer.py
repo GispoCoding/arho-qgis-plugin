@@ -168,11 +168,8 @@ class Deserializer:
             raise ValueError(
                 f"Unsupported SRID: {geometry.srid}, expected: {PROJECT_SRID}"
             )
-        print(f"{geometry=}")
         json = geometry.geometry.model_dump_json()
-        print(f"{json=}")
         shape = from_geojson(json)
-        print(f"{shape=}")
 
         multi_shape = self.convert_to_multi_geom(shape)
         return from_shape(multi_shape, srid=int(geometry.srid))
@@ -240,7 +237,7 @@ class Deserializer:
                 "unit": value.unit_of_measure,
             }
         elif data_type is AttributeValueDataType.IDENTIFIER:
-            pass  # TODO implement identifier values
+            pass  # TODO: implement identifier values
         elif data_type == AttributeValueDataType.LOCALIZED_TEXT:
             value = cast("LocalizedTextValue", value)
             database_field_values = {
@@ -380,7 +377,7 @@ class Deserializer:
 
     def deserialize_plan_regulation_group(
         self, regulation_group: RyhtiPlanRegulationGroup
-    ):
+    ) -> PlanRegulationGroup:
         """Deserializes a RyhtiPlanRegulationGroup into a PlanRegulationGroup SQLAlchemy model instance.
 
         "planRegulationGroupKey", ✅
