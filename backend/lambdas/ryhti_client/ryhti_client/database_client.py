@@ -620,7 +620,8 @@ class DatabaseClient:
         plan_description = (
             plan.description.get("fin") if isinstance(plan.description, dict) else None
         )
-        plan_dictionary["planDescription"] = plan_description
+        if plan_description:
+            plan_dictionary["planDescription"] = plan_description
         if plan.official_use_only:
             plan_dictionary["officialUseOnly"] = plan.official_use_only
 
