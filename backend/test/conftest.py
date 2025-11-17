@@ -2333,7 +2333,6 @@ def desired_plan_dict(
         "planAnnexes": [],
         "otherPlanMaterials": [],
         "planReport": None,
-        "periodOfValidity": None,
         "generalRegulationGroups": [
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
@@ -2358,7 +2357,6 @@ def desired_plan_dict(
                             general_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "planRecommendations": [],
@@ -2398,7 +2396,6 @@ def desired_plan_dict(
                     "maximumValue": land_use_area_instance.height_max,
                     "unitOfMeasure": land_use_area_instance.height_unit,
                 },
-                "periodOfValidity": None,
             },
             {
                 "planObjectKey": pedestrian_street_instance.id,
@@ -2428,7 +2425,6 @@ def desired_plan_dict(
                     "maximumValue": pedestrian_street_instance.height_max,
                     "unitOfMeasure": pedestrian_street_instance.height_unit,
                 },
-                "periodOfValidity": None,
             },
             {
                 "planObjectKey": other_area_instance.id,
@@ -2453,7 +2449,6 @@ def desired_plan_dict(
                 "description": other_area_instance.description,
                 "objectNumber": None,
                 "relatedPlanObjectKeys": [land_use_area_instance.id],
-                "periodOfValidity": None,
             },
             {
                 "planObjectKey": point_instance.id,
@@ -2466,7 +2461,6 @@ def desired_plan_dict(
                 "name": point_instance.name,
                 "description": point_instance.description,
                 "objectNumber": point_instance.ordering,
-                "periodOfValidity": None,
             },
         ],
         # groups will not be in order by object, because we join all the group ids together to find
@@ -2494,7 +2488,6 @@ def desired_plan_dict(
                             point_text_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "planRecommendations": [],
@@ -2532,7 +2525,6 @@ def desired_plan_dict(
                             empty_value_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     },
                     {
                         "planRegulationKey": numeric_range_plan_regulation_instance.id,
@@ -2566,7 +2558,6 @@ def desired_plan_dict(
                             numeric_range_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     },
                     {
                         "planRegulationKey": text_plan_regulation_instance.id,
@@ -2588,7 +2579,6 @@ def desired_plan_dict(
                         # oh great, integer has to be string here for reasons unknown.
                         "regulationNumber": str(text_plan_regulation_instance.ordering),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     },
                     {
                         "planRegulationKey": verbal_plan_regulation_instance.id,
@@ -2611,7 +2601,6 @@ def desired_plan_dict(
                             verbal_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     },
                 ],
                 "planRecommendations": [
@@ -2624,7 +2613,6 @@ def desired_plan_dict(
                         ],
                         "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "letterIdentifier": plan_regulation_group_instance.short_name,
@@ -2658,7 +2646,6 @@ def desired_plan_dict(
                             numeric_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "planRecommendations": [],
@@ -2689,7 +2676,6 @@ def desired_plan_dict(
                             decimal_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "planRecommendations": [],
@@ -2745,7 +2731,6 @@ def desired_plan_dict(
                             pedestrian_street_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "planRecommendations": [],
@@ -2772,7 +2757,6 @@ def desired_plan_dict(
                             construction_area_plan_regulation_instance.ordering
                         ),
                         # TODO: plan regulation documents to be added.
-                        "periodOfValidity": None,
                     }
                 ],
                 "planRecommendations": [],
@@ -2834,7 +2818,6 @@ def another_plan_dict(another_plan_instance: models.Plan) -> dict:
             },
         },
         # TODO: plan documents to be added.
-        "periodOfValidity": None,
         "generalRegulationGroups": [],
         "planDescription": (
             another_plan_instance.description["fin"]

@@ -98,6 +98,8 @@ def test_import_plan(
     assert sub_area.type_of_underground.value == "01"
     assert sub_area.name is None
     assert sub_area.description is None
+    assert sub_area.period_of_validity_start == date(2023, 3, 11)
+    assert sub_area.period_of_validity_end == date(2023, 3, 30)
 
     point = session.get(models.Point, "bb50b5a0-ef60-40e7-bee0-a1ae927d020f")
     assert point is not None
@@ -158,10 +160,10 @@ def test_import_plan(
     assert ai_with_value.unit == "k-m2"
 
     assert plan.approval_date == date(2023, 3, 8)
+    assert plan.period_of_validity_start == date(2023, 3, 11)
+    assert plan.period_of_validity_end is None
 
     # TODO: rest of plan_regulation_groups
-    # TODO: periodOfValidity - not implemented yet
-    # TODO: approvalDate
     # TODO: planMaps
     # TODO: planAnnexes
     # TODO: otherPlanMaterials - not implemented yet

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
@@ -21,6 +22,7 @@ from ryhti_api_client import (
     PlanRegulation as RyhtiPlanRegulation,
     PlanRegulationGroup as RyhtiPlanRegulationGroup,
     RyhtiGeometry,
+    TimePeriodDateOnly as RyhtiTimePeriodDateOnly,
 )
 from shapely import (
     LineString,
@@ -275,6 +277,14 @@ class Deserializer:
             **value,
         )
 
+    def deserialize_date_period(
+        self, time_period: RyhtiTimePeriodDateOnly | None
+    ) -> tuple[date | None, date | None]:
+        """Deserializes a RyhtiTimePeriodDateOnly into start and end date."""
+        if time_period is None:
+            return None, None
+        return time_period.begin, time_period.end
+
     def deserialize_regulation(
         self, ryhti_regulation: RyhtiPlanRegulation
     ) -> PlanRegulation:
@@ -289,7 +299,7 @@ class Deserializer:
         "additionalInformations", ✅
         "relatedDocuments",
         "planThemes", ✅
-        "periodOfValidity",
+        "periodOfValidity", ✅
         "subjectIdentifiers", ✅
         "regulationNumber", ✅
         """
@@ -301,6 +311,10 @@ class Deserializer:
             )
         except (ValueError, TypeError):
             regulation_number = None
+
+        period_of_validity_start, period_of_validity_end = self.deserialize_date_period(
+            ryhti_regulation.period_of_validity
+        )
 
         return PlanRegulation(
             id=ryhti_regulation.plan_regulation_key,
@@ -322,6 +336,8 @@ class Deserializer:
                 self.get_code_instance_from_uri(type_)
                 for type_ in ryhti_regulation.verbal_regulations or []
             ],
+            period_of_validity_start=period_of_validity_start,
+            period_of_validity_end=period_of_validity_end,
             ordering=regulation_number,
             subject_identifiers=ryhti_regulation.subject_identifiers,
             **value,
@@ -338,9 +354,13 @@ class Deserializer:
         "lifeCycleStatus", ✅
         "relatedDocuments",
         "planThemes", ✅
-        "periodOfValidity",
+        "periodOfValidity", ✅
         "recommendationNumber", ✅
         """
+        period_of_validity_start, period_of_validity_end = self.deserialize_date_period(
+            ryhti_plan_recommendation.period_of_validity
+        )
+
         return PlanProposition(
             id=ryhti_plan_recommendation.plan_recommendation_key,
             lifecycle_status_id=self.get_code_id_from_uri(
@@ -354,6 +374,8 @@ class Deserializer:
             text_value=self.deserialize_language_string(
                 ryhti_plan_recommendation.value
             ),
+            period_of_validity_start=period_of_validity_start,
+            period_of_validity_end=period_of_validity_end,
         )
 
     def deserialize_plan_regulation_group(
@@ -456,7 +478,7 @@ class Deserializer:
         "verticalLimit", ✅
         "relatedPlanSourceDataKeys",
         "relatedPlanSourceDataUris",
-        "periodOfValidity",
+        "periodOfValidity", ✅
         "objectNumber", ✅
         "relatedPlanObjectKeys",
         """
@@ -469,6 +491,11 @@ class Deserializer:
             raise
 
         shape = self.convert_to_multi_geom(shape)
+
+        period_of_validity_start, period_of_validity_end = self.deserialize_date_period(
+            ryhti_plan_object.period_of_validity
+        )
+
         PlanObjectClass: (  # noqa: N806
             type[LandUseArea | OtherArea | Point | Line] | None
         ) = None
@@ -512,6 +539,8 @@ class Deserializer:
                 else None
             ),
             plan_regulation_groups=regulation_groups,
+            period_of_validity_start=period_of_validity_start,
+            period_of_validity_end=period_of_validity_end,
         )
         return plan_object
 
@@ -604,8 +633,8 @@ class Deserializer:
         "planReport", ✅ # TODO: planreportKey not saved
         "generalRegulationGroups", ✅
         "presentationAlignments",
-        "periodOfValidity",
         "approvalDate", ✅
+        "periodOfValidity", ✅
         "planners",
         "planObjects", ✅
         "planRegulationGroups", ✅
@@ -669,6 +698,10 @@ class Deserializer:
         documents.extend(plan_maps)
         documents.extend(plan_reports)
 
+        period_of_validity_start, period_of_validity_end = self.deserialize_date_period(
+            ryhti_plan.period_of_validity
+        )
+
         plan = Plan(
             id=UUID(ryhti_plan.plan_key),
             name={"fin": name},
@@ -695,6 +728,8 @@ class Deserializer:
             documents=documents,
             official_use_only=ryhti_plan.official_use_only,
             approval_date=ryhti_plan.approval_date,
+            period_of_validity_start=period_of_validity_start,
+            period_of_validity_end=period_of_validity_end,
         )
 
         plan.name = {"fin": name}

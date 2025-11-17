@@ -258,6 +258,14 @@ class DatabaseClient:
         """Returns the last period in the list, or None if the list is empty."""
         return periods[-1] if periods else None
 
+    def serialize_date_period(
+        self, date_start: datetime.date | None, date_end: datetime.date | None
+    ) -> Period:
+        return {
+            "begin": date_start.isoformat() if date_start else "",
+            "end": date_end.isoformat() if date_end else None,
+        }
+
     def get_plan_recommendation(
         self, plan_recommendation: models.PlanProposition
     ) -> dict:
@@ -272,11 +280,10 @@ class DatabaseClient:
                 plan_theme.uri for plan_theme in plan_recommendation.plan_themes
             ]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
-        # we should only have one valid period. If there are several, pick last
-        recommendation_dict["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(
-                plan_recommendation, self.valid_status_value, datetimes=False
-            )
+
+        recommendation_dict["periodOfValidity"] = self.serialize_date_period(
+            plan_recommendation.period_of_validity_start,
+            plan_recommendation.period_of_validity_end,
         )
         recommendation_dict["value"] = self.format_language_string_value(
             plan_recommendation.text_value
@@ -384,11 +391,10 @@ class DatabaseClient:
             ]
         regulation_dict["subjectIdentifiers"] = plan_regulation.subject_identifiers
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
-        # we should only have one valid period. If there are several, pick last
-        regulation_dict["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(
-                plan_regulation, self.valid_status_value, datetimes=False
-            )
+
+        regulation_dict["periodOfValidity"] = self.serialize_date_period(
+            plan_regulation.period_of_validity_start,
+            plan_regulation.period_of_validity_end,
         )
 
         if plan_regulation.types_of_verbal_plan_regulations:
@@ -453,11 +459,9 @@ class DatabaseClient:
             plan_object.description
         )
         plan_object_dict["objectNumber"] = plan_object.ordering
-        # we should only have one valid period. If there are several, pick last
-        plan_object_dict["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(
-                plan_object, self.valid_status_value, datetimes=False
-            )
+
+        plan_object_dict["periodOfValidity"] = self.serialize_date_period(
+            plan_object.period_of_validity_start, plan_object.period_of_validity_end
         )
         if plan_object.height_min or plan_object.height_max:
             plan_object_dict["verticalLimit"] = {
@@ -642,13 +646,12 @@ class DatabaseClient:
             self.get_plan_regulation_group_relations(plan_objects)
         )
 
-        # we should only have one valid period. If there are several, pick last
-        plan_dictionary["periodOfValidity"] = self.get_last_period(
-            self.get_lifecycle_periods(plan, self.valid_status_value, datetimes=False)
-        )
-
         if plan.approval_date:
             plan_dictionary["approvalDate"] = plan.approval_date.isoformat()
+
+        plan_dictionary["periodOfValidity"] = self.serialize_date_period(
+            plan.period_of_validity_start, plan.period_of_validity_end
+        )
 
         # Documents are divided into different categories. They may only be added
         # to plan *after* they have been uploaded.

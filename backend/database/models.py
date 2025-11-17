@@ -223,7 +223,14 @@ class PlanBase(VersionedBase):
         )
 
 
-class Plan(PlanBase):
+class PeriodOfValidityMixin:
+    """Mixin for period of validity fields."""
+
+    period_of_validity_start: Mapped[date | None]
+    period_of_validity_end: Mapped[date | None]
+
+
+class Plan(PlanBase, PeriodOfValidityMixin):
     """Maakuntakaava, compatible with Ryhti 2.0 specification"""
 
     __tablename__ = "plan"
@@ -297,7 +304,7 @@ class Plan(PlanBase):
     )
 
 
-class PlanObjectBase(PlanBase):
+class PlanObjectBase(PlanBase, PeriodOfValidityMixin):
     """All plan object tables have the same fields, apart from geometry."""
 
     __abstract__ = True
@@ -551,7 +558,7 @@ type_of_verbal_regulation_association = Table(
 )
 
 
-class PlanRegulation(PlanBase, AttributeValueMixin):
+class PlanRegulation(PlanBase, AttributeValueMixin, PeriodOfValidityMixin):
     """Kaavamääräys"""
 
     __tablename__ = "plan_regulation"
@@ -614,7 +621,7 @@ class PlanRegulation(PlanBase, AttributeValueMixin):
     subject_identifiers: Mapped[list[str] | None]
 
 
-class PlanProposition(PlanBase):
+class PlanProposition(PlanBase, PeriodOfValidityMixin):
     """Kaavasuositus"""
 
     __tablename__ = "plan_proposition"
