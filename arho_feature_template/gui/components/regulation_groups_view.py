@@ -44,11 +44,13 @@ FormClass, _ = uic.loadUiType(ui_path)
 class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
     def __init__(
         self,
+        tr,
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         plan_object: PlanObject | None = None,
     ):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -107,11 +109,11 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
             library_name = ""
             if plan_type == PlanType.REGIONAL:
-                library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
+                library_name = self.tr("Maakuntakaavan kaavamääräysryhmät (Katja)")
             elif plan_type == PlanType.GENERAL:
-                library_name = "Yleiskaavan kaavamääräysryhmät (Katja)"
+                library_name = self.tr("Yleiskaavan kaavamääräysryhmät (Katja)")
             elif plan_type == PlanType.TOWN:
-                library_name = "Asemakaavan kaavamääräysryhmät (Katja)"
+                library_name = self.tr("Asemakaavan kaavamääräysryhmät (Katja)")
             else:
                 return
 
@@ -144,8 +146,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         }
 
         if len(principal_intended_use_groups) > 1:
-            msg = "Kaavakohteella voi olla vain yksi kaavamääräysryhmä, jossa pääkäyttötarkoituksia."
-            QMessageBox.critical(self, "Virhe", msg)
+            msg = self.tr("Kaavakohteella voi olla vain yksi kaavamääräysryhmä, jossa pääkäyttötarkoituksia.")
+            QMessageBox.critical(self, self.tr("Virhe"), msg)
             return False
 
         return True
@@ -157,7 +159,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = RegulationGroupWidget(regulation_group, self.plan_object)
+        regulation_group_widget = RegulationGroupWidget(self.tr, regulation_group, self.plan_object)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         regulation_group_widget.update_matching_groups.connect(self.update_matching_groups)
@@ -176,7 +178,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
     def open_plan_regulation_group_form(self, regulation_group_widget: RegulationGroupWidget):
         group_as_form = PlanRegulationGroupForm(
-            regulation_group_widget.into_model(), self.active_plan_regulation_groups_library
+            self.tr, regulation_group_widget.into_model(), self.active_plan_regulation_groups_library
         )
         if group_as_form.exec_():
             regulation_group_widget.from_model(group_as_form.model)

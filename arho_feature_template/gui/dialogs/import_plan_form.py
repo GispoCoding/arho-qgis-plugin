@@ -27,8 +27,9 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
     widget_replace: QWidget
     widget_progress: QWidget
 
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, tr, parent: QWidget | None = None):
         super().__init__(parent)
+        self.tr = tr
 
         self.setupUi(self)
         self.setModal(True)
@@ -48,7 +49,7 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
 
         self.button_box_accept.button(QDialogButtonBox.Ok).setEnabled(False)
 
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self.tr)
         self.lambda_service.plan_imported.connect(self.plan_imported)
         self.lambda_service.plan_import_failed.connect(self.handle_import_failed)
 
@@ -94,5 +95,5 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
             self.adjustSize()
 
         else:
-            iface.messageBar().pushCritical("", f"Kaavasuunnitelman tuonti epäonnistui: {error_message}")
+            iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelman tuonti epäonnistui:") + f" {error_message}")
             self.reject()

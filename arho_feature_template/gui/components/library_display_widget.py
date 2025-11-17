@@ -58,6 +58,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def __init__(
         self,
+        tr,
         libraries: list[PlanFeatureLibrary | RegulationGroupLibrary],
         library_type_class: type[PlanFeatureLibrary | RegulationGroupLibrary],
         # regulation_group_libraries is needed to open PlanFeatureForm
@@ -65,6 +66,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
     ):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -185,7 +187,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
     def _on_reload_library_file_clicked(self):
         file_path = self.library_file_path.filePath()
         loaded_library = self.library_type_class.from_template_dict(
-            data=TemplateManager.read_library_config_file(file_path, self.library_type),
+            data=TemplateManager.read_library_config_file(file_path, self.library_type, self.tr),
             library_type=Library.LibraryType.CUSTOM,
             file_path=str(file_path),
         )
@@ -253,20 +255,20 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.library_selection.setCurrentIndex(self.library_selection.count() - 1)
 
     def _on_new_library_clicked(self):
-        library = self.library_type_class(f"Uusi kirjasto {len(self.new_libraries) + 1}")
+        library = self.library_type_class(self.tr("Uusi kirjasto") + f" {len(self.new_libraries) + 1}")
         self.new_libraries.append(library)
         self._add_library(library)
         self.library_name.clear()  # Keep the name field empty to make sure user types something themselves
 
     def _on_import_library_clicked(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Tuo kirjasto", "", "YAML files (*.yaml)")
+        file_path, _ = QFileDialog.getOpenFileName(self, self.tr("Tuo kirjasto"), "", "YAML files (*.yaml)")
         if file_path:
             # Ask user for confirmation if about to import a library with an existing/duplicate filepath
             if file_path in [library.file_path for library in self.get_current_libraries()]:
                 response = QMessageBox.question(
                     None,
-                    "Kirjaston tuominen",
-                    "Valitulle tiedostopolulle on jo määritetty kirjasto. Haluatko silti tuoda kirjaston?",
+                    self.tr("Kirjaston tuominen"),
+                    self.tr("Valitulle tiedostopolulle on jo määritetty kirjasto. Haluatko silti tuoda kirjaston?"),
                     QMessageBox.Yes | QMessageBox.No,
                 )
                 if response == QMessageBox.No:
@@ -274,7 +276,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
             # Attempt import
             library = self.library_type_class.from_template_dict(
-                data=TemplateManager.read_library_config_file(file_path, self.library_type),
+                data=TemplateManager.read_library_config_file(file_path, self.library_type, self.tr),
                 library_type=Library.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
@@ -283,8 +285,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             else:
                 QMessageBox.critical(
                     self,
-                    "Virhe",
-                    "Valitun tiedoston lukeminen kirjastoksi epäonnistui.",
+                    self.tr("Virhe"),
+                    self.tr("Valitun tiedoston lukeminen kirjastoksi epäonnistui."),
                 )
 
     def _on_delete_library_clicked(self):
@@ -298,8 +300,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
         response = QMessageBox.question(
             None,
-            "Kirjaston poisto",
-            "Haluatko varmasti poistaa kirjaston?",
+            self.tr("Kirjaston poisto"),
+            self.tr("Haluatko varmasti poistaa kirjaston?"),
             QMessageBox.Yes | QMessageBox.No,
         )
         if response == QMessageBox.Yes:
@@ -327,7 +329,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def _add_library_element_to_list(self, element: RegulationGroup | PlanObject):
         item = QListWidgetItem(str(element))
-        item.setToolTip(element.as_tooltip())
+        item.setToolTip(element.as_tooltip(self.tr))
         item.setData(DATA_ROLE, element)
         self.library_element_list.addItem(item)
 
@@ -362,8 +364,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if not self.active_library:
             return
 
-        form = PlanRegulationGroupForm(RegulationGroup(), None)
-        form.setWindowTitle("Luo kaavamääräysryhmäpohja")
+        form = PlanRegulationGroupForm(self.tr, RegulationGroup(), None)
+        form.setWindowTitle(self.tr("Luo kaavamääräysryhmäpohja"))
 
         # TODO: Let user select a category for their regulation group template?
         if form.exec_():
@@ -375,8 +377,9 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             return
 
         form = PlanObjectForm(
+            self.tr,
             plan_feature=PlanObject(layer_name=plan_feature_layer),
-            form_title=f"Luo kaavakohdepohja ({plan_feature_type})",
+            form_title=self.tr("Luo kaavakohdepohja") + f" ({plan_feature_type})",
             regulation_group_libraries=self.regulation_group_libraries,
             template_form=True,
         )
@@ -390,23 +393,23 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if len(selected_items) == 0:
             return
         if len(selected_items) > 1:
-            iface.messageBar().pushWarning("", "Valitse vain yksi pohja kerrallaan muokkaamista varten.")
+            iface.messageBar().pushWarning("", self.tr("Valitse vain yksi pohja kerrallaan muokkaamista varten."))
             return
 
         selected_item = selected_items[0]
         element = selected_item.data(DATA_ROLE)
 
         if self.library_type_class is PlanFeatureLibrary:
-            title = "Muokkaa kaavakohdepohjaa"
+            title = self.tr("Muokkaa kaavakohdepohjaa")
             # Find correct plan feature type for the plan feature template to be edited
             for plan_feature_type, plan_feature_layer in FEATURE_TYPE_TO_LAYER_NAME.items():
                 if plan_feature_layer == element.layer_name:
-                    title = f"Muokkaa kaavakohdepohjaa ({plan_feature_type})"
+                    title = self.tr("Muokkaa kaavakohdepohjaa") + f" ({plan_feature_type})"
                     break
             form = PlanObjectForm(element, title, self.regulation_group_libraries)
         elif self.library_type_class is RegulationGroupLibrary:
-            form = PlanRegulationGroupForm(element, None)
-            form.setWindowTitle("Muokkaa kaavamääräysryhmäpohjaa")
+            form = PlanRegulationGroupForm(self.tr, element, None)
+            form.setWindowTitle(self.tr("Muokkaa kaavamääräysryhmäpohjaa"))
         else:
             return
 
@@ -423,18 +426,18 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
         if self.library_type_class is PlanFeatureLibrary:
             if len(selected_items) == 1:
-                title = "Kaavakohdepohjan poisto"
-                text = "Haluatko varmasti poistaa kaavakohdepohjan?"
+                title = self.tr("Kaavakohdepohjan poisto")
+                text = self.tr("Haluatko varmasti poistaa kaavakohdepohjan?")
             else:
-                title = "Kaavakohdepohjien poisto"
-                text = "Haluatko varmasti poistaa kaavakohdepohjat?"
+                title = self.tr("Kaavakohdepohjien poisto")
+                text = self.tr("Haluatko varmasti poistaa kaavakohdepohjat?")
         elif self.library_type_class is RegulationGroupLibrary:
             if len(selected_items) == 1:
-                title = "Kaavamääräysryhmäpohjan poisto"
-                text = "Haluatko varmasti poistaa kaavamääräysryhmäpohjan?"
+                title = self.tr("Kaavamääräysryhmäpohjan poisto")
+                text = self.tr("Haluatko varmasti poistaa kaavamääräysryhmäpohjan?")
             else:
-                title = "Kaavamääräysryhmäpohjien poisto"
-                text = "Haluatko varmasti poistaa kaavamääräysryhmäpohjat?"
+                title = self.tr("Kaavamääräysryhmäpohjien poisto")
+                text = self.tr("Haluatko varmasti poistaa kaavamääräysryhmäpohjat?")
         else:
             return
 

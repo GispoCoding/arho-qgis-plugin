@@ -31,6 +31,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
     def __init__(
         self,
+        tr,
         plan_feature: PlanObject,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
@@ -38,6 +39,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         template_form: bool = False,  # noqa: FBT001, FBT002
     ):
         super().__init__()
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -49,7 +51,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
         # INIT
         self.regulation_groups_view = RegulationGroupsView(
-            regulation_group_libraries, active_plan_regulation_groups_library, plan_feature
+            self.tr, regulation_group_libraries, active_plan_regulation_groups_library, plan_feature
         )
         self.layout().insertWidget(1, self.regulation_groups_view)
 
@@ -76,8 +78,8 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         """Feature must have a name if we are saving a plan feature template."""
         # TODO: Find a better way to detect if we are saving a plan feature template
         if self.template_form and self.feature_name.text() == "":
-            msg = "Kaavakohdepohjalla täytyy olla nimi."
-            QMessageBox.critical(self, "Virhe", msg)
+            msg = self.tr("Kaavakohdepohjalla täytyy olla nimi.")
+            QMessageBox.critical(self, self.tr("Virhe"), msg)
             return False
         return True
 

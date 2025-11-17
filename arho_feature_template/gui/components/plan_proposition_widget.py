@@ -26,8 +26,9 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     changed = pyqtSignal()
 
-    def __init__(self, proposition: Proposition, parent=None):
+    def __init__(self, proposition: Proposition, tr, parent=None):
         super().__init__(parent)
+        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -46,8 +47,8 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.widgets: list[tuple[QLabel, QWidget]] = []
 
         add_field_menu = QMenu(self)
-        add_field_menu.addAction("Suositusnumero").triggered.connect(self._add_proposition_number)
-        add_field_menu.addAction("Kaavoitusteema").triggered.connect(self._add_theme)
+        add_field_menu.addAction(self.tr("Suositusnumero")).triggered.connect(self._add_proposition_number)
+        add_field_menu.addAction(self.tr("Kaavoitusteema")).triggered.connect(self._add_theme)
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
@@ -58,7 +59,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
         self.text_input = MultilineTextInputWidget(self.proposition.value)
-        self._add_widget(RequiredFieldLabel("Sisältö:"), self.text_input)
+        self._add_widget(RequiredFieldLabel(self.tr("Sisältö:")), self.text_input)
         if self.proposition.theme_ids not in [None, NULL]:
             for theme_id in self.proposition.theme_ids:
                 self._add_theme(theme_id)
@@ -88,13 +89,13 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
     def _add_proposition_number(self, default_value: int | None = None):
         if not self.proposition_number_widget:
             self.proposition_number_widget = IntegerInputWidget(default_value, None, True)
-            self._add_widget(QLabel("Suositusnumero"), self.proposition_number_widget)
+            self._add_widget(QLabel(self.tr("Suositusnumero")), self.proposition_number_widget)
 
     def _add_theme(self, theme_name: str):
         theme_widget = ThemeWidget(theme_name)
         self.theme_widgets.append(theme_widget)
         theme_widget.delete_signal.connect(self._delete_widget)
-        self._add_widget(QLabel("Kaavoitusteema:"), theme_widget)
+        self._add_widget(QLabel(self.tr("Kaavoitusteema:")), theme_widget)
 
     def _on_expand_hide_btn_clicked(self):
         if self.expanded:

@@ -59,8 +59,9 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
 
     # ID_COLUMN = 4
 
-    def __init__(self, parent, connection_names: list[str]):
+    def __init__(self, parent, tr, connection_names: list[str]):
         super().__init__(parent)
+        tr = self.tr
         self.setupUi(self)
 
         self._selected_plan_matter_id = None
@@ -81,7 +82,7 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(4)
-        self.model.setHorizontalHeaderLabels(["Nimi", "Kaava tyyppi", "Tuottajan kaavatunnus", "Pysyvä kaavatunnus"])
+        self.model.setHorizontalHeaderLabels([self.tr("Nimi"), self.tr("Kaava tyyppi"), self.tr("Tuottajan kaavatunnus"), self.tr("Pysyvä kaavatunnus")])
 
         self.filterProxyModel = PlanMatterFilterProxyModel(self.model)
 
@@ -156,7 +157,7 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
                         ON pm.plan_type_id = pt.id;
             """)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Virhe", f"Kaava-asioiden lataus epäonnistui: {e}")
+            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Kaava-asioiden lataus epäonnistui:") + f" {e}")
             self.clear_table()
 
         return plan_matters
