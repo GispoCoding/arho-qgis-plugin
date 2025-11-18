@@ -647,9 +647,8 @@ class DatabaseClient:
             self.get_lifecycle_periods(plan, self.valid_status_value, datetimes=False)
         )
 
-        plan_dictionary["approvalDate"] = (
-            plan.approval_date.isoformat() if plan.approval_date else None
-        )
+        if plan.approval_date:
+            plan_dictionary["approvalDate"] = plan.approval_date.isoformat()
 
         # Documents are divided into different categories. They may only be added
         # to plan *after* they have been uploaded.
