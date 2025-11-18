@@ -259,10 +259,10 @@ class DatabaseClient:
         return periods[-1] if periods else None
 
     def serialize_date_period(
-        self, date_start: datetime.date | None, date_end: datetime.date | None
+        self, date_start: datetime.date, date_end: datetime.date | None
     ) -> Period:
         return {
-            "begin": date_start.isoformat() if date_start else "",
+            "begin": date_start.isoformat(),
             "end": date_end.isoformat() if date_end else None,
         }
 
@@ -281,10 +281,11 @@ class DatabaseClient:
             ]
         recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
 
-        recommendation_dict["periodOfValidity"] = self.serialize_date_period(
-            plan_recommendation.period_of_validity_start,
-            plan_recommendation.period_of_validity_end,
-        )
+        if plan_recommendation.period_of_validity_start:
+            recommendation_dict["periodOfValidity"] = self.serialize_date_period(
+                plan_recommendation.period_of_validity_start,
+                plan_recommendation.period_of_validity_end,
+            )
         recommendation_dict["value"] = self.format_language_string_value(
             plan_recommendation.text_value
         )
@@ -392,10 +393,11 @@ class DatabaseClient:
         regulation_dict["subjectIdentifiers"] = plan_regulation.subject_identifiers
         regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
 
-        regulation_dict["periodOfValidity"] = self.serialize_date_period(
-            plan_regulation.period_of_validity_start,
-            plan_regulation.period_of_validity_end,
-        )
+        if plan_regulation.period_of_validity_start:
+            regulation_dict["periodOfValidity"] = self.serialize_date_period(
+                plan_regulation.period_of_validity_start,
+                plan_regulation.period_of_validity_end,
+            )
 
         if plan_regulation.types_of_verbal_plan_regulations:
             regulation_dict["verbalRegulations"] = [
@@ -460,9 +462,10 @@ class DatabaseClient:
         )
         plan_object_dict["objectNumber"] = plan_object.ordering
 
-        plan_object_dict["periodOfValidity"] = self.serialize_date_period(
-            plan_object.period_of_validity_start, plan_object.period_of_validity_end
-        )
+        if plan_object.period_of_validity_start:
+            plan_object_dict["periodOfValidity"] = self.serialize_date_period(
+                plan_object.period_of_validity_start, plan_object.period_of_validity_end
+            )
         if plan_object.height_min or plan_object.height_max:
             plan_object_dict["verticalLimit"] = {
                 "dataType": "DecimalRange",
@@ -649,9 +652,10 @@ class DatabaseClient:
         if plan.approval_date:
             plan_dictionary["approvalDate"] = plan.approval_date.isoformat()
 
-        plan_dictionary["periodOfValidity"] = self.serialize_date_period(
-            plan.period_of_validity_start, plan.period_of_validity_end
-        )
+        if plan.period_of_validity_start:
+            plan_dictionary["periodOfValidity"] = self.serialize_date_period(
+                plan.period_of_validity_start, plan.period_of_validity_end
+            )
 
         # Documents are divided into different categories. They may only be added
         # to plan *after* they have been uploaded.
