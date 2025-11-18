@@ -19,6 +19,7 @@ from arho_feature_template.project.layers.plan_layers import (
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
+    from qgis.core import QgsFeature
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QWidget
 
@@ -158,14 +159,21 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         # Clear table
         self.model.setRowCount(0)
 
-        for group in regulation_group_library.regulation_groups:
-            self.model.appendRow(self._regulation_group_into_items(group))
+        # Get regulation group associations only once
+        associations = list(RegulationGroupAssociationLayer.get_features())
 
-    def _regulation_group_into_items(self, group: RegulationGroup) -> list[QStandardItem]:
+        for group in regulation_group_library.regulation_groups:
+            self.model.appendRow(self._regulation_group_into_items(group, associations))
+
+    def _regulation_group_into_items(
+        self, group: RegulationGroup, associations: list[QgsFeature]
+    ) -> list[QStandardItem]:
         if group.id_ is None:
             return []
 
-        associated_plan_object_ids = RegulationGroupAssociationLayer.get_associated_plan_object_ids(group.id_)
+        associated_plan_object_ids = RegulationGroupAssociationLayer.get_associated_plan_object_ids(
+            group.id_, associations
+        )
         # Create items
         items = [
             QStandardItem(str(group.group_number) if group.group_number else ""),
