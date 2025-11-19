@@ -340,7 +340,6 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def _on_save_plan_object_to_library(self, plan_feature_model: PlanObject, library: PlanFeatureLibrary):
         TemplateManager.save_plan_object_to_library(plan_feature_model, library)
-        self.plan_manager_ref.initialize_libraries()
 
     def _on_feats_added(self, layer_id: str, added_features: Iterable[QgsFeature]):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
