@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from collections import defaultdict
+from copy import deepcopy
 from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator, cast
@@ -490,34 +491,34 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
 
     @classmethod
-    def get_associated_plan_object_ids(
-        cls, group_id: str, associations: list[QgsFeature] | None = None
-    ) -> dict[str, list[str]]:
-        """Returns plan object IDs for each plan object layer linked to given regulation group.
+    def get_plan_object_ids_by_regulation_group(cls, associations: list[QgsFeature]) -> dict[str, dict[str, list[str]]]:
+        """Returns plan object IDs for each plan object layer linked to each regulation group.
 
-        If associations are given as parameter, only those are considered and associations are not
-        queried from DB.
+        Only given associations are considered and associations are not queried from DB.
         """
+        plan_object_ids_by_group: dict[str, dict[str, list[str]]] = {}
+
         # key is layer name, value is list of plan object IDs of that layer
-        plan_object_ids: dict[str, list[str]] = {
+        _base_map: dict[str, list[str]] = {
             layer_name: [] for layer_name in cls.layer_name_to_attribute_map if layer_name != PlanLayer.name
         }
-        if associations is None:
-            associations = cls.get_associations_for_regulation_group(group_id) or []  # type: ignore
-        if associations:
-            for association in associations:
-                if association["plan_regulation_group_id"] != group_id:
+        for association in associations:
+            group_id = association["plan_regulation_group_id"]
+
+            # Initialize layer name to ids map for group
+            if group_id not in plan_object_ids_by_group:
+                plan_object_ids_by_group[group_id] = deepcopy(_base_map)
+
+            for layer_name, attribute_name in cls.layer_name_to_attribute_map.items():
+                if layer_name == PlanLayer.name:
+                    continue
+                id_ = association[attribute_name]
+                if id_ is not None and id_ != NULL:
+                    # Save plan object ID to map
+                    plan_object_ids_by_group[group_id][layer_name].append(id_)
                     continue
 
-                for layer_name, attribute_name in cls.layer_name_to_attribute_map.items():
-                    if layer_name == PlanLayer.name:
-                        continue
-                    id_ = association[attribute_name]
-                    if id_ is not None and id_ != NULL:
-                        plan_object_ids[layer_name].append(id_)
-                        continue
-
-        return plan_object_ids
+        return plan_object_ids_by_group
 
     @classmethod
     def get_associations_for_regulation_group_exclude_feature(
