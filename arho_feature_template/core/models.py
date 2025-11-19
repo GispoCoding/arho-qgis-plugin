@@ -112,6 +112,12 @@ class PlanFeatureLibrary(Library):
             "plan_features": [plan_feature.into_template_dict() for plan_feature in self.plan_features],
         }
 
+    def into_hash_map(self) -> defaultdict[int, list]:
+        plan_object_hash_map: defaultdict[int, list] = defaultdict(list)
+        for plan_object in self.plan_features:
+            plan_object_hash_map[plan_object.data_hash()].append(plan_object)
+        return plan_object_hash_map
+
 
 @dataclass
 class RegulationGroupLibrary(Library):

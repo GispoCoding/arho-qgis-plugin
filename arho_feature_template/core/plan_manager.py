@@ -587,6 +587,7 @@ class PlanManager(QObject):
             plan_feature,
             title if title else "",
             self.regulation_group_libraries,
+            self,
             self.active_plan_regulation_group_library,
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
@@ -598,7 +599,7 @@ class PlanManager(QObject):
 
         title = plan_feature.name if plan_feature.name else layer_name
         attribute_form = PlanObjectForm(
-            plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
+            plan_feature, title, self.regulation_group_libraries, self, self.active_plan_regulation_group_library
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
