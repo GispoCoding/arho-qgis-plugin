@@ -4,22 +4,17 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import (
-    QDialog,
-    QDialogButtonBox,
-    QLineEdit,
-    QMessageBox,
-    QTextEdit,
-)
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QMenu, QMessageBox, QPushButton, QTextEdit
 
 from arho_feature_template.core.models import PlanObject
+from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
 from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
 )
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import RegulationGroupLibrary
+    from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_feature_form.ui"
@@ -34,6 +29,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         plan_feature: PlanObject,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
+        plan_feature_libraries: list[PlanFeatureLibrary] | None = None,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         template_form: bool = False,  # noqa: FBT001, FBT002
     ):
@@ -45,6 +41,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.feature_description: QTextEdit
         self.feature_type_of_underground: CodeComboBox
 
+        self.save_to_library_button: QPushButton
         self.button_box: QDialogButtonBox
 
         # INIT
@@ -70,7 +67,24 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         for regulation_group in plan_feature.regulation_groups:
             self.regulation_groups_view.add_plan_regulation_group(regulation_group)
 
+        self.plan_feature_libraries = plan_feature_libraries
+        self._init_save_to_library_button()
+
         self.button_box.accepted.connect(self._on_ok_clicked)
+
+    def _init_save_to_library_button(self) -> None:
+        if self.plan_feature_libraries:
+            self.plan_object_menu = QMenu()
+            plan_object_libraries = self.plan_feature_libraries
+            if not plan_object_libraries:
+                self.save_to_library_button.setEnabled(False)
+            else:
+                for library in plan_object_libraries:
+                    self.plan_object_menu.addAction(
+                        library.name,
+                        lambda library=library: TemplateManager.save_plan_object_to_library(self.into_model(), library),
+                    )
+                self.save_to_library_button.setMenu(self.plan_object_menu)
 
     def _check_feature_name(self) -> bool:
         """Feature must have a name if we are saving a plan feature template."""
