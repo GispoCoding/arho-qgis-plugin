@@ -3,7 +3,7 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING, Generator
 
-from qgis.core import Qgis, QgsApplication, QgsGeometry
+from qgis.core import Qgis, QgsApplication, QgsFeature, QgsFeatureRequest, QgsGeometry
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QModelIndex, QPoint, QRegularExpression, QSortFilterProxyModel, Qt, pyqtSignal
@@ -158,19 +158,33 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         # Clear table
         self.model.setRowCount(0)
 
+        if len(regulation_group_library.regulation_groups) == 0:
+            return
+
         # Get regulation group associations only once
-        plan_objects_by_group_id: dict[str, dict[str, list[str]]] = (
+        plan_object_ids_by_group_id: dict[str, dict[str, list[str]]] = (
             RegulationGroupAssociationLayer.get_plan_object_ids_by_regulation_group(
                 associations=list(RegulationGroupAssociationLayer.get_features())
             )
         )
 
+        # Get plan objects for each layer only once
+        plan_objects_by_layer: dict[str, list[QgsFeature]] = {}
+        for plan_object_layer in plan_feature_layers:
+            layer = plan_object_layer.get_from_project()
+            request = QgsFeatureRequest()
+            request.setSubsetOfAttributes(["id"], layer.fields())
+            plan_objects_by_layer[plan_object_layer.name] = list(layer.getFeatures(request))
+
         for group in regulation_group_library.regulation_groups:
-            plan_object_ids_map = plan_objects_by_group_id.get(group.id_)  # type: ignore
-            self.model.appendRow(self._regulation_group_into_items(group, plan_object_ids_map))
+            plan_object_ids_map = plan_object_ids_by_group_id.get(group.id_)  # type: ignore
+            self.model.appendRow(self._regulation_group_into_items(group, plan_object_ids_map, plan_objects_by_layer))
 
     def _regulation_group_into_items(
-        self, group: RegulationGroup, plan_object_ids_map: dict[str, list[str]] | None
+        self,
+        group: RegulationGroup,
+        plan_object_ids_map: dict[str, list[str]] | None,
+        plan_objects_by_layer: dict[str, list[QgsFeature]],
     ) -> list[QStandardItem]:
         if group.id_ is None:
             return []
@@ -188,12 +202,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         for item in items:
             item.setToolTip(tooltip_text)
 
-        # Save FIDS of associated plan objects
+        # Save FIDS and geometries of associated plan objects
         associated_plan_object_fids_and_geoms: dict[str, list[tuple[int, QgsGeometry]]] = {}
         if plan_object_ids_map:
             for layer_name, ids in plan_object_ids_map.items():
-                layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
-                fids_and_geoms = layer_class.get_fids_and_geometries_by_ids(set(ids))
+                fids_and_geoms: list[tuple[int, QgsGeometry]] = [
+                    (feat.id(), feat.geometry()) for feat in plan_objects_by_layer[layer_name] if feat["id"] in ids
+                ]
                 associated_plan_object_fids_and_geoms[layer_name] = fids_and_geoms
 
         # Set data
