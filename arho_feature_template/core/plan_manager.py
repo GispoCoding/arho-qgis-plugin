@@ -52,6 +52,7 @@ from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMat
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.dialogs.serialize_plan_matter import SerializePlanMatter
+from arho_feature_template.gui.dialogs.template_selection_form import TemplateSelectionForm
 from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
 from arho_feature_template.gui.docks.plan_features_dock import PlanObjectsDock
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
@@ -155,7 +156,13 @@ class PlanManager(QObject):
 
         # Initialize regulation groups dock
         self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
-        self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
+        # self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
+        self.regulation_groups_dock.request_new_regulation_group_empty.connect(
+            lambda: self.create_new_regulation_group(from_template=False)
+        )
+        self.regulation_groups_dock.request_new_regulation_group_template.connect(
+            lambda: self.create_new_regulation_group(from_template=True)
+        )
         self.regulation_groups_dock.request_edit_regulation_group.connect(self.edit_regulation_group)
         self.regulation_groups_dock.request_delete_regulation_groups.connect(self.delete_regulation_groups)
         self.regulation_groups_dock.request_remove_all_regulation_groups.connect(
@@ -301,8 +308,16 @@ class PlanManager(QObject):
         self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
         self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
 
-    def create_new_regulation_group(self):
-        self._open_regulation_group_form(RegulationGroup())
+    def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
+        if from_template:
+            regulation_group_template_selection_form = TemplateSelectionForm(
+                libraries=[*self.regulation_group_libraries, self.active_plan_regulation_group_library]
+            )
+            if regulation_group_template_selection_form.exec():
+                model = regulation_group_template_selection_form.selected_template
+                self._open_regulation_group_form(model)  # type: ignore
+        else:
+            self._open_regulation_group_form(RegulationGroup())
 
     def edit_regulation_group(self, regulation_group: RegulationGroup):
         self._open_regulation_group_form(regulation_group)

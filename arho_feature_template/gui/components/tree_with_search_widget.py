@@ -12,6 +12,9 @@ from arho_feature_template.utils.misc_utils import deserialize_localized_text
 class TreeWithSearchWidget(QWidget):
     """A widget combining a QTreeWidget and QgsFilterLineEdit."""
 
+    DATA_COLUMN = 0
+    DATA_ROLE = Qt.UserRole
+
     def __init__(self):
         super().__init__()
         self.search = QgsFilterLineEdit(self)
@@ -22,6 +25,7 @@ class TreeWithSearchWidget(QWidget):
 
         self.tree = QTreeWidget(self)
         self.tree.setHeaderHidden(True)
+        self.tree.setSelectionMode(QTreeWidget.SelectionMode.SingleSelection)
         self.tree.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
 
         layout = QVBoxLayout()
@@ -39,10 +43,12 @@ class TreeWithSearchWidget(QWidget):
         if text:
             if isinstance(text, dict):
                 text = deserialize_localized_text(text)
-            item.setText(0, text)
-            item.setToolTip(0, text)  # Set text as tooltip in case the tree width is not enough to show item text
+            item.setText(self.DATA_COLUMN, text)
+            item.setToolTip(
+                self.DATA_COLUMN, text
+            )  # Set text as tooltip in case the tree width is not enough to show item text
         if data:
-            item.setData(0, Qt.UserRole, data)
+            item.setData(self.DATA_COLUMN, self.DATA_ROLE, data)
         if not parent:
             self.tree.addTopLevelItem(item)
 
@@ -56,7 +62,7 @@ class TreeWithSearchWidget(QWidget):
             group_item = self.tree.topLevelItem(i)
             group_item.setHidden(True)  # Initially hide the top-level item
 
-            matches_group = search_text in group_item.text(0).lower()
+            matches_group = search_text in group_item.text(self.DATA_COLUMN).lower()
             if matches_group:
                 # If group matches, show it and all its children
                 self.show_all_children(group_item)
@@ -72,7 +78,7 @@ class TreeWithSearchWidget(QWidget):
         """Recursively filter children and return True if any child matches."""
         parent_matches = False
         if parent_item.parent() is not None:
-            parent_matches = search_text in parent_item.text(0).lower()
+            parent_matches = search_text in parent_item.text(self.DATA_COLUMN).lower()
         descendant_matches = False
 
         for i in range(parent_item.childCount()):
@@ -95,3 +101,10 @@ class TreeWithSearchWidget(QWidget):
             child.setExpanded(True)
             if child.childCount() > 0:
                 self.show_all_children(child)
+
+    def get_selected_item(self) -> QTreeWidgetItem | None:
+        selected = self.tree.selectedItems()
+        return selected[0] if len(selected) != 0 else None
+
+    def get_item_data(self, item: QTreeWidgetItem) -> Any:
+        return item.data(self.DATA_COLUMN, self.DATA_ROLE)
