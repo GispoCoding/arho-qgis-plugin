@@ -19,7 +19,6 @@ from arho_feature_template.project.layers.plan_layers import (
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QWidget
 
@@ -160,26 +159,28 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.model.setRowCount(0)
 
         # Get regulation group associations only once
-        associations = list(RegulationGroupAssociationLayer.get_features())
+        plan_objects_by_group_id: dict[str, dict[str, list[str]]] = (
+            RegulationGroupAssociationLayer.get_plan_object_ids_by_regulation_group(
+                associations=list(RegulationGroupAssociationLayer.get_features())
+            )
+        )
 
         for group in regulation_group_library.regulation_groups:
-            self.model.appendRow(self._regulation_group_into_items(group, associations))
+            plan_object_ids_map = plan_objects_by_group_id.get(group.id_)  # type: ignore
+            self.model.appendRow(self._regulation_group_into_items(group, plan_object_ids_map))
 
     def _regulation_group_into_items(
-        self, group: RegulationGroup, associations: list[QgsFeature]
+        self, group: RegulationGroup, plan_object_ids_map: dict[str, list[str]] | None
     ) -> list[QStandardItem]:
         if group.id_ is None:
             return []
 
-        associated_plan_object_ids = RegulationGroupAssociationLayer.get_associated_plan_object_ids(
-            group.id_, associations
-        )
         # Create items
         items = [
             QStandardItem(str(group.group_number) if group.group_number else ""),
             QStandardItem(group.letter_code or ""),
             QStandardItem(group.heading or ""),
-            QStandardItem(str(sum(len(v) for v in associated_plan_object_ids.values()))),
+            QStandardItem(str(sum(len(v) for v in plan_object_ids_map.values()) if plan_object_ids_map else 0)),
         ]
 
         # Set tooltips
@@ -189,10 +190,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         # Save FIDS of associated plan objects
         associated_plan_object_fids_and_geoms: dict[str, list[tuple[int, QgsGeometry]]] = {}
-        for layer_name, ids in associated_plan_object_ids.items():
-            layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
-            fids_and_geoms = layer_class.get_fids_and_geometries_by_ids(set(ids))
-            associated_plan_object_fids_and_geoms[layer_name] = fids_and_geoms
+        if plan_object_ids_map:
+            for layer_name, ids in plan_object_ids_map.items():
+                layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
+                fids_and_geoms = layer_class.get_fids_and_geometries_by_ids(set(ids))
+                associated_plan_object_fids_and_geoms[layer_name] = fids_and_geoms
 
         # Set data
         items[DATA_COLUMN].setData((group, associated_plan_object_fids_and_geoms), DATA_ROLE)
