@@ -23,7 +23,10 @@ DockClass, _ = uic.loadUiType(ui_path)
 
 
 class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
-    request_new_regulation_group = pyqtSignal()
+    # request_new_regulation_group = pyqtSignal()
+    request_new_regulation_group_empty = pyqtSignal()
+    request_new_regulation_group_template = pyqtSignal()
+
     request_edit_regulation_group = pyqtSignal(RegulationGroup)
     request_delete_regulation_groups = pyqtSignal(object)  # Type: list[RegulationGroup]
     request_remove_all_regulation_groups = pyqtSignal(object)  # Type: list[tuple[str, Generator[str]]]
@@ -56,16 +59,24 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.regulation_group_list.setSelectionMode(self.regulation_group_list.ExtendedSelection)
         self.search_box.valueChanged.connect(self.filter_regulation_groups)
 
-        menu = QMenu()
-        self.add_selected_action = menu.addAction("Lisää valitut ryhmät valituille kohteille")
-        self.remove_all_action = menu.addAction("Poista kaikki ryhmät valituilta kohteilta")
-        self.remove_selected_action = menu.addAction("Poista valitut ryhmät valituilta kohteilta")
-        self.modify_selected_features_btn.setMenu(menu)
+        new_regulation_group_menu = QMenu()
+        self.new_group_empty_action = new_regulation_group_menu.addAction("Tyhjä")
+        self.new_group_from_template_action = new_regulation_group_menu.addAction("Pohjasta")
+        new_regulation_group_menu.addActions([self.new_group_empty_action, self.new_group_from_template_action])
+        self.new_btn.setMenu(new_regulation_group_menu)
+
+        plan_object_actions_menu = QMenu()
+        self.add_selected_action = plan_object_actions_menu.addAction("Lisää valitut ryhmät valituille kohteille")
+        self.remove_all_action = plan_object_actions_menu.addAction("Poista kaikki ryhmät valituilta kohteilta")
+        self.remove_selected_action = plan_object_actions_menu.addAction("Poista valitut ryhmät valituilta kohteilta")
+        self.modify_selected_features_btn.setMenu(plan_object_actions_menu)
 
         self._connect_signals()
 
     def _disconnect_signals(self):
-        disconnect_signal(self.new_btn.clicked)
+        disconnect_signal(self.new_group_empty_action.triggered)
+        disconnect_signal(self.new_group_from_template_action.triggered)
+        # disconnect_signal(self.new_btn.clicked)
         disconnect_signal(self.edit_btn.clicked)
         disconnect_signal(self.delete_btn.clicked)
         disconnect_signal(self.remove_all_action.triggered)
@@ -75,7 +86,9 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def _connect_signals(self):
         self._disconnect_signals()
 
-        self.new_btn.clicked.connect(self.request_new_regulation_group.emit)
+        self.new_group_empty_action.triggered.connect(self.request_new_regulation_group_empty.emit)
+        self.new_group_from_template_action.triggered.connect(self.request_new_regulation_group_template.emit)
+        # self.new_btn.clicked.connect(self.request_new_regulation_group.emit)
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
         self.delete_btn.clicked.connect(self.on_delete_btn_clicked)
         self.remove_all_action.triggered.connect(self.on_remove_all_btn_clicked)
@@ -145,7 +158,8 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def unload(self):
         self._disconnect_signals()
 
-        disconnect_signal(self.request_new_regulation_group)
+        disconnect_signal(self.request_new_regulation_group_empty)
+        disconnect_signal(self.request_new_regulation_group_template)
         disconnect_signal(self.request_edit_regulation_group)
         disconnect_signal(self.request_delete_regulation_groups)
         disconnect_signal(self.request_remove_all_regulation_groups)
