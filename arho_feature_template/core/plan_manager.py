@@ -334,12 +334,10 @@ class PlanManager(QObject):
             # Rewrite all new and remaining library config files and reinitialize libraries
             for library in updated_regulation_group_libraries:
                 TemplateManager.write_regulation_group_template_file(
-                    library.into_template_dict(), Path(library.file_path), overwrite=True
+                    library.into_template_dict(), Path(library.file_path)
                 )
             for library in updated_plan_feature_libraries:
-                TemplateManager.write_plan_feature_template_file(
-                    library.into_template_dict(), Path(library.file_path), overwrite=True
-                )
+                TemplateManager.write_plan_feature_template_file(library.into_template_dict(), Path(library.file_path))
         set_user_regulation_group_library_config_files(
             library.file_path for library in updated_regulation_group_libraries
         )
@@ -601,6 +599,7 @@ class PlanManager(QObject):
             plan_feature,
             title if title else "",
             self.regulation_group_libraries,
+            self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
@@ -612,7 +611,11 @@ class PlanManager(QObject):
 
         title = plan_feature.name if plan_feature.name else layer_name
         attribute_form = PlanObjectForm(
-            plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
+            plan_feature,
+            title,
+            self.regulation_group_libraries,
+            self.plan_feature_libraries,
+            self.active_plan_regulation_group_library,
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()

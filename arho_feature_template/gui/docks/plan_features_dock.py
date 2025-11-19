@@ -20,6 +20,7 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QMenu, QPushButton, QTableView
 
 from arho_feature_template.core.feature_editing import save_plan_feature
+from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.project.layers.plan_layers import (
@@ -38,7 +39,7 @@ ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import PlanObject
+    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
     from arho_feature_template.core.plan_manager import PlanManager
 
 DATA_COLUMN = 0
@@ -269,6 +270,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         form = PlanObjectForm(
             plan_feature=plan_feature_model,
             form_title=plan_feature_model.name or plan_feature_model.layer_name or "",
+            plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
             regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
             active_plan_regulation_groups_library=self.plan_manager_ref.active_plan_regulation_group_library,
         )
@@ -305,6 +307,17 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             "Väläytä kohdetta",
             lambda: self._on_highlight_feature(plan_feature_model),
         )
+        plan_object_library_menu = QMenu("Tallenna kaavakohdepohjakirjastoon")
+        menu.addMenu(plan_object_library_menu)
+        plan_object_libraries = self.plan_manager_ref.plan_feature_libraries
+        if not plan_object_libraries:
+            plan_object_library_menu.setEnabled(False)
+        else:
+            for library in plan_object_libraries:
+                plan_object_library_menu.addAction(
+                    library.name,
+                    lambda library=library: self._on_save_plan_object_to_library(plan_feature_model, library),
+                )
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
     def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
@@ -324,6 +337,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def _on_highlight_feature(self, plan_feature_model: PlanObject):
         iface.mapCanvas().flashGeometries(geometries=[plan_feature_model.geom])
         iface.mapCanvas().redrawAllLayers()
+
+    def _on_save_plan_object_to_library(self, plan_feature_model: PlanObject, library: PlanFeatureLibrary):
+        TemplateManager.save_plan_object_to_library(plan_feature_model, library)
 
     def _on_feats_added(self, layer_id: str, added_features: Iterable[QgsFeature]):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)

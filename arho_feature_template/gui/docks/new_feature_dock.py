@@ -8,6 +8,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem
 
+from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.gui.components.new_feature_grid_widget import NewFeatureGridWidget
 
 if TYPE_CHECKING:
@@ -50,6 +51,8 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         # NOTE: If user moves selection with arrow keys, this is not registered currently
         self.template_list.clicked.connect(self.on_template_item_clicked)
         self.new_feature_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
+
+        TemplateManager.signal_manager.feature_object_added_to_library.connect(self.update_template_list)
 
     def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanFeatureLibrary]):
         self.plan_feature_libraries = plan_feature_libraries
@@ -107,9 +110,17 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.template_list.clearSelection()
 
     def set_active_plan_feature_library(self, index: int) -> None:
+        self.update_template_list(index)
+
+    def update_template_list(self, index: int | None = None) -> None:
         if self.plan_feature_libraries and len(self.plan_feature_libraries) > 0:
             self.template_list.clear()
-            library = self.plan_feature_libraries[index]
+            library = (
+                self.plan_feature_libraries[index]
+                if index
+                else self.plan_feature_libraries[self.library_selection.currentIndex()]
+            )
+
             for feature_template in library.plan_features:
                 item = QListWidgetItem(feature_template.name)
                 item.setData(Qt.UserRole, feature_template)
