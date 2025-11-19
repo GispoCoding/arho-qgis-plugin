@@ -14,8 +14,7 @@ from arho_feature_template.project.layers.code_layers import (
 )
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import RegulationGroupLibrary
-    from arho_feature_template.core.plan_manager import PlanManager
+    from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "plan_feature_form.ui"
@@ -30,7 +29,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         plan_feature: PlanObject,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
-        plan_manager_ref: PlanManager | None = None,
+        plan_feature_libraries: list[PlanFeatureLibrary] | None = None,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         template_form: bool = False,  # noqa: FBT001, FBT002
     ):
@@ -68,15 +67,15 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         for regulation_group in plan_feature.regulation_groups:
             self.regulation_groups_view.add_plan_regulation_group(regulation_group)
 
-        self.plan_manager_ref = plan_manager_ref
+        self.plan_feature_libraries = plan_feature_libraries
         self._init_save_to_library_button()
 
         self.button_box.accepted.connect(self._on_ok_clicked)
 
     def _init_save_to_library_button(self) -> None:
-        if self.plan_manager_ref:
+        if self.plan_feature_libraries:
             self.plan_object_menu = QMenu()
-            plan_object_libraries = self.plan_manager_ref.plan_feature_libraries
+            plan_object_libraries = self.plan_feature_libraries
             if not plan_object_libraries:
                 self.save_to_library_button.setEnabled(False)
             else:

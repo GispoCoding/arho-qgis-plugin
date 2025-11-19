@@ -270,7 +270,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         form = PlanObjectForm(
             plan_feature=plan_feature_model,
             form_title=plan_feature_model.name or plan_feature_model.layer_name or "",
-            plan_manager_ref=self.plan_manager_ref,
+            plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
             regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
             active_plan_regulation_groups_library=self.plan_manager_ref.active_plan_regulation_group_library,
         )
