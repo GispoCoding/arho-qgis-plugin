@@ -168,6 +168,14 @@ class PlanTypeLayer(AbstractCodeLayer):
         return cls.get_plan_type(_id) == PlanType.TOWN
 
 
+class MunicipalityLayer(AbstractCodeLayer):
+    name = "Kunta"
+
+
+class RegionLayer(AbstractCodeLayer):
+    name = "Maakunta"
+
+
 class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
 
