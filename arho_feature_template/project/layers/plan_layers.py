@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from collections import defaultdict
-from copy import deepcopy
 from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator, cast
@@ -489,18 +488,9 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
 
         Only given associations are considered and associations are not queried from DB.
         """
-        plan_object_ids_by_group: dict[str, dict[str, list[str]]] = {}
-
-        # key is layer name, value is list of plan object IDs of that layer
-        _base_map: dict[str, list[str]] = {
-            layer_name: [] for layer_name in cls.layer_name_to_attribute_map if layer_name != PlanLayer.name
-        }
+        plan_object_ids_by_group: dict[str, dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
         for association in associations:
             group_id = association["plan_regulation_group_id"]
-
-            # Initialize layer name to ids map for group
-            if group_id not in plan_object_ids_by_group:
-                plan_object_ids_by_group[group_id] = deepcopy(_base_map)
 
             for layer_name, attribute_name in cls.layer_name_to_attribute_map.items():
                 if layer_name == PlanLayer.name:
