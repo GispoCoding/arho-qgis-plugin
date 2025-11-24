@@ -23,7 +23,6 @@ DockClass, _ = uic.loadUiType(ui_path)
 
 
 class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
-    # request_new_regulation_group = pyqtSignal()
     request_new_regulation_group_empty = pyqtSignal()
     request_new_regulation_group_template = pyqtSignal()
 
@@ -76,7 +75,6 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def _disconnect_signals(self):
         disconnect_signal(self.new_group_empty_action.triggered)
         disconnect_signal(self.new_group_from_template_action.triggered)
-        # disconnect_signal(self.new_btn.clicked)
         disconnect_signal(self.edit_btn.clicked)
         disconnect_signal(self.delete_btn.clicked)
         disconnect_signal(self.remove_all_action.triggered)
@@ -88,7 +86,6 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.new_group_empty_action.triggered.connect(self.request_new_regulation_group_empty.emit)
         self.new_group_from_template_action.triggered.connect(self.request_new_regulation_group_template.emit)
-        # self.new_btn.clicked.connect(self.request_new_regulation_group.emit)
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
         self.delete_btn.clicked.connect(self.on_delete_btn_clicked)
         self.remove_all_action.triggered.connect(self.on_remove_all_btn_clicked)
