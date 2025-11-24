@@ -24,7 +24,7 @@ from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
 from arho_feature_template.utils.misc_utils import LANGUAGE, get_active_plan_matter_id
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QWidget
+    from qgis.PyQt.QtWidgets import QComboBox, QWidget
 
 ui_path = resources.files(__package__) / "template_selection_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -41,6 +41,7 @@ class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
 
         # TYPES
         self.libraries_widget: QWidget
+        self.libraries_combobox: QComboBox
         self.button_box: QDialogButtonBox
 
         # INIT
@@ -58,7 +59,7 @@ class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
 
         self.template_selection_widget = TreeWithSearchWidget()
         self.libraries_widget.layout().insertWidget(2, self.template_selection_widget)
-        # self.select_library_by_active_plan_type()
+        self.select_library_by_active_plan_type()
 
         self.show_library(self.libraries_combobox.currentIndex())
 
@@ -86,12 +87,12 @@ class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
             else:
                 return
 
-            for i, library in enumerate(self.regulation_group_libraries):
+            for i, library in enumerate(self.libraries):
                 if library.name == library_name:
-                    self.plan_regulation_group_libraries_combobox.setCurrentIndex(i)
+                    self.libraries_combobox.setCurrentIndex(i)
                     return
 
-        self.plan_regulation_group_libraries_combobox.setCurrentIndex(0)
+        self.libraries_combobox.setCurrentIndex(0)
 
     def show_library(self, i: int):
         self.template_selection_widget.tree.clear()
