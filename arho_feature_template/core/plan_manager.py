@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Generator, Iterable, cast
 
@@ -38,6 +37,7 @@ from arho_feature_template.core.models import (
     RegulationGroup,
     RegulationGroupLibrary,
 )
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
@@ -60,25 +60,19 @@ from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
-    PlanType,
     code_layers,
 )
 from arho_feature_template.project.layers.plan_layers import (
     FEATURE_LAYER_NAME_TO_CLASS_MAP,
-    LandUseAreaLayer,
-    LineLayer,
-    OtherAreaLayer,
     PlanLayer,
     PlanMatterLayer,
     PlanTypeLayer,
-    PointLayer,
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     plan_feature_layers,
     plan_layers,
     plan_matter_layers,
 )
-from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
     set_user_plan_feature_library_config_files,
@@ -104,13 +98,6 @@ from arho_feature_template.utils.misc_utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-QML_MAP = {
-    LandUseAreaLayer.name: "land_use_area.qml",
-    OtherAreaLayer.name: "other_area.qml",
-    LineLayer.name: "line.qml",
-    PointLayer.name: "point.qml",
-}
 
 
 class PlanLayerDigitizeMapTool(QgsMapToolDigitizeFeature):
@@ -920,21 +907,18 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
     if not active_plan_matter:
         return
+
     plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
-    if plan_type == PlanType.REGIONAL:
-        path = plugin_path("resources", "styles", "maakuntakaava")
-    elif plan_type == PlanType.GENERAL:
-        path = plugin_path("resources", "styles", "yleiskaava")
-    elif plan_type == PlanType.TOWN:
-        path = plugin_path("resources", "styles", "asemakaava")
-    else:
+    if not plan_type:
         return
 
     # Apply style to temp layer and copy symbology and labels from there to the actual layer
     geom_type = QgsWkbTypes.displayString(layer.wkbType())
     crs = layer.crs().authid()
     temp_layer = QgsVectorLayer(f"{geom_type}?crs={crs}", "temp_layer", "memory")
-    msg, result = temp_layer.loadNamedStyle(os.path.join(path, QML_MAP[layer.name()]))
+    msg, result = temp_layer.loadNamedStyle(
+        SettingsManager.get_layer_style_path(plan_type, FEATURE_LAYER_NAME_TO_CLASS_MAP[layer.name()])
+    )
     if not result:
         iface.messageBar().pushCritical("", msg)
         return

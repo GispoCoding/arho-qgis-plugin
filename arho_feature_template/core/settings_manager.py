@@ -1,9 +1,32 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
+
+from arho_feature_template.project.layers.code_layers import PlanType
+from arho_feature_template.project.layers.plan_layers import (
+    LandUseAreaLayer,
+    LineLayer,
+    OtherAreaLayer,
+    PlanObjectLayer,
+    PointLayer,
+    plan_feature_layers,
+)
+from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
+
+LAYER_NAME_TRANSLATION_MAP = {
+    LandUseAreaLayer.name: "land_use_area",
+    OtherAreaLayer.name: "other_area",
+    LineLayer.name: "line",
+    PointLayer.name: "point",
+}
+
+REGIONAL_PLAN_PATH = plugin_path("resources", "styles", "maakuntakaava")
+GENERAL_PLAN_PATH = plugin_path("resources", "styles", "yleiskaava")
+TOWN_PLAN_PATH = plugin_path("resources", "styles", "asemakaava")
 
 
 class SettingsNotifier(QObject):
@@ -75,6 +98,26 @@ class SettingsManager:
     def set_data_exchange_layer_enabled(cls, value: bool):  # noqa: FBT001
         cls._set("data_exchange_layer_enabled", value)
 
+    # VISUALISATIONS
+    @classmethod
+    def get_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer]) -> str:
+        if plan_type == PlanType.REGIONAL:
+            folder = REGIONAL_PLAN_PATH
+        elif plan_type == PlanType.GENERAL:
+            folder = GENERAL_PLAN_PATH
+        elif plan_type == PlanType.TOWN:
+            folder = TOWN_PLAN_PATH
+        else:
+            return
+
+        default = os.path.join(folder, f"{LAYER_NAME_TRANSLATION_MAP[layer.name]}.qml")
+
+        return cls._get(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", default)
+
+    @classmethod
+    def set_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer], value: str):
+        cls._set(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", value)
+
     @classmethod
     def _migrate_keys(cls):
         # Old settings
@@ -97,5 +140,12 @@ class SettingsManager:
         if lambda_url is not None:
             cls.set_lambda_url(lambda_url)
             settings.remove("lambda_url")
+
+        for plan_type in PlanType:
+            for layer in plan_feature_layers:
+                style_path = settings.value(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path")
+                if style_path is not None:
+                    cls.set_layer_style_path(plan_type, layer, style_path)
+                    settings.remove(f"{plan_type}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path")
 
         cls.MIGRATIONS_RUN = True
