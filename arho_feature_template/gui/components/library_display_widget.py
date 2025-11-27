@@ -504,16 +504,24 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def _on_save_library_clicked(self):
         if self._check_form():
-            updated_libraries = self.get_current_libraries()
-            if self.library_type_class is RegulationGroupLibrary:
-                for library in updated_libraries:
-                    TemplateManager.write_regulation_group_template_file(
-                        library.into_template_dict(), Path(library.file_path), overwrite=True
-                    )
+            current_library = self.library_selection.currentData(DATA_ROLE)
+            if isinstance(current_library, RegulationGroupLibrary):
+                TemplateManager.write_regulation_group_template_file(
+                    current_library.into_template_dict(), Path(current_library.file_path), overwrite=True
+                )
+            elif isinstance(current_library, PlanFeatureLibrary):
+                TemplateManager.write_plan_feature_template_file(
+                    current_library.into_template_dict(), Path(current_library.file_path), overwrite=True
+                )
+            # if self.library_type_class is RegulationGroupLibrary:
+            #     for library in updated_libraries:
+            #         TemplateManager.write_regulation_group_template_file(
+            #             library.into_template_dict(), Path(library.file_path), overwrite=True
+            #         )
 
-            elif self.library_type_class is PlanFeatureLibrary:
-                for library in updated_libraries:
-                    TemplateManager.write_plan_feature_template_file(
-                        library.into_template_dict(), Path(library.file_path), overwrite=True
-                    )
-            iface.messageBar().pushSuccess("", "Kirjastot tallennettu.")
+            # elif self.library_type_class is PlanFeatureLibrary:
+            #     for library in updated_libraries:
+            #         TemplateManager.write_plan_feature_template_file(
+            #             library.into_template_dict(), Path(library.file_path), overwrite=True
+            # )
+            iface.messageBar().pushSuccess("", "Kirjasto tallennettu.")
