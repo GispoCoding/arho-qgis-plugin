@@ -299,11 +299,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             return
 
         associated_plan_object_fids_and_geoms = data[1]
+        nr_of_selected_groups = len(self.get_selected_regulation_groups())
 
         menu = QMenu()
         menu.addAction(
             QgsApplication.getThemeIcon("mActionOpenTable.svg"), "Näytä lomake", lambda: self._open_form(index)
         )
+        menu.addSeparator()
         menu.addAction(
             QgsApplication.getThemeIcon("mActionZoomTo.svg"),
             "Valitse kaavakohteet joilla on kaavamääräysryhmä",
@@ -313,6 +315,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             QgsApplication.getThemeIcon("mActionHighlightFeature.svg"),
             "Väläytä kaavakohteita, joilla on kaavamääräysryhmä",
             lambda: self._on_highlight_plan_objects(associated_plan_object_fids_and_geoms),
+        )
+        menu.addSeparator()
+        menu.addAction(
+            QgsApplication.getThemeIcon("mActionDeleteSelected.svg"),
+            "Poista kaavamääräysryhmä" if nr_of_selected_groups == 1 else "Poista valitut kaavamääräysryhmät",
         )
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
