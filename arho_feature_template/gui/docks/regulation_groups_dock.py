@@ -203,13 +203,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             item.setToolTip(tooltip_text)
 
         # Save FIDS and geometries of associated plan objects
-        associated_plan_object_fids_and_geoms: dict[str, list[tuple[int, QgsGeometry]]] = {}
+        associated_plan_object_fids_and_geoms: dict[str, dict[int, QgsGeometry]] = {}
         if plan_object_ids_map:
             for layer_name, ids in plan_object_ids_map.items():
-                fids_and_geoms: list[tuple[int, QgsGeometry]] = [
-                    (feat.id(), feat.geometry()) for feat in plan_objects_by_layer[layer_name] if feat["id"] in ids
-                ]
-                associated_plan_object_fids_and_geoms[layer_name] = fids_and_geoms
+                fids_to_geoms: dict[int, QgsGeometry] = {
+                    feat.id(): feat.geometry() for feat in plan_objects_by_layer[layer_name] if feat["id"] in ids
+                }
+                associated_plan_object_fids_and_geoms[layer_name] = fids_to_geoms
 
         # Set data
         items[DATA_COLUMN].setData((group, associated_plan_object_fids_and_geoms), DATA_ROLE)
@@ -245,7 +245,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def _data_from_index(
         self, proxy_index: QModelIndex
-    ) -> tuple[RegulationGroup, dict[str, list[tuple[int, QgsGeometry]]]] | None:
+    ) -> tuple[RegulationGroup, dict[str, dict[int, QgsGeometry]]] | None:
         """
         Data is tuple of RegulationGroup model and dictionary of associated plan object FIDs and geoms
         (keys are plan object layer names).
@@ -269,11 +269,14 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def on_delete_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
-        if len(selected_groups) > 0:
+        nr_of_groups = len(selected_groups)
+        if nr_of_groups > 0:
             response = QMessageBox.question(
                 None,
-                "Kaavamääräysryhmän poisto",
-                "Haluatko varmasti poistaa kaavamääräysryhmän?",
+                "Kaavamääräysryhmän poisto" if nr_of_groups == 1 else "Kaavamääräysryhmien poisto",
+                "Haluatko varmasti poistaa kaavamääräysryhmän?"
+                if nr_of_groups == 1
+                else "Haluatko varmasti poistaa kaavamääräysryhmät?",
                 QMessageBox.Yes | QMessageBox.No,
             )
             if response == QMessageBox.Yes:
@@ -298,7 +301,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         if not data:
             return
 
-        associated_plan_object_fids_and_geoms = data[1]
+        # associated_plan_object_fids_and_geoms = data[1]
         nr_of_selected_groups = len(self.get_selected_regulation_groups())
 
         menu = QMenu()
@@ -308,32 +311,68 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         menu.addSeparator()
         menu.addAction(
             QgsApplication.getThemeIcon("mActionZoomTo.svg"),
-            "Valitse kaavakohteet joilla on kaavamääräysryhmä",
-            lambda: self._on_select_plan_objects(associated_plan_object_fids_and_geoms),
+            "Valitse kaavakohteet joilla on kaavamääräysryhmä"
+            if nr_of_selected_groups == 1
+            else "Valitse kaavakohteet, joilla on valitut kaavamääräysryhmät",
+            self._on_select_plan_objects,
         )
         menu.addAction(
             QgsApplication.getThemeIcon("mActionHighlightFeature.svg"),
-            "Väläytä kaavakohteita, joilla on kaavamääräysryhmä",
-            lambda: self._on_highlight_plan_objects(associated_plan_object_fids_and_geoms),
+            "Väläytä kaavakohteita, joilla on kaavamääräysryhmä"
+            if nr_of_selected_groups == 1
+            else "Väläytä kaavakohteita, joilla on valitut kaavamääräysryhmät",
+            self._on_highlight_plan_objects,
         )
         menu.addSeparator()
         menu.addAction(
             QgsApplication.getThemeIcon("mActionDeleteSelected.svg"),
             "Poista kaavamääräysryhmä" if nr_of_selected_groups == 1 else "Poista valitut kaavamääräysryhmät",
+            self.on_delete_btn_clicked,
         )
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
-    def _on_select_plan_objects(self, fids_and_geoms_map: dict[str, list[tuple[int, QgsGeometry]]]):
+    def _on_select_plan_objects(self):
+        fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()
         for layer_name, fids_and_geoms in fids_and_geoms_map.items():
             layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
-            layer_class.get_from_project().selectByIds(
-                [fid_and_geom[0] for fid_and_geom in fids_and_geoms], Qgis.SelectBehavior.SetSelection
-            )
+            layer_class.get_from_project().selectByIds(list(fids_and_geoms.keys()), Qgis.SelectBehavior.SetSelection)
 
-    def _on_highlight_plan_objects(self, fids_and_geoms_map: dict[str, list[tuple[int, QgsGeometry]]]):
+    def _on_highlight_plan_objects(self):
+        fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()
         for fids_and_geoms in fids_and_geoms_map.values():
-            iface.mapCanvas().flashGeometries(geometries=[fid_and_geom[1] for fid_and_geom in fids_and_geoms])
+            iface.mapCanvas().flashGeometries(geometries=list(fids_and_geoms.values()))
         iface.mapCanvas().redrawAllLayers()
+
+    def _get_common_associated_plan_object_fids_and_geoms_for_selected_groups(
+        self,
+    ) -> dict[str, dict[int, QgsGeometry]]:
+        assoc_data = []
+        for proxy_index in self.selection_model.selectedRows(DATA_COLUMN):
+            data = self._data_from_index(proxy_index)
+            if not data:
+                continue
+            assoc_data.append(data[1])
+
+        if not assoc_data:
+            return {}
+
+        if len(assoc_data) == 1:
+            return assoc_data[0]
+
+        common: dict[str, dict[int, QgsGeometry]] = assoc_data[0].copy()
+
+        # Intersect all fids per layer
+        for assoc in assoc_data[1:]:
+            for layer_name in common:
+                next_map = assoc.get(layer_name)
+                if not next_map:
+                    common.pop(layer_name)
+                    continue
+                current_map = common[layer_name]
+                common_fids = set(current_map.keys()) & set(next_map.keys())
+                common[layer_name] = {fid: current_map[fid] for fid in common_fids}
+
+        return common
 
     def unload(self):
         self._disconnect_signals()
