@@ -130,6 +130,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.new_library_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.import_library_btn.setIcon(QgsApplication.getThemeIcon("mActionFileOpen.svg"))
         self.delete_library_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
+        self.save_library_btn.setIcon(QgsApplication.getThemeIcon("mActionFileSave.svg"))
 
         self.new_library_element_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.edit_library_element_btn.setIcon(QgsApplication.getThemeIcon("mActionEditTable.svg"))
@@ -139,10 +140,14 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         for library in self.libraries:
             self._add_library(library)
 
-        self.library_details_groupbox.setCollapsed(False)
         if self.library_selection.count() != 0:
             self.library_selection.setCurrentIndex(0)
         self._check_required_fields()
+
+        # Initialize save library button
+        self._update_save_library_btn_state()
+        self.library_name.textChanged.connect(self._update_save_library_btn_state)
+        self.library_file_path.fileChanged.connect(self._update_save_library_btn_state)
 
         # Call to handle the case where no libraries are present
         self._on_library_selection_changed(None)
@@ -250,6 +255,16 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             self.reload_library_btn.setEnabled(True)
 
         self._update_template_view()
+
+    def _update_save_library_btn_state(self):
+        file_path = self.library_file_path.filePath()
+        library_name = self.library_name.text()
+
+        # Check if both file path and name are not empty and not just whitespace
+        is_file_path_valid = bool(file_path and file_path.strip())
+        is_library_name_valid = bool(library_name and library_name.strip())
+
+        self.save_library_btn.setEnabled(is_file_path_valid and is_library_name_valid)
 
     def _add_library(self, library: Library):
         self.library_selection.addItem(library.name, library)
@@ -449,48 +464,54 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             self._update_active_library_templates_from_view()
 
     def _check_form(self) -> bool | None:
-        file_paths = set()
-        names = set()
-        for library in self.get_current_libraries():
-            # Check for missing filepath
-            if not library.file_path:
-                QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu tiedostopolkua.")
-                return False
-            # Check for duplicate filepaths
-            if library.file_path in file_paths:
-                QMessageBox.critical(
-                    self,
-                    "Virhe",
-                    f"Useammalle kirjastolle on määritelty sama tallennuspolku ({library.file_path}).",
-                )
-                return False
-            # Check for missing name
-            if not library.name:
-                QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu nimeä.")
-                return False
-            # Check for duplicate names
-            if library.name in names:
-                QMessageBox.critical(
-                    self,
-                    "Virhe",
-                    f"Useammalle kirjastolle on määritelty sama nimi ({library.name}).",
-                )
-                return False
-            file_paths.add(library.file_path)
-            names.add(library.name)
+        file_path = self.library_file_path.filePath()
+        library_name = self.library_name.text()
+        current_library: Library = self.library_selection.currentData(DATA_ROLE)
+        current_libraries = self.get_current_libraries()
+        library_names = {library.name for library in current_libraries}
+        library_file_paths = {library.file_path for library in current_libraries}
+
+        # Check for missing filepath
+        if not file_path:
+            QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu tiedostopolkua.")
+            return False
+        # Check for duplicate filepaths
+        if file_path in library_file_paths and file_path != current_library.file_path:
+            QMessageBox.critical(
+                self,
+                "Virhe",
+                f"Useammalle kirjastolle on määritelty sama tallennuspolku ({file_path}).",
+            )
+            return False
+        # Check for missing name
+        if not library_name:
+            QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu nimeä.")
+            return False
+        # Check for duplicate names
+        if library_name in library_names and library_name != current_library.name:
+            QMessageBox.critical(
+                self,
+                "Virhe",
+                f"Useammalle kirjastolle on määritelty sama nimi ({library_name}).",
+            )
+            return False
+
+        current_library.name = library_name
+        current_library.file_path = file_path
+        current_library.description = self.library_description.toPlainText()
 
         return True
 
     def _on_save_library_clicked(self):
         if self._check_form():
             updated_libraries = self.get_current_libraries()
-            if self.library_type_class == RegulationGroupLibrary:
+            if self.library_type_class is RegulationGroupLibrary:
                 for library in updated_libraries:
                     TemplateManager.write_regulation_group_template_file(
                         library.into_template_dict(), Path(library.file_path), overwrite=True
                     )
 
-            elif self.library_type_class == PlanFeatureLibrary:
+            elif self.library_type_class is PlanFeatureLibrary:
                 for library in updated_libraries:
                     TemplateManager.write_plan_feature_template_file(
                         library.into_template_dict(), Path(library.file_path), overwrite=True
