@@ -466,7 +466,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 return False
             # Check for missing name
             if not library.name:
-                QMessageBox.critical(self, "Virhe", "Kirjasolle ei ole asetettu nimeä.")
+                QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu nimeä.")
                 return False
             # Check for duplicate names
             if library.name in names:
