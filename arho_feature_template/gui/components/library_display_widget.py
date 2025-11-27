@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from importlib import resources
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qgis.core import QgsApplication
@@ -85,6 +86,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.new_library_element_btn: QPushButton
         self.edit_library_element_btn: QPushButton
         self.delete_library_element_btn: QPushButton
+        self.save_library_btn: QPushButton
 
         self.library_element_filter: QgsFilterLineEdit
         self.library_element_list: QListWidget
@@ -118,6 +120,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.library_element_list.itemDoubleClicked.connect(lambda _: self._on_edit_element_clicked())
         self.edit_library_element_btn.clicked.connect(self._on_edit_element_clicked)
         self.delete_library_element_btn.clicked.connect(self._on_delete_element_clicked)
+        self.save_library_btn.clicked.connect(self._on_save_library_clicked)
 
         self.library_element_filter.valueChanged.connect(self._on_filter_elements)
 
@@ -293,7 +296,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
         # If we are deleting a new and empty library, skip asking for confirmation to delete
         if self._is_new_library(self.active_library) and self.library_element_list.count() == 0:
-            self._delete_library(self.active_library)
+            self.delete_library(self.active_library)
             return
 
         response = QMessageBox.question(
@@ -303,18 +306,18 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             QMessageBox.Yes | QMessageBox.No,
         )
         if response == QMessageBox.Yes:
-            self._delete_library(self.active_library)
+            self.delete_library(self.active_library)
 
-    def _delete_library(self, library: Library):
-        if library.file_path is not None and id(library) in [id(lib) for lib in self.libraries]:
-            # TemplateManager.delete_template_file(library.file_path)
+    def delete_library(self, library: Library):
+        # if library.file_path is not None and id(library) in [id(lib) for lib in self.libraries]:
+        #     # TemplateManager.delete_template_file(library.file_path)
 
-            # Find the correct library from the list of updated libraries
-            # We have to find the correct library like this because the library instances are
-            # different in the original list and the copied list
-            for lib in self.updated_libraries:
-                if lib.file_path == library.file_path:
-                    self.updated_libraries.remove(lib)
+        # Find the correct library from the list of updated libraries
+        # We have to find the correct library like this because the library instances are
+        # different in the original list and the copied list
+        for lib in self.updated_libraries:
+            if lib.file_path == library.file_path:
+                self.updated_libraries.remove(lib)
 
         self.library_selection.removeItem(self.library_selection.currentIndex())
 
@@ -444,3 +447,58 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 self.library_element_list.takeItem(self.library_element_list.row(item))
 
             self._update_active_library_templates_from_view()
+
+    def _check_form(self) -> bool | None:
+        file_paths = set()
+        names = set()
+        for library in self.get_current_libraries():
+            # Check for missing filepath
+            if not library.file_path:
+                QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu tiedostopolkua.")
+                return False
+            # Check for duplicate filepaths
+            if library.file_path in file_paths:
+                QMessageBox.critical(
+                    self,
+                    "Virhe",
+                    f"Useammalle kirjastolle on määritelty sama tallennuspolku ({library.file_path}).",
+                )
+                return False
+            # Check for missing name
+            if not library.name:
+                QMessageBox.critical(self, "Virhe", "Kirjasolle ei ole asetettu nimeä.")
+                return False
+            # Check for duplicate names
+            if library.name in names:
+                QMessageBox.critical(
+                    self,
+                    "Virhe",
+                    f"Useammalle kirjastolle on määritelty sama nimi ({library.name}).",
+                )
+                return False
+            # Check for empty library
+            if (isinstance(library, PlanFeatureLibrary) and not library.plan_features) or (
+                isinstance(library, RegulationGroupLibrary) and not library.regulation_groups
+            ):
+                QMessageBox.critical(self, "Virhe", f"Kirjasto {library.name} on tyhjä")
+                return False
+            file_paths.add(library.file_path)
+            names.add(library.name)
+
+        return True
+
+    def _on_save_library_clicked(self):
+        if self._check_form():
+            updated_libraries = self.get_current_libraries()
+            if self.library_type_class == RegulationGroupLibrary:
+                for library in updated_libraries:
+                    TemplateManager.write_regulation_group_template_file(
+                        library.into_template_dict(), Path(library.file_path), overwrite=True
+                    )
+
+            elif self.library_type_class == PlanFeatureLibrary:
+                for library in updated_libraries:
+                    TemplateManager.write_plan_feature_template_file(
+                        library.into_template_dict(), Path(library.file_path), overwrite=True
+                    )
+            iface.messageBar().pushSuccess("", "Kirjastot tallennettu.")

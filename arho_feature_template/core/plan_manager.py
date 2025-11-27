@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Generator, Iterable, cast
 
 from qgis.core import (
@@ -310,22 +309,12 @@ class PlanManager(QObject):
 
     def manage_libraries(self):
         manage_libraries_form = ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries)
-        result = manage_libraries_form.exec_()
-        # Even if user clicked cancel, we retrieve the list of updated libraries in case a library was deleted
+        _ = manage_libraries_form.exec_()
         updated_regulation_group_libraries = (
             manage_libraries_form.regulation_group_library_widget.get_current_libraries()
         )
         updated_plan_feature_libraries = manage_libraries_form.plan_feature_library_widget.get_current_libraries()
-        if result:
-            # Rewrite all new and remaining library config files and reinitialize libraries
-            for library in updated_regulation_group_libraries:
-                TemplateManager.write_regulation_group_template_file(
-                    library.into_template_dict(), Path(library.file_path), overwrite=True
-                )
-            for library in updated_plan_feature_libraries:
-                TemplateManager.write_plan_feature_template_file(
-                    library.into_template_dict(), Path(library.file_path), overwrite=True
-                )
+
         set_user_regulation_group_library_config_files(
             library.file_path for library in updated_regulation_group_libraries
         )
