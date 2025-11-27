@@ -19,31 +19,49 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QPushButton" name="new_btn">
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Luo uusi kaavamääräysryhmä</string>
         </property>
         <property name="text">
-         <string>Uusi</string>
+         <string/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="edit_btn">
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Muokkaa valittua kaavamääräysryhmää</string>
         </property>
         <property name="text">
-         <string>Muokkaa</string>
+         <string/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QPushButton" name="delete_btn">
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="toolTip">
          <string>Poista valittu kaavamääräysryhmä</string>
         </property>
         <property name="text">
-         <string>Poista</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -60,29 +78,12 @@
         </property>
        </spacer>
       </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
        <widget class="QPushButton" name="modify_selected_features_btn">
         <property name="text">
          <string>Kaavakohdetoiminnot</string>
         </property>
        </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
       </item>
      </layout>
     </item>
