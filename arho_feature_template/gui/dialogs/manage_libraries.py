@@ -68,12 +68,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
     def _delete_invalid_libraries(self, library_widget: LibaryDisplayWidget):
         for library in library_widget.get_current_libraries():
             # Check for library missing file path, name or content
-            if (
-                not library.file_path
-                or not library.name
-                or (isinstance(library, PlanFeatureLibrary) and not library.plan_features)
-                or (isinstance(library, RegulationGroupLibrary) and not library.regulation_groups)
-            ):
+            if not library.file_path or not library.name:
                 library_widget.delete_library(library)
 
     def _on_close_clicked(self):

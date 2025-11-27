@@ -476,12 +476,6 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                     f"Useammalle kirjastolle on määritelty sama nimi ({library.name}).",
                 )
                 return False
-            # Check for empty library
-            if (isinstance(library, PlanFeatureLibrary) and not library.plan_features) or (
-                isinstance(library, RegulationGroupLibrary) and not library.regulation_groups
-            ):
-                QMessageBox.critical(self, "Virhe", f"Kirjasto {library.name} on tyhjä")
-                return False
             file_paths.add(library.file_path)
             names.add(library.name)
 
