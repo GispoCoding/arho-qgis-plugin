@@ -1093,6 +1093,13 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: metro
 
+  - heading: Raideliikenteen asema tai seisake
+    category: Erityisominaisuudet ja muut osa-alueet
+    geometry: Piste
+    letter_code:
+    plan_regulations:
+      - regulation_code: raideliikenteenAsemaTaiSeisake
+
   - heading: Liittymä
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
