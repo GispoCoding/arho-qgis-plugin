@@ -15,6 +15,7 @@ from qgis.core import (
     QgsWkbTypes,
 )
 from qgis.PyQt import uic
+from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressBar
 
 from arho_feature_template.core.feature_editing import save_plan_feature, save_regulation_group
@@ -48,8 +49,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary,
     ):
-        super().__init__()
+        super().__init__(parent=iface.mainWindow())
         self.setupUi(self)
+        self.setWindowFlags(self.windowFlags() | Qt.Window)
 
         # TYPES
         self.source_layer_selection: QgsMapLayerComboBox
