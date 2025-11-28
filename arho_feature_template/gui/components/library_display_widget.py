@@ -515,4 +515,4 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 TemplateManager.write_plan_feature_template_file(
                     current_library.into_template_dict(), Path(current_library.file_path), overwrite=True
                 )
-            iface.messageBar().pushSuccess("", f"Kirjasto {self.library_selection.currentText()} tallennettu.")
+            iface.messageBar().pushSuccess("", f"Kirjasto {self.library_name.text()} tallennettu.")
