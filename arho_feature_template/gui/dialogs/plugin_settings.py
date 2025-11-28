@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from importlib import resources
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
@@ -7,6 +8,12 @@ from typing import TYPE_CHECKING, NamedTuple
 from qgis.gui import QgsFileWidget, QgsOptionsPageWidget, QgsOptionsWidgetFactory
 from qgis.PyQt import uic
 
+from arho_feature_template.core.plan_manager import (
+    GENERAL_PLAN_PATH,
+    LAYER_NAME_TRANSLATION_MAP,
+    REGIONAL_PLAN_PATH,
+    TOWN_PLAN_PATH,
+)
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.project.layers.code_layers import PlanType
 from arho_feature_template.project.layers.plan_layers import (
@@ -63,7 +70,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         tooltip_text = """
         Käyttääksesi tasoille jotain muuta kuin Arhossa tulevaa Katja-asetuksen mukaista visualisaatiota,
         vaihda tarvittavat tiedostopolut osoittamaan omiin QML-tyylitiedostoihisi.
-        Uudet visualisaatiot aktivoituvat, kun avaat toisen kaavasuunnitelman.
+        Uudet visualisaatiot aktivoituvat, kun avaat kaava-asian uudelleen tai vaihdat toiseen kaavasuunnitelmaan.
         """
         self.visualisations_group_box.setToolTip(tooltip_text)
 
@@ -134,7 +141,15 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         for config in self.file_widget_configs:
             widget: QgsFileWidget = config.file_widget
 
-            path = SettingsManager.get_layer_style_path(config.plan_type, config.layer_type)
+            if config.plan_type == PlanType.REGIONAL:
+                folder = REGIONAL_PLAN_PATH
+            elif config.plan_type == PlanType.GENERAL:
+                folder = GENERAL_PLAN_PATH
+            elif config.plan_type == PlanType.TOWN:
+                folder = TOWN_PLAN_PATH
+
+            default = os.path.join(folder, f"{LAYER_NAME_TRANSLATION_MAP[config.layer_type.name]}.qml")
+            path = SettingsManager.get_layer_style_path(config.plan_type, config.layer_type, default)
             widget.setFilePath(path)
 
 

@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-import os
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
 
-from arho_feature_template.project.layers.code_layers import PlanType
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
     OtherAreaLayer,
-    PlanObjectLayer,
     PointLayer,
 )
-from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
+
+if TYPE_CHECKING:
+    from arho_feature_template.project.layers.code_layers import PlanType
+    from arho_feature_template.project.layers.plan_layers import PlanObjectLayer
 
 LAYER_NAME_TRANSLATION_MAP = {
     LandUseAreaLayer.name: "land_use_area",
@@ -22,10 +22,6 @@ LAYER_NAME_TRANSLATION_MAP = {
     LineLayer.name: "line",
     PointLayer.name: "point",
 }
-
-REGIONAL_PLAN_PATH = plugin_path("resources", "styles", "maakuntakaava")
-GENERAL_PLAN_PATH = plugin_path("resources", "styles", "yleiskaava")
-TOWN_PLAN_PATH = plugin_path("resources", "styles", "asemakaava")
 
 
 class SettingsNotifier(QObject):
@@ -99,18 +95,7 @@ class SettingsManager:
 
     # VISUALISATIONS
     @classmethod
-    def get_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer]) -> str:
-        if plan_type == PlanType.REGIONAL:
-            folder = REGIONAL_PLAN_PATH
-        elif plan_type == PlanType.GENERAL:
-            folder = GENERAL_PLAN_PATH
-        elif plan_type == PlanType.TOWN:
-            folder = TOWN_PLAN_PATH
-        else:
-            return
-
-        default = os.path.join(folder, f"{LAYER_NAME_TRANSLATION_MAP[layer.name]}.qml")
-
+    def get_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer], default: str) -> str:
         return cls._get(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", default)
 
     @classmethod
