@@ -1,9 +1,27 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
+
+from arho_feature_template.project.layers.plan_layers import (
+    LandUseAreaLayer,
+    LineLayer,
+    OtherAreaLayer,
+    PointLayer,
+)
+
+if TYPE_CHECKING:
+    from arho_feature_template.project.layers.code_layers import PlanType
+    from arho_feature_template.project.layers.plan_layers import PlanObjectLayer
+
+LAYER_NAME_TRANSLATION_MAP = {
+    LandUseAreaLayer.name: "land_use_area",
+    OtherAreaLayer.name: "other_area",
+    LineLayer.name: "line",
+    PointLayer.name: "point",
+}
 
 
 class SettingsNotifier(QObject):
@@ -74,6 +92,15 @@ class SettingsManager:
     @classmethod
     def set_data_exchange_layer_enabled(cls, value: bool):  # noqa: FBT001
         cls._set("data_exchange_layer_enabled", value)
+
+    # VISUALISATIONS
+    @classmethod
+    def get_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer], default: str) -> str:
+        return cls._get(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", default)
+
+    @classmethod
+    def set_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer], value: str):
+        cls._set(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", value)
 
     @classmethod
     def _migrate_keys(cls):

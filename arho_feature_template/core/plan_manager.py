@@ -38,6 +38,7 @@ from arho_feature_template.core.models import (
     RegulationGroup,
     RegulationGroupLibrary,
 )
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
@@ -106,12 +107,16 @@ from arho_feature_template.utils.misc_utils import (
 
 logger = logging.getLogger(__name__)
 
-QML_MAP = {
-    LandUseAreaLayer.name: "land_use_area.qml",
-    OtherAreaLayer.name: "other_area.qml",
-    LineLayer.name: "line.qml",
-    PointLayer.name: "point.qml",
+LAYER_NAME_TRANSLATION_MAP = {
+    LandUseAreaLayer.name: "land_use_area",
+    OtherAreaLayer.name: "other_area",
+    LineLayer.name: "line",
+    PointLayer.name: "point",
 }
+
+REGIONAL_PLAN_PATH = plugin_path("resources", "styles", "maakuntakaava")
+GENERAL_PLAN_PATH = plugin_path("resources", "styles", "yleiskaava")
+TOWN_PLAN_PATH = plugin_path("resources", "styles", "asemakaava")
 
 
 class PlanLayerDigitizeMapTool(QgsMapToolDigitizeFeature):
@@ -937,21 +942,29 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
     if not active_plan_matter:
         return
+
     plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
+    if not plan_type:
+        return
+
     if plan_type == PlanType.REGIONAL:
-        path = plugin_path("resources", "styles", "maakuntakaava")
+        folder = REGIONAL_PLAN_PATH
     elif plan_type == PlanType.GENERAL:
-        path = plugin_path("resources", "styles", "yleiskaava")
+        folder = GENERAL_PLAN_PATH
     elif plan_type == PlanType.TOWN:
-        path = plugin_path("resources", "styles", "asemakaava")
+        folder = TOWN_PLAN_PATH
     else:
         return
+
+    default = os.path.join(folder, f"{LAYER_NAME_TRANSLATION_MAP[layer.name()]}.qml")
 
     # Apply style to temp layer and copy symbology and labels from there to the actual layer
     geom_type = QgsWkbTypes.displayString(layer.wkbType())
     crs = layer.crs().authid()
     temp_layer = QgsVectorLayer(f"{geom_type}?crs={crs}", "temp_layer", "memory")
-    msg, result = temp_layer.loadNamedStyle(os.path.join(path, QML_MAP[layer.name()]))
+    msg, result = temp_layer.loadNamedStyle(
+        SettingsManager.get_layer_style_path(plan_type, FEATURE_LAYER_NAME_TO_CLASS_MAP[layer.name()], default)
+    )
     if not result:
         iface.messageBar().pushCritical("", msg)
         return
