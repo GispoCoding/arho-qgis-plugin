@@ -468,15 +468,17 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         library_name = self.library_name.text()
         current_library: Library = self.library_selection.currentData(DATA_ROLE)
         current_libraries = self.get_current_libraries()
-        library_names = {library.name for library in current_libraries}
-        library_file_paths = {library.file_path for library in current_libraries}
+        other_library_names = {library.name for library in current_libraries if library is not current_library}
+        other_library_file_paths = {
+            library.file_path for library in current_libraries if library is not current_library
+        }
 
         # Check for missing filepath
         if not file_path:
             QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu tiedostopolkua.")
             return False
         # Check for duplicate filepaths
-        if file_path in library_file_paths and file_path != current_library.file_path:
+        if file_path in other_library_file_paths:
             QMessageBox.critical(
                 self,
                 "Virhe",
@@ -488,7 +490,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu nimeä.")
             return False
         # Check for duplicate names
-        if library_name in library_names and library_name != current_library.name:
+        if library_name in other_library_names:
             QMessageBox.critical(
                 self,
                 "Virhe",
