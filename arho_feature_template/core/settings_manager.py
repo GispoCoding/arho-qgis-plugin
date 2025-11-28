@@ -13,7 +13,6 @@ from arho_feature_template.project.layers.plan_layers import (
     OtherAreaLayer,
     PlanObjectLayer,
     PointLayer,
-    plan_feature_layers,
 )
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 
@@ -140,12 +139,5 @@ class SettingsManager:
         if lambda_url is not None:
             cls.set_lambda_url(lambda_url)
             settings.remove("lambda_url")
-
-        for plan_type in PlanType:
-            for layer in plan_feature_layers:
-                style_path = settings.value(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path")
-                if style_path is not None:
-                    cls.set_layer_style_path(plan_type, layer, style_path)
-                    settings.remove(f"{plan_type}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path")
 
         cls.MIGRATIONS_RUN = True
