@@ -29,7 +29,7 @@ FormClass, _ = uic.loadUiType(ui_path)
 class FileWidgetConfig(NamedTuple):
     plan_type: PlanType
     layer_type: type[PlanObjectLayer]
-    widget_name: str
+    file_widget: QgsFileWidget
 
 
 class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
@@ -70,20 +70,20 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         # QML FILE PATHS
         self.file_widget_configs: list[FileWidgetConfig] = [
             # REGIONAL
-            FileWidgetConfig(PlanType.REGIONAL, LandUseAreaLayer, "region_land_use_area"),
-            FileWidgetConfig(PlanType.REGIONAL, OtherAreaLayer, "region_other_area"),
-            FileWidgetConfig(PlanType.REGIONAL, LineLayer, "region_line"),
-            FileWidgetConfig(PlanType.REGIONAL, PointLayer, "region_point"),
+            FileWidgetConfig(PlanType.REGIONAL, LandUseAreaLayer, self.region_land_use_area),
+            FileWidgetConfig(PlanType.REGIONAL, OtherAreaLayer, self.region_other_area),
+            FileWidgetConfig(PlanType.REGIONAL, LineLayer, self.region_line),
+            FileWidgetConfig(PlanType.REGIONAL, PointLayer, self.region_point),
             # GENERAL
-            FileWidgetConfig(PlanType.GENERAL, LandUseAreaLayer, "general_land_use_area"),
-            FileWidgetConfig(PlanType.GENERAL, OtherAreaLayer, "general_other_area"),
-            FileWidgetConfig(PlanType.GENERAL, LineLayer, "general_line"),
-            FileWidgetConfig(PlanType.GENERAL, PointLayer, "general_point"),
+            FileWidgetConfig(PlanType.GENERAL, LandUseAreaLayer, self.general_land_use_area),
+            FileWidgetConfig(PlanType.GENERAL, OtherAreaLayer, self.general_other_area),
+            FileWidgetConfig(PlanType.GENERAL, LineLayer, self.general_line),
+            FileWidgetConfig(PlanType.GENERAL, PointLayer, self.general_point),
             # TOWN
-            FileWidgetConfig(PlanType.TOWN, LandUseAreaLayer, "town_land_use_area"),
-            FileWidgetConfig(PlanType.TOWN, OtherAreaLayer, "town_other_area"),
-            FileWidgetConfig(PlanType.TOWN, LineLayer, "town_line"),
-            FileWidgetConfig(PlanType.TOWN, PointLayer, "town_point"),
+            FileWidgetConfig(PlanType.TOWN, LandUseAreaLayer, self.town_land_use_area),
+            FileWidgetConfig(PlanType.TOWN, OtherAreaLayer, self.town_other_area),
+            FileWidgetConfig(PlanType.TOWN, LineLayer, self.town_line),
+            FileWidgetConfig(PlanType.TOWN, PointLayer, self.town_point),
         ]
         self._set_file_filter()
 
@@ -92,7 +92,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
 
     def _set_file_filter(self):
         for config in self.file_widget_configs:
-            widget: QgsFileWidget = getattr(self, config.widget_name)
+            widget: QgsFileWidget = config.file_widget
             widget.setFilter("*.qml")
 
     def apply(self):
@@ -104,7 +104,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         missing_files = []
         invalid_file_types = []
         for config in self.file_widget_configs:
-            widget: QgsFileWidget = getattr(self, config.widget_name)
+            widget: QgsFileWidget = config.file_widget
             file_path = widget.filePath()
             path_object = Path(file_path)
             if not path_object.is_file():
@@ -132,7 +132,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self.data_exchange_layer_enabled.setChecked(SettingsManager.get_data_exchange_layer_enabled())
 
         for config in self.file_widget_configs:
-            widget: QgsFileWidget = getattr(self, config.widget_name)
+            widget: QgsFileWidget = config.file_widget
 
             path = SettingsManager.get_layer_style_path(config.plan_type, config.layer_type)
             widget.setFilePath(path)
