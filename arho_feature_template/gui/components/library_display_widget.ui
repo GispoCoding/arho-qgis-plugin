@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>585</width>
-    <height>544</height>
+    <width>600</width>
+    <height>747</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -118,49 +118,79 @@
    <item>
     <widget class="QGroupBox" name="library_details_groupbox">
      <property name="title">
-      <string>Kirjaston tiedot</string>
+      <string/>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <layout class="QFormLayout" name="formLayout">
-        <item row="1" column="1">
-         <widget class="QgsFileWidget" name="library_file_path">
-          <property name="toolTip">
-           <string>Kirjaston tallennuspolku</string>
-          </property>
-          <property name="dialogTitle">
-           <string>Kirjaston tiedostopolku</string>
-          </property>
-          <property name="filter">
-           <string>YAML files (*.yaml)</string>
-          </property>
-          <property name="storageMode">
-           <enum>QgsFileWidget::SaveFile</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="0">
+        <property name="sizeConstraint">
+         <enum>QLayout::SetMinimumSize</enum>
+        </property>
+        <property name="fieldGrowthPolicy">
+         <enum>QFormLayout::ExpandingFieldsGrow</enum>
+        </property>
+        <item row="0" column="0">
          <widget class="QLabel" name="name_label">
           <property name="text">
            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Nimi:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="0" column="1">
          <widget class="QLineEdit" name="library_name">
           <property name="toolTip">
            <string>Kirjaston nimi</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="0">
+        <item row="1" column="0">
+         <widget class="QLabel" name="file_path_label_4">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Tallennuspolku:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QgsFileWidget" name="library_file_path">
+            <property name="toolTip">
+             <string>Kirjaston tallennuspolku</string>
+            </property>
+            <property name="dialogTitle">
+             <string>Kirjaston tiedostopolku</string>
+            </property>
+            <property name="filter">
+             <string>YAML files (*.yaml)</string>
+            </property>
+            <property name="storageMode">
+             <enum>QgsFileWidget::SaveFile</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="broken_path_warning_label">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;Kirjastoa ei löytynyt asetetusta tallennuspolusta!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item row="2" column="0">
          <widget class="QLabel" name="description_label">
           <property name="text">
            <string>Kuvaus:</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
+        <item row="2" column="1">
          <widget class="QTextEdit" name="library_description">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -176,20 +206,6 @@
           </property>
           <property name="toolTip">
            <string>Kirjaston kuvaus</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="file_path_label_4">
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Tallennuspolku:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QLabel" name="broken_path_warning_label">
-          <property name="text">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;Kirjastoa ei löytynyt asetetusta tallennuspolusta!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </item>
@@ -209,11 +225,23 @@
         <property name="title">
          <string>Kirjaston pohjat</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,1">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetMaximumSize</enum>
+         </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetFixedSize</enum>
+           </property>
            <item>
             <widget class="QPushButton" name="new_library_element_btn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="maximumSize">
               <size>
                <width>30</width>
@@ -265,6 +293,9 @@
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
+             <property name="sizeType">
+              <enum>QSizePolicy::Expanding</enum>
+             </property>
              <property name="sizeHint" stdset="0">
               <size>
                <width>40</width>
@@ -290,6 +321,12 @@
          </item>
          <item>
           <widget class="QListWidget" name="library_element_list">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="toolTip">
             <string>Kirjaston pohjat</string>
            </property>
@@ -298,41 +335,35 @@
            </property>
           </widget>
          </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QPushButton" name="save_library_btn">
-             <property name="maximumSize">
-              <size>
-               <width>30</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>Tallenna kirjasto</string>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
         </layout>
        </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="save_library_btn">
+          <property name="text">
+           <string>Tallenna</string>
+          </property>
+          <property name="toolTip">
+           <string>Tallenna kirjasto</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
