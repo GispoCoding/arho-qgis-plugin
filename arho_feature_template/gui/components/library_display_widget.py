@@ -513,15 +513,4 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 TemplateManager.write_plan_feature_template_file(
                     current_library.into_template_dict(), Path(current_library.file_path), overwrite=True
                 )
-            # if self.library_type_class is RegulationGroupLibrary:
-            #     for library in updated_libraries:
-            #         TemplateManager.write_regulation_group_template_file(
-            #             library.into_template_dict(), Path(library.file_path), overwrite=True
-            #         )
-
-            # elif self.library_type_class is PlanFeatureLibrary:
-            #     for library in updated_libraries:
-            #         TemplateManager.write_plan_feature_template_file(
-            #             library.into_template_dict(), Path(library.file_path), overwrite=True
-            # )
-            iface.messageBar().pushSuccess("", "Kirjasto tallennettu.")
+            iface.messageBar().pushSuccess("", f"Kirjasto {self.library_selection.currentText()} tallennettu.")
