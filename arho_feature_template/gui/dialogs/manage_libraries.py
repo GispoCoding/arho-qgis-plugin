@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from importlib import resources
+from pathlib import Path
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidget
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QTabWidget
 
 from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
 from arho_feature_template.gui.components.library_display_widget import LibaryDisplayWidget
+from arho_feature_template.resources.libraries.feature_templates import set_user_plan_feature_library_config_files
+from arho_feature_template.resources.libraries.regulation_groups import set_user_regulation_group_library_config_files
 
 ui_path = resources.files(__package__) / "manage_libraries.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -27,6 +30,9 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         # TYPES
         self.library_tabs: QTabWidget
         self.button_box: QDialogButtonBox
+        self.close_button = self.button_box.button(QDialogButtonBox.StandardButton.Close)
+        if self.close_button:
+            self.close_button.setText("Sulje")
 
         self.default_regulation_group_libraries: list[RegulationGroupLibrary] = [
             library
@@ -53,33 +59,8 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self.updated_plan_feature_libraries: list[PlanFeatureLibrary] = []
 
         self.regulation_group_library_widget.library_elements_updated.connect(self._on_regulation_groups_updated)
-        self.button_box.accepted.connect(self._on_ok_clicked)
-
-    def _check_form(self) -> bool:
-        file_paths = set()
-        names = set()
-        for tab in [self.regulation_group_library_widget, self.plan_feature_library_widget]:
-            for library in tab.get_current_libraries():
-                # Check for duplicate filepaths
-                if library.file_path in file_paths:
-                    QMessageBox.critical(
-                        self,
-                        "Virhe",
-                        f"Useammalle kirjastolle on määritelty sama tallennuspolku ({library.file_path}).",
-                    )
-                    return False
-                # Check for duplicate names
-                if library.name in names:
-                    QMessageBox.critical(
-                        self,
-                        "Virhe",
-                        f"Useammalle kirjastolle on määritelty sama nimi ({library.name}).",
-                    )
-                    return False
-                file_paths.add(library.file_path)
-                names.add(library.name)
-
-        return True
+        self.button_box.clicked.connect(self._on_close_clicked)
+        self.rejected.connect(self._handle_reject)
 
     def _on_regulation_groups_updated(self, new_custom_regulation_groups: list):
         # Update plan feature library widgets regulation group libraries when custom regulation group libraries
@@ -88,6 +69,26 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             self.default_regulation_group_libraries + new_custom_regulation_groups
         )
 
-    def _on_ok_clicked(self):
-        if self._check_form():
-            self.accept()
+    def _handle_reject(self):
+        self._delete_all_invalid_libraries()
+
+    def _delete_all_invalid_libraries(self):
+        self._delete_invalid_libraries(self.regulation_group_library_widget)
+        self._delete_invalid_libraries(self.plan_feature_library_widget)
+
+    def _delete_invalid_libraries(self, library_widget: LibaryDisplayWidget):
+        for library in library_widget.get_current_libraries():
+            # Check for library missing file path or name, or if library is not saved into file
+            if not library.file_path or not library.name or not Path(library.file_path).exists():
+                library_widget.delete_library(library)
+
+    def _on_close_clicked(self):
+        self._delete_all_invalid_libraries()
+        updated_regulation_group_libraries = self.regulation_group_library_widget.get_current_libraries()
+        updated_plan_feature_libraries = self.plan_feature_library_widget.get_current_libraries()
+
+        set_user_regulation_group_library_config_files(
+            library.file_path for library in updated_regulation_group_libraries
+        )
+        set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
+        self.close()
