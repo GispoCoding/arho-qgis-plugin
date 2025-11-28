@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
+from pathlib import Path
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
@@ -77,8 +78,8 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
 
     def _delete_invalid_libraries(self, library_widget: LibaryDisplayWidget):
         for library in library_widget.get_current_libraries():
-            # Check for library missing file path, name or content
-            if not library.file_path or not library.name:
+            # Check for library missing file path or name, or if library is not saved into file
+            if not library.file_path or not library.name or not Path(library.file_path).exists():
                 library_widget.delete_library(library)
 
     def _on_close_clicked(self):
