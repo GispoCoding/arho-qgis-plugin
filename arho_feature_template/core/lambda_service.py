@@ -12,7 +12,7 @@ from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import iface
 
 from arho_feature_template.core.settings_manager import SettingsManager
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_id
 
 
@@ -149,7 +149,7 @@ class LambdaService(QObject):
         error_handler = self._get_error_handler(action)
         if response.error() != QNetworkReply.NoError:  # type: ignore  # wrong type annotation in the stubs
             error = response.errorString()
-            QMessageBox.critical(None, tr("API Virhe"), tr("Lambda kutsu epäonnistui: ") + f"{error}")
+            QMessageBox.critical(None, self.tr("API Virhe"), self.tr("Lambda kutsu epäonnistui: ") + f"{error}")
             error_handler(error)
             response.deleteLater()
             return
@@ -162,7 +162,7 @@ class LambdaService(QObject):
                 # If calling the lambda directly, the response includes status code and body
                 if int(response_data.get("statusCode", 0)) != HTTPStatus.OK:
                     error = response_data["body"] if "body" in response_data else response_data["errorMessage"]
-                    QMessageBox.critical(None, tr("API Virhe"), tr("Lambda kutsu epäonnistui: ") + f"{error}")
+                    QMessageBox.critical(None, self.tr("API Virhe"), self.tr("Lambda kutsu epäonnistui: ") + f"{error}")
                     error_handler(error)
                     response.deleteLater()
                     return
@@ -171,7 +171,7 @@ class LambdaService(QObject):
                 response_body = response_data
 
         except (json.JSONDecodeError, KeyError) as e:
-            QMessageBox.critical(None, tr("JSON Virhe"), tr("Vastauksen JSON-tiedoston jäsennys epäonnistui: ") + f"{e}")
+            QMessageBox.critical(None, self.tr("JSON Virhe"), self.tr("Vastauksen JSON-tiedoston jäsennys epäonnistui: ") + f"{e}")
             error_handler(str(e))
             return
         finally:
@@ -198,13 +198,13 @@ class LambdaService(QObject):
         if value and value.get("status") == HTTPStatus.OK:
             identifier = value.get("detail")
             iface.messageBar().pushSuccess(
-                "Success", tr("Pysyvän kaavatunnuksen haku onnistui kaavasuunnitelman") + f" {plan_id} " + tr("kaava-asialle.")
+                "Success", self.tr("Pysyvän kaavatunnuksen haku onnistui kaavasuunnitelman") + f" {plan_id} " + self.tr("kaava-asialle.")
             )
             self.plan_identifier_received.emit({"plan_id": plan_id, "status": "success", "identifier": identifier})
         else:
             iface.messageBar().pushWarning(
-                tr("Virhe"),
-                tr("Pysyvän kaavatunnuksen haku epäonnistui kaavasuunnitelmalla") + f" {plan_id} " + tr("kaava-asialle statuksella") + f" {value.get('status') if value else 'N/A'}.",
+                self.tr("Virhe"),
+                self.tr("Pysyvän kaavatunnuksen haku epäonnistui kaavasuunnitelmalla") + f" {plan_id} " + self.tr("kaava-asialle statuksella") + f" {value.get('status') if value else 'N/A'}.",
             )
             # self.plan_identifiers_received.emit({"plan_id": plan_id, "status": "failure"})
 
@@ -215,7 +215,7 @@ class LambdaService(QObject):
 
         validation_errors_of_active_plan = validation_errors.get(plan_id)
         if not validation_errors_of_active_plan:
-            self.validation_failed.emit(tr("Arhovirhe - Lambdavastaus ei odotetun muotoinen:") + f" {validation_errors}")
+            self.validation_failed.emit(self.tr("Arhovirhe - Lambdavastaus ei odotetun muotoinen:") + f" {validation_errors}")
             return
 
         SERVER_ERROR_MIN_STATUS = 500  # noqa: N806
@@ -223,7 +223,7 @@ class LambdaService(QObject):
         if (
             status := validation_errors_of_active_plan.get("status")
         ) and SERVER_ERROR_MIN_STATUS <= status <= SERVER_ERROR_MAX_STATUS:
-            self.validation_failed.emit(tr("Ryhtivirhe:") + f" {validation_errors_of_active_plan}")
+            self.validation_failed.emit(self.tr("Ryhtivirhe:") + f" {validation_errors_of_active_plan}")
             return
 
         self.validation_received.emit(validation_errors)

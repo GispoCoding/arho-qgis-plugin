@@ -12,7 +12,7 @@ from arho_feature_template.gui.components.regulation_groups_view import Regulati
 from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
 )
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
@@ -91,8 +91,8 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         """Feature must have a name if we are saving a plan feature template."""
         # TODO: Find a better way to detect if we are saving a plan feature template
         if self.template_form and self.feature_name.text() == "":
-            msg = tr("Kaavakohdepohjalla täytyy olla nimi.")
-            QMessageBox.critical(self, tr("Virhe"), msg)
+            msg = self.tr("Kaavakohdepohjalla täytyy olla nimi.")
+            QMessageBox.critical(self, self.tr("Virhe"), msg)
             return False
         return True
 

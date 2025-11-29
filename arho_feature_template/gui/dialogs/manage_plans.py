@@ -15,7 +15,7 @@ from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -62,11 +62,11 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         # to make the first plan by drawing the geometry from the toolbar
         if self.plans_table.rowCount() == 0:
             self.new_plan_button.setEnabled(False)
-            self.new_plan_button.setToolTip(tr("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja."))
+            self.new_plan_button.setToolTip(self.tr("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja."))
             iface.messageBar().pushWarning(
                 "",
-                tr("Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma ") +
-                tr(" piirtämällä tai tuomalla ulkoraja."),
+                self.tr("Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma ") +
+                self.tr(" piirtämällä tai tuomalla ulkoraja."),
             )
 
         self.filter_line.valueChanged.connect(self._filter_plans)

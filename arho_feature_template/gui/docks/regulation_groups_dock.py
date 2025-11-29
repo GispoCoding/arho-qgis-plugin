@@ -13,7 +13,7 @@ from qgis.PyQt.QtCore import QLocale
 
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.project.layers.plan_layers import plan_feature_layers
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
@@ -77,11 +77,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             remove_all_text = "Remove all groups from the chosen objects"
             remove_chosen_text = "Remove the chosen groups from the chosen objects"
         else:
-            empty_text = tr("Tyhjä")
-            from_template_text = tr("Pohjasta")
-            add_chosen_text = tr("Lisää valitut ryhmät valituille kohteille")
-            remove_all_text = tr("Poista kaikki ryhmät valituilta kohteilta")
-            remove_chosen_text = tr("Poista valitut ryhmät valituilta kohteilta")
+            empty_text = self.tr("Tyhjä")
+            from_template_text = self.tr("Pohjasta")
+            add_chosen_text = self.tr("Lisää valitut ryhmät valituille kohteille")
+            remove_all_text = self.tr("Poista kaikki ryhmät valituilta kohteilta")
+            remove_chosen_text = self.tr("Poista valitut ryhmät valituilta kohteilta")
 
         self.new_group_empty_action = new_regulation_group_menu.addAction(empty_text)
         self.new_group_from_template_action = new_regulation_group_menu.addAction(from_template_text)
@@ -143,15 +143,15 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         if len(selected) == 1:
             self.request_edit_regulation_group.emit(selected[0])
         else:
-            iface.messageBar().pushWarning("", tr("Valitse vain yksi kaavamääräysryhmä kerrallaan muokkaamista varten."))
+            iface.messageBar().pushWarning("", self.tr("Valitse vain yksi kaavamääräysryhmä kerrallaan muokkaamista varten."))
 
     def on_delete_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
         if len(selected_groups) > 0:
             response = QMessageBox.question(
                 None,
-                tr("Kaavamääräysryhmän poisto"),
-                tr("Haluatko varmasti poistaa kaavamääräysryhmän?"),
+                self.tr("Kaavamääräysryhmän poisto"),
+                self.tr("Haluatko varmasti poistaa kaavamääräysryhmän?"),
                 QMessageBox.Yes | QMessageBox.No,
             )
             if response == QMessageBox.Yes:

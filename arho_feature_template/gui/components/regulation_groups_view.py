@@ -28,7 +28,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanTypeLayer,
 )
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import LANGUAGE, disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
@@ -108,11 +108,11 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
             library_name = ""
             if plan_type == PlanType.REGIONAL:
-                library_name = tr("Maakuntakaavan kaavamääräysryhmät (Katja)")
+                library_name = self.tr("Maakuntakaavan kaavamääräysryhmät (Katja)")
             elif plan_type == PlanType.GENERAL:
-                library_name = tr("Yleiskaavan kaavamääräysryhmät (Katja)")
+                library_name = self.tr("Yleiskaavan kaavamääräysryhmät (Katja)")
             elif plan_type == PlanType.TOWN:
-                library_name = tr("Asemakaavan kaavamääräysryhmät (Katja)")
+                library_name = self.tr("Asemakaavan kaavamääräysryhmät (Katja)")
             else:
                 return
 
@@ -145,8 +145,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         }
 
         if len(principal_intended_use_groups) > 1:
-            msg = tr("Kaavakohteella voi olla vain yksi kaavamääräysryhmä, jossa pääkäyttötarkoituksia.")
-            QMessageBox.critical(self, tr("Virhe"), msg)
+            msg = self.tr("Kaavakohteella voi olla vain yksi kaavamääräysryhmä, jossa pääkäyttötarkoituksia.")
+            QMessageBox.critical(self, self.tr("Virhe"), msg)
             return False
 
         return True

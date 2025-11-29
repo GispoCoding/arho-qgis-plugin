@@ -31,7 +31,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_feature_layers,
     plan_layers,
 )
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 
 if TYPE_CHECKING:
@@ -118,7 +118,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.regulation_groups_view = RegulationGroupsView(
             regulation_group_libraries, active_plan_regulation_groups_library
         )
-        self.regulation_groups_view.regulation_groups_label.setText(tr("Kaavakohteiden kaavamääräysryhmät"))
+        self.regulation_groups_view.regulation_groups_label.setText(self.tr("Kaavakohteiden kaavamääräysryhmät"))
         self.layout().insertWidget(3, self.regulation_groups_view)
 
         self._on_layer_selections_changed(self.source_layer_selection.currentLayer())
@@ -160,7 +160,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         source_features = list(self.get_source_features(self.source_layer))
 
         if not source_features:
-            iface.messageBar().pushInfo("", tr("Yhtään kohdetta ei tuotu."))
+            iface.messageBar().pushInfo("", self.tr("Yhtään kohdetta ei tuotu."))
             return
 
         # Create and add new plan features
@@ -223,6 +223,6 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.progress_bar.setValue(100)
 
         if failed_count == 0:
-            iface.messageBar().pushSuccess("", tr("Kaavakohteet tuotiin onnistuneesti."))
+            iface.messageBar().pushSuccess("", self.tr("Kaavakohteet tuotiin onnistuneesti."))
         else:
-            iface.messageBar().pushInfo("", tr("Osa kaavakohteista tuotiin epäonnistuneesti") + f" ({failed_count}).")
+            iface.messageBar().pushInfo("", self.tr("Osa kaavakohteista tuotiin epäonnistuneesti") + f" ({failed_count}).")

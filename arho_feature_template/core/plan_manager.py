@@ -215,14 +215,14 @@ class PlanManager(QObject):
     def check_compatible_project_version(self) -> bool:
         project_version, ok = QgsProject.instance().readEntry("arho", "project_version")
         if not ok:
-            msg = tr("Projektitiedostosta ei löytynyt ARHO versiomerkintää. Käytäthän varmasti yhteensopivaa projektiedostoa?")
+            msg = self.tr("Projektitiedostosta ei löytynyt ARHO versiomerkintää. Käytäthän varmasti yhteensopivaa projektiedostoa?")
             iface.messageBar().pushCritical("", msg)
             return False
 
         if float(project_version) != SUPPORTED_PROJECT_VERSION:
             msg = (
-                tr("Projektitiedosto ei ole yhteensopiva lisäosan version kanssa ") +
-                tr("(havaittu versio ") + f"{project_version}" + tr(", vaadittu ") + f"{SUPPORTED_PROJECT_VERSION})"
+                self.tr("Projektitiedosto ei ole yhteensopiva lisäosan version kanssa ") +
+                self.tr("(havaittu versio ") + f"{project_version}" + self.tr(", vaadittu ") + f"{SUPPORTED_PROJECT_VERSION})"
             )
             iface.messageBar().pushCritical("", msg)
             return False
@@ -381,9 +381,9 @@ class PlanManager(QObject):
                     if not delete_feature(
                         association,
                         RegulationGroupAssociationLayer.get_from_project(),
-                        tr("Kaavamääräysryhmän assosiaation poisto"),
+                        self.tr("Kaavamääräysryhmän assosiaation poisto"),
                     ):
-                        iface.messageBar().pushCritical("", tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui."))
+                        iface.messageBar().pushCritical("", self.tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui."))
 
     def add_regulation_groups_to_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
@@ -406,10 +406,10 @@ class PlanManager(QObject):
                         if not delete_feature(
                             association,
                             RegulationGroupAssociationLayer.get_from_project(),
-                            tr("Kaavamääräysryhmän assosiaation poisto"),
+                            self.tr("Kaavamääräysryhmän assosiaation poisto"),
                         ):
                             iface.messageBar().pushCritical(
-                                "", tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+                                "", self.tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
                             )
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
@@ -452,14 +452,14 @@ class PlanManager(QObject):
         layer: QgsVectorLayer = iface.activeLayer()
         plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
         if layer.name() in plan_layer_names:
-            iface.messageBar().pushWarning("", tr("Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta."))
+            iface.messageBar().pushWarning("", self.tr("Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta."))
             return
         if layer.geometryType() != QgsWkbTypes.PolygonGeometry:
-            iface.messageBar().pushWarning("", tr("Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni."))
+            iface.messageBar().pushWarning("", self.tr("Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni."))
             return
         features = layer.selectedFeatures()
         if not features:
-            iface.messageBar().pushWarning("", tr("Ei valittuja kohteita kaavasuunnitelman ulkorajaksi."))
+            iface.messageBar().pushWarning("", self.tr("Ei valittuja kohteita kaavasuunnitelman ulkorajaksi."))
             return
 
         plan_saved = self._plan_geom_ready(features)
@@ -473,7 +473,7 @@ class PlanManager(QObject):
 
         feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         if feature is None:
-            iface.messageBar().pushWarning("", tr("Mikään kaavasuunnitelma ei ole avattuna."))
+            iface.messageBar().pushWarning("", self.tr("Mikään kaavasuunnitelma ei ole avattuna."))
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
@@ -490,7 +490,7 @@ class PlanManager(QObject):
 
         feature = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=True)
         if feature is None:
-            iface.messageBar().pushWarning("", tr("Ei aktiivista kaava-asiaa."))
+            iface.messageBar().pushWarning("", self.tr("Ei aktiivista kaava-asiaa."))
             return
         plan_matter_model = PlanMatterLayer.model_from_feature(feature)
 
@@ -508,7 +508,7 @@ class PlanManager(QObject):
         # Get the layer
         plan_matter_layer = PlanMatterLayer.get_from_project()
         if not plan_matter_layer:
-            iface.messageBar().pushWarning("", tr("Kaava-asia tasoa ei löytynyt projektista."))
+            iface.messageBar().pushWarning("", self.tr("Kaava-asia tasoa ei löytynyt projektista."))
             return
 
         self.previously_editable = plan_matter_layer.isEditable()
@@ -532,13 +532,13 @@ class PlanManager(QObject):
 
         layer_name = self.new_feature_dock.active_feature_layer
         if layer_name is None:
-            msg = tr("Kaavakohdetyyppiä ei ole valittuna")
+            msg = self.tr("Kaavakohdetyyppiä ei ole valittuna")
             iface.messageBar().pushWarning("", msg)
             return
 
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
         if not layer_class:
-            msg = tr("Ei löytynyt kaavakohdetasojen luokkaa, joka vastaa tasoa nimeltä ") + f"{layer_name}"
+            msg = self.tr("Ei löytynyt kaavakohdetasojen luokkaa, joka vastaa tasoa nimeltä ") + f"{layer_name}"
             raise ValueError(msg)
         layer = layer_class.get_from_project()
 
@@ -717,7 +717,7 @@ class PlanManager(QObject):
         connection_names = get_existing_database_connection_names()
 
         if not connection_names:
-            iface.messageBar().pushCritical("", tr("Tietokantayhteyksiä ei löytynyt."))
+            iface.messageBar().pushCritical("", self.tr("Tietokantayhteyksiä ei löytynyt."))
             return
 
         if not handle_unsaved_changes():
@@ -736,7 +736,7 @@ class PlanManager(QObject):
         connection_names = get_existing_database_connection_names()
 
         if not connection_names:
-            iface.messageBar().pushCritical("", tr("Tietokantayhteyksiä ei löytynyt."))
+            iface.messageBar().pushCritical("", self.tr("Tietokantayhteyksiä ei löytynyt."))
             return
 
         if not handle_unsaved_changes():
@@ -761,7 +761,7 @@ class PlanManager(QObject):
         The plan_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
-            iface.messageBar().pushWarning("", tr("Mikään kaavasuunnitelma ei ole avattuna."))
+            iface.messageBar().pushWarning("", self.tr("Mikään kaavasuunnitelma ei ole avattuna."))
             return
 
         dialog = SerializePlan()
@@ -778,7 +778,7 @@ class PlanManager(QObject):
         The plan_matter_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
-            iface.messageBar().pushWarning("", tr("Mikään kaavasuunnitelma ei ole avattuna."))
+            iface.messageBar().pushWarning("", self.tr("Mikään kaavasuunnitelma ei ole avattuna."))
             return
 
         dialog = SerializePlanMatter()
@@ -791,12 +791,12 @@ class PlanManager(QObject):
         """Gets the permanent plan identifier for the active plan."""
         plan_matter_id = get_active_plan_matter_id()
         if not plan_matter_id:
-            iface.messageBar().pushWarning("", tr("Mikään kaava-asia ei ole aktiivisena."))
+            iface.messageBar().pushWarning("", self.tr("Mikään kaava-asia ei ole aktiivisena."))
             return
         if not PlanMatterLayer.get_plan_matter_producers_plan_identifier(plan_matter_id):
             iface.messageBar().pushCritical(
-                tr("VIRHE"),
-                tr("Kaava-asialta puuttuu tuottajan kaavatunnus, joka vaaditaan pysyvän kaavatunnuksen hakemista varten."),
+                self.tr("VIRHE"),
+                self.tr("Kaava-asialta puuttuu tuottajan kaavatunnus, joka vaaditaan pysyvän kaavatunnuksen hakemista varten."),
             )
             return
 
@@ -809,12 +809,12 @@ class PlanManager(QObject):
     def save_exported_plan(self, plan_data: dict, outline_data: dict):
         """This slot saves the plan and outline data to JSON files."""
         if plan_data is None or outline_data is None:
-            iface.messageBar().pushCritical("", tr("Kaavasuunnitelmaa tai sen ulkorajaa ei löytynyt."))
+            iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelmaa tai sen ulkorajaa ei löytynyt."))
             return
 
         # Retrieve paths
         if self.json_plan_path is None or self.json_plan_outline_path is None:
-            iface.messageBar().pushCritical("", tr("Tiedostopolut eivät ole saatavilla."))
+            iface.messageBar().pushCritical("", self.tr("Tiedostopolut eivät ole saatavilla."))
             return
 
         # Save the JSONs
@@ -824,24 +824,24 @@ class PlanManager(QObject):
         with open(self.json_plan_outline_path, "w", encoding="utf-8") as outline_file:
             json.dump(outline_data, outline_file, ensure_ascii=False, indent=2)
 
-        iface.messageBar().pushSuccess("", tr("Kaavasuunnitelma ja sen ulkoraja tallennettu."))
+        iface.messageBar().pushSuccess("", self.tr("Kaavasuunnitelma ja sen ulkoraja tallennettu."))
 
     def save_exported_plan_matter(self, plan_matter_data):
         """Saves the plan matter data to a JSON file."""
         if plan_matter_data is None:
-            iface.messageBar().pushCritical("", tr("Kaava-asiaa ei löytynyt."))
+            iface.messageBar().pushCritical("", self.tr("Kaava-asiaa ei löytynyt."))
             return
 
         # Retrieve path
         if self.json_plan_matter_path is None:
-            iface.messageBar().pushCritical("", tr("Tiedostopolku ei ole saatavilla."))
+            iface.messageBar().pushCritical("", self.tr("Tiedostopolku ei ole saatavilla."))
             return
 
         # Save the JSON
         with open(self.json_plan_matter_path, "w", encoding="utf-8") as file:
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
-        iface.messageBar().pushSuccess("", tr("Kaava-asia tallennettu."))
+        iface.messageBar().pushSuccess("", self.tr("Kaava-asia tallennettu."))
 
     def on_project_loaded(self):
         if QgsProject.instance().fileName() == "":
@@ -910,7 +910,7 @@ class PlanManager(QObject):
 
 
 @status_message("Haetaan kaavasuunitelman kaavamääräysryhmiä ...")
-def regulation_group_library_from_active_plan(tr) -> RegulationGroupLibrary:
+def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     if get_active_plan_id():
         id_of_general_regulation_group_type = (
             PlanRegulationGroupTypeLayer.get_attribute_value_by_another_attribute_value(

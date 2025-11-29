@@ -8,7 +8,7 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidg
 
 from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
 from arho_feature_template.gui.components.library_display_widget import LibaryDisplayWidget
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 
 ui_path = resources.files(__package__) / "manage_libraries.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -47,8 +47,8 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self.plan_feature_library_widget = LibaryDisplayWidget(
             list(custom_plan_feature_libraries), PlanFeatureLibrary, list(regulation_group_libraries)
         )
-        self.library_tabs.addTab(self.regulation_group_library_widget, tr("Kaavamääräysryhmäpohjat"))
-        self.library_tabs.addTab(self.plan_feature_library_widget, tr("Kaavakohdepohjat"))
+        self.library_tabs.addTab(self.regulation_group_library_widget, self.tr("Kaavamääräysryhmäpohjat"))
+        self.library_tabs.addTab(self.plan_feature_library_widget, self.tr("Kaavakohdepohjat"))
 
         self.updated_regulation_group_libraries: list[RegulationGroupLibrary] = []
         self.updated_plan_feature_libraries: list[PlanFeatureLibrary] = []
@@ -65,16 +65,16 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
                 if library.file_path in file_paths:
                     QMessageBox.critical(
                         self,
-                        tr("Virhe"),
-                        tr("Useammalle kirjastolle on määritelty sama tallennuspolku") + f" ({library.file_path}).",
+                        self.tr("Virhe"),
+                        self.tr("Useammalle kirjastolle on määritelty sama tallennuspolku") + f" ({library.file_path}).",
                     )
                     return False
                 # Check for duplicate names
                 if library.name in names:
                     QMessageBox.critical(
                         self,
-                        tr("Virhe"),
-                        tr("Useammalle kirjastolle on määritelty sama nimi") + f" ({library.name}).",
+                        self.tr("Virhe"),
+                        self.tr("Useammalle kirjastolle on määritelty sama nimi") + f" ({library.name}).",
                     )
                     return False
                 file_paths.add(library.file_path)

@@ -7,7 +7,7 @@ import yaml
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QLabel
 
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 
 ui_path = resources.files(__package__) / "plugin_about.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -22,9 +22,9 @@ class PluginAbout(QDialog, FormClass):  # type: ignore
         self.setupUi(self)
 
         self.version_labels: dict[str, QLabel] = {
-            tr("asemakaava"): self.katja_version_town,
-            tr("yleiskaava"): self.katja_version_general,
-            tr("maakuntakaava"): self.katja_version_regional,
+            self.tr("asemakaava"): self.katja_version_town,
+            self.tr("yleiskaava"): self.katja_version_general,
+            self.tr("maakuntakaava"): self.katja_version_regional,
         }
 
         self.show_versions()

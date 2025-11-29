@@ -24,7 +24,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
     plan_feature_layers,
 )
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_id, iface
 
 if TYPE_CHECKING:
@@ -64,10 +64,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             self.validate_plan_matter_button.hide()
 
     def handle_validation_call_errors(self, error: str):
-        self.validation_label.setText(tr("Validoinnissa tapahtui virhe."))
+        self.validation_label.setText(self.tr("Validoinnissa tapahtui virhe."))
         self.validation_label.setStyleSheet("QLabel {color: red}")
 
-        logger.warning(tr("Validoinnissa tapahtui virhe:") + " %s", error)
+        logger.warning(self.tr("Validoinnissa tapahtui virhe:") + " %s", error)
 
         self.enable_validation()
 
@@ -75,17 +75,17 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         """Enable the validate plan matter button when a valid permanent identifier is received."""
         if identifier:
             self.validate_plan_matter_button.setEnabled(True)
-            self.validate_plan_matter_button.setToolTip(tr("Lähetä liitteet Ryhtiin ja validoi kaava-asia"))
+            self.validate_plan_matter_button.setToolTip(self.tr("Lähetä liitteet Ryhtiin ja validoi kaava-asia"))
         else:
             self.validate_plan_matter_button.setEnabled(False)
-            self.validate_plan_matter_button.setToolTip(tr("Hae ensin pysyvä kaavatunnus"))
+            self.validate_plan_matter_button.setToolTip(self.tr("Hae ensin pysyvä kaavatunnus"))
 
     def validate_plan(self):
         """Handles the button press to trigger the validation process."""
         # Get IDs from all layers
         # self.layer_features = self.get_all_features()
 
-        self.validation_label.setText(tr("Kaavasuunnitelman validointivirheet:"))
+        self.validation_label.setText(self.tr("Kaavasuunnitelman validointivirheet:"))
         self.validation_label.setStyleSheet("")
 
         # Clear the existing errors from the list view
@@ -93,7 +93,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
-            iface.messageBar().pushMessage(tr("Virhe"), tr("Ei aktiivista kaavasuunnitelmaa."), level=3)
+            iface.messageBar().pushMessage(self.tr("Virhe"), self.tr("Ei aktiivista kaavasuunnitelmaa."), level=3)
             return
 
         # Disable buttons and show progress bar
@@ -106,7 +106,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
     def validate_plan_matter(self):
         """Handles the button press to trigger the plan matter validation process."""
 
-        self.validation_label.setText(tr("Kaava-asian validointivirheet:"))
+        self.validation_label.setText(self.tr("Kaava-asian validointivirheet:"))
         self.validation_label.setStyleSheet("")
 
         # Clear the existing errors from the list view
@@ -114,7 +114,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
-            iface.messageBar().pushMessage(tr("Virhe"), tr("Ei aktiivista kaavasuunnitelmaa."), level=3)
+            iface.messageBar().pushMessage(self.tr("Virhe"), self.tr("Ei aktiivista kaavasuunnitelmaa."), level=3)
             return
 
         # Disable buttons and show progress bar
@@ -148,13 +148,13 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         """Slot for listing validation errors and warnings."""
 
         if not validation_json:
-            iface.messageBar().pushMessage(tr("Virhe"), tr("Validaatio json puuttuu."), level=1)
+            iface.messageBar().pushMessage(self.tr("Virhe"), self.tr("Validaatio json puuttuu."), level=1)
             self.enable_validation()
             return
 
         # If no errors or warnings, display a message and exit
         if not any(validation_json.values()):
-            iface.messageBar().pushMessage(tr("Virhe"), tr("Ei virheitä havaittu."), level=1)
+            iface.messageBar().pushMessage(self.tr("Virhe"), self.tr("Ei virheitä havaittu."), level=1)
             self.enable_validation()
             return
         self.layer_features = {}
@@ -211,7 +211,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         if not feature_id:
             iface.messageBar().pushWarning(
-                tr("Lomakkeen avaaminen epäonnistui"), tr("Kohteen ID puuttuu validointivirheen JSON:sta")
+                self.tr("Lomakkeen avaaminen epäonnistui"), self.tr("Kohteen ID puuttuu validointivirheen JSON:sta")
             )
             return
 
@@ -224,9 +224,9 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                 else:
                     self.plan_manager.edit_plan_feature(feature=feature_found, layer_name=layer.name)
             else:
-                if layer.name in (tr("Kaavamääräys"), tr("Kaavasuositus")):
+                if layer.name in (self.tr("Kaavamääräys"), self.tr("Kaavasuositus")):
                     regulation_group_id = feature_found["plan_regulation_group_id"]
-                elif layer.name == tr("Kaavamääräysryhmät"):
+                elif layer.name == self.tr("Kaavamääräysryhmät"):
                     regulation_group_id = feature_found["id"]
 
                 regulation_group_feature, _ = self.layer_features[regulation_group_id]
@@ -234,7 +234,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     regulation_group = RegulationGroupLayer.model_from_feature(regulation_group_feature)
                     self.plan_manager.edit_regulation_group(regulation_group)
         else:
-            iface.messageBar().pushWarning("", tr("Ei avattavaa lomaketta."))
+            iface.messageBar().pushWarning("", self.tr("Ei avattavaa lomaketta."))
 
     def get_feature_from_validation_error(self, validation_json: dict):
         key = validation_json.get("classKey", "")

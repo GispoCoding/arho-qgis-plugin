@@ -49,12 +49,7 @@ class Plugin:
 
         # QgsMessageLog.logMessage(self.locale, 'ARHO', level=Qgis.Info)
 
-        if self.locale == 'fi':
-            self.toolbar = iface.addToolBar("ARHO Työkalupalkki")
-        elif self.locale == 'en_US':
-            self.toolbar = iface.addToolBar("ARHO Toolbar")
-        else:
-            self.toolbar = iface.addToolBar(tr("ARHO Työkalupalkki"))
+        self.toolbar = iface.addToolBar(tr("ARHO Työkalupalkki"))
         # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def check_timezone_variable(self):

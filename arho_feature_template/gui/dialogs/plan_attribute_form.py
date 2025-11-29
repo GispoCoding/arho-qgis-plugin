@@ -18,7 +18,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanTypeLayer,
 )
 from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
@@ -150,7 +150,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         if legal_effect_id:
             widget.set_value(legal_effect_id)
 
-        label = QLabel(tr("Oikeusvaikutus:"))
+        label = QLabel(self.tr("Oikeusvaikutus:"))
         self.legal_effect_widgets.append((label, widget))
         self.general_data_layout.addRow(label, widget)
 

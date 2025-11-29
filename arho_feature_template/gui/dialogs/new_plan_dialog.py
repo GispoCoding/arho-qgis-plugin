@@ -12,7 +12,7 @@ from arho_feature_template.core.models import Plan
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
     get_active_plan_id,
@@ -128,4 +128,4 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.accept()
 
     def _handle_copy_failed(self, error_message: str):
-        iface.messageBar().pushCritical("", tr("Kaavasuunnitelman kopiointi epäonnistui:") + f" {error_message}")
+        iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelman kopiointi epäonnistui:") + f" {error_message}")

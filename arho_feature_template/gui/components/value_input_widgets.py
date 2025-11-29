@@ -19,7 +19,7 @@ from qgis.PyQt.QtWidgets import (
 from arho_feature_template.core.models import AttributeValue, AttributeValueDataType
 from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
 from arho_feature_template.project.layers.code_layers import LegalEffectsLayer, VerbalRegulationType
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 
 logger = logging.getLogger(__name__)
 
@@ -173,9 +173,9 @@ class CodeInputWidget(QWidget):
         self.code_value_widget = SinglelineTextInputWidget(default_value=code_value, editable=True)
 
         layout = QFormLayout()
-        layout.addRow(tr("Otsikko:"), self.title_widget)
-        layout.addRow(tr("Koodisto:"), self.code_list_widget)
-        layout.addRow(tr('<span style="color: red;">*</span> Koodiarvo:'), self.code_value_widget)
+        layout.addRow(self.tr("Otsikko:"), self.title_widget)
+        layout.addRow(self.tr("Koodisto:"), self.code_list_widget)
+        layout.addRow(self.tr('<span style="color: red;">*</span> Koodiarvo:'), self.code_value_widget)
         self.setLayout(layout)
 
         self.title_widget.changed.connect(lambda: self.changed.emit())

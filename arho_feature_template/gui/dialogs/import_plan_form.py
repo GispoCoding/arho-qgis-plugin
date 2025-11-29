@@ -8,7 +8,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QWidget
 
 from arho_feature_template.core.lambda_service import LambdaService
-from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_id, iface
 
 if TYPE_CHECKING:
@@ -95,5 +95,5 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
             self.adjustSize()
 
         else:
-            iface.messageBar().pushCritical("", tr("Kaavasuunnitelman tuonti epäonnistui:") + f" {error_message}")
+            iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelman tuonti epäonnistui:") + f" {error_message}")
             self.reject()
