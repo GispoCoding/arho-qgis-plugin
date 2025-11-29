@@ -31,6 +31,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_feature_layers,
     plan_layers,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 
 if TYPE_CHECKING:
@@ -46,12 +47,10 @@ FormClass, _ = uic.loadUiType(ui_path)
 class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
     def __init__(
         self,
-        tr,
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary
     ):
         super().__init__(parent=iface.mainWindow())
-        self.tr = tr
         self.setupUi(self)
         self.setWindowFlags(self.windowFlags() | Qt.Window)
 
@@ -117,9 +116,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground_selection.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
         self.regulation_groups_view = RegulationGroupsView(
-            self.tr, regulation_group_libraries, active_plan_regulation_groups_library
+            regulation_group_libraries, active_plan_regulation_groups_library
         )
-        self.regulation_groups_view.regulation_groups_label.setText(self.tr("Kaavakohteiden kaavamääräysryhmät"))
+        self.regulation_groups_view.regulation_groups_label.setText(tr("Kaavakohteiden kaavamääräysryhmät"))
         self.layout().insertWidget(3, self.regulation_groups_view)
 
         self._on_layer_selections_changed(self.source_layer_selection.currentLayer())
@@ -161,7 +160,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         source_features = list(self.get_source_features(self.source_layer))
 
         if not source_features:
-            iface.messageBar().pushInfo("", self.tr("Yhtään kohdetta ei tuotu."))
+            iface.messageBar().pushInfo("", tr("Yhtään kohdetta ei tuotu."))
             return
 
         # Create and add new plan features
@@ -198,7 +197,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             # If the group is not yet in DB, save it now to get an ID and use the same group object for each
             # plan feature
             if group.id_ is None:
-                id_ = save_regulation_group(group, self.tr)
+                id_ = save_regulation_group(group)
                 group.id_ = id_
                 group.modified = False
 
@@ -216,7 +215,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 regulation_groups=regulation_groups,
             )
             self.progress_bar.setValue(int((i + 1) / total_count * 100))
-            if save_plan_feature(model, self.tr):
+            if save_plan_feature(model):
                 success_count += 1
             else:
                 failed_count += 1
@@ -224,6 +223,6 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.progress_bar.setValue(100)
 
         if failed_count == 0:
-            iface.messageBar().pushSuccess("", self.tr("Kaavakohteet tuotiin onnistuneesti."))
+            iface.messageBar().pushSuccess("", tr("Kaavakohteet tuotiin onnistuneesti."))
         else:
-            iface.messageBar().pushInfo("", self.tr("Osa kaavakohteista tuotiin epäonnistuneesti") + f" ({failed_count}).")
+            iface.messageBar().pushInfo("", tr("Osa kaavakohteista tuotiin epäonnistuneesti") + f" ({failed_count}).")

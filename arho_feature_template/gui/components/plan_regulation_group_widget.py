@@ -15,6 +15,7 @@ from arho_feature_template.gui.components.plan_regulation_widget import Regulati
 from arho_feature_template.gui.dialogs.regulation_group_selection_view import RegulationGroupSelectionView
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.signal_utils import SignalDebouncer
 
@@ -32,9 +33,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     update_matching_groups = pyqtSignal(QWidget)
 
-    def __init__(self, tr, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
+    def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
         super().__init__()
-        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -87,18 +87,18 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.link_btn.setEnabled(False)
             self.link_btn.setText(str(0))
             self.link_btn.setToolTip(
-                self.tr("Yhdistämistä ei voi suorittaa, tietokannasta ei löydy vastaavia kaavamääräysryhmiä.")
+                tr("Yhdistämistä ei voi suorittaa, tietokannasta ei löydy vastaavia kaavamääräysryhmiä.")
             )
         elif nr_of_matching_groups == 1:
             self.link_btn.setEnabled(True)
             self.link_btn.setText("")
             self.link_btn.setMaximumWidth(30)
-            self.link_btn.setToolTip(self.tr("Yhdistä kaavamääräysryhmä tietokannan vastaavaan kaavamääräysryhmään."))
+            self.link_btn.setToolTip(tr("Yhdistä kaavamääräysryhmä tietokannan vastaavaan kaavamääräysryhmään."))
         else:
             self.link_btn.setEnabled(True)
             self.link_btn.setText(f"{nr_of_matching_groups!s}!")
             self.link_btn.setToolTip(
-                self.tr("Tietokannasta löytyy useita vastaavia kaavamääräysryhmiä, valitse yhdistettävä ryhmä.")
+                tr("Tietokannasta löytyy useita vastaavia kaavamääräysryhmiä, valitse yhdistettävä ryhmä.")
             )
             # Determine width based on characters in the button text
             if nr_of_matching_groups < 10:  # noqa: PLR2004
@@ -145,7 +145,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.update_matching_groups.emit(self)
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
-        widget = RegulationWidget(regulation=regulation, tr=self.tr, parent=self.frame)
+        widget = RegulationWidget(regulation=regulation, parent=self.frame)
         widget.changed.connect(lambda: self.group_contents_update_debouncer.restart_timer())
         widget.delete_signal.connect(self.delete_regulation_widget)
         self.frame.layout().addWidget(widget)
@@ -159,7 +159,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.group_contents_update_debouncer.restart_timer()
 
     def add_proposition_widget(self, proposition: Proposition) -> PropositionWidget:
-        widget = PropositionWidget(proposition=proposition, parent=self.frame, tr=self.tr)
+        widget = PropositionWidget(proposition=proposition, parent=self.frame)
         widget.changed.connect(lambda: self.group_contents_update_debouncer.restart_timer())
         widget.delete_signal.connect(self.delete_proposition_widget)
         self.frame.layout().addWidget(widget)
@@ -183,17 +183,17 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         # Case group exists in DB but no other plan object uses it
         if other_linked_features_count == 0:
             self.link_btn.setEnabled(False)
-            self.link_btn.setToolTip(self.tr("Ei purettavia linkkejä, kaavamääräysryhmää ei ole annettu muille kaavakohteelle."))
+            self.link_btn.setToolTip(tr("Ei purettavia linkkejä, kaavamääräysryhmää ei ole annettu muille kaavakohteelle."))
             # Return early, don't add other existing group indicators if not linked to other plan objects
             return
 
         # Case group exists in DB and N other plan object use it too
         self.link_btn.setEnabled(True)
-        self.link_btn.setToolTip(self.tr("Tee kaavamääräysryhmästä uniikki / pura linkitys muihin kaavakohteisiin."))
+        self.link_btn.setToolTip(tr("Tee kaavamääräysryhmästä uniikki / pura linkitys muihin kaavakohteisiin."))
 
         tooltip = (
-            self.tr("Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin ") +
-            self.tr("kaavakohteisiin, joille ryhmä on lisätty.")
+            tr("Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa muihin ") +
+            tr("kaavakohteisiin, joille ryhmä on lisätty.")
         )
         layout = QHBoxLayout()
 
@@ -206,7 +206,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.link_label_text = QLabel()
         self.link_label_text.setObjectName("text_label")  # Set unique name to avoid style cascading
         self.link_label_text.setText(
-            self.tr("Kaavamääräysryhmä on käytössä myös") + f" {other_linked_features_count} " + self.tr("toisella kaavakohteella")
+            tr("Kaavamääräysryhmä on käytössä myös") + f" {other_linked_features_count} " + tr("toisella kaavakohteella")
         )
         self.link_label_text.setWordWrap(True)
         self.link_label_text.setStyleSheet("#text_label { color: #4b8db2; }")

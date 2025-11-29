@@ -80,6 +80,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_layers,
     plan_matter_layers,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
@@ -145,9 +146,8 @@ class PlanManager(QObject):
     project_cleared = pyqtSignal()
     plan_identifier_set = pyqtSignal(str)
 
-    def __init__(self, tr):
+    def __init__(self):
         super().__init__()
-        self.tr = tr
         self.json_plan_path = None
         self.json_plan_outline_path = None
         self.json_plan_matter_path = None
@@ -161,7 +161,7 @@ class PlanManager(QObject):
         self.new_feature_dock.hide()
 
         # Initialize regulation groups dock
-        self.regulation_groups_dock = RegulationGroupsDock(self.tr, iface.mainWindow())
+        self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
         # self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
         self.regulation_groups_dock.request_new_regulation_group_empty.connect(
             lambda: self.create_new_regulation_group(from_template=False)
@@ -201,7 +201,7 @@ class PlanManager(QObject):
         self.inspect_plan_feature_tool.edit_feature_requested.connect(self.edit_plan_feature)
 
         # Initialize lambda service
-        self.lambda_service = LambdaService(self.tr)
+        self.lambda_service = LambdaService()
         self.lambda_service.plan_identifier_received.connect(
             lambda value: self.set_permanent_identifier(value["identifier"])
         )
@@ -215,14 +215,14 @@ class PlanManager(QObject):
     def check_compatible_project_version(self) -> bool:
         project_version, ok = QgsProject.instance().readEntry("arho", "project_version")
         if not ok:
-            msg = self.tr("Projektitiedostosta ei löytynyt ARHO versiomerkintää. Käytäthän varmasti yhteensopivaa projektiedostoa?")
+            msg = tr("Projektitiedostosta ei löytynyt ARHO versiomerkintää. Käytäthän varmasti yhteensopivaa projektiedostoa?")
             iface.messageBar().pushCritical("", msg)
             return False
 
         if float(project_version) != SUPPORTED_PROJECT_VERSION:
             msg = (
-                self.tr("Projektitiedosto ei ole yhteensopiva lisäosan version kanssa ") +
-                self.tr("(havaittu versio ") + f"{project_version}" + self.tr(", vaadittu ") + f"{SUPPORTED_PROJECT_VERSION})"
+                tr("Projektitiedosto ei ole yhteensopiva lisäosan version kanssa ") +
+                tr("(havaittu versio ") + f"{project_version}" + tr(", vaadittu ") + f"{SUPPORTED_PROJECT_VERSION})"
             )
             iface.messageBar().pushCritical("", msg)
             return False
@@ -263,7 +263,7 @@ class PlanManager(QObject):
         self.regulation_group_libraries: list[RegulationGroupLibrary] = []
         self.regulation_group_libraries = [
             RegulationGroupLibrary.from_template_dict(
-                data=TemplateManager.read_library_config_file(file_path, "regulation_group", self.tr),
+                data=TemplateManager.read_library_config_file(file_path, "regulation_group"),
                 library_type=RegulationGroupLibrary.LibraryType.DEFAULT,
                 file_path=str(file_path),
             )
@@ -271,7 +271,7 @@ class PlanManager(QObject):
         ]
         self.regulation_group_libraries.extend(
             RegulationGroupLibrary.from_template_dict(
-                data=TemplateManager.read_library_config_file(file_path, "regulation_group", self.tr),
+                data=TemplateManager.read_library_config_file(file_path, "regulation_group"),
                 library_type=RegulationGroupLibrary.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
@@ -282,7 +282,7 @@ class PlanManager(QObject):
         """Make sure regulation group libraries are updated before initializing plan feature libraries."""
         self.plan_feature_libraries = [
             PlanFeatureLibrary.from_template_dict(
-                data=TemplateManager.read_library_config_file(file_path, "plan_feature", self.tr),
+                data=TemplateManager.read_library_config_file(file_path, "plan_feature"),
                 library_type=PlanFeatureLibrary.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
@@ -291,7 +291,7 @@ class PlanManager(QObject):
         self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
 
     def open_manage_plans(self):
-        dialog = ManagePlans(self.regulation_group_libraries, self.tr)
+        dialog = ManagePlans(self.regulation_group_libraries)
         if dialog.exec():
             selected_plan = dialog.selected_plan
             # If the active plan was changed, update state
@@ -299,19 +299,19 @@ class PlanManager(QObject):
                 self.set_active_plan(selected_plan.id_)
 
     def open_import_plan_dialog(self):
-        dialog = ImportPlanForm(self.tr, iface.mainWindow())
+        dialog = ImportPlanForm(iface.mainWindow())
         if dialog.exec_() and dialog.imported_plan_id:
             self.set_active_plan(dialog.imported_plan_id)
 
     def open_import_features_dialog(self):
         self.import_features_form = ImportFeaturesForm(
-            self.tr, self.regulation_group_libraries, self.active_plan_regulation_group_library
+            self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
         self.import_features_form.show()
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(self):
-        self.active_plan_regulation_group_library = regulation_group_library_from_active_plan(self.tr)
+        self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
         self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
 
     def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
@@ -329,7 +329,7 @@ class PlanManager(QObject):
         self._open_regulation_group_form(regulation_group)
 
     def manage_libraries(self):
-        manage_libraries_form = ManageLibrariesForm(self.tr, self.regulation_group_libraries, self.plan_feature_libraries)
+        manage_libraries_form = ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries)
         result = manage_libraries_form.exec_()
         # Even if user clicked cancel, we retrieve the list of updated libraries in case a library was deleted
         updated_regulation_group_libraries = (
@@ -351,11 +351,11 @@ class PlanManager(QObject):
         self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
-        regulation_group_form = PlanRegulationGroupForm(self.tr, regulation_group, self.active_plan_regulation_group_library)
+        regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
 
         if regulation_group_form.exec_():
             model = regulation_group_form.model
-            if save_regulation_group(model, self.tr) is None:
+            if save_regulation_group(model) is None:
                 return None
             # NOTE: Should we reinitialize regulation group dock even if saving failed?
             self.update_active_plan_regulation_group_library()
@@ -366,7 +366,7 @@ class PlanManager(QObject):
     def delete_regulation_groups(self, groups: Iterable[RegulationGroup]):
         groups_changed = False
         for group in groups:
-            if delete_regulation_group(group, self.tr):
+            if delete_regulation_group(group):
                 groups_changed = True
 
         if groups_changed:
@@ -381,9 +381,9 @@ class PlanManager(QObject):
                     if not delete_feature(
                         association,
                         RegulationGroupAssociationLayer.get_from_project(),
-                        self.tr("Kaavamääräysryhmän assosiaation poisto"),
+                        tr("Kaavamääräysryhmän assosiaation poisto"),
                     ):
-                        iface.messageBar().pushCritical("", self.tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui."))
+                        iface.messageBar().pushCritical("", tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui."))
 
     def add_regulation_groups_to_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
@@ -391,7 +391,7 @@ class PlanManager(QObject):
         for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
                 for group in groups:
-                    save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id, self.tr)
+                    save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
 
     def remove_selected_regulation_groups_from_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
@@ -406,10 +406,10 @@ class PlanManager(QObject):
                         if not delete_feature(
                             association,
                             RegulationGroupAssociationLayer.get_from_project(),
-                            self.tr("Kaavamääräysryhmän assosiaation poisto"),
+                            tr("Kaavamääräysryhmän assosiaation poisto"),
                         ):
                             iface.messageBar().pushCritical(
-                                "", self.tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+                                "", tr("Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
                             )
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
@@ -424,7 +424,7 @@ class PlanManager(QObject):
         self.previous_map_tool = iface.mapCanvas().mapTool()
         self.previous_active_plan_id = get_active_plan_id()
 
-        if not handle_unsaved_changes(self.tr):
+        if not handle_unsaved_changes():
             return
 
         plan_layer = PlanLayer.get_from_project()
@@ -452,14 +452,14 @@ class PlanManager(QObject):
         layer: QgsVectorLayer = iface.activeLayer()
         plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
         if layer.name() in plan_layer_names:
-            iface.messageBar().pushWarning("", self.tr("Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta."))
+            iface.messageBar().pushWarning("", tr("Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta."))
             return
         if layer.geometryType() != QgsWkbTypes.PolygonGeometry:
-            iface.messageBar().pushWarning("", self.tr("Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni."))
+            iface.messageBar().pushWarning("", tr("Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni."))
             return
         features = layer.selectedFeatures()
         if not features:
-            iface.messageBar().pushWarning("", self.tr("Ei valittuja kohteita kaavasuunnitelman ulkorajaksi."))
+            iface.messageBar().pushWarning("", tr("Ei valittuja kohteita kaavasuunnitelman ulkorajaksi."))
             return
 
         plan_saved = self._plan_geom_ready(features)
@@ -473,13 +473,13 @@ class PlanManager(QObject):
 
         feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         if feature is None:
-            iface.messageBar().pushWarning("", self.tr("Mikään kaavasuunnitelma ei ole avattuna."))
+            iface.messageBar().pushWarning("", tr("Mikään kaavasuunnitelma ei ole avattuna."))
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
-        attribute_form = PlanAttributeForm(self.tr, plan_model, self.regulation_group_libraries)
+        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
-            plan_id = save_plan(attribute_form.model, self.tr)
+            plan_id = save_plan(attribute_form.model)
             if plan_id is not None:
                 self.update_active_plan_regulation_group_library()
 
@@ -490,25 +490,25 @@ class PlanManager(QObject):
 
         feature = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=True)
         if feature is None:
-            iface.messageBar().pushWarning("", self.tr("Ei aktiivista kaava-asiaa."))
+            iface.messageBar().pushWarning("", tr("Ei aktiivista kaava-asiaa."))
             return
         plan_matter_model = PlanMatterLayer.model_from_feature(feature)
 
         attribute_form = PlanMatterAttributeForm(plan_matter_model)
         if attribute_form.exec_():
-            save_plan_matter(attribute_form.model, self.tr)
+            save_plan_matter(attribute_form.model)
 
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
 
         # Handle unsaved changes first
-        if not handle_unsaved_changes(self.tr):
+        if not handle_unsaved_changes():
             return
 
         # Get the layer
         plan_matter_layer = PlanMatterLayer.get_from_project()
         if not plan_matter_layer:
-            iface.messageBar().pushWarning("", self.tr("Kaava-asia tasoa ei löytynyt projektista."))
+            iface.messageBar().pushWarning("", tr("Kaava-asia tasoa ei löytynyt projektista."))
             return
 
         self.previously_editable = plan_matter_layer.isEditable()
@@ -522,23 +522,23 @@ class PlanManager(QObject):
         attribute_form = PlanMatterAttributeForm(plan_matter_model, parent=iface.mainWindow())
 
         if attribute_form.exec_():
-            saved_id = save_plan_matter(attribute_form.model, self.tr)
+            saved_id = save_plan_matter(attribute_form.model)
 
             self.set_active_plan_matter(saved_id)
 
     def add_new_plan_feature(self):
-        if not handle_unsaved_changes(self.tr):
+        if not handle_unsaved_changes():
             return
 
         layer_name = self.new_feature_dock.active_feature_layer
         if layer_name is None:
-            msg = self.tr("Kaavakohdetyyppiä ei ole valittuna")
+            msg = tr("Kaavakohdetyyppiä ei ole valittuna")
             iface.messageBar().pushWarning("", msg)
             return
 
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
         if not layer_class:
-            msg = self.tr("Ei löytynyt kaavakohdetasojen luokkaa, joka vastaa tasoa nimeltä ") + f"{layer_name}"
+            msg = tr("Ei löytynyt kaavakohdetasojen luokkaa, joka vastaa tasoa nimeltä ") + f"{layer_name}"
             raise ValueError(msg)
         layer = layer_class.get_from_project()
 
@@ -562,9 +562,9 @@ class PlanManager(QObject):
             geom = QgsGeometry.unaryUnion([feature.geometry() for feature in features if feature.geometry()])
 
         plan_model = Plan(geom=geom)
-        attribute_form = PlanAttributeForm(self.tr, plan_model, self.regulation_group_libraries)
+        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
-            plan_id = save_plan(attribute_form.model, self.tr)
+            plan_id = save_plan(attribute_form.model)
             if plan_id is not None:
                 plan_to_be_activated = plan_id
                 plan_saved = True
@@ -602,14 +602,13 @@ class PlanManager(QObject):
 
         plan_feature.geom = feature.geometry()
         attribute_form = PlanObjectForm(
-            self.tr,
             plan_feature,
             title if title else "",
             self.regulation_group_libraries,
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
         )
-        if attribute_form.exec_() and save_plan_feature(attribute_form.model, self.tr) is not None:
+        if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
@@ -618,9 +617,9 @@ class PlanManager(QObject):
 
         title = plan_feature.name if plan_feature.name else layer_name
         attribute_form = PlanObjectForm(
-            self.tr, plan_feature, title, self.regulation_group_libraries, self.plan_feature_libraries, self.active_plan_regulation_group_library
+            plan_feature, title, self.regulation_group_libraries, self.plan_feature_libraries, self.active_plan_regulation_group_library
         )
-        if attribute_form.exec_() and save_plan_feature(attribute_form.model, self.tr) is not None:
+        if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
 
     @use_wait_cursor
@@ -718,13 +717,13 @@ class PlanManager(QObject):
         connection_names = get_existing_database_connection_names()
 
         if not connection_names:
-            iface.messageBar().pushCritical("", self.tr("Tietokantayhteyksiä ei löytynyt."))
+            iface.messageBar().pushCritical("", tr("Tietokantayhteyksiä ei löytynyt."))
             return
 
-        if not handle_unsaved_changes(self.tr):
+        if not handle_unsaved_changes():
             return
 
-        dialog = LoadPlanDialog(None, self.tr, connection_names)
+        dialog = LoadPlanDialog(None, connection_names)
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_id = dialog.get_selected_plan_id()
@@ -737,13 +736,13 @@ class PlanManager(QObject):
         connection_names = get_existing_database_connection_names()
 
         if not connection_names:
-            iface.messageBar().pushCritical("", self.tr("Tietokantayhteyksiä ei löytynyt."))
+            iface.messageBar().pushCritical("", tr("Tietokantayhteyksiä ei löytynyt."))
             return
 
-        if not handle_unsaved_changes(self.tr):
+        if not handle_unsaved_changes():
             return
 
-        dialog = LoadPlanMatterDialog(None, self.tr, connection_names)
+        dialog = LoadPlanMatterDialog(None, connection_names)
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_matter_id = dialog.get_selected_plan_matter_id()
@@ -762,7 +761,7 @@ class PlanManager(QObject):
         The plan_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
-            iface.messageBar().pushWarning("", self.tr("Mikään kaavasuunnitelma ei ole avattuna."))
+            iface.messageBar().pushWarning("", tr("Mikään kaavasuunnitelma ei ole avattuna."))
             return
 
         dialog = SerializePlan()
@@ -779,7 +778,7 @@ class PlanManager(QObject):
         The plan_matter_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
         if not plan_id:
-            iface.messageBar().pushWarning("", self.tr("Mikään kaavasuunnitelma ei ole avattuna."))
+            iface.messageBar().pushWarning("", tr("Mikään kaavasuunnitelma ei ole avattuna."))
             return
 
         dialog = SerializePlanMatter()
@@ -792,12 +791,12 @@ class PlanManager(QObject):
         """Gets the permanent plan identifier for the active plan."""
         plan_matter_id = get_active_plan_matter_id()
         if not plan_matter_id:
-            iface.messageBar().pushWarning("", self.tr("Mikään kaava-asia ei ole aktiivisena."))
+            iface.messageBar().pushWarning("", tr("Mikään kaava-asia ei ole aktiivisena."))
             return
         if not PlanMatterLayer.get_plan_matter_producers_plan_identifier(plan_matter_id):
             iface.messageBar().pushCritical(
-                self.tr("VIRHE"),
-                self.tr("Kaava-asialta puuttuu tuottajan kaavatunnus, joka vaaditaan pysyvän kaavatunnuksen hakemista varten."),
+                tr("VIRHE"),
+                tr("Kaava-asialta puuttuu tuottajan kaavatunnus, joka vaaditaan pysyvän kaavatunnuksen hakemista varten."),
             )
             return
 
@@ -810,12 +809,12 @@ class PlanManager(QObject):
     def save_exported_plan(self, plan_data: dict, outline_data: dict):
         """This slot saves the plan and outline data to JSON files."""
         if plan_data is None or outline_data is None:
-            iface.messageBar().pushCritical("", self.tr("Kaavasuunnitelmaa tai sen ulkorajaa ei löytynyt."))
+            iface.messageBar().pushCritical("", tr("Kaavasuunnitelmaa tai sen ulkorajaa ei löytynyt."))
             return
 
         # Retrieve paths
         if self.json_plan_path is None or self.json_plan_outline_path is None:
-            iface.messageBar().pushCritical("", self.tr("Tiedostopolut eivät ole saatavilla."))
+            iface.messageBar().pushCritical("", tr("Tiedostopolut eivät ole saatavilla."))
             return
 
         # Save the JSONs
@@ -825,24 +824,24 @@ class PlanManager(QObject):
         with open(self.json_plan_outline_path, "w", encoding="utf-8") as outline_file:
             json.dump(outline_data, outline_file, ensure_ascii=False, indent=2)
 
-        iface.messageBar().pushSuccess("", self.tr("Kaavasuunnitelma ja sen ulkoraja tallennettu."))
+        iface.messageBar().pushSuccess("", tr("Kaavasuunnitelma ja sen ulkoraja tallennettu."))
 
     def save_exported_plan_matter(self, plan_matter_data):
         """Saves the plan matter data to a JSON file."""
         if plan_matter_data is None:
-            iface.messageBar().pushCritical("", self.tr("Kaava-asiaa ei löytynyt."))
+            iface.messageBar().pushCritical("", tr("Kaava-asiaa ei löytynyt."))
             return
 
         # Retrieve path
         if self.json_plan_matter_path is None:
-            iface.messageBar().pushCritical("", self.tr("Tiedostopolku ei ole saatavilla."))
+            iface.messageBar().pushCritical("", tr("Tiedostopolku ei ole saatavilla."))
             return
 
         # Save the JSON
         with open(self.json_plan_matter_path, "w", encoding="utf-8") as file:
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
-        iface.messageBar().pushSuccess("", self.tr("Kaava-asia tallennettu."))
+        iface.messageBar().pushSuccess("", tr("Kaava-asia tallennettu."))
 
     def on_project_loaded(self):
         if QgsProject.instance().fileName() == "":

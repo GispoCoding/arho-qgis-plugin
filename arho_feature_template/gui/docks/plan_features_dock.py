@@ -34,6 +34,7 @@ from arho_feature_template.project.layers.plan_layers import (
     get_plan_feature_layer_class_by_model,
     plan_feature_layers,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import iface
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
@@ -95,7 +96,6 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
 class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def __init__(self, plan_manager_ref: PlanManager, parent=None):
         super().__init__(parent)
-        self.tr = plan_manager_ref.tr
         self.setupUi(self)
 
         # TYPES
@@ -127,9 +127,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             type_text = "Type"
             description_text = "Description"
         else:
-            name_text = self.tr("Nimi")
-            type_text = self.tr("Tyyppi")
-            description_text = self.tr("Kuvaus")
+            name_text = tr("Nimi")
+            type_text = tr("Tyyppi")
+            description_text = tr("Kuvaus")
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(3)
@@ -222,13 +222,13 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         # Set type filter
         allowed_types = set()
         if self.land_use_area_btn.isChecked():
-            allowed_types.add(self.tr("Aluevaraus"))
+            allowed_types.add(tr("Aluevaraus"))
         if self.other_area_btn.isChecked():
-            allowed_types.add(self.tr("Osa-alue"))
+            allowed_types.add(tr("Osa-alue"))
         if self.line_btn.isChecked():
-            allowed_types.add(self.tr("Viiva"))
+            allowed_types.add(tr("Viiva"))
         if self.point_btn.isChecked():
-            allowed_types.add(self.tr("Piste"))
+            allowed_types.add(tr("Piste"))
         self.filter_proxy_model.allowed_types = allowed_types
         self.filter_proxy_model.invalidateFilter()
 
@@ -281,11 +281,10 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def _open_form(self, index: QModelIndex):
         plan_feature_model = self._plan_feature_from_index(index)
         if not plan_feature_model:
-            iface.messageBar().pushWarning("", self.tr("Kaavakohdetta ei löydetty."))
+            iface.messageBar().pushWarning("", tr("Kaavakohdetta ei löydetty."))
             return
 
         form = PlanObjectForm(
-            self.tr,
             plan_feature=plan_feature_model,
             form_title=plan_feature_model.name or plan_feature_model.layer_name or "",
             plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
@@ -294,7 +293,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         )
         if form.exec():
             updated_plan_feature_model = form.model
-            if save_plan_feature(updated_plan_feature_model, self.tr) is not None:
+            if save_plan_feature(updated_plan_feature_model) is not None:
                 # Update table row if saving was succesfull
                 model_index = self.filter_proxy_model.mapToSource(index)
                 row = model_index.row()
@@ -308,21 +307,21 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
         menu = QMenu()
         menu.addAction(
-            QgsApplication.getThemeIcon("mActionOpenTable.svg"), self.tr("Näytä lomake"), lambda: self._open_form(index)
+            QgsApplication.getThemeIcon("mActionOpenTable.svg"), tr("Näytä lomake"), lambda: self._open_form(index)
         )
         menu.addAction(
             QgsApplication.getThemeIcon("mActionZoomTo.svg"),
-            self.tr("Zoomaa kohteeseen"),
+            tr("Zoomaa kohteeseen"),
             lambda: self._on_zoom_to_feature(plan_feature_model),
         )
         menu.addAction(
             QgsApplication.getThemeIcon("mActionPanTo.svg"),
-            self.tr("Vieritä kohteeseen"),
+            tr("Vieritä kohteeseen"),
             lambda: self._on_pan_to_feature(plan_feature_model),
         )
         menu.addAction(
             QgsApplication.getThemeIcon("mActionHighlightFeature.svg"),
-            self.tr("Väläytä kohdetta"),
+            tr("Väläytä kohdetta"),
             lambda: self._on_highlight_feature(plan_feature_model),
         )
         plan_object_library_menu = QMenu("Tallenna kaavakohdepohjakirjastoon")

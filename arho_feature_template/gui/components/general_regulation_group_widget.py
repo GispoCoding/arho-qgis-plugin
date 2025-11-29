@@ -12,6 +12,7 @@ from arho_feature_template.core.models import Proposition, Regulation, Regulatio
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
@@ -26,9 +27,8 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
     # open_as_form_signal = pyqtSignal(QWidget)
     delete_signal = pyqtSignal(QWidget)
 
-    def __init__(self, tr, regulation_group: RegulationGroup, layer_name: str):
+    def __init__(self, regulation_group: RegulationGroup, layer_name: str):
         super().__init__()
-        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -51,8 +51,8 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         # self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         # self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
         add_field_menu = QMenu()
-        add_field_menu.addAction(self.tr("Lisää kaavamääräys")).triggered.connect(self.add_new_regulation)
-        add_field_menu.addAction(self.tr("Lisää kaavasuositus")).triggered.connect(self.add_new_proposition)
+        add_field_menu.addAction(tr("Lisää kaavamääräys")).triggered.connect(self.add_new_regulation)
+        add_field_menu.addAction(tr("Lisää kaavasuositus")).triggered.connect(self.add_new_proposition)
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
@@ -79,7 +79,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.add_regulation_widget(regulation)
 
     def add_regulation_widget(self, regulation: Regulation) -> RegulationWidget:
-        widget = RegulationWidget(regulation=regulation, tr=self.tr, parent=self.frame)
+        widget = RegulationWidget(regulation=regulation, parent=self.frame)
         widget.delete_signal.connect(self.delete_regulation_widget)
         self.frame.layout().addWidget(widget)
         self.regulation_widgets.append(widget)
@@ -95,7 +95,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.add_proposition_widget(proposition)
 
     def add_proposition_widget(self, proposition: Proposition) -> PropositionWidget:
-        widget = PropositionWidget(proposition=proposition, parent=self.frame, tr=self.tr)
+        widget = PropositionWidget(proposition=proposition, parent=self.frame)
         widget.delete_signal.connect(self.delete_proposition_widget)
         self.frame.layout().addWidget(widget)
         self.proposition_widgets.append(widget)

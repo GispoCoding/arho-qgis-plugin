@@ -31,6 +31,7 @@ from arho_feature_template.gui.components.plan_regulation_widget import Regulati
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
@@ -49,12 +50,10 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def __init__(
         self,
-        tr,
         regulation_group: RegulationGroup,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None,
     ):
         super().__init__()
-        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -188,7 +187,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.add_regulation(Regulation(regulation_type_id))
 
     def add_regulation(self, regulation: Regulation):
-        widget = RegulationWidget(self.tr, regulation, parent=self.regulations_scroll_area_contents)
+        widget = RegulationWidget(regulation, parent=self.regulations_scroll_area_contents)
         widget.delete_signal.connect(self.delete_regulation)
         index = self.regulations_layout.count() - 1
         self.regulations_layout.insertWidget(index, widget)
@@ -205,7 +204,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.add_proposition(proposition)
 
     def add_proposition(self, proposition: Proposition):
-        widget = PropositionWidget(proposition, parent=self.propositions_scroll_contents, tr=self.tr)
+        widget = PropositionWidget(proposition, parent=self.propositions_scroll_contents)
         widget.delete_signal.connect(self.delete_proposition)
         self.propositions_layout.insertWidget(1, widget)
         self.proposition_widgets.append(widget)

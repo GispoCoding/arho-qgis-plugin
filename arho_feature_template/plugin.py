@@ -18,7 +18,7 @@ from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFac
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
-from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
+from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation, tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
@@ -54,24 +54,8 @@ class Plugin:
         elif self.locale == 'en_US':
             self.toolbar = iface.addToolBar("ARHO Toolbar")
         else:
-            self.toolbar = iface.addToolBar(self.tr("ARHO Työkalupalkki"))
+            self.toolbar = iface.addToolBar(tr("ARHO Työkalupalkki"))
         # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-
-
-    def tr(self, message):
-        """Get the translation for a string using Qt translation API.
-
-        We implement this ourselves since we do not inherit QObject.
-
-        :param message: String for translation.
-        :type message: str, QString
-
-        :returns: Translated version of message.
-        :rtype: QString
-        """
-        # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('Arho QGIS plugin', message)
-    
 
     def check_timezone_variable(self):
         """Check if PGTZ environment variable is correctly set."""
@@ -166,7 +150,7 @@ class Plugin:
 
     def initGui(self) -> None:  # noqa N802
         # Plan manager
-        self.plan_manager = PlanManager(self.tr)
+        self.plan_manager = PlanManager()
 
         # Docks
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
@@ -179,7 +163,7 @@ class Plugin:
         iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.features_dock)
         iface.mainWindow().tabifyDockWidget(self.plan_manager.regulation_groups_dock, self.plan_manager.features_dock)
 
-        self.validation_dock = ValidationDock(self.plan_manager, self.tr)
+        self.validation_dock = ValidationDock(self.plan_manager)
         iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
         iface.mainWindow().tabifyDockWidget(self.plan_manager.new_feature_dock, self.validation_dock)
 
@@ -224,19 +208,19 @@ class Plugin:
             send_plan_matter_text = "Send plan matter to Ryhti"
             send_plan_matter_text_tip = "Send plan matter to Ryhti"
         else:
-            plan_matter_text = self.tr("Kaava-asia ")
-            new_plan_matter_text = self.tr("Uusi kaava-asia")
-            create_new_plan_matter_text = self.tr("Luo uusi kaava-asia")
-            open_plan_matter_text = self.tr("Avaa kaava-asia")
-            load_plan_matter_text = self.tr("Lataa/avaa kaava-asia")
-            plan_matter_attributes_text = self.tr("Kaava-asian tiedot")
-            edit_active_plan_matter_attributes_text = self.tr("Muokkaa aktiivisen kaava-asian tietoja")
-            save_plan_matter_json_text = self.tr("Tallenna kaava-asian JSON")
-            save_plan_matter_json_text_tip = self.tr("Tallenna aktiivisen kaavan kaava-asia JSON muodossa")
-            fetch_permanent_plan_identifier_text = self.tr("Hae pysyvä kaavatunnus")
-            fetch_permanent_plan_identifier_text_tip = self.tr("Hae kaavalle pysyvä kaavatunnus")
-            send_plan_matter_text = self.tr("Lähetä kaava-asia Ryhtiin")
-            send_plan_matter_text_tip = self.tr("Lähetä kaava-asia Ryhtiin")
+            plan_matter_text = tr("Kaava-asia ")
+            new_plan_matter_text = tr("Uusi kaava-asia")
+            create_new_plan_matter_text = tr("Luo uusi kaava-asia")
+            open_plan_matter_text = tr("Avaa kaava-asia")
+            load_plan_matter_text = tr("Lataa/avaa kaava-asia")
+            plan_matter_attributes_text = tr("Kaava-asian tiedot")
+            edit_active_plan_matter_attributes_text = tr("Muokkaa aktiivisen kaava-asian tietoja")
+            save_plan_matter_json_text = tr("Tallenna kaava-asian JSON")
+            save_plan_matter_json_text_tip = tr("Tallenna aktiivisen kaavan kaava-asia JSON muodossa")
+            fetch_permanent_plan_identifier_text = tr("Hae pysyvä kaavatunnus")
+            fetch_permanent_plan_identifier_text_tip = tr("Hae kaavalle pysyvä kaavatunnus")
+            send_plan_matter_text = tr("Lähetä kaava-asia Ryhtiin")
+            send_plan_matter_text_tip = tr("Lähetä kaava-asia Ryhtiin")
 
         self.plan_matter_button = QToolButton()
         self.plan_matter_button.setText(plan_matter_text)
@@ -350,23 +334,23 @@ class Plugin:
             save_plan_map_text = "Save plan map"
             save_plan_map_text_tip = "Save active plan scheme in GeoTIFF format"
         else:
-            plan_scheme_text = self.tr("Kaavasuunnitelma ")
-            new_plan_scheme_text = self.tr("Uusi kaavasuunnitelma")
-            create_new_plan_scheme_by_drawing_text = self.tr("Luo uusi kaavasuunnitelma piirtämällä ulkoraja")
-            create_new_plan_scheme_by_drawing_text_tip = self.tr("Luo uusi kaavasuunnitelman ulkoraja piirtämällä kaavarajaus")
-            create_new_plan_scheme_by_importing_text = self.tr("Luo uusi kaavasuunnitelma tuomalla ulkoraja")
-            create_new_plan_scheme_by_importing_text_tip = self.tr("Luo uusi kaavasuunnitelman ulkoraja valitsemalla kaavarajauksen geometria toiselta tasolta")
-            plan_schemes_text = self.tr("Kaavasuunnitelmat")
-            plan_schemes_text_tip = self.tr("Näytä kaavasuunnitelmat")
-            plan_scheme_attributes_text = self.tr("Kaavasuunnitelman tiedot")
-            plan_scheme_attributes_text_tip = self.tr("Näytä aktiivisen kaavasuunnitelman tiedot")
-            import_plan_scheme_text = self.tr("Tuo kaavasuunnitelma")
-            import_plan_scheme_text_tip = self.tr("Tuo kaavasuunnitelman JSON tietokantaan")
-            save_plan_scheme_text = self.tr("Tallenna kaavasuunnitelma")
-            save_plan_scheme_json_text = self.tr("Tallenna kaavasuunnitelma JSON")
-            save_plan_scheme_json_text_tip = self.tr("Tallenna aktiivinen kaavasuunnitelma JSON-muodossa")
-            save_plan_map_text = self.tr("Tallenna kaavakartta")
-            save_plan_map_text_tip = self.tr("Tallenna aktiivinen kaavasuunnitelma GeoTIFF-muodossa")
+            plan_scheme_text = tr("Kaavasuunnitelma ")
+            new_plan_scheme_text = tr("Uusi kaavasuunnitelma")
+            create_new_plan_scheme_by_drawing_text = tr("Luo uusi kaavasuunnitelma piirtämällä ulkoraja")
+            create_new_plan_scheme_by_drawing_text_tip = tr("Luo uusi kaavasuunnitelman ulkoraja piirtämällä kaavarajaus")
+            create_new_plan_scheme_by_importing_text = tr("Luo uusi kaavasuunnitelma tuomalla ulkoraja")
+            create_new_plan_scheme_by_importing_text_tip = tr("Luo uusi kaavasuunnitelman ulkoraja valitsemalla kaavarajauksen geometria toiselta tasolta")
+            plan_schemes_text = tr("Kaavasuunnitelmat")
+            plan_schemes_text_tip = tr("Näytä kaavasuunnitelmat")
+            plan_scheme_attributes_text = tr("Kaavasuunnitelman tiedot")
+            plan_scheme_attributes_text_tip = tr("Näytä aktiivisen kaavasuunnitelman tiedot")
+            import_plan_scheme_text = tr("Tuo kaavasuunnitelma")
+            import_plan_scheme_text_tip = tr("Tuo kaavasuunnitelman JSON tietokantaan")
+            save_plan_scheme_text = tr("Tallenna kaavasuunnitelma")
+            save_plan_scheme_json_text = tr("Tallenna kaavasuunnitelma JSON")
+            save_plan_scheme_json_text_tip = tr("Tallenna aktiivinen kaavasuunnitelma JSON-muodossa")
+            save_plan_map_text = tr("Tallenna kaavakartta")
+            save_plan_map_text_tip = tr("Tallenna aktiivinen kaavasuunnitelma GeoTIFF-muodossa")
 
         self.plan_button = QToolButton()
         self.plan_button.setText(plan_scheme_text)
@@ -480,11 +464,11 @@ class Plugin:
             import_plan_objects_text = "Import plan objects"
             import_plan_objects_text_tip = "Import plan objects to the database from other vector layers"
         else:
-            plan_objects_text = self.tr("Kaavakohteet")
-            create_plan_object_text = self.tr("Luo kaavakohde")
-            edit_plan_objects_text = self.tr("Muokkaa kaavakohteita")
-            import_plan_objects_text = self.tr("Tuo kaavakohteita")
-            import_plan_objects_text_tip = self.tr("Tuo kaavakohteita tietokantaan toisilta vektoritasoilta")
+            plan_objects_text = tr("Kaavakohteet")
+            create_plan_object_text = tr("Luo kaavakohde")
+            edit_plan_objects_text = tr("Muokkaa kaavakohteita")
+            import_plan_objects_text = tr("Tuo kaavakohteita")
+            import_plan_objects_text_tip = tr("Tuo kaavakohteita tietokantaan toisilta vektoritasoilta")
 
         self.plan_features_dock_action = self.add_action(
             text=plan_objects_text,
@@ -529,7 +513,7 @@ class Plugin:
         elif self.locale == 'en_US':
             plan_regulation_groups_text = "Plan regulation groups"
         else:
-            plan_regulation_groups_text = self.tr("Kaavamääräysryhmät")
+            plan_regulation_groups_text = tr("Kaavamääräysryhmät")
 
         self.regulation_groups_dock_action = self.add_action(
             text=plan_regulation_groups_text,
@@ -547,7 +531,7 @@ class Plugin:
         elif self.locale == 'en_US':
             validation_text = "Validation"
         else:
-            validation_text = self.tr("Validointi")
+            validation_text = tr("Validointi")
 
         self.validation_dock_action = self.add_action(
             text=validation_text,
@@ -564,7 +548,7 @@ class Plugin:
         elif self.locale == 'en_US':
             libraries_text = "Libraries"
         else:
-            libraries_text = self.tr("Kirjastot")
+            libraries_text = tr("Kirjastot")
 
         self.manage_libraries_action = self.add_action(
             text=libraries_text,
@@ -586,10 +570,10 @@ class Plugin:
             settings_text = "Settings"
             settings_text_tip = "Edit plugin settings"
         else:
-            about_text = self.tr("Tietoja")
-            about_text_tip = self.tr("Tarkastele pluginin tietoja")
-            settings_text = self.tr("Asetukset")
-            settings_text_tip = self.tr("Muokkaa pluginin asetuksia")
+            about_text = tr("Tietoja")
+            about_text_tip = tr("Tarkastele pluginin tietoja")
+            settings_text = tr("Asetukset")
+            settings_text_tip = tr("Muokkaa pluginin asetuksia")
 
         self.plugin_about = self.add_action(
             text=about_text,
@@ -680,17 +664,17 @@ class Plugin:
 
     def open_about(self):
         """Open the plugin about dialog."""
-        about = PluginAbout(self.tr)
+        about = PluginAbout()
         about.exec()
 
     def create_geotiff(self):
         """Create geotiff from currently active plan."""
-        geotiff_creator = GeoTiffCreator(self.tr)
+        geotiff_creator = GeoTiffCreator()
         geotiff_creator.select_output_file()
 
     def post_plan_matter(self):
         """Exports plan matter to Ryhti."""
-        dialog = PostPlanDialog(self.tr)
+        dialog = PostPlanDialog()
         dialog.exec_()
 
     def update_ryhti_buttons(self):
@@ -701,14 +685,14 @@ class Plugin:
 
         if permanent_identifier:
             self.get_permanent_identifier_action.setEnabled(False)
-            self.get_permanent_identifier_action.setToolTip(self.tr("Pysyvä kaavatunnus: ") + f"{permanent_identifier}")
+            self.get_permanent_identifier_action.setToolTip(tr("Pysyvä kaavatunnus: ") + f"{permanent_identifier}")
             self.post_plan_matter_action.setEnabled(True)
             # self.post_plan_matter_action.setToolTip("Vie kaava-asia Ryhtiin")
         else:
             self.post_plan_matter_action.setEnabled(False)
             # self.post_plan_matter_action.setToolTip("Hae kaavalle ensin pysyvä kaavatunnus")
             self.get_permanent_identifier_action.setEnabled(True)
-            self.get_permanent_identifier_action.setToolTip(self.tr("Hae pysyvä kaavatunnus"))
+            self.get_permanent_identifier_action.setToolTip(tr("Hae pysyvä kaavatunnus"))
 
     def on_active_plan_matter_set(self):
         for action in self.plan_matter_depending_actions:

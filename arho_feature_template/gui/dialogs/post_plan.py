@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFrame, QLabel, QMessageBox, QProgressBar
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
@@ -26,9 +27,8 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
     progress_bar: QProgressBar
     dialogButtonBox: QDialogButtonBox  # noqa: N815
 
-    def __init__(self, tr, parent=None) -> None:
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.tr = tr
         self.setupUi(self)
 
         self.validation_error_frame.hide()
@@ -37,7 +37,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         self.dialogButtonBox.rejected.connect(self.reject)
 
-        self.lambda_service = LambdaService(self.tr)
+        self.lambda_service = LambdaService()
         self.lambda_service.plan_matter_received.connect(self.update_message_list)
 
         # Start the posting process after dialog is fully opened.
@@ -49,7 +49,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         plan_id = get_active_plan_id()
         if not plan_id:
-            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Ei aktiivista kaavasuunnitelmaa."))
+            QMessageBox.critical(self, tr("Virhe"), tr("Ei aktiivista kaavasuunnitelmaa."))
             self.reject()
             return
 
@@ -60,7 +60,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
         self.validation_result_tree_view.clear_errors()
 
         if not post_json:
-            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Lambda palautti tyhjän vastauksen."))
+            QMessageBox.critical(self, tr("Virhe"), tr("Lambda palautti tyhjän vastauksen."))
             self.reject()
             return
 
@@ -88,7 +88,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
         # If the response includes errors or warnings, show validation_result_tree_view.
         if errors_found or warnings_found:
             if success_found and warnings_found and not errors_found:
-                self.validation_label.setText(self.tr("Kaava-asia vietiin Ryhtiin, mutta se sisälsi varoituksia:"))
+                self.validation_label.setText(tr("Kaava-asia vietiin Ryhtiin, mutta se sisälsi varoituksia:"))
             self.validation_error_frame.show()
             self.validation_result_tree_view.expandAll()
             self.validation_result_tree_view.resizeColumnToContents(0)
@@ -97,6 +97,6 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         # Notify user weather the post was successful or not.
         if success_found:
-            iface.messageBar().pushMessage(self.tr("Kaava-asia viety Ryhtiin onnistuneesti"), level=Qgis.Success)
+            iface.messageBar().pushMessage(tr("Kaava-asia viety Ryhtiin onnistuneesti"), level=Qgis.Success)
         else:
-            iface.messageBar().pushMessage(self.tr("Virhe, kaava-asiaa ei toimitettu Ryhtiin."), level=Qgis.Critical)
+            iface.messageBar().pushMessage(tr("Virhe, kaava-asiaa ei toimitettu Ryhtiin."), level=Qgis.Critical)

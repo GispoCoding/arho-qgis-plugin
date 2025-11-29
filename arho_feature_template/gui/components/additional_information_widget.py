@@ -13,6 +13,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     ValueWidgetManager,
 )
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
@@ -28,9 +29,8 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     changed = pyqtSignal()
 
-    def __init__(self, additional_information: AdditionalInformation, tr, parent=None):
+    def __init__(self, additional_information: AdditionalInformation, parent=None):
         super().__init__(parent)
-        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -55,12 +55,12 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
             additional_information.additional_information_type_id
         )
         if default_value:
-            self.value_widget_manager = ValueWidgetManager(self.tr, self.additional_information.value, default_value)
+            self.value_widget_manager = ValueWidgetManager(self.additional_information.value, default_value)
             self.value_widget_manager.value_changed.connect(lambda: self.changed.emit())
             widget = (
                 self.value_widget_manager.value_widget
                 if self.value_widget_manager.value_widget is not None
-                else QLabel(self.tr("Syötekenttää tälle tyypille ei ole vielä toteutettu"))
+                else QLabel(tr("Syötekenttää tälle tyypille ei ole vielä toteutettu"))
             )
             self.layout().addWidget(widget)
 

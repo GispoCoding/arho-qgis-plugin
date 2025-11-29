@@ -15,6 +15,7 @@ from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -38,9 +39,8 @@ DATA_ROLE = Qt.UserRole
 
 class ManagePlans(QDialog, FormClass):  # type: ignore
     @use_wait_cursor
-    def __init__(self, regulation_group_libraries, tr):
+    def __init__(self, regulation_group_libraries):
         super().__init__()
-        self.tr = tr
         self.setupUi(self)
 
         # TYPES
@@ -62,11 +62,11 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         # to make the first plan by drawing the geometry from the toolbar
         if self.plans_table.rowCount() == 0:
             self.new_plan_button.setEnabled(False)
-            self.new_plan_button.setToolTip(self.tr("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja."))
+            self.new_plan_button.setToolTip(tr("Luo ensimmäinen kaavasuunnitelma piirtämällä tai tuomalla ulkoraja."))
             iface.messageBar().pushWarning(
                 "",
-                self.tr("Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma ") +
-                self.tr(" piirtämällä tai tuomalla ulkoraja."),
+                tr("Kaava-asialle ei ole luotu vielä yhtään kaavasuunnitelmaa. Luo ensimmäinen kaavasuunnitelma ") +
+                tr(" piirtämällä tai tuomalla ulkoraja."),
             )
 
         self.filter_line.valueChanged.connect(self._filter_plans)
@@ -142,16 +142,16 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     def _on_row_double_clicked(self, item: QTableWidgetItem):
         row = item.row()
         plan = self.plans_table.item(row, 0).data(DATA_ROLE)
-        form = PlanAttributeForm(self.tr, plan, self.regulation_group_libraries)
+        form = PlanAttributeForm(plan, self.regulation_group_libraries)
         if form.exec():
-            save_plan(form.model, self.tr)
+            save_plan(form.model)
 
     def _on_new_plan_button_clicked(self):
-        form = NewPlanDialog(self.tr)
+        form = NewPlanDialog()
         form.plan_copied.connect(self._handle_plan_copied)
         if form.exec() and form.plan:
             new_plan: Plan = form.plan
-            plan_id = save_plan(new_plan, self.tr)
+            plan_id = save_plan(new_plan)
             if plan_id:
                 new_plan.id_ = plan_id
                 self._add_plan_row(new_plan, select=True)

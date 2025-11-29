@@ -19,6 +19,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.exceptions import UnexpectedNoneError
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_id, get_active_plan_matter_id
 
 ui_path = resources.files(__package__) / "load_plan_dialog.ui"
@@ -59,9 +60,8 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
 
     # ID_COLUMN = 4
 
-    def __init__(self, parent, tr, connection_names: list[str]):
+    def __init__(self, parent, connection_names: list[str]):
         super().__init__(parent)
-        self.tr = tr
         self.setupUi(self)
 
         self._selected_plan_id = None
@@ -85,8 +85,8 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
         self.model.setColumnCount(2)
         self.model.setHorizontalHeaderLabels(
             [
-                self.tr("Nimi"),
-                self.tr("Kaavasuunnitelman elinkaaren tila"),
+                tr("Nimi"),
+                tr("Kaavasuunnitelman elinkaaren tila"),
             ]
         )
 
@@ -163,7 +163,7 @@ class LoadPlanDialog(QDialog, LoadPlanDialogBase):  # type: ignore
                     p.plan_matter_id = '{active_plan_matter}'
             """)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Kaavojen lataus epäonnistui:") + f" {e}")
+            QMessageBox.critical(self, tr("Virhe"), tr("Kaavojen lataus epäonnistui:") + f" {e}")
             self.clear_table()
 
         return plans

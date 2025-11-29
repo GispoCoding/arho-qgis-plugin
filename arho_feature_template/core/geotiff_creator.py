@@ -15,33 +15,33 @@ from qgis.PyQt.QtWidgets import QApplication, QFileDialog
 from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 
 class GeoTiffCreator:
-    def __init__(self, tr, desired_pixel_size=0.5):
+    def __init__(self, desired_pixel_size=0.5):
         """Initialize the CreateGeoTiff class and fetch the required data."""
-        self.tr = tr
         self.desired_pixel_size = desired_pixel_size
         self.plan_layer = PlanLayer.get_from_project()
 
         if not self.plan_layer:
-            iface.messageBar().pushWarning("", self.tr("Ei aktiivista kaavasuunnitelmaa."))
+            iface.messageBar().pushWarning("", tr("Ei aktiivista kaavasuunnitelmaa."))
             return
 
         self.feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
 
         if not self.feature:
-            iface.messageBar().pushWarning("", self.tr("Ei aktiivista kaavasuunnitelmaa."))
+            iface.messageBar().pushWarning("", tr("Ei aktiivista kaavasuunnitelmaa."))
             return
 
     def select_output_file(self):
         """Opens a file dialog for the user to select the output GeoTIFF file."""
         geotiff_path, _ = QFileDialog.getSaveFileName(
-            None, self.tr("Määritä GeoTIFF tallennuspolku"), "", "GeoTIFF Files (*.tif)"
+            None, tr("Määritä GeoTIFF tallennuspolku"), "", "GeoTIFF Files (*.tif)"
         )
         if not geotiff_path:
-            iface.messageBar().pushWarning("", self.tr("Tallennuspolkua ei määritetty."))
+            iface.messageBar().pushWarning("", tr("Tallennuspolkua ei määritetty."))
             return None
 
         self.create_geotiff(geotiff_path)
@@ -135,4 +135,4 @@ class GeoTiffCreator:
             },
         )
 
-        iface.messageBar().pushSuccess("", self.tr("GeoTIFF tallennettu polkuun: ") + f"{geotiff_path}")
+        iface.messageBar().pushSuccess("", tr("GeoTIFF tallennettu polkuun: ") + f"{geotiff_path}")

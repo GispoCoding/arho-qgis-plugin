@@ -15,6 +15,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanRegulationLayer,
     RegulationGroupLayer,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
@@ -62,9 +63,9 @@ class ValidationModel(QStandardItemModel):
             errors_text = "Errors"
             warnings_text = "Warnings"
         else:
-            message_text = self.tr("Viesti")
-            errors_text = self.tr("Virheet")
-            warnings_text = self.tr("Varoitukset")
+            message_text = tr("Viesti")
+            errors_text = tr("Virheet")
+            warnings_text = tr("Varoitukset")
 
 
         self.setColumnCount(2)
