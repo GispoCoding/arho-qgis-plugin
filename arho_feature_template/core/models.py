@@ -13,6 +13,7 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
@@ -428,11 +429,11 @@ class RegulationGroup(PlanBaseModel):
     def as_tooltip(self) -> str:
         letter_code = self.letter_code if self.letter_code else ""
         return (
-            f"Kaavamääräyksen otsikko: {self.heading}\n"
-            f"Kirjaintunnus: {letter_code}\n"
-            f"Kategoria: {self.category}\n"
-            f"Kaavamääräysten määrä: {len(self.regulations)}\n"
-            f"Suositusten määrä: {len(self.propositions)}"
+            tr("Kaavamääräyksen otsikko:") + f" {self.heading}\n" +
+            tr("Kirjaintunnus:") + f" {letter_code}\n" +
+            tr("Kategoria:") + f" {self.category}\n" +
+            tr("Kaavamääräysten määrä:") + f" {len(self.regulations)}\n" +
+            tr("Suositusten määrä:") + f" {len(self.propositions)}"
         )
 
 
@@ -485,9 +486,9 @@ class PlanObject(PlanBaseModel):
 
     def as_tooltip(self) -> str:
         return (
-            f"Nimi: {self.name}\n"
-            f"Kuvaus: {self.description}\n"
-            f"Kaavamääräysryhmien määrä: {len(self.regulation_groups)}"
+            tr("Nimi:") + f" {self.name}\n" +
+            tr("Kuvaus:") + f" {self.description}\n" +
+            tr("Kaavamääräysryhmien määrä:") + f" {len(self.regulation_groups)}"
         )
 
 

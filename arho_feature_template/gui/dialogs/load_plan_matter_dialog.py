@@ -19,6 +19,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.exceptions import UnexpectedNoneError
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
 
 ui_path = resources.files(__package__) / "load_plan_matter_dialog.ui"
@@ -81,7 +82,7 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(4)
-        self.model.setHorizontalHeaderLabels(["Nimi", "Kaava tyyppi", "Tuottajan kaavatunnus", "Pysyvä kaavatunnus"])
+        self.model.setHorizontalHeaderLabels([self.tr("Nimi"), self.tr("Kaava tyyppi"), self.tr("Tuottajan kaavatunnus"), self.tr("Pysyvä kaavatunnus")])
 
         self.filterProxyModel = PlanMatterFilterProxyModel(self.model)
 
@@ -156,7 +157,7 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
                         ON pm.plan_type_id = pt.id;
             """)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Virhe", f"Kaava-asioiden lataus epäonnistui: {e}")
+            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Kaava-asioiden lataus epäonnistui:") + f" {e}")
             self.clear_table()
 
         return plan_matters

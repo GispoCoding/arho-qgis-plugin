@@ -6,6 +6,8 @@ from typing import cast
 
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QTreeView
+from qgis.core import QgsSettings
+from qgis.PyQt.QtCore import QLocale
 
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
@@ -13,6 +15,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanRegulationLayer,
     RegulationGroupLayer,
 )
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
@@ -50,12 +53,17 @@ class ValidationModel(QStandardItemModel):
 
         self.parent_items: dict[str, ValidationItem] = {}
 
+        message_text = self.tr("Viesti")
+        errors_text = self.tr("Virheet")
+        warnings_text = self.tr("Varoitukset")
+
+
         self.setColumnCount(2)
-        self.setHorizontalHeaderLabels(["", "Viesti"])
+        self.setHorizontalHeaderLabels(["", message_text])
 
         self.root = self.invisibleRootItem()
-        self.root.appendRow([ValidationItem("Virheet"), ValidationItem("")])
-        self.root.appendRow([ValidationItem("Varoitukset"), ValidationItem("")])
+        self.root.appendRow([ValidationItem(errors_text), ValidationItem("")])
+        self.root.appendRow([ValidationItem(warnings_text), ValidationItem("")])
 
     def clear(self):
         self.item(self.ERROR_INDEX, 0).removeRows(0, self.item(self.ERROR_INDEX, 0).rowCount())

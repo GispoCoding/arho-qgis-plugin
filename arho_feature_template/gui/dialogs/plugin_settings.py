@@ -23,6 +23,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
     PointLayer,
 )
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
@@ -125,10 +126,10 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
             SettingsManager.set_layer_style_path(config.plan_type, config.layer_type, file_path)
 
         if missing_files:
-            iface.messageBar().pushCritical("Tiedostoa ei olemassa:", ", ".join(missing_files))
+            iface.messageBar().pushCritical(self.tr("Tiedostoa ei olemassa:"), ", ".join(missing_files))
 
         if invalid_file_types:
-            iface.messageBar().pushCritical("Väärä tiedostotyyppi:", ", ".join(invalid_file_types))
+            iface.messageBar().pushCritical(self.tr("Väärä tiedostotyyppi:"), ", ".join(invalid_file_types))
 
         SettingsManager.finish()
 

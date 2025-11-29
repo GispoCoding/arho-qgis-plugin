@@ -12,6 +12,7 @@ from arho_feature_template.core.models import Proposition, Regulation, Regulatio
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
@@ -50,8 +51,8 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         # self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         # self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
         add_field_menu = QMenu()
-        add_field_menu.addAction("Lisää kaavamääräys").triggered.connect(self.add_new_regulation)
-        add_field_menu.addAction("Lisää kaavasuositus").triggered.connect(self.add_new_proposition)
+        add_field_menu.addAction(self.tr("Lisää kaavamääräys")).triggered.connect(self.add_new_regulation)
+        add_field_menu.addAction(self.tr("Lisää kaavasuositus")).triggered.connect(self.add_new_proposition)
         self.add_field_btn.setMenu(add_field_menu)
         self.add_field_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 

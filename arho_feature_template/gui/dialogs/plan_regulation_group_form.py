@@ -31,6 +31,7 @@ from arho_feature_template.gui.components.plan_regulation_widget import Regulati
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
@@ -131,8 +132,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
                 list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(self.regulation_group.id_))
             )
             tooltip = (
-                "Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa "
-                "kaavakohteisiin, joille ryhmä on lisätty."
+                self.tr("Kaavamääräysryhmä on tallennettu kaavasuunnitelmaan. Ryhmän tietojen muokkaaminen vaikuttaa ") +
+                self.tr("kaavakohteisiin, joille ryhmä on lisätty.")
             )
             layout = QHBoxLayout()
 
@@ -144,14 +145,14 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
             self.link_label_text = QLabel()
             self.link_label_text.setObjectName("text_label")  # Set unique name to avoid style cascading
-            self.link_label_text.setText(f"Kaavamääräysryhmä on käytössä yhteensä {feat_count} kaavakohteella")
+            self.link_label_text.setText(self.tr("Kaavamääräysryhmä on käytössä yhteensä") + f" {feat_count} " + self.tr("kaavakohteella"))
             self.link_label_text.setWordWrap(True)
             self.link_label_text.setStyleSheet("#text_label { color: #4b8db2; }")
             self.link_label_text.setToolTip(tooltip)
             layout.addWidget(self.link_label_text)
 
             self.regulation_group_info_tab.layout().insertLayout(1, layout)
-            self.setWindowTitle("Muokkaa kaavamääräysryhmää")
+            self.setWindowTitle(self.tr("Muokkaa kaavamääräysryhmää"))
 
     def initialize_regulation_library(self):
         """Initializes the tree menu for regulations."""

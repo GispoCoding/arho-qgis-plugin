@@ -10,6 +10,8 @@ from qgis.PyQt.QtCore import NULL, Qt, pyqtBoundSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
 
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
+
 if TYPE_CHECKING:
     from qgis.core import QgsMapLayer
     from qgis.gui import QgisInterface
@@ -48,8 +50,8 @@ def prompt_commit_changes() -> bool:
     """Ask user if changes should be committed."""
     response = QMessageBox.question(
         None,
-        "Tallentamattomat muutokset",
-        "Tasoilla on tallentamattomia muutoksia. Tallenetaanko muutokset?",
+        tr("Tallentamattomat muutokset"),
+        tr("Tasoilla on tallentamattomia muutoksia. Tallenetaanko muutokset?"),
         QMessageBox.Yes | QMessageBox.No,
     )
     return response == QMessageBox.Yes
@@ -66,7 +68,7 @@ def commit_all_layer_changes() -> bool:
 
     for layer in layers:
         if isinstance(layer, QgsVectorLayer) and layer.isModified() and not layer.commitChanges():
-            QMessageBox.critical(None, "Virhe", f"Tason {layer.name()} muutosten tallentaminen epäonnistui.")
+            QMessageBox.critical(None, tr("Virhe"), tr("Tason") + f" {layer.name()} " + tr("muutosten tallentaminen epäonnistui."))
             all_committed = False
 
     return all_committed

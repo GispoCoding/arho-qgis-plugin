@@ -13,6 +13,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     ValueWidgetManager,
 )
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
@@ -59,7 +60,7 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
             widget = (
                 self.value_widget_manager.value_widget
                 if self.value_widget_manager.value_widget is not None
-                else QLabel("Syötekenttää tälle tyypille ei ole vielä toteutettu")
+                else QLabel(self.tr("Syötekenttää tälle tyypille ei ole vielä toteutettu"))
             )
             self.layout().addWidget(widget)
 

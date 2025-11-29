@@ -15,6 +15,7 @@ from qgis.PyQt.QtWidgets import QApplication, QFileDialog
 from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 
@@ -25,22 +26,22 @@ class GeoTiffCreator:
         self.plan_layer = PlanLayer.get_from_project()
 
         if not self.plan_layer:
-            iface.messageBar().pushWarning("", "Ei aktiivista kaavasuunnitelmaa.")
+            iface.messageBar().pushWarning("", tr("Ei aktiivista kaavasuunnitelmaa."))
             return
 
         self.feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
 
         if not self.feature:
-            iface.messageBar().pushWarning("", "Ei aktiivista kaavasuunnitelmaa.")
+            iface.messageBar().pushWarning("", tr("Ei aktiivista kaavasuunnitelmaa."))
             return
 
     def select_output_file(self):
         """Opens a file dialog for the user to select the output GeoTIFF file."""
         geotiff_path, _ = QFileDialog.getSaveFileName(
-            None, "Määritä GeoTIFF tallennuspolku", "", "GeoTIFF Files (*.tif)"
+            None, tr("Määritä GeoTIFF tallennuspolku"), "", "GeoTIFF Files (*.tif)"
         )
         if not geotiff_path:
-            iface.messageBar().pushWarning("", "Tallennuspolkua ei määritetty.")
+            iface.messageBar().pushWarning("", tr("Tallennuspolkua ei määritetty."))
             return None
 
         self.create_geotiff(geotiff_path)
@@ -134,4 +135,4 @@ class GeoTiffCreator:
             },
         )
 
-        iface.messageBar().pushSuccess("", f"GeoTIFF tallennettu polkuun: {geotiff_path}")
+        iface.messageBar().pushSuccess("", tr("GeoTIFF tallennettu polkuun: ") + f"{geotiff_path}")

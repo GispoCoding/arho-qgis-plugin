@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFrame, QLabel, QMessageBox, QProgressBar
 
 from arho_feature_template.core.lambda_service import LambdaService
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
@@ -48,7 +49,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         plan_id = get_active_plan_id()
         if not plan_id:
-            QMessageBox.critical(self, "Virhe", "Ei aktiivista kaavasuunnitelmaa.")
+            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Ei aktiivista kaavasuunnitelmaa."))
             self.reject()
             return
 
@@ -59,7 +60,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
         self.validation_result_tree_view.clear_errors()
 
         if not post_json:
-            QMessageBox.critical(self, "Virhe", "Lambda palautti tyhjän vastauksen.")
+            QMessageBox.critical(self, self.tr("Virhe"), self.tr("Lambda palautti tyhjän vastauksen."))
             self.reject()
             return
 
@@ -87,7 +88,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
         # If the response includes errors or warnings, show validation_result_tree_view.
         if errors_found or warnings_found:
             if success_found and warnings_found and not errors_found:
-                self.validation_label.setText("Kaava-asia vietiin Ryhtiin, mutta se sisälsi varoituksia:")
+                self.validation_label.setText(self.tr("Kaava-asia vietiin Ryhtiin, mutta se sisälsi varoituksia:"))
             self.validation_error_frame.show()
             self.validation_result_tree_view.expandAll()
             self.validation_result_tree_view.resizeColumnToContents(0)
@@ -96,6 +97,6 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         # Notify user weather the post was successful or not.
         if success_found:
-            iface.messageBar().pushMessage("Kaava-asia viety Ryhtiin onnistuneesti", level=Qgis.Success)
+            iface.messageBar().pushMessage(self.tr("Kaava-asia viety Ryhtiin onnistuneesti"), level=Qgis.Success)
         else:
-            iface.messageBar().pushMessage("Virhe, kaava-asiaa ei toimitettu Ryhtiin.", level=Qgis.Critical)
+            iface.messageBar().pushMessage(self.tr("Virhe, kaava-asiaa ei toimitettu Ryhtiin."), level=Qgis.Critical)

@@ -8,9 +8,12 @@ from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QMenu, QMessageBox, QPushButton
+from qgis.core import QgsSettings
+from qgis.PyQt.QtCore import QLocale
 
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.project.layers.plan_layers import plan_feature_layers
+# from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
@@ -59,15 +62,22 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.search_box.valueChanged.connect(self.filter_regulation_groups)
 
         new_regulation_group_menu = QMenu()
-        self.new_group_empty_action = new_regulation_group_menu.addAction("Tyhjä")
-        self.new_group_from_template_action = new_regulation_group_menu.addAction("Pohjasta")
+
+        empty_text = self.tr("Tyhjä")
+        from_template_text = self.tr("Pohjasta")
+        add_chosen_text = self.tr("Lisää valitut ryhmät valituille kohteille")
+        remove_all_text = self.tr("Poista kaikki ryhmät valituilta kohteilta")
+        remove_chosen_text = self.tr("Poista valitut ryhmät valituilta kohteilta")
+
+        self.new_group_empty_action = new_regulation_group_menu.addAction(empty_text)
+        self.new_group_from_template_action = new_regulation_group_menu.addAction(from_template_text)
         new_regulation_group_menu.addActions([self.new_group_empty_action, self.new_group_from_template_action])
         self.new_btn.setMenu(new_regulation_group_menu)
 
         plan_object_actions_menu = QMenu()
-        self.add_selected_action = plan_object_actions_menu.addAction("Lisää valitut ryhmät valituille kohteille")
-        self.remove_all_action = plan_object_actions_menu.addAction("Poista kaikki ryhmät valituilta kohteilta")
-        self.remove_selected_action = plan_object_actions_menu.addAction("Poista valitut ryhmät valituilta kohteilta")
+        self.add_selected_action = plan_object_actions_menu.addAction(add_chosen_text)
+        self.remove_all_action = plan_object_actions_menu.addAction(remove_all_text)
+        self.remove_selected_action = plan_object_actions_menu.addAction(remove_chosen_text)
         self.modify_selected_features_btn.setMenu(plan_object_actions_menu)
 
         self._connect_signals()
@@ -119,15 +129,15 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         if len(selected) == 1:
             self.request_edit_regulation_group.emit(selected[0])
         else:
-            iface.messageBar().pushWarning("", "Valitse vain yksi kaavamääräysryhmä kerrallaan muokkaamista varten.")
+            iface.messageBar().pushWarning("", self.tr("Valitse vain yksi kaavamääräysryhmä kerrallaan muokkaamista varten."))
 
     def on_delete_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
         if len(selected_groups) > 0:
             response = QMessageBox.question(
                 None,
-                "Kaavamääräysryhmän poisto",
-                "Haluatko varmasti poistaa kaavamääräysryhmän?",
+                self.tr("Kaavamääräysryhmän poisto"),
+                self.tr("Haluatko varmasti poistaa kaavamääräysryhmän?"),
                 QMessageBox.Yes | QMessageBox.No,
             )
             if response == QMessageBox.Yes:

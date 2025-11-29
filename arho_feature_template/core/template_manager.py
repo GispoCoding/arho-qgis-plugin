@@ -10,6 +10,7 @@ from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
     set_user_plan_feature_library_config_files,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
@@ -84,11 +85,11 @@ class TemplateManager:
     def read_library_config_file(cls, file_path: Path | str, expected_library_type: str) -> dict:
         data = cls._read_from_yaml_file(
             file_path=file_path if type(file_path) is Path else Path(file_path),
-            fail_msg=f"Kirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
+            fail_msg=tr("Kirjastoa ei löytynyt määritellystä tiedostopolusta:") + f" {file_path}",
         )
         library_type = data.get("library_type")
         if not library_type or library_type != expected_library_type:
-            iface.messageBar().pushCritical("", f"Kirjaston tyyppiä ei löytynyt tai se oli väärä: {library_type}")
+            iface.messageBar().pushCritical("", tr("Kirjaston tyyppiä ei löytynyt tai se oli väärä:") + f" {library_type}")
             return {}
         return data
 
@@ -140,14 +141,14 @@ class TemplateManager:
         library_hash_map = library.into_hash_map()
         plan_object_hash = plan_object_model.data_hash()
         if plan_object_hash in library_hash_map:
-            iface.messageBar().pushMessage("", "Kaavakohde on jo tallennettu kaavakohdepohjakirjastoon.")
+            iface.messageBar().pushMessage("", tr("Kaavakohde on jo tallennettu kaavakohdepohjakirjastoon."))
             return
 
         library.plan_features.append(plan_object_model)
         TemplateManager.write_plan_feature_template_file(
             plan_feature_config_data=library.into_template_dict(), file_path=Path(library.file_path)
         )
-        iface.messageBar().pushSuccess("", "Kaavakohde tallennettu kaavakohdepohjakirjastoon.")
+        iface.messageBar().pushSuccess("", tr("Kaavakohde tallennettu kaavakohdepohjakirjastoon."))
 
         library_file_paths = get_user_plan_feature_library_config_files()
         library_file_paths_as_str = [str(path) for path in library_file_paths]
