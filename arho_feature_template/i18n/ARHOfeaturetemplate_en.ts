@@ -401,7 +401,7 @@
     <message>
         <location filename="../plugin.py" line="214"/>
         <source>Tallenna aktiivisen kaavan kaava-asia JSON muodossa</source>
-        <translation>Save the active plan's planning matter as JSON</translation>
+        <translation>Save the active plan&apos;s planning matter as JSON</translation>
     </message>
     <message>
         <location filename="../plugin.py" line="690"/>
@@ -1313,6 +1313,16 @@
         <source>Ei avattavaa lomaketta.</source>
         <translation type="obsolete">No form to open.</translation>
     </message>
+    <message>
+        <location filename="../core/template_manager.py" line="144"/>
+        <source>Kaavakohde on jo tallennettu kaavakohdepohjakirjastoon.</source>
+        <translation>The plan object has already been saved to the plan object template library.</translation>
+    </message>
+    <message>
+        <location filename="../core/template_manager.py" line="151"/>
+        <source>Kaavakohde tallennettu kaavakohdepohjakirjastoon.</source>
+        <translation>The plan object was saved to the plan object template library.</translation>
+    </message>
 </context>
 <context>
     <name>AdditionalInformationWidget</name>
@@ -1774,6 +1784,16 @@ p, li { white-space: pre-wrap; }
         <location filename="../gui/dialogs/serialize_plan.ui" line="61"/>
         <source>Valitse kaavasuunnitelman tallennuspolku</source>
         <translation>Choose land use plan save path</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/template_selection_form.ui" line="14"/>
+        <source>Valitse pohja</source>
+        <translation>Choose template</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/template_selection_form.ui" line="23"/>
+        <source>Kaavamääräysryhmäkirjastot</source>
+        <translation>Plan regulation group libraries</translation>
     </message>
 </context>
 <context>
@@ -2728,6 +2748,11 @@ p, li { white-space: pre-wrap; }
         <source>Väläytä kohdetta</source>
         <translation>Flash the object</translation>
     </message>
+    <message>
+        <location filename="../gui/docks/plan_features_dock.py" line="317"/>
+        <source>Tallenna kaavakohdepohjakirjastoon</source>
+        <translation>Save to plan object template library</translation>
+    </message>
 </context>
 <context>
     <name>PlanObjectsDockFilterProxyModel</name>
@@ -2870,7 +2895,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../plugin.py" line="235"/>
         <source>Tallenna aktiivisen kaavan kaava-asia JSON muodossa</source>
-        <translation type="obsolete">Save the active plan's planning matter as JSON</translation>
+        <translation type="obsolete">Save the active plan&apos;s planning matter as JSON</translation>
     </message>
     <message>
         <location filename="../plugin.py" line="711"/>
@@ -3287,6 +3312,19 @@ p, li { white-space: pre-wrap; }
         <location filename="../gui/components/plan_regulation_widget.py" line="220"/>
         <source>Sanallisen määräyksen laji</source>
         <translation>Type of verbal regulation</translation>
+    </message>
+</context>
+<context>
+    <name>TemplateSelectionForm</name>
+    <message>
+        <location filename="../gui/dialogs/template_selection_form.py" line="138"/>
+        <source>Virhe</source>
+        <translation>Error</translation>
+    </message>
+    <message>
+        <location filename="../gui/dialogs/template_selection_form.py" line="138"/>
+        <source>Valittu rivi on kategoria eikä sisällä pohjaa.</source>
+        <translation>The chosen row is a category and does not include template.</translation>
     </message>
 </context>
 <context>

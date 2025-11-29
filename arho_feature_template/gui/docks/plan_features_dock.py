@@ -314,7 +314,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             self.tr("Väläytä kohdetta"),
             lambda: self._on_highlight_feature(plan_feature_model),
         )
-        plan_object_library_menu = QMenu("Tallenna kaavakohdepohjakirjastoon")
+        plan_object_library_menu = QMenu(self.tr("Tallenna kaavakohdepohjakirjastoon"))
         menu.addMenu(plan_object_library_menu)
         plan_object_libraries = self.plan_manager_ref.plan_feature_libraries
         if not plan_object_libraries:

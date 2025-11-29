@@ -135,4 +135,4 @@ class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
             self.selected_template = model
             self.accept()
         else:
-            QMessageBox.critical(None, "Virhe", "Valittu rivi on kategoria eikä sisällä pohjaa.")
+            QMessageBox.critical(None, self.tr("Virhe"), self.tr("Valittu rivi on kategoria eikä sisällä pohjaa."))
