@@ -13,6 +13,7 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
@@ -425,7 +426,7 @@ class RegulationGroup(PlanBaseModel):
     def __str__(self):
         return " - ".join(part for part in (self.letter_code, self.heading) if part)
 
-    def as_tooltip(self, tr) -> str:
+    def as_tooltip(self) -> str:
         letter_code = self.letter_code if self.letter_code else ""
         return (
             tr("Kaavamääräyksen otsikko:") + f" {self.heading}\n" +
@@ -483,7 +484,7 @@ class PlanObject(PlanBaseModel):
     def __str__(self):
         return self.name if self.name else ""
 
-    def as_tooltip(self, tr) -> str:
+    def as_tooltip(self) -> str:
         return (
             tr("Nimi:") + f" {self.name}\n" +
             tr("Kuvaus:") + f" {self.description}\n" +

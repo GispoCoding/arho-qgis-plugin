@@ -10,6 +10,7 @@ from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
     set_user_plan_feature_library_config_files,
 )
+from arho_feature_template.qgis_plugin_tools.tools.i18n import tr
 from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
@@ -81,7 +82,7 @@ class TemplateManager:
     #     return data
 
     @classmethod
-    def read_library_config_file(cls, file_path: Path | str, expected_library_type: str, tr) -> dict:
+    def read_library_config_file(cls, file_path: Path | str, expected_library_type: str) -> dict:
         data = cls._read_from_yaml_file(
             file_path=file_path if type(file_path) is Path else Path(file_path),
             fail_msg=tr("Kirjastoa ei löytynyt määritellystä tiedostopolusta:") + f" {file_path}",

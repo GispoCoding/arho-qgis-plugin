@@ -117,19 +117,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self._syncing_selections = False
         self._initialized = False
 
-        locale = QgsSettings().value("locale/userLocale", QLocale().name())
-        if locale == 'fi':
-            name_text = "Nimi"
-            type_text = "Tyyppi"
-            description_text = "Kuvaus"
-        elif locale == 'en_US':
-            name_text = "Name"
-            type_text = "Type"
-            description_text = "Description"
-        else:
-            name_text = self.tr("Nimi")
-            type_text = self.tr("Tyyppi")
-            description_text = self.tr("Kuvaus")
+        name_text = self.tr("Nimi")
+        type_text = self.tr("Tyyppi")
+        description_text = self.tr("Kuvaus")
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(3)

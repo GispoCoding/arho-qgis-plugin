@@ -53,19 +53,9 @@ class ValidationModel(QStandardItemModel):
 
         self.parent_items: dict[str, ValidationItem] = {}
 
-        locale = QgsSettings().value("locale/userLocale", QLocale().name())
-        if locale == 'fi':
-            message_text = "Viesti"
-            errors_text = "Virheet"
-            warnings_text = "Varoitukset"
-        elif locale == 'en_US':
-            message_text = "Message"
-            errors_text = "Errors"
-            warnings_text = "Warnings"
-        else:
-            message_text = self.tr("Viesti")
-            errors_text = self.tr("Virheet")
-            warnings_text = self.tr("Varoitukset")
+        message_text = self.tr("Viesti")
+        errors_text = self.tr("Virheet")
+        warnings_text = self.tr("Varoitukset")
 
 
         self.setColumnCount(2)

@@ -6,7 +6,7 @@
     <message>
         <location filename="../core/plan_manager.py" line="928"/>
         <source>Käytössä olevat kaavamääräysryhmät</source>
-        <translation type="obsolete">Plan regulation groups in use</translation>
+        <translation>Plan regulation groups in use</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/plugin_about.py" line="27"/>
@@ -279,52 +279,52 @@
         <translation>Saving of the document failed.</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="430"/>
+        <location filename="../core/models.py" line="431"/>
         <source>Kaavamääräyksen otsikko:</source>
         <translation>Plan regulation title:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="430"/>
+        <location filename="../core/models.py" line="431"/>
         <source>Kirjaintunnus:</source>
         <translation>Letter identifier:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="430"/>
+        <location filename="../core/models.py" line="431"/>
         <source>Kategoria:</source>
         <translation>Category:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="430"/>
+        <location filename="../core/models.py" line="431"/>
         <source>Kaavamääräysten määrä:</source>
         <translation>Plan regulation count:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="430"/>
+        <location filename="../core/models.py" line="431"/>
         <source>Suositusten määrä:</source>
         <translation>Plan recommendation count:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="487"/>
+        <location filename="../core/models.py" line="488"/>
         <source>Nimi:</source>
         <translation>Name:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="487"/>
+        <location filename="../core/models.py" line="488"/>
         <source>Kuvaus:</source>
         <translation>Description:</translation>
     </message>
     <message>
-        <location filename="../core/models.py" line="487"/>
+        <location filename="../core/models.py" line="488"/>
         <source>Kaavamääräysryhmien määrä:</source>
         <translation>Plan regulation group count:</translation>
     </message>
     <message>
-        <location filename="../core/template_manager.py" line="85"/>
+        <location filename="../core/template_manager.py" line="86"/>
         <source>Kirjastoa ei löytynyt määritellystä tiedostopolusta:</source>
         <translation>The library was not found in the specified file path:</translation>
     </message>
     <message>
-        <location filename="../core/template_manager.py" line="91"/>
+        <location filename="../core/template_manager.py" line="92"/>
         <source>Kirjaston tyyppiä ei löytynyt tai se oli väärä:</source>
         <translation>The typ of the library was not found or it was wrong:</translation>
     </message>
@@ -401,7 +401,7 @@
     <message>
         <location filename="../plugin.py" line="214"/>
         <source>Tallenna aktiivisen kaavan kaava-asia JSON muodossa</source>
-        <translation>Save the active plan&apos;s planning matter as JSON</translation>
+        <translation>Save the active plan's planning matter as JSON</translation>
     </message>
     <message>
         <location filename="../plugin.py" line="690"/>
@@ -1317,7 +1317,7 @@
 <context>
     <name>AdditionalInformationWidget</name>
     <message>
-        <location filename="../gui/components/additional_information_widget.py" line="59"/>
+        <location filename="../gui/components/additional_information_widget.py" line="60"/>
         <source>Syötekenttää tälle tyypille ei ole vielä toteutettu</source>
         <translation>Input field for this type has not yet been implemented</translation>
     </message>
@@ -2178,57 +2178,57 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>LambdaService</name>
     <message>
-        <location filename="../core/lambda_service.py" line="164"/>
+        <location filename="../core/lambda_service.py" line="165"/>
         <source>API Virhe</source>
         <translation>API Error</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="164"/>
+        <location filename="../core/lambda_service.py" line="165"/>
         <source>Lambda kutsu epäonnistui: </source>
         <translation>Lambda call failed: </translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="173"/>
+        <location filename="../core/lambda_service.py" line="174"/>
         <source>JSON Virhe</source>
         <translation>JSON Error</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="173"/>
+        <location filename="../core/lambda_service.py" line="174"/>
         <source>Vastauksen JSON-tiedoston jäsennys epäonnistui: </source>
         <translation>Parsing of the response JSON file failed: </translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="199"/>
+        <location filename="../core/lambda_service.py" line="200"/>
         <source>Pysyvän kaavatunnuksen haku onnistui kaavasuunnitelman</source>
         <translation>Fetching of the permanent plan identifier of the land use plan</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="199"/>
+        <location filename="../core/lambda_service.py" line="200"/>
         <source>kaava-asialle.</source>
         <translation>for plan matter.</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="204"/>
+        <location filename="../core/lambda_service.py" line="205"/>
         <source>Virhe</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="204"/>
+        <location filename="../core/lambda_service.py" line="205"/>
         <source>Pysyvän kaavatunnuksen haku epäonnistui kaavasuunnitelmalla</source>
         <translation>Fetching of the permanent plan identifier failed with the land use plan</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="204"/>
+        <location filename="../core/lambda_service.py" line="205"/>
         <source>kaava-asialle statuksella</source>
         <translation>for plan matter with status</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="217"/>
+        <location filename="../core/lambda_service.py" line="218"/>
         <source>Arhovirhe - Lambdavastaus ei odotetun muotoinen:</source>
         <translation>Arho error - Lambda respons not expected:</translation>
     </message>
     <message>
-        <location filename="../core/lambda_service.py" line="225"/>
+        <location filename="../core/lambda_service.py" line="226"/>
         <source>Ryhtivirhe:</source>
         <translation>Ryhti error:</translation>
     </message>
@@ -2346,22 +2346,22 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="86"/>
         <source>Nimi</source>
-        <translation type="obsolete">Name</translation>
+        <translation>Name</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="86"/>
         <source>Kaavasuunnitelman elinkaaren tila</source>
-        <translation type="obsolete">Lify cycle state of the land use plan</translation>
+        <translation>Lify cycle state of the land use plan</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="166"/>
         <source>Virhe</source>
-        <translation type="obsolete">Error</translation>
+        <translation>Error</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="166"/>
         <source>Kaavojen lataus epäonnistui:</source>
-        <translation type="obsolete">Loading land use plans failed:</translation>
+        <translation>Loading land use plans failed:</translation>
     </message>
 </context>
 <context>
@@ -2369,32 +2369,32 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Nimi</source>
-        <translation type="obsolete">Name</translation>
+        <translation>Name</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Kaava tyyppi</source>
-        <translation type="obsolete">Type of the land use plan</translation>
+        <translation>Type of the land use plan</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Tuottajan kaavatunnus</source>
-        <translation type="obsolete">Producers plan identifier</translation>
+        <translation>Producers plan identifier</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Pysyvä kaavatunnus</source>
-        <translation type="obsolete">Permanent plan identifier</translation>
+        <translation>Permanent plan identifier</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="160"/>
         <source>Virhe</source>
-        <translation type="obsolete">Error</translation>
+        <translation>Error</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="160"/>
         <source>Kaava-asioiden lataus epäonnistui:</source>
-        <translation type="obsolete">Loading the plan matters failed:</translation>
+        <translation>Loading the plan matters failed:</translation>
     </message>
 </context>
 <context>
@@ -2464,22 +2464,22 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="86"/>
         <source>Nimi</source>
-        <translation>Name</translation>
+        <translation type="obsolete">Name</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="86"/>
         <source>Kaavasuunnitelman elinkaaren tila</source>
-        <translation>The life-cycle status of the land use plan</translation>
+        <translation type="obsolete">The life-cycle status of the land use plan</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="166"/>
         <source>Virhe</source>
-        <translation>Error</translation>
+        <translation type="obsolete">Error</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_dialog.py" line="166"/>
         <source>Kaavojen lataus epäonnistui:</source>
-        <translation>Loading of the land use plans failed:</translation>
+        <translation type="obsolete">Loading of the land use plans failed:</translation>
     </message>
 </context>
 <context>
@@ -2617,7 +2617,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../core/plan_manager.py" line="928"/>
         <source>Käytössä olevat kaavamääräysryhmät</source>
-        <translation>Plan regulation groups in use</translation>
+        <translation type="obsolete">Plan regulation groups in use</translation>
     </message>
 </context>
 <context>
@@ -2625,32 +2625,32 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Nimi</source>
-        <translation>Name</translation>
+        <translation type="obsolete">Name</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Kaava tyyppi</source>
-        <translation>Plan type</translation>
+        <translation type="obsolete">Plan type</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Tuottajan kaavatunnus</source>
-        <translation>Producers plan identifier</translation>
+        <translation type="obsolete">Producers plan identifier</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="85"/>
         <source>Pysyvä kaavatunnus</source>
-        <translation>Permanent plan identifier</translation>
+        <translation type="obsolete">Permanent plan identifier</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="160"/>
         <source>Virhe</source>
-        <translation>Error</translation>
+        <translation type="obsolete">Error</translation>
     </message>
     <message>
         <location filename="../gui/dialogs/load_plan_matter_dialog.py" line="160"/>
         <source>Kaava-asioiden lataus epäonnistui:</source>
-        <translation>Loading the plan matters failed:</translation>
+        <translation type="obsolete">Loading the plan matters failed:</translation>
     </message>
 </context>
 <context>
@@ -2669,64 +2669,64 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>PlanObjectsDock</name>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="129"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="120"/>
         <source>Nimi</source>
-        <translation type="obsolete">Name</translation>
+        <translation>Name</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="130"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="121"/>
         <source>Tyyppi</source>
-        <translation type="obsolete">Type</translation>
+        <translation>Type</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="131"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="122"/>
         <source>Kuvaus</source>
-        <translation type="obsolete">Description</translation>
+        <translation>Description</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="224"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="215"/>
         <source>Aluevaraus</source>
-        <translation type="obsolete">Area reservation</translation>
+        <translation>Area reservation</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="226"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="217"/>
         <source>Osa-alue</source>
-        <translation type="obsolete">Sub-area</translation>
+        <translation>Sub-area</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="228"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="219"/>
         <source>Viiva</source>
-        <translation type="obsolete">Line</translation>
+        <translation>Line</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="230"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="221"/>
         <source>Piste</source>
-        <translation type="obsolete">Point</translation>
+        <translation>Point</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="283"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="274"/>
         <source>Kaavakohdetta ei löydetty.</source>
-        <translation type="obsolete">No plan object was found.</translation>
+        <translation>No plan object was found.</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="308"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="299"/>
         <source>Näytä lomake</source>
-        <translation type="obsolete">Show form</translation>
+        <translation>Show form</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="311"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="302"/>
         <source>Zoomaa kohteeseen</source>
-        <translation type="obsolete">Zoom to the object</translation>
+        <translation>Zoom to the object</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="316"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="307"/>
         <source>Vieritä kohteeseen</source>
-        <translation type="obsolete">Pan to the object</translation>
+        <translation>Pan to the object</translation>
     </message>
     <message>
-        <location filename="../gui/docks/plan_features_dock.py" line="321"/>
+        <location filename="../gui/docks/plan_features_dock.py" line="312"/>
         <source>Väläytä kohdetta</source>
-        <translation type="obsolete">Flash the object</translation>
+        <translation>Flash the object</translation>
     </message>
 </context>
 <context>
@@ -2734,62 +2734,62 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="130"/>
         <source>Nimi</source>
-        <translation>Name</translation>
+        <translation type="obsolete">Name</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="131"/>
         <source>Tyyppi</source>
-        <translation>Type</translation>
+        <translation type="obsolete">Type</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="132"/>
         <source>Kuvaus</source>
-        <translation>Description</translation>
+        <translation type="obsolete">Description</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="225"/>
         <source>Aluevaraus</source>
-        <translation>Area reservation</translation>
+        <translation type="obsolete">Area reservation</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="227"/>
         <source>Osa-alue</source>
-        <translation>Sub-area</translation>
+        <translation type="obsolete">Sub-area</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="229"/>
         <source>Viiva</source>
-        <translation>Line</translation>
+        <translation type="obsolete">Line</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="231"/>
         <source>Piste</source>
-        <translation>Point</translation>
+        <translation type="obsolete">Point</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="284"/>
         <source>Kaavakohdetta ei löydetty.</source>
-        <translation>No plan object was found.</translation>
+        <translation type="obsolete">No plan object was found.</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="309"/>
         <source>Näytä lomake</source>
-        <translation>Show form</translation>
+        <translation type="obsolete">Show form</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="312"/>
         <source>Zoomaa kohteeseen</source>
-        <translation>Zoom to the object</translation>
+        <translation type="obsolete">Zoom to the object</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="317"/>
         <source>Vieritä kohteeseen</source>
-        <translation>Pan to the object</translation>
+        <translation type="obsolete">Pan to the object</translation>
     </message>
     <message>
         <location filename="../gui/docks/plan_features_dock.py" line="322"/>
         <source>Väläytä kohdetta</source>
-        <translation>Flash the object</translation>
+        <translation type="obsolete">Flash the object</translation>
     </message>
 </context>
 <context>
@@ -2870,7 +2870,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../plugin.py" line="235"/>
         <source>Tallenna aktiivisen kaavan kaava-asia JSON muodossa</source>
-        <translation type="obsolete">Save the active plan&apos;s planning matter as JSON</translation>
+        <translation type="obsolete">Save the active plan's planning matter as JSON</translation>
     </message>
     <message>
         <location filename="../plugin.py" line="711"/>
@@ -3178,42 +3178,42 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>RegulationGroupsDock</name>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="82"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="68"/>
         <source>Lisää valitut ryhmät valituille kohteille</source>
         <translation>Add the chosen groups for the chosen objects</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="83"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="69"/>
         <source>Poista kaikki ryhmät valituilta kohteilta</source>
         <translation>Remove all groups from the chosen objects</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="84"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="70"/>
         <source>Poista valitut ryhmät valituilta kohteilta</source>
         <translation>Remove the chosen groups from the chosen objects</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="146"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="132"/>
         <source>Valitse vain yksi kaavamääräysryhmä kerrallaan muokkaamista varten.</source>
         <translation>Choose only one plan regulation group to be editted at the time.</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="151"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="137"/>
         <source>Kaavamääräysryhmän poisto</source>
         <translation>Deletion of the plan regulation group</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="151"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="137"/>
         <source>Haluatko varmasti poistaa kaavamääräysryhmän?</source>
         <translation>Are you sure you want to delete the plan regulation group?</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="80"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="66"/>
         <source>Tyhjä</source>
         <translation>Empty</translation>
     </message>
     <message>
-        <location filename="../gui/docks/regulation_groups_dock.py" line="81"/>
+        <location filename="../gui/docks/regulation_groups_dock.py" line="67"/>
         <source>Pohjasta</source>
         <translation>From a template</translation>
     </message>
@@ -3395,17 +3395,17 @@ p, li { white-space: pre-wrap; }
 <context>
     <name>ValidationModel</name>
     <message>
-        <location filename="../gui/components/validation_tree_view.py" line="66"/>
+        <location filename="../gui/components/validation_tree_view.py" line="56"/>
         <source>Viesti</source>
         <translation>Message</translation>
     </message>
     <message>
-        <location filename="../gui/components/validation_tree_view.py" line="67"/>
+        <location filename="../gui/components/validation_tree_view.py" line="57"/>
         <source>Virheet</source>
         <translation>Errors</translation>
     </message>
     <message>
-        <location filename="../gui/components/validation_tree_view.py" line="68"/>
+        <location filename="../gui/components/validation_tree_view.py" line="58"/>
         <source>Varoitukset</source>
         <translation>Warnings</translation>
     </message>

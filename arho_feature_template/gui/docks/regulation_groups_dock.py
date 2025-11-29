@@ -63,25 +63,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         new_regulation_group_menu = QMenu()
 
-        locale = QgsSettings().value("locale/userLocale", QLocale().name())
-        if locale == 'fi':
-            empty_text = "Tyhjä"
-            from_template_text = "Pohjasta"
-            add_chosen_text = "Lisää valitut ryhmät valituille kohteille"
-            remove_all_text = "Poista kaikki ryhmät valituilta kohteilta"
-            remove_chosen_text = "Poista valitut ryhmät valituilta kohteilta"
-        elif locale == 'en_US':
-            empty_text = "Empty"
-            from_template_text = "From template"
-            add_chosen_text = "Add the chosen groups to the chosen objects"
-            remove_all_text = "Remove all groups from the chosen objects"
-            remove_chosen_text = "Remove the chosen groups from the chosen objects"
-        else:
-            empty_text = self.tr("Tyhjä")
-            from_template_text = self.tr("Pohjasta")
-            add_chosen_text = self.tr("Lisää valitut ryhmät valituille kohteille")
-            remove_all_text = self.tr("Poista kaikki ryhmät valituilta kohteilta")
-            remove_chosen_text = self.tr("Poista valitut ryhmät valituilta kohteilta")
+        empty_text = self.tr("Tyhjä")
+        from_template_text = self.tr("Pohjasta")
+        add_chosen_text = self.tr("Lisää valitut ryhmät valituille kohteille")
+        remove_all_text = self.tr("Poista kaikki ryhmät valituilta kohteilta")
+        remove_chosen_text = self.tr("Poista valitut ryhmät valituilta kohteilta")
 
         self.new_group_empty_action = new_regulation_group_menu.addAction(empty_text)
         self.new_group_from_template_action = new_regulation_group_menu.addAction(from_template_text)
