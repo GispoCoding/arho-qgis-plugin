@@ -37,6 +37,7 @@ from arho_feature_template.core.models import (
     RegulationGroup,
     RegulationGroupLibrary,
 )
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
@@ -51,6 +52,7 @@ from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMat
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.dialogs.serialize_plan_matter import SerializePlanMatter
+from arho_feature_template.gui.dialogs.template_selection_form import TemplateSelectionForm
 from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
 from arho_feature_template.gui.docks.plan_features_dock import PlanObjectsDock
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
@@ -102,12 +104,16 @@ from arho_feature_template.utils.misc_utils import (
 
 logger = logging.getLogger(__name__)
 
-QML_MAP = {
-    LandUseAreaLayer.name: "land_use_area.qml",
-    OtherAreaLayer.name: "other_area.qml",
-    LineLayer.name: "line.qml",
-    PointLayer.name: "point.qml",
+LAYER_NAME_TRANSLATION_MAP = {
+    LandUseAreaLayer.name: "land_use_area",
+    OtherAreaLayer.name: "other_area",
+    LineLayer.name: "line",
+    PointLayer.name: "point",
 }
+
+REGIONAL_PLAN_PATH = plugin_path("resources", "styles", "maakuntakaava")
+GENERAL_PLAN_PATH = plugin_path("resources", "styles", "yleiskaava")
+TOWN_PLAN_PATH = plugin_path("resources", "styles", "asemakaava")
 
 
 class PlanLayerDigitizeMapTool(QgsMapToolDigitizeFeature):
@@ -152,7 +158,13 @@ class PlanManager(QObject):
 
         # Initialize regulation groups dock
         self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
-        self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
+        # self.regulation_groups_dock.request_new_regulation_group.connect(self.create_new_regulation_group)
+        self.regulation_groups_dock.request_new_regulation_group_empty.connect(
+            lambda: self.create_new_regulation_group(from_template=False)
+        )
+        self.regulation_groups_dock.request_new_regulation_group_template.connect(
+            lambda: self.create_new_regulation_group(from_template=True)
+        )
         self.regulation_groups_dock.request_edit_regulation_group.connect(self.edit_regulation_group)
         self.regulation_groups_dock.request_delete_regulation_groups.connect(self.delete_regulation_groups)
         self.regulation_groups_dock.request_remove_all_regulation_groups.connect(
@@ -288,19 +300,26 @@ class PlanManager(QObject):
             self.set_active_plan(dialog.imported_plan_id)
 
     def open_import_features_dialog(self):
-        import_features_form = ImportFeaturesForm(
+        self.import_features_form = ImportFeaturesForm(
             self.regulation_group_libraries, self.active_plan_regulation_group_library
         )
-        if import_features_form.exec_():
-            pass
+        self.import_features_form.show()
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(self):
         self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
         self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
 
-    def create_new_regulation_group(self):
-        self._open_regulation_group_form(RegulationGroup())
+    def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
+        if from_template:
+            regulation_group_template_selection_form = TemplateSelectionForm(
+                libraries=[*self.regulation_group_libraries, self.active_plan_regulation_group_library]
+            )
+            if regulation_group_template_selection_form.exec():
+                model = regulation_group_template_selection_form.selected_template
+                self._open_regulation_group_form(model)  # type: ignore
+        else:
+            self._open_regulation_group_form(RegulationGroup())
 
     def edit_regulation_group(self, regulation_group: RegulationGroup):
         self._open_regulation_group_form(regulation_group)
@@ -311,6 +330,7 @@ class PlanManager(QObject):
         # Close event return zero
         if result == 0:
             self.initialize_libraries()
+
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
@@ -567,6 +587,7 @@ class PlanManager(QObject):
             plan_feature,
             title if title else "",
             self.regulation_group_libraries,
+            self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
@@ -578,7 +599,11 @@ class PlanManager(QObject):
 
         title = plan_feature.name if plan_feature.name else layer_name
         attribute_form = PlanObjectForm(
-            plan_feature, title, self.regulation_group_libraries, self.active_plan_regulation_group_library
+            plan_feature,
+            title,
+            self.regulation_group_libraries,
+            self.plan_feature_libraries,
+            self.active_plan_regulation_group_library,
         )
         if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
@@ -900,21 +925,29 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
     if not active_plan_matter:
         return
+
     plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
+    if not plan_type:
+        return
+
     if plan_type == PlanType.REGIONAL:
-        path = plugin_path("resources", "styles", "maakuntakaava")
+        folder = REGIONAL_PLAN_PATH
     elif plan_type == PlanType.GENERAL:
-        path = plugin_path("resources", "styles", "yleiskaava")
+        folder = GENERAL_PLAN_PATH
     elif plan_type == PlanType.TOWN:
-        path = plugin_path("resources", "styles", "asemakaava")
+        folder = TOWN_PLAN_PATH
     else:
         return
+
+    default = os.path.join(folder, f"{LAYER_NAME_TRANSLATION_MAP[layer.name()]}.qml")
 
     # Apply style to temp layer and copy symbology and labels from there to the actual layer
     geom_type = QgsWkbTypes.displayString(layer.wkbType())
     crs = layer.crs().authid()
     temp_layer = QgsVectorLayer(f"{geom_type}?crs={crs}", "temp_layer", "memory")
-    msg, result = temp_layer.loadNamedStyle(os.path.join(path, QML_MAP[layer.name()]))
+    msg, result = temp_layer.loadNamedStyle(
+        SettingsManager.get_layer_style_path(plan_type, FEATURE_LAYER_NAME_TO_CLASS_MAP[layer.name()], default)
+    )
     if not result:
         iface.messageBar().pushCritical("", msg)
         return

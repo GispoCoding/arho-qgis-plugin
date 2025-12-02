@@ -1,14 +1,27 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
+from qgis.PyQt.QtCore import QObject, pyqtSignal
 
+from arho_feature_template.resources.libraries.feature_templates import (
+    get_user_plan_feature_library_config_files,
+    set_user_plan_feature_library_config_files,
+)
 from arho_feature_template.utils.misc_utils import iface
+
+if TYPE_CHECKING:
+    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
+
+
+class SignalManager(QObject):
+    feature_object_added_to_library = pyqtSignal()
 
 
 class TemplateManager:
+    signal_manager = SignalManager()
     # NOTE: Consider refactoring this class into utils
 
     @classmethod
@@ -34,12 +47,11 @@ class TemplateManager:
         return data
 
     @classmethod
-    def _write_to_yaml_file(cls, config_data: dict, file_path: Path, overwrite: bool):  # noqa: FBT001
-        if not overwrite and os.path.exists(file_path):
+    def _write_to_yaml_file(cls, config_data: dict, file_path: Path):
+        if not file_path.exists():
             return
 
         cleaned_data = cls._clean_data(config_data)
-
         with file_path.open("w", encoding="utf-8") as yaml_file:
             yaml.safe_dump(cleaned_data, yaml_file, sort_keys=False, allow_unicode=True, default_flow_style=False)
 
@@ -96,13 +108,11 @@ class TemplateManager:
         cls,
         regulation_group_config_data: dict,
         file_path: Path | str,
-        overwrite: bool = True,  # noqa: FBT001, FBT002
     ):
         regulation_group_config_data["library_type"] = "regulation_group"
         cls._write_to_yaml_file(
             config_data=regulation_group_config_data,
             file_path=file_path if type(file_path) is Path else Path(file_path),
-            overwrite=overwrite,
         )
 
     @classmethod
@@ -110,11 +120,36 @@ class TemplateManager:
         cls,
         plan_feature_config_data: dict,
         file_path: Path | str,
-        overwrite: bool = True,  # noqa: FBT001, FBT002
     ):
         plan_feature_config_data["library_type"] = "plan_feature"
-        cls._write_to_yaml_file(
+        return cls._write_to_yaml_file(
             config_data=plan_feature_config_data,
             file_path=file_path if type(file_path) is Path else Path(file_path),
-            overwrite=overwrite,
         )
+
+    @classmethod
+    def save_plan_object_to_library(cls, plan_object_model: PlanObject, library: PlanFeatureLibrary):
+        if not library.file_path:
+            return
+
+        # plan_id and geom are not saved into library
+        plan_object_model.plan_id = None
+        plan_object_model.geom = None
+
+        # Check if plan object is already saved into library
+        library_hash_map = library.into_hash_map()
+        plan_object_hash = plan_object_model.data_hash()
+        if plan_object_hash in library_hash_map:
+            iface.messageBar().pushMessage("", "Kaavakohde on jo tallennettu kaavakohdepohjakirjastoon.")
+            return
+
+        library.plan_features.append(plan_object_model)
+        TemplateManager.write_plan_feature_template_file(
+            plan_feature_config_data=library.into_template_dict(), file_path=Path(library.file_path)
+        )
+        iface.messageBar().pushSuccess("", "Kaavakohde tallennettu kaavakohdepohjakirjastoon.")
+
+        library_file_paths = get_user_plan_feature_library_config_files()
+        library_file_paths_as_str = [str(path) for path in library_file_paths]
+        set_user_plan_feature_library_config_files(library_file_paths_as_str)
+        TemplateManager.signal_manager.feature_object_added_to_library.emit()
