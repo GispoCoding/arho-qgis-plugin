@@ -5,7 +5,7 @@ from pathlib import Path
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QTabWidget
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidget
 
 from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
 from arho_feature_template.gui.components.library_display_widget import LibaryDisplayWidget
@@ -83,7 +83,33 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
                 library_widget.delete_library(library)
 
     def _on_close_clicked(self):
+        unsaved_regulation_group_libraries = self.regulation_group_library_widget.unsaved_libraries
+        unsaved_plan_object_libraries = self.plan_feature_library_widget.unsaved_libraries
+        if (
+            unsaved_regulation_group_libraries
+            and QMessageBox.question(
+                None,
+                "Varoitus",
+                f"Tallentamattomia kaavamääräysryhmäkirjastoja: {unsaved_regulation_group_libraries}. Jos valitset Kyllä, muutokset menetetään.",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            == QMessageBox.No
+        ):
+            return
+
+        if unsaved_plan_object_libraries and (
+            QMessageBox.question(
+                None,
+                "Varoitus",
+                f"Tallentamattomia kaavakohdepohjakirjastoja: {unsaved_plan_object_libraries}. Jos valitset Kyllä, muutokset menetetään.",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            == QMessageBox.No
+        ):
+            return
+
         self._delete_all_invalid_libraries()
+
         updated_regulation_group_libraries = self.regulation_group_library_widget.get_current_libraries()
         updated_plan_feature_libraries = self.plan_feature_library_widget.get_current_libraries()
 

@@ -105,6 +105,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         # Make a deep copy of the given library list so that modifications will only be saved when user
         # succesfully clicks Ok
         self.updated_libraries = copy.deepcopy(libraries)
+        # Initialize set for storing references to unsaved libraries
+        self.unsaved_libraries: set[str] = set()
 
         # SIGNALS
         self.library_selection.currentIndexChanged.connect(self._on_library_selection_changed)
@@ -144,11 +146,6 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             self.library_selection.setCurrentIndex(0)
         self._check_required_fields()
 
-        # Initialize save library button
-        self._update_save_library_btn_state()
-        self.library_name.textChanged.connect(self._update_save_library_btn_state)
-        self.library_file_path.fileChanged.connect(self._update_save_library_btn_state)
-
         # Call to handle the case where no libraries are present
         self._on_library_selection_changed(None)
 
@@ -181,13 +178,20 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if self.library_selection.count() == 0:
             self._handle_no_libraries_present()
         else:
-            self._change_active_library(self.library_selection.currentData(DATA_ROLE))
+            current_library = self.library_selection.currentData(DATA_ROLE)
+            current_library_name = self.library_selection.currentText()
+            self._change_active_library(current_library)
+            if current_library_name in self.unsaved_libraries:
+                self.save_library_btn.setEnabled(True)
+            else:
+                self.save_library_btn.setEnabled(False)
 
     def _on_library_name_changed(self, new_name: str):
         if self.active_library is None:
             return
 
         self.active_library.name = new_name
+        self.save_library_btn.setEnabled(True)
         self._check_required_fields()
 
     def _on_reload_library_file_clicked(self):
@@ -199,12 +203,14 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         )
         self.library_selection.setItemData(self.library_selection.currentIndex(), loaded_library, DATA_ROLE)
         self._change_active_library(loaded_library)
+        self.save_library_btn.setEnabled(False)
 
     def _on_library_file_path_changed(self, new_path: str):
         if self.active_library is None:
             return
 
         self.active_library.file_path = new_path
+        self.save_library_btn.setEnabled(True)
         self._check_required_fields()
 
     def _on_library_description_changed(self):
@@ -212,6 +218,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             return
 
         self.active_library.description = self.library_description.toPlainText()
+        self.save_library_btn.setEnabled(True)
 
     def _handle_no_libraries_present(self):
         self.library_name.clear()
@@ -255,16 +262,6 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             self.reload_library_btn.setEnabled(True)
 
         self._update_template_view()
-
-    def _update_save_library_btn_state(self):
-        file_path = self.library_file_path.filePath()
-        library_name = self.library_name.text()
-
-        # Check if both file path and name are not empty and not just whitespace
-        is_file_path_valid = bool(file_path and file_path.strip())
-        is_library_name_valid = bool(library_name and library_name.strip())
-
-        self.save_library_btn.setEnabled(is_file_path_valid and is_library_name_valid)
 
     def _add_library(self, library: Library):
         self.library_selection.addItem(library.name, library)
@@ -387,6 +384,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if form.exec_():
             self._add_library_element_to_list(form.model)
             self._update_active_library_templates_from_view()
+            self.unsaved_libraries.add(self.active_library.name)
+            self.save_library_btn.setEnabled(True)
 
     def _on_new_plan_feature_clicked(self, plan_feature_type: str, plan_feature_layer: str):
         if not self.active_library:
@@ -402,6 +401,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if form.exec_():
             self._add_library_element_to_list(form.model)
             self._update_active_library_templates_from_view()
+            self.unsaved_libraries.add(self.active_library.name)
+            self.save_library_btn.setEnabled(True)
 
     def _on_edit_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()
@@ -428,11 +429,13 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         else:
             return
 
-        if form.exec_():
+        if form.exec_() and element.data_hash() != form.model.data_hash():
             selected_item.setData(DATA_ROLE, form.model)
 
             self._update_active_library_templates_from_view()
             self._update_template_view()
+            self.unsaved_libraries.add(self.active_library.name)
+            self.save_library_btn.setEnabled(True)
 
     def _on_delete_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()
@@ -462,6 +465,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 self.library_element_list.takeItem(self.library_element_list.row(item))
 
             self._update_active_library_templates_from_view()
+            self.save_library_btn.setEnabled(True)
+            self.unsaved_libraries.add(self.active_library.name)
 
     def _check_form(self) -> bool | None:
         file_path = self.library_file_path.filePath()
@@ -498,15 +503,16 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             )
             return False
 
-        current_library.name = library_name
-        current_library.file_path = file_path
-        current_library.description = self.library_description.toPlainText()
-
         return True
 
     def _on_save_library_clicked(self):
         if self._check_form():
-            current_library = self.library_selection.currentData(DATA_ROLE)
+            current_library: PlanFeatureLibrary | RegulationGroupLibrary = self.library_selection.currentData(DATA_ROLE)
+            current_library_old_name = current_library.name
+            current_library.name = self.library_name.text()
+            current_library.file_path = self.library_file_path.filePath()
+            current_library.description = self.library_description.toPlainText()
+
             if isinstance(current_library, RegulationGroupLibrary):
                 TemplateManager.write_regulation_group_template_file(
                     current_library.into_template_dict(), Path(current_library.file_path), overwrite=True
@@ -516,3 +522,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                     current_library.into_template_dict(), Path(current_library.file_path), overwrite=True
                 )
             iface.messageBar().pushSuccess("", f"Kirjasto {self.library_name.text()} tallennettu.")
+
+            if current_library_old_name in self.unsaved_libraries:
+                self.unsaved_libraries.remove(current_library_old_name)
+            self.save_library_btn.setEnabled(False)
