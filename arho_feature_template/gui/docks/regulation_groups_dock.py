@@ -366,7 +366,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             for layer_name in common:
                 next_map = assoc.get(layer_name)
                 if not next_map:
-                    common.pop(layer_name)
+                    common[layer_name] = {}
                     continue
                 current_map = common[layer_name]
                 common_fids = set(current_map.keys()) & set(next_map.keys())
