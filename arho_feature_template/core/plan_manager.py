@@ -331,7 +331,6 @@ class PlanManager(QObject):
         if result == 0:
             self.initialize_libraries()
 
-
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
 
