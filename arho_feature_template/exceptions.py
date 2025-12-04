@@ -38,3 +38,8 @@ class FeatureNotFoundError(Exception):
 
 class UnexpectedNoneError(Exception):
     """Internal QGIS errors that should not be happened"""
+
+
+class NotPlanObjectLayerError(Exception):
+    def __init__(self, layer_name: str):
+        super().__init__(f"Layer {layer_name} is not a plan object layer")

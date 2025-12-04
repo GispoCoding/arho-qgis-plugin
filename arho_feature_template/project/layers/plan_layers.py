@@ -347,6 +347,15 @@ class PlanObjectLayer(AbstractPlanLayer):
     def model_from_feature(cls, feature: QgsFeature) -> PlanObject:
         return cls.models_from_features([feature])[0]
 
+    @staticmethod
+    def feature_letter_codes_as_text(feature: QgsFeature) -> str:
+        nr_of_codes = len(feature["short_names"])
+        if nr_of_codes == 0:
+            return ""
+        if nr_of_codes == 1:
+            return feature["short_names"][0]
+        return " / ".join(feature["short_names"])
+
 
 class PointLayer(PlanObjectLayer):
     name = "Pisteet"
