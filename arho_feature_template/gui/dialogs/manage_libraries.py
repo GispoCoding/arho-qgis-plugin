@@ -59,8 +59,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self.updated_plan_feature_libraries: list[PlanFeatureLibrary] = []
 
         self.regulation_group_library_widget.library_elements_updated.connect(self._on_regulation_groups_updated)
-        self.button_box.clicked.connect(self._on_close_clicked)
-        self.rejected.connect(self._handle_reject)
+        self.button_box.clicked.connect(self.reject)
 
     def _on_regulation_groups_updated(self, new_custom_regulation_groups: list):
         # Update plan feature library widgets regulation group libraries when custom regulation group libraries
@@ -68,9 +67,6 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self.plan_feature_library_widget.regulation_group_libraries = (
             self.default_regulation_group_libraries + new_custom_regulation_groups
         )
-
-    def _handle_reject(self):
-        self._delete_all_invalid_libraries()
 
     def _delete_all_invalid_libraries(self):
         self._delete_invalid_libraries(self.regulation_group_library_widget)
@@ -82,7 +78,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             if not library.file_path or not library.name or not Path(library.file_path).exists():
                 library_widget.delete_library(library)
 
-    def _on_close_clicked(self):
+    def _handle_unsaved_libraries(self) -> bool:
         unsaved_regulation_group_libraries = self.regulation_group_library_widget.unsaved_libraries
         unsaved_plan_object_libraries = self.plan_feature_library_widget.unsaved_libraries
         if (
@@ -95,7 +91,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             )
             == QMessageBox.No
         ):
-            return
+            return False
 
         if unsaved_plan_object_libraries and (
             QMessageBox.question(
@@ -106,15 +102,19 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             )
             == QMessageBox.No
         ):
-            return
+            return False
 
         self._delete_all_invalid_libraries()
+        return True
 
-        updated_regulation_group_libraries = self.regulation_group_library_widget.get_current_libraries()
-        updated_plan_feature_libraries = self.plan_feature_library_widget.get_current_libraries()
+    def reject(self):
+        if self._handle_unsaved_libraries():
+            updated_regulation_group_libraries = self.regulation_group_library_widget.get_current_libraries()
+            updated_plan_feature_libraries = self.plan_feature_library_widget.get_current_libraries()
 
-        set_user_regulation_group_library_config_files(
-            library.file_path for library in updated_regulation_group_libraries
-        )
-        set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
-        self.close()
+            set_user_regulation_group_library_config_files(
+                library.file_path for library in updated_regulation_group_libraries
+            )
+            set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
+
+            super().reject()
