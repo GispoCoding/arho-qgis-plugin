@@ -11,6 +11,7 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.gui.dialogs.plan_object_icon_preview import PlanObjectIconPreview
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
 from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
@@ -411,6 +412,13 @@ class Plugin:
             status_tip="Tarkastele pluginin tietoja",
         )
 
+        self.plan_object_icons_preview = self.add_action(
+            text="Kaavakohdekuvakkaiden esikatselu",
+            triggered_callback=self.open_plan_object_icons_preview,
+            add_to_menu=True,
+            add_to_toolbar=False,
+        )
+
         self._arho_options_page_factory = ArhoOptionsPageFactory()
         iface.registerOptionsWidgetFactory(self._arho_options_page_factory)
         self.plugin_settings_action = self.add_action(
@@ -494,6 +502,11 @@ class Plugin:
         """Open the plugin about dialog."""
         about = PluginAbout()
         about.exec()
+
+    def open_plan_object_icons_preview(self):
+        """Open plan object icons preview dialog."""
+        preview = PlanObjectIconPreview()
+        preview.exec()
 
     def create_geotiff(self):
         """Create geotiff from currently active plan."""
