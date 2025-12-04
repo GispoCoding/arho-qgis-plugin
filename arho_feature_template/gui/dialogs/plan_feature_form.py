@@ -12,6 +12,7 @@ from arho_feature_template.gui.components.regulation_groups_view import Regulati
 from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
 )
+from arho_feature_template.utils.misc_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
@@ -55,7 +56,16 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
         self.feature_type_of_underground.populate_from_code_layer(UndergroundTypeLayer)
         self.feature_type_of_underground.remove_item_by_text("NULL")
-        self.feature_type_of_underground.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
+
+        # If editing, show previously saved value, otherwise show 'Maanpäällinen'
+        type_of_underground_id = plan_feature.type_of_underground_id
+        if type_of_underground_id:
+            type_of_underground = deserialize_localized_text(
+                UndergroundTypeLayer.get_attribute_by_id("name", type_of_underground_id)
+            )
+            self.feature_type_of_underground.setCurrentText(type_of_underground)
+        else:
+            self.feature_type_of_underground.setCurrentIndex(1)  # Maanpäällinen
 
         # Initialize attributes from template
         self.plan_feature = plan_feature
