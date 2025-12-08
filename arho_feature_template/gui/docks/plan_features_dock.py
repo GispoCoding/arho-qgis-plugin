@@ -385,8 +385,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             for selected_feat_id in selected:
                 self.selected_plan_feature_ids.add(selected_feat_id)
             for deselected_feat_id in deselected:
-                if deselected_feat_id in self.selected_plan_feature_ids:
-                    self.selected_plan_feature_ids.remove(deselected_feat_id)
+                self.selected_plan_feature_ids.discard(deselected_feat_id)
 
             self.update_selected_rows()
         finally:
