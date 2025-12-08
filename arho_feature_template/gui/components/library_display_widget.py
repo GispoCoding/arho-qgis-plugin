@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from importlib import resources
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qgis.core import QgsApplication
@@ -85,6 +86,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.new_library_element_btn: QPushButton
         self.edit_library_element_btn: QPushButton
         self.delete_library_element_btn: QPushButton
+        self.save_library_btn: QPushButton
 
         self.library_element_filter: QgsFilterLineEdit
         self.library_element_list: QListWidget
@@ -103,6 +105,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         # Make a deep copy of the given library list so that modifications will only be saved when user
         # succesfully clicks Ok
         self.updated_libraries = copy.deepcopy(libraries)
+        # Initialize set for storing references to unsaved libraries
+        self.unsaved_libraries: set[str] = set()
 
         # SIGNALS
         self.library_selection.currentIndexChanged.connect(self._on_library_selection_changed)
@@ -118,6 +122,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.library_element_list.itemDoubleClicked.connect(lambda _: self._on_edit_element_clicked())
         self.edit_library_element_btn.clicked.connect(self._on_edit_element_clicked)
         self.delete_library_element_btn.clicked.connect(self._on_delete_element_clicked)
+        self.save_library_btn.clicked.connect(self._on_save_library_clicked)
 
         self.library_element_filter.valueChanged.connect(self._on_filter_elements)
 
@@ -127,6 +132,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.new_library_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.import_library_btn.setIcon(QgsApplication.getThemeIcon("mActionFileOpen.svg"))
         self.delete_library_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
+        self.save_library_btn.setIcon(QgsApplication.getThemeIcon("mActionFileSave.svg"))
 
         self.new_library_element_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.edit_library_element_btn.setIcon(QgsApplication.getThemeIcon("mActionEditTable.svg"))
@@ -136,7 +142,6 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         for library in self.libraries:
             self._add_library(library)
 
-        self.library_details_groupbox.setCollapsed(False)
         if self.library_selection.count() != 0:
             self.library_selection.setCurrentIndex(0)
         self._check_required_fields()
@@ -173,13 +178,20 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if self.library_selection.count() == 0:
             self._handle_no_libraries_present()
         else:
-            self._change_active_library(self.library_selection.currentData(DATA_ROLE))
+            current_library = self.library_selection.currentData(DATA_ROLE)
+            current_library_name = self.library_selection.currentText()
+            self._change_active_library(current_library)
+            if current_library_name in self.unsaved_libraries:
+                self.save_library_btn.setEnabled(True)
+            else:
+                self.save_library_btn.setEnabled(False)
 
     def _on_library_name_changed(self, new_name: str):
         if self.active_library is None:
             return
 
         self.active_library.name = new_name
+        self.save_library_btn.setEnabled(True)
         self._check_required_fields()
 
     def _on_reload_library_file_clicked(self):
@@ -191,12 +203,14 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         )
         self.library_selection.setItemData(self.library_selection.currentIndex(), loaded_library, DATA_ROLE)
         self._change_active_library(loaded_library)
+        self.save_library_btn.setEnabled(False)
 
     def _on_library_file_path_changed(self, new_path: str):
         if self.active_library is None:
             return
 
         self.active_library.file_path = new_path
+        self.save_library_btn.setEnabled(True)
         self._check_required_fields()
 
     def _on_library_description_changed(self):
@@ -204,6 +218,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             return
 
         self.active_library.description = self.library_description.toPlainText()
+        self.save_library_btn.setEnabled(True)
 
     def _handle_no_libraries_present(self):
         self.library_name.clear()
@@ -293,7 +308,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
         # If we are deleting a new and empty library, skip asking for confirmation to delete
         if self._is_new_library(self.active_library) and self.library_element_list.count() == 0:
-            self._delete_library(self.active_library)
+            self.delete_library(self.active_library)
             return
 
         response = QMessageBox.question(
@@ -303,18 +318,15 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             QMessageBox.Yes | QMessageBox.No,
         )
         if response == QMessageBox.Yes:
-            self._delete_library(self.active_library)
+            self.delete_library(self.active_library)
 
-    def _delete_library(self, library: Library):
-        if library.file_path is not None and id(library) in [id(lib) for lib in self.libraries]:
-            # TemplateManager.delete_template_file(library.file_path)
-
-            # Find the correct library from the list of updated libraries
-            # We have to find the correct library like this because the library instances are
-            # different in the original list and the copied list
-            for lib in self.updated_libraries:
-                if lib.file_path == library.file_path:
-                    self.updated_libraries.remove(lib)
+    def delete_library(self, library: Library):
+        # Find the correct library from the list of updated libraries
+        # We have to find the correct library like this because the library instances are
+        # different in the original list and the copied list
+        for lib in self.updated_libraries:
+            if lib.file_path == library.file_path:
+                self.updated_libraries.remove(lib)
 
         self.library_selection.removeItem(self.library_selection.currentIndex())
 
@@ -369,6 +381,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if form.exec_():
             self._add_library_element_to_list(form.model)
             self._update_active_library_templates_from_view()
+            self.unsaved_libraries.add(self.active_library.name)
+            self.save_library_btn.setEnabled(True)
 
     def _on_new_plan_feature_clicked(self, plan_feature_type: str, plan_feature_layer: str):
         if not self.active_library:
@@ -384,6 +398,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if form.exec_():
             self._add_library_element_to_list(form.model)
             self._update_active_library_templates_from_view()
+            self.unsaved_libraries.add(self.active_library.name)
+            self.save_library_btn.setEnabled(True)
 
     def _on_edit_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()
@@ -410,11 +426,13 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         else:
             return
 
-        if form.exec_():
+        if form.exec_() and element.data_hash() != form.model.data_hash():
             selected_item.setData(DATA_ROLE, form.model)
 
             self._update_active_library_templates_from_view()
             self._update_template_view()
+            self.unsaved_libraries.add(self.active_library.name)
+            self.save_library_btn.setEnabled(True)
 
     def _on_delete_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()
@@ -444,3 +462,64 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 self.library_element_list.takeItem(self.library_element_list.row(item))
 
             self._update_active_library_templates_from_view()
+            self.save_library_btn.setEnabled(True)
+            self.unsaved_libraries.add(self.active_library.name)
+
+    def _check_form(self) -> bool | None:
+        file_path = self.library_file_path.filePath()
+        library_name = self.library_name.text()
+        current_library: Library = self.library_selection.currentData(DATA_ROLE)
+        current_libraries = self.get_current_libraries()
+        other_library_names = {library.name for library in current_libraries if library is not current_library}
+        other_library_file_paths = {
+            library.file_path for library in current_libraries if library is not current_library
+        }
+
+        # Check for missing filepath
+        if not file_path:
+            QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu tiedostopolkua.")
+            return False
+        # Check for duplicate filepaths
+        if file_path in other_library_file_paths:
+            QMessageBox.critical(
+                self,
+                "Virhe",
+                f"Useammalle kirjastolle on määritelty sama tallennuspolku ({file_path}).",
+            )
+            return False
+        # Check for missing name
+        if not library_name:
+            QMessageBox.critical(self, "Virhe", "Kirjastolle ei ole asetettu nimeä.")
+            return False
+        # Check for duplicate names
+        if library_name in other_library_names:
+            QMessageBox.critical(
+                self,
+                "Virhe",
+                f"Useammalle kirjastolle on määritelty sama nimi ({library_name}).",
+            )
+            return False
+
+        return True
+
+    def _on_save_library_clicked(self):
+        if self._check_form():
+            current_library: PlanFeatureLibrary | RegulationGroupLibrary = self.library_selection.currentData(DATA_ROLE)
+            current_library_old_name = current_library.name
+            current_library.name = self.library_name.text()
+            current_library.file_path = self.library_file_path.filePath()
+            current_library.description = self.library_description.toPlainText()
+
+            if isinstance(current_library, RegulationGroupLibrary):
+                TemplateManager.write_regulation_group_template_file(
+                    current_library.into_template_dict(), Path(current_library.file_path)
+                )
+            elif isinstance(current_library, PlanFeatureLibrary):
+                TemplateManager.write_plan_feature_template_file(
+                    current_library.into_template_dict(), Path(current_library.file_path)
+                )
+            iface.messageBar().pushSuccess("", f"Kirjasto {self.library_name.text()} tallennettu.")
+
+            if current_library_old_name in self.unsaved_libraries:
+                self.unsaved_libraries.remove(current_library_old_name)
+            self.save_library_btn.setEnabled(False)

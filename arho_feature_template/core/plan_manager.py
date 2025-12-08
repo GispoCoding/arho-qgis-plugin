@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
 from typing import Generator, Iterable, cast
 
 from qgis.core import (
@@ -83,12 +82,10 @@ from arho_feature_template.project.layers.plan_layers import (
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
-    set_user_plan_feature_library_config_files,
 )
 from arho_feature_template.resources.libraries.regulation_groups import (
     get_default_regulation_group_library_config_files,
     get_user_regulation_group_library_config_files,
-    set_user_regulation_group_library_config_files,
 )
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
 from arho_feature_template.utils.misc_utils import (
@@ -330,24 +327,9 @@ class PlanManager(QObject):
     def manage_libraries(self):
         manage_libraries_form = ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries)
         result = manage_libraries_form.exec_()
-        # Even if user clicked cancel, we retrieve the list of updated libraries in case a library was deleted
-        updated_regulation_group_libraries = (
-            manage_libraries_form.regulation_group_library_widget.get_current_libraries()
-        )
-        updated_plan_feature_libraries = manage_libraries_form.plan_feature_library_widget.get_current_libraries()
-        if result:
-            # Rewrite all new and remaining library config files and reinitialize libraries
-            for library in updated_regulation_group_libraries:
-                TemplateManager.write_regulation_group_template_file(
-                    library.into_template_dict(), Path(library.file_path)
-                )
-            for library in updated_plan_feature_libraries:
-                TemplateManager.write_plan_feature_template_file(library.into_template_dict(), Path(library.file_path))
-        set_user_regulation_group_library_config_files(
-            library.file_path for library in updated_regulation_group_libraries
-        )
-        set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
-        self.initialize_libraries()
+        # Close event return zero
+        if result == 0:
+            self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
