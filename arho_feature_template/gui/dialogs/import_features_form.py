@@ -36,6 +36,7 @@ from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 if TYPE_CHECKING:
     from qgis.gui import QgsFieldComboBox, QgsMapLayerComboBox
 
+    from arho_feature_template.core.plan_manager import PlanManager
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 
@@ -48,6 +49,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self,
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary,
+        plan_manager_ref: PlanManager,
     ):
         super().__init__(parent=iface.mainWindow())
         self.setupUi(self)
@@ -72,6 +74,8 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.process_button_box.rejected.connect(self.reject)
 
         self.target_crs: QgsCoordinateReferenceSystem | None = None
+
+        self.plan_manager = plan_manager_ref
 
         # Source layer initialization
         # Exclude all project layers from valid source layers
@@ -164,6 +168,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
         # Create and add new plan features
         self.create_and_save_plan_features(source_features)
+        self.plan_manager.update_active_plan_regulation_group_library()
 
     def get_source_features(self, source_layer: QgsVectorLayer) -> list[QgsFeature]:
         return (

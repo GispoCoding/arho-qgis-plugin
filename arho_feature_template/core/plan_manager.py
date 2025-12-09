@@ -301,7 +301,7 @@ class PlanManager(QObject):
 
     def open_import_features_dialog(self):
         self.import_features_form = ImportFeaturesForm(
-            self.regulation_group_libraries, self.active_plan_regulation_group_library
+            self.regulation_group_libraries, self.active_plan_regulation_group_library, self
         )
         self.import_features_form.show()
 
