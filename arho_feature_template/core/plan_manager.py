@@ -372,6 +372,7 @@ class PlanManager(QObject):
             for feat_id in feat_ids:
                 for group in groups:
                     save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
+        self.features_dock.create_plan_feature_view()
 
     def remove_selected_regulation_groups_from_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
