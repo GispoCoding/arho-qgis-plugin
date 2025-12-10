@@ -19,7 +19,8 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QMenu, QPushButton, QTableView
 
-from arho_feature_template.core.feature_editing import PLAN_OBJECT_NOTIFIER, save_plan_feature
+from arho_feature_template.core import feature_editing
+from arho_feature_template.core.feature_editing import save_plan_feature
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
@@ -31,7 +32,7 @@ from arho_feature_template.project.layers.plan_layers import (
     get_plan_feature_layer_class_by_model,
     plan_feature_layers,
 )
-from arho_feature_template.utils.misc_utils import disconnect_signal, iface
+from arho_feature_template.utils.misc_utils import iface
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 ui_path = resources.files(__package__) / "plan_features_dock.ui"
@@ -144,12 +145,12 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             btn.toggled.connect(self._filter_table)
 
     def initialize(self):
-        PLAN_OBJECT_NOTIFIER.plan_object_added.connect(self._on_feat_added)
-        PLAN_OBJECT_NOTIFIER.plan_object_edited.connect(self._on_feat_attributes_changed)
         for layer in plan_feature_layers:
             vector_layer = layer.get_from_project()
             vector_layer.selectionChanged.connect(self._on_feature_selection_changed)
+            vector_layer.committedFeaturesAdded.connect(self._on_feat_added)
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
+            vector_layer.committedAttributeValuesChanges.connect(self._on_feat_attributes_changed)
 
     def unload(self) -> None:
         # Disconnect signals
@@ -157,8 +158,6 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.selection_model.selectionChanged.disconnect(self._on_table_selection_changed)
         self.table.customContextMenuRequested.disconnect(self._open_context_menu)
         self.filter_line.textChanged.disconnect(self._filter_table)
-        disconnect_signal(PLAN_OBJECT_NOTIFIER.plan_object_added)
-        disconnect_signal(PLAN_OBJECT_NOTIFIER.plan_object_edited)
 
         for layer in plan_feature_layers:
             # If we are closing QGIS, layers are gone already at this point. If we are reloading the plugin,
@@ -166,7 +165,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             with suppress(LayerNotFoundError):
                 vector_layer = layer.get_from_project()
                 vector_layer.selectionChanged.disconnect(self._on_feature_selection_changed)
+                vector_layer.committedFeaturesAdded.disconnect(self._on_feat_added)
                 vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
+                vector_layer.committedAttributeValuesChanges.disconnect(self._on_feat_attributes_changed)
 
     def create_plan_feature_view(self):
         # Clear table
@@ -340,8 +341,10 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def _on_save_plan_object_to_library(self, plan_feature_model: PlanObject, library: PlanFeatureLibrary):
         TemplateManager.save_plan_object_to_library(plan_feature_model, library)
 
-    def _on_feat_added(self, added_model: PlanObject, added_feature: QgsFeature):
-        self._add_plan_feature_to_view(added_model, added_feature.id())
+    def _on_feat_added(self, _: str, added_features: Iterable[QgsFeature]):
+        for feature in added_features:
+            plan_object_model = feature_editing.created_object_models.pop(feature["id"])
+            self._add_plan_feature_to_view(plan_object_model, feature.id())
 
     def _on_feats_removed(self, layer_id: int, feature_ids: Iterable[int]):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
@@ -363,10 +366,15 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             if len(feats_to_delete) == 0:
                 return
 
-    def _on_feat_attributes_changed(self, edited_model: PlanObject):
-        row = self._find_row_by_plan_feature_id(cast(str, edited_model.id_))
-        if row is not None:
-            self._update_row(row, edited_model)
+    def _on_feat_attributes_changed(self, layer_id: str, changed_attribute_values_map: dict):
+        vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
+        features = [vector_layer.getFeature(feat_id) for feat_id in changed_attribute_values_map]
+        for feature in features:
+            feat_id = feature["id"]
+            plan_object_model = feature_editing.created_object_models.pop(feat_id)
+            row = self._find_row_by_plan_feature_id(cast(str, feat_id))
+            if row is not None:
+                self._update_row(row, plan_object_model)
 
     def _on_feature_selection_changed(self, selected: Iterable[int], deselected: Iterable[int], _):
         if self._syncing_selections:
