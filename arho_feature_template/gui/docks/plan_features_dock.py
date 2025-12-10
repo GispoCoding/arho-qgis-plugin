@@ -374,7 +374,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         features = [vector_layer.getFeature(feat_id) for feat_id in changed_attribute_values_map]
         for plan_feature_model in layer.models_from_features(features):
             row = self._find_row_by_plan_feature_id(cast(str, plan_feature_model.id_))
-            if row:
+            if row is not None:
                 self._update_row(row, plan_feature_model)
 
     def _on_feature_selection_changed(self, selected: Iterable[int], deselected: Iterable[int], _):
