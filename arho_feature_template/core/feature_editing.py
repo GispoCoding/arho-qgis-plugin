@@ -9,12 +9,16 @@ from arho_feature_template.core.models import PlanObject
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
     DocumentLayer,
+    LandUseAreaLayer,
     LegalEffectAssociationLayer,
+    LineLayer,
+    OtherAreaLayer,
     PlanLayer,
     PlanMatterLayer,
     PlanPropositionLayer,
     PlanRegulationLayer,
     PlanThemeAssociationLayer,
+    PointLayer,
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     TypeOfVerbalRegulationAssociationLayer,
@@ -64,9 +68,9 @@ def save_feature(
         feature = out_feats[0]
     else:
         layer.updateFeature(feature)
+        result = True
 
     layer.endEditCommand()
-    result = layer.commitChanges(stopEditing=False)
     return result, feature
 
 
@@ -79,6 +83,31 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
 
     layer.endEditCommand()
     return layer.commitChanges(stopEditing=False)
+
+
+@use_wait_cursor
+def commit_layer_changes():
+    layer_commit_order = [
+        PlanMatterLayer,
+        PlanLayer,
+        LandUseAreaLayer,
+        OtherAreaLayer,
+        LineLayer,
+        PointLayer,
+        RegulationGroupLayer,
+        PlanRegulationLayer,
+        PlanPropositionLayer,
+        AdditionalInformationLayer,
+        TypeOfVerbalRegulationAssociationLayer,
+        PlanThemeAssociationLayer,
+        RegulationGroupAssociationLayer,
+        LegalEffectAssociationLayer,
+        DocumentLayer,
+    ]
+    for layer_class in layer_commit_order:
+        layer: QgsVectorLayer = layer_class.get_from_project()
+        if layer.isModified():
+            layer.commitChanges(stopEditing=False)
 
 
 @use_wait_cursor
@@ -98,6 +127,8 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
             iface.messageBar().pushCritical("", "Kaava-asian tallentaminen epäonnistui")
             return None
         plan_matter_id = cast(str, feature["id"])
+
+    commit_layer_changes()
 
     return plan_matter_id
 
@@ -164,6 +195,8 @@ def save_plan(plan: Plan) -> str | None:
         document.plan_id = plan_id
         save_document(document)
 
+    commit_layer_changes()
+
     return plan_id
 
 
@@ -209,6 +242,8 @@ def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> s
             continue  # Skip association saving if saving regulation group failed
         save_regulation_group_association(group_id, layer_name, feat_id)
 
+    commit_layer_changes()
+
     if editing:
         PLAN_OBJECT_NOTIFIER.plan_object_edited.emit(plan_feature)
     else:
@@ -222,7 +257,7 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     editing = group_id is not None
     if group_id is None or regulation_group.modified:
         feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
-        result, _ = save_feature(
+        result, feat = save_feature(
             feature=feature,
             layer=RegulationGroupLayer.get_from_project(),
             id_=group_id,
@@ -257,7 +292,6 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
         for proposition in regulation_group.propositions:
             proposition.regulation_group_id = group_id  # Updating regulation group ID
             save_proposition(proposition)
-
     return group_id
 
 
