@@ -105,6 +105,19 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         row = self.plans_table.rowCount()
         self.plans_table.insertRow(row)
 
+        plan_name_item = self._set_row_attributes(row, plan)
+
+        active_plan_id = get_active_plan_id()
+        if plan.id_ == active_plan_id:
+            plan_name_item.setIcon(QIcon(resources_path("icons", "green_dot.png")))
+        if select or plan.id_ == active_plan_id:
+            self.plans_table.selectRow(row)
+        self.plans_table.setFocus()
+
+    def _update_plan_row(self, row: int, plan: Plan):
+        self._set_row_attributes(row, plan)
+
+    def _set_row_attributes(self, row: int, plan: Plan) -> QTableWidgetItem:
         plan_name_item = QTableWidgetItem(plan.name or "")
         plan_name_item.setData(DATA_ROLE, plan)
         self.plans_table.setItem(row, 0, plan_name_item)
@@ -120,12 +133,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         description_item = QTableWidgetItem(plan.description or "")
         self.plans_table.setItem(row, 2, description_item)
 
-        active_plan_id = get_active_plan_id()
-        if plan.id_ == active_plan_id:
-            plan_name_item.setIcon(QIcon(resources_path("icons", "green_dot.png")))
-        if select or plan.id_ == active_plan_id:
-            self.plans_table.selectRow(row)
-        self.plans_table.setFocus()
+        return plan_name_item
 
     def _filter_plans(self) -> None:
         text = self.filter_line.text().lower().strip()
@@ -142,8 +150,20 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         row = item.row()
         plan = self.plans_table.item(row, 0).data(DATA_ROLE)
         form = PlanAttributeForm(plan, self.regulation_group_libraries)
+
+        active_plan_matter_id = get_active_plan_matter_id()
+        original_filter = self.plan_layer.subsetString()
         if form.exec():
-            save_plan(form.model)
+            try:
+                edited_plan = form.model
+                self.plan_layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # Set temporary filter
+                save_plan(edited_plan)
+            finally:
+                # Make sure plan layer is not in edit state to set new filter
+                if self.plan_layer.isEditable():
+                    self.plan_layer.rollBack()
+                self.plan_layer.setSubsetString(original_filter)  # restore filter
+                self._update_plan_row(row, edited_plan)
 
     def _on_new_plan_button_clicked(self):
         form = NewPlanDialog()

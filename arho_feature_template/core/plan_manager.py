@@ -42,7 +42,6 @@ from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
-from arho_feature_template.gui.dialogs.load_plan_dialog import LoadPlanDialog
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
 from arho_feature_template.gui.dialogs.manage_plans import ManagePlans
@@ -696,25 +695,6 @@ class PlanManager(QObject):
             canvas = iface.mapCanvas()
             canvas.zoomToFeatureExtent(bounding_box.buffered(50))
             canvas.refresh()
-
-    def load_plan(self):
-        """Load an existing land use plan using a dialog selection."""
-        connection_names = get_existing_database_connection_names()
-
-        if not connection_names:
-            iface.messageBar().pushCritical("", "Tietokantayhteyksiä ei löytynyt.")
-            return
-
-        if not handle_unsaved_changes():
-            return
-
-        dialog = LoadPlanDialog(None, connection_names)
-
-        if dialog.exec_() == QDialog.Accepted:
-            selected_plan_id = dialog.get_selected_plan_id()
-            self.commit_all_editable_layers()
-
-            self.set_active_plan(selected_plan_id)
 
     def load_plan_matter(self):
         """Load an existing plan matter using a dialog selection."""
