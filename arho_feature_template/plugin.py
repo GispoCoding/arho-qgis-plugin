@@ -10,6 +10,7 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
+from arho_feature_template.core.prints.regulations_print_generator import RegulationsPrintGenerator
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.dialogs.plan_object_icon_preview import PlanObjectIconPreview
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
@@ -313,6 +314,14 @@ class Plugin:
         )
         plan_menu.addAction(self.import_plan_action)
 
+        self.plan_regulations_print = self.add_action(
+            text="Luo tulosteen määräysosa",
+            triggered_callback=self.generate_plan_regulations_print,
+            add_to_menu=True,
+            add_to_toolbar=False,
+        )
+        plan_menu.addAction(self.plan_regulations_print)
+
         self.save_plan_menu = QMenu("Tallenna kaavasuunnitelma")
         self.save_plan_menu.setIcon(QgsApplication.getThemeIcon("mActionFileSaveAs.svg"))
         plan_menu.addMenu(self.save_plan_menu)
@@ -507,6 +516,9 @@ class Plugin:
         """Open plan object icons preview dialog."""
         preview = PlanObjectIconPreview()
         preview.exec()
+
+    def generate_plan_regulations_print(self):
+        RegulationsPrintGenerator.new_regulations_print_layout()
 
     def create_geotiff(self):
         """Create geotiff from currently active plan."""
