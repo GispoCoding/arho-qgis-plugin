@@ -67,8 +67,9 @@ def save_feature(
             return False, feature
         feature = out_feats[0]
     else:
-        layer.updateFeature(feature)
-        result = True
+        result = layer.updateFeature(feature)
+        if not result:
+            return False, feature
 
     layer.endEditCommand()
     return result, feature
