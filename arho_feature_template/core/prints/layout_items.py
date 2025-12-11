@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 from qgis.core import (
-    QgsFeature,
     QgsFillSymbol,
     QgsLayoutItem,
     QgsLayoutItemGroup,
@@ -27,8 +27,10 @@ from arho_feature_template.core.prints.layout_utils import (
     move_label_next_to_item,
     move_label_on_symbol,
 )
-from arho_feature_template.project.layers.plan_layers import PlanObjectLayer
-from arho_feature_template.utils.misc_utils import deserialize_localized_text
+
+if TYPE_CHECKING:
+    from arho_feature_template.core.prints.regulations_print_generator import RegulationPrintElement
+
 
 # NOTE: The constants below can be refactored into settings, Määräysosan asetukset
 
@@ -64,40 +66,26 @@ PLACEHOLDER_TEXT = (
 class LayoutItemFactory:
     @classmethod
     def new_regulation_print_item(
-        cls, symbol: QgsSymbol, feat: QgsFeature, layout: QgsPrintLayout, coords: tuple[float, float]
+        cls, element: RegulationPrintElement, layout: QgsPrintLayout, coords: tuple[float, float]
     ) -> QgsLayoutItemGroup:
         # --- 1. Create the icon / symbol element ---
-        icon_element: QgsLayoutItem = cls.new_symbol_item(symbol, layout)
+        icon_element: QgsLayoutItem = cls.new_symbol_item(element.symbol, layout)
 
         # If letter code exists, create a label for it and combine with symbol
-        letter_code = PlanObjectLayer.feature_letter_codes_as_text(feat)
-        if letter_code != "":
-            label_item = LayoutItemFactory.new_letter_code_label(letter_code, layout)
+        if element.letter_code != "":
+            label_item = LayoutItemFactory.new_letter_code_label(element.letter_code, layout)
             icon_element = LayoutItemFactory.group_and_align_label_and_symbol_items(label_item, icon_element, layout)
 
         # Position the symbol
         icon_element.attemptMove(QgsLayoutPoint(*coords))
 
         # --- 2. Create the text element ---
-
-        # Heading
-        heading = feat.attribute("name")
-        heading = deserialize_localized_text(heading) if heading else "[PUUTTUVA OTSIKKO]"
-        text_element = LayoutItemFactory.new_regulation_heading_label(layout, heading)
+        text_element = LayoutItemFactory.new_regulation_heading_label(layout, element.heading)
         move_label_next_to_item(text_element, icon_element, APPROX_VISUAL_LINE_WIDTH, SYMBOL_ITEM_OCCUPIED_WIDTH)
 
         # Verbal regulation contents
-        # NOTE: This could be done elsewhere or refactored into a method
-        text: str | None = None
-        regulation_values = feat.attribute("regulation_values")
-        if regulation_values:
-            # NOTE: There can be only one verbal regulation value in a regulation group?
-            verbal_regulations = regulation_values.get("sanallinenMaarays")
-            if verbal_regulations:
-                text = deserialize_localized_text(verbal_regulations["text_value"])
-
-        if text or USE_PLACEHOLDER_REGULATION_TEXT:
-            verbal_regulation_label = LayoutItemFactory.new_regulation_text_label(layout, text or "")
+        if element.text or USE_PLACEHOLDER_REGULATION_TEXT:
+            verbal_regulation_label = LayoutItemFactory.new_regulation_text_label(layout, element.text or "")
             move_label_below_item(verbal_regulation_label, text_element)
             text_element = layout.groupItems([verbal_regulation_label, text_element])
 

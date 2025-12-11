@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+from dataclasses import dataclass
+from hashlib import sha256
+
 from qgis.core import (
+    QgsFeature,
     QgsLayoutItem,
     QgsLayoutItemLabel,
     QgsLayoutItemPage,
@@ -8,6 +13,7 @@ from qgis.core import (
     QgsLayoutSize,
     QgsPrintLayout,
     QgsProject,
+    QgsSymbol,
 )
 from qgis.PyQt.QtWidgets import QMessageBox
 
@@ -17,9 +23,48 @@ from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
     OtherAreaLayer,
+    PlanObjectLayer,
     PointLayer,
 )
-from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.misc_utils import deserialize_localized_text, iface, symbol_fingerprint
+
+
+@dataclass(frozen=True)
+class RegulationPrintElement:
+    """Represents a unique printable regulation entry."""
+
+    symbol: QgsSymbol
+    letter_code: str
+    heading: str
+    text: str
+
+    @classmethod
+    def from_feat_and_symbol(cls, feat: QgsFeature, symbol: QgsSymbol) -> RegulationPrintElement:
+        letter_code = PlanObjectLayer.feature_letter_codes_as_text(feat) or ""
+
+        heading = feat.attribute("name")
+        heading = deserialize_localized_text(heading) if heading else "[PUUTTUVA OTSIKKO]"
+
+        # NOTE: This could be done elsewhere or refactored into a method
+        text: str = ""
+        regulation_values = feat.attribute("regulation_values")
+        if regulation_values:
+            # NOTE: There can be only one verbal regulation value in a regulation group?
+            verbal_regulations = regulation_values.get("sanallinenMaarays")
+            if verbal_regulations:
+                text = deserialize_localized_text(verbal_regulations["text_value"]) or ""
+
+        return cls(symbol, letter_code, heading, text)
+
+    def data_hash(self) -> str:
+        combined = {
+            "symbol": json.loads(symbol_fingerprint(self.symbol)),
+            "letter_code": self.letter_code or "",
+            "heading": self.heading or "",
+            "text": self.text or "",
+        }
+        key_str = json.dumps(combined, sort_keys=True)
+        return sha256(key_str.encode("utf-8")).hexdigest()
 
 
 class RegulationsPrintGenerator:
@@ -116,6 +161,8 @@ class RegulationsPrintGenerator:
         x_coord: float = cls.COL_1_START_X
         y_coord: float = cls.START_Y
 
+        print_element_hashes: set[str] = set()
+
         def move_y_coordinate(y: float, item: QgsLayoutItem) -> float:
             return float(y + max(item.sizeWithUnits().height(), cls.ELEMENT_MIN_HEIGHT) + cls.SPACE_BETWEEN_ELEMENTS)
 
@@ -130,8 +177,22 @@ class RegulationsPrintGenerator:
             y_coord = move_y_coordinate(y_coord, heading_label)
 
             for feat, symbol in PlanObjectIconRenderer.get_symbols_for_layer_features(layer.get_from_project()):
+                if symbol is None:
+                    # What to do if no symbol was found?
+                    continue
+
                 # Symbol must be cloned, otherwise QGIS crashes later when deferencing ref dropped by renderer
-                item = LayoutItemFactory.new_regulation_print_item(symbol.clone(), feat, layout, (x_coord, y_coord))
+                cloned_symbol = symbol.clone()
+
+                element = RegulationPrintElement.from_feat_and_symbol(feat, cloned_symbol)
+
+                # Check if element exists already. If it does, skip creating a duplicate
+                hash_value = element.data_hash()
+                if hash_value in print_element_hashes:
+                    continue
+
+                item = LayoutItemFactory.new_regulation_print_item(element, layout, (x_coord, y_coord))
+                print_element_hashes.add(hash_value)
 
                 if cls._item_does_not_fit_to_page(y_coord, item):
                     cls.add_page_to_layout(layout)
