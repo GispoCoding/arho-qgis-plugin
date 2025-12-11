@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 from contextlib import suppress
 from functools import wraps
 from typing import TYPE_CHECKING, Any, cast
 
-from qgis.core import QgsExpressionContextUtils, QgsProject, QgsVectorLayer
+from qgis.core import QgsExpressionContextUtils, QgsProject, QgsSymbol, QgsVectorLayer
 from qgis.PyQt.QtCore import NULL, Qt, pyqtBoundSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
@@ -174,3 +175,17 @@ def set_imported_layer_invisible(layer: QgsVectorLayer) -> None:
     root = QgsProject.instance().layerTreeRoot()
     layer_node = root.findLayer(layer.id())
     layer_node.setItemVisibilityChecked(False)
+
+
+def symbol_fingerprint(symbol: QgsSymbol) -> str:
+    data = {
+        "type": symbol.type(),
+        "layers": [
+            {
+                "layer": layer.layerType(),
+                "props": layer.properties(),
+            }
+            for layer in symbol.symbolLayers()
+        ],
+    }
+    return json.dumps(data, sort_keys=True)
