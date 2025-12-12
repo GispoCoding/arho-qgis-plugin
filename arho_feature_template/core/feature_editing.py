@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
+from qgis.core import QgsFeature
+from qgis.PyQt.QtCore import QObject, pyqtSignal
+
+from arho_feature_template.core.models import PlanObject
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
     DocumentLayer,
@@ -24,32 +28,46 @@ from arho_feature_template.utils.misc_utils import (
 )
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature, QgsVectorLayer
+    from qgis.core import QgsVectorLayer
 
     from arho_feature_template.core.models import (
         AdditionalInformation,
         Document,
         Plan,
         PlanMatter,
-        PlanObject,
         Proposition,
         Regulation,
         RegulationGroup,
     )
 
 
-def save_feature(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = "") -> bool:
+class PlanObjectSaveNotifier(QObject):
+    plan_object_added = pyqtSignal(PlanObject, QgsFeature)
+    plan_object_edited = pyqtSignal(PlanObject)
+
+
+PLAN_OBJECT_NOTIFIER = PlanObjectSaveNotifier()
+
+
+def save_feature(
+    feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = ""
+) -> tuple[bool, QgsFeature]:
     if not layer.isEditable():
         layer.startEditing()
     layer.beginEditCommand(edit_text)
 
     if id_ is None:
-        layer.addFeature(feature)
+        provider = layer.dataProvider()
+        result, out_feats = provider.addFeatures([feature])
+        if not result:
+            return False, feature
+        feature = out_feats[0]
     else:
         layer.updateFeature(feature)
 
     layer.endEditCommand()
-    return layer.commitChanges(stopEditing=False)
+    result = layer.commitChanges(stopEditing=False)
+    return result, feature
 
 
 def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
@@ -70,12 +88,13 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
     editing = plan_matter_id is not None
     if plan_matter.id_ is None or plan_matter.modified:
         feature = PlanMatterLayer.feature_from_model(plan_matter)
-        if not save_feature(
+        result, _ = save_feature(
             feature=feature,
             layer=PlanMatterLayer.get_from_project(),
             id_=plan_matter_id,
             edit_text="Kaava-asian muokkaus" if editing else "Kaava-asian luominen",
-        ):
+        )
+        if not result:
             iface.messageBar().pushCritical("", "Kaava-asian tallentaminen epäonnistui")
             return None
         plan_matter_id = cast(str, feature["id"])
@@ -92,12 +111,13 @@ def save_plan(plan: Plan) -> str | None:
     editing = plan_id is not None
     if plan_id is None or plan.modified:
         feature = PlanLayer.feature_from_model(plan)
-        if not save_feature(
+        result, _ = save_feature(
             feature=feature,
             layer=PlanLayer.get_from_project(),
             id_=plan_id,
             edit_text="Kaavasuunnitelman muokkaus" if editing else "Kaavasuunnitelman luominen",
-        ):
+        )
+        if not result:
             iface.messageBar().pushCritical("", "Kaavasuunnitelman tallentaminen epäonnistui")
             return None
         plan_id = cast(str, feature["id"])
@@ -157,15 +177,18 @@ def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> s
     editing = feat_id is not None
     if feat_id is None or plan_feature.modified:
         feature = layer_class.feature_from_model(plan_feature, plan_id)
-        if not save_feature(
+        result, feat = save_feature(
             feature=feature,
             layer=layer_class.get_from_project(),
             id_=feat_id,
             edit_text="Kaavakohteen muokkaus" if editing else "Kaavakohteen lisäys",
-        ):
+        )
+        if not result:
             iface.messageBar().pushCritical("", "Kaavakohteen tallentaminen epäonnistui.")
             return None
         feat_id = cast(str, feature["id"])
+        # Add id to model so that up-to-date model can be sent to plan objects table
+        plan_feature.id_ = feat_id
 
     if editing:
         # Check for deleted regulation groups
@@ -186,6 +209,10 @@ def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> s
             continue  # Skip association saving if saving regulation group failed
         save_regulation_group_association(group_id, layer_name, feat_id)
 
+    if editing:
+        PLAN_OBJECT_NOTIFIER.plan_object_edited.emit(plan_feature)
+    else:
+        PLAN_OBJECT_NOTIFIER.plan_object_added.emit(plan_feature, feat)
     return feat_id
 
 
@@ -195,12 +222,13 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
     editing = group_id is not None
     if group_id is None or regulation_group.modified:
         feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
-        if not save_feature(
+        result, _ = save_feature(
             feature=feature,
             layer=RegulationGroupLayer.get_from_project(),
             id_=group_id,
             edit_text="Kaavamääräysryhmän muokkaus" if editing else "Kaavamääräysryhmän lisäys",
-        ):
+        )
+        if not result:
             iface.messageBar().pushCritical("", "Kaavamääräysryhmän tallentaminen epäonnistui.")
             return None
         group_id = cast(str, feature["id"])
@@ -254,7 +282,8 @@ def save_regulation_group_association(regulation_group_id: str, layer_name: str,
     feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
     layer = RegulationGroupAssociationLayer.get_from_project()
 
-    if not save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavamääräysryhmän assosiaation lisäys"):
+    result, _ = save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavamääräysryhmän assosiaation lisäys")
+    if not result:
         iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation tallentaminen epäonnistui.")
         return False
 
@@ -266,12 +295,13 @@ def save_regulation(regulation: Regulation) -> str | None:
     editing = reg_id is not None
     if reg_id is None or regulation.modified:
         regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
-        if not save_feature(
+        result, _ = save_feature(
             feature=regulation_feature,
             layer=PlanRegulationLayer.get_from_project(),
             id_=reg_id,
             edit_text="Kaavamääräyksen muokkaus" if editing else "Kaavamääräyksen lisäys",
-        ):
+        )
+        if not result:
             iface.messageBar().pushCritical("", "Kaavamääräyksen tallentaminen epäonnistui.")
             return None
         reg_id = cast(str, regulation_feature["id"])
@@ -335,7 +365,8 @@ def save_plan_theme_association(
     )
     layer = PlanThemeAssociationLayer.get_from_project()
 
-    if not save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavoitusteeman assosiaation lisäys"):
+    result, _ = save_feature(feature=feature, layer=layer, id_=None, edit_text="Kaavoitusteeman assosiaation lisäys")
+    if not result:
         iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation tallentaminen epäonnistui.")
         return False
 
@@ -348,9 +379,10 @@ def save_type_of_verbal_regulation_association(regulation_id: str, verbal_regula
     feature = TypeOfVerbalRegulationAssociationLayer.feature_from(regulation_id, verbal_regulation_type_id)
     layer = TypeOfVerbalRegulationAssociationLayer.get_from_project()
 
-    if not save_feature(
+    result, _ = save_feature(
         feature=feature, layer=layer, id_=None, edit_text="Sanallisen kaavamääräyksen lajin assosiaation lisäys"
-    ):
+    )
+    if not result:
         iface.messageBar().pushCritical("", "Sanallisen kaavamääräyksen lajin assosiaation tallentaminen epäonnistui.")
         return False
 
@@ -363,7 +395,8 @@ def save_legal_effect_association(plan_id: str, legal_effect_id: str) -> bool:
     feature = LegalEffectAssociationLayer.feature_from(plan_id, legal_effect_id)
     layer = LegalEffectAssociationLayer.get_from_project()
 
-    if not save_feature(feature=feature, layer=layer, id_=None, edit_text="Oikeusvaikutuksen assosiaation lisäys"):
+    result, _ = save_feature(feature=feature, layer=layer, id_=None, edit_text="Oikeusvaikutuksen assosiaation lisäys")
+    if not result:
         iface.messageBar().pushCritical("", "Oikeusvaikutuksen assosiaation tallentaminen epäonnistui.")
         return False
 
@@ -375,12 +408,13 @@ def save_additional_information(additional_information: AdditionalInformation) -
         return additional_information.id_
 
     feature = AdditionalInformationLayer.feature_from_model(additional_information)
-    if not save_feature(
+    result, _ = save_feature(
         feature=feature,
         layer=AdditionalInformationLayer.get_from_project(),
         id_=additional_information.id_,
         edit_text="Lisätiedon lisäys" if additional_information.id_ is None else "Lisätiedon muokkaus",
-    ):
+    )
+    if not result:
         iface.messageBar().pushCritical("", "Lisätiedon tallentaminen epäonnistui.")
         return None
 
@@ -416,12 +450,13 @@ def save_proposition(proposition: Proposition) -> str | None:
         return proposition.id_
 
     feature = PlanPropositionLayer.feature_from_model(proposition)
-    if not save_feature(
+    result, _ = save_feature(
         feature=feature,
         layer=PlanPropositionLayer.get_from_project(),
         id_=prop_id,
         edit_text="Kaavasuosituksen lisäys" if prop_id is None else "Kaavasuosituksen muokkaus",
-    ):
+    )
+    if not result:
         iface.messageBar().pushCritical("", "Kaavasuosituksen tallentaminen epäonnistui.")
         return None
     prop_id = cast(str, feature["id"])
@@ -458,12 +493,13 @@ def save_document(document: Document) -> str | None:
         return document.id_
 
     feature = DocumentLayer.feature_from_model(document)
-    if not save_feature(
+    result, _ = save_feature(
         feature=feature,
         layer=DocumentLayer.get_from_project(),
         id_=document.id_,
         edit_text="Asiakirjan lisäys" if document.id_ is None else "Asiakirjan muokkaus",
-    ):
+    )
+    if not result:
         iface.messageBar().pushCritical("", "Asiakirjan tallentaminen epäonnistui.")
         return None
 
