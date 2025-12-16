@@ -71,23 +71,30 @@ class LayoutItemFactory:
         # --- 1. Create the icon / symbol element ---
         icon_element: QgsLayoutItem = cls.new_symbol_item(element.symbol, layout)
 
-        # If letter code exists, create a label for it and combine with symbol
-        if element.letter_code != "":
-            label_item = LayoutItemFactory.new_letter_code_label(element.letter_code, layout)
-            icon_element = LayoutItemFactory.group_and_align_label_and_symbol_items(label_item, icon_element, layout)
+        # Create letter code label even if it is empty, this makes positioning markers easier
+        label_item = LayoutItemFactory.new_letter_code_label(element.letter_code, layout)
+        icon_element = LayoutItemFactory.group_and_align_label_and_symbol_items(label_item, icon_element, layout)
 
         # Position the symbol
         icon_element.attemptMove(QgsLayoutPoint(*coords))
 
         # --- 2. Create the text element ---
-        text_element = LayoutItemFactory.new_regulation_heading_label(layout, element.heading)
-        move_label_next_to_item(text_element, icon_element, APPROX_VISUAL_LINE_WIDTH, SYMBOL_ITEM_OCCUPIED_WIDTH)
+        heading_element = LayoutItemFactory.new_regulation_heading_label(layout, element.heading)
+        move_label_next_to_item(heading_element, icon_element, APPROX_VISUAL_LINE_WIDTH, SYMBOL_ITEM_OCCUPIED_WIDTH)
 
         # Verbal regulation contents
-        if element.text or USE_PLACEHOLDER_REGULATION_TEXT:
-            verbal_regulation_label = LayoutItemFactory.new_regulation_text_label(layout, element.text or "")
-            move_label_below_item(verbal_regulation_label, text_element)
-            text_element = layout.groupItems([verbal_regulation_label, text_element])
+        previous_element = heading_element
+        text_elements = []
+        if len(element.regulation_texts) > 0:
+            for i, text in enumerate(element.regulation_texts):
+                verbal_regulation_label = LayoutItemFactory.new_regulation_text_label(layout, text)
+                # Include 4.4 mm extra space if multiple verbal regulation exist
+                move_label_below_item(verbal_regulation_label, previous_element, 4.4 if i > 0 else 0)
+                text_elements.append(verbal_regulation_label)
+                previous_element = verbal_regulation_label
+            text_element = layout.groupItems([heading_element, *text_elements])
+        else:
+            text_element = heading_element
 
         # --- 3. Combine them ---
         return layout.groupItems([icon_element, text_element])
@@ -176,7 +183,7 @@ class LayoutItemFactory:
         label = QgsLayoutItemLabel(layout)
         label.setMode(QgsLayoutItemLabel.Mode.ModeHtml)
         # html = f"<b>{title}</b><br/>{text}"
-        label.setText(text or PLACEHOLDER_TEXT)
+        label.setText(text)
         label.setMarginX(2)
         label.attemptResize(
             QgsLayoutSize(width=REGULATION_TEXT_BOX_WIDTH, height=cls._get_approx_required_height_for_label(label))

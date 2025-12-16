@@ -72,7 +72,9 @@ def move_label_next_to_item(
     )
 
 
-def move_label_below_item(label_item: QgsLayoutItemLabel, item: QgsLayoutItem) -> None:
+def move_label_below_item(label_item: QgsLayoutItemLabel, item: QgsLayoutItem, extra_y_move: float = 0) -> None:
     label_item.attemptMove(
-        QgsLayoutPoint(item.x(), item.y() + item.sizeWithUnits().height(), QgsUnitTypes.LayoutMillimeters)
+        QgsLayoutPoint(
+            item.x(), item.y() + item.sizeWithUnits().height() + extra_y_move, QgsUnitTypes.LayoutMillimeters
+        )
     )
