@@ -37,6 +37,7 @@ from arho_feature_template.core.models import (
     RegulationGroup,
     RegulationGroupLibrary,
 )
+from arho_feature_template.core.prints.regulations_print_generator import RegulationsPrintGenerator
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
@@ -839,6 +840,9 @@ class PlanManager(QObject):
             layer.get_from_project().setReadOnly(False)
 
         PlanLayer.get_from_project().startEditing()
+
+    def generate_plan_regulations_print(self):
+        RegulationsPrintGenerator.new_regulations_print_layout(self.active_plan_regulation_group_library)
 
     def on_project_loaded(self):
         if QgsProject.instance().fileName() == "":

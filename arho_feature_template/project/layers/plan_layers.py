@@ -299,7 +299,9 @@ class PlanObjectLayer(AbstractPlanLayer):
         return feature
 
     @classmethod
-    def models_from_features(cls, features: list[QgsFeature]) -> list[PlanObject]:
+    def models_from_features(
+        cls, features: list[QgsFeature], regulation_groups: list[RegulationGroup] | None = None
+    ) -> list[PlanObject]:
         plan_object_ids = {feat["id"] for feat in features}
         plan_object_field_name = RegulationGroupAssociationLayer.layer_name_to_attribute_map.get(cls.name)
         if not plan_object_field_name:
@@ -319,10 +321,13 @@ class PlanObjectLayer(AbstractPlanLayer):
         regulation_group_features = list(
             RegulationGroupLayer.get_features_by_attribute_value("id", regulation_group_ids)
         )
-        regulation_group_models = RegulationGroupLayer.models_from_features(regulation_group_features)
+
+        # Get regulation group models only if they are not given as parameter
+        if not regulation_groups:
+            regulation_groups = RegulationGroupLayer.models_from_features(regulation_group_features)
 
         groups_by_plan_object_id: dict[str, list[RegulationGroup]] = defaultdict(list)
-        for group in regulation_group_models:
+        for group in regulation_groups:
             group_id = group.id_
             if group_id:
                 for plan_object_id in plan_object_ids_by_group_id.get(group_id, []):

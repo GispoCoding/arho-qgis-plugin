@@ -364,6 +364,10 @@ class Regulation(PlanBaseModel):
             ],
         }
 
+    def is_verbal_regulation(self) -> bool:
+        reg_type = PlanRegulationTypeLayer.get_type_by_id(self.regulation_type_id)
+        return reg_type in PlanRegulationTypeLayer.verbal_regulation_types
+
 
 @dataclass
 class Proposition(PlanBaseModel):
@@ -422,6 +426,14 @@ class RegulationGroup(PlanBaseModel):
             "plan_propositions": [proposition.into_template_dict() for proposition in self.propositions],
             "category": self.category,
         }
+
+    def is_primary_use_group(self) -> bool:
+        primary_use_id = AdditionalInformationTypeLayer.get_id_by_type("paakayttotarkoitus")
+        for regulation in self.regulations:
+            for ai in regulation.additional_information:
+                if ai.additional_information_type_id == primary_use_id:
+                    return True
+        return False
 
     def __str__(self):
         return " - ".join(part for part in (self.letter_code, self.heading) if part)
