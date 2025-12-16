@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from hashlib import sha256
+from typing import TYPE_CHECKING
 
 from qgis.core import (
     QgsFeature,
@@ -26,7 +27,10 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
     PointLayer,
 )
-from arho_feature_template.utils.misc_utils import deserialize_localized_text, iface, symbol_fingerprint
+from arho_feature_template.utils.misc_utils import iface, symbol_fingerprint
+
+if TYPE_CHECKING:
+    from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
 
 
 @dataclass(frozen=True)
@@ -36,32 +40,43 @@ class RegulationPrintElement:
     symbol: QgsSymbol
     letter_code: str
     heading: str
-    text: str
+    regulation_texts: list[str]
 
     @classmethod
-    def from_feat_and_symbol(cls, feat: QgsFeature, symbol: QgsSymbol) -> RegulationPrintElement:
+    def create(cls, feat: QgsFeature, plan_object: PlanObject, symbol: QgsSymbol) -> RegulationPrintElement:
+        # Get element letter code (can be empty)
         letter_code = PlanObjectLayer.feature_letter_codes_as_text(feat) or ""
 
-        heading = feat.attribute("name")
-        heading = deserialize_localized_text(heading) if heading else "[PUUTTUVA OTSIKKO]"
+        # Determine element heading (can be empty) and regulation texts (can be empty)
+        heading = ""  # "[PUUTTUVA OTSIKKO]"
+        found_headings: list[str] = []
+        regulation_texts: list[str] = []
+        for group in plan_object.regulation_groups:
+            if group.heading:
+                found_headings.append(group.heading)
+                # Use heading of primary use group if it exists
+                if group.is_primary_use_group():
+                    heading = group.heading
 
-        # NOTE: This could be done elsewhere or refactored into a method
-        text: str = ""
-        regulation_values = feat.attribute("regulation_values")
-        if regulation_values:
-            # NOTE: There can be only one verbal regulation value in a regulation group?
-            verbal_regulations = regulation_values.get("sanallinenMaarays")
-            if verbal_regulations:
-                text = deserialize_localized_text(verbal_regulations["text_value"]) or ""
+            # Save all found verbal regulation texts
+            regulation_texts.extend(
+                regulation.value.text_value
+                for regulation in group.regulations
+                if regulation.is_verbal_regulation() and regulation.value and regulation.value.text_value
+            )
 
-        return cls(symbol, letter_code, heading, text)
+        # Otherwise, use heading of first group with a heading defined if one exists
+        if heading == "" and len(found_headings) > 0:
+            heading = found_headings[0]
+
+        return cls(symbol, letter_code, heading, regulation_texts)
 
     def data_hash(self) -> str:
         combined = {
             "symbol": json.loads(symbol_fingerprint(self.symbol)),
             "letter_code": self.letter_code or "",
             "heading": self.heading or "",
-            "text": self.text or "",
+            "regulation_texts": tuple(sorted(self.regulation_texts)),
         }
         key_str = json.dumps(combined, sort_keys=True)
         return sha256(key_str.encode("utf-8")).hexdigest()
@@ -84,7 +99,9 @@ class RegulationsPrintGenerator:
     PAGE_HEIGHT = 297  # A4
 
     @classmethod
-    def new_regulations_print_layout(cls, name: str = "Tulosteen määräysosa") -> QgsPrintLayout:
+    def new_regulations_print_layout(
+        cls, active_regulation_groups_library: RegulationGroupLibrary, name: str = "Tulosteen määräysosa"
+    ) -> QgsPrintLayout:
         project = QgsProject.instance()
         manager = project.layoutManager()
 
@@ -112,7 +129,7 @@ class RegulationsPrintGenerator:
 
         cls.add_page_to_layout(layout)
         cls.add_regulation_print_heading(layout)
-        cls.add_regulation_print_elements(layout)
+        cls.add_regulation_print_elements(layout, active_regulation_groups_library)
 
         iface.openLayoutDesigner(layout)
         return layout
@@ -157,7 +174,9 @@ class RegulationsPrintGenerator:
         return label
 
     @classmethod
-    def add_regulation_print_elements(cls, layout: QgsPrintLayout):
+    def add_regulation_print_elements(
+        cls, layout: QgsPrintLayout, active_regulation_groups_library: RegulationGroupLibrary
+    ):
         x_coord: float = cls.COL_1_START_X
         y_coord: float = cls.START_Y
 
@@ -165,6 +184,8 @@ class RegulationsPrintGenerator:
 
         def move_y_coordinate(y: float, item: QgsLayoutItem) -> float:
             return float(y + max(item.sizeWithUnits().height(), cls.ELEMENT_MIN_HEIGHT) + cls.SPACE_BETWEEN_ELEMENTS)
+
+        regulation_groups = active_regulation_groups_library.regulation_groups
 
         ordered_plan_object_layers = [LandUseAreaLayer, OtherAreaLayer, LineLayer, PointLayer]
         for i, layer in enumerate(ordered_plan_object_layers):
@@ -176,15 +197,22 @@ class RegulationsPrintGenerator:
             heading_label = cls.add_object_type_heading(layer.name, layout, (x_coord, y_coord))
             y_coord = move_y_coordinate(y_coord, heading_label)
 
-            for feat, symbol in PlanObjectIconRenderer.get_symbols_for_layer_features(layer.get_from_project()):
+            vector_layer = layer.get_from_project()
+            feats = list(vector_layer.getFeatures())
+            plan_objects = layer.models_from_features(feats, regulation_groups)
+
+            # List elements are in same order so we can zip lists
+            for plan_object, (feat, symbol) in zip(
+                plan_objects, PlanObjectIconRenderer.get_symbols_for_layer_features(vector_layer, feats)
+            ):
                 if symbol is None:
                     # What to do if no symbol was found?
                     continue
 
-                # Symbol must be cloned, otherwise QGIS crashes later when deferencing ref dropped by renderer
+                # Symbol must be cloned, otherwise QGIS crashes later when dereferencing ref dropped by renderer
                 cloned_symbol = symbol.clone()
 
-                element = RegulationPrintElement.from_feat_and_symbol(feat, cloned_symbol)
+                element = RegulationPrintElement.create(feat, plan_object, cloned_symbol)
 
                 # Check if element exists already. If it does, skip creating a duplicate
                 hash_value = element.data_hash()

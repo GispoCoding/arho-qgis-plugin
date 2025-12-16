@@ -10,7 +10,6 @@ from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
-from arho_feature_template.core.prints.regulations_print_generator import RegulationsPrintGenerator
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.dialogs.plan_object_icon_preview import PlanObjectIconPreview
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
@@ -518,7 +517,7 @@ class Plugin:
         preview.exec()
 
     def generate_plan_regulations_print(self):
-        RegulationsPrintGenerator.new_regulations_print_layout()
+        self.plan_manager.generate_plan_regulations_print()
 
     def create_geotiff(self):
         """Create geotiff from currently active plan."""
