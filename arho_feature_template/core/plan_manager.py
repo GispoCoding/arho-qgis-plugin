@@ -37,6 +37,7 @@ from arho_feature_template.core.models import (
     RegulationGroup,
     RegulationGroupLibrary,
 )
+from arho_feature_template.core.prints.regulations_print_generator import RegulationsPrintGenerator
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
@@ -808,6 +809,9 @@ class PlanManager(QObject):
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
+
+    def generate_plan_regulations_print(self):
+        RegulationsPrintGenerator.new_regulations_print_layout(self.active_plan_regulation_group_library)
 
     def on_project_loaded(self):
         if QgsProject.instance().fileName() == "":
