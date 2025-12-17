@@ -108,7 +108,7 @@ class ArhoPayload(TypedDict):
     If plan_uuid is empty, all plans in database are processed.
 
     If save_json is true, generated JSON as well as Ryhti API response are saved
-    as {plan_id}.json and {plan_id}.response.json in the ryhti_debug directory.
+    as {plan_id}.json and {plan_id}.response.json in the logs directory.
     """
 
     action: str  # Action

@@ -10,7 +10,7 @@ services:
 
   ryhti_client:
     volumes: !override
-      - ./ryhti_debug:/var/task/ryhti_debug
+      - ./logs:/var/task/logs
 
   mml_loader:
     volumes: !reset null

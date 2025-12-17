@@ -37,7 +37,7 @@ class RyhtiResponse(TypedDict):
 
 
 def save_debug_json(filename: str, data: Any) -> None:
-    with Path("ryhti_debug", filename).open("w", encoding="utf-8") as f:
+    with Path("logs", filename).open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
@@ -370,7 +370,7 @@ class RyhtiClient:
                     }
                 if self.debug_json:
                     with open(
-                        f"ryhti_debug/{plan_matter.id}.identifier.response.json",
+                        f"logs/{plan_matter.id}.identifier.response.json",
                         "w",
                         encoding="utf-8",
                     ) as response_file:
