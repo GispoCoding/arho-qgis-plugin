@@ -34,21 +34,21 @@ if TYPE_CHECKING:
 
 # NOTE: The constants below can be refactored into settings, Määräysosan asetukset
 
-APPROX_VISUAL_LINE_WIDTH = 2.0
+APPROX_VISUAL_LINE_WIDTH = 2.3
 """There doesn't seem to be easy way to position the label just above the rendered
 polyline because the width doesn't always correspond given line_width. 2mm seems to work
 ok with current settings."""
 
-SYMBOL_ITEM_OCCUPIED_WIDTH = 9.0
+SYMBOL_ITEM_OCCUPIED_WIDTH = 10.0
 """The width that a marker/line/polygon symbol + letter code should occupy in the layout. """
 
-POLYGON_WIDTH = 8.0
+POLYGON_WIDTH = 10.0
 """The width of new polygon item / `QgsLayoutItemPolygon`."""
 
-POLYGON_HEIGHT = 8.0
+POLYGON_HEIGHT = 10.0
 """The height of new polygon item / `QgsLayoutItemPolygon`."""
 
-LINE_LENGTH = 8.0
+LINE_LENGTH = 10.0
 """The length of new line item / `QgsLayoutItemPolyline`."""
 
 REGULATION_TEXT_BOX_WIDTH = 75.0
