@@ -93,9 +93,6 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.delete_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.edit_btn.setIcon(QgsApplication.getThemeIcon("mActionEditTable.svg"))
 
-        self.regulation_group_list.setSelectionMode(self.regulation_group_list.ExtendedSelection)
-        self.search_box.valueChanged.connect(self.filter_regulation_groups)
-
         new_regulation_group_menu = QMenu()
         self.new_group_empty_action = new_regulation_group_menu.addAction("Tyhjä")
         self.new_group_from_template_action = new_regulation_group_menu.addAction("Pohjasta")
