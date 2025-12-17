@@ -122,6 +122,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.selection_model = self.table.selectionModel()
 
+        # Connect feat remove signals for each plan object layer so the linked plan object counts
+        # stay updated
+        for plan_object_layer in plan_feature_layers:
+            plan_object_layer.get_from_project().committedFeaturesRemoved.connect(
+                lambda _layer_id, ids, layer_name=plan_object_layer.name: self._on_feats_removed(layer_name, ids)
+            )
+
     def _disconnect_signals(self):
         disconnect_signal(self.new_group_empty_action.triggered)
         disconnect_signal(self.new_group_from_template_action.triggered)
@@ -256,6 +263,17 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         data = self._data_from_index(proxy_index)
         return data[0] if data else None
 
+    def _update_row_data(self, row: int, group: RegulationGroup, assoc_data: dict[str, dict[int, QgsGeometry]]) -> None:
+        item = self.model.item(row, DATA_COLUMN)
+        if item:
+            item.setData((group, assoc_data), DATA_ROLE)
+
+            # Update row linked plan objects count
+            total = sum(len(fid_map) for fid_map in assoc_data.values()) if assoc_data else 0
+            count_item = self.model.item(row, 3)
+            if count_item:
+                count_item.setText(str(total))
+
     def _open_form(self, index: QModelIndex):
         group_model = self._regulation_group_from_index(index)
         if not group_model:
@@ -381,3 +399,38 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.request_remove_all_regulation_groups)
         disconnect_signal(self.request_remove_selected_groups)
         disconnect_signal(self.request_add_groups_to_features)
+
+    def _on_feats_removed(self, layer_name: str, feat_ids):
+        feat_ids_set = set(feat_ids)
+
+        for row in range(self.model.rowCount()):
+            item = self.model.item(row, DATA_COLUMN)
+            if not item:
+                continue
+
+            data = item.data(DATA_ROLE)
+            if not data:
+                continue
+
+            group: RegulationGroup = data[0]
+            assoc_data: dict[str, dict[int, QgsGeometry]] = data[1]
+            layer_map: dict[int, QgsGeometry] | None = assoc_data.get(layer_name)
+            if not layer_map:
+                continue
+
+            # Remove deleted fids from this row's association map for layer
+            removed_any = False
+            for fid in feat_ids_set:
+                if fid in layer_map:
+                    layer_map.pop(fid)
+                    removed_any = True
+
+            if not removed_any:
+                continue
+
+            # Delete layer map if empty
+            if not layer_map:
+                assoc_data.pop(layer_name)
+
+            # Set the updated association map to table
+            self._update_row_data(row, group, assoc_data)
