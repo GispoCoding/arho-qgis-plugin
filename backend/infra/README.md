@@ -86,17 +86,59 @@ ansible-playbook ansible/playbook.yml \
 1. To create a new instance of ARHO Backend, copy [arho.tfvars.sample.json](arho.tfvars.sample.json) to a new file called `your-deployment.tfvars.json`.
 2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in Github secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY`.
 3. Change the values in `your-deployment.tfvars.json` as required
-4. Create zip packages for the lambda functions by running `make build-lambda -C ..` (this
-   has to be done only once since github actions can be configured to update functions).
-5. Remember to encrypt your variables with `sops` to create `your-deployment.tfvars.enc.json` and commit the encrypted file. The encryption key to allow decrypting the file is safely stored in AWS.
+4. Remember to encrypt your variables with `sops` to create `your-deployment.tfvars.enc.json` and commit the encrypted file. The encryption key to allow decrypting the file is safely stored in AWS.
 
 ## Deploying instances
 
-To launch new instances, run the following commands:
+To launch new instances, running the following commands should be sufficient:
 
 ```shell
 terraform init
 terraform apply --var-file your-deployment.tfvars.json
+```
+
+But in practice it is little bit more complicated, as some manual steps are required in between. `Terraform apply` would encounter some errors that need to be fixed manually before proceeding. Here is an example session for deploying a new `arho-dev` instance:
+
+```shell
+cd infra
+# Set AWS MFA session variables
+. get-mfa-vars.sh
+
+# Create new terraform workspace
+terraform workspace new arho-dev
+
+# Copy sample variables and edit them
+cp arho.tfvars.sample.json arho-dev.tfvars.json
+# Edit arho-dev.tfvars.json
+
+# Test the plan first
+terraform plan -var-file=arho-dev.tfvars.json
+
+terraform apply -var-file=arho-dev.tfvars.json
+# Error is expected: Error: creating RDS DB Subnet Group (arho-dev-db): operation error RDS: CreateDBSubnetGroup, https response error StatusCode: 400, RequestID: f89c1d41-e247-48d2-9003-5a40b0e018aa, InvalidSubnet: Subnet IDs are required.
+
+terraform apply -var-file=arho-dev.tfvars.json
+# Error is expected: Error: creating Lambda Function (arho-dev-db_manager): operation error Lambda: CreateFunction, https response error StatusCode: 400, RequestID: acc82829-26b3-4c88-af07-c9bae6f27b81, InvalidParameterValueException: Source image 631260641272.dkr.ecr.eu-central-1.amazonaws.com/arho-dev-db_manager:latest does not exist. Provide a valid source image.
+
+# Set AWS_REGION and AWS_ACCOUNT_ID environment variables for Makefile
+export AWS_REGION=<region>
+export AWS_ACCOUNT_ID=<account id>
+export prefix=arho-dev
+# Build and push lambda images
+make push-lambdas
+
+terraform apply -var-file=arho-dev.tfvars.json
+# Error is expected: Error: creating Lambda Provisioned Concurrency Config (arho-dev-ryhti_client,live): operation error Lambda: PutProvisionedConcurrencyConfig, https response error StatusCode: 400, RequestID: 284038e3-650d-4ccb-951f-764e6cd9161d, InvalidParameterValueException: Provisioned Concurrency Configs cannot be applied to unpublished function versions.
+
+# Update lambda functions
+make update-lambdas
+terraform apply -var-file=arho-dev.tfvars.json
+
+# Now the infra should be deployed, but the database is still empty. Initialize the database with:
+make create-db
+make migrate-db
+make load-koodistot
+make load-mml
 ```
 
 Note: Setting up the instances takes a couple of minutes.
