@@ -222,7 +222,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 regulation_groups=regulation_groups,
             )
             self.progress_bar.setValue(int((i + 1) / total_count * 100))
-            if add_plan_object_to_edit_buffer(model):
+            if add_plan_object_to_edit_buffer(model, enable_editing=False):
                 success_count += 1
             else:
                 failed_count += 1

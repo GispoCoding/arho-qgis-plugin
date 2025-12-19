@@ -170,7 +170,7 @@ def save_plan(plan: Plan) -> str | None:
 @use_wait_cursor
 @status_message("Tallennetaan kaavakohdetta ...")
 def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str | None:
-    object_id = add_plan_object_to_edit_buffer(plan_object, plan_id)
+    object_id = add_plan_object_to_edit_buffer(plan_object, enable_editing=True, plan_id=plan_id)
     result, _ = QgsProject.instance().commitChanges(stopEditing=False)
     if not result:
         return None
@@ -181,7 +181,7 @@ def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str
 @use_wait_cursor
 def add_plan_object_to_edit_buffer(
     plan_object: PlanObject,
-    enable_editing: bool = False,  # noqa: FBT001, FBT002
+    enable_editing: bool = True,  # noqa: FBT001, FBT002
     plan_id: str | None = None,
 ) -> str | None:
     """Add plan objact object to edit buffer as part of action where multiple plan objects are saved at once.
