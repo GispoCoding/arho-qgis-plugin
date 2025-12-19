@@ -108,7 +108,12 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         # Reference to get regulation group libraries for PlanObjectForm
         self.plan_manager_ref = plan_manager_ref
         # Used to reapply selections after filtering
-        self.selected_plan_feature_ids: set[int] = set()
+        self.selected_plan_feature_ids: dict[str, set[int]] = {
+            LandUseAreaLayer.name: set(),
+            OtherAreaLayer.name: set(),
+            LineLayer.name: set(),
+            PointLayer.name: set(),
+        }
         # Used for avoiding looping updates between table and map canvas (
         # table select -> trigger map select -> trigger table select.. etc.)
         self._syncing_selections = False
@@ -185,10 +190,12 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
         for row in range(self.filter_proxy_model.rowCount()):
             item = self.model.item(row, DATA_COLUMN)
+            plan_object: PlanObject = item.data(DATA_ROLE)[0]
             feat_id: int = item.data(DATA_ROLE)[1]
-            if feat_id in self.selected_plan_feature_ids:
-                proxy_index = self.filter_proxy_model.index(row, 0)
-                self.selection_model.select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            for layer_name, feat_ids in self.selected_plan_feature_ids.items():
+                if feat_id in feat_ids and plan_object.layer_name == layer_name:
+                    proxy_index = self.filter_proxy_model.index(row, 0)
+                    self.selection_model.select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def _add_plan_feature_to_view(self, plan_feature_model: PlanObject, feat_id: int):
         self.model.appendRow(self._plan_feature_into_items(plan_feature_model, feat_id))
@@ -381,10 +388,11 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             return
         self._syncing_selections = True
         try:
+            layer: QgsVectorLayer = self.sender()
             for selected_feat_id in selected:
-                self.selected_plan_feature_ids.add(selected_feat_id)
+                self.selected_plan_feature_ids[layer.name()].add(selected_feat_id)
             for deselected_feat_id in deselected:
-                self.selected_plan_feature_ids.discard(deselected_feat_id)
+                self.selected_plan_feature_ids[layer.name()].discard(deselected_feat_id)
 
             self.update_selected_rows()
         finally:
@@ -406,7 +414,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                 feat_id = data[1]
                 layer = get_vector_layer_from_project(cast(str, plan_feature.layer_name))
                 layer.selectByIds([feat_id], Qgis.SelectBehavior.AddToSelection)
-                self.selected_plan_feature_ids.add(feat_id)
+                self.selected_plan_feature_ids[layer.name()].add(feat_id)
 
             # DESELECT
             for index in deselected.indexes():
@@ -417,6 +425,6 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                 feat_id = data[1]
                 layer = get_vector_layer_from_project(cast(str, plan_feature.layer_name))
                 layer.deselect(feat_id)
-                self.selected_plan_feature_ids.discard(feat_id)
+                self.selected_plan_feature_ids[layer.name()].discard(feat_id)
         finally:
             self._syncing_selections = False
