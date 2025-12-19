@@ -18,7 +18,10 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressBar
 
-from arho_feature_template.core.feature_editing import save_plan_feature, save_regulation_group
+from arho_feature_template.core.feature_editing import (
+    add_plan_object_to_edit_buffer,
+    add_regulation_group_to_edit_buffer,
+)
 from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
 from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
 from arho_feature_template.project.layers.code_layers import (
@@ -166,8 +169,8 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             iface.messageBar().pushInfo("", "Yhtään kohdetta ei tuotu.")
             return
 
-        # Create and add new plan features
-        self.create_and_save_plan_features(source_features)
+        # Create and add new plan objects
+        self.create_and_save_plan_objects(source_features)
         self.plan_manager.update_active_plan_regulation_group_library()
 
     def get_source_features(self, source_layer: QgsVectorLayer) -> list[QgsFeature]:
@@ -175,7 +178,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             source_layer.selectedFeatures() if self.selected_features_only.isChecked() else source_layer.getFeatures()
         )
 
-    def create_and_save_plan_features(self, source_features: list[QgsFeature]):
+    def create_and_save_plan_objects(self, source_features: list[QgsFeature]):
         crs_mismatch = self.source_layer.crs() != self.target_crs
         transform = QgsCoordinateTransform(
             self.source_layer.crs(), PlanLayer.get_from_project().crs(), QgsProject.instance()
@@ -201,11 +204,11 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             # If the group is not yet in DB, save it now to get an ID and use the same group object for each
             # plan feature
             if group.id_ is None:
-                id_ = save_regulation_group(group)
+                id_ = add_regulation_group_to_edit_buffer(group)
                 group.id_ = id_
                 group.modified = False
 
-        # Save plan features and track progress
+        # Save plan objects and track progress
         total_count = len(source_features)
         failed_count = 0
         success_count = 0
@@ -219,10 +222,15 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 regulation_groups=regulation_groups,
             )
             self.progress_bar.setValue(int((i + 1) / total_count * 100))
-            if save_plan_feature(model):
+            if add_plan_object_to_edit_buffer(model):
                 success_count += 1
             else:
                 failed_count += 1
+
+        result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+        if not result:
+            iface.messageBar().pushSuccess("", "Kaavakohteiden tuominen epäonnistui.")
+            return
 
         self.progress_bar.setValue(100)
 

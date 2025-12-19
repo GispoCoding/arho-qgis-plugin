@@ -169,14 +169,34 @@ def save_plan(plan: Plan) -> str | None:
 
 @use_wait_cursor
 @status_message("Tallennetaan kaavakohdetta ...")
-def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> str | None:
-    layer_class = get_plan_feature_layer_class_by_model(plan_feature)
-    layer_name = cast(str, plan_feature.layer_name)
+def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str | None:
+    object_id = add_plan_object_to_edit_buffer(plan_object, plan_id)
+    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+    if not result:
+        return None
 
-    feat_id = plan_feature.id_
-    editing = feat_id is not None
-    feature = layer_class.feature_from_model(plan_feature, plan_id)
-    if feat_id is None or plan_feature.modified:
+    return object_id
+
+
+@use_wait_cursor
+def add_plan_object_to_edit_buffer(
+    plan_object: PlanObject,
+    enable_editing: bool = False,  # noqa: FBT001, FBT002
+    plan_id: str | None = None,
+) -> str | None:
+    """Add plan objact object to edit buffer as part of action where multiple plan objects are saved at once.
+
+    When `enable_editing` is False, we don't check for deleted, modified or new regulations groups. It is
+    assumed that all regulations groups of plan object to be added exist already and that the plan object
+    is new.
+    """
+    layer_class = get_plan_feature_layer_class_by_model(plan_object)
+    layer_name = cast(str, plan_object.layer_name)
+
+    object_id = plan_object.id_
+    editing = object_id is not None
+    feature = layer_class.feature_from_model(plan_object, plan_id)
+    if object_id is None or plan_object.modified:
         layer = layer_class.get_from_project()
         if not layer.isEditable():
             QgsProject.instance().startEditing(layer)
@@ -184,19 +204,19 @@ def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> s
         if not add_to_edit_buffer(
             feature=feature,
             layer=layer,
-            id_=feat_id,
+            id_=object_id,
             edit_text="Kaavakohteen muokkaus" if editing else "Kaavakohteen lisäys",
         ):
             iface.messageBar().pushCritical("", "Kaavakohteen tallentaminen epäonnistui.")
             return None
-        feat_id = cast(str, feature["id"])
+        object_id = cast(str, feature["id"])
         # Add id to model so that up-to-date model can be sent to plan objects table
-        plan_feature.id_ = feat_id
+        plan_object.id_ = object_id
 
-    if editing:
+    if enable_editing and editing:
         # Check for deleted regulation groups
         for association in RegulationGroupAssociationLayer.get_dangling_associations(
-            plan_feature.regulation_groups, feat_id, layer_name
+            plan_object.regulation_groups, object_id, layer_name
         ):
             if not delete_in_edit_buffer(
                 association,
@@ -206,28 +226,28 @@ def save_plan_feature(plan_feature: PlanObject, plan_id: str | None = None) -> s
                 iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
 
     # Save regulation groups
-    for group in plan_feature.regulation_groups:
-        group_id = add_regulation_group_to_edit_buffer(group)
-        if group_id is None:
-            continue  # Skip association saving if saving regulation group failed
-        add_regulation_group_association_to_edit_buffer(group_id, layer_name, feat_id)
+    for group in plan_object.regulation_groups:
+        if enable_editing:
+            group_id = add_regulation_group_to_edit_buffer(group)
+            if group_id is None:
+                continue  # Skip association saving if saving regulation group failed
+        else:
+            group_id = group.id_
+        add_regulation_group_association_to_edit_buffer(group_id, layer_name, object_id)
 
-    created_object_models[feature["id"]] = plan_feature
-    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
-    if not result:
-        return None
+    created_object_models[feature["id"]] = plan_object
 
-    return feat_id
+    return object_id
 
 
 @use_wait_cursor
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
-    add_regulation_group_to_edit_buffer(regulation_group, plan_id)
+    group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
     result, _ = QgsProject.instance().commitChanges(stopEditing=False)
     if not result:
         return None
 
-    return plan_id
+    return group_id
 
 
 @use_wait_cursor
@@ -274,6 +294,7 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
         for proposition in regulation_group.propositions:
             proposition.regulation_group_id = group_id  # Updating regulation group ID
             add_proposition_to_edit_buffer(proposition)
+
     return group_id
 
 
