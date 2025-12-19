@@ -20,7 +20,7 @@ from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QMenu, QPushButton, QTableView
 
 from arho_feature_template.core import feature_editing
-from arho_feature_template.core.feature_editing import save_plan_feature
+from arho_feature_template.core.feature_editing import save_plan_object
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
@@ -283,7 +283,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         )
         if form.exec():
             updated_plan_feature_model = form.model
-            if save_plan_feature(updated_plan_feature_model) is not None:
+            if save_plan_object(updated_plan_feature_model) is not None:
                 # Update table row if saving was succesfull
                 model_index = self.filter_proxy_model.mapToSource(index)
                 row = model_index.row()

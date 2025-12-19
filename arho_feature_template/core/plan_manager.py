@@ -23,8 +23,8 @@ from arho_feature_template.core.feature_editing import (
     delete_feature,
     delete_regulation_group,
     save_plan,
-    save_plan_feature,
     save_plan_matter,
+    save_plan_object,
     save_regulation_group,
     save_regulation_group_association,
 )
@@ -589,7 +589,7 @@ class PlanManager(QObject):
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
         )
-        if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
+        if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
@@ -604,7 +604,7 @@ class PlanManager(QObject):
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
         )
-        if attribute_form.exec_() and save_plan_feature(attribute_form.model) is not None:
+        if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
 
     @use_wait_cursor
