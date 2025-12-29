@@ -5,7 +5,16 @@ from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLabel, QLineEdit, QPushButton, QSpinBox, QTextEdit
+from qgis.PyQt.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QSpinBox,
+    QTextEdit,
+)
 
 from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.components.general_regulation_group_widget import GeneralRegulationGroupWidget
@@ -38,6 +47,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     add_general_regulation_group_btn: QPushButton
     documents_layout: QVBoxLayout
     add_document_btn: QPushButton
+    lock_checkbox: QCheckBox
 
     button_box: QDialogButtonBox
 
@@ -58,6 +68,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
         self.name_line_edit.setText(plan.name if plan.name else "")
         self.description_text_edit.setText(plan.description if plan.description else "")
+        self.lock_checkbox.setChecked(plan.locked)
 
         self.name_line_edit.textChanged.connect(self._check_required_fields)
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
@@ -239,6 +250,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             modified=self.plan.modified,
             plan_matter_id=self.plan.plan_matter_id,
             geom=self.plan.geom,
+            locked=self.lock_checkbox.isChecked(),
         )
         if not model.modified and model != self.plan:
             model.modified = True
