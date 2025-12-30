@@ -460,9 +460,19 @@ class PlanManager(QObject):
 
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
-            plan_id = save_plan(attribute_form.model)
+            plan_model = attribute_form.model
+
+            # Make sure plan layer is unlocked so we can update plan (includng locked state)
+            self.unlock_plan_layers()
+
+            plan_id = save_plan(plan_model)
             if plan_id is not None:
                 self.update_active_plan_regulation_group_library()
+
+            if plan_model.locked:
+                self.lock_plan_layers()
+            else:
+                self.unlock_plan_layers()
 
     def edit_plan_matter(self):
         plan_matter_layer = PlanMatterLayer.get_from_project()
@@ -661,6 +671,7 @@ class PlanManager(QObject):
             plan_layer.rollBack()
 
         set_active_plan_id(plan_id)
+        locked = False
         if plan_id:
             self.plan_set.emit()
             for layer in plan_layers:
@@ -668,6 +679,14 @@ class PlanManager(QObject):
                     layer.filter_layer_by_plan_id(plan_id)
                 else:
                     layer.show_all_features()
+
+            plan_feat = PlanLayer.get_feature_by_id(plan_id)
+            if plan_feat:
+                locked = plan_feat["locked"]
+                if locked:
+                    self.lock_plan_layers()
+                else:
+                    self.unlock_plan_layers()
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
@@ -676,7 +695,7 @@ class PlanManager(QObject):
                 else:
                     layer.hide_all_features()
 
-        if previously_in_edit_mode:
+        if previously_in_edit_mode and not locked:
             plan_layer.startEditing()
 
         self.update_active_plan_regulation_group_library()
@@ -808,6 +827,18 @@ class PlanManager(QObject):
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
+
+    def lock_plan_layers(self):
+        for layer in plan_layers:
+            vlayer = layer.get_from_project()
+            vlayer.rollBack()
+            vlayer.setReadOnly(True)
+
+    def unlock_plan_layers(self):
+        for layer in plan_layers:
+            layer.get_from_project().setReadOnly(False)
+
+        PlanLayer.get_from_project().startEditing()
 
     def on_project_loaded(self):
         if QgsProject.instance().fileName() == "":

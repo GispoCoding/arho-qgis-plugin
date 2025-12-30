@@ -114,7 +114,7 @@ def save_plan(plan: Plan) -> str | None:
             id_=plan_id,
             edit_text="Kaavasuunnitelman muokkaus" if editing else "Kaavasuunnitelman luominen",
         ):
-            iface.messageBar().pushCritical("", "Kaavasuunnitelman tallentaminen epäonnistui")
+            iface.messageBar().pushCritical("", "Kaavasuunnitelman tallentaminen epäonnistui.")
             return None
         plan_id = cast(str, feature["id"])
 

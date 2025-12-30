@@ -181,6 +181,7 @@ class PlanLayer(AbstractPlanLayer):
         feature["scale"] = model.scale
         feature["lifecycle_status_id"] = model.lifecycle_status_id
         feature["plan_matter_id"] = model.plan_matter_id
+        feature["locked"] = model.locked
 
         return feature
 
@@ -203,6 +204,7 @@ class PlanLayer(AbstractPlanLayer):
             ],
             id_=feature["id"],
             plan_matter_id=feature["plan_matter_id"],
+            locked=feature["locked"],
             modified=False,
         )
 
@@ -261,6 +263,7 @@ class PlanLayer(AbstractPlanLayer):
                 documents=documents_by_plan_id[feature["id"]],
                 id_=feature["id"],
                 plan_matter_id=feature["plan_matter_id"],
+                locked=feature["locked"],
                 modified=False,
             )
             for feature in features

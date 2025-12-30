@@ -37,6 +37,9 @@ DATA_ROLE = Qt.UserRole
 
 
 class ManagePlans(QDialog, FormClass):  # type: ignore
+    LOCK_ICON: QIcon = QgsApplication.getThemeIcon("locked.svg")
+    UNLOCKED_ICON: QIcon = QgsApplication.getThemeIcon("unlocked.svg")
+
     @use_wait_cursor
     def __init__(self, regulation_group_libraries):
         super().__init__()
@@ -56,6 +59,8 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.previously_in_edit_mode = self.plan_layer.isEditable()
         self.show_plans_in_table()
         self.plans_table.setFocus()
+
+        self.plans_table.setColumnWidth(0, 25)
 
         # If no plans exist in the plan matter yet, disable new plan button and tell user
         # to make the first plan by drawing the geometry from the toolbar
@@ -82,6 +87,9 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             self._add_plan_row(plan)
         if resize:
             self.plans_table.resizeColumnsToContents()
+
+    def _get_plan_data(self, row: int) -> Plan:
+        return self.plans_table.item(row, 1).data(DATA_ROLE)
 
     def _get_plans(self) -> list[Plan]:
         if check_layer_changes():
@@ -118,9 +126,15 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self._set_row_attributes(row, plan)
 
     def _set_row_attributes(self, row: int, plan: Plan) -> QTableWidgetItem:
+        if plan.locked:
+            plan_locked_item = QTableWidgetItem(self.LOCK_ICON, "Lukittu")
+        else:
+            plan_locked_item = QTableWidgetItem(self.UNLOCKED_ICON, "")
+        self.plans_table.setItem(row, 0, plan_locked_item)
+
         plan_name_item = QTableWidgetItem(plan.name or "")
         plan_name_item.setData(DATA_ROLE, plan)
-        self.plans_table.setItem(row, 0, plan_name_item)
+        self.plans_table.setItem(row, 1, plan_name_item)
 
         lifecycle_text = (
             deserialize_localized_text(LifeCycleStatusLayer.get_attribute_by_id("name", plan.lifecycle_status_id))
@@ -128,10 +142,10 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             else ""
         )
         plan_lifecycle_item = QTableWidgetItem(lifecycle_text or "")
-        self.plans_table.setItem(row, 1, plan_lifecycle_item)
+        self.plans_table.setItem(row, 2, plan_lifecycle_item)
 
         description_item = QTableWidgetItem(plan.description or "")
-        self.plans_table.setItem(row, 2, description_item)
+        self.plans_table.setItem(row, 3, description_item)
 
         return plan_name_item
 
@@ -148,7 +162,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
 
     def _on_row_double_clicked(self, item: QTableWidgetItem):
         row = item.row()
-        plan = self.plans_table.item(row, 0).data(DATA_ROLE)
+        plan = self._get_plan_data(row)
         form = PlanAttributeForm(plan, self.regulation_group_libraries)
 
         active_plan_matter_id = get_active_plan_matter_id()
@@ -180,9 +194,8 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             self.show_plans_in_table(resize=False)
 
             for row in range(self.plans_table.rowCount()):
-                plan_item = self.plans_table.item(row, 0)
-                plan = plan_item.data(DATA_ROLE) if plan_item else None
-                if plan and plan.id_ == copied_plan_id:
+                plan = self._get_plan_data(row)
+                if plan.id_ == copied_plan_id:
                     self.plans_table.selectRow(row)
                     break
             self.plans_table.setFocus()
@@ -197,7 +210,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     def _on_ok_clicked(self):
         self._restore_plan_layer_edit_state()
         row = self.plans_table.currentRow()
-        self.selected_plan = self.plans_table.item(row, 0).data(DATA_ROLE)
+        self.selected_plan = self._get_plan_data(row)
         self.accept()
 
     def _on_cancel_clicked(self):
