@@ -122,6 +122,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.selection_model = self.table.selectionModel()
 
+    def initialize(self):
         # Connect feat remove signals for each plan object layer so the linked plan object counts
         # stay updated
         for plan_object_layer in plan_feature_layers:
