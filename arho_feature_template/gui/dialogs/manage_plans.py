@@ -14,7 +14,7 @@ from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
-from arho_feature_template.project.layers.plan_layers import PlanLayer
+from arho_feature_template.project.layers.plan_layers import PlanLayer, plan_layers
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -171,7 +171,18 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             try:
                 edited_plan = form.model
                 self.plan_layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # Set temporary filter
+
+                # Unlock to allow edits
+                self.unlock_plan_layers()
+
                 save_plan(edited_plan)
+
+                # If we edited the active plan, update lock status
+                if edited_plan.id_ == get_active_plan_id():
+                    if edited_plan.locked:
+                        self.lock_plan_layers()
+                    else:
+                        self.unlock_plan_layers()
             finally:
                 # Make sure plan layer is not in edit state to set new filter
                 if self.plan_layer.isEditable():
@@ -216,3 +227,16 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     def _on_cancel_clicked(self):
         self._restore_plan_layer_edit_state()
         self.reject()
+
+    # DUPLICATED FROM PLAN MANAGER
+    def lock_plan_layers(self):
+        for layer in plan_layers:
+            vlayer = layer.get_from_project()
+            vlayer.rollBack()
+            vlayer.setReadOnly(True)
+
+    def unlock_plan_layers(self):
+        for layer in plan_layers:
+            layer.get_from_project().setReadOnly(False)
+
+        PlanLayer.get_from_project().startEditing()
