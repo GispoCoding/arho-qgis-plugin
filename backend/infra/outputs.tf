@@ -28,6 +28,11 @@ output "bastion_address" {
   value       = aws_route53_record.bastion[0].name
 }
 
+output "database_endpoint" {
+  description = "Database endpoint"
+  value       = aws_db_instance.main_db.endpoint
+}
+
 output "xroad_fqdn" {
   description = "X-Road Security Server fully qualified domain name"
   value       = try(module.x-road["this"].dns_record, null)
