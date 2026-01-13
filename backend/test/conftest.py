@@ -120,7 +120,6 @@ if os.environ.get("MANAGE_DOCKER", USE_DOCKER):
         wait_until_responsive(
             timeout=20, pause=0.5, check=lambda: is_responsive(root_db_params)
         )
-        drop_hame_db(main_db_params, root_db_params)
 
 else:
 
@@ -131,7 +130,6 @@ else:
         wait_until_responsive(
             timeout=20, pause=0.5, check=lambda: is_responsive(root_db_params)
         )
-        drop_hame_db(main_db_params, root_db_params)
 
 
 @pytest.fixture(scope="session")
@@ -154,20 +152,6 @@ def hame_database_migrated(
     event = db_manager.Event(action="migrate_db")
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
-
-
-def drop_hame_db(main_db_params, root_db_params) -> None:
-    conn = psycopg.connect(**root_db_params)
-    try:
-        conn.autocommit = True
-        with conn.cursor() as cur:
-            cur.execute(
-                f"DROP DATABASE IF EXISTS {main_db_params['dbname']} WITH (FORCE)"
-            )
-            for user in os.environ.get("DB_USERS", "").split(","):
-                cur.execute(f"DROP ROLE IF EXISTS {user}")
-    finally:
-        conn.close()
 
 
 def wait_until_responsive(check, timeout, pause, clock=timeit.default_timer) -> None:
@@ -272,21 +256,6 @@ def simple_plan_json(
 
 
 @pytest.fixture
-def delete_plan_after_test(session: Session) -> Generator[Callable[[str], None]]:
-    plan_id = None
-
-    def _set_plan_id(id: str) -> None:
-        nonlocal plan_id
-        plan_id = id
-
-    yield _set_plan_id
-
-    if plan_id and (plan := session.get(models.Plan, plan_id)):
-        session.delete(plan)
-        print(f"Removed plan {plan_id} after test")
-
-
-@pytest.fixture
 def remove_plan(session: Session) -> Callable[[str], None]:
     def _remove_plan(plan_id: str) -> None:
         if plan := session.get(models.Plan, plan_id):
@@ -296,32 +265,35 @@ def remove_plan(session: Session) -> Callable[[str], None]:
     return _remove_plan
 
 
+@pytest.fixture(autouse=True)
+def truncate_after(su_session: Session) -> Generator[None]:
+    """Truncate all tables after each test to have a clean state
+
+    If a test needs data to persist between tests, it should use an override fixture
+    """
+    yield
+
+    meta = models.Base.metadata
+    # Disable triggers to avoid issues with foreign keys
+    su_session.execute(sqlalchemy.text("SET session_replication_role = replica"))
+    for table in meta.sorted_tables:
+        su_session.execute(table.delete())
+    su_session.execute(sqlalchemy.text("SET session_replication_role = DEFAULT"))
+    su_session.commit()
+
+
 T = TypeVar("T", bound=models.Base)
 type ReturnSame[T] = Callable[[T], T]
 
 
 @pytest.fixture
-def temp_session_feature(session: Session) -> Generator[ReturnSame[T]]:
-    created_instances = []
-
+def temp_session_feature(session: Session) -> ReturnSame[T]:
     def add_instance(instance: T) -> T:
         session.add(instance)
         session.commit()
-        created_instances.append(instance)
         return instance
 
-    yield add_instance
-
-    for instance in reversed(created_instances):
-        if instance not in session:
-            # Already deleted
-            continue
-        # Refresh to update collections changed by cascade deletes done by db.
-        # Without this, sqlalchemy tries to delete things already deleted and gives warnings.
-        session.refresh(instance)
-        session.delete(instance)
-        session.flush()  # flush to delete in right order
-    session.commit()
+    return add_instance
 
 
 # Code fixtures
@@ -1680,26 +1652,16 @@ def proportion_of_intended_use_additional_information_instance(
 @pytest.fixture
 def make_additional_information_instance_of_type(
     session: Session,
-) -> Generator[
-    Callable[[codes.TypeOfAdditionalInformation], models.AdditionalInformation]
-]:
-    created_instances = []
-
+) -> Callable[[codes.TypeOfAdditionalInformation], models.AdditionalInformation]:
     def _make_additional_information_instance_of_type(
         type_of_additional_information: codes.TypeOfAdditionalInformation,
     ) -> models.AdditionalInformation:
         instance = models.AdditionalInformation(
             type_of_additional_information=type_of_additional_information
         )
-        created_instances.append(instance)
         return instance
 
-    yield _make_additional_information_instance_of_type
-
-    for instance in created_instances:
-        if instance in session:
-            session.delete(instance)
-    session.commit()
+    return _make_additional_information_instance_of_type
 
 
 # Complete fixtures
