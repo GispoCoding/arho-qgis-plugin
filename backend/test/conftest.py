@@ -605,12 +605,12 @@ def remove_plan(session: Session) -> Callable[[str], None]:
     return _remove_plan
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=models.Base)
 type ReturnSame[T] = Callable[[T], T]
 
 
 @pytest.fixture
-def temp_session_feature(session: Session) -> Generator[ReturnSame]:
+def temp_session_feature(session: Session) -> Generator[ReturnSame[T]]:
     created_instances = []
 
     def add_instance(instance: T) -> T:
@@ -637,26 +637,32 @@ def temp_session_feature(session: Session) -> Generator[ReturnSame]:
 
 
 @pytest.fixture
-def code_instance(temp_session_feature: ReturnSame) -> codes.LifeCycleStatus:
+def code_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="test", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def another_code_instance(temp_session_feature: ReturnSame) -> codes.LifeCycleStatus:
+def another_code_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="test2", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def pending_status_instance(temp_session_feature: ReturnSame) -> codes.LifeCycleStatus:
+def pending_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="02", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
 def preparation_status_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
 ) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="03", status="LOCAL")
     return temp_session_feature(instance)
@@ -664,26 +670,32 @@ def preparation_status_instance(
 
 @pytest.fixture
 def plan_proposal_status_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
 ) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="04", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def approved_status_instance(temp_session_feature: ReturnSame) -> codes.LifeCycleStatus:
+def approved_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="06", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def valid_status_instance(temp_session_feature: ReturnSame) -> codes.LifeCycleStatus:
+def valid_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
     instance = codes.LifeCycleStatus(value="13", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def plan_type_instance(temp_session_feature: ReturnSame) -> codes.PlanType:
+def plan_type_instance(
+    temp_session_feature: ReturnSame[codes.PlanType],
+) -> codes.PlanType:
     # Let's use real code to allow testing API endpoints that require this
     # code value as parameter
     # https://koodistot.suomi.fi/codescheme;registryCode=rytj;schemeCode=RY_Kaavalaji
@@ -694,7 +706,7 @@ def plan_type_instance(temp_session_feature: ReturnSame) -> codes.PlanType:
 
 @pytest.fixture
 def type_of_underground_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfUnderground],
 ) -> codes.TypeOfUnderground:
     instance = codes.TypeOfUnderground(value="01", status="LOCAL")
     return temp_session_feature(instance)
@@ -702,7 +714,7 @@ def type_of_underground_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
 ) -> codes.TypeOfPlanRegulationGroup:
     instance = codes.TypeOfPlanRegulationGroup(value="test", status="LOCAL")
     return temp_session_feature(instance)
@@ -710,7 +722,7 @@ def type_of_plan_regulation_group_instance(
 
 @pytest.fixture
 def type_of_general_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
 ) -> codes.TypeOfPlanRegulationGroup:
     instance = codes.TypeOfPlanRegulationGroup(
         value="generalRegulations", status="LOCAL"
@@ -720,7 +732,7 @@ def type_of_general_plan_regulation_group_instance(
 
 @pytest.fixture
 def type_of_land_use_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
 ) -> codes.TypeOfPlanRegulationGroup:
     instance = codes.TypeOfPlanRegulationGroup(
         value="landUseRegulations", status="LOCAL"
@@ -730,7 +742,7 @@ def type_of_land_use_plan_regulation_group_instance(
 
 @pytest.fixture
 def type_of_other_area_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
 ) -> codes.TypeOfPlanRegulationGroup:
     instance = codes.TypeOfPlanRegulationGroup(
         value="otherAreaRegulations", status="LOCAL"
@@ -740,7 +752,7 @@ def type_of_other_area_plan_regulation_group_instance(
 
 @pytest.fixture
 def type_of_line_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
 ) -> codes.TypeOfPlanRegulationGroup:
     instance = codes.TypeOfPlanRegulationGroup(value="lineRegulations", status="LOCAL")
     return temp_session_feature(instance)
@@ -748,7 +760,7 @@ def type_of_line_plan_regulation_group_instance(
 
 @pytest.fixture
 def type_of_point_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
 ) -> codes.TypeOfPlanRegulationGroup:
     instance = codes.TypeOfPlanRegulationGroup(value="pointRegulations", status="LOCAL")
     return temp_session_feature(instance)
@@ -756,7 +768,7 @@ def type_of_point_plan_regulation_group_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(value="asumisenAlue", status="LOCAL")
     return temp_session_feature(instance)
@@ -764,7 +776,7 @@ def type_of_plan_regulation_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_allowed_area_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(value="sallittuKerrosala", status="LOCAL")
     return temp_session_feature(instance)
@@ -772,7 +784,7 @@ def type_of_plan_regulation_allowed_area_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_number_of_stories_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(
         value="maanpaallinenKerroslukuArvovali", status="LOCAL"
@@ -782,7 +794,7 @@ def type_of_plan_regulation_number_of_stories_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_ground_elevation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(
         value="maanpinnanKorkeusasema", status="LOCAL"
@@ -792,7 +804,7 @@ def type_of_plan_regulation_ground_elevation_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_verbal_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(value="sanallinenMaarays", status="LOCAL")
     return temp_session_feature(instance)
@@ -800,7 +812,7 @@ def type_of_plan_regulation_verbal_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_street_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(value="katu", status="LOCAL")
     return temp_session_feature(instance)
@@ -808,7 +820,7 @@ def type_of_plan_regulation_street_instance(
 
 @pytest.fixture
 def type_of_plan_regulation_construction_area_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
 ) -> codes.TypeOfPlanRegulation:
     instance = codes.TypeOfPlanRegulation(value="rakennusala", status="LOCAL")
     return temp_session_feature(instance)
@@ -816,7 +828,7 @@ def type_of_plan_regulation_construction_area_instance(
 
 @pytest.fixture
 def type_of_verbal_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfVerbalPlanRegulation],
 ) -> codes.TypeOfVerbalPlanRegulation:
     instance = codes.TypeOfVerbalPlanRegulation(value="perustaminen", status="LOCAL")
     return temp_session_feature(instance)
@@ -824,7 +836,7 @@ def type_of_verbal_plan_regulation_instance(
 
 @pytest.fixture
 def type_of_main_use_additional_information_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
 ) -> codes.TypeOfAdditionalInformation:
     instance = codes.TypeOfAdditionalInformation(
         value="paakayttotarkoitus", status="LOCAL"
@@ -834,7 +846,7 @@ def type_of_main_use_additional_information_instance(
 
 @pytest.fixture
 def type_of_proportion_of_intended_use_additional_information_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
 ) -> codes.TypeOfAdditionalInformation:
     instance = codes.TypeOfAdditionalInformation(
         value="kayttotarkoituksenOsuusKerrosalastaK-m2", status="LOCAL"
@@ -844,7 +856,7 @@ def type_of_proportion_of_intended_use_additional_information_instance(
 
 @pytest.fixture
 def type_of_sub_area_additional_information_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
 ) -> codes.TypeOfAdditionalInformation:
     instance = codes.TypeOfAdditionalInformation(value="osaAlue", status="LOCAL")
     return temp_session_feature(instance)
@@ -852,7 +864,7 @@ def type_of_sub_area_additional_information_instance(
 
 @pytest.fixture
 def type_of_intended_use_allocation_additional_information_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
 ) -> codes.TypeOfAdditionalInformation:
     instance = codes.TypeOfAdditionalInformation(
         value="kayttotarkoituskohdistus", status="LOCAL"
@@ -862,7 +874,7 @@ def type_of_intended_use_allocation_additional_information_instance(
 
 @pytest.fixture
 def type_of_source_data_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfSourceData],
 ) -> codes.TypeOfSourceData:
     instance = codes.TypeOfSourceData(value="test", status="LOCAL")
     return temp_session_feature(instance)
@@ -870,7 +882,7 @@ def type_of_source_data_instance(
 
 @pytest.fixture
 def type_of_document_plan_map_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
 ) -> codes.TypeOfDocument:
     instance = codes.TypeOfDocument(value="03", status="LOCAL")
     return temp_session_feature(instance)
@@ -878,7 +890,7 @@ def type_of_document_plan_map_instance(
 
 @pytest.fixture
 def type_of_document_oas_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
 ) -> codes.TypeOfDocument:
     instance = codes.TypeOfDocument(value="14", status="LOCAL")
     return temp_session_feature(instance)
@@ -886,7 +898,7 @@ def type_of_document_oas_instance(
 
 @pytest.fixture
 def type_of_document_plan_description_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
 ) -> codes.TypeOfDocument:
     instance = codes.TypeOfDocument(value="06", status="LOCAL")
     return temp_session_feature(instance)
@@ -894,7 +906,7 @@ def type_of_document_plan_description_instance(
 
 @pytest.fixture
 def type_of_document_other_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
 ) -> codes.TypeOfDocument:
     instance = codes.TypeOfDocument(value="99", status="LOCAL")
     return temp_session_feature(instance)
@@ -902,7 +914,7 @@ def type_of_document_other_instance(
 
 @pytest.fixture
 def category_of_publicity_public_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.CategoryOfPublicity],
 ) -> codes.CategoryOfPublicity:
     instance = codes.CategoryOfPublicity(value="1", status="LOCAL")
     return temp_session_feature(instance)
@@ -910,7 +922,7 @@ def category_of_publicity_public_instance(
 
 @pytest.fixture
 def personal_data_content_no_personal_data_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.PersonalDataContent],
 ) -> codes.PersonalDataContent:
     instance = codes.PersonalDataContent(value="1", status="LOCAL")
     return temp_session_feature(instance)
@@ -918,35 +930,39 @@ def personal_data_content_no_personal_data_instance(
 
 @pytest.fixture
 def retention_time_permanent_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.RetentionTime],
 ) -> codes.RetentionTime:
     instance = codes.RetentionTime(value="01", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def language_finnish_instance(temp_session_feature: ReturnSame) -> codes.Language:
+def language_finnish_instance(
+    temp_session_feature: ReturnSame[codes.Language],
+) -> codes.Language:
     instance = codes.Language(value="fi", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
 def legal_effects_of_master_plan_without_legal_effects_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.LegalEffectsOfMasterPlan],
 ) -> codes.LegalEffectsOfMasterPlan:
     instance = codes.LegalEffectsOfMasterPlan(value="2", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def municipality_instance(temp_session_feature: ReturnSame) -> codes.Municipality:
+def municipality_instance(
+    temp_session_feature: ReturnSame[codes.Municipality],
+) -> codes.Municipality:
     instance = codes.Municipality(value="577", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
 def administrative_region_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.AdministrativeRegion],
 ) -> codes.AdministrativeRegion:
     instance = codes.AdministrativeRegion(value="01", status="LOCAL")
     return temp_session_feature(instance)
@@ -954,14 +970,16 @@ def administrative_region_instance(
 
 @pytest.fixture
 def another_administrative_region_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.AdministrativeRegion],
 ) -> codes.AdministrativeRegion:
     instance = codes.AdministrativeRegion(value="02", status="LOCAL")
     return temp_session_feature(instance)
 
 
 @pytest.fixture
-def plan_theme_instance(temp_session_feature: ReturnSame) -> codes.PlanTheme:
+def plan_theme_instance(
+    temp_session_feature: ReturnSame[codes.PlanTheme],
+) -> codes.PlanTheme:
     instance = codes.PlanTheme(value="01", status="LOCAL")
     return temp_session_feature(instance)
 
@@ -1033,7 +1051,7 @@ def codes_loaded(
 
 @pytest.fixture
 def plan_matter_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanMatter],
     organisation_instance: codes.Organisation,
     another_organisation_instance: codes.Organisation,
     plan_type_instance: codes.PlanType,
@@ -1048,7 +1066,7 @@ def plan_matter_instance(
 
 @pytest.fixture
 def plan_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Plan],
     plan_matter_instance: models.PlanMatter,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
@@ -1092,7 +1110,7 @@ def plan_instance(
 
 @pytest.fixture
 def another_plan_matter_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanMatter],
     organisation_instance: codes.Organisation,
     another_organisation_instance: codes.Organisation,
     plan_type_instance: codes.PlanType,
@@ -1107,7 +1125,7 @@ def another_plan_matter_instance(
 
 @pytest.fixture
 def another_plan_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Plan],
     another_plan_matter_instance: models.PlanMatter,
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
@@ -1153,7 +1171,7 @@ def another_plan_instance(
 
 @pytest.fixture
 def organisation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Organisation],
     administrative_region_instance: codes.AdministrativeRegion,
 ) -> models.Organisation:
     instance = models.Organisation(
@@ -1164,7 +1182,7 @@ def organisation_instance(
 
 @pytest.fixture
 def another_organisation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Organisation],
     another_administrative_region_instance: codes.AdministrativeRegion,
 ) -> models.Organisation:
     instance = models.Organisation(
@@ -1179,7 +1197,7 @@ def another_organisation_instance(
 
 @pytest.fixture
 def land_use_area_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LandUseArea],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
@@ -1230,7 +1248,7 @@ def land_use_area_instance(
 # code values, i.e. käyttötarkoituskohdistus.
 @pytest.fixture
 def pedestrian_street_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LandUseArea],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
@@ -1273,12 +1291,12 @@ def pedestrian_street_instance(
 
 @pytest.fixture
 def other_area_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.OtherArea],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
     construction_area_plan_regulation_group_instance: codes.PlanRegulationGroup,
-):
+) -> models.OtherArea:
     instance = models.OtherArea(
         geom=from_shape(
             shape(
@@ -1310,12 +1328,12 @@ def other_area_instance(
 
 @pytest.fixture
 def line_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Line],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
     plan_regulation_group_instance: codes.PlanRegulationGroup,
-):
+) -> models.Line:
     instance = models.Line(
         geom=from_shape(MultiLineString([[[382000, 6678000], [383000, 6678000]]])),
         lifecycle_status=preparation_status_instance,
@@ -1328,7 +1346,7 @@ def line_instance(
 
 @pytest.fixture
 def point_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Point],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_underground_instance: codes.TypeOfUnderground,
     plan_instance: codes.Plan,
@@ -1349,7 +1367,7 @@ def point_instance(
 
 @pytest.fixture
 def plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1366,7 +1384,7 @@ def plan_regulation_group_instance(
 # Construction area must have its own plan regulation group
 @pytest.fixture
 def construction_area_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1384,7 +1402,7 @@ def construction_area_plan_regulation_group_instance(
 # Therefore, these plan regulations require their own groups.
 @pytest.fixture
 def numeric_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1400,7 +1418,7 @@ def numeric_plan_regulation_group_instance(
 
 @pytest.fixture
 def decimal_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1416,7 +1434,7 @@ def decimal_plan_regulation_group_instance(
 
 @pytest.fixture
 def pedestrian_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1432,7 +1450,7 @@ def pedestrian_plan_regulation_group_instance(
 
 @pytest.fixture
 def point_plan_regulation_group_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1449,7 +1467,7 @@ def point_plan_regulation_group_instance(
 @pytest.fixture
 def general_regulation_group_instance(
     session: Session,
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
     plan_instance: codes.Plan,
     type_of_general_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
 ) -> models.PlanRegulationGroup:
@@ -1469,7 +1487,7 @@ def general_regulation_group_instance(
 
 @pytest.fixture
 def empty_value_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1487,7 +1505,7 @@ def empty_value_plan_regulation_instance(
 @pytest.fixture
 def construction_area_plan_regulation_instance(
     session: Session,
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     construction_area_plan_regulation_group_instance: codes.PlanRegulationGroup,
     type_of_plan_regulation_construction_area_instance: codes.TypeOfPlanRegulation,
@@ -1512,7 +1530,7 @@ def construction_area_plan_regulation_instance(
 
 @pytest.fixture
 def numeric_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_allowed_area_instance: codes.TypeOfPlanRegulation,
     numeric_plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1532,7 +1550,7 @@ def numeric_plan_regulation_instance(
 
 @pytest.fixture
 def decimal_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_ground_elevation_instance: codes.TypeOfPlanRegulation,
     decimal_plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1552,7 +1570,7 @@ def decimal_plan_regulation_instance(
 
 @pytest.fixture
 def numeric_range_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_number_of_stories_instance: codes.TypeOfPlanRegulation,
     plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1572,7 +1590,7 @@ def numeric_range_plan_regulation_instance(
 
 @pytest.fixture
 def text_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1592,7 +1610,7 @@ def text_plan_regulation_instance(
 
 @pytest.fixture
 def pedestrian_street_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_street_instance: codes.TypeOfPlanRegulation,
     pedestrian_plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1609,7 +1627,7 @@ def pedestrian_street_plan_regulation_instance(
 
 @pytest.fixture
 def point_text_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     point_plan_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1628,7 +1646,7 @@ def point_text_plan_regulation_instance(
 
 @pytest.fixture
 def verbal_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_verbal_instance: codes.TypeOfPlanRegulation,
     type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
@@ -1653,7 +1671,7 @@ def verbal_plan_regulation_instance(
 
 @pytest.fixture
 def general_plan_regulation_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
     preparation_status_instance: codes.LifeCycleStatus,
     type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
     general_regulation_group_instance: codes.PlanRegulationGroup,
@@ -1672,7 +1690,7 @@ def general_plan_regulation_instance(
 
 @pytest.fixture
 def plan_proposition_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.PlanProposition],
     preparation_status_instance: codes.LifeCycleStatus,
     plan_regulation_group_instance: codes.PlanRegulationGroup,
 ) -> models.PlanProposition:
@@ -1689,7 +1707,7 @@ def plan_proposition_instance(
 
 @pytest.fixture
 def source_data_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.SourceData],
     plan_matter_instance: codes.PlanMatter,
     type_of_source_data_instance: codes.TypeOfSourceData,
 ) -> models.SourceData:
@@ -1707,7 +1725,7 @@ def source_data_instance(
 
 @pytest.fixture
 def document_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Document],
     plan_instance: codes.Plan,
     type_of_document_oas_instance: codes.TypeOfDocument,
     category_of_publicity_public_instance: codes.CategoryOfPublicity,
@@ -1732,7 +1750,7 @@ def document_instance(
 
 @pytest.fixture
 def plan_report_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Document],
     plan_instance: codes.Plan,
     type_of_document_plan_description_instance: codes.TypeOfDocument,
     category_of_publicity_public_instance: codes.CategoryOfPublicity,
@@ -1757,7 +1775,7 @@ def plan_report_instance(
 
 @pytest.fixture
 def other_document_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Document],
     plan_instance: codes.Plan,
     type_of_document_other_instance: codes.TypeOfDocument,
     category_of_publicity_public_instance: codes.CategoryOfPublicity,
@@ -1781,7 +1799,7 @@ def other_document_instance(
 
 @pytest.fixture
 def plan_map_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.Document],
     plan_instance: codes.Plan,
     type_of_document_plan_map_instance: codes.TypeOfDocument,
     category_of_publicity_public_instance: codes.CategoryOfPublicity,
@@ -1808,7 +1826,8 @@ def plan_map_instance(
 
 @pytest.fixture
 def lifecycle_date_instance(
-    temp_session_feature: ReturnSame, code_instance: codes.LifeCycleStatus
+    temp_session_feature: ReturnSame[models.LifeCycleDate],
+    code_instance: codes.LifeCycleStatus,
 ) -> models.LifeCycleDate:
     instance = models.LifeCycleDate(
         lifecycle_status=code_instance,
@@ -1820,7 +1839,7 @@ def lifecycle_date_instance(
 
 @pytest.fixture
 def pending_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LifeCycleDate],
     plan_instance: codes.Plan,
     pending_status_instance: codes.LifeCycleStatus,
 ) -> models.LifeCycleDate:
@@ -1835,7 +1854,7 @@ def pending_date_instance(
 
 @pytest.fixture
 def preparation_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LifeCycleDate],
     plan_instance: codes.Plan,
     preparation_status_instance: codes.LifeCycleStatus,
 ) -> models.LifeCycleDate:
@@ -1850,7 +1869,7 @@ def preparation_date_instance(
 
 @pytest.fixture
 def plan_proposal_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LifeCycleDate],
     plan_instance: codes.Plan,
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> models.LifeCycleDate:
@@ -1865,7 +1884,7 @@ def plan_proposal_date_instance(
 
 @pytest.fixture
 def approved_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LifeCycleDate],
     plan_instance: codes.Plan,
     approved_status_instance: codes.LifeCycleStatus,
 ) -> models.LifeCycleDate:
@@ -1880,7 +1899,7 @@ def approved_date_instance(
 
 @pytest.fixture
 def valid_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.LifeCycleDate],
     plan_instance: codes.Plan,
     valid_status_instance: codes.LifeCycleStatus,
 ) -> models.LifeCycleDate:
@@ -1894,7 +1913,7 @@ def valid_date_instance(
 
 @pytest.fixture
 def decision_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.EventDate],
     preparation_date_instance: models.LifeCycleDate,
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
 ) -> models.EventDate:
@@ -1908,7 +1927,7 @@ def decision_date_instance(
 
 @pytest.fixture
 def processing_event_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.EventDate],
     preparation_date_instance: models.LifeCycleDate,
     participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
 ) -> models.EventDate:
@@ -1922,7 +1941,7 @@ def processing_event_date_instance(
 
 @pytest.fixture
 def interaction_event_date_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.EventDate],
     preparation_date_instance: models.LifeCycleDate,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
 ) -> models.EventDate:
@@ -1940,7 +1959,7 @@ def interaction_event_date_instance(
 
 @pytest.fixture
 def main_use_additional_information_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.AdditionalInformation],
     type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     empty_value_plan_regulation_instance: codes.PlanRegulation,
 ) -> models.AdditionalInformation:
@@ -1953,7 +1972,7 @@ def main_use_additional_information_instance(
 
 @pytest.fixture
 def proportion_of_intended_use_additional_information_instance(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[models.AdditionalInformation],
     type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
     empty_value_plan_regulation_instance: codes.PlanRegulation,
 ) -> models.AdditionalInformation:
@@ -2166,7 +2185,8 @@ def another_test_plan(
 
 @pytest.fixture
 def participation_plan_presenting_for_public_decision(
-    temp_session_feature: ReturnSame, preparation_status_instance: codes.LifeCycleStatus
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    preparation_status_instance: codes.LifeCycleStatus,
 ) -> codes.NameOfPlanCaseDecision:
     instance = codes.NameOfPlanCaseDecision(
         value="04", status="LOCAL", allowed_statuses=[preparation_status_instance]
@@ -2176,7 +2196,8 @@ def participation_plan_presenting_for_public_decision(
 
 @pytest.fixture
 def plan_material_presenting_for_public_decision(
-    temp_session_feature: ReturnSame, preparation_status_instance: codes.LifeCycleStatus
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    preparation_status_instance: codes.LifeCycleStatus,
 ) -> codes.NameOfPlanCaseDecision:
     instance = codes.NameOfPlanCaseDecision(
         value="05", status="LOCAL", allowed_statuses=[preparation_status_instance]
@@ -2186,7 +2207,8 @@ def plan_material_presenting_for_public_decision(
 
 @pytest.fixture
 def draft_plan_presenting_for_public_decision(
-    temp_session_feature: ReturnSame, preparation_status_instance: codes.LifeCycleStatus
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    preparation_status_instance: codes.LifeCycleStatus,
 ) -> codes.NameOfPlanCaseDecision:
     instance = codes.NameOfPlanCaseDecision(
         value="06", status="LOCAL", allowed_statuses=[preparation_status_instance]
@@ -2196,7 +2218,7 @@ def draft_plan_presenting_for_public_decision(
 
 @pytest.fixture
 def plan_proposal_sending_out_for_opinions_decision(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> codes.NameOfPlanCaseDecision:
     instance = codes.NameOfPlanCaseDecision(
@@ -2207,7 +2229,7 @@ def plan_proposal_sending_out_for_opinions_decision(
 
 @pytest.fixture
 def plan_proposal_presenting_for_public_decision(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> codes.NameOfPlanCaseDecision:
     instance = codes.NameOfPlanCaseDecision(
@@ -2218,7 +2240,8 @@ def plan_proposal_presenting_for_public_decision(
 
 @pytest.fixture
 def participation_plan_presenting_for_public_event(
-    temp_session_feature: ReturnSame, preparation_status_instance: codes.LifeCycleStatus
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
+    preparation_status_instance: codes.LifeCycleStatus,
 ) -> codes.TypeOfProcessingEvent:
     instance = codes.TypeOfProcessingEvent(
         value="05", status="LOCAL", allowed_statuses=[preparation_status_instance]
@@ -2228,7 +2251,8 @@ def participation_plan_presenting_for_public_event(
 
 @pytest.fixture
 def plan_material_presenting_for_public_event(
-    temp_session_feature: ReturnSame, preparation_status_instance: codes.LifeCycleStatus
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
+    preparation_status_instance: codes.LifeCycleStatus,
 ) -> codes.TypeOfProcessingEvent:
     instance = codes.TypeOfProcessingEvent(
         value="06", status="LOCAL", allowed_statuses=[preparation_status_instance]
@@ -2238,7 +2262,7 @@ def plan_material_presenting_for_public_event(
 
 @pytest.fixture
 def plan_proposal_presenting_for_public_event(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> codes.TypeOfProcessingEvent:
     instance = codes.TypeOfProcessingEvent(
@@ -2249,7 +2273,7 @@ def plan_proposal_presenting_for_public_event(
 
 @pytest.fixture
 def plan_proposal_requesting_for_opinions_event(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> codes.TypeOfProcessingEvent:
     instance = codes.TypeOfProcessingEvent(
@@ -2260,7 +2284,7 @@ def plan_proposal_requesting_for_opinions_event(
 
 @pytest.fixture
 def presentation_to_the_public_interaction(
-    temp_session_feature: ReturnSame,
+    temp_session_feature: ReturnSame[codes.TypeOfInteractionEvent],
     preparation_status_instance: codes.LifeCycleStatus,
     plan_proposal_status_instance: codes.LifeCycleStatus,
 ) -> codes.TypeOfInteractionEvent:
@@ -2273,7 +2297,9 @@ def presentation_to_the_public_interaction(
 
 
 @pytest.fixture
-def decisionmaker_type(temp_session_feature: ReturnSame) -> codes.TypeOfDecisionMaker:
+def decisionmaker_type(
+    temp_session_feature: ReturnSame[codes.TypeOfDecisionMaker],
+) -> codes.TypeOfDecisionMaker:
     instance = codes.TypeOfDecisionMaker(value="01", status="LOCAL")
     return temp_session_feature(instance)
 
@@ -3021,8 +3047,8 @@ def assert_dicts_equal(
 def deepcompare(
     item1: object,
     item2: object,
-    ignore_keys: list | None = None,
-    ignore_order_for_keys: list | None = None,
+    ignore_keys: list[str] | None = None,
+    ignore_order_for_keys: list[str] | None = None,
     ignore_list_order: bool | None = False,
     path: str = "",
 ) -> None:
