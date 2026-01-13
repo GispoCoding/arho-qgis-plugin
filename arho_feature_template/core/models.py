@@ -556,6 +556,9 @@ class Plan(PlanBaseModel):
     legal_effect_ids: list[str] = field(default_factory=list)
     geom: QgsGeometry | None = None
     plan_matter_id: str | None = None
+    approval_date: datetime | None = None
+    period_of_validity_start: datetime | None = None
+    period_of_validity_end: datetime | None = None
     locked: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)

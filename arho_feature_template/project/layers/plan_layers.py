@@ -180,6 +180,9 @@ class PlanLayer(AbstractPlanLayer):
         feature["scale"] = model.scale
         feature["lifecycle_status_id"] = model.lifecycle_status_id
         feature["plan_matter_id"] = model.plan_matter_id
+        feature["approval_date"] = model.approval_date
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
         feature["locked"] = model.locked
 
         return feature
@@ -203,6 +206,9 @@ class PlanLayer(AbstractPlanLayer):
             ],
             id_=feature["id"],
             plan_matter_id=feature["plan_matter_id"],
+            approval_date=feature["approval_date"],
+            period_of_validity_start=feature["period_of_validity_start"],
+            period_of_validity_end=feature["period_of_validity_end"],
             locked=feature["locked"],
             modified=False,
         )
@@ -262,6 +268,9 @@ class PlanLayer(AbstractPlanLayer):
                 documents=documents_by_plan_id[feature["id"]],
                 id_=feature["id"],
                 plan_matter_id=feature["plan_matter_id"],
+                approval_date=feature["approval_date"],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 locked=feature["locked"],
                 modified=False,
             )

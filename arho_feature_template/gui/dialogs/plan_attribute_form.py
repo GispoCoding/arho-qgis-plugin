@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
+from qgis.PyQt.QtCore import QDateTime
 from qgis.PyQt.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -18,8 +19,6 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.components.general_regulation_group_widget import GeneralRegulationGroupWidget
-
-# from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.gui.components.plan_document_widget import DocumentWidget
 from arho_feature_template.gui.components.value_input_widgets import LegalEffectWidget
 from arho_feature_template.project.layers.code_layers import (
@@ -30,6 +29,9 @@ from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatt
 from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from qgis.gui import QgsDateTimeEdit
     from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
@@ -48,22 +50,34 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     documents_layout: QVBoxLayout
     add_document_btn: QPushButton
     lock_checkbox: QCheckBox
-
     button_box: QDialogButtonBox
 
     def __init__(self, plan: Plan, _regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
         super().__init__(parent)
-
         self.setupUi(self)
 
-        self.is_general_plan_type = self._is_general_plan_type()
-
+        # TYPES
+        self.name_line_edit: QLineEdit
+        self.description_text_edit: QTextEdit
+        self.scale_spin_box: QSpinBox
+        self.lifecycle_status_combo_box: CodeComboBox
+        self.regulations_layout: QVBoxLayout
+        self.add_general_regulation_group_btn: QPushButton
+        self.documents_layout: QVBoxLayout
+        self.add_document_btn: QPushButton
+        self.approval_checkbox: QCheckBox
+        self.approval_date_edit: QgsDateTimeEdit
+        self.validity_checkbox: QCheckBox
+        self.validity_date_edit: QgsDateTimeEdit
+        self.lock_checkbox: QCheckBox
+        self.button_box: QDialogButtonBox
         self.general_data_layout: QFormLayout
 
+        # INIT
         self.plan = plan
+        self.is_general_plan_type = self._is_general_plan_type()
 
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
-
         self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
         self.name_edit.setText(plan.name or "")
@@ -72,15 +86,12 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.name_edit.textChanged.connect(self._check_required_fields)
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
+        self.approval_checkbox.stateChanged.connect(self._on_approval_state_changed)
+        self.validity_checkbox.stateChanged.connect(self._on_validity_state_changed)
 
         self.scroll_area_spacer = None
         self.regulation_group_widgets: list[GeneralRegulationGroupWidget] = []
         self.legal_effect_widgets: list[tuple[QLabel, LegalEffectWidget]] = []
-        # self.regulation_groups_selection_widget = TreeWithSearchWidget()
-        # self.regulation_groups_tree_layout.insertWidget(2, self.regulation_groups_selection_widget)
-        # for library in regulation_group_libraries:
-        #     self.init_plan_regulation_group_library(library)
-        # self.regulation_groups_selection_widget.tree.itemDoubleClicked.connect(self.add_selected_plan_regulation_group)
 
         for regulation_group in plan.general_regulations:
             self.add_plan_regulation_group(regulation_group)
@@ -95,6 +106,34 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             self.add_legal_effect_widget(legal_effect_id)
         if len(self.legal_effect_widgets) == 0:
             self.add_legal_effect_widget()
+
+        # Approval
+        if plan.approval_date:
+            # Once set, cannot modify approval (date) anymore
+            # Use disabled (greyed) state to indicate permanent state
+            self.approval_checkbox.setChecked(True)
+            self.approval_checkbox.setEnabled(False)
+            self.approval_date_edit.show()
+            self.approval_date_edit.setDateTime(QDateTime(plan.approval_date))
+            self.approval_date_edit.setReadOnly(True)
+            self.approval_date_edit.setEnabled(False)
+        # Hide datetime edit before user checks approval checkbox
+        else:
+            self.approval_date_edit.hide()
+
+        # Validity
+        if plan.period_of_validity_start:
+            # Once set, cannot modify period of validity start date anymore
+            # Use disabled (greyed) state to indicate permanent state
+            self.validity_checkbox.setChecked(True)
+            self.validity_checkbox.setEnabled(False)
+            self.validity_date_edit.show()
+            self.validity_date_edit.setDateTime(QDateTime(plan.period_of_validity_start))
+            self.validity_date_edit.setReadOnly(True)
+            self.validity_date_edit.setEnabled(False)
+        # Hide datetime edit before user checks validity checkbox
+        else:
+            self.validity_date_edit.hide()
 
         self.add_general_regulation_group_btn.clicked.connect(self.add_new_regulation_group)
         self.add_general_regulation_group_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
@@ -142,6 +181,18 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             label.hide()
             widget.hide()
 
+    def _on_approval_state_changed(self, _state):
+        if self.approval_checkbox.isChecked():
+            self.approval_date_edit.show()
+        else:
+            self.approval_date_edit.hide()
+
+    def _on_validity_state_changed(self, _state):
+        if self.validity_checkbox.isChecked():
+            self.validity_date_edit.show()
+        else:
+            self.validity_date_edit.hide()
+
     def add_legal_effect_widget(self, legal_effect_id: str | None = None):
         """
         Adds a legal effect widget to the form.
@@ -172,44 +223,20 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
                 widget.deleteLater()
                 label.deleteLater()
 
-    # --- COPIED FROM PLAN FEATURE FORM ---
-
-    # def add_selected_plan_regulation_group(self, item: QTreeWidgetItem, column: int):
-    #     if not item.parent():
-    #         return
-    #     regulation_group: RegulationGroup = item.data(column, Qt.UserRole)
-    #     self.add_plan_regulation_group(regulation_group)
-
     def add_new_regulation_group(self):
         self.add_plan_regulation_group(RegulationGroup())
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):
         regulation_group_widget = GeneralRegulationGroupWidget(regulation_group, layer_name=PlanLayer.name)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
-        # regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         self.regulations_layout.insertWidget(1, regulation_group_widget)
         self.regulation_group_widgets.append(regulation_group_widget)
 
-    # def open_plan_regulation_group_form(self, regulation_group_widget: GeneralRegulationGroupWidget):
-    #     group_as_form = PlanRegulationGroupForm(regulation_group_widget.into_model())
-    #     if group_as_form.exec_():
-    #         regulation_group_widget.from_model(group_as_form.model)
-
     def remove_plan_regulation_group(self, regulation_group_widget: GeneralRegulationGroupWidget):
         disconnect_signal(regulation_group_widget.delete_signal)
-        # disconnect_signal(regulation_group_widget.open_as_form_signal)
         self.regulations_layout.removeWidget(regulation_group_widget)
         self.regulation_group_widgets.remove(regulation_group_widget)
         regulation_group_widget.deleteLater()
-
-    # def init_plan_regulation_group_library(self, library: RegulationGroupLibrary):
-    #     self.plan_regulation_group_libraries_combobox.addItem(library.name)
-    #     for category in library.regulation_group_categories:
-    #         category_item = self.regulation_groups_selection_widget.add_item_to_tree(category.name)
-    #         for group_definition in category.regulation_groups:
-    #             self.regulation_groups_selection_widget.add_item_to_tree(
-    #                 group_definition.name, group_definition, category_item
-    #             )
 
     def add_new_document(self):
         self.add_document(Document())
@@ -230,7 +257,23 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         document_widget.deleteLater()
         self._check_required_fields()
 
-    # ---
+    def get_approval_date(self) -> datetime | None:
+        if self.plan.approval_date:
+            return self.plan.approval_date
+
+        if self.approval_checkbox.isChecked():
+            return self.approval_date_edit.date()
+
+        return None
+
+    def get_validity_start_date(self) -> datetime | None:
+        if self.plan.period_of_validity_start:
+            return self.plan.period_of_validity_start
+
+        if self.validity_checkbox.isChecked():
+            return self.validity_date_edit.date()
+
+        return None
 
     def into_model(self) -> Plan:
         if self.is_general_plan_type:
@@ -249,6 +292,9 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             documents=[document_widget.into_model() for document_widget in self.document_widgets],
             modified=self.plan.modified,
             plan_matter_id=self.plan.plan_matter_id,
+            approval_date=self.get_approval_date(),
+            period_of_validity_start=self.get_validity_start_date(),
+            period_of_validity_end=self.plan.period_of_validity_end,
             geom=self.plan.geom,
             locked=self.lock_checkbox.isChecked(),
         )
