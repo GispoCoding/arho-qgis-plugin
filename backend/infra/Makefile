@@ -59,8 +59,10 @@ validate-plans:
 get-plans:
 	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --payload '{"action": "get_plans"}' response_ryhti.json
 
-decrypt-ssh-keys:
+decrypt-workspace-secrets:
 	sops -d public_keys/$(shell terraform workspace show).enc > public_keys/$(shell terraform workspace show)
+	sops -d $(shell terraform workspace show).tfvars.enc.json > $(shell terraform workspace show).tfvars.json
 
-encrypt-ssh-keys:
+encrypt-workspace-secrets:
 	sops -e public_keys/$(shell terraform workspace show) > public_keys/$(shell terraform workspace show).enc
+	sops -e $(shell terraform workspace show).tfvars.json > $(shell terraform workspace show).tfvars.enc.json
