@@ -304,6 +304,8 @@ class PlanObjectLayer(AbstractPlanLayer):
         feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = serialize_localized_text(model.description)
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
 
         return feature
 
@@ -351,6 +353,8 @@ class PlanObjectLayer(AbstractPlanLayer):
                 description=deserialize_localized_text(feature["description"]),
                 regulation_groups=groups_by_plan_object_id[feature["id"]],
                 plan_id=feature["plan_id"],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 modified=False,
                 id_=feature["id"],
             )
@@ -610,6 +614,8 @@ class PlanRegulationLayer(AbstractPlanLayer):
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["type_of_plan_regulation_id"] = model.regulation_type_id
         feature["subject_identifiers"] = model.subject_identifiers
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
 
         update_feature_from_attribute_value_model(model.value, feature)
 
@@ -657,6 +663,8 @@ class PlanRegulationLayer(AbstractPlanLayer):
                 subject_identifiers=feature["subject_identifiers"],
                 regulation_group_id=feature["plan_regulation_group_id"],
                 verbal_regulation_type_ids=verbal_regulation_types_by_regulation_id[feature["id"]],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 modified=False,
                 id_=feature["id"],
             )
@@ -785,6 +793,8 @@ class PlanPropositionLayer(AbstractPlanLayer):
         feature["text_value"] = serialize_localized_text(model.value)
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["ordering"] = model.proposition_number
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
         feature["id"] = model.id_ if model.id_ else feature["id"]
 
         return feature
@@ -806,6 +816,8 @@ class PlanPropositionLayer(AbstractPlanLayer):
                 regulation_group_id=feature["plan_regulation_group_id"],
                 proposition_number=feature["ordering"],
                 theme_ids=plan_theme_ids_by_proposition_id[feature["id"]],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 modified=False,
                 id_=feature["id"],
             )
