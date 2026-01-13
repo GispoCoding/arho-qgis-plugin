@@ -24,7 +24,13 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from database import codes, enums, models
 from database.base import PROJECT_SRID
-from database.db_helper import ConnectionParameters, DatabaseHelper, User
+from database.db_helper import (
+    ConnectionParameters,
+    DbUser,
+    get_connection_parameters,
+    get_connection_string,
+    get_user_credentials,
+)
 from database.enums import AttributeValueDataType
 from lambdas.db_manager import db_manager
 
@@ -57,33 +63,33 @@ def pytest_addoption(parser, pluginmanager) -> None:
 @pytest.fixture(scope="session")
 def root_db_params() -> ConnectionParameters:
     return {
+        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
+        "port": os.environ.get("DB_INSTANCE_PORT", ""),
         "dbname": os.environ.get("DB_MAINTENANCE_NAME", ""),
         "user": os.environ.get("SU_USER", ""),
-        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
         "password": os.environ.get("SU_USER_PW", ""),
-        "port": os.environ.get("DB_INSTANCE_PORT", ""),
     }
 
 
 @pytest.fixture(scope="session")
 def main_db_params() -> ConnectionParameters:
     return {
-        "dbname": os.environ.get("DB_MAIN_NAME", ""),
-        "user": os.environ.get("RW_USER", ""),
         "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
-        "password": os.environ.get("RW_USER_PW", ""),
         "port": os.environ.get("DB_INSTANCE_PORT", ""),
+        "dbname": os.environ.get("DB_MAIN_NAME", ""),
+        "user": os.environ.get("DBA_USER", ""),
+        "password": os.environ.get("DBA_USER", ""),
     }
 
 
 @pytest.fixture(scope="session")
 def main_db_params_with_root_user() -> ConnectionParameters:
     return {
+        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
+        "port": os.environ.get("DB_INSTANCE_PORT", ""),
         "dbname": os.environ.get("DB_MAIN_NAME", ""),
         "user": os.environ.get("SU_USER", ""),
-        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
         "password": os.environ.get("SU_USER_PW", ""),
-        "port": os.environ.get("DB_INSTANCE_PORT", ""),
     }
 
 
@@ -138,38 +144,21 @@ def alembic_cfg() -> Config:
     return Config(Path(__file__).parent.parent / "alembic.ini")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def current_head_version_id(alembic_cfg: Config) -> str | None:
     script_dir = ScriptDirectory.from_config(alembic_cfg)
     return script_dir.get_current_head()
 
 
-@pytest.fixture(scope="module")
-def hame_database_created(
-    root_db_params: ConnectionParameters,
-    main_db_params: ConnectionParameters,
-    current_head_version_id: str | None,
-) -> Generator[str | None]:
-    event: db_manager.Event = {"action": "create_db"}
-    response = db_manager.handler(event, None)
-    assert response["statusCode"] == 200, response["body"]
-    yield current_head_version_id
-
-    drop_hame_db(main_db_params, root_db_params)
-
-
-@pytest.fixture
+@pytest.fixture(scope="session", autouse=True)
 def hame_database_migrated(
+    wait_for_services: None,
     root_db_params: ConnectionParameters,
     main_db_params: ConnectionParameters,
-    current_head_version_id: str | None,
-):
-    event: db_manager.Event = {"action": "migrate_db"}
+) -> None:
+    event = db_manager.Event(action="migrate_db")
     response = db_manager.handler(event, None)
     assert response["statusCode"] == 200, response["body"]
-    yield current_head_version_id
-
-    drop_hame_db(main_db_params, root_db_params)
 
 
 @pytest.fixture
@@ -515,27 +504,40 @@ def assert_database_is_alright(
     #     assert f"{os.environ.get('ADMIN_USER')}=arwdDxt/" in permission_string
 
 
-@pytest.fixture(scope="module")
-def admin_connection_string(hame_database_created: str | None) -> str:
-    return DatabaseHelper(user=User.ADMIN).get_connection_string()
+@pytest.fixture
+def su_session() -> Generator[Session]:
+    user = get_user_credentials(DbUser.SU)
+    connection_parameters = get_connection_parameters(user)
+    connection_string = get_connection_string(**connection_parameters)
+    engine = sqlalchemy.create_engine(connection_string)
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        yield session
 
 
-@pytest.fixture(scope="module")
-def rw_connection_string(hame_database_created: str | None) -> str:
-    return DatabaseHelper(user=User.READ_WRITE).get_connection_string()
-
-
-@pytest.fixture(scope="module")
-def session(admin_connection_string: str):
-    engine = sqlalchemy.create_engine(admin_connection_string)
-    session = sessionmaker(bind=engine)
-    return session()
+@pytest.fixture(scope="session")
+def dba_connection_string() -> str:
+    user = get_user_credentials(DbUser.DBA)
+    connection_parameters = get_connection_parameters(user)
+    return get_connection_string(**connection_parameters)
 
 
 @pytest.fixture
-def rollback_after(session: Session):
-    yield
-    session.rollback()
+def dba_session(dba_connection_string: str) -> Generator[Session]:
+    engine = sqlalchemy.create_engine(dba_connection_string)
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        yield session
+
+
+@pytest.fixture
+def session(
+    dba_connection_string: str, hame_database_migrated: str | None
+) -> Generator[Session]:
+    engine = sqlalchemy.create_engine(dba_connection_string)
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        yield session
 
 
 @pytest.fixture

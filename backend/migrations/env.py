@@ -1,5 +1,5 @@
-import os
 from logging.config import fileConfig
+import os
 
 from alembic import context
 from alembic_utils.pg_extension import PGExtension
@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 # *ALL* sqlalchemy models have to be imported so that alembic detects all tables
 from database.base import Base
 from database.codes import *  # noqa
+from database.db_helper import DbUser, get_connection_parameters, get_connection_string, get_user_credentials
 from database.functions import functions
 from database.models import *  # noqa
 from database.triggers import (
@@ -166,18 +167,11 @@ def include_name(name, type_, parent_names):
 
 # adapted from
 # http://allan-simon.github.io/blog/posts/python-alembic-with-environment-variables/
-def get_url(connection_params: dict):
+def get_url():
     """Allow passing connection params to alembic, or use env values as fallback."""
-    user = connection_params.get("user", os.environ.get("SU_USER", "postgres"))
-    password = connection_params.get(
-        "password", os.environ.get("SU_USER_PW", "postgres")
-    )
-    host = connection_params.get(
-        "host", os.environ.get("DB_INSTANCE_ADDRESS", "localhost")
-    )
-    port = connection_params.get("port", os.environ.get("DB_INSTANCE_PORT", "5434"))
-    dbname = connection_params.get("dbname", os.environ.get("DB_MAIN_NAME", "hame"))
-    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"
+    dba_credentials = get_user_credentials(DbUser.DBA)
+    connection_parameters = get_connection_parameters(dba_credentials, os.environ["DB_MAIN_NAME"])
+    return get_connection_string(**connection_parameters)
 
 
 def run_migrations_offline() -> None:
@@ -192,7 +186,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = get_url({})
+    url = get_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -217,8 +211,13 @@ def run_migrations_online() -> None:
     An existing psycopg connection cannot be used here.
     We have to provide an sqlalchemy connectable or nothing.
     """
-    connection_params = config.attributes.get("connection", {})
-    connectable = create_engine(get_url(connection_params))
+
+    connection_parameters = config.attributes.get("connection_parameters", {})
+    if not connection_parameters:
+        connection_parameters = get_connection_parameters(
+            get_user_credentials(DbUser.DBA), os.environ["DB_MAIN_NAME"]
+        )
+    connectable = create_engine(get_connection_string(**connection_parameters))
 
     with connectable.connect() as connection:
         context.configure(

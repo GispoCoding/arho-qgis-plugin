@@ -43,9 +43,7 @@ resource "aws_iam_policy" "secrets-policy" {
         Effect   = "Allow",
         Resource = compact([
           aws_secretsmanager_secret.hame-db-su.arn,
-          aws_secretsmanager_secret.hame-db-admin.arn,
-          aws_secretsmanager_secret.hame-db-rw.arn,
-          aws_secretsmanager_secret.hame-db-r.arn,
+          aws_secretsmanager_secret.hame-db-dba.arn,
           var.enable_x_road ? module.x-road["this"].client_secret_arn : null
         ])
       }

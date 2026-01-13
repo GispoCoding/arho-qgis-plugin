@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import enum
 import json
 import os
-from typing import TypedDict
+from enum import Enum
+from typing import TypedDict, cast
 
 import boto3
 
@@ -16,99 +16,81 @@ class ConnectionParameters(TypedDict):
     password: str
 
 
-class User(enum.Enum):
-    SU = "DB_SECRET_SU_ARN"
-    ADMIN = "DB_SECRET_ADMIN_ARN"
-    READ_WRITE = "DB_SECRET_RW_ARN"
-    READ = "DB_SECRET_R_ARN"
+class UserCredentials(TypedDict):
+    username: str
+    password: str
 
 
-env_credentials = {
-    User.SU: {
-        "username": os.environ.get("SU_USER"),
-        "password": os.environ.get("SU_USER_PW"),
-    },
-    User.ADMIN: {
-        "username": os.environ.get("ADMIN_USER"),
-        "password": os.environ.get("ADMIN_USER_PW"),
-    },
-    User.READ_WRITE: {
-        "username": os.environ.get("RW_USER"),
-        "password": os.environ.get("RW_USER_PW"),
-    },
-    User.READ: {
-        "username": os.environ.get("R_USER"),
-        "password": os.environ.get("R_USER_PW"),
-    },
+class DbUser(Enum):
+    DBA = "dba"
+    SU = "su"
+
+
+user_secret_arns = {
+    DbUser.DBA: os.environ.get("DB_SECRET_DBA_ARN"),
+    DbUser.SU: os.environ.get("DB_SECRET_SU_ARN"),
+}
+
+local_user_credentials = {
+    DbUser.DBA: UserCredentials(username=username, password=password)
+    if (username := os.environ.get("DBA_USER"))
+    and (password := os.environ.get("DBA_USER_PW"))
+    else None,
+    DbUser.SU: UserCredentials(username=username, password=password)
+    if (username := os.environ.get("SU_USER"))
+    and (password := os.environ.get("SU_USER_PW"))
+    else None,
 }
 
 
-class Db(enum.Enum):
-    MAINTENANCE = 1
-    MAIN = 2
+def get_user_credentials_from_aws_secretsmanager(secret_arn: str) -> UserCredentials:
+    session = boto3.session.Session()
+    client = session.client(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        service_name="secretsmanager", region_name=os.environ["AWS_REGION_NAME"]
+    )
+    secret_string = cast(
+        "str",
+        client.get_secret_value(SecretId=secret_arn)["SecretString"],  # pyright: ignore[reportUnknownMemberType]
+    )
+    credentials = cast("UserCredentials", json.loads(secret_string))
+    return credentials
 
 
-class DatabaseHelper:
-    def __init__(self, user: User | None = None) -> None:
-        """Initialize a database helper with given user privileges.
-
-        If user is not specified, requires that the lambda function has *all* user
-        privileges and secrets specified in lambda function os.environ.
-        """
-        # if user is not specified, iterate through all users
-        users: list | type[User] = [user] if user else User
-        if os.environ.get("READ_FROM_AWS", "1") == "1":
-            session = boto3.session.Session()
-            client = session.client(
-                service_name="secretsmanager",
-                region_name=os.environ.get("AWS_REGION_NAME"),
+def get_user_credentials(user: DbUser) -> UserCredentials:
+    if os.environ.get("READ_FROM_AWS") == "1":
+        user_secret_arn = user_secret_arns.get(user)
+        if user_secret_arn is None:
+            raise ValueError(
+                f"Secret ARN for user {user} is not set in environment variables."
             )
-            self._users = {
-                user: json.loads(
-                    client.get_secret_value(SecretId=os.environ[user.value])[
-                        "SecretString"
-                    ]
-                )
-                for user in users
-            }
-        else:
-            self._users = {user: env_credentials[user] for user in users}
-        self._dbs = {
-            Db.MAIN: os.environ["DB_MAIN_NAME"],
-            Db.MAINTENANCE: os.environ["DB_MAINTENANCE_NAME"],
-        }
-        self._host = os.environ["DB_INSTANCE_ADDRESS"]
-        self._port = os.environ.get("DB_INSTANCE_PORT", "5432")
-        self._region_name = os.environ.get("AWS_REGION_NAME")
 
-    def get_connection_parameters(
-        self, user: User | None = None, db: Db = Db.MAIN
-    ) -> ConnectionParameters:
-        if not user:
-            # take the first user that has credentials provided
-            user = next(iter(self._users))
-        user_credentials = self._users[user]
-        return {
-            "host": self._host,
-            "port": self._port,
-            "dbname": self.get_db_name(db),
-            "user": user_credentials["username"],
-            "password": user_credentials["password"],
-        }
+        return get_user_credentials_from_aws_secretsmanager(user_secret_arn)
 
-    def get_connection_string(self) -> str:
-        db_params = self.get_connection_parameters()
-        return (
-            f"postgresql+psycopg://{db_params['user']}:{db_params['password']}"
-            f"@{db_params['host']}:{db_params['port']}/{db_params['dbname']}"
+    credentials = local_user_credentials.get(user)
+    if credentials is None:
+        raise ValueError(
+            f"Credentials for user {user} are not set in environment variables."
         )
+    return credentials
 
-    def get_username_and_password(self, user: User) -> tuple[str, str]:
-        user_credentials = self._users[user]
-        return user_credentials["username"], user_credentials["password"]
 
-    def get_db_name(self, db: Db) -> str:
-        return self._dbs[db]
+def get_connection_parameters(
+    user_credentials: UserCredentials | None = None, db_name: str | None = None
+) -> ConnectionParameters:
+    if user_credentials is None:
+        user_credentials = get_user_credentials(DbUser.DBA)
+    if db_name is None:
+        db_name = os.environ["DB_MAIN_NAME"]
+    return {
+        "host": os.environ["DB_INSTANCE_ADDRESS"],
+        "port": os.environ["DB_INSTANCE_PORT"],
+        "dbname": db_name,
+        "user": user_credentials["username"],
+        "password": user_credentials["password"],
+    }
 
-    def get_users(self) -> dict[User, dict]:
-        return self._users
+
+def get_connection_string(
+    host: str, port: str, dbname: str, user: str, password: str
+) -> str:
+    return f"postgresql+psycopg://{user}:{password}@{host}:{port}/{dbname}"

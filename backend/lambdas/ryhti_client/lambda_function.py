@@ -10,7 +10,12 @@ from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
 import boto3
 import simplejson as json
 
-from database.db_helper import DatabaseHelper, User
+from database.db_helper import (
+    DbUser,
+    get_connection_parameters,
+    get_connection_string,
+    get_user_credentials,
+)
 from ryhti_client.database_client import (
     DatabaseClient,
     LifeCycleStatusNotFoundError,
@@ -30,14 +35,13 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
 
+user_credentials = get_user_credentials(
+    DbUser.DBA
+)  # Get DB credentials once at cold start.
 
-# write access is required to update plan information after
-# validating or POSTing data
-db_helper = DatabaseHelper(user=User.READ_WRITE)
 # Let's fetch the syke secret from AWS secrets, so it cannot be read in plain
 # text when looking at lambda env variables.
-
-if os.environ.get("READ_FROM_AWS", "1") == "1" and (
+if os.environ.get("READ_FROM_AWS") == "1" and (
     client_secret_arn := os.environ.get("XROAD_SYKE_CLIENT_SECRET_ARN")
 ):
     session = boto3.session.Session()
@@ -255,8 +259,9 @@ def handler(
             "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
             "is set to FI-TEST."
         )
+    connection_params = get_connection_parameters(user_credentials)
     database_client = DatabaseClient(
-        db_helper.get_connection_string(), plan_uuid=plan_uuid
+        get_connection_string(**connection_params), plan_uuid=plan_uuid
     )
     client = RyhtiClient(
         database_client=database_client,

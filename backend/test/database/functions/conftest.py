@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture(scope="module")
 def conn(
-    main_db_params_with_root_user: ConnectionParameters, hame_database_created: None
+    main_db_params_with_root_user: ConnectionParameters, hame_database_migrated: None
 ) -> Generator[psycopg.Connection]:
     with psycopg.connect(**main_db_params_with_root_user) as conn:
         yield conn

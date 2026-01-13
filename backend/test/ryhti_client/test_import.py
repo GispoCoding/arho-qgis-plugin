@@ -10,8 +10,8 @@ from ryhti_client.database_client import DatabaseClient, PlanAlreadyExistsError
 
 
 @pytest.fixture
-def database_client(rw_connection_string: str) -> DatabaseClient:
-    return DatabaseClient(rw_connection_string)
+def database_client(dba_connection_string: str) -> DatabaseClient:
+    return DatabaseClient(dba_connection_string)
 
 
 @pytest.fixture
@@ -28,7 +28,6 @@ def test_import_plan(
 ):
     """Imports complete_test_plan.json and checks that the data was imported correctly."""
     COMPLETE_PLAN_ID = "09c62caa-c56f-474d-9c0a-1ba4c4188cb2"
-    # delete_plan_after_test(COMPLETE_PLAN_ID)
 
     imported_plan_id = database_client.import_plan(complete_plan_json, extra_data)
     assert imported_plan_id == UUID(COMPLETE_PLAN_ID)

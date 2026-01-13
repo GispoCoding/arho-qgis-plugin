@@ -440,8 +440,8 @@ def changed_mock_koodistot(requests_mock, mock_koodistot: None) -> None:
 
 
 @pytest.fixture(scope="module")
-def loader(admin_connection_string: str) -> KoodistotLoader:
-    return KoodistotLoader(admin_connection_string, api_url="http://mock.url")
+def loader(dba_connection_string: str) -> KoodistotLoader:
+    return KoodistotLoader(dba_connection_string, api_url="http://mock.url")
 
 
 @pytest.fixture
@@ -581,7 +581,7 @@ def test_get_yleismaaraysryhma(loader: KoodistotLoader, koodistot_data) -> None:
 
 
 @pytest.fixture(scope="module")
-def custom_code_loader(admin_connection_string: str) -> Generator[KoodistotLoader]:
+def custom_code_loader(dba_connection_string: str) -> Generator[KoodistotLoader]:
     """Use monkey patched local codes for testing local custom codes with
     remote children. At the moment, no local custom codes with remote
     children are used in production.
@@ -618,7 +618,7 @@ def custom_code_loader(admin_connection_string: str) -> Generator[KoodistotLoade
             ],
         },
     ]
-    yield KoodistotLoader(admin_connection_string, api_url="http://mock.url")
+    yield KoodistotLoader(dba_connection_string, api_url="http://mock.url")
     # we have to remove local codes after the test so that they aren't found
     # in other tests that import the codes module
     codes.TypeOfAdditionalInformation.local_codes = []
@@ -785,18 +785,21 @@ def assert_changed_data_is_imported(main_db_params) -> None:
         conn.close()
 
 
-def test_save_objects(
-    custom_code_loader: KoodistotLoader,
-    custom_koodistot_data,
-    main_db_params: ConnectionParameters,
-) -> None:
+@pytest.fixture
+def custom_code_data_loaded(custom_code_loader: KoodistotLoader, custom_koodistot_data):
     custom_code_loader.save_objects(custom_koodistot_data)
+
+
+def test_save_objects(
+    custom_code_data_loaded: None, main_db_params: ConnectionParameters
+) -> None:
     assert_data_is_imported(main_db_params)
 
 
 def test_save_changed_objects(
+    custom_code_data_loaded: None,
     changed_custom_koodistot_data,
-    admin_connection_string: str,
+    dba_connection_string: str,
     main_db_params: ConnectionParameters,
 ) -> None:
     # TODO: Make test independent of test_save_objects
@@ -806,6 +809,6 @@ def test_save_changed_objects(
     # has module scope, the database persists between tests.
     assert_data_is_imported(main_db_params)
     # check that a new loader adds one object to the database
-    loader = KoodistotLoader(admin_connection_string, api_url="http://mock.url")
+    loader = KoodistotLoader(dba_connection_string, api_url="http://mock.url")
     loader.save_objects(changed_custom_koodistot_data)
     assert_changed_data_is_imported(main_db_params)

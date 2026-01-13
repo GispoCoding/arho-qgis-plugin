@@ -379,7 +379,7 @@ def mock_xroad_ryhti_update_existing_plan_matter(
 
 @pytest.fixture
 def client_with_plan_data(
-    session: Session, rw_connection_string: str, complete_test_plan: models.Plan
+    session: Session, dba_connection_string: str, complete_test_plan: models.Plan
 ) -> RyhtiClient:
     """Return RyhtiClient that has plan data read in and serialized.
 
@@ -387,7 +387,7 @@ def client_with_plan_data(
     reads plans from the database when initializing.
     """
     # Let's mock production x-road with gispo organization client here.
-    database_client = DatabaseClient(rw_connection_string)
+    database_client = DatabaseClient(dba_connection_string)
     client = RyhtiClient(
         database_client,
         public_api_url="http://mock.url",
@@ -432,7 +432,7 @@ def test_related_land_use_area(
 @pytest.fixture
 def client_with_plan_data_in_wrong_region(
     session: Session,
-    rw_connection_string: str,
+    dba_connection_string: str,
     complete_test_plan: models.Plan,
     another_organisation_instance: models.Organisation,
 ) -> RyhtiClient:
@@ -448,7 +448,7 @@ def client_with_plan_data_in_wrong_region(
     session.commit()
 
     # Let's mock production x-road with gispo organization client here.
-    database_client = DatabaseClient(rw_connection_string)
+    database_client = DatabaseClient(dba_connection_string)
     client = RyhtiClient(
         database_client=database_client,
         public_api_url="http://mock.url",
@@ -467,7 +467,7 @@ def client_with_plan_data_in_wrong_region(
 @pytest.fixture
 def client_with_plan_data_in_proposal_phase(
     session: Session,
-    rw_connection_string: str,
+    dba_connection_string: str,
     complete_test_plan: models.Plan,
     plan_proposal_status_instance: codes.LifeCycleStatus,
     plan_proposal_date_instance: models.LifeCycleDate,
@@ -490,7 +490,7 @@ def client_with_plan_data_in_proposal_phase(
     session.commit()
 
     # Let's mock production x-road with gispo organization client here.
-    database_client = DatabaseClient(rw_connection_string)
+    database_client = DatabaseClient(dba_connection_string)
     client = RyhtiClient(
         database_client=database_client,
         public_api_url="http://mock.url",

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeVar
-from uuid import UUID  # noqa: TC003  # Sqlalchemy uses UUID type annotation runtime
+from uuid import UUID  # Sqlalchemy uses UUID type annotation runtime
 
 from geoalchemy2 import Geometry, WKBElement
 from sqlalchemy import Column, ForeignKey, Index, Table, Uuid

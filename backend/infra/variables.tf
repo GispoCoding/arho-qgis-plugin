@@ -104,19 +104,15 @@ variable "hame_db_name" {
   default     = "db"
 }
 
-variable "su_secrets" {
+variable "arho_su_secrets" {
+  description = "Superuser username and password for the RDS instance"
+  type        = map(string)
   nullable = false
 }
 
-variable "hame_admin_secrets" {
-  nullable = false
-}
-
-variable "hame_r_secrets" {
-  nullable = false
-}
-
-variable "hame_rw_secrets" {
+variable "arho_dba_secrets" {
+  description = "DBA user username and password for the RDS instance"
+  type        = map(string)
   nullable = false
 }
 

@@ -14,13 +14,12 @@ resource "aws_lambda_function" "db_manager" {
     variables = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME
       DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
+      DB_INSTANCE_PORT    = 5432
       DB_MAIN_NAME        = var.hame_db_name
       DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
       DB_SECRET_SU_ARN    = aws_secretsmanager_secret.hame-db-su.arn
-      DB_SECRET_ADMIN_ARN = aws_secretsmanager_secret.hame-db-admin.arn
-      DB_SECRET_R_ARN     = aws_secretsmanager_secret.hame-db-r.arn
-      DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
+      DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-db_manager" })
@@ -53,10 +52,10 @@ resource "aws_lambda_function" "koodistot_loader" {
     variables = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME
       DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
+      DB_INSTANCE_PORT    = 5432
       DB_MAIN_NAME        = var.hame_db_name
-      DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
-      DB_SECRET_ADMIN_ARN = aws_secretsmanager_secret.hame-db-admin.arn
+      DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-koodistot_loader" })
@@ -153,10 +152,10 @@ resource "aws_lambda_function" "mml_loader" {
     variables = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME
       DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
+      DB_INSTANCE_PORT    = 5432
       DB_MAIN_NAME        = var.hame_db_name
-      DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
-      DB_SECRET_ADMIN_ARN    = aws_secretsmanager_secret.hame-db-admin.arn
+      DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
       MML_APIKEY          = var.mml_apikey
     }
   }
@@ -178,10 +177,9 @@ locals {
   ryhti_client_base_environment = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME
       DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
+      DB_INSTANCE_PORT    = 5432
       DB_MAIN_NAME        = var.hame_db_name
-      DB_MAINTENANCE_NAME = "postgres"
       READ_FROM_AWS       = 1
-      DB_SECRET_RW_ARN    = aws_secretsmanager_secret.hame-db-rw.arn
       SYKE_APIKEY         = var.syke_apikey
   }
   ryhti_client_x-road_environment = var.enable_x_road ? {

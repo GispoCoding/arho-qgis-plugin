@@ -47,9 +47,6 @@ log-ryhti-client:
 create-db:
 	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "create_db"}' response_db.json
 
-change-db-pw:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "change_pws"}' response_db.json
-
 migrate-db:
 	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "migrate_db"}' response_db.json
 

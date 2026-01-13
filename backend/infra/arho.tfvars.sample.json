@@ -3,6 +3,7 @@
     "AWS_LAMBDA_USER": "<AWS user for updating lambda functions>",
     "AWS_HOSTED_DOMAIN": "<Domain for route53 record>",
     "bastion_subdomain": "<Subdomain for ssh tunnel server route53 record>",
+    "enable_x_road": true,
     "x-road_host": "<Name for your X-road server>",
     "x-road_subdomain": "<X-Road code of your X-Road subsystem, of the form ryhti-your_org-client>",
     "x-road_verification_record": "<Verification record for your X-road server domain, if requested by DVV>",
@@ -11,21 +12,13 @@
     "x-road_member_code": "<X-Road member code of your X-Road organization, usually its Y-tunnus>",
     "enable_route53_record": true,
     "hame_db_name": "<Name of the database to create>",
-    "su_secrets": {
+    "arho_su_secrets": {
         "username": "<Superuser name>",
         "password": "<Superuser password>"
     },
-    "hame_admin_secrets": {
-        "username": "<Admin user name>",
-        "password": "<Admin user password>"
-    },
-    "hame_r_secrets": {
-        "username": "<Read user name>",
-        "password": "<Read user password>"
-    },
-    "hame_rw_secrets": {
-        "username": "<Read & write user name>",
-        "password": "<Read & write user password>"
+    "arho_dba_secrets": {
+        "username": "<Dba user name>",
+        "password": "<Dba user password>"
     },
     "x-road_db_password": "<X-road database password>",
 	"x-road_secrets": {
@@ -39,7 +32,6 @@
         "Project": "<AWS project tag>",
         "wrike_task_id": "<AWS task id tag>"
     },
-    "SLACK_HOOK_URL": "<URL to slack hook for event reporting>",
     "syke_apikey": "<Your Syke public API subscription key for Ryhti client>",
     "syke_xroad_client_id": "<Your Syke client id for X-Road Ryhti client>",
     "syke_xroad_client_secret": "<Your Syke client secret for X-Road Ryhti client>",

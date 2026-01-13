@@ -18,9 +18,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # SQLAlchemy needs all the models to be imported to make relationships mapper to work
-from database import codes, models  # noqa: F401
+from database import codes, models  # noqa: F401 # pyright: ignore[reportUnusedImport]
 from database.codes import AdministrativeRegion, Municipality
-from database.db_helper import DatabaseHelper, User
+from database.db_helper import (
+    DbUser,
+    get_connection_parameters,
+    get_connection_string,
+    get_user_credentials,
+)
 
 if TYPE_CHECKING:
     from shapely import Polygon
@@ -32,6 +37,10 @@ geometries, adapted from Tarmo lambda functions
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
+
+user_credentials = get_user_credentials(
+    DbUser.DBA
+)  # Get DB credentials once at cold start.
 
 
 class Response(TypedDict):
@@ -226,14 +235,16 @@ class MMLLoader:
 def handler(event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
-    db_helper = DatabaseHelper(user=User.ADMIN)
     api_key = os.environ.get("MML_APIKEY")
     if not api_key:
         raise ValueError(
             "Please set MML_APIKEY environment variable to fetch geometries."
         )
 
-    loader = MMLLoader(db_helper.get_connection_string(), api_key=api_key)
+    connection_params = get_connection_parameters(
+        user_credentials, os.environ["DB_MAIN_NAME"]
+    )
+    loader = MMLLoader(get_connection_string(**connection_params), api_key=api_key)
     LOGGER.info("Getting objects...")
     geoms = loader.get_geometries()
 

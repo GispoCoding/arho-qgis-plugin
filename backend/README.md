@@ -72,7 +72,7 @@ If you also want to import municipality and region boundaries from [MML](https:/
 To start and create a database:
 
 10. Start the development containers with `make up` (or `docker-compose -f docker-compose.dev.yml up -d`).
-11. Fill the database with current data model by `make test-create-db`.
+11. Setup the database with `make dev-setup-db`.
 12. To continue you have two choises. Either you can populate the database with some test data or start from scratch by populating code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi)
     - a)  To populate the database with some test data, run `make test-populate-test-data`. (Provide the password for the `postgres` user when prompted.)
     - b)  To Populate national code tables from [koodistot.suomi.fi](https://koodistot.suomi.fi), run `make test-koodistot`. (If you have not specified an MML API key, code tables will be populated, but municipality and regional geometries will be left empty, and you will get an error telling you that MML API key is missing.)

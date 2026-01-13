@@ -9,9 +9,9 @@ services:
     ports:
       - ${DB_INSTANCE_PORT:-5434}:5432
     environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=postgres
+      - POSTGRES_DB=${DB_MAINTENANCE_NAME}
+      - POSTGRES_USER=${SU_USER}
+      - POSTGRES_PASSWORD=${SU_USER_PW}
     volumes:
       - postgis-data:/var/lib/postgresql/data
       - ./pg_dumps:/opt/pg_backups
@@ -27,7 +27,8 @@ services:
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
-      - READ_FROM_AWS=0
+      - DBA_USER=${DBA_USER}
+      - DBA_USER_PW=${DBA_USER_PW}
     ports:
       - ${DB_MANAGER_PORT:-8081}:8080
     depends_on:
@@ -46,7 +47,6 @@ services:
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
-      - READ_FROM_AWS=0
     ports:
       - ${KOODISTOT_LOADER_PORT:-8082}:8080
     depends_on:
@@ -64,7 +64,6 @@ services:
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
-      - READ_FROM_AWS=0
       - SYKE_APIKEY
       - XROAD_HTTP_PORT=1080
       - XROAD_SERVER_ADDRESS=mock_xroad
@@ -93,7 +92,6 @@ services:
     environment:
       - DB_INSTANCE_ADDRESS=db
       - DB_INSTANCE_PORT=5432
-      - READ_FROM_AWS=0
       - MML_APIKEY
     ports:
       - ${MML_LOADER_PORT:-8085}:8080

@@ -3,17 +3,17 @@ from __future__ import annotations
 import enum
 import json
 import logging
+import os
 from pathlib import Path
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import psycopg
 from alembic import command
 from alembic.config import Config
-from alembic.script import ScriptDirectory
 from alembic.util.exc import CommandError
 from psycopg.sql import SQL, Identifier, Literal
 
-from database.db_helper import DatabaseHelper, Db, User
+from database.db_helper import DbUser, get_connection_parameters, get_user_credentials
 
 """
 Hame-ryhti database manager, adapted from Tarmo db_manager.
@@ -25,7 +25,6 @@ LOGGER.setLevel(logging.INFO)
 
 class Action(enum.Enum):
     CREATE_DB = "create_db"
-    CHANGE_PWS = "change_pws"
     MIGRATE_DB = "migrate_db"
 
 
@@ -34,240 +33,137 @@ class Response(TypedDict):
     body: str
 
 
-class Event(TypedDict, total=False):
+class Event(TypedDict):
     action: str  # EventType
-    version: str | None  # Ansible version id
+    version: NotRequired[str | None]  # Alembic revision id
 
 
-def create_db(conn: psycopg.Connection, db_name: str) -> str:
-    """Creates empty db."""
-    with conn.cursor() as cur:
-        cur.execute(
-            SQL("CREATE DATABASE {db_name};").format(db_name=Identifier(db_name))
-        )
-    msg = "Created empty database."
-    LOGGER.info(msg)
-    return msg
-
-
-def configure_schemas_and_users(
-    conn: psycopg.Connection, users: dict[User, dict]
-) -> str:
-    """Configures given database with hame schemas and users."""
-    with conn.cursor() as cur:
-        cur.execute(SQL("CREATE SCHEMA codes; CREATE SCHEMA hame;"))
-        cur.execute(SQL("CREATE EXTENSION postgis WITH SCHEMA public;"))
-        for key, user in users.items():
-            if key == User.SU:
-                # superuser exists already
-                pass
-            elif key == User.ADMIN:
-                cur.execute(
-                    SQL(
-                        "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD {password}"  # noqa: E501
-                    ).format(
-                        username=Identifier(user["username"]),
-                        password=Literal(user["password"]),
-                    )
-                )
-            else:
-                cur.execute(
-                    SQL(
-                        "CREATE ROLE {username} WITH LOGIN ENCRYPTED PASSWORD {password}"  # noqa: E501
-                    ).format(
-                        username=Identifier(user["username"]),
-                        password=Literal(user["password"]),
-                    )
-                )
-    msg = "Added hame schemas and users."
-    return msg
-
-
-def configure_permissions(conn: psycopg.Connection, users: dict[User, dict]) -> str:
-    """Configures user permissions.
-
-    Can also be run on an existing database to fix user permissions to be up to date.
-    """
-    with conn.cursor() as cur:
-        for key, user in users.items():
-            if key == User.SU:
-                # superuser already has the right permissions
-                pass
-            if key == User.ADMIN:
-                # admin user should be able to edit all tables
-                # (hame and code tables etc.)
-                cur.execute(
-                    SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user}"
-                        "GRANT ALL PRIVILEGES ON TABLES TO {username};"
-                    ).format(
-                        SU_user=Identifier(users[User.SU]["username"]),
-                        username=Identifier(user["username"]),
-                    )
-                )
-            elif key == User.READ_WRITE:
-                # read and write user should be able to edit hame tables and
-                # read code tables
-                cur.execute(
-                    SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} "
-                        "IN SCHEMA hame "
-                        "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {username};"
-                    ).format(
-                        SU_user=Identifier(users[User.SU]["username"]),
-                        username=Identifier(user["username"]),
-                    )
-                )
-                cur.execute(
-                    SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} "
-                        "IN SCHEMA codes "
-                        "GRANT SELECT ON TABLES TO {username};"
-                    ).format(
-                        SU_user=Identifier(users[User.SU]["username"]),
-                        username=Identifier(user["username"]),
-                    )
-                )
-            else:
-                # default user should be able to read hame tables and code tables
-                cur.execute(
-                    SQL(
-                        "ALTER DEFAULT PRIVILEGES FOR USER {SU_user} "
-                        "IN SCHEMA hame, codes "
-                        "GRANT SELECT ON TABLES TO {username};"
-                    ).format(
-                        SU_user=Identifier(users[User.SU]["username"]),
-                        username=Identifier(user["username"]),
-                    )
-                )
-            # Finally, all users must have schema usage permissions
-            cur.execute(
-                SQL("GRANT USAGE ON SCHEMA hame to {username}").format(
-                    username=Identifier(user["username"])
-                )
-            )
-            cur.execute(
-                SQL("GRANT USAGE ON SCHEMA codes to {username}").format(
-                    username=Identifier(user["username"])
-                )
-            )
-    msg = "Configured user permissions."
-    return msg
+dba_user_credentials = get_user_credentials(DbUser.DBA)
+su_user_credentials = get_user_credentials(DbUser.SU)
 
 
 def database_exists(conn: psycopg.Connection, db_name: str) -> bool:
-    query = SQL("SELECT count(*) FROM pg_database WHERE datname = %(db_name)s")
-    with conn.cursor() as cur:
-        cur.execute(query, {"db_name": db_name})
-        row = cur.fetchone()
-        return bool(row[0]) if row is not None else False
-
-
-def migrate_hame_db(db_helper: DatabaseHelper, version: str = "head") -> str:
-    """Migrates an existing db to the latest scheme, or provided version. Also
-    configures database permissions.
-
-    Can also be used to create the database up to any version.
-    """
-    root_conn = psycopg.connect(
-        **db_helper.get_connection_parameters(User.SU, Db.MAINTENANCE)
+    return (
+        conn.execute(
+            "SELECT 1 FROM pg_database WHERE datname = %s", (db_name,)
+        ).fetchone()
+        is not None
     )
-    try:
-        users = db_helper.get_users()
-        print("Got db users")
-        print(users)
-        root_conn.autocommit = True
-        main_conn_params = db_helper.get_connection_parameters(User.SU, Db.MAIN)
-        msg = ""
 
-        print("Got main db conn params")
-        print(main_conn_params)
-        # 1) check and create database and users
-        main_db_exists = database_exists(root_conn, db_helper.get_db_name(Db.MAIN))
-        if not main_db_exists:
-            print("Db not found, creating...")
-            msg += create_db(root_conn, db_helper.get_db_name(Db.MAIN))
-        main_conn = psycopg.connect(**main_conn_params)
-        main_conn.autocommit = True
-        if not main_db_exists:
-            msg += configure_schemas_and_users(main_conn, users)
 
-        # 2) check and create permissions
-        msg += configure_permissions(main_conn, users)
-
-        # 3) check and upgrade database to correct version
-        if main_db_exists:
-            with main_conn.cursor() as cur:
-                version_query = SQL("SELECT version_num FROM alembic_version")
-                cur.execute(version_query)
-                row = cur.fetchone()
-                if row is None:
-                    raise RuntimeError("alembic_version table is empty")
-                old_version = row[0]
-        else:
-            old_version = None
-        main_conn.close()
-
-        alembic_cfg = Config(Path("alembic.ini"))
-        alembic_cfg.attributes["connection"] = main_conn_params
-        script_dir = ScriptDirectory.from_config(alembic_cfg)
-        current_head_version = script_dir.get_current_head()
-        print(current_head_version)
-        if current_head_version is None:
-            raise RuntimeError("No alembic head version found.")
-
-        if version == "head":
-            version = current_head_version
-        if old_version != version:
-            print("Trying to migrate db...")
-            # Go figure. Alembic API has no way of checking if a version is up
-            # or down from current version. We have to figure it out by trying
-            try:
-                command.downgrade(alembic_cfg, version)
-            except CommandError:
-                command.upgrade(alembic_cfg, version)
-            msg += (
-                "\n"
-                f"Database was in version {old_version}.\n"
-                f"Migrated the database to {version}."
+def create_dba_user_if_not_exists(conn: psycopg.Connection) -> None:
+    if (
+        conn.execute(
+            SQL("SELECT 1 FROM pg_roles WHERE rolname = {username}").format(
+                username=Literal(dba_user_credentials["username"])
             )
-        else:
-            msg += (
-                "\n"
-                "Requested version is the same as current database "
-                f"version {old_version}.\nNo migrations were run."
-            )
-    finally:
-        root_conn.close()
-    LOGGER.info(msg)
-    return msg
+        ).fetchone()
+        is not None
+    ):
+        LOGGER.info("DBA user already exists.")
+        return
 
-
-def change_password(
-    user: User, db_helper: DatabaseHelper, conn: psycopg.Connection
-) -> None:
-    username, pw = db_helper.get_username_and_password(user)
-    with conn.cursor() as cur:
-        sql = SQL("ALTER USER {user} WITH PASSWORD %(password)s").format(
-            user=Identifier(username)
+    conn.execute(
+        SQL(
+            "CREATE ROLE {username} WITH CREATEROLE LOGIN ENCRYPTED PASSWORD {password}"
+        ).format(
+            username=Identifier(dba_user_credentials["username"]),
+            password=Literal(dba_user_credentials["password"]),
         )
-        cur.execute(sql, {"password": pw})
-    conn.commit()
-
-
-def change_passwords(db_helper: DatabaseHelper) -> str:
-    conn = psycopg.connect(
-        **db_helper.get_connection_parameters(User.SU, Db.MAINTENANCE)
     )
+    conn.commit()
+    LOGGER.info("Created DBA user.")
+
+
+def create_db_if_not_exists(conn: psycopg.Connection, db_name: str) -> None:
+    """Creates empty db."""
+    if database_exists(conn, db_name):
+        msg = "Database already exists."
+        LOGGER.info(msg)
+        return
+
+    conn.commit()  # Ensure no transaction is active
+    original_autocommit = conn.autocommit
+    conn.autocommit = True
+    with conn.cursor() as cur:
+        cur.execute(
+            SQL("CREATE DATABASE {db_name} OWNER {dba_user}").format(
+                db_name=Identifier(db_name),
+                dba_user=Identifier(dba_user_credentials["username"]),
+            )
+        )
+    conn.autocommit = original_autocommit
+    LOGGER.info("Created empty database.")
+
+
+def configure_db_permissions(conn: psycopg.Connection) -> None:
+    maintenance_db_name = os.environ["DB_MAINTENANCE_NAME"]
+    main_db_name = os.environ["DB_MAIN_NAME"]
+    with conn.cursor() as cur:
+        for db_name in (maintenance_db_name, main_db_name):
+            cur.execute(
+                SQL("REVOKE ALL ON DATABASE {db_name} FROM PUBLIC").format(
+                    db_name=Identifier(db_name)
+                )
+            )
+        cur.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
+        cur.execute(
+            SQL("GRANT ALL ON SCHEMA public TO {dba_user}").format(
+                dba_user=Identifier(dba_user_credentials["username"])
+            )
+        )
+    conn.commit()
+    LOGGER.info("Configured database permissions.")
+
+
+def install_postgis_extension(conn: psycopg.Connection) -> None:
+    """Installs PostGIS extension to the given database connection."""
+    with conn.cursor() as cur:
+        cur.execute(SQL("CREATE EXTENSION IF NOT EXISTS postgis"))
+    conn.commit()
+    LOGGER.info("Installed PostGIS extension.")
+
+
+def migrate_db(version: str = "head") -> str:
+    connection_params = get_connection_parameters(
+        dba_user_credentials, os.environ["DB_MAIN_NAME"]
+    )
+    alembic_cfg = Config(Path("alembic.ini"))
+    alembic_cfg.attributes["connection_parameters"] = connection_params
+
+    LOGGER.info("Migrating db to version '%s'", version)
+    # Go figure. Alembic API has no way of checking if a version is up
+    # or down from current version. We have to figure it out by trying
     try:
-        change_password(User.ADMIN, db_helper, conn)
-        change_password(User.READ, db_helper, conn)
-        change_password(User.READ_WRITE, db_helper, conn)
-    finally:
-        conn.close()
-    msg = "Changed passwords"
-    LOGGER.info(msg)
+        command.downgrade(alembic_cfg, version)
+        msg = f"Database downgraded to version {version}."
+        LOGGER.info("Downgrade successful.")
+    except CommandError:
+        command.upgrade(alembic_cfg, version)
+        msg = f"Database upgraded to or already at version {version}."
+        LOGGER.info("Upgrade successful.")
+
     return msg
+
+
+def setup_db() -> None:
+    """Set up the database by creating the dba user and the database."""
+    maintenance_db_name = os.environ["DB_MAINTENANCE_NAME"]
+    main_db_name = os.environ["DB_MAIN_NAME"]
+
+    # Connect to maintenance db to create DBA user and main db
+    with psycopg.connect(
+        **get_connection_parameters(su_user_credentials, maintenance_db_name)
+    ) as su_connection_to_maintenance_db:
+        create_dba_user_if_not_exists(su_connection_to_maintenance_db)
+        create_db_if_not_exists(su_connection_to_maintenance_db, main_db_name)
+
+    # Connect to main db to install PostGIS and configure permissions
+    with psycopg.connect(
+        **get_connection_parameters(su_user_credentials, main_db_name)
+    ) as su_connection_to_main_db:
+        install_postgis_extension(su_connection_to_main_db)
+        configure_db_permissions(su_connection_to_main_db)
 
 
 def handler(event: Event, _) -> Response:
@@ -275,24 +171,22 @@ def handler(event: Event, _) -> Response:
     # if the code fails before returning response, aws lambda will return http 500
     # with the exception stack trace, as desired.
     response = Response(statusCode=200, body=json.dumps(""))
-    print(f"Got event {event}")
-    db_helper = DatabaseHelper()
+    LOGGER.info(f"Got an event {event}")
     try:
         event_type = Action(event["action"])
-    except KeyError:
-        event_type = Action.CREATE_DB
     except ValueError:
         return Response(statusCode=400, body=f"Unknown action {event['action']}.")
+    except KeyError:
+        return Response(statusCode=400, body="Action not defined.")
 
+    msg = None
     if event_type is Action.CREATE_DB:
-        msg = migrate_hame_db(db_helper)
-    elif event_type is Action.CHANGE_PWS:
-        msg = change_passwords(db_helper)
+        setup_db()
+        msg = "Database setup completed."
     elif event_type is Action.MIGRATE_DB:
-        version = str(event.get("version", ""))
-        if version:
-            msg = migrate_hame_db(db_helper, version)
-        else:
-            msg = migrate_hame_db(db_helper)
-    response["body"] = json.dumps(msg)
+        # Make sure DB is up to date
+        setup_db()
+        version = str(event.get("version", "head"))
+        msg = migrate_db(version)
+    response["body"] = msg or ""
     return response

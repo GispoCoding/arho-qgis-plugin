@@ -12,11 +12,9 @@ import requests
 
 from database import codes
 
-from .conftest import assert_database_is_alright, deepcompare, drop_hame_db
+from .conftest import deepcompare
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
     from pytest_docker.plugin import Services
 
     from database.db_helper import ConnectionParameters
@@ -49,24 +47,7 @@ def mml_loader_url(docker_ip: str | Any, docker_services: Services) -> str:
 
 
 @pytest.fixture
-def create_db(
-    db_manager_url: str,
-    main_db_params: ConnectionParameters,
-    root_db_params: dict[str, str],
-) -> Generator[None]:
-    payload = {"action": "create_db"}
-    r = requests.post(db_manager_url, data=json.dumps(payload))
-    data = r.json()
-    assert data["statusCode"] == 200, data["body"]
-    yield
-
-    drop_hame_db(main_db_params, root_db_params)
-
-
-@pytest.fixture
-def populate_koodistot(
-    koodistot_loader_url: str, main_db_params: ConnectionParameters, create_db: None
-) -> None:
+def populate_koodistot(koodistot_loader_url: str) -> None:
     payload: koodistot_loader.Event = {}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     data = r.json()
@@ -74,9 +55,7 @@ def populate_koodistot(
 
 
 @pytest.fixture
-def populate_suomifi_koodistot(
-    koodistot_loader_url: str, main_db_params: ConnectionParameters, create_db: None
-) -> None:
+def populate_suomifi_koodistot(koodistot_loader_url: str) -> None:
     payload: koodistot_loader.Event = {"local_codes": False}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     data = r.json()
@@ -84,25 +63,11 @@ def populate_suomifi_koodistot(
 
 
 @pytest.fixture
-def populate_local_koodistot(
-    koodistot_loader_url: str, main_db_params: ConnectionParameters, create_db: None
-) -> None:
+def populate_local_koodistot(koodistot_loader_url: str) -> None:
     payload: koodistot_loader.Event = {"suomifi_codes": False}
     r = requests.post(koodistot_loader_url, data=json.dumps(payload))
     data = r.json()
     assert data["statusCode"] == 200, data["body"]
-
-
-def test_create_db(
-    create_db: None, main_db_params_with_root_user: ConnectionParameters
-) -> None:
-    """Test the whole lambda endpoint"""
-    conn = psycopg.connect(**main_db_params_with_root_user)
-    try:
-        with conn.cursor() as cur:
-            assert_database_is_alright(cur)
-    finally:
-        conn.close()
 
 
 def test_populate_koodistot(

@@ -10,8 +10,8 @@ from ryhti_client.plan_copier import PlanCopier
 
 
 @pytest.fixture
-def database_client(rw_connection_string: str) -> DatabaseClient:
-    return DatabaseClient(rw_connection_string)
+def database_client(dba_connection_string: str) -> DatabaseClient:
+    return DatabaseClient(dba_connection_string)
 
 
 def test_clone_model(

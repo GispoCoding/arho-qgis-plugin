@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import logging
+import os
 from typing import TYPE_CHECKING, Any, ClassVar, TypedDict
 
 import requests
@@ -10,8 +11,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 # SQLAlchemy needs all the models to be imported to make relationships mapper to work
-from database import codes, models  # noqa: F401
-from database.db_helper import DatabaseHelper, User
+from database import codes, models  # pyright: ignore[reportUnusedImport] # noqa: F401
+from database.db_helper import (
+    DbUser,
+    get_connection_parameters,
+    get_connection_string,
+    get_user_credentials,
+)
 
 if TYPE_CHECKING:
     from database.base import DbId
@@ -23,6 +29,10 @@ Tarmo lambda functions
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.INFO)
+
+user_credentials = get_user_credentials(
+    DbUser.DBA
+)  # Get DB credentials once at cold start.
 
 type CodeDict = dict[str, Any]
 type CodeValue = str
@@ -288,12 +298,15 @@ class KoodistotLoader:
 def handler(event: Event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
-    db_helper = DatabaseHelper(user=User.ADMIN)
     load_suomifi_codes = event.get("suomifi_codes", True)
     load_local_codes = event.get("local_codes", True)
 
+    connection_params = get_connection_parameters(
+        user_credentials, os.environ["DB_MAIN_NAME"]
+    )
+    connection_string = get_connection_string(**connection_params)
     loader = KoodistotLoader(
-        db_helper.get_connection_string(),
+        connection_string,
         load_suomifi_codes=load_suomifi_codes,
         load_local_codes=load_local_codes,
     )
