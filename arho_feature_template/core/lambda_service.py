@@ -6,7 +6,7 @@ import json
 import re
 import uuid
 from http import HTTPStatus
-from typing import Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from qgis.PyQt.QtCore import QByteArray, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
@@ -15,6 +15,9 @@ from qgis.utils import iface
 
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.utils.misc_utils import get_active_plan_id
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class LambdaService(QObject):
@@ -74,7 +77,13 @@ class LambdaService(QObject):
 
         self._send_request(action=self.ACTION_IMPORT_PLAN, payload=payload)
 
-    def copy_plan(self, plan_id: str, lifecycle_status_id: str, plan_name: str):
+    def copy_plan(
+        self,
+        plan_id: str,
+        lifecycle_status_id: str,
+        plan_name: str,
+        period_of_validity_start: datetime.date | None,
+    ):
         payload: dict[str, Any] = {
             # For now use a random non existing UUID so backend won't find any existing plan
             # TODO: Change this when backend supports importing without UUID
@@ -82,8 +91,12 @@ class LambdaService(QObject):
             "data": {
                 "lifecycle_status_uuid": lifecycle_status_id,
                 "plan_name": {"fin": plan_name},
+                "period_of_validity_start": (
+                    period_of_validity_start.isoformat() if period_of_validity_start else None
+                ),
             },
         }
+
         self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
 
     def _send_request(self, action: str, plan_id: str | None = None, payload: dict[str, Any] | None = None):
