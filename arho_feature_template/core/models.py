@@ -312,6 +312,8 @@ class Regulation(PlanBaseModel):
     subject_identifiers: list[str] = field(default_factory=list)
     verbal_regulation_type_ids: list[str] = field(default_factory=list)
     regulation_group_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
+    period_of_validity_start: datetime | None = None
+    period_of_validity_end: datetime | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -375,6 +377,8 @@ class Proposition(PlanBaseModel):
     theme_ids: list[str] = field(default_factory=list, compare=False, metadata={"hash": True})
     proposition_number: int | None = None
     regulation_group_id: str | None = field(compare=False, default=None)
+    period_of_validity_start: datetime | None = None
+    period_of_validity_end: datetime | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -476,6 +480,8 @@ class PlanObject(PlanBaseModel):
     layer_name: str | None = None
     name: str | None = None
     description: str | None = None
+    period_of_validity_start: datetime | None = None
+    period_of_validity_end: datetime | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
     plan_id: int | None = None
     modified: bool = field(compare=False, default=True)
@@ -535,6 +541,9 @@ class Plan(PlanBaseModel):
     legal_effect_ids: list[str] = field(default_factory=list)
     geom: QgsGeometry | None = None
     plan_matter_id: str | None = None
+    approval_date: datetime | None = None
+    period_of_validity_start: datetime | None = None
+    period_of_validity_end: datetime | None = None
     locked: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
