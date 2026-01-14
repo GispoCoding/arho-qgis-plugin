@@ -84,7 +84,7 @@ resource "aws_lambda_function" "ryhti_client" {
   function_name = "${var.prefix}-ryhti_client"
   image_uri     = "${aws_ecr_repository.ryhti_client.repository_url}:latest"
   package_type  = "Image"
-  memory_size   = 256
+  memory_size   = 1024
   timeout       = 120
 
   role = aws_iam_role.lambda_exec.arn
