@@ -92,7 +92,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
     def _init_widgets(self):
         # Value input
         if self.default_value:
-            self._add_widget(RequiredFieldLabel("Arvo"), self.value_widget_manager.value_widget)
+            self._add_widget(RequiredFieldLabel("Arvo:"), self.value_widget_manager.value_widget)
 
         regulation_type = PlanRegulationTypeLayer.get_type_by_id(self.regulation.regulation_type_id)
         if regulation_type in PlanRegulationTypeLayer.verbal_regulation_types:
@@ -216,7 +216,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             widget.set_value(type_id)
 
         self.type_of_verbal_regulation_widgets.append(widget)
-        self._add_widget(RequiredFieldLabel("Sanallisen määräyksen laji"), widget)
+        self._add_widget(RequiredFieldLabel("Laji:"), widget)
 
     def _delete_type_of_verbal_regulation(self, widget_to_delete: TypeOfVerbalRegulationWidget):
         self.type_of_verbal_regulation_widgets.remove(widget_to_delete)
