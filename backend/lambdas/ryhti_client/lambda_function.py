@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import base64
 import enum
 import logging
 import os
 from collections.abc import Callable
+from copy import deepcopy
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 import boto3
 import simplejson as json
@@ -86,7 +88,7 @@ class Response(TypedDict):
     body: ResponseBody
 
 
-class Event(TypedDict, total=False):
+class ArhoPayload(TypedDict):
     """Support validating, POSTing or getting a desired plan. If provided directly to
     lambda, the lambda request needs only contain these keys.
 
@@ -97,11 +99,22 @@ class Event(TypedDict, total=False):
     """
 
     action: str  # Action
-    plan_uuid: str | None  # UUID for plan to be used
-    lifecycle_status_uuid: str | None  # UUID for lifecycle status to be used
-    save_json: bool | None  # True if we want JSON files to be saved in ryhti_debug
-    data: dict | None  # Additional data to be used in the action, if needed
-    force: bool | None  # True if we want to force the action, if needed
+    plan_uuid: NotRequired[str | None]  # UUID for plan to be used
+
+    # UUID for lifecycle status to be used
+    lifecycle_status_uuid: NotRequired[str | None]  # TODO: move to the data dict
+
+    # True if we want JSON files to be saved in ryhti_debug
+    save_json: NotRequired[bool | None]
+
+    # Additional data to be used in the action, if needed
+    data: NotRequired[dict[str, Any] | None]
+
+    # True if we want to force the action, if needed
+    force: NotRequired[bool | None]
+
+    # HTTP headers, if lambda function called directly
+    headers: NotRequired[dict[str, str]]
 
 
 class AWSAPIGatewayPayload(TypedDict):
@@ -115,9 +128,9 @@ class AWSAPIGatewayPayload(TypedDict):
     """
 
     version: Literal["2.0"]
-    headers: dict
-    queryStringParameters: dict
-    requestContext: dict
+    headers: dict[str, str]
+    queryStringParameters: dict[str, str]
+    requestContext: dict[str, Any]
     body: str  # The event is stringified json, we have to jsonify it first
 
 
@@ -142,23 +155,21 @@ class Action(enum.Enum):
     COPY_PLAN = "copy_plan"
 
 
-def responsify(
-    response: Response, using_api_gateway: bool = False
+def format_response(
+    response: Response, using_api_gateway: bool
 ) -> Response | AWSAPIGatewayResponse:
     """Convert response to API gateway response if the request arrived through API gateway.
     If we want to provide status code to API gateway, the JSON body must be string.
     """
-    return (
-        AWSAPIGatewayResponse(
+    if using_api_gateway:
+        return AWSAPIGatewayResponse(
             statusCode=response["statusCode"], body=json.dumps(response["body"])
         )
-        if using_api_gateway
-        else response
-    )
+    return response
 
 
 type HandlerType = Callable[
-    [Event | AWSAPIGatewayPayload, Any], Response | AWSAPIGatewayResponse
+    [ArhoPayload | AWSAPIGatewayPayload, Any], Response | AWSAPIGatewayResponse
 ]
 
 
@@ -167,34 +178,62 @@ def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType
 
     @wraps(func)
     def wrapper(
-        payload: Event | AWSAPIGatewayPayload, _
+        payload: ArhoPayload | AWSAPIGatewayPayload, context: Any
     ) -> Response | AWSAPIGatewayResponse:
         try:
-            return func(payload, _)
+            return func(payload, context)
         except Exception:
             LOGGER.exception("Unhandled exception in lambda handler.")
-            response_title = "Internal Server Error."
-            return responsify(
+            return format_response(
                 Response(
                     statusCode=500,
                     body=ResponseBody(
-                        title=response_title,
+                        title="Internal Server Error.",
                         details={
-                            "error": "Internal server error. Please contact support."
+                            "error": (
+                                "Internal server error. "
+                                "Please contact Arho support team."
+                            )
                         },
                         ryhti_responses={},
                     ),
                 ),
-                using_api_gateway=isinstance(payload, dict)
-                and "requestContext" in payload,
+                is_api_gateway_event(payload),
             )
 
     return wrapper
 
 
+def is_api_gateway_event(event: Any) -> bool:
+    return isinstance(event, dict) and "requestContext" in event
+
+
+class NormalizedEvent(TypedDict):
+    raw_event: ArhoPayload | AWSAPIGatewayPayload
+    headers: dict[str, str]
+    body: ArhoPayload
+
+
+def normalize_event(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEvent:
+    raw_event = deepcopy(event)
+    if is_api_gateway_event(event):
+        event = cast("AWSAPIGatewayPayload", event)
+        headers = event.get("headers", {})
+        body_string = event["body"]
+        if event.get("isBase64Encoded"):
+            body_string = base64.b64decode(body_string).decode("utf-8")
+        body_dict = json.loads(body_string)
+        body = cast("ArhoPayload", body_dict)
+    else:
+        event = cast("ArhoPayload", event)
+        headers = event.pop("headers", {})
+        body = event
+    return {"raw_event": raw_event, "headers": headers, "body": body}
+
+
 @return_500_on_unhandled_exceptions
 def handler(
-    payload: Event | AWSAPIGatewayPayload, _
+    payload: ArhoPayload | AWSAPIGatewayPayload, context: Any
 ) -> Response | AWSAPIGatewayResponse:
     """Handler which is called when accessing the endpoint. We must handle both API
     gateway HTTP requests and regular lambda requests. API gateway requires
@@ -206,18 +245,11 @@ def handler(
     We want to return general result message of the lambda run, as well as all the
     Ryhti API results and errors, separated by plan id.
     """
-    LOGGER.info(f"Received {payload}...")
+    LOGGER.info(f"Received payload {payload}...")
 
-    using_api_gateway = False
-    # The payload may contain only the event dict *or* all possible data coming from an
-    # API Gateway HTTP request. We kinda have to infer which one is the case here.
-    try:
-        # API Gateway request. The JSON body has to be converted to python object.
-        event = cast("Event", json.loads(cast("AWSAPIGatewayPayload", payload)["body"]))
-        using_api_gateway = True
-    except KeyError:
-        # Direct lambda request
-        event = cast("Event", payload)
+    using_api_gateway = is_api_gateway_event(payload)
+    normalized_event = normalize_event(payload)
+    event = normalized_event["body"]
 
     try:
         event_type = Action(event["action"])
@@ -226,7 +258,7 @@ def handler(
     except ValueError:
         response_title = "Unknown action."
         LOGGER.info(response_title)
-        return responsify(
+        return format_response(
             Response(
                 statusCode=400,
                 body=ResponseBody(
@@ -511,4 +543,4 @@ def handler(
         )
 
     LOGGER.info(lambda_response["body"]["title"])
-    return responsify(lambda_response, using_api_gateway)
+    return format_response(lambda_response, using_api_gateway)
