@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QComboBox, QTreeWidget, QTreeWidgetItem
 
-from arho_feature_template.utils.misc_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.code_layers import (

@@ -10,6 +10,7 @@ from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem
 
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.gui.components.new_feature_grid_widget import NewFeatureGridWidget
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
@@ -122,6 +123,10 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
             )
 
             for feature_template in library.plan_features:
-                item = QListWidgetItem(feature_template.name)
+                item = QListWidgetItem(
+                    feature_template.name
+                    if isinstance(feature_template.name, str)
+                    else deserialize_localized_text(feature_template.name)
+                )
                 item.setData(Qt.UserRole, feature_template)
                 self.template_list.addItem(item)

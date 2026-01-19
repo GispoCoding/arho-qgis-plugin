@@ -39,7 +39,7 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 
 class PlanAttributeForm(QDialog, FormClass):  # type: ignore
-    name_line_edit: QLineEdit
+    name_edit: QLineEdit
     description_text_edit: QTextEdit
     scale_spin_box: QSpinBox
     lifecycle_status_combo_box: CodeComboBox
@@ -66,11 +66,11 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
-        self.name_line_edit.setText(plan.name if plan.name else "")
+        self.name_edit.setText(plan.name or "")
         self.description_text_edit.setText(plan.description if plan.description else "")
         self.lock_checkbox.setChecked(plan.locked)
 
-        self.name_line_edit.textChanged.connect(self._check_required_fields)
+        self.name_edit.textChanged.connect(self._check_required_fields)
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         self.scroll_area_spacer = None
@@ -111,7 +111,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
         if (
-            self.name_line_edit.text() != ""
+            self.name_edit.text() != ""
             and self.lifecycle_status_combo_box.value() is not None
             and all(document_widget.is_ok() for document_widget in self.document_widgets)
         ):
@@ -240,7 +240,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         model = Plan(
             id_=self.plan.id_,
-            name=self.name_line_edit.text(),
+            name=self.name_edit.text(),
             description=self.description_text_edit.toPlainText() or None,
             scale=self.scale_spin_box.value() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),

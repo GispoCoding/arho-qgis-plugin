@@ -16,6 +16,7 @@ from arho_feature_template.project.layers.plan_layers import (
     get_plan_feature_layer_class_by_layer_name,
     plan_feature_layers,
 )
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
@@ -198,7 +199,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         items = [
             QStandardItem(str(group.group_number) if group.group_number else ""),
             QStandardItem(group.letter_code or ""),
-            QStandardItem(group.heading or ""),
+            QStandardItem(deserialize_localized_text(group.heading) or ""),
             QStandardItem(str(sum(len(v) for v in plan_object_ids_map.values()) if plan_object_ids_map else 0)),
         ]
 

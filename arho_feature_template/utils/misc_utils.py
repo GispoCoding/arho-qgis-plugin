@@ -19,8 +19,6 @@ if TYPE_CHECKING:
 
 PLUGIN_PATH = os.path.dirname(os.path.dirname(__file__))
 
-LANGUAGE = "fin"
-
 
 # NOTE: Consider creating "layer_utils.py" or similar for layer related utils in the future
 def get_layer_by_name(layer_name: str) -> QgsMapLayer | None:
@@ -144,21 +142,6 @@ def disconnect_signal(signal: pyqtBoundSignal) -> None:
     """
     with suppress(TypeError):
         signal.disconnect()
-
-
-def serialize_localized_text(text: str | None) -> dict[str, str] | None:
-    if isinstance(text, str):
-        text = text.strip()
-    if text:
-        return {LANGUAGE: text}
-    return None
-
-
-def deserialize_localized_text(text_value: dict[str, str] | None | Any) -> str | None:
-    text = None
-    if isinstance(text_value, dict):
-        text = text_value.get(LANGUAGE)
-    return text
 
 
 def use_wait_cursor(func):

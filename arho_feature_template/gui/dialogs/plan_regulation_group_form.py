@@ -32,13 +32,14 @@ from arho_feature_template.gui.components.tree_with_search_widget import TreeWit
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.misc_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
     from qgis.gui import QgsSpinBox
     from qgis.PyQt.QtWidgets import QBoxLayout, QLineEdit, QPushButton, QWidget
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
+    from arho_feature_template.gui.components.value_input_widgets import LocalizedSinglelineTextInputWidget
 
 ui_path = resources.files(__package__) / "plan_regulation_group_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -56,7 +57,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        self.heading: QLineEdit
+        self.heading: LocalizedSinglelineTextInputWidget
         self.letter_code: QLineEdit
         self.group_number: QgsSpinBox
         self.color_code: QLineEdit
@@ -114,7 +115,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         # Initialize from model
-        self.heading.setText(self.regulation_group.heading if self.regulation_group.heading else "")
+        self.heading.set_value(self.regulation_group.heading)
         self.letter_code.setText(self.regulation_group.letter_code if self.regulation_group.letter_code else "")
         self.group_number.setValue(self.regulation_group.group_number if self.regulation_group.group_number else 0)
         self.color_code.setText(self.regulation_group.color_code if self.regulation_group.color_code else "")
@@ -217,7 +218,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
             type_code_id=self.type_of_regulation_group.value(),
-            heading=self.heading.text() if self.heading.text() != "" else None,
+            heading=self.heading.get_value(),
             letter_code=self.letter_code.text() if self.letter_code.text() != "" else None,
             color_code=self.color_code.text() if self.color_code.text() != "" else None,
             group_number=self.group_number.value() if self.group_number.value() > 0 else None,

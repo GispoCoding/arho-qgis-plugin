@@ -172,6 +172,8 @@ class LocalizedTextInputWidget(QWidget):
 
         self.editable = editable
 
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+
         layout = QFormLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
@@ -232,7 +234,7 @@ class LocalizedTextInputWidget(QWidget):
                 return
         self.input_widgets[language_code].setText(value)
 
-    def get_value(self) -> dict[str, str] | None:
+    def get_value(self) -> LocalizedText | None:
         result = {}
         for language_code, widget in self.input_widgets.items():
             result[language_code] = widget.get_value()
@@ -453,7 +455,7 @@ class ValueWidgetManager(QObject):
         if self.value_data_type == AttributeValueDataType.LOCALIZED_TEXT:
             return AttributeValue(
                 value_data_type=self.value_data_type,
-                text_values=self.value_widget.get_value() if self.value_widget else None,
+                text_value=self.value_widget.get_value() if self.value_widget else None,
                 text_syntax=None,
             )
 

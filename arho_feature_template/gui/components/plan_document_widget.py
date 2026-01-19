@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QLineEdit, QPushButton
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
+    from arho_feature_template.gui.components.value_input_widgets import LocalizedSinglelineTextInputWidget
 
 
 ui_path = resources.files(__package__) / "plan_document_widget.ui"
@@ -41,7 +42,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        self.name: QLineEdit
+        self.name: LocalizedSinglelineTextInputWidget
         self.url: QLineEdit
         self.url_label: QLabel
         self.identifier_label: QLabel
@@ -76,7 +77,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.retention_time.populate_from_code_layer(RetentionTimeLayer)
         self.personal_data_content.populate_from_code_layer(PersonalDataContentLayer)
 
-        self.name.textChanged.connect(self.document_edited.emit)
+        self.name.changed.connect(self.document_edited.emit)
         self.identifier.textChanged.connect(self.document_edited.emit)
         self.document_type.currentIndexChanged.connect(self.document_edited.emit)
         self.publicity.currentIndexChanged.connect(self.document_edited.emit)
@@ -111,7 +112,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
         # Set values from input Document model
-        self.name.setText(document.name)
+        self.name.set_value(document.name)
         self.url.setText(document.url)
         if document.identifier:
             self.identifier.setText(document.identifier)
@@ -178,7 +179,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
 
     def into_model(self) -> Document:
         model = Document(
-            name=self.name.text() if self.name.text() != "" else None,
+            name=self.name.get_value(),
             url=self.url.text(),
             identifier=self.identifier.text(),
             type_of_document_id=self.document_type.value(),

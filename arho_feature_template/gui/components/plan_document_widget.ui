@@ -72,6 +72,19 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QToolButton" name="expand_hide_btn">
+       <property name="text">
+        <string>Laajenna</string>
+       </property>
+       <property name="autoRaise">
+        <bool>false</bool>
+       </property>
+       <property name="arrowType">
+        <enum>Qt::UpArrow</enum>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -84,34 +97,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="QLineEdit" name="name">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="clearButtonEnabled">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="expand_hide_btn">
-         <property name="text">
-          <string>Laajenna</string>
-         </property>
-         <property name="autoRaise">
-          <bool>false</bool>
-         </property>
-         <property name="arrowType">
-          <enum>Qt::UpArrow</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
+      <widget class="LocalizedSinglelineTextInputWidget" name="name" native="true"/>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="url_label">
@@ -122,6 +108,16 @@
      </item>
      <item row="1" column="1">
       <widget class="QLineEdit" name="url"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="identifier_label">
+       <property name="text">
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Tunnus:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="identifier"/>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="document_type_label">
@@ -153,11 +149,39 @@
      <item row="5" column="1">
       <widget class="CodeComboBox" name="language"/>
      </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="retention_time_label">
+       <property name="text">
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Säilytysaika:</string>
+       </property>
+      </widget>
+     </item>
      <item row="6" column="1">
       <widget class="HierarchicalCodeComboBox" name="retention_time"/>
      </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="personal_data_content_label">
+       <property name="text">
+        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Henkilötietosisältö:</string>
+       </property>
+      </widget>
+     </item>
      <item row="7" column="1">
       <widget class="CodeComboBox" name="personal_data_content"/>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="document_date_label">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Asiakirjan päivämäärä:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QgsDateTimeEdit" name="document_date">
+       <property name="displayFormat">
+        <string>d.M.yyyy</string>
+       </property>
+      </widget>
      </item>
      <item row="9" column="0">
       <widget class="QLabel" name="accessibility_label">
@@ -179,44 +203,6 @@
        </property>
       </widget>
      </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="personal_data_content_label">
-       <property name="text">
-        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Henkilötietosisältö:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="retention_time_label">
-       <property name="text">
-        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Säilytysaika:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="1">
-      <widget class="QgsDateTimeEdit" name="document_date">
-       <property name="displayFormat">
-        <string>d.M.yyyy</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="document_date_label">
-       <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Asiakirjan päivämäärä:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="identifier_label">
-       <property name="text">
-        <string>&lt;span style=&quot;color: red;&quot;&gt;*&lt;/span&gt; Tunnus:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="QLineEdit" name="identifier"/>
-     </item>
     </layout>
    </item>
   </layout>
@@ -236,6 +222,12 @@
    <class>HierarchicalCodeComboBox</class>
    <extends>QComboBox</extends>
    <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedSinglelineTextInputWidget</class>
+   <extends>QWidget</extends>
+   <header>arho_feature_template.gui.components.value_input_widgets</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -5,22 +5,15 @@ from typing import TYPE_CHECKING, Any
 from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
 
-from arho_feature_template.project.layers.plan_layers import (
-    LandUseAreaLayer,
-    LineLayer,
-    OtherAreaLayer,
-    PointLayer,
-)
-
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.code_layers import PlanType
     from arho_feature_template.project.layers.plan_layers import PlanObjectLayer
 
 LAYER_NAME_TRANSLATION_MAP = {
-    LandUseAreaLayer.name: "land_use_area",
-    OtherAreaLayer.name: "other_area",
-    LineLayer.name: "line",
-    PointLayer.name: "point",
+    "Aluevaraus": "land_use_area",
+    "Osa-alue": "other_area",
+    "Viivat": "line",
+    "Pisteet": "point",
 }
 
 

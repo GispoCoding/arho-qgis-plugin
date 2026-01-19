@@ -36,29 +36,10 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QLineEdit" name="feature_name"/>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="feature_description_label">
         <property name="text">
          <string>Kuvaus:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QTextEdit" name="feature_description">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>75</height>
-         </size>
         </property>
        </widget>
       </item>
@@ -71,6 +52,12 @@
       </item>
       <item row="2" column="1">
        <widget class="CodeComboBox" name="feature_type_of_underground"/>
+      </item>
+      <item row="0" column="1">
+       <widget class="LocalizedSinglelineTextInputWidget" name="feature_name" native="true"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="LocalizedMultilineTextInputWidget" name="feature_description" native="true"/>
       </item>
      </layout>
     </widget>
@@ -128,6 +115,18 @@
    <class>CodeComboBox</class>
    <extends>QComboBox</extends>
    <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedMultilineTextInputWidget</class>
+   <extends>QWidget</extends>
+   <header>arho_feature_template.gui.components.value_input_widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedSinglelineTextInputWidget</class>
+   <extends>QWidget</extends>
+   <header>arho_feature_template.gui.components.value_input_widgets</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

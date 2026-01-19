@@ -9,9 +9,11 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QFormLayout, QLabel, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.models import Proposition
-from arho_feature_template.gui.components.required_field_label import RequiredFieldLabel
 from arho_feature_template.gui.components.theme_widget import ThemeWidget
-from arho_feature_template.gui.components.value_input_widgets import IntegerInputWidget, MultilineTextInputWidget
+from arho_feature_template.gui.components.value_input_widgets import (
+    IntegerInputWidget,
+    LocalizedMultilineTextInputWidget,
+)
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
@@ -34,6 +36,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.add_field_btn: QPushButton
         self.del_btn: QPushButton
         self.form_layout: QFormLayout
+        self.text_input: LocalizedMultilineTextInputWidget
         self.expand_hide_btn: QToolButton
 
         # INIT
@@ -57,8 +60,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.expanded = True
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
 
-        self.text_input = MultilineTextInputWidget(self.proposition.value)
-        self._add_widget(RequiredFieldLabel("Sisältö:"), self.text_input)
+        self.text_input.set_value(self.proposition.value)
         if self.proposition.theme_ids not in [None, NULL]:
             for theme_id in self.proposition.theme_ids:
                 self._add_theme(theme_id)
