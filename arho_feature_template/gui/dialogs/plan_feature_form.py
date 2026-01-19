@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QMenu, QMessageBox, QPushButton, QTextEdit
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMenu, QMessageBox, QPushButton
 
 from arho_feature_template.core.models import PlanObject
 from arho_feature_template.core.template_manager import TemplateManager
@@ -12,11 +12,15 @@ from arho_feature_template.gui.components.regulation_groups_view import Regulati
 from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
 )
-from arho_feature_template.utils.misc_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
+    from arho_feature_template.gui.components.value_input_widgets import (
+        LocalizedMultilineTextInputWidget,
+        LocalizedSinglelineTextInputWidget,
+    )
 
 ui_path = resources.files(__package__) / "plan_feature_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -38,8 +42,8 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        self.feature_name: QLineEdit
-        self.feature_description: QTextEdit
+        self.feature_name: LocalizedSinglelineTextInputWidget
+        self.feature_description: LocalizedMultilineTextInputWidget
         self.feature_type_of_underground: CodeComboBox
 
         self.save_to_library_button: QPushButton
@@ -70,10 +74,8 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         # Initialize attributes from template
         self.plan_feature = plan_feature
 
-        if plan_feature.name:
-            self.feature_name.setText(plan_feature.name)
-        if plan_feature.description:
-            self.feature_description.setText(plan_feature.description)
+        self.feature_name.set_value(plan_feature.name)
+        self.feature_description.set_value(plan_feature.description)
         for regulation_group in plan_feature.regulation_groups:
             self.regulation_groups_view.add_plan_regulation_group(regulation_group)
 
@@ -99,7 +101,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
     def _check_feature_name(self) -> bool:
         """Feature must have a name if we are saving a plan feature template."""
         # TODO: Find a better way to detect if we are saving a plan feature template
-        if self.template_form and self.feature_name.text() == "":
+        if self.template_form and not self.feature_name.get_value():
             msg = "Kaavakohdepohjalla täytyy olla nimi."
             QMessageBox.critical(self, "Virhe", msg)
             return False
@@ -107,11 +109,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
     def into_model(self) -> PlanObject:
         model = PlanObject(
-            name=self.feature_name.text() if self.feature_name.text() != "" else None,
+            name=self.feature_name.get_value(),
             type_of_underground_id=self.feature_type_of_underground.value(),
-            description=self.feature_description.toPlainText()
-            if self.feature_description.toPlainText() != ""
-            else None,
+            description=self.feature_description.get_value(),
             geom=self.plan_feature.geom,
             layer_name=self.plan_feature.layer_name,
             regulation_groups=self.regulation_groups_view.into_model(),

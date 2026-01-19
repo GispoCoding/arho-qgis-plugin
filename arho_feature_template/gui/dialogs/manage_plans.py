@@ -16,9 +16,9 @@ from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeF
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer, plan_layers
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
-    deserialize_localized_text,
     get_active_plan_id,
     get_active_plan_matter_id,
     iface,

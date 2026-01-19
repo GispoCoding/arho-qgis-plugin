@@ -166,19 +166,6 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="heading">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="letter_code_label">
           <property name="text">
@@ -189,6 +176,9 @@
         <item row="1" column="1">
          <widget class="QLineEdit" name="letter_code"/>
         </item>
+        <item row="0" column="1">
+         <widget class="LocalizedSinglelineTextInputWidget" name="heading" native="true"/>
+        </item>
        </layout>
       </item>
      </layout>
@@ -196,6 +186,14 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>LocalizedSinglelineTextInputWidget</class>
+   <extends>QWidget</extends>
+   <header>arho_feature_template.gui.components.value_input_widgets</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

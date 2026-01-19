@@ -24,12 +24,8 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanTypeLayer
-from arho_feature_template.utils.misc_utils import (
-    deserialize_localized_text,
-    get_active_plan_id,
-    iface,
-    serialize_localized_text,
-)
+from arho_feature_template.utils.localization_utils import deserialize_localized_text, serialize_localized_text
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 logger = logging.getLogger(__name__)
 
@@ -113,8 +109,8 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
     @classmethod
     def feature_from_model(cls, model: PlanMatter) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
-        feature["name"] = serialize_localized_text(model.name)
-        feature["description"] = serialize_localized_text(model.description)
+        feature["name"] = model.name
+        feature["description"] = model.description
         feature["permanent_plan_identifier"] = model.permanent_plan_identifier
         feature["record_number"] = model.record_number
         feature["producers_plan_identifier"] = model.producers_plan_identifier
@@ -127,8 +123,8 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> PlanMatter:
         return PlanMatter(
-            name=deserialize_localized_text(feature["name"]),
-            description=deserialize_localized_text(feature["description"]),
+            name=feature["name"],
+            description=feature["description"],
             permanent_plan_identifier=feature["permanent_plan_identifier"],
             record_number=feature["record_number"],
             producers_plan_identifier=feature["producers_plan_identifier"],
@@ -141,13 +137,15 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
 
     @classmethod
     def get_plan_matter_name(cls, plan_matter_id: str) -> str:
+        """Plan matter name in primary language."""
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_matter_id)
         name = deserialize_localized_text(attribute_value)
 
-        return name or "Nimetön"
+        return name or "Nimetön"  # TODO: Localize fallback name?
 
     @classmethod
     def get_plan_matter_type_name(cls, plan_matter_id: str) -> str | None:
+        """Plan matter type name in primary language."""
         type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_matter_id)
         if type_id is None:
             return None
@@ -291,9 +289,9 @@ class PlanObjectLayer(AbstractPlanLayer):
 
         feature = cls.initialize_feature_from_model(model)
         feature.setGeometry(model.geom)
-        feature["name"] = serialize_localized_text(model.name)
+        feature["name"] = model.name
         feature["type_of_underground_id"] = model.type_of_underground_id
-        feature["description"] = serialize_localized_text(model.description)
+        feature["description"] = model.description
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
 
         return feature
@@ -338,8 +336,8 @@ class PlanObjectLayer(AbstractPlanLayer):
                 geom=feature.geometry(),
                 type_of_underground_id=feature["type_of_underground_id"],
                 layer_name=cls.get_from_project().name(),
-                name=deserialize_localized_text(feature["name"]),
-                description=deserialize_localized_text(feature["description"]),
+                name=feature["name"],
+                description=feature["description"],
                 regulation_groups=groups_by_plan_object_id[feature["id"]],
                 plan_id=feature["plan_id"],
                 modified=False,
@@ -393,7 +391,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
         # TODO: Change `short_name` into `letter_code` in DB
         # TODO: Change `name` into `heading` or `regulation_heading` in DB
         feature["short_name"] = model.letter_code if model.letter_code else None
-        feature["name"] = serialize_localized_text(model.heading)
+        feature["name"] = model.heading
         feature["type_of_plan_regulation_group_id"] = model.type_code_id
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
         feature["id"] = model.id_ if model.id_ else feature["id"]
@@ -425,7 +423,7 @@ class RegulationGroupLayer(AbstractPlanLayer):
         return [
             RegulationGroup(
                 type_code_id=feature["type_of_plan_regulation_group_id"],
-                heading=deserialize_localized_text(feature["name"]),
+                heading=feature["name"],
                 letter_code=feature["short_name"],
                 color_code=None,
                 group_number=feature["ordering"],
@@ -773,7 +771,7 @@ class PlanPropositionLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Proposition) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["text_value"] = serialize_localized_text(model.value)
+        feature["text_value"] = model.value
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["ordering"] = model.proposition_number
         feature["id"] = model.id_ if model.id_ else feature["id"]
@@ -793,7 +791,7 @@ class PlanPropositionLayer(AbstractPlanLayer):
 
         return [
             Proposition(
-                value=deserialize_localized_text(feature["text_value"]),
+                value=feature["text_value"],
                 regulation_group_id=feature["plan_regulation_group_id"],
                 proposition_number=feature["ordering"],
                 theme_ids=plan_theme_ids_by_proposition_id[feature["id"]],
@@ -903,7 +901,7 @@ class DocumentLayer(AbstractPlanLayer):
     def feature_from_model(cls, model: Document) -> QgsFeature:
         feature = cls.initialize_feature_from_model(model)
 
-        feature["name"] = serialize_localized_text(model.name)
+        feature["name"] = model.name
         feature["url"] = model.url
         feature["permanent_document_identifier"] = model.identifier
         feature["type_of_document_id"] = model.type_of_document_id
@@ -923,7 +921,7 @@ class DocumentLayer(AbstractPlanLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Document:
         return Document(
-            name=deserialize_localized_text(feature["name"]),
+            name=feature["name"],
             url=feature["url"],
             identifier=feature["permanent_document_identifier"],
             type_of_document_id=feature["type_of_document_id"],
@@ -944,7 +942,7 @@ class DocumentLayer(AbstractPlanLayer):
     def models_from_features(cls, features: list[QgsFeature]) -> list[Document]:
         return [
             Document(
-                name=deserialize_localized_text(feature["name"]),
+                name=feature["name"],
                 url=feature["url"],
                 identifier=feature["permanent_document_identifier"],
                 type_of_document_id=feature["type_of_document_id"],

@@ -21,6 +21,9 @@ from arho_feature_template.utils.signal_utils import SignalDebouncer
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
 
+    from arho_feature_template.gui.components.value_input_widgets import LocalizedSinglelineTextInputWidget
+
+
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
@@ -38,7 +41,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         # TYPES
         self.frame: QFrame
-        self.heading: QLineEdit
+        self.heading: LocalizedSinglelineTextInputWidget
         self.letter_code: QLineEdit
         self.link_btn: QPushButton
         self.edit_btn: QPushButton
@@ -68,7 +71,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         self.group_contents_update_debouncer = SignalDebouncer(delay_ms=300)
         self.group_contents_update_debouncer.triggered.connect(self._on_group_details_changed)
-        self.heading.textEdited.connect(lambda _: self.group_contents_update_debouncer.restart_timer())
+        self.heading.changed.connect(self.group_contents_update_debouncer.restart_timer)
         self.letter_code.textEdited.connect(lambda _: self.group_contents_update_debouncer.restart_timer())
 
     def disable_linking(self):
@@ -110,7 +113,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def from_model(self, regulation_group: RegulationGroup):
         self.regulation_group = regulation_group
 
-        self.heading.setText(regulation_group.heading if regulation_group.heading else "")
+        self.heading.set_value(regulation_group.heading)
         self.letter_code.setText(regulation_group.letter_code if regulation_group.letter_code else "")
 
         # Remove existing child widgets if reinitializing
@@ -251,7 +254,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def into_model(self, force_new: bool = False) -> RegulationGroup:  # noqa: FBT001, FBT002
         model = RegulationGroup(
             type_code_id=self.regulation_group.type_code_id,
-            heading=self.heading.text(),
+            heading=self.heading.get_value(),
             letter_code=self.letter_code.text(),
             color_code=self.regulation_group.color_code,
             group_number=self.regulation_group.group_number,

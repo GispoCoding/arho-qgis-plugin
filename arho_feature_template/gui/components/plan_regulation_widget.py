@@ -29,7 +29,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     ValueWidgetManager,
 )
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, PlanRegulationTypeLayer
-from arho_feature_template.utils.misc_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)

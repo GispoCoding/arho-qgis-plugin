@@ -85,16 +85,6 @@
                <property name="text">
                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; color:#757575;&quot;&gt; Nimi:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
-               <property name="buddy">
-                <cstring>name_line_edit</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QLineEdit" name="name_line_edit">
-               <property name="toolTip">
-                <string>Kaavasuunnitelman nimi</string>
-               </property>
               </widget>
              </item>
              <item row="1" column="0">
@@ -168,6 +158,9 @@
                </property>
               </widget>
              </item>
+             <item row="0" column="1">
+              <widget class="QLineEdit" name="name_edit"/>
+             </item>
             </layout>
            </item>
            <item>
@@ -204,8 +197,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>193</width>
-            <height>49</height>
+            <width>595</width>
+            <height>263</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="regulations_layout">
@@ -259,8 +252,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>119</width>
-            <height>49</height>
+            <width>595</width>
+            <height>263</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="documents_layout">
@@ -320,7 +313,6 @@
  <tabstops>
   <tabstop>tabWidget</tabstop>
   <tabstop>general_info_scroll_area</tabstop>
-  <tabstop>name_line_edit</tabstop>
   <tabstop>description_text_edit</tabstop>
   <tabstop>lifecycle_status_combo_box</tabstop>
  </tabstops>

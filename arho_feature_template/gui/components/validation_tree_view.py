@@ -14,7 +14,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
 )
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
-from arho_feature_template.utils.misc_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 
 category_map = {
     "plan": "Kaavasuunnitelma",

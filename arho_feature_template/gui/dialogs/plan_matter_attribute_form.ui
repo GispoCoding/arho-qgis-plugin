@@ -28,6 +28,12 @@
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="name_label">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="text">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Nimi:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -35,6 +41,12 @@
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="description_label">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
        <property name="text">
         <string>Kuvaus:</string>
        </property>
@@ -42,12 +54,6 @@
      </item>
      <item row="0" column="1">
       <widget class="QLineEdit" name="permanent_identifier_edit"/>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="name_edit"/>
-     </item>
-     <item row="2" column="1">
-      <widget class="QTextEdit" name="description_edit"/>
      </item>
      <item row="3" column="0">
       <widget class="QLabel" name="organisation_label">
@@ -99,6 +105,12 @@
      <item row="7" column="1">
       <widget class="QLineEdit" name="producers_id_edit"/>
      </item>
+     <item row="1" column="1">
+      <widget class="LocalizedSinglelineTextInputWidget" name="name_edit" native="true"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="LocalizedMultilineTextInputWidget" name="description_edit" native="true"/>
+     </item>
     </layout>
    </item>
    <item>
@@ -123,6 +135,18 @@
    <class>HierarchicalCodeComboBox</class>
    <extends>QComboBox</extends>
    <header>arho_feature_template.gui.components.code_combobox</header>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedMultilineTextInputWidget</class>
+   <extends>QWidget</extends>
+   <header>arho_feature_template.gui.components.value_input_widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>LocalizedSinglelineTextInputWidget</class>
+   <extends>QWidget</extends>
+   <header>arho_feature_template.gui.components.value_input_widgets</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import enum
+import json
 import logging
 import textwrap
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field, fields
+from hashlib import sha256
 from typing import TYPE_CHECKING, TypeAlias, cast
 
 from arho_feature_template.project.layers.code_layers import (
@@ -14,7 +16,8 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
-from arho_feature_template.utils.misc_utils import deserialize_localized_text, null_to_none
+from arho_feature_template.utils.localization_utils import deserialize_localized_text, localized_text_as_str
+from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -198,6 +201,10 @@ class PlanBaseModel:
                 else:
                     # value = tuple(sorted(element for element in value))
                     value = frozenset(value)
+
+            elif isinstance(value, dict):
+                value = sha256(json.dumps(value, sort_keys=True).encode("utf-8")).hexdigest()
+
             # Call data_hash recursively
             elif isinstance(value, PlanBaseModel):
                 value = value.data_hash()
@@ -520,17 +527,23 @@ class PlanObject(PlanBaseModel):
     def __str__(self):
         return self.name if self.name else ""
 
-    def as_tooltip(self) -> str:
+    def as_tooltip(self, only_primary_language: bool = False) -> str:  # noqa: FBT001, FBT002
+        if only_primary_language:
+            return (
+                f"Nimi: {deserialize_localized_text(self.name)}\n"
+                f"Kuvaus: {deserialize_localized_text(self.description)}\n"
+                f"Kaavamääräysryhmien määrä: {len(self.regulation_groups)}"
+            )
         return (
-            f"Nimi: {self.name}\n"
-            f"Kuvaus: {self.description}\n"
+            f"Nimi: {localized_text_as_str(self.name)}\n"
+            f"Kuvaus: {localized_text_as_str(self.description)}\n"
             f"Kaavamääräysryhmien määrä: {len(self.regulation_groups)}"
         )
 
 
 @dataclass
 class Plan(PlanBaseModel):
-    name: LocalizedText | None = None
+    name: str | None = None
     description: str | None = None
     scale: int | None = None
     lifecycle_status_id: str | None = None
