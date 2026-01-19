@@ -102,6 +102,15 @@ class SettingsManager:
     def set_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer], value: str):
         cls._set(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", value)
 
+    # LANGUAGES
+    @classmethod
+    def get_primary_language(cls) -> str:
+        return "fin"
+
+    @classmethod
+    def get_languages(cls) -> list[str]:
+        return ["fin"]  # TODO: implement language settings properly
+
     @classmethod
     def _migrate_keys(cls):
         # Old settings
