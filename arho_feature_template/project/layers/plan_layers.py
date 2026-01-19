@@ -554,7 +554,7 @@ def attribute_value_model_from_feature(feature: QgsFeature) -> AttributeValue:
         numeric_range_min=feature["numeric_range_min"],
         numeric_range_max=feature["numeric_range_max"],
         unit=feature["unit"],
-        text_value=deserialize_localized_text(feature["text_value"]),
+        text_value=feature["text_value"],
         text_syntax=feature["text_syntax"],
         code_list=feature["code_list"],
         code_value=feature["code_value"],
@@ -571,7 +571,7 @@ def update_feature_from_attribute_value_model(value: AttributeValue | None, feat
     feature["numeric_range_min"] = value.numeric_range_min
     feature["numeric_range_max"] = value.numeric_range_max
     feature["unit"] = value.unit
-    feature["text_value"] = serialize_localized_text(value.text_value)
+    feature["text_value"] = value.text_value
     feature["text_syntax"] = value.text_syntax
     feature["code_list"] = value.code_list
     feature["code_value"] = value.code_value

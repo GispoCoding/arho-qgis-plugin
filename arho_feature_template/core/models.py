@@ -6,7 +6,7 @@ import textwrap
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field, fields
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeAlias, cast
 
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
@@ -20,6 +20,10 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from qgis.core import QgsGeometry
+
+
+# Type alias for localized text fields for models
+LocalizedText: TypeAlias = dict[str, str]
 
 
 logger = logging.getLogger(__name__)
@@ -213,7 +217,7 @@ class AttributeValue(PlanBaseModel):
 
     unit: str | None = None
 
-    text_value: str | None = None
+    text_value: LocalizedText | None = None
     text_syntax: str | None = None
 
     code_list: str | None = None
@@ -371,7 +375,7 @@ class Regulation(PlanBaseModel):
 
 @dataclass
 class Proposition(PlanBaseModel):
-    value: str | None
+    value: LocalizedText | None
     theme_ids: list[str] = field(default_factory=list, compare=False, metadata={"hash": True})
     proposition_number: int | None = None
     regulation_group_id: str | None = field(compare=False, default=None)
@@ -389,7 +393,7 @@ class Proposition(PlanBaseModel):
 @dataclass
 class RegulationGroup(PlanBaseModel):
     type_code_id: str | None = None
-    heading: str | None = None  # Called "regulation_heading" / "kaavamääräyksen otsikko" in UI and data model
+    heading: LocalizedText | None = None  # Called "regulation_heading" / "kaavamääräyksen otsikko" in UI and data model
     letter_code: str | None = None
     color_code: str | None = None
     group_number: int | None = None
@@ -436,7 +440,7 @@ class RegulationGroup(PlanBaseModel):
         return False
 
     def __str__(self):
-        return " - ".join(part for part in (self.letter_code, self.heading) if part)
+        return " - ".join(part for part in (self.letter_code, deserialize_localized_text(self.heading)) if part)
 
     def as_tooltip(self, long: bool = True) -> str:  # noqa: FBT001, FBT002
         """If long format, show regulation names."""
@@ -452,7 +456,7 @@ class RegulationGroup(PlanBaseModel):
                 for reg in self.regulations
             ]
             return (
-                f"{wrap_line('Kaavamääräyksen otsikko', self.heading or '')}\n"
+                f"{wrap_line('Kaavamääräyksen otsikko', deserialize_localized_text(self.heading) or '')}\n"
                 f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
                 f"{wrap_line('Järjestysnumero', str(self.group_number) if self.group_number else '')}\n"
                 # f"{wrap_line('Kategoria', self.category)}\n"
@@ -460,7 +464,7 @@ class RegulationGroup(PlanBaseModel):
                 f"{wrap_line('Suositusten määrä', str(len(self.propositions)))}"
             )
         return (
-            f"{wrap_line('Kaavamääräyksen otsikko', self.heading or '')}\n"
+            f"{wrap_line('Kaavamääräyksen otsikko', deserialize_localized_text(self.heading) or '')}\n"
             f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
             f"{wrap_line('Järjestysnumero', str(self.group_number) if self.group_number else '')}\n"
             # f"{wrap_line('Kategoria', self.category)}\n"
@@ -474,8 +478,8 @@ class PlanObject(PlanBaseModel):
     geom: QgsGeometry | None = None  # Need to allow None for feature templates
     type_of_underground_id: str | None = None
     layer_name: str | None = None
-    name: str | None = None
-    description: str | None = None
+    name: LocalizedText | None = None
+    description: LocalizedText | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
     plan_id: int | None = None
     modified: bool = field(compare=False, default=True)
@@ -526,7 +530,7 @@ class PlanObject(PlanBaseModel):
 
 @dataclass
 class Plan(PlanBaseModel):
-    name: str | None = None
+    name: LocalizedText | None = None
     description: str | None = None
     scale: int | None = None
     lifecycle_status_id: str | None = None
@@ -542,8 +546,8 @@ class Plan(PlanBaseModel):
 
 @dataclass
 class PlanMatter(PlanBaseModel):
-    name: str | None = None
-    description: str | None = None
+    name: LocalizedText | None = None
+    description: LocalizedText | None = None
     plan_type_id: str | None = None
     record_number: str | None = None
     case_identifier: str | None = None
@@ -556,7 +560,7 @@ class PlanMatter(PlanBaseModel):
 
 @dataclass(unsafe_hash=True)
 class Document(PlanBaseModel):
-    name: str | None = None
+    name: LocalizedText | None = None
     url: str | None = None
     type_of_document_id: str | None = None
     accessibility: bool = False

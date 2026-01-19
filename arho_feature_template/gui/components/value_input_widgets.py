@@ -16,7 +16,8 @@ from qgis.PyQt.QtWidgets import (
     QWidget,
 )
 
-from arho_feature_template.core.models import AttributeValue, AttributeValueDataType
+from arho_feature_template.core.models import AttributeValue, AttributeValueDataType, LocalizedText
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
 from arho_feature_template.project.layers.code_layers import LegalEffectsLayer, VerbalRegulationType
 
@@ -159,6 +160,95 @@ class MultilineTextInputWidget(QTextEdit):
     def get_value(self) -> str | None:
         text = self.toPlainText()
         return text if text else None
+
+
+class LocalizedTextInputWidget(QWidget):
+    WIDGET_CLS: type[SinglelineTextInputWidget | MultilineTextInputWidget] | None = None
+
+    changed = pyqtSignal()
+
+    def __init__(self, editable: bool = True):  # noqa: FBT001, FBT002
+        super().__init__()
+
+        self.editable = editable
+
+        layout = QFormLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+        # widgets by language code
+        self.input_widgets: dict[str, SinglelineTextInputWidget | MultilineTextInputWidget] = {}
+
+        self.initialize_for_languages(SettingsManager.get_languages())
+
+    def set_editable(self, editable: bool):  # noqa: FBT001
+        self.editable = editable
+        for widget in self.input_widgets.values():
+            widget.setReadOnly(not editable)
+
+    def _add_widget_for_language(self, language_code: str):
+        if self.WIDGET_CLS is None:
+            raise NotImplementedError
+
+        widget = self.WIDGET_CLS(None, self.editable)  # Initialize input field as empty
+        widget.changed.connect(self.changed)
+
+        # TODO: Language rather than language code?
+        self.layout().addRow(language_code, widget)
+        self.input_widgets[language_code] = widget
+
+    def initialize_for_languages(self, language_codes: list[str]):
+        for language_code in language_codes:
+            self._add_widget_for_language(language_code)
+
+    def set_value(
+        self,
+        values_dict: LocalizedText | None,
+        add_missing_widgets: bool = True,  # noqa: FBT001, FBT002
+    ):
+        if not values_dict:
+            return
+
+        for language_code, value in values_dict.items():
+            if language_code in self.input_widgets:
+                self.input_widgets[language_code].setText(value)
+            elif add_missing_widgets:
+                self._add_widget_for_language(language_code)
+                self.input_widgets[language_code].setText(value)
+            else:
+                # Value exists for a language but widget is not created
+                pass
+
+    def set_value_for_language_code(
+        self,
+        language_code: str,
+        value: str,
+        add_missing_widgets: bool = True,  # noqa: FBT001, FBT002
+    ):
+        if language_code not in self.input_widgets:
+            if add_missing_widgets:
+                self._add_widget_for_language(language_code)
+            else:
+                return
+        self.input_widgets[language_code].setText(value)
+
+    def get_value(self) -> dict[str, str] | None:
+        result = {}
+        for language_code, widget in self.input_widgets.items():
+            result[language_code] = widget.get_value()
+        return result or None
+
+    def get_value_for_language_code(self, language_code: str) -> str | None:
+        widget = self.input_widgets.get(language_code)
+        return widget.get_value() if widget else None
+
+
+class LocalizedSinglelineTextInputWidget(LocalizedTextInputWidget):
+    WIDGET_CLS = SinglelineTextInputWidget
+
+
+class LocalizedMultilineTextInputWidget(LocalizedTextInputWidget):
+    WIDGET_CLS = MultilineTextInputWidget
 
 
 class CodeInputWidget(QWidget):
@@ -318,7 +408,9 @@ class ValueWidgetManager(QObject):
 
         elif self.value_data_type == AttributeValueDataType.LOCALIZED_TEXT:
             text_value = value.text_value or default_value.text_value
-            self.value_widget = MultilineTextInputWidget(default_value=text_value, editable=True)
+            self.value_widget = LocalizedMultilineTextInputWidget(editable=True)
+            if text_value:
+                self.value_widget.set_value(text_value)
 
         elif self.value_data_type == AttributeValueDataType.CODE:
             self.value_widget = CodeInputWidget(
@@ -361,7 +453,7 @@ class ValueWidgetManager(QObject):
         if self.value_data_type == AttributeValueDataType.LOCALIZED_TEXT:
             return AttributeValue(
                 value_data_type=self.value_data_type,
-                text_value=self.value_widget.toPlainText() if self.value_widget else None,
+                text_values=self.value_widget.get_value() if self.value_widget else None,
                 text_syntax=None,
             )
 
