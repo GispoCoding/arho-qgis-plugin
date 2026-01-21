@@ -89,9 +89,16 @@ def handle_unsaved_changes() -> bool:
 
 
 def set_active_plan_id(plan_id: str | None):
-    """Store the given plan ID as the active plan ID as a project variable."""
+    """Store the given plan ID as project variables."""
     QgsExpressionContextUtils.setProjectVariable(
         QgsProject.instance(), "active_plan_id", plan_id if plan_id is not None else ""
+    )
+
+
+def set_active_plan_name(plan_name: str | None):
+    """Store the given plan name as project variables."""
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "active_plan_name", plan_name if plan_name is not None else ""
     )
 
 
@@ -100,16 +107,33 @@ def get_active_plan_id():
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_id")
 
 
+def get_active_plan_name():
+    """Retrieve the active plan name stored as a project variable."""
+    return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_name")
+
+
 def set_active_plan_matter_id(plan_matter_id: str | None):
-    """Store the given plan matter ID as the active plan matter ID as a project variable."""
+    """Store the given plan matter ID as project variables."""
     QgsExpressionContextUtils.setProjectVariable(
         QgsProject.instance(), "active_plan_matter_id", plan_matter_id if plan_matter_id is not None else ""
+    )
+
+
+def set_active_plan_matter_name(plan_matter_name: str | None):
+    """Store the given plan matter name as project variables."""
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "active_plan_matter_name", plan_matter_name if plan_matter_name is not None else ""
     )
 
 
 def get_active_plan_matter_id():
     """Retrieve the active plan matter ID stored as a project variable."""
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_matter_id")
+
+
+def get_active_plan_matter_name():
+    """Retrieve the active plan matter name stored as a project variable."""
+    return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_matter_name")
 
 
 def disconnect_signal(signal: pyqtBoundSignal) -> None:

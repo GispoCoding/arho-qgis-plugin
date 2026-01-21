@@ -97,6 +97,8 @@ from arho_feature_template.utils.misc_utils import (
     iface,
     set_active_plan_id,
     set_active_plan_matter_id,
+    set_active_plan_matter_name,
+    set_active_plan_name,
     set_imported_layer_invisible,
     status_message,
     use_wait_cursor,
@@ -636,10 +638,15 @@ class PlanManager(QObject):
             self.plan_matter_set.emit()
             for layer in plan_matter_layers:
                 layer.filter_layer_by_plan_matter_id(plan_matter_id)
+
+            # Name is set as localized text in primary language
+            set_active_plan_matter_name(PlanMatterLayer.get_plan_matter_name(plan_matter_id))
         else:
             for layer in plan_matter_layers:
                 layer.hide_all_features()
             self.plan_matter_unset.emit()
+
+            set_active_plan_matter_name("")
 
         self.set_active_plan(None)
         PlanLayer.hide_all_features()
@@ -707,6 +714,15 @@ class PlanManager(QObject):
                 layer = feature_layer.get_from_project()
                 _apply_style(layer)
             self.zoom_to_active_plan()
+
+            plan_name = PlanLayer.get_plan_name(plan_id)
+            # Don't save Nimetön as plan name in project variables
+            if plan_name == "Nimetön":
+                plan_name = ""
+        else:
+            plan_name = ""
+
+        set_active_plan_name(plan_name)
 
     def zoom_to_active_plan(self):
         """Zoom to the active plan layer."""
