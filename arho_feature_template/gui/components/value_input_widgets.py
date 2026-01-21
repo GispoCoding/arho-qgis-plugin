@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 from qgis.core import QgsApplication
 from qgis.gui import QgsDoubleSpinBox, QgsSpinBox
@@ -167,10 +168,13 @@ class LocalizedTextInputWidget(QWidget):
 
     changed = pyqtSignal()
 
+    HIDE_LABEL_WHEN_SHOW_PRIMARY_LANGUAGE_ONLY: ClassVar[bool] = True
+
     def __init__(self, editable: bool = True):  # noqa: FBT001, FBT002
         super().__init__()
 
         self.editable = editable
+        self.show_primary_language_only = SettingsManager.get_show_only_primary_language()
 
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
@@ -181,7 +185,10 @@ class LocalizedTextInputWidget(QWidget):
         # widgets by language code
         self.input_widgets: dict[str, SinglelineTextInputWidget | MultilineTextInputWidget] = {}
 
-        self.initialize_for_languages(SettingsManager.get_languages())
+        if self.show_primary_language_only:
+            self.initialize_for_languages([SettingsManager.get_primary_language()])
+        else:
+            self.initialize_for_languages(SettingsManager.get_languages())
 
     def set_editable(self, editable: bool):  # noqa: FBT001
         self.editable = editable
@@ -196,7 +203,11 @@ class LocalizedTextInputWidget(QWidget):
         widget.changed.connect(self.changed)
 
         # TODO: Language rather than language code?
-        self.layout().addRow(language_code, widget)
+        if self.HIDE_LABEL_WHEN_SHOW_PRIMARY_LANGUAGE_ONLY and self.show_primary_language_only:
+            self.layout().addRow("", widget)
+            self.layout().setSpacing(0)  # If spacing is not 0, there is a small empty space in place of label
+        else:
+            self.layout().addRow(language_code, widget)
         self.input_widgets[language_code] = widget
 
     def initialize_for_languages(self, language_codes: list[str]):
@@ -210,11 +221,11 @@ class LocalizedTextInputWidget(QWidget):
     ):
         if not values_dict:
             return
-
         for language_code, value in values_dict.items():
             if language_code in self.input_widgets:
                 self.input_widgets[language_code].setText(value)
-            elif add_missing_widgets:
+            # Don't add empty fields here, only in initialization phase
+            elif not self.show_primary_language_only and add_missing_widgets and value not in ["", None]:
                 self._add_widget_for_language(language_code)
                 self.input_widgets[language_code].setText(value)
             else:
@@ -235,9 +246,9 @@ class LocalizedTextInputWidget(QWidget):
         self.input_widgets[language_code].setText(value)
 
     def get_value(self) -> LocalizedText | None:
-        result = {}
+        result: LocalizedText = {}
         for language_code, widget in self.input_widgets.items():
-            result[language_code] = widget.get_value()
+            result[language_code] = widget.get_value() or ""
         return result or None
 
     def get_value_for_language_code(self, language_code: str) -> str | None:

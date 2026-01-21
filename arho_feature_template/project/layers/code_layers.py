@@ -382,6 +382,25 @@ class LanguageLayer(AbstractCodeLayer):
 
     category_only_codes: ClassVar[list[str]] = []
 
+    LANGUAGE_CODE_MAP: ClassVar[dict[str, str]] = {"fi": "fin", "sv": "swe", "en": "eng"}
+
+    @classmethod
+    def get_language_code_by_id(cls, id_: str) -> str | None:
+        code = cls.get_attribute_by_id("value", id_)
+        if code is None:
+            return None
+        if code in cls.LANGUAGE_CODE_MAP:
+            return cls.LANGUAGE_CODE_MAP[code]
+        return code
+
+    @classmethod
+    def get_id_by_language_code(cls, language_code: str) -> str | None:
+        for key, value in cls.LANGUAGE_CODE_MAP.items():
+            if value == language_code:
+                return cls.get_id_by_attribute("value", key)
+
+        return cls.get_id_by_attribute("value", language_code)
+
 
 class PersonalDataContentLayer(AbstractCodeLayer):
     name = "Henkilötietosisältö"
