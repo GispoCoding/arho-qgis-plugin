@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
@@ -114,7 +114,7 @@ class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
             if category is None:
                 if group.type_code_id is not None:
                     group_type = PlanRegulationGroupTypeLayer.get_attribute_by_id("name", group.type_code_id)
-                    category = deserialize_localized_text(group_type) if group_type else "Muut"
+                    category = cast(str, deserialize_localized_text(group_type)) if group_type else "Muut"
                 else:
                     category = "Muut"
 

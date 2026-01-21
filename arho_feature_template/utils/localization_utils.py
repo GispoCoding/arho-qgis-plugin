@@ -51,3 +51,11 @@ def localized_text_as_str(localized_text: LocalizedText | None = None, indent_si
         result += f"{indent}{language_code}: {text}\n"
 
     return result
+
+
+def read_localized_field_backward_compatible(value: LocalizedText | str | None) -> LocalizedText | None:
+    """Interprets given value as {"fin": value} if value is a string."""
+    if isinstance(value, str):
+        return {"fin": value}
+
+    return value
