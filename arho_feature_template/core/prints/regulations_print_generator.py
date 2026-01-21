@@ -20,6 +20,7 @@ from qgis.PyQt.QtWidgets import QMessageBox
 
 from arho_feature_template.core.plan_object_icons import PlanObjectIconRenderer
 from arho_feature_template.core.prints.layout_items import LayoutItemFactory
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
@@ -27,6 +28,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
     PointLayer,
 )
+from arho_feature_template.utils.localization_utils import deserialize_localized_text
 from arho_feature_template.utils.misc_utils import iface, symbol_fingerprint
 
 if TYPE_CHECKING:
@@ -39,11 +41,17 @@ class RegulationPrintElement:
 
     symbol: QgsSymbol
     letter_code: str
-    heading: str
-    regulation_texts: list[str]
+    heading: str  # As localized text
+    regulation_texts: list[str]  # As localized texts
 
     @classmethod
-    def create(cls, feat: QgsFeature, plan_object: PlanObject, symbol: QgsSymbol) -> RegulationPrintElement:
+    def create(
+        cls,
+        feat: QgsFeature,
+        plan_object: PlanObject,
+        symbol: QgsSymbol,
+        language: str,  # TODO: multiple languages
+    ) -> RegulationPrintElement:
         # Get element letter code (can be empty)
         letter_code = PlanObjectLayer.feature_letter_codes_as_text(feat) or ""
 
@@ -53,16 +61,23 @@ class RegulationPrintElement:
         regulation_texts: list[str] = []
         for group in plan_object.regulation_groups:
             if group.heading:
-                found_headings.append(group.heading)
+                localized_heading = deserialize_localized_text(group.heading, language)
+                if not localized_heading:
+                    continue
+                found_headings.append(localized_heading)
                 # Use heading of primary use group if it exists
                 if group.is_primary_use_group():
-                    heading = group.heading
+                    heading = localized_heading
 
             # Save all found verbal regulation texts
             regulation_texts.extend(
-                regulation.value.text_value
-                for regulation in group.regulations
-                if regulation.is_verbal_regulation() and regulation.value and regulation.value.text_value
+                text
+                for text in (
+                    deserialize_localized_text(regulation.value.text_value, language)
+                    for regulation in group.regulations
+                    if regulation.is_verbal_regulation() and regulation.value and regulation.value.text_value
+                )
+                if text  # Filter Nones that may come from deserialize_localized_text
             )
 
         # Otherwise, use heading of first group with a heading defined if one exists
@@ -182,6 +197,8 @@ class RegulationsPrintGenerator:
 
         print_element_hashes: set[str] = set()
 
+        language = SettingsManager.get_primary_language()  # TODO: Multiple languages
+
         def move_y_coordinate(y: float, item: QgsLayoutItem) -> float:
             return float(y + max(item.sizeWithUnits().height(), cls.ELEMENT_MIN_HEIGHT) + cls.SPACE_BETWEEN_ELEMENTS)
 
@@ -212,7 +229,7 @@ class RegulationsPrintGenerator:
                 # Symbol must be cloned, otherwise QGIS crashes later when dereferencing ref dropped by renderer
                 cloned_symbol = symbol.clone()
 
-                element = RegulationPrintElement.create(feat, plan_object, cloned_symbol)
+                element = RegulationPrintElement.create(feat, plan_object, cloned_symbol, language)
 
                 # Check if element exists already. If it does, skip creating a duplicate
                 hash_value = element.data_hash()
