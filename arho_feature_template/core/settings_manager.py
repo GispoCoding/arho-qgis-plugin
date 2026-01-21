@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from typing import TYPE_CHECKING, Any
 
 from qgis.core import QgsSettings
@@ -97,12 +98,33 @@ class SettingsManager:
 
     # LANGUAGES
     @classmethod
-    def get_primary_language(cls) -> str:
-        return "fin"
+    def get_primary_language(cls, default: str = "fin") -> str:
+        """Language as language code (e.g. "fin")."""
+        return cls._get("primary_language", default)
 
     @classmethod
-    def get_languages(cls) -> list[str]:
-        return ["fin"]  # TODO: implement language settings properly
+    def set_primary_language(cls, value: str):
+        """Language as language code (e.g. "fin")."""
+        cls._set("primary_language", value)
+
+    @classmethod
+    def get_languages(cls, default: str = "['fin']") -> list[str]:
+        """Languages as language codes (e.g. "fin")."""
+        return ast.literal_eval(cls._get("languages", default))
+
+    @classmethod
+    def set_languages(cls, value: list[str]):
+        """Languages as language codes (e.g. "fin")."""
+        value_to_save = str(value)
+        cls._set("languages", value_to_save)  # Save list as str
+
+    @classmethod
+    def get_show_only_primary_language(cls, default: bool = False) -> bool:  # noqa: FBT001, FBT002
+        return cls._get("show_only_primary_language", default)
+
+    @classmethod
+    def set_show_only_primary_language(cls, value: bool):  # noqa: FBT001
+        return cls._set("show_only_primary_language", value)
 
     @classmethod
     def _migrate_keys(cls):
