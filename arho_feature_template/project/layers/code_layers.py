@@ -382,7 +382,9 @@ class LanguageLayer(AbstractCodeLayer):
 
     category_only_codes: ClassVar[list[str]] = []
 
-    LANGUAGE_CODE_MAP: ClassVar[dict[str, str]] = {"fi": "fin", "sv": "swe", "en": "eng"}
+    # Map two letter language codes into Ryhti compatible 3 letter codes
+    # These are needed when using CodeComboBox with LanguageLayer
+    LANGUAGE_CODE_MAP: ClassVar[dict[str, str]] = {"fi": "fin", "sv": "swe", "en": "eng", "se": "sme"}
 
     @classmethod
     def get_language_code_by_id(cls, id_: str) -> str | None:
