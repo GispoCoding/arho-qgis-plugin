@@ -2,7 +2,8 @@ name: Yleiskaavan kaavamääräysryhmät (Katja)
 version: Katja II (393/2025)
 library_type: regulation_group
 plan_regulation_groups:
-  - heading: Asuntoalue
+  - heading:
+      fin: Asuntoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: A
@@ -11,7 +12,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Kerrostalovaltainen asuntoalue
+  - heading:
+      fin: Kerrostalovaltainen asuntoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: AK
@@ -20,7 +22,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Pientalovaltainen asuntoalue
+  - heading:
+      fin: Pientalovaltainen asuntoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: AP
@@ -29,7 +32,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Kyläalue
+  - heading:
+      fin: Kyläalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: AT
@@ -38,7 +42,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Keskustatoimintojen alue
+  - heading:
+      fin: Keskustatoimintojen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: C
@@ -47,7 +52,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Keskustatoimintojen alakeskus
+  - heading:
+      fin: Keskustatoimintojen alakeskus
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: CA
@@ -56,7 +62,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Työpaikka-alue
+  - heading:
+      fin: Työpaikka-alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: TP
@@ -65,7 +72,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Palvelujen alue
+  - heading:
+      fin: Palvelujen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: P
@@ -74,7 +82,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Lähipalvelujen alue
+  - heading:
+      fin: Lähipalvelujen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: PL
@@ -84,7 +93,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: paikallinen
 
-  - heading: Julkisten palvelujen ja hallinnon alue
+  - heading:
+      fin: Julkisten palvelujen ja hallinnon alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: PY
@@ -94,7 +104,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: varattuYleiseenKayttoon
 
-  - heading: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
+  - heading:
+      fin: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: KM
@@ -103,7 +114,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan myymäläkeskittymän
+  - heading:
+      fin: Kaupallisten palvelujen alue, jolle saa sijoittaa vähittäiskaupan myymäläkeskittymän
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: KMK
@@ -112,7 +124,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Teollisuus- ja varastoalue
+  - heading:
+      fin: Teollisuus- ja varastoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: T
@@ -124,7 +137,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Ympäristövaikutuksiltaan merkittävien teollisuustoimintojen alue
+  - heading:
+      fin: Ympäristövaikutuksiltaan merkittävien teollisuustoimintojen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: TT
@@ -134,7 +148,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
       - regulation_code: ymparistohairioalue
 
-  - heading: Teollisuusalue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
+  - heading:
+      fin: Teollisuusalue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: TY
@@ -144,7 +159,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: ymparistoAsettaaToiminnanLaadulleErityisiaVaatimuksia
 
-  - heading: Varastoalue
+  - heading:
+      fin: Varastoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: TV
@@ -153,7 +169,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Teollisuus- ja varastoalue, jolla on/jolle saa sijoittaa merkittävän, vaarallisia kemikaaleja valmistavan tai varastoivan laitoksen
+  - heading:
+      fin: Teollisuus- ja varastoalue, jolla on/jolle saa sijoittaa merkittävän, vaarallisia kemikaaleja valmistavan tai varastoivan laitoksen
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: T/kem
@@ -167,7 +184,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: VaarallistenKemikaalienValmistusJaVarastointiSallittu
 
-  - heading: Virkistysalue
+  - heading:
+      fin: Virkistysalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: V
@@ -176,7 +194,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Lähivirkistysalue
+  - heading:
+      fin: Lähivirkistysalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: VL
@@ -185,7 +204,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Urheilu- ja virkistyspalvelujen alue
+  - heading:
+      fin: Urheilu- ja virkistyspalvelujen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: VU
@@ -194,7 +214,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Retkeily- ja ulkoilualue
+  - heading:
+      fin: Retkeily- ja ulkoilualue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: VR
@@ -203,7 +224,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Uimaranta
+  - heading:
+      fin: Uimaranta
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: VV
@@ -212,7 +234,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Vapaa-ajan asumisen ja matkailun alue
+  - heading:
+      fin: Vapaa-ajan asumisen ja matkailun alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: R
@@ -221,7 +244,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Vapaa-ajan asumisen alue
+  - heading:
+      fin: Vapaa-ajan asumisen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: RA
@@ -230,7 +254,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Matkailupalvelujen alue
+  - heading:
+      fin: Matkailupalvelujen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: RM
@@ -239,7 +264,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Leirintäalue
+  - heading:
+      fin: Leirintäalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: RL
@@ -248,7 +274,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Asuntovaunualue
+  - heading:
+      fin: Asuntovaunualue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: RV
@@ -257,7 +284,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Siirtolapuutarha-alue
+  - heading:
+      fin: Siirtolapuutarha-alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: RSP
@@ -266,7 +294,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Palstaviljelyalue
+  - heading:
+      fin: Palstaviljelyalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: RP
@@ -275,7 +304,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Liikennealue
+  - heading:
+      fin: Liikennealue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: L
@@ -284,7 +314,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maantieliikenteen alue
+  - heading:
+      fin: Maantieliikenteen alue
     category: Aluevaraukset
     geometry: Alue
     letter_code: LT
@@ -293,7 +324,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Katualue
+  - heading:
+      fin: Katualue
     category: Aluevaraukset
     geometry: Alue
     letter_code:
@@ -302,7 +334,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Rautatieliikenteen alue
+  - heading:
+      fin: Rautatieliikenteen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LR
@@ -311,7 +344,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Lentoliikenteen alue
+  - heading:
+      fin: Lentoliikenteen alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LL
@@ -320,7 +354,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Satama-alue
+  - heading:
+      fin: Satama-alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LS
@@ -329,7 +364,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Venesatama
+  - heading:
+      fin: Venesatama
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LV
@@ -338,7 +374,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Venevalkama
+  - heading:
+      fin: Venevalkama
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LVV
@@ -347,7 +384,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Huoltoasema-alue
+  - heading:
+      fin: Huoltoasema-alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LH
@@ -356,7 +394,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Henkilöliikenteen terminaalialue
+  - heading:
+      fin: Henkilöliikenteen terminaalialue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LHA
@@ -365,7 +404,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Tavaraliikenteen terminaalialue
+  - heading:
+      fin: Tavaraliikenteen terminaalialue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LTA
@@ -374,7 +414,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Varikkoalue
+  - heading:
+      fin: Varikkoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: LVH
@@ -383,7 +424,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Erityisalue
+  - heading:
+      fin: Erityisalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: E
@@ -392,7 +434,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Yhdyskuntateknisen huollon alue
+  - heading:
+      fin: Yhdyskuntateknisen huollon alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: ET
@@ -401,7 +444,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Energiahuollon alue
+  - heading:
+      fin: Energiahuollon alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EN
@@ -410,7 +454,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Tuulivoimatuotantoon tarkoitettu energiatuotannon alue
+  - heading:
+      fin: Tuulivoimatuotantoon tarkoitettu energiatuotannon alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EN/tv
@@ -421,7 +466,8 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: tuulivoimalaAlue
 
-  - heading: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
+  - heading:
+      fin: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EN/au
@@ -432,7 +478,8 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: aurinkovoimalaAlue
 
-  - heading: Jätteenkäsittelyalue
+  - heading:
+      fin: Jätteenkäsittelyalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EJ
@@ -441,7 +488,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Kiertotalouden alue
+  - heading:
+      fin: Kiertotalouden alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EJK
@@ -450,7 +498,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maa-ainesten ottoalue
+  - heading:
+      fin: Maa-ainesten ottoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EO
@@ -459,7 +508,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Turvetuotannon alue
+  - heading:
+      fin: Turvetuotannon alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EOT
@@ -468,7 +518,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Kaivosalue
+  - heading:
+      fin: Kaivosalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EK
@@ -477,7 +528,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Moottoriurheilun alue
+  - heading:
+      fin: Moottoriurheilun alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EU
@@ -486,7 +538,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Ampumarata-alue
+  - heading:
+      fin: Ampumarata-alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EA
@@ -495,7 +548,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Puolustusvoimien alue
+  - heading:
+      fin: Puolustusvoimien alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EP
@@ -504,7 +558,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Hautausmaa-alue
+  - heading:
+      fin: Hautausmaa-alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EH
@@ -513,7 +568,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Suojaviheralue
+  - heading:
+      fin: Suojaviheralue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: EV
@@ -522,7 +578,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Suojelualue
+  - heading:
+      fin: Suojelualue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: S
@@ -531,7 +588,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Luonnonsuojelualue
+  - heading:
+      fin: Luonnonsuojelualue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: SL
@@ -540,7 +598,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Muinaismuistoalue
+  - heading:
+      fin: Muinaismuistoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: SM
@@ -549,7 +608,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Rakennussuojelualue
+  - heading:
+      fin: Rakennussuojelualue
     category: Aluevaraukset
     geometry: Alue
     letter_code: SR
@@ -558,7 +618,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Suojeltu rakennus, jota ei saa purkaa
     category: Aluevaraukset
     geometry: Piste
     letter_code: SR
@@ -567,7 +628,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltujen rakennusten alue
+  - heading:
+      fin: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltujen rakennusten alue
     category: Aluevaraukset
     geometry: Alue
     letter_code: SRS
@@ -576,7 +638,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
     category: Aluevaraukset
     geometry: Piste
     letter_code: SRS
@@ -585,7 +648,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maa- ja metsätalous- valtainen alue
+  - heading:
+      fin: Maa- ja metsätalous- valtainen alue
     category: Aluevaraukset
     geometry: Alue
     letter_code: M
@@ -594,7 +658,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Metsätalousvaltainen alue
+  - heading:
+      fin: Metsätalousvaltainen alue
     category: Aluevaraukset
     geometry: Alue
     letter_code: MM
@@ -603,7 +668,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maatalousalue
+  - heading:
+      fin: Maatalousalue
     category: Aluevaraukset
     geometry: Alue
     letter_code: MT
@@ -612,7 +678,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Kotieläintalouden suuryksikön alue
+  - heading:
+      fin: Kotieläintalouden suuryksikön alue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: ME
@@ -621,7 +688,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Pelto
+  - heading:
+      fin: Pelto
     category: Aluevaraukset
     geometry: Alue
     letter_code: MTP
@@ -630,7 +698,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maisemallisesti arvokas peltoalue
+  - heading:
+      fin: Maisemallisesti arvokas peltoalue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: MA
@@ -642,7 +711,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maa- ja metsätalousvaltainen alue, jolla on erityistä ulkoilun ohjaamistarvetta
+  - heading:
+      fin: Maa- ja metsätalousvaltainen alue, jolla on erityistä ulkoilun ohjaamistarvetta
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: MU
@@ -651,7 +721,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Maa- ja metsätalousvaltainen alue, jolla on erityisiä ympäristöarvoja
+  - heading:
+      fin: Maa- ja metsätalousvaltainen alue, jolla on erityisiä ympäristöarvoja
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: MY
@@ -660,7 +731,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Vesialue
+  - heading:
+      fin: Vesialue
     category: Aluevaraukset
     geometry: [Alue, Piste]
     letter_code: W
@@ -669,7 +741,8 @@ plan_regulation_groups:
         additional_information:
           - type: paakayttotarkoitus
 
-  - heading: Olemassa oleva asuntovaltainen alue
+  - heading:
+      fin: Olemassa oleva asuntovaltainen alue
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A
@@ -679,7 +752,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: olemassaOleva
 
-  - heading: Asuntovaltainen alue, jolla ympäristö säilytetään
+  - heading:
+      fin: Asuntovaltainen alue, jolla ympäristö säilytetään
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A/s
@@ -689,7 +763,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: sailytettava
 
-  - heading: Olennaisesti muuttuva asuntovaltainen alue
+  - heading:
+      fin: Olennaisesti muuttuva asuntovaltainen alue
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A
@@ -699,7 +774,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: olennaisestiMuuttuva
 
-  - heading: Uusi asuntovaltainen alue
+  - heading:
+      fin: Uusi asuntovaltainen alue
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A
@@ -709,7 +785,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: uusi
 
-  - heading: Asuntovaltainen alue, joka osoitetaan reservialueena
+  - heading:
+      fin: Asuntovaltainen alue, joka osoitetaan reservialueena
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A/res
@@ -719,7 +796,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: reservialue
 
-  - heading: Kehitettävä asuntovaltainen alue
+  - heading:
+      fin: Kehitettävä asuntovaltainen alue
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A
@@ -729,7 +807,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: kehitettava
 
-  - heading: Eheytettävä tai tiivistettävä asuntovaltainen alue
+  - heading:
+      fin: Eheytettävä tai tiivistettävä asuntovaltainen alue
     category: Ympäristön muutosta koskevien kaavamääräysryhmien vaikutus aluevaraukseen
     geometry: [Alue, Piste]
     letter_code: A
@@ -739,7 +818,8 @@ plan_regulation_groups:
           - type: paakayttotarkoitus
           - type: eheytettavaTaiTiivistettava
 
-  - heading: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
+  - heading:
+      fin: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: kyma
@@ -751,7 +831,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Maisemallisesti arvokas alue
+  - heading:
+      fin: Maisemallisesti arvokas alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: ma
@@ -760,7 +841,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kansainvälisesti arvokas maisema-alue
+  - heading:
+      fin: Kansainvälisesti arvokas maisema-alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: kvma
@@ -770,7 +852,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: kansainvalinen
 
-  - heading: Valtakunnallisesti arvokas maisema-alue
+  - heading:
+      fin: Valtakunnallisesti arvokas maisema-alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: vama
@@ -780,7 +863,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: valtakunnallinen
 
-  - heading: Maakunnallisesti arvokas maisema-alue
+  - heading:
+      fin: Maakunnallisesti arvokas maisema-alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: mma
@@ -790,7 +874,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: maakunnallinen
 
-  - heading: Paikallisesti arvokas maisema-alue
+  - heading:
+      fin: Paikallisesti arvokas maisema-alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: pma
@@ -800,7 +885,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: paikallinen
 
-  - heading: Merkittävä rakennettu kulttuuriympäristö
+  - heading:
+      fin: Merkittävä rakennettu kulttuuriympäristö
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: ky
@@ -809,7 +895,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kansainvälisesti merkittävä rakennettu kulttuuriympäristö
+  - heading:
+      fin: Kansainvälisesti merkittävä rakennettu kulttuuriympäristö
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: kvky
@@ -819,7 +906,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: kansainvalinen
 
-  - heading: Valtakunnallisesti merkittävä rakennettu kulttuuriympäristö
+  - heading:
+      fin: Valtakunnallisesti merkittävä rakennettu kulttuuriympäristö
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste, Viiva]
     letter_code: rky
@@ -829,7 +917,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: valtakunnallinen
 
-  - heading: Maakunnallisesti merkittävä rakennettu kulttuuriympäristö
+  - heading:
+      fin: Maakunnallisesti merkittävä rakennettu kulttuuriympäristö
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: mky
@@ -839,7 +928,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: maakunnallinen
 
-  - heading: Paikallisesti merkittävä rakennettu kulttuuriympäristö
+  - heading:
+      fin: Paikallisesti merkittävä rakennettu kulttuuriympäristö
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: pky
@@ -849,7 +939,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: paikallinen
 
-  - heading: Kaupunki- tai kyläkuvallisesti arvokas alue
+  - heading:
+      fin: Kaupunki- tai kyläkuvallisesti arvokas alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: sk
@@ -858,7 +949,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä muinaisjäännös
+  - heading:
+      fin: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä muinaisjäännös
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: ark
@@ -867,7 +959,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Valtakunnallisesti merkittävä arkeologinen kohde
+  - heading:
+      fin: Valtakunnallisesti merkittävä arkeologinen kohde
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: vark
@@ -877,7 +970,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: valtakunnallinen
 
-  - heading: Arvokas harjualue tai muu geologinen muodostuma
+  - heading:
+      fin: Arvokas harjualue tai muu geologinen muodostuma
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: ge
@@ -886,7 +980,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Tärkeä vedenhankintaan soveltuva pohjavesialue
+  - heading:
+      fin: Tärkeä vedenhankintaan soveltuva pohjavesialue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: pv
@@ -895,7 +990,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Natura 2000 -verkostoon kuuluva alue
+  - heading:
+      fin: Natura 2000 -verkostoon kuuluva alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Viiva, Piste]
     letter_code: nat
@@ -904,7 +1000,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Luonnon monimuotoisuuden kannalta erityisen tärkeä alue
+  - heading:
+      fin: Luonnon monimuotoisuuden kannalta erityisen tärkeä alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Viiva, Piste]
     letter_code: luo
@@ -913,7 +1010,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: UNESCO:n maailmanperintökohde
+  - heading:
+      fin: UNESCO:n maailmanperintökohde
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: un
@@ -922,7 +1020,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kansallinen kaupunkipuisto
+  - heading:
+      fin: Kansallinen kaupunkipuisto
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: kp
@@ -931,7 +1030,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Maisemanhoitoalue
+  - heading:
+      fin: Maisemanhoitoalue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: mai
@@ -940,7 +1040,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Saamelaiskulttuurin kannalta tärkeä alue
+  - heading:
+      fin: Saamelaiskulttuurin kannalta tärkeä alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: saame
@@ -949,7 +1050,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Poronhoitolain mukainen poronhoitoalue
+  - heading:
+      fin: Poronhoitolain mukainen poronhoitoalue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: poro
@@ -958,7 +1060,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Ympäristöhäiriöalue
+  - heading:
+      fin: Ympäristöhäiriöalue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: häiriö
@@ -967,7 +1070,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Ympäristö- tai maisemavaurion korjaustarve
+  - heading:
+      fin: Ympäristö- tai maisemavaurion korjaustarve
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: häiriö y
@@ -977,7 +1081,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: terveyshaitanPoistamistarve
 
-  - heading: Terveyshaitan poistamistarve
+  - heading:
+      fin: Terveyshaitan poistamistarve
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: häiriö t
@@ -987,7 +1092,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: terveyshaitanPoistamistarve
 
-  - heading: Melualue
+  - heading:
+      fin: Melualue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: melu
@@ -996,7 +1102,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Tärinäalue
+  - heading:
+      fin: Tärinäalue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: tärinä
@@ -1005,7 +1112,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Radonriskialue
+  - heading:
+      fin: Radonriskialue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: radon
@@ -1014,7 +1122,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Pilaantunut maa-alue
+  - heading:
+      fin: Pilaantunut maa-alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: pima
@@ -1023,7 +1132,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Vaara-alue
+  - heading:
+      fin: Vaara-alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: vaara
@@ -1032,7 +1142,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Tulvariskialue
+  - heading:
+      fin: Tulvariskialue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: tulva
@@ -1041,7 +1152,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Tulvapenger
+  - heading:
+      fin: Tulvapenger
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: tupe
@@ -1050,7 +1162,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Suojavyöhyke
+  - heading:
+      fin: Suojavyöhyke
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: suojav
@@ -1059,7 +1172,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Suojeltu puu, jota ei saa kaataa
+  - heading:
+      fin: Suojeltu puu, jota ei saa kaataa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
@@ -1069,21 +1183,24 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: puuTaiPuurivi
 
-  - heading: Pysäkki
+  - heading:
+      fin: Pysäkki
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: pys
     plan_regulations:
       - regulation_code: pysakki
 
-  - heading: Linja-autoasema
+  - heading:
+      fin: Linja-autoasema
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
     plan_regulations:
       - regulation_code: linjaAutoasema
 
-  - heading: Metroasema
+  - heading:
+      fin: Metroasema
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: metro
@@ -1093,49 +1210,56 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: metro
 
-  - heading: Raideliikenteen asema tai seisake
+  - heading:
+      fin: Raideliikenteen asema tai seisake
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
     plan_regulations:
       - regulation_code: raideliikenteenAsemaTaiSeisake
 
-  - heading: Liittymä
+  - heading:
+      fin: Liittymä
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
     plan_regulations:
       - regulation_code: liittyma
 
-  - heading: Eritasoliittymä
+  - heading:
+      fin: Eritasoliittymä
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
     plan_regulations:
       - regulation_code: eritasoliittyma
 
-  - heading: Suuntaisliittymä
+  - heading:
+      fin: Suuntaisliittymä
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
     plan_regulations:
       - regulation_code: suuntaisliittyma
 
-  - heading: Eritasoristeys
+  - heading:
+      fin: Eritasoristeys
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: eri
     plan_regulations:
       - regulation_code: eritasoristeys
 
-  - heading: Alikulku
+  - heading:
+      fin: Alikulku
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: ali
     plan_regulations:
       - regulation_code: alikulku
 
-  - heading: Jalankululle tarkoitettu alikulku
+  - heading:
+      fin: Jalankululle tarkoitettu alikulku
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: /jk ali
@@ -1145,14 +1269,16 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: jalankulkualue
 
-  - heading: Ylikulku
+  - heading:
+      fin: Ylikulku
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: yli
     plan_regulations:
       - regulation_code: ylikulku
 
-  - heading: Jalankululle tarkoitettu ylikulku
+  - heading:
+      fin: Jalankululle tarkoitettu ylikulku
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code: /jk yli
@@ -1162,7 +1288,8 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: jalankulkualue
 
-  - heading: Konsultointivyöhyke
+  - heading:
+      fin: Konsultointivyöhyke
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: konsu
@@ -1171,7 +1298,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kehittämisalue
+  - heading:
+      fin: Kehittämisalue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: ke
@@ -1180,7 +1308,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Suunnittelutarvealue
+  - heading:
+      fin: Suunnittelutarvealue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: st
@@ -1189,7 +1318,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Alue, jota koskee rakentamisrajoitus
+  - heading:
+      fin: Alue, jota koskee rakentamisrajoitus
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: rr
@@ -1198,7 +1328,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Alue, jota koskee määräaikainen rakentamisrajoitus
+  - heading:
+      fin: Alue, jota koskee määräaikainen rakentamisrajoitus
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: mrr
@@ -1207,7 +1338,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Alue, jota koskee toimenpiderajoitus
+  - heading:
+      fin: Alue, jota koskee toimenpiderajoitus
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: tr
@@ -1216,7 +1348,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Tuulivoimaloiden alue
+  - heading:
+      fin: Tuulivoimaloiden alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: tv
@@ -1225,7 +1358,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Tuulivoimalan ohjeellinen sijainti
+  - heading:
+      fin: Tuulivoimalan ohjeellinen sijainti
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Piste
     letter_code:
@@ -1234,7 +1368,8 @@ plan_regulation_groups:
         additional_information:
           - type: ohjeellinenSijainti
 
-  - heading: Aurinkovoimaloiden alue
+  - heading:
+      fin: Aurinkovoimaloiden alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: aur
@@ -1243,7 +1378,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Suojeltava alueen osa
+  - heading:
+      fin: Suojeltava alueen osa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: s
@@ -1252,7 +1388,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Alue, jolla sijaitsee luonnonsuojelulain mukainen luonnonsuojelualue tai -kohde
+  - heading:
+      fin: Alue, jolla sijaitsee luonnonsuojelulain mukainen luonnonsuojelualue tai -kohde
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: sl
@@ -1261,7 +1398,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: sr
@@ -1270,7 +1408,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: kvSR
@@ -1280,7 +1419,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: kansainvalinen
 
-  - heading: Valtakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Valtakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: vaSR
@@ -1290,7 +1430,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: valtakunnallinen
 
-  - heading: Maakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Maakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: mSR
@@ -1300,7 +1441,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: maakunnallinen
 
-  - heading: Paikallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Paikallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: pSR
@@ -1310,7 +1452,8 @@ plan_regulation_groups:
           - type: osaAlue
           - type: paikallinen
 
-  - heading: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: srs
@@ -1319,7 +1462,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Alueen osa, jolla sijaitsee muinaismuistolailla rauhoitettu kiinteä muinaisjäännös
+  - heading:
+      fin: Alueen osa, jolla sijaitsee muinaismuistolailla rauhoitettu kiinteä muinaisjäännös
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: Alue
     letter_code: sm
@@ -1328,7 +1472,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Valtion omistamien rakennusten suojelusta annetun asetuksen nojalla suojeltu rakennus, jota ei saa purkaa
+  - heading:
+      fin: Valtion omistamien rakennusten suojelusta annetun asetuksen nojalla suojeltu rakennus, jota ei saa purkaa
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: sra
@@ -1337,7 +1482,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kirkkolain nojalla suojeltu kirkollinen rakennus
+  - heading:
+      fin: Kirkkolain nojalla suojeltu kirkollinen rakennus
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: srk
@@ -1346,7 +1492,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Ortodoksisesta kirkosta annetun lain nojalla suojeltu kirkko tai rukoushuone
+  - heading:
+      fin: Ortodoksisesta kirkosta annetun lain nojalla suojeltu kirkko tai rukoushuone
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: srko
@@ -1355,7 +1502,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Ekologisen kompensaation alue
+  - heading:
+      fin: Ekologisen kompensaation alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: ekok
@@ -1364,7 +1512,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Hulevesien hallintaan tarkoitettu alue
+  - heading:
+      fin: Hulevesien hallintaan tarkoitettu alue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: hule
@@ -1373,7 +1522,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Maa-ainesten vastaanotto- tai läjitysalue
+  - heading:
+      fin: Maa-ainesten vastaanotto- tai läjitysalue
     category: Erityisominaisuudet ja muut osa-alueet
     geometry: [Alue, Piste]
     letter_code: läji
@@ -1382,7 +1532,8 @@ plan_regulation_groups:
         additional_information:
           - type: osaAlue
 
-  - heading: Kaupunkikehittämisvyöhyke
+  - heading:
+      fin: Kaupunkikehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: kk
@@ -1392,7 +1543,8 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Maaseudun kehittämisvyöhyke
+  - heading:
+      fin: Maaseudun kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: mk
@@ -1402,7 +1554,8 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Matkailun ja virkistyksen kehittämisvyöhyke
+  - heading:
+      fin: Matkailun ja virkistyksen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: mv
@@ -1416,7 +1569,8 @@ plan_regulation_groups:
             code_value: virkistysalue
       - regulation_code: sanallinenMaarays
 
-  - heading: Matkailun kehittämisvyöhyke
+  - heading:
+      fin: Matkailun kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: rma
@@ -1428,7 +1582,8 @@ plan_regulation_groups:
             code_value: matkailupalvelujenAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Virkistyksen kehittämisvyöhyke
+  - heading:
+      fin: Virkistyksen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: vka
@@ -1440,7 +1595,8 @@ plan_regulation_groups:
             code_value: virkistysalue
       - regulation_code: sanallinenMaarays
 
-  - heading: Vähittäiskaupan kehittämisvyöhyke
+  - heading:
+      fin: Vähittäiskaupan kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: kma
@@ -1452,7 +1608,8 @@ plan_regulation_groups:
             code_value: vahittaiskaupanSuuryksikko
       - regulation_code: sanallinenMaarays
 
-  - heading: Ekologinen kehittämisvyöhyke
+  - heading:
+      fin: Ekologinen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: eko
@@ -1462,7 +1619,8 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Kulttuuriympäristön kehittämisvyöhyke
+  - heading:
+      fin: Kulttuuriympäristön kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: kya
@@ -1472,7 +1630,8 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Energiahuollon / energiatuotannon kehittämisvyöhyke
+  - heading:
+      fin: Energiahuollon / energiatuotannon kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: ena
@@ -1484,7 +1643,8 @@ plan_regulation_groups:
             code_value: energiahuollonAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Kaupan palveluiden kehittämisvyöhyke
+  - heading:
+      fin: Kaupan palveluiden kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: ka
@@ -1496,7 +1656,8 @@ plan_regulation_groups:
             code_value: palvelujenAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Liikenteen kehittämisvyöhyke
+  - heading:
+      fin: Liikenteen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: lka
@@ -1508,7 +1669,8 @@ plan_regulation_groups:
             code_value: liikennealue
       - regulation_code: sanallinenMaarays
 
-  - heading: Keskustatoimintojen kehittämisvyöhyke
+  - heading:
+      fin: Keskustatoimintojen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: cka
@@ -1520,7 +1682,8 @@ plan_regulation_groups:
             code_value: keskustatoimintojenAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Teollisuustoimintojen kehittämisvyöhyke
+  - heading:
+      fin: Teollisuustoimintojen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: tka
@@ -1532,7 +1695,8 @@ plan_regulation_groups:
             code_value: teollisuusalue
       - regulation_code: sanallinenMaarays
 
-  - heading: Logistiikkatoimintojen kehittämisvyöhyke
+  - heading:
+      fin: Logistiikkatoimintojen kehittämisvyöhyke
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: log
@@ -1542,7 +1706,8 @@ plan_regulation_groups:
           - type: osaAlue
       - regulation_code: sanallinenMaarays
 
-  - heading: Yhdyskuntarakenteen eheyttämistarve
+  - heading:
+      fin: Yhdyskuntarakenteen eheyttämistarve
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code:
@@ -1553,35 +1718,40 @@ plan_regulation_groups:
           - type: eheytettavaTaiTiivistettava
       - regulation_code: sanallinenMaarays
 
-  - heading: Yhdyskuntarakenteen laajenemissuunta
+  - heading:
+      fin: Yhdyskuntarakenteen laajenemissuunta
     category: Kehittämisperiaatteita koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: yhdyskuntarakenteenLaajenemissuunta
 
-  - heading: Nykyinen tie
+  - heading:
+      fin: Nykyinen tie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: tie
 
-  - heading: Moottori- tai moottoriliikennetie
+  - heading:
+      fin: Moottori- tai moottoriliikennetie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: mo
     plan_regulations:
       - regulation_code: moottoriTaiMoottoriliikenneTie
 
-  - heading: Kaksiajoratainen tie tai katu
+  - heading:
+      fin: Kaksiajoratainen tie tai katu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: kaksiajoratainenTieTaiKatu
 
-  - heading: Valtatie tai kantatie
+  - heading:
+      fin: Valtatie tai kantatie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: vt/kt
@@ -1589,21 +1759,24 @@ plan_regulation_groups:
       - regulation_code: valtatie
       - regulation_code: kantatie
 
-  - heading: Valtatie
+  - heading:
+      fin: Valtatie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: vt
     plan_regulations:
       - regulation_code: valtatie
 
-  - heading: Kantatie
+  - heading:
+      fin: Kantatie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: kt
     plan_regulations:
       - regulation_code: kantatie
 
-  - heading: Seututie tai pääkatu
+  - heading:
+      fin: Seututie tai pääkatu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: st/pk
@@ -1611,21 +1784,24 @@ plan_regulation_groups:
       - regulation_code: seututie
       - regulation_code: paakatu
 
-  - heading: Seututie
+  - heading:
+      fin: Seututie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: st
     plan_regulations:
       - regulation_code: seututie
 
-  - heading: Pääkatu
+  - heading:
+      fin: Pääkatu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: pk
     plan_regulations:
       - regulation_code: paakatu
 
-  - heading: Yhdystie tai kokoojakatu
+  - heading:
+      fin: Yhdystie tai kokoojakatu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: yt/kk
@@ -1633,21 +1809,24 @@ plan_regulation_groups:
       - regulation_code: yhdystie
       - regulation_code: kokoojakatu
 
-  - heading: Yhdystie
+  - heading:
+      fin: Yhdystie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: yt
     plan_regulations:
       - regulation_code: yhdystie
 
-  - heading: Kokoojakatu
+  - heading:
+      fin: Kokoojakatu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: kk
     plan_regulations:
       - regulation_code: kokoojakatu
 
-  - heading: Maantie tai katu
+  - heading:
+      fin: Maantie tai katu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: LT/katu
@@ -1655,21 +1834,24 @@ plan_regulation_groups:
       - regulation_code: maantie
       - regulation_code: katu
 
-  - heading: Maantie
+  - heading:
+      fin: Maantie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: LT
     plan_regulations:
       - regulation_code: maantie
 
-  - heading: Katu
+  - heading:
+      fin: Katu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: katu
     plan_regulations:
       - regulation_code: katu
 
-  - heading: Joukkoliikenteelle varattu tie tai katu
+  - heading:
+      fin: Joukkoliikenteelle varattu tie tai katu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: LT/katu - jl
@@ -1683,7 +1865,8 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: joukkoliikenteenAlue
 
-  - heading: Joukkoliikenteelle varattu katu
+  - heading:
+      fin: Joukkoliikenteelle varattu katu
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: katu - jl
@@ -1693,70 +1876,80 @@ plan_regulation_groups:
           - type: kayttotarkoituskohdistus
             code_value: joukkoliikenteenAlue
 
-  - heading: Rautatie
+  - heading:
+      fin: Rautatie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: raideliikenteenAlue
 
-  - heading: Päärata
+  - heading:
+      fin: Päärata
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: pr
     plan_regulations:
       - regulation_code: paarata
 
-  - heading: Yhdysrata
+  - heading:
+      fin: Yhdysrata
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: yr
     plan_regulations:
       - regulation_code: yhdysrata
 
-  - heading: Sivurata
+  - heading:
+      fin: Sivurata
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: siv
     plan_regulations:
       - regulation_code: sivurata
 
-  - heading: Kaupunkirata
+  - heading:
+      fin: Kaupunkirata
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: kr
     plan_regulations:
       - regulation_code: kaupunkirata
 
-  - heading: Metro
+  - heading:
+      fin: Metro
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: metro
     plan_regulations:
       - regulation_code: metro
 
-  - heading: Raitiotie
+  - heading:
+      fin: Raitiotie
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: rt
     plan_regulations:
       - regulation_code: raitiotie
 
-  - heading: Liikennetunneli
+  - heading:
+      fin: Liikennetunneli
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: lt
     plan_regulations:
       - regulation_code: liikennetunneli
 
-  - heading: Moottorikelkkailureitti
+  - heading:
+      fin: Moottorikelkkailureitti
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: moottorikelkkailureitti
 
-  - heading: Jalankulku- ja pyöräilyreitti
+  - heading:
+      fin: Jalankulku- ja pyöräilyreitti
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: jk/pp
@@ -1764,42 +1957,48 @@ plan_regulation_groups:
       - regulation_code: pyorailyalue
       - regulation_code: jalankulkualue
 
-  - heading: Pyöräilyreitti
+  - heading:
+      fin: Pyöräilyreitti
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: pp
     plan_regulations:
       - regulation_code: pyorailyalue
 
-  - heading: Jalankulkureitti
+  - heading:
+      fin: Jalankulkureitti
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: jk
     plan_regulations:
       - regulation_code: jalankulkualue
 
-  - heading: Laivaväylä
+  - heading:
+      fin: Laivaväylä
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: lv
     plan_regulations:
       - regulation_code: laivavayla
 
-  - heading: Veneväylä
+  - heading:
+      fin: Veneväylä
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: vv
     plan_regulations:
       - regulation_code: venevayla
 
-  - heading: Lossi- tai lauttayhteys
+  - heading:
+      fin: Lossi- tai lauttayhteys
     category: Eri liikennemuotojen käyttöön tarkoitetut linjaukset (Viivamaisiin kaavakohteisiin liittyvät kaavamääräysryhmät)
     geometry: Viiva
     letter_code: ly
     plan_regulations:
       - regulation_code: lossiTaiLauttaYhteys
 
-  - heading: Nykyinen tie
+  - heading:
+      fin: Nykyinen tie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1808,7 +2007,8 @@ plan_regulation_groups:
         additional_information:
           - type: olemassaOleva
 
-  - heading: Uusi tie
+  - heading:
+      fin: Uusi tie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1817,7 +2017,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Merkittävästi parannettava tie
+  - heading:
+      fin: Merkittävästi parannettava tie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1826,7 +2027,8 @@ plan_regulation_groups:
         additional_information:
           - type: merkittavastiParannettava
 
-  - heading: Valtatie
+  - heading:
+      fin: Valtatie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: vt
@@ -1835,7 +2037,8 @@ plan_regulation_groups:
         additional_information:
           - type: olemassaOleva
 
-  - heading: Uusi valtatie
+  - heading:
+      fin: Uusi valtatie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: vt
@@ -1844,7 +2047,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Merkittävästi parannettava valtatie
+  - heading:
+      fin: Merkittävästi parannettava valtatie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: vt
@@ -1853,7 +2057,8 @@ plan_regulation_groups:
         additional_information:
           - type: merkittavastiParannettava
 
-  - heading: Tieliikenteen yhteystarve
+  - heading:
+      fin: Tieliikenteen yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1862,7 +2067,8 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Ohjeellinen tie
+  - heading:
+      fin: Ohjeellinen tie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1871,7 +2077,8 @@ plan_regulation_groups:
         additional_information:
           - type: ohjeellinenSijainti
 
-  - heading: Vaihtoehtoinen tie
+  - heading:
+      fin: Vaihtoehtoinen tie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1880,7 +2087,8 @@ plan_regulation_groups:
         additional_information:
           - type: vaihtoehtoinen
 
-  - heading: Valtatien yhteystarve
+  - heading:
+      fin: Valtatien yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: vt
@@ -1889,7 +2097,8 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Ohjeellinen valtatie
+  - heading:
+      fin: Ohjeellinen valtatie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: vt
@@ -1898,7 +2107,8 @@ plan_regulation_groups:
         additional_information:
           - type: ohjeellinenSijainti
 
-  - heading: Vaihtoehtoinen valtatie
+  - heading:
+      fin: Vaihtoehtoinen valtatie
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: vt
@@ -1907,7 +2117,8 @@ plan_regulation_groups:
         additional_information:
           - type: vaihtoehtoinen
 
-  - heading: Raideliikenteen yhteystarve
+  - heading:
+      fin: Raideliikenteen yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1916,7 +2127,8 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Joukkoliikenteen kehittämiskäytävä
+  - heading:
+      fin: Joukkoliikenteen kehittämiskäytävä
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: jl
@@ -1925,7 +2137,8 @@ plan_regulation_groups:
         additional_information:
           - type: kehitettava
 
-  - heading: Jalankulun ja pyöräilyn yhteystarve
+  - heading:
+      fin: Jalankulun ja pyöräilyn yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: jk/pp
@@ -1937,7 +2150,8 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Jalankulun yhteystarve
+  - heading:
+      fin: Jalankulun yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: jk
@@ -1946,7 +2160,8 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Pyöräilyn yhteystarve
+  - heading:
+      fin: Pyöräilyn yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code: pp
@@ -1955,7 +2170,8 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Liikenteen yhteystarve
+  - heading:
+      fin: Liikenteen yhteystarve
     category: Ympäristönmuutosta koskevien määräysten vaikutus yleiskaavan eri liikennemuotojen käyttöön tarkoitettujen linjausten esitystapaan
     geometry: Viiva
     letter_code:
@@ -1964,14 +2180,16 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Viheryhteys
+  - heading:
+      fin: Viheryhteys
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: viheryhteys
 
-  - heading: Viheryhteystarve
+  - heading:
+      fin: Viheryhteystarve
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code:
@@ -1980,14 +2198,16 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Sähkölinja tai voimajohto
+  - heading:
+      fin: Sähkölinja tai voimajohto
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: z
     plan_regulations:
       - regulation_code: sahkolinja
 
-  - heading: Uusi sähkölinja tai voimajohto
+  - heading:
+      fin: Uusi sähkölinja tai voimajohto
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: z
@@ -1996,7 +2216,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Sähkölinjan tai voimajohdon yhteystarve
+  - heading:
+      fin: Sähkölinjan tai voimajohdon yhteystarve
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: z
@@ -2005,14 +2226,16 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Vesijohto tai viemäri
+  - heading:
+      fin: Vesijohto tai viemäri
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: v
     plan_regulations:
       - regulation_code: vesijohtoTaiViemari
 
-  - heading: Uusi vesijohto tai viemäri
+  - heading:
+      fin: Uusi vesijohto tai viemäri
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: v
@@ -2021,7 +2244,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Vesijohdon tai viemärin yhteystarve
+  - heading:
+      fin: Vesijohdon tai viemärin yhteystarve
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: v
@@ -2030,14 +2254,16 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Kaasulinja
+  - heading:
+      fin: Kaasulinja
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: k
     plan_regulations:
       - regulation_code: kaasulinja
 
-  - heading: Uusi kaasulinja
+  - heading:
+      fin: Uusi kaasulinja
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: k
@@ -2046,7 +2272,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Kaasulinjan yhteystarve
+  - heading:
+      fin: Kaasulinjan yhteystarve
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: k
@@ -2055,21 +2282,24 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Historiallinen tie
+  - heading:
+      fin: Historiallinen tie
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: /s
     plan_regulations:
       - regulation_code: historiallinenKohde
 
-  - heading: Ulkoilu- tai virkistysreitti
+  - heading:
+      fin: Ulkoilu- tai virkistysreitti
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code:
     plan_regulations:
       - regulation_code: ulkoiluTaiVirkistysReitti
 
-  - heading: Uusi ulkoilu- tai virkistysreitti
+  - heading:
+      fin: Uusi ulkoilu- tai virkistysreitti
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code:
@@ -2078,7 +2308,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Ulkoilu- tai virkistysreitin yhteystarve
+  - heading:
+      fin: Ulkoilu- tai virkistysreitin yhteystarve
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code:
@@ -2087,48 +2318,55 @@ plan_regulation_groups:
         additional_information:
           - type: yhteystarve
 
-  - heading: Joki tai muu arvokasGeologinenMuodostuma
+  - heading:
+      fin: Joki tai muu arvokasGeologinenMuodostuma
     category: Muut yleiskaavassa osoitettavia linjauksia koskevat kaavamääräysryhmät
     geometry: Viiva
     letter_code: W
     plan_regulations:
       - regulation_code: vesialue
 
-  - heading: Kaupungin- tai kunnanosan nimi
+  - heading:
+      fin: Kaupungin- tai kunnanosan nimi
     category: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
       - regulation_code: kaupunginTaiKunnanosanNimi
 
-  - heading: Tuulivoimalan enimmäiskorkeus
+  - heading:
+      fin: Tuulivoimalan enimmäiskorkeus
     category: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
     plan_regulations:
       - regulation_code: tuulivoimalanEnimmaiskorkeus
 
-  - heading: Tuulivoimaloiden määrä
+  - heading:
+      fin: Tuulivoimaloiden määrä
     category: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa kuinka monta tuulivoimalaa alueelle saa rakentaa
     plan_regulations:
       - regulation_code: tuulivoimaloidenMaara
 
-  - heading: Rakennuspaikkojen määrä
+  - heading:
+      fin: Rakennuspaikkojen määrä
     category: Yleiskaavan kaavamääräysryhmät, joille annetaan numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa kuinka monta rakennuspaikkaa alueelle saa rakentaa
     plan_regulations:
       - regulation_code: rakennuspaikkojenMaara
 
-  - heading: Rakennuspaikka
+  - heading:
+      fin: Rakennuspaikka
     category: Rakennuspaikkaa koskevat kaavamääräysryhmät
     geometry: Piste
     letter_code:
     plan_regulations:
       - regulation_code: rakennuspaikka
 
-  - heading: Uusi rakennuspaikka
+  - heading:
+      fin: Uusi rakennuspaikka
     category: Rakennuspaikkaa koskevat kaavamääräysryhmät
     geometry: Piste
     letter_code:
@@ -2137,7 +2375,8 @@ plan_regulation_groups:
         additional_information:
           - type: uusi
 
-  - heading: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
+  - heading:
+      fin: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
     category: Rakennuspaikkaa koskevat kaavamääräysryhmät
     geometry: Piste
     letter_code:
@@ -2149,7 +2388,8 @@ plan_regulation_groups:
             code_list: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK
             code_value: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/11
 
-  - heading: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
+  - heading:
+      fin: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 44 §)
     category: Rakennuspaikkaa koskevat kaavamääräysryhmät
     geometry: Piste
     letter_code:
@@ -2162,7 +2402,8 @@ plan_regulation_groups:
             code_value: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/11
           - type: uusi
 
-  - heading: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
+  - heading:
+      fin: Rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
     category: Rakennuspaikkaa koskevat kaavamääräysryhmät
     geometry: Piste
     letter_code:
@@ -2174,7 +2415,8 @@ plan_regulation_groups:
             code_list: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK
             code_value: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/12
 
-  - heading: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
+  - heading:
+      fin: Uusi rakennuspaikka, jolla yleiskaavaa voidaan käyttää rakennusluvan perusteena (MRL 72 §)
     category: Rakennuspaikkaa koskevat kaavamääräysryhmät
     geometry: Piste
     letter_code:
