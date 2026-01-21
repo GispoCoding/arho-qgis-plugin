@@ -48,9 +48,6 @@ class TemplateManager:
 
     @classmethod
     def _write_to_yaml_file(cls, config_data: dict, file_path: Path):
-        if not file_path.exists():
-            return
-
         cleaned_data = cls._clean_data(config_data)
         with file_path.open("w", encoding="utf-8") as yaml_file:
             yaml.safe_dump(cleaned_data, yaml_file, sort_keys=False, allow_unicode=True, default_flow_style=False)
