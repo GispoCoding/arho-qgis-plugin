@@ -16,7 +16,11 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
     VerbalRegulationType,
 )
-from arho_feature_template.utils.localization_utils import deserialize_localized_text, localized_text_as_str
+from arho_feature_template.utils.localization_utils import (
+    deserialize_localized_text,
+    localized_text_as_str,
+    read_localized_field_backward_compatible,
+)
 from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
@@ -416,7 +420,7 @@ class RegulationGroup(PlanBaseModel):
             # NOTE: Might need to convert type code into type code ID here when
             # config file has type codes for regulation groups
             # type_code_id=data.get("type"),
-            heading=data.get("heading"),
+            heading=read_localized_field_backward_compatible(data.get("heading")),
             letter_code=data.get("letter_code"),
             color_code=data.get("color_code"),
             group_number=data.get("group_number"),
@@ -503,8 +507,8 @@ class PlanObject(PlanBaseModel):
                 else None
             ),
             layer_name=data.get("layer_name"),
-            name=data.get("name"),
-            description=data.get("description"),
+            name=read_localized_field_backward_compatible(data.get("name")),
+            description=read_localized_field_backward_compatible(data.get("description")),
             regulation_groups=[
                 RegulationGroup.from_template_dict(group_data) for group_data in data.get("regulation_groups", [])
             ],
@@ -524,8 +528,8 @@ class PlanObject(PlanBaseModel):
             "regulation_groups": [regulation_group.into_template_dict() for regulation_group in self.regulation_groups],
         }
 
-    def __str__(self):
-        return self.name if self.name else ""
+    def __str__(self) -> str:
+        return deserialize_localized_text(self.name) or "" if self.name else ""
 
     def as_tooltip(self, only_primary_language: bool = False) -> str:  # noqa: FBT001, FBT002
         if only_primary_language:
