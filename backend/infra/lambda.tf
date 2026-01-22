@@ -181,6 +181,7 @@ locals {
       DB_MAIN_NAME        = var.hame_db_name
       READ_FROM_AWS       = 1
       SYKE_APIKEY         = var.syke_apikey
+      DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
   }
   ryhti_client_x-road_environment = var.enable_x_road ? {
       XROAD_SERVER_ADDRESS = module.x-road["this"].dns_record
