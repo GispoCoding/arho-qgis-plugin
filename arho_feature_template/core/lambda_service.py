@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import gzip
 import json
 import re
 import uuid
@@ -84,7 +86,7 @@ class LambdaService(QObject):
         }
         self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
 
-    def _send_request(self, action: str, plan_id: str | None = None, payload: dict | None = None):
+    def _send_request(self, action: str, plan_id: str | None = None, payload: dict[str, Any] | None = None):
         """Sends a request to the lambda function."""
         proxy_host = SettingsManager.get_proxy_host()
         proxy_port = SettingsManager.get_proxy_port()
@@ -105,10 +107,17 @@ class LambdaService(QObject):
             payload = {"plan_uuid": plan_id}
         payload["action"] = action
 
-        payload_bytes = QByteArray(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         request = QNetworkRequest(QUrl(self.lambda_url))
         request.setAttribute(LambdaService.ActionAttribute, action)
         request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+        if self._is_api_gateway_request():
+            request.setRawHeader(b"Accept-Encoding", b"gzip")
+        else:
+            # When calling the lambda directly in development environment,
+            # we need to set the Accept-Encoding header in the payload
+            payload["headers"] = {"Accept-Encoding": "gzip"}
+
+        payload_bytes = QByteArray(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
         self.network_manager.post(request, payload_bytes)
 
     def _is_api_gateway_request(self) -> bool:
@@ -154,20 +163,36 @@ class LambdaService(QObject):
             return
 
         try:
-            response_json = response.readAll().data().decode("utf-8")
-            response_data = json.loads(response_json)
+            response_bytes = response.readAll().data()
+            if self._is_api_gateway_request():
+                is_compressed = bytes(response.rawHeader(b"Content-Encoding")).decode("utf-8") == "gzip"
+                if is_compressed:
+                    decompressed_data = gzip.decompress(response_bytes)
+                    response_json = decompressed_data.decode("utf-8")
+                else:
+                    response_json = response_bytes.decode("utf-8")
+                response_body = json.loads(response_json)
+            else:
+                # In developement environment lambda is called directly without API Gateway
+                # and has a different response format
+                response_json = response_bytes.decode("utf-8")
+                response_data = json.loads(response_json)
 
-            if not self._is_api_gateway_request():
-                # If calling the lambda directly, the response includes status code and body
-                if int(response_data.get("statusCode", 0)) != HTTPStatus.OK:
+                encoding = response_data.get("encoding")
+                is_compressed = encoding == "gzip+base64"
+                if is_compressed:
+                    compressed_data = base64.b64decode(response_data["body"])
+                    decompressed_data = gzip.decompress(compressed_data)
+                    response_data["body"] = json.loads(decompressed_data.decode("utf-8"))
+
+                status_code = int(response_data.get("statusCode", 0))
+                if status_code != HTTPStatus.OK:
                     error = response_data["body"] if "body" in response_data else response_data["errorMessage"]
                     QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
                     error_handler(error)
                     response.deleteLater()
                     return
                 response_body = response_data["body"]
-            else:
-                response_body = response_data
 
         except (json.JSONDecodeError, KeyError) as e:
             QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {e}")
