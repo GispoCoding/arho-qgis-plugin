@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import enum
+import gzip
 import logging
 import os
 from collections.abc import Callable
@@ -88,6 +89,14 @@ class Response(TypedDict):
     body: ResponseBody
 
 
+class CompressedResponse(TypedDict):
+    """Represents a compressed response body."""
+
+    statusCode: int
+    encoding: Literal["gzip+base64"]
+    body: str
+
+
 class ArhoPayload(TypedDict):
     """Support validating, POSTing or getting a desired plan. If provided directly to
     lambda, the lambda request needs only contain these keys.
@@ -142,6 +151,8 @@ class AWSAPIGatewayResponse(TypedDict):
 
     statusCode: int
     body: str  # Response body must be stringified for API gateway
+    headers: NotRequired[dict[str, str]]
+    isBase64Encoded: NotRequired[bool]
 
 
 class Action(enum.Enum):
@@ -155,21 +166,59 @@ class Action(enum.Enum):
     COPY_PLAN = "copy_plan"
 
 
-def format_response(
-    response: Response, using_api_gateway: bool
-) -> Response | AWSAPIGatewayResponse:
-    """Convert response to API gateway response if the request arrived through API gateway.
-    If we want to provide status code to API gateway, the JSON body must be string.
-    """
-    if using_api_gateway:
-        return AWSAPIGatewayResponse(
-            statusCode=response["statusCode"], body=json.dumps(response["body"])
+def compress(dict_data: ResponseBody) -> str:
+    """Compress and base64 encode JSON data for API Gateway response."""
+    json_bytes = json.dumps(dict_data).encode("utf-8")
+    gzipped = gzip.compress(json_bytes)
+    encoded = base64.b64encode(gzipped).decode("utf-8")
+    return encoded
+
+
+def format_direct_invocation_response(
+    response: Response, compress_response: bool = False
+) -> Response | CompressedResponse:
+    """Convert response to compressed response if needed."""
+    if compress_response:
+        compressed = compress(response["body"])
+        return CompressedResponse(
+            statusCode=response["statusCode"], encoding="gzip+base64", body=compressed
         )
     return response
 
 
+def format_api_gateway_response(
+    response: Response, compress_response: bool = False
+) -> AWSAPIGatewayResponse:
+    """Convert response to API gateway response.
+    If we want to provide status code to API gateway, the JSON body must be string.
+    """
+    if compress_response:
+        compressed = compress(response["body"])
+        return AWSAPIGatewayResponse(
+            statusCode=response["statusCode"],
+            body=compressed,
+            headers={"Content-Encoding": "gzip"},
+            isBase64Encoded=True,
+        )
+    return AWSAPIGatewayResponse(
+        statusCode=response["statusCode"], body=json.dumps(response["body"])
+    )
+
+
+def format_response(
+    response: Response, using_api_gateway: bool, compress_response: bool = False
+) -> Response | CompressedResponse | AWSAPIGatewayResponse:
+    """Convert response to API gateway response if the request arrived through API gateway.
+    If we want to provide status code to API gateway, the JSON body must be string.
+    """
+    if using_api_gateway:
+        return format_api_gateway_response(response, compress_response)
+    return format_direct_invocation_response(response, compress_response)
+
+
 type HandlerType = Callable[
-    [ArhoPayload | AWSAPIGatewayPayload, Any], Response | AWSAPIGatewayResponse
+    [ArhoPayload | AWSAPIGatewayPayload, dict[str, Any]],
+    Response | CompressedResponse | AWSAPIGatewayResponse,
 ]
 
 
@@ -178,8 +227,8 @@ def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType
 
     @wraps(func)
     def wrapper(
-        payload: ArhoPayload | AWSAPIGatewayPayload, context: Any
-    ) -> Response | AWSAPIGatewayResponse:
+        payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+    ) -> Response | CompressedResponse | AWSAPIGatewayResponse:
         try:
             return func(payload, context)
         except Exception:
@@ -214,7 +263,7 @@ class NormalizedEvent(TypedDict):
     body: ArhoPayload
 
 
-def normalize_event(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEvent:
+def normalize_payload(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEvent:
     raw_event = deepcopy(event)
     if is_api_gateway_event(event):
         event = cast("AWSAPIGatewayPayload", event)
@@ -226,15 +275,18 @@ def normalize_event(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEven
         body = cast("ArhoPayload", body_dict)
     else:
         event = cast("ArhoPayload", event)
-        headers = event.pop("headers", {})
-        body = event
+        headers = event.get("headers", {})
+        body = cast(
+            "ArhoPayload",
+            {key: value for key, value in event.items() if key != "headers"},
+        )
     return {"raw_event": raw_event, "headers": headers, "body": body}
 
 
 @return_500_on_unhandled_exceptions
 def handler(
-    payload: ArhoPayload | AWSAPIGatewayPayload, context: Any
-) -> Response | AWSAPIGatewayResponse:
+    payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+) -> Response | CompressedResponse | AWSAPIGatewayResponse:
     """Handler which is called when accessing the endpoint. We must handle both API
     gateway HTTP requests and regular lambda requests. API gateway requires
     the response body to be stringified.
@@ -248,9 +300,12 @@ def handler(
     LOGGER.info(f"Received payload {payload}...")
 
     using_api_gateway = is_api_gateway_event(payload)
-    normalized_event = normalize_event(payload)
-    event = normalized_event["body"]
-
+    normalized_payload = normalize_payload(payload)
+    event = normalized_payload["body"]
+    compress_response = (
+        "gzip"
+        in normalized_payload.get("headers", {}).get("Accept-Encoding", "").lower()
+    )
     try:
         event_type = Action(event["action"])
     except KeyError:
@@ -268,6 +323,7 @@ def handler(
                 ),
             ),
             using_api_gateway,
+            compress_response,
         )
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
@@ -542,5 +598,4 @@ def handler(
             ),
         )
 
-    LOGGER.info(lambda_response["body"]["title"])
-    return format_response(lambda_response, using_api_gateway)
+    return format_response(lambda_response, using_api_gateway, compress_response)

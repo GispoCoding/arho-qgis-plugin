@@ -3,6 +3,11 @@
 resource "aws_api_gateway_rest_api" "lambda_api" {
   name = "${var.prefix}-lambda_api"
   description = "API gateway for calling lambda"
+  # NOTE: We intentionally treat 'application/json' as a binary media type.
+  # The backing Lambda may return base64-encoded / compressed JSON while
+  # still using the 'application/json' content type, so API Gateway must
+  # handle it as binary to decode it correctly.
+  binary_media_types = ["application/json"]
 
   endpoint_configuration {
     types = ["PRIVATE"]
