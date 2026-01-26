@@ -59,60 +59,45 @@
           </property>
          </widget>
         </item>
-
-        <!-- Validity start date -->
         <item row="3" column="0">
          <widget class="QLabel" name="label_validity_start">
+          <property name="visible">
+           <bool>true</bool>
+          </property>
           <property name="text">
            <string>Voimassa alkaen:</string>
           </property>
-          <property name="visible">
-           <bool>false</bool>
-          </property>
          </widget>
         </item>
-        <item row="3" column="1">
-         <widget class="QDateEdit" name="validity_start_date">
-          <property name="calendarPopup">
-           <bool>true</bool>
-          </property>
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="visible">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-
-        <!--
         <item row="4" column="0">
-         <widget class="QLabel" name="label_validity_end">
+         <widget class="QLabel" name="label_approval">
           <property name="text">
-           <string>Voimassa asti:</string>
-          </property>
-          <property name="visible">
-           <bool>false</bool>
+           <string>Hyväksytty:</string>
           </property>
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QDateEdit" name="validity_end_date">
-          <property name="calendarPopup">
-           <bool>true</bool>
-          </property>
+         <widget class="QgsDateTimeEdit" name="approval_date">
           <property name="enabled">
            <bool>true</bool>
           </property>
-          <property name="visible">
-           <bool>false</bool>
+          <property name="currentSection">
+           <enum>QDateTimeEdit::DaySection</enum>
+          </property>
+          <property name="displayFormat">
+           <string>d.M.yyyy</string>
           </property>
          </widget>
         </item>
-        -->
+        <item row="3" column="1">
+         <widget class="QgsDateTimeEdit" name="validity_start_date">
+          <property name="displayFormat">
+           <string>d.M.yyyy</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
-
       <item>
        <spacer name="verticalSpacer_3">
         <property name="orientation">
@@ -194,6 +179,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsDateTimeEdit</class>
+   <extends>QDateTimeEdit</extends>
+   <header>qgsdatetimeedit.h</header>
+  </customwidget>
   <customwidget>
    <class>CodeComboBox</class>
    <extends>QComboBox</extends>
