@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QDate
 from qgis.PyQt.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -26,7 +25,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanTypeLayer,
 )
 from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
-from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_matter_id
+from arho_feature_template.utils.misc_utils import date_as_str, disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
@@ -101,10 +100,8 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             self.add_legal_effect_widget()
 
         # Approval
-        self.approved_date.setText(QDate(plan.approval_date).toString("dd.MM.yyyy") if plan.approval_date else "")
-        self.validity_start_date.setText(
-            QDate(plan.period_of_validity_start).toString("dd.MM.yyyy") if plan.period_of_validity_start else ""
-        )
+        self.approved_date.setText(date_as_str(plan.approval_date))
+        self.validity_start_date.setText(date_as_str(plan.period_of_validity_start))
 
         self.add_general_regulation_group_btn.clicked.connect(self.add_new_regulation_group)
         self.add_general_regulation_group_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))

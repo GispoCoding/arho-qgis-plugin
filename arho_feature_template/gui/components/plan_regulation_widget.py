@@ -30,6 +30,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
 )
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
+from arho_feature_template.utils.misc_utils import date_as_str
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -52,6 +53,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.add_attribute_or_information_btn: QPushButton
         self.del_btn: QPushButton
         self.expand_hide_btn: QToolButton
+        self.valid_mark_label: QLabel
 
         # INIT
         self.regulation = regulation
@@ -88,6 +90,13 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.expand_hide_btn.clicked.connect(self._on_expand_hide_btn_clicked)
         self._init_additional_attributes_and_information_btn()
         self._init_widgets()
+
+        if self.regulation.period_of_validity_start is None:
+            self.valid_mark_label.hide()
+        else:
+            self.valid_mark_label.setToolTip(
+                f"Voimassa alkaen: {date_as_str(self.regulation.period_of_validity_start)}"
+            )
 
     def _init_widgets(self):
         # Value input
