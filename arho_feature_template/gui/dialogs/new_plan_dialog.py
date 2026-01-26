@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QDate, Qt, pyqtSignal
+from qgis.PyQt.QtCore import QDate, QDateTime, Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLineEdit, QWidget
 
 from arho_feature_template.core.lambda_service import LambdaService
@@ -20,12 +20,18 @@ from arho_feature_template.utils.misc_utils import (
 )
 
 if TYPE_CHECKING:
+    from qgis.gui import QgsDateTimeEdit
+    from qgis.PyQt.QtWidgets import QLabel
+
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
 ui_path = resources.files(__package__) / "new_plan_dialog.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 DATA_ROLE = Qt.UserRole
+
+VALID_LIFECYCLE_TEXT = "Voimassa"
+APPORVED_LIFECYCLE_TEXT = "Hyväksytty kaava"
 
 
 class NewPlanDialog(QDialog, FormClass):  # type: ignore
@@ -46,6 +52,10 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.button_box: QDialogButtonBox
         self.widget_input: QWidget
         self.widget_progress: QWidget
+        self.label_validity_start: QLabel
+        self.validity_start_date: QgsDateTimeEdit
+        self.label_approval: QLabel
+        self.approval_date: QgsDateTimeEdit
 
         # INIT
         self.plan = None
@@ -65,6 +75,12 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         # Start date widget initially invisible
         self.label_validity_start.setVisible(False)
         self.validity_start_date.setVisible(False)
+        self.label_approval.setVisible(False)
+        self.approval_date.setVisible(False)
+
+        # Set dates as today initially
+        self.validity_start_date.setDateTime(QDateTime(QDate.currentDate()))
+        self.approval_date.setDateTime(QDateTime(QDate.currentDate()))
 
         # Show/hide start date based on lifecycle stage
         self.plan_lifecycle.currentTextChanged.connect(self._update_validity_widgets)
@@ -107,25 +123,20 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         # Required: plan name + lifecycle
         required_fields_filled = self.plan_name.text() != "" and self.plan_lifecycle.value() is not None
 
-        # If lifecycle stage is "Voimassa", date must also be visible (it will have a date)
+        # Require valid/approved date for corresponding lifecycle statuses
         if self.validity_start_date.isVisible():
             required_fields_filled = required_fields_filled and self.validity_start_date.date() is not None
+        if self.approval_date.isVisible():
+            required_fields_filled = required_fields_filled and self.approval_date.date() is not None
 
         ok_button.setEnabled(required_fields_filled)
 
     def _update_validity_widgets(self, text: str):
-        """
-        Show the start date widgets only when lifecycle stage is 'Voimassa'.
-        Sets the date to today when visible.
-        """
-        is_voimassa = text == "Voimassa"
-        self.label_validity_start.setVisible(is_voimassa)
-        self.validity_start_date.setVisible(is_voimassa)
+        self.label_validity_start.setVisible(text == VALID_LIFECYCLE_TEXT)
+        self.validity_start_date.setVisible(text == VALID_LIFECYCLE_TEXT)
 
-        if is_voimassa:
-            # Set the date to current date
-            today_qdate = QDate.currentDate()
-            self.validity_start_date.setDate(today_qdate)
+        self.label_approval.setVisible(text == APPORVED_LIFECYCLE_TEXT)
+        self.approval_date.setVisible(text == APPORVED_LIFECYCLE_TEXT)
 
         # Re-check required fields after visibility change
         self._check_required_fields()
@@ -133,9 +144,11 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
     def _on_ok_clicked(self):
         plan_id = self.source_plan.currentData(DATA_ROLE)
 
-        # Only pass the start date if lifecycle stage is "Voimassa"
         period_of_validity_start = (
-            self.validity_start_date.date().toPyDate() if self.plan_lifecycle.currentText() == "Voimassa" else None
+            self.validity_start_date.date() if self.plan_lifecycle.currentText() == VALID_LIFECYCLE_TEXT else None
+        )
+        approval_date = (
+            self.approval_date.date() if self.plan_lifecycle.currentText() == APPORVED_LIFECYCLE_TEXT else None
         )
 
         if plan_id is not None:
@@ -149,6 +162,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
                 self.plan_lifecycle.value(),
                 self.plan_name.text(),
                 period_of_validity_start=period_of_validity_start,
+                approval_date=approval_date,
             )
         else:
             self.plan = Plan(
@@ -156,6 +170,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
                 lifecycle_status_id=self.plan_lifecycle.value(),
                 plan_matter_id=get_active_plan_matter_id(),
                 period_of_validity_start=period_of_validity_start,
+                approval_date=approval_date,
             )
             self.plan.geom = PlanLayer.get_active_plan().geom
 
