@@ -54,6 +54,9 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
+LIFECYCLE_APPROVED_VALUE = 6
+LIFECYCLE_VALID_STATUS = 13
+
 
 MODEL = TypeVar("MODEL", bound=models.Base)
 
@@ -61,24 +64,36 @@ MODEL = TypeVar("MODEL", bound=models.Base)
 class PlanAlreadyExistsError(Exception):
     def __init__(self, plan_id: str) -> None:
         self.plan_id = plan_id
-        super().__init__(f"Plan '{plan_id}' already exists in the database.")
+        super().__init__(f"Plan '{plan_id}' already exists.")
 
 
 class PlanMatterNotFoundError(Exception):
     def __init__(self, plan_matter_id: UUID) -> None:
         self.plan_matter_id = plan_matter_id
-        super().__init__(f"Plan matter '{plan_matter_id}' not found in the database.")
+        super().__init__(f"Plan matter '{plan_matter_id}' does not exist.")
 
 
 class PlanNotFoundError(Exception):
     def __init__(self, plan_id: UUID) -> None:
-        super().__init__(f"Plan '{plan_id}' not found in the database")
+        super().__init__(f"Plan '{plan_id}' does not exist.")
 
 
 class LifeCycleStatusNotFoundError(Exception):
     def __init__(self, lifecycle_status_id: UUID) -> None:
+        super().__init__(f"Lifecycle status '{lifecycle_status_id} does not exist.")
+
+
+class ApprovalDateRequiredError(Exception):
+    def __init__(self) -> None:
         super().__init__(
-            f"Lifecycle status '{lifecycle_status_id} not found in the database"
+            "Approval date must be provided when copying plan to approved status or later."
+        )
+
+
+class StartDateRequiredError(Exception):
+    def __init__(self) -> None:
+        super().__init__(
+            "Period of validity start date must be provided when copying plan to valid status or later."
         )
 
 
@@ -1308,7 +1323,7 @@ class DatabaseClient:
         return details
 
     def import_plan(
-        self, plan_json: str, extra_data_dict: dict, overwrite: bool = False
+        self, plan_json: str, extra_data_dict: dict[str, Any], overwrite: bool = False
     ) -> DbId | None:
         ryhti_plan = ryhti_plan_from_json(plan_json)
         extra_data = extra_import_data_from_dict(extra_data_dict)
@@ -1338,7 +1353,12 @@ class DatabaseClient:
         return plan.id
 
     def copy_plan(
-        self, plan_id: str, lifecycle_status_id: str, plan_name: dict[str, str]
+        self,
+        plan_id: str,
+        lifecycle_status_id: str,
+        plan_name: dict[str, str],
+        approval_date: datetime.date | None = None,
+        period_of_validity_start: datetime.date | None = None,
     ) -> DbId | None:
         """Deep copy plan instance with all associated child objects and relationships."""
         with self.Session(autoflush=False, expire_on_commit=False) as session:
@@ -1352,10 +1372,32 @@ class DatabaseClient:
             if new_lifecycle_status is None:
                 raise LifeCycleStatusNotFoundError(UUID(lifecycle_status_id))
 
-            plan_copier = PlanCopier(plan, new_lifecycle_status, plan_name)
-            copied_plan = plan_copier.copy_plan()
+            approval_date = approval_date or plan.approval_date
+            if (
+                int(new_lifecycle_status.value) >= LIFECYCLE_APPROVED_VALUE
+                and not approval_date
+            ):
+                raise ApprovalDateRequiredError
 
+            period_of_validity_start = (
+                period_of_validity_start or plan.period_of_validity_start
+            )
+            if (
+                int(new_lifecycle_status.value) >= LIFECYCLE_VALID_STATUS
+                and not period_of_validity_start
+            ):
+                raise StartDateRequiredError
+
+            plan_copier = PlanCopier(
+                plan=plan,
+                lifecycle_status=new_lifecycle_status,
+                plan_name=plan_name,
+                approval_date=approval_date,
+                period_of_validity_start=period_of_validity_start,
+            )
+
+            copied_plan = plan_copier.copy_plan()
             session.add(copied_plan)
             session.commit()
 
-        return copied_plan.id
+            return copied_plan.id

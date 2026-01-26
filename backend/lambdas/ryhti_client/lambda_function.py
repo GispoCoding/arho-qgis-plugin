@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import datetime
 import enum
 import gzip
 import logging
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 import boto3
 import simplejson as json
+from pydantic import BaseModel, ValidationError
 
 from database.db_helper import (
     DbUser,
@@ -20,11 +22,13 @@ from database.db_helper import (
     get_user_credentials,
 )
 from ryhti_client.database_client import (
+    ApprovalDateRequiredError,
     DatabaseClient,
     LifeCycleStatusNotFoundError,
     PlanAlreadyExistsError,
     PlanMatterNotFoundError,
     PlanNotFoundError,
+    StartDateRequiredError,
 )
 from ryhti_client.ryhti_client import RyhtiClient
 
@@ -109,9 +113,6 @@ class ArhoPayload(TypedDict):
 
     action: str  # Action
     plan_uuid: NotRequired[str | None]  # UUID for plan to be used
-
-    # UUID for lifecycle status to be used
-    lifecycle_status_uuid: NotRequired[str | None]  # TODO: move to the data dict
 
     # True if we want JSON files to be saved in ryhti_debug
     save_json: NotRequired[bool | None]
@@ -281,6 +282,13 @@ def normalize_payload(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEv
             {key: value for key, value in event.items() if key != "headers"},
         )
     return {"raw_event": raw_event, "headers": headers, "body": body}
+
+
+class CopyPlanData(BaseModel):
+    lifecycle_status_uuid: str
+    plan_name: dict[str, str]
+    approval_date: datetime.date | None = None
+    period_of_validity_start: datetime.date | None = None
 
 
 @return_500_on_unhandled_exceptions
@@ -487,43 +495,46 @@ def handler(
                 ),
             )
         elif event_type is Action.COPY_PLAN:
-            data = event.get("data") or {}
-            LOGGER.debug("data: %s", data)
-            lifecycle_status_uuid = data.get("lifecycle_status_uuid")
-            LOGGER.debug("lifecycle_status_uuid: %s", lifecycle_status_uuid)
-            plan_name = data.get("plan_name")
-            if plan_uuid is None or lifecycle_status_uuid is None or plan_name is None:
-                LOGGER.warning("Copying plan failed. Required parameters missing.")
+            raw_data = event.get("data")
+            LOGGER.debug("data: %s", raw_data)
+            try:
+                copy_data = CopyPlanData.model_validate(raw_data or {})
+            except ValidationError as e:
                 status_code = 400
-                title = "Error copying plan."
-                copy_details = {
-                    "error": "Missing some required parameter: 'plan_uuid', 'data.lifecycle_status_uuid' or 'data.plan_name'"
-                }
+                title = "Error in provided data."
+                details = {"error": str(e)}
 
             else:
-                LOGGER.info("Copying plan...")
-                try:
-                    copied_plan_id = database_client.copy_plan(
-                        plan_uuid, lifecycle_status_uuid, plan_name
-                    )
-                    status_code = 200
-                    title = "Plan copied."
-                    copy_details = {"copied_plan_id": str(copied_plan_id)}
+                if plan_uuid is None:
+                    LOGGER.warning("Copying plan failed. Required parameters missing.")
+                    status_code = 400
+                    title = "Error in provided data."
+                    copy_details = {
+                        "error": "plan_uuid parameter is required for copying a plan."
+                    }
 
-                except Exception as e:
-                    title = "Error copying plan."
-                    if isinstance(e, PlanNotFoundError):
+                else:
+                    LOGGER.info("Copying plan...")
+                    try:
+                        copied_plan_id = database_client.copy_plan(
+                            plan_uuid,
+                            copy_data.lifecycle_status_uuid,
+                            copy_data.plan_name,
+                            approval_date=copy_data.approval_date,
+                            period_of_validity_start=copy_data.period_of_validity_start,
+                        )
+                        status_code = 200
+                        title = "Plan copied."
+                        copy_details = {"copied_plan_id": str(copied_plan_id)}
+
+                    except (ApprovalDateRequiredError, StartDateRequiredError) as e:
+                        title = "Error copying plan."
+                        status_code = 400
+                        copy_details = {"error": str(e)}
+                    except (PlanNotFoundError, LifeCycleStatusNotFoundError) as e:
+                        title = "Error copying plan."
                         status_code = 404
-                        copy_details = {"error": f'plan "{plan_uuid}" not found'}
-                    if isinstance(e, LifeCycleStatusNotFoundError):
-                        status_code = 404
-                        copy_details = {
-                            "error": f'lifecycle_status_uuid" {lifecycle_status_uuid} not found'
-                        }
-                    else:
-                        LOGGER.exception("Error copying plan.")
-                        status_code = 500
-                        copy_details = {"error": "Please contact support"}
+                        copy_details = {"error": str(e)}
 
             lambda_response = Response(
                 statusCode=status_code,
@@ -550,10 +561,10 @@ def handler(
         if plan_json is None or extra_data is None:
             status_code = 400
             title = "Missing plan data or extra data."
-            details: dict[str, Any] = {}
+            details = {}
         else:
             plan_json = cast("str", plan_json)
-            extra_data = cast("dict", extra_data)
+            extra_data = cast("dict[str, Any]", extra_data)
             overwrite = event.get("force") is True
 
             try:

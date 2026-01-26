@@ -1,9 +1,14 @@
-from typing import Any, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import uuid4
 
 from sqlalchemy.orm import class_mapper
 
 from database import codes, models
+
+if TYPE_CHECKING:
+    from datetime import date
 
 MODEL = TypeVar("MODEL", bound=models.Base)
 PLAN_OBJECT_MODEL = TypeVar("PLAN_OBJECT_MODEL", bound=models.PlanObjectBase)
@@ -15,10 +20,14 @@ class PlanCopier:
         plan: models.Plan,
         lifecycle_status: codes.LifeCycleStatus,
         plan_name: dict[str, str],
+        approval_date: date | None = None,
+        period_of_validity_start: date | None = None,
     ) -> None:
         self.plan = plan
         self.lifecycle_status = lifecycle_status
         self.plan_name = plan_name
+        self.approval_date = approval_date
+        self.period_of_validity_start = period_of_validity_start
 
         # Mapping original regulation group ID → duplicated regulation group
         self.regulation_group_mapping: dict[str, models.PlanRegulationGroup] = {}
@@ -29,7 +38,9 @@ class PlanCopier:
         model_class = type(obj)
         mapper = class_mapper(model_class)
         data = {
-            c.key: getattr(obj, c.key) for c in mapper.columns if c.key not in overrides
+            column.key: getattr(obj, column.key)
+            for column in mapper.columns
+            if column.key not in overrides
         }
         data.update(overrides)
         return model_class(**data)
@@ -38,8 +49,10 @@ class PlanCopier:
         self.duplicate_plan = self.clone_model(
             self.plan,
             id=uuid4(),
-            lifecycle_status=self.lifecycle_status,
             name=self.plan_name,
+            lifecycle_status=self.lifecycle_status,
+            approval_date=self.approval_date,
+            period_of_validity_start=self.period_of_validity_start,
         )
 
         # Documents
@@ -109,6 +122,7 @@ class PlanCopier:
                 id=uuid4(),
                 plan_regulation_group=duplicate_regulation_group,
                 lifecycle_status=self.lifecycle_status,
+                period_of_validity_start=self.period_of_validity_start,
             )
 
             duplicate_regulation.types_of_verbal_plan_regulations = (
@@ -130,19 +144,21 @@ class PlanCopier:
                 id=uuid4(),
                 plan_regulation_group=duplicate_regulation_group,
                 lifecycle_status=self.lifecycle_status,
+                period_of_validity_start=self.period_of_validity_start,
             )
             duplicate_proposition.plan_themes = proposition.plan_themes
 
     def copy_plan_objects(
         self, plan_objects: list[PLAN_OBJECT_MODEL]
     ) -> list[PLAN_OBJECT_MODEL]:
-        duplicate_plan_objects = []
+        duplicate_plan_objects: list[PLAN_OBJECT_MODEL] = []
         for plan_object in plan_objects:
             duplicate_plan_object = self.clone_model(
                 plan_object,
                 id=uuid4(),
                 plan=self.duplicate_plan,
                 lifecycle_status=self.lifecycle_status,
+                period_of_validity_start=self.period_of_validity_start,
             )
             duplicate_regulation_groups = [
                 self.regulation_group_mapping[original_regulation_group.id]
