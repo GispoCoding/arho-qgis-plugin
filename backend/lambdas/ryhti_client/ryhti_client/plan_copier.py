@@ -20,9 +20,12 @@ class PlanCopier:
         self.lifecycle_status = lifecycle_status
         self.plan_name = plan_name
 
+        # Mapping original regulation group ID → duplicated regulation group
+        self.regulation_group_mapping: dict[str, models.PlanRegulationGroup] = {}
+
     @classmethod
     def clone_model(cls, obj: MODEL, **overrides: Any) -> MODEL:
-        """Clone a SQLAlchemy model instance with the same column data."""
+        """Clone a SQLAlchemy model instance with the same column data and overrides."""
         model_class = type(obj)
         mapper = class_mapper(model_class)
         data = {
@@ -32,7 +35,6 @@ class PlanCopier:
         return model_class(**data)
 
     def copy_plan(self) -> models.Plan:
-        self.regulation_group_mapping: dict[str, models.PlanRegulationGroup] = {}
         self.duplicate_plan = self.clone_model(
             self.plan,
             id=uuid4(),
@@ -40,15 +42,18 @@ class PlanCopier:
             name=self.plan_name,
         )
 
+        # Documents
         self.duplicate_plan.documents = [
             self.clone_model(document, id=uuid4(), plan=self.duplicate_plan)
             for document in self.plan.documents
         ]
+
+        # Master plan effects
         self.duplicate_plan.legal_effects_of_master_plan = (
             self.plan.legal_effects_of_master_plan
         )
 
-        # Regulation groups
+        # Regulation groups and dependencies
         self.copy_regulation_groups()
 
         # Plan objects
@@ -67,8 +72,9 @@ class PlanCopier:
         return self.duplicate_plan
 
     def copy_regulation_groups(self) -> None:
-        duplicate_general_regulation_groups = []
-        duplicate_regulation_groups = []
+        duplicate_regulation_groups: list[models.PlanRegulationGroup] = []
+        duplicate_general_regulation_groups: list[models.PlanRegulationGroup] = []
+
         for regulation_group in self.plan.regulation_groups:
             duplicate_regulation_group = self.clone_model(
                 regulation_group, id=uuid4(), plan=self.duplicate_plan
