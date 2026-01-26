@@ -640,7 +640,9 @@ class PlanManager(QObject):
                 layer.filter_layer_by_plan_matter_id(plan_matter_id)
 
             # Name is set as localized text in primary language
-            set_active_plan_matter_name(PlanMatterLayer.get_plan_matter_name(plan_matter_id))
+            plan_matter_name = PlanMatterLayer.get_plan_matter_name(plan_matter_id)
+            # Don't save Nimetön as plan name in project variables
+            set_active_plan_matter_name(plan_matter_name if plan_matter_name != "Nimetön" else "")
         else:
             for layer in plan_matter_layers:
                 layer.hide_all_features()
@@ -717,12 +719,9 @@ class PlanManager(QObject):
 
             plan_name = PlanLayer.get_plan_name(plan_id)
             # Don't save Nimetön as plan name in project variables
-            if plan_name == "Nimetön":
-                plan_name = ""
+            set_active_plan_name(plan_name if plan_name != "Nimetön" else "")
         else:
-            plan_name = ""
-
-        set_active_plan_name(plan_name)
+            set_active_plan_name("")
 
     def zoom_to_active_plan(self):
         """Zoom to the active plan layer."""
