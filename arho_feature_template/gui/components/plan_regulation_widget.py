@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from qgis.core import NULL, QgsApplication
 from qgis.PyQt import uic
@@ -30,7 +30,10 @@ from arho_feature_template.gui.components.value_input_widgets import (
 )
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import date_as_str
+
+if TYPE_CHECKING:
+    from arho_feature_template.gui.components.validity_label import ValidityLabel
+
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -53,7 +56,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.add_attribute_or_information_btn: QPushButton
         self.del_btn: QPushButton
         self.expand_hide_btn: QToolButton
-        self.valid_mark_label: QLabel
+        self.validity_label: ValidityLabel
 
         # INIT
         self.regulation = regulation
@@ -91,12 +94,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self._init_additional_attributes_and_information_btn()
         self._init_widgets()
 
-        if self.regulation.period_of_validity_start is None:
-            self.valid_mark_label.hide()
-        else:
-            self.valid_mark_label.setToolTip(
-                f"Voimassa alkaen: {date_as_str(self.regulation.period_of_validity_start)}"
-            )
+        self.validity_label.set_from_model(self.regulation)
 
     def _init_widgets(self):
         # Value input
