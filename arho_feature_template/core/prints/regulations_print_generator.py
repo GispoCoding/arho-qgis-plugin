@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
+from functools import cmp_to_key
 from hashlib import sha256
 from typing import TYPE_CHECKING
 
@@ -33,6 +35,8 @@ from arho_feature_template.utils.misc_utils import iface, symbol_fingerprint
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -202,6 +206,24 @@ class RegulationsPrintGenerator:
         def move_y_coordinate(y: float, item: QgsLayoutItem) -> float:
             return float(y + max(item.sizeWithUnits().height(), cls.ELEMENT_MIN_HEIGHT) + cls.SPACE_BETWEEN_ELEMENTS)
 
+        def compare_elements(
+            a: tuple[RegulationPrintElement, int, str, str], b: tuple[RegulationPrintElement, int, str, str]
+        ) -> int:
+            """Compare tuples with RegulationPrintElements to sort them."""
+            # 1. Compare symbol indices (legend order)
+            if a[1] != b[1]:
+                return -1 if a[1] < b[1] else 1
+
+            # 2. Compare letter codes if needed
+            if a[2] != b[2]:
+                return -1 if a[2] < b[2] else 1
+
+            # 2. Compare headings if needed
+            if a[3] != b[3]:
+                return -1 if a[3] < b[3] else 1
+
+            return 0
+
         regulation_groups = active_regulation_groups_library.regulation_groups
 
         ordered_plan_object_layers = [LandUseAreaLayer, OtherAreaLayer, LineLayer, PointLayer]
@@ -218,10 +240,27 @@ class RegulationsPrintGenerator:
             feats = list(vector_layer.getFeatures())
             plan_objects = layer.models_from_features(feats, regulation_groups)
 
+            # Construct symbol ordering dict
+            symbol_index_map: dict[str, int] = {}
+            failed_count = 0
+            for index, symbol_item in enumerate(layer.get_from_project().renderer().legendSymbolItems()):
+                symbol = symbol_item.symbol()
+                try:
+                    symbol_index_map[symbol_fingerprint(symbol_item.symbol())] = index
+                except TypeError:
+                    failed_count += 1
+
+            if failed_count > 0:
+                logger.debug("Failed to get symbol of %s legend symbol items.", str(failed_count))
+
+            # Collection of RegulationPrintElements with symbol index, letter code and heading.
+            # Order of the elements is based on them
+            elements_to_sort: list[tuple[RegulationPrintElement, int, str, str]] = []
+
+            symbols_for_feats = PlanObjectIconRenderer.get_symbols_for_layer_features(vector_layer, feats)
+
             # List elements are in same order so we can zip lists
-            for plan_object, (feat, symbol) in zip(
-                plan_objects, PlanObjectIconRenderer.get_symbols_for_layer_features(vector_layer, feats)
-            ):
+            for plan_object, (feat, symbol) in zip(plan_objects, symbols_for_feats):
                 if symbol is None:
                     # What to do if no symbol was found?
                     continue
@@ -236,6 +275,17 @@ class RegulationsPrintGenerator:
                 if hash_value in print_element_hashes:
                     continue
 
+                # Default to large index if symbol is not found in map
+                symbol_index = symbol_index_map.get(symbol_fingerprint(symbol), 10000)
+                elements_to_sort.append(
+                    (element, symbol_index, element.letter_code.casefold(), element.heading.casefold())
+                )
+
+            # Sort elements to add them in correct order
+            elements_to_sort.sort(key=cmp_to_key(compare_elements))
+
+            # Add elements to layout
+            for element, _, _, _ in elements_to_sort:
                 item = LayoutItemFactory.new_regulation_print_item(element, layout, (x_coord, y_coord))
                 print_element_hashes.add(hash_value)
 
