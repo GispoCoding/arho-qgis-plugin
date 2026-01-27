@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import date
 from uuid import uuid4
 
 import pytest
@@ -78,14 +79,20 @@ def test_copy_plan(
     database_client: DatabaseClient,
     session: Session,
     complete_test_plan: models.Plan,
-    plan_proposal_status_instance: codes.LifeCycleStatus,
+    valid_status_instance: codes.LifeCycleStatus,
     remove_plan: Callable[[str], None],
 ):
     """Copies complete_test_plan object and checks that all relationships are duplicated correctly."""
     original_plan_id = complete_test_plan.id
-    new_lifecycle_status_id = plan_proposal_status_instance.id
+    approval_date = date(2026, 1, 1)
+    period_of_validity_start = date(2026, 2, 1)
+
     copied_plan_id = database_client.copy_plan(
-        original_plan_id, new_lifecycle_status_id, plan_name={"fin": "Copied plan"}
+        original_plan_id,
+        lifecycle_status_id=valid_status_instance.id,
+        plan_name={"fin": "Copied plan"},
+        approval_date=approval_date,
+        period_of_validity_start=period_of_validity_start,
     )
     assert copied_plan_id is not None
 
@@ -100,6 +107,14 @@ def test_copy_plan(
     assert copied_plan.plan_matter == original_plan.plan_matter
     assert len(copied_plan.documents) == len(original_plan.documents)
 
+    assert copied_plan.approval_date == approval_date
+    assert copied_plan.period_of_validity_start == period_of_validity_start
+
+    assert (
+        copied_plan.legal_effects_of_master_plan
+        == original_plan.legal_effects_of_master_plan
+    )
+
     # Land use areas
     assert len(copied_plan.land_use_areas) == len(original_plan.land_use_areas)
     land_use_area_1 = original_plan.land_use_areas[0]
@@ -112,7 +127,8 @@ def test_copy_plan(
         None,
     )
     assert copied_land_use_area_1 is not None
-    assert copied_land_use_area_1.lifecycle_status.value == "04"
+    assert copied_land_use_area_1.lifecycle_status.value == valid_status_instance.value
+    assert copied_land_use_area_1.period_of_validity_start == period_of_validity_start
     assert len(land_use_area_1.lifecycle_dates) == len(
         copied_land_use_area_1.lifecycle_dates
     )
@@ -133,7 +149,7 @@ def test_copy_plan(
         None,
     )
     assert copied_other_area_1 is not None
-    assert copied_other_area_1.lifecycle_status.value == "04"
+    assert copied_other_area_1.lifecycle_status.value == valid_status_instance.value
     assert len(other_area_1.lifecycle_dates) == len(copied_other_area_1.lifecycle_dates)
     assert other_area_1.type_of_underground == copied_other_area_1.type_of_underground
 
@@ -147,11 +163,11 @@ def test_copy_plan(
         None,
     )
     assert copied_point_1 is not None
-    assert copied_point_1.lifecycle_status.value == "04"
+    assert copied_point_1.lifecycle_status.value == valid_status_instance.value
     assert len(point_1.lifecycle_dates) == len(copied_point_1.lifecycle_dates)
     assert point_1.type_of_underground == copied_point_1.type_of_underground
 
-    # Regulation groups
+    # General regulation groups
     assert len(copied_plan.general_plan_regulation_groups) == len(
         original_plan.general_plan_regulation_groups
     )
@@ -175,6 +191,7 @@ def test_copy_plan(
         == copied_general_regulation_group.plan_propositions
     )
 
+    # General regulations
     general_regulation = general_regulation_group.plan_regulations[0]
     copied_general_regulation = next(
         (
@@ -185,7 +202,12 @@ def test_copy_plan(
         None,
     )
     assert copied_general_regulation is not None
-    assert copied_general_regulation.lifecycle_status.value == "04"
+    assert (
+        copied_general_regulation.period_of_validity_start == period_of_validity_start
+    )
+    assert (
+        copied_general_regulation.lifecycle_status.value == valid_status_instance.value
+    )
     assert (
         general_regulation.type_of_plan_regulation
         == copied_general_regulation.type_of_plan_regulation
@@ -196,10 +218,26 @@ def test_copy_plan(
     assert len(general_regulation.additional_information) == len(
         copied_general_regulation.additional_information
     )
-    assert len(copied_plan.regulation_groups) == len(original_plan.regulation_groups)
 
-    assert (
-        copied_plan.legal_effects_of_master_plan
-        == original_plan.legal_effects_of_master_plan
+    # Regulation groups
+    assert len(copied_plan.regulation_groups) == len(original_plan.regulation_groups)
+    copied_pedestrian_group = next(
+        (
+            group
+            for group in copied_plan.regulation_groups
+            if group.short_name == "jk/pp"
+        ),
+        None,
     )
+    assert copied_pedestrian_group is not None
+
+    # Regulations
+
+    pedestrian_regulation = next(
+        (regulation for regulation in copied_pedestrian_group.plan_regulations), None
+    )
+    assert pedestrian_regulation is not None
+    assert pedestrian_regulation.lifecycle_status.value == valid_status_instance.value
+    assert pedestrian_regulation.period_of_validity_start == period_of_validity_start
+
     remove_plan(copied_plan_id)
