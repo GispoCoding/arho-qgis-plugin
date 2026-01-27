@@ -40,7 +40,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="valid_mark_label">
+      <widget class="ValidityLabel" name="validity_label">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -49,8 +49,8 @@
        </property>
        <property name="maximumSize">
         <size>
-         <width>24</width>
-         <height>24</height>
+         <width>23</width>
+         <height>23</height>
         </size>
        </property>
        <property name="text">
@@ -163,6 +163,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ValidityLabel</class>
+   <extends>QLabel</extends>
+   <header>arho_feature_template.gui.components.validity_label</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
