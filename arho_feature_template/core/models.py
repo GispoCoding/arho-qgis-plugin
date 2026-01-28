@@ -24,7 +24,7 @@ from arho_feature_template.utils.localization_utils import (
 from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
-    from datetime import datetime
+    from datetime import date
 
     from qgis.core import QgsGeometry
 
@@ -327,8 +327,9 @@ class Regulation(PlanBaseModel):
     subject_identifiers: list[str] = field(default_factory=list)
     verbal_regulation_type_ids: list[str] = field(default_factory=list)
     regulation_group_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
-    period_of_validity_start: datetime | None = None
-    period_of_validity_end: datetime | None = None
+    lifecycle_status_id: str | None = None
+    period_of_validity_start: date | None = None
+    period_of_validity_end: date | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -392,8 +393,9 @@ class Proposition(PlanBaseModel):
     theme_ids: list[str] = field(default_factory=list, compare=False, metadata={"hash": True})
     proposition_number: int | None = None
     regulation_group_id: str | None = field(compare=False, default=None)
-    period_of_validity_start: datetime | None = None
-    period_of_validity_end: datetime | None = None
+    lifecycle_status_id: str | None = None
+    period_of_validity_start: date | None = None
+    period_of_validity_end: date | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -495,8 +497,9 @@ class PlanObject(PlanBaseModel):
     layer_name: str | None = None
     name: LocalizedText | None = None
     description: LocalizedText | None = None
-    period_of_validity_start: datetime | None = None
-    period_of_validity_end: datetime | None = None
+    lifecycle_status_id: str | None = None
+    period_of_validity_start: date | None = None
+    period_of_validity_end: date | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
     plan_id: int | None = None
     modified: bool = field(compare=False, default=True)
@@ -562,9 +565,9 @@ class Plan(PlanBaseModel):
     legal_effect_ids: list[str] = field(default_factory=list)
     geom: QgsGeometry | None = None
     plan_matter_id: str | None = None
-    approval_date: datetime | None = None
-    period_of_validity_start: datetime | None = None
-    period_of_validity_end: datetime | None = None
+    approval_date: date | None = None
+    period_of_validity_start: date | None = None
+    period_of_validity_end: date | None = None
     locked: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
@@ -595,11 +598,11 @@ class Document(PlanBaseModel):
     personal_data_content_id: str | None = None
     retention_time_id: str | None = None
     language_id: str | None = None
-    document_date: datetime | None = None
+    document_date: date | None = None
     # exported_at: str | None = None
     # exported_file_key:
-    confirmation_date: datetime | None = None
-    arrival_date: datetime | None = None
+    confirmation_date: date | None = None
+    arrival_date: date | None = None
     plan_id: str | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
