@@ -216,9 +216,6 @@ class RegulationsPrintGenerator:
                 y_coord = cls.START_Y
                 x_coord = cls.COL_2_START_X
 
-            heading_label = cls.add_object_type_heading(layer.name, layout, (x_coord, y_coord))
-            y_coord = move_y_coordinate(y_coord, heading_label)
-
             vector_layer = layer.get_from_project()
             feats = list(vector_layer.getFeatures())
             plan_objects = layer.models_from_features(feats, regulation_groups)
@@ -284,9 +281,6 @@ class RegulationsPrintGenerator:
 
                 # Move Y coordinate to be ready for next item
                 y_coord = move_y_coordinate(y_coord, item)
-
-            # Put extra space between plan object types
-            y_coord += 5
 
     @classmethod
     def _item_does_not_fit_to_page(cls, y_coord: float, item: QgsLayoutItem) -> bool:
