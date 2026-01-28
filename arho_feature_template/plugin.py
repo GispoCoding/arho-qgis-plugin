@@ -315,6 +315,7 @@ class Plugin:
 
         self.plan_regulations_print = self.add_action(
             text="Luo tulosteen määräysosa",
+            icon=QgsApplication.getThemeIcon("mActionFileNew.svg"),
             triggered_callback=self.generate_plan_regulations_print,
             add_to_menu=True,
             add_to_toolbar=False,
