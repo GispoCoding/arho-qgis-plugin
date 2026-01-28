@@ -14,7 +14,9 @@ from arho_feature_template.gui.components.plan_regulation_widget import Regulati
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
+    from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QPushButton
+
+    from arho_feature_template.gui.components.value_input_widgets import LocalizedSinglelineTextInputWidget
 
 ui_path = resources.files(__package__) / "general_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -32,7 +34,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         # TYPES
         self.frame: QFrame
-        self.heading: QLineEdit
+        self.heading: LocalizedSinglelineTextInputWidget
         # self.edit_btn: QPushButton
         self.add_field_btn: QPushButton
         self.del_btn: QPushButton
@@ -61,7 +63,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def from_model(self, regulation_group: RegulationGroup):
         self.regulation_group = regulation_group
 
-        self.heading.setText(regulation_group.heading if regulation_group.heading else "")
+        self.heading.set_value(regulation_group.heading)
 
         # Remove existing child widgets if reinitializing
         for widget in self.regulation_widgets:
@@ -108,7 +110,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
             type_code_id=self.regulation_group.type_code_id,
-            heading=self.heading.text(),
+            heading=self.heading.get_value(),
             letter_code=None,
             color_code=None,
             regulations=[widget.into_model() for widget in self.regulation_widgets],

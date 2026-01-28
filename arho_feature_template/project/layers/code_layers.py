@@ -179,6 +179,17 @@ class RegionLayer(AbstractCodeLayer):
 class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
 
+    valid_status_values: ClassVar[list[str]] = ["11", "13"]  # "Voimassa ennen kaavan lainvoimaisuutta", "Voimassa"
+    repealed_status_values: ClassVar[list[str]] = ["14"]  # "Kumoutunut"
+
+    @classmethod
+    def is_valid_status(cls, _id: str) -> bool:
+        return cls.get_attribute_by_id("value", _id) in cls.valid_status_values
+
+    @classmethod
+    def is_repealed_status(cls, _id: str) -> bool:
+        return cls.get_attribute_by_id("value", _id) in cls.repealed_status_values
+
 
 class OrganisationLayer(AbstractCodeLayer):
     name = "Toimija"

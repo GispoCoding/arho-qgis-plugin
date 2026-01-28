@@ -2,6 +2,7 @@ from qgis.PyQt.QtGui import QPixmap
 from qgis.PyQt.QtWidgets import QLabel, QSizePolicy
 
 from arho_feature_template.core.models import PlanBaseModel
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import date_as_str
 
@@ -18,23 +19,31 @@ class ValidityLabel(QLabel):
         self.setScaledContents(True)
 
     def set_from_model(self, model: PlanBaseModel) -> None:
-        if hasattr(model, "period_of_validity_end") and model.period_of_validity_end is not None:
+        if not hasattr(model, "lifecycle_status_id"):
+            self.hide_widget()
+            return
+
+        if LifeCycleStatusLayer.is_repealed_status(model.lifecycle_status_id):
             self.setPixmap(self.REPEALED_MARK)
 
-            if hasattr(model, "period_of_validity_start") and model.period_of_validity_start is not None:
+            if model.period_of_validity_start is not None and model.period_of_validity_end is not None:  # type: ignore
                 self.setToolTip(
                     "KUMOTTU\n"  # noqa: ISC003
-                    + f"Voimassa {date_as_str(model.period_of_validity_start)} - "
-                    + date_as_str(model.period_of_validity_end)
+                    + f"Voimassa {date_as_str(model.period_of_validity_start)} - "  # type: ignore
+                    + date_as_str(model.period_of_validity_end)  # type: ignore
                 )
-            # Should this ever happen?
+            elif model.period_of_validity_end is not None:  # type: ignore
+                self.setToolTip(f"KUMOTTU\nKumottu alkaen: {date_as_str(model.period_of_validity_end)}")  # type: ignore
             else:
-                self.setToolTip(f"KUMOTTU\nKumottu alkaen: {date_as_str(model.period_of_validity_end)}")
+                self.setToolTip("KUMOTTU")
 
-        elif hasattr(model, "period_of_validity_start") and model.period_of_validity_start is not None:
+        elif LifeCycleStatusLayer.is_valid_status(model.lifecycle_status_id):
             self.setPixmap(self.VALID_MARK)
-            self.setToolTip(f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}")
+            self.setToolTip(f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}")  # type: ignore
 
         else:
-            self.setToolTip("")
-            self.hide()
+            self.hide_widget()
+
+    def hide_widget(self):
+        self.setToolTip("")
+        self.hide()

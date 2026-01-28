@@ -45,27 +45,19 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     add_general_regulation_group_btn: QPushButton
     documents_layout: QVBoxLayout
     add_document_btn: QPushButton
+    approved_date_label: QLabel
+    approved_date: QLineEdit
+    validity_start_label: QLabel
+    validity_start_date: QLineEdit
+    validity_end_label: QLabel
+    validity_end_date: QLineEdit
     lock_checkbox: QCheckBox
     button_box: QDialogButtonBox
+    general_data_layout: QFormLayout
 
     def __init__(self, plan: Plan, _regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
         super().__init__(parent)
         self.setupUi(self)
-
-        # TYPES
-        self.name_line_edit: QLineEdit
-        self.description_text_edit: QTextEdit
-        self.scale_spin_box: QSpinBox
-        self.lifecycle_status_combo_box: CodeComboBox
-        self.regulations_layout: QVBoxLayout
-        self.add_general_regulation_group_btn: QPushButton
-        self.documents_layout: QVBoxLayout
-        self.add_document_btn: QPushButton
-        self.approved_date: QLineEdit
-        self.validity_start_date: QLineEdit
-        self.lock_checkbox: QCheckBox
-        self.button_box: QDialogButtonBox
-        self.general_data_layout: QFormLayout
 
         # INIT
         self.plan = plan
@@ -100,8 +92,22 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             self.add_legal_effect_widget()
 
         # Approval
-        self.approved_date.setText(date_as_str(plan.approval_date))
-        self.validity_start_date.setText(date_as_str(plan.period_of_validity_start))
+        if plan.approval_date:
+            self.approved_date.setText(date_as_str(plan.approval_date))
+        else:
+            self.general_data_layout.removeRow(self.approved_date_label)
+
+        # Validity start
+        if plan.period_of_validity_start:
+            self.validity_start_date.setText(date_as_str(plan.period_of_validity_start))
+        else:
+            self.general_data_layout.removeRow(self.validity_start_label)
+
+        # Validity end
+        if plan.period_of_validity_end:
+            self.validity_end_date.setText(date_as_str(plan.period_of_validity_end))
+        else:
+            self.general_data_layout.removeRow(self.validity_end_label)
 
         self.add_general_regulation_group_btn.clicked.connect(self.add_new_regulation_group)
         self.add_general_regulation_group_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
