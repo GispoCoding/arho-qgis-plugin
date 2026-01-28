@@ -24,7 +24,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanTypeLayer
-from arho_feature_template.utils.localization_utils import deserialize_localized_text, serialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
     def get_plan_matter_name(cls, plan_matter_id: str) -> str:
         """Plan matter name in primary language."""
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_matter_id)
-        name = deserialize_localized_text(attribute_value)
+        name = get_localized_text(attribute_value)
 
         return name or "Nimetön"  # TODO: Localize fallback name?
 
@@ -150,7 +150,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
         if type_id is None:
             return None
         attribute_value = PlanTypeLayer.get_attribute_value_by_another_attribute_value("name", "id", cast(str, type_id))
-        return deserialize_localized_text(attribute_value)
+        return get_localized_text(attribute_value)
 
     @classmethod
     def get_plan_matter_producers_plan_identifier(cls, plan_matter_id: str) -> str | None:
@@ -174,8 +174,9 @@ class PlanLayer(AbstractPlanLayer):
 
         feature = cls.initialize_feature_from_model(model)
         feature.setGeometry(model.geom)
-        feature["name"] = serialize_localized_text(model.name)
-        feature["description"] = serialize_localized_text(model.description)
+        # TODO: Decide if plan name and description are actually localized data
+        feature["name"] = {"fin": model.name}
+        feature["description"] = {"fin": model.description}
         feature["scale"] = model.scale
         feature["lifecycle_status_id"] = model.lifecycle_status_id
         feature["plan_matter_id"] = model.plan_matter_id
@@ -190,8 +191,8 @@ class PlanLayer(AbstractPlanLayer):
 
         return Plan(
             geom=feature.geometry(),
-            name=deserialize_localized_text(feature["name"]),
-            description=deserialize_localized_text(feature["description"]),
+            name=get_localized_text(feature["name"]),
+            description=get_localized_text(feature["description"]),
             scale=feature["scale"],
             lifecycle_status_id=feature["lifecycle_status_id"],
             general_regulations=RegulationGroupLayer.models_from_features(general_regulation_features),
@@ -252,8 +253,8 @@ class PlanLayer(AbstractPlanLayer):
         return [
             Plan(
                 geom=feature.geometry(),
-                name=deserialize_localized_text(feature["name"]),
-                description=deserialize_localized_text(feature["description"]),
+                name=get_localized_text(feature["name"]),
+                description=get_localized_text(feature["description"]),
                 scale=feature["scale"],
                 lifecycle_status_id=feature["lifecycle_status_id"],
                 general_regulations=groups_by_plan_object_id[feature["id"]],
@@ -270,7 +271,7 @@ class PlanLayer(AbstractPlanLayer):
     @classmethod
     def get_plan_name(cls, plan_id: str) -> str:
         attribute_value = cls.get_attribute_value_by_another_attribute_value("name", "id", plan_id)
-        name = deserialize_localized_text(attribute_value)
+        name = get_localized_text(attribute_value)
 
         return name or "Nimetön"
 
@@ -556,7 +557,7 @@ def attribute_value_model_from_feature(feature: QgsFeature) -> AttributeValue:
         text_syntax=feature["text_syntax"],
         code_list=feature["code_list"],
         code_value=feature["code_value"],
-        code_title=deserialize_localized_text(feature["code_title"]),
+        code_title=get_localized_text(feature["code_title"]),
         height_reference_point=feature["height_reference_point"],
     )
 
@@ -573,7 +574,7 @@ def update_feature_from_attribute_value_model(value: AttributeValue | None, feat
     feature["text_syntax"] = value.text_syntax
     feature["code_list"] = value.code_list
     feature["code_value"] = value.code_value
-    feature["code_title"] = serialize_localized_text(value.code_title)
+    feature["code_title"] = {"fin": value.code_title}  # TODO: Refactor whole code widget
     feature["height_reference_point"] = value.height_reference_point
 
 

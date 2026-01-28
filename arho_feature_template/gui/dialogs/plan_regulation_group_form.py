@@ -32,7 +32,7 @@ from arho_feature_template.gui.components.tree_with_search_widget import TreeWit
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 
 if TYPE_CHECKING:
     from qgis.gui import QgsSpinBox
@@ -177,7 +177,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         _, regulation_type_attributes = item.data(column, Qt.UserRole)
         text = regulation_type_attributes["description"]
         if isinstance(text, dict):
-            text = deserialize_localized_text(text)
+            text = get_localized_text(text)
         self.regulation_info.setText(text)
 
     def add_selected_regulation(self, item: QTreeWidgetItem, column: int):

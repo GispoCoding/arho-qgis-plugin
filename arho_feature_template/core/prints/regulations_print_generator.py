@@ -28,7 +28,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
     PointLayer,
 )
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import iface, symbol_fingerprint
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ class RegulationPrintElement:
         regulation_texts: list[str] = []
         for group in plan_object.regulation_groups:
             if group.heading:
-                localized_heading = deserialize_localized_text(group.heading, language)
+                localized_heading = get_localized_text(group.heading, language)
                 if not localized_heading:
                     continue
                 found_headings.append(localized_heading)
@@ -73,11 +73,11 @@ class RegulationPrintElement:
             regulation_texts.extend(
                 text
                 for text in (
-                    deserialize_localized_text(regulation.value.text_value, language)
+                    get_localized_text(regulation.value.text_value, language)
                     for regulation in group.regulations
                     if regulation.is_verbal_regulation() and regulation.value and regulation.value.text_value
                 )
-                if text  # Filter Nones that may come from deserialize_localized_text
+                if text  # Filter Nones that may come from get_localized_text
             )
 
         # Otherwise, use heading of first group with a heading defined if one exists

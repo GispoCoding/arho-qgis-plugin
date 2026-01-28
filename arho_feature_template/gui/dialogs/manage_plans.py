@@ -16,7 +16,7 @@ from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeF
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer, plan_layers
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
     get_active_plan_id,
@@ -137,7 +137,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.plans_table.setItem(row, 1, plan_name_item)
 
         lifecycle_text = (
-            deserialize_localized_text(LifeCycleStatusLayer.get_attribute_by_id("name", plan.lifecycle_status_id))
+            get_localized_text(LifeCycleStatusLayer.get_attribute_by_id("name", plan.lifecycle_status_id))
             if plan.lifecycle_status_id
             else ""
         )

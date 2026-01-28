@@ -29,7 +29,7 @@ from arho_feature_template.gui.components.value_input_widgets import (
     ValueWidgetManager,
 )
 from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, PlanRegulationTypeLayer
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 
 ui_path = resources.files(__package__) / "plan_regulation_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -80,7 +80,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
         name_text = PlanRegulationTypeLayer.get_name_by_id(self.regulation.regulation_type_id)
         if isinstance(name_text, dict):
-            name_text = deserialize_localized_text(name_text)
+            name_text = get_localized_text(name_text)
         self.regulation_name.setText(name_text)
 
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
@@ -121,11 +121,11 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             AdditionalInformationTypeLayer.get_attribute_dict().items(), key=lambda item: item[1]["level"]
         ):
             if attributes["level"] == 1:
-                sub_menu = QMenu(deserialize_localized_text(attributes["name"]), self)
+                sub_menu = QMenu(get_localized_text(attributes["name"]), self)
                 _menu_dict[id_] = sub_menu
             else:  # level 2
                 sub_menu = _menu_dict[attributes["parent_id"]]
-                action = sub_menu.addAction(deserialize_localized_text(attributes["name"]))
+                action = sub_menu.addAction(get_localized_text(attributes["name"]))
                 action.triggered.connect(
                     lambda _, id_=id_, attrs=attributes: self._add_additional_info(
                         AdditionalInformation(additional_information_type_id=id_, value=attrs["default_value"])

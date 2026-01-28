@@ -17,7 +17,7 @@ from arho_feature_template.project.layers.code_layers import (
     VerbalRegulationType,
 )
 from arho_feature_template.utils.localization_utils import (
-    deserialize_localized_text,
+    get_localized_text,
     localized_text_as_str,
     read_localized_field_backward_compatible,
 )
@@ -451,7 +451,7 @@ class RegulationGroup(PlanBaseModel):
         return False
 
     def __str__(self):
-        return " - ".join(part for part in (self.letter_code, deserialize_localized_text(self.heading)) if part)
+        return " - ".join(part for part in (self.letter_code, get_localized_text(self.heading)) if part)
 
     def as_tooltip(self, long: bool = True) -> str:  # noqa: FBT001, FBT002
         """If long format, show regulation names."""
@@ -463,11 +463,11 @@ class RegulationGroup(PlanBaseModel):
 
         if long:
             names = [
-                deserialize_localized_text(PlanRegulationTypeLayer.get_name_by_id(reg.regulation_type_id))
+                get_localized_text(PlanRegulationTypeLayer.get_name_by_id(reg.regulation_type_id))
                 for reg in self.regulations
             ]
             return (
-                f"{wrap_line('Kaavamääräyksen otsikko', deserialize_localized_text(self.heading) or '')}\n"
+                f"{wrap_line('Kaavamääräyksen otsikko', get_localized_text(self.heading) or '')}\n"
                 f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
                 f"{wrap_line('Järjestysnumero', str(self.group_number) if self.group_number else '')}\n"
                 # f"{wrap_line('Kategoria', self.category)}\n"
@@ -475,7 +475,7 @@ class RegulationGroup(PlanBaseModel):
                 f"{wrap_line('Suositusten määrä', str(len(self.propositions)))}"
             )
         return (
-            f"{wrap_line('Kaavamääräyksen otsikko', deserialize_localized_text(self.heading) or '')}\n"
+            f"{wrap_line('Kaavamääräyksen otsikko', get_localized_text(self.heading) or '')}\n"
             f"{wrap_line('Kirjaintunnus', self.letter_code or '')}\n"
             f"{wrap_line('Järjestysnumero', str(self.group_number) if self.group_number else '')}\n"
             # f"{wrap_line('Kategoria', self.category)}\n"
@@ -529,13 +529,13 @@ class PlanObject(PlanBaseModel):
         }
 
     def __str__(self) -> str:
-        return deserialize_localized_text(self.name) or "" if self.name else ""
+        return get_localized_text(self.name) or "" if self.name else ""
 
     def as_tooltip(self, only_primary_language: bool = False) -> str:  # noqa: FBT001, FBT002
         if only_primary_language:
             return (
-                f"Nimi: {deserialize_localized_text(self.name)}\n"
-                f"Kuvaus: {deserialize_localized_text(self.description)}\n"
+                f"Nimi: {get_localized_text(self.name)}\n"
+                f"Kuvaus: {get_localized_text(self.description)}\n"
                 f"Kaavamääräysryhmien määrä: {len(self.regulation_groups)}"
             )
         return (

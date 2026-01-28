@@ -32,7 +32,7 @@ from arho_feature_template.project.layers.plan_layers import (
     get_plan_feature_layer_class_by_model,
     plan_feature_layers,
 )
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import iface
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
@@ -226,17 +226,17 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.update_selected_rows()
 
     def _update_row(self, row: int, plan_feature_model: PlanObject):
-        self.model.item(row, 0).setText(deserialize_localized_text(plan_feature_model.name) or "")
-        self.model.item(row, 2).setText(deserialize_localized_text(plan_feature_model.description) or "")
+        self.model.item(row, 0).setText(get_localized_text(plan_feature_model.name) or "")
+        self.model.item(row, 2).setText(get_localized_text(plan_feature_model.description) or "")
         # Feat ID remains the same
         feat_id = self.model.item(row, DATA_COLUMN).data(DATA_ROLE)[1]
         self.model.item(row, DATA_COLUMN).setData((plan_feature_model, feat_id), DATA_ROLE)
 
     def _plan_feature_into_items(self, plan_feature_model: PlanObject, feat_id: int) -> list[QStandardItem]:
         items = [
-            QStandardItem(deserialize_localized_text(plan_feature_model.name) or ""),
+            QStandardItem(get_localized_text(plan_feature_model.name) or ""),
             QStandardItem(LAYER_NAME_TO_FEATURE_TYPE.get(plan_feature_model.layer_name or "", "")),
-            QStandardItem(deserialize_localized_text(plan_feature_model.description) or ""),
+            QStandardItem(get_localized_text(plan_feature_model.description) or ""),
         ]
 
         # Set the whole PlanObject model and QGIS feature ID as data tuple
@@ -277,7 +277,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
         form = PlanObjectForm(
             plan_feature=plan_feature_model,
-            form_title=deserialize_localized_text(plan_feature_model.name) or plan_feature_model.layer_name or "",
+            form_title=get_localized_text(plan_feature_model.name) or plan_feature_model.layer_name or "",
             plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
             regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
             active_plan_regulation_groups_library=self.plan_manager_ref.active_plan_regulation_group_library,
