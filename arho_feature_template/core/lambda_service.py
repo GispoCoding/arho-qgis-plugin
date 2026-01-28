@@ -17,7 +17,7 @@ from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.utils.misc_utils import get_active_plan_id
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtCore import QDate
+    from datetime import date
 
 
 class LambdaService(QObject):
@@ -82,8 +82,8 @@ class LambdaService(QObject):
         plan_id: str,
         lifecycle_status_id: str,
         plan_name: str,
-        period_of_validity_start: QDate | None,
-        approval_date: QDate | None,
+        period_of_validity_start: date | None,
+        approval_date: date | None,
     ):
         payload: dict[str, Any] = {
             # For now use a random non existing UUID so backend won't find any existing plan
@@ -92,12 +92,12 @@ class LambdaService(QObject):
             "data": {
                 "lifecycle_status_uuid": lifecycle_status_id,
                 "plan_name": {"fin": plan_name},
-                "period_of_validity_start": (
-                    period_of_validity_start.toPyDate().isoformat() if period_of_validity_start else None
-                ),
-                "approval_date": (approval_date.toPyDate().isoformat() if approval_date else None),
             },
         }
+        if period_of_validity_start:
+            payload["data"]["period_of_validity_start"] = period_of_validity_start.isoformat()
+        if approval_date:
+            payload["data"]["approval_date"] = approval_date.isoformat()
 
         self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
 

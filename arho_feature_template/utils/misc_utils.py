@@ -7,12 +7,12 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsSymbol, QgsVectorLayer
-from qgis.PyQt.QtCore import NULL, QDate, Qt, pyqtBoundSignal
+from qgis.PyQt.QtCore import NULL, QDate, QLocale, Qt, pyqtBoundSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
 
 if TYPE_CHECKING:
-    from datetime import datetime
+    from datetime import date
 
     from qgis.core import QgsMapLayer
     from qgis.gui import QgisInterface
@@ -200,5 +200,6 @@ def symbol_fingerprint(symbol: QgsSymbol) -> str:
     return json.dumps(data, sort_keys=True)
 
 
-def date_as_str(date: datetime | None) -> str:
-    return QDate(date).toString("dd.MM.yyyy") if date else ""
+def date_as_str(date: date | None) -> str:
+    return QDate(date).toString(QLocale().dateFormat(QLocale.FormatType.ShortFormat)) if date else ""
+    # return QDate(date).toString("dd.MM.yyyy") if date else ""

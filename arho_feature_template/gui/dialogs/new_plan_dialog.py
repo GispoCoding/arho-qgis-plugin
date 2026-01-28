@@ -145,10 +145,14 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         plan_id = self.source_plan.currentData(DATA_ROLE)
 
         period_of_validity_start = (
-            self.validity_start_date.date() if self.plan_lifecycle.currentText() == VALID_LIFECYCLE_TEXT else None
+            self.validity_start_date.date().toPyDate()
+            if self.plan_lifecycle.currentText() == VALID_LIFECYCLE_TEXT
+            else None
         )
         approval_date = (
-            self.approval_date.date() if self.plan_lifecycle.currentText() == APPORVED_LIFECYCLE_TEXT else None
+            self.approval_date.date().toPyDate()
+            if self.plan_lifecycle.currentText() == APPORVED_LIFECYCLE_TEXT
+            else None
         )
 
         if plan_id is not None:
