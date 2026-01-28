@@ -6,7 +6,7 @@ from qgis.gui import QgsFilterLineEdit
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QSizePolicy, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 
 
 class TreeWithSearchWidget(QWidget):
@@ -42,7 +42,7 @@ class TreeWithSearchWidget(QWidget):
         item = QTreeWidgetItem(parent)
         if text:
             if isinstance(text, dict):
-                text = deserialize_localized_text(text)
+                text = get_localized_text(text)
             item.setText(self.DATA_COLUMN, text)
             item.setToolTip(
                 self.DATA_COLUMN, text

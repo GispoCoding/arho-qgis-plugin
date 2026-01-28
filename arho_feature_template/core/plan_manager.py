@@ -89,7 +89,7 @@ from arho_feature_template.resources.libraries.regulation_groups import (
     get_user_regulation_group_library_config_files,
 )
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
     disconnect_signal,
@@ -590,7 +590,7 @@ class PlanManager(QObject):
                 description=plan_feat_template.description,
                 regulation_groups=plan_feat_template.regulation_groups,  # Check if ok
             )
-            title = deserialize_localized_text(plan_feature.name)
+            title = get_localized_text(plan_feature.name)
         else:
             plan_feature = PlanObject(layer_name=self.new_feature_dock.active_feature_layer)
             title = self.new_feature_dock.active_feature_type
@@ -610,7 +610,7 @@ class PlanManager(QObject):
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP[layer_name]
         plan_feature = layer_class.model_from_feature(feature)
 
-        title = deserialize_localized_text(plan_feature.name) or layer_name
+        title = get_localized_text(plan_feature.name) or layer_name
         attribute_form = PlanObjectForm(
             plan_feature,
             title,

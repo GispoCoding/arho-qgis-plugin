@@ -28,7 +28,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanTypeLayer,
 )
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_matter_id
 
 if TYPE_CHECKING:
@@ -201,7 +201,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
             if category is None:
                 if group.type_code_id is not None:
                     group_type = PlanRegulationGroupTypeLayer.get_attribute_by_id("name", group.type_code_id)
-                    category = cast(str, deserialize_localized_text(group_type) if group_type else "Muut")
+                    category = cast(str, get_localized_text(group_type) if group_type else "Muut")
                 else:
                     category = "Muut"
 

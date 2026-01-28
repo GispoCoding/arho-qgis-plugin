@@ -14,7 +14,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
 )
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
-from arho_feature_template.utils.localization_utils import deserialize_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text
 
 category_map = {
     "plan": "Kaavasuunnitelma",
@@ -88,7 +88,7 @@ class ValidationModel(QStandardItemModel):
                         feature_name = None
                     else:
                         feature, _ = layer_features[feature_id]
-                        feature_name = deserialize_localized_text(feature["name"])
+                        feature_name = get_localized_text(feature["name"])
 
                 elif part == "planregulationgroups":
                     if not feature_id:
@@ -110,14 +110,14 @@ class ValidationModel(QStandardItemModel):
 
                         if regulation_group_id:
                             feature, _ = layer_features[regulation_group_id]
-                            feature_name = deserialize_localized_text(feature["name"])
+                            feature_name = get_localized_text(feature["name"])
                         else:
                             feature_name = None
 
                 elif part == "planregulations":
                     if "additionalinformations" in parts and feature_id is not None and feature_id in layer_features:
                         feature, _ = layer_features[feature_id]
-                        feature_name = deserialize_localized_text(feature["name"])
+                        feature_name = get_localized_text(feature["name"])
                     else:
                         feature_name = None
 

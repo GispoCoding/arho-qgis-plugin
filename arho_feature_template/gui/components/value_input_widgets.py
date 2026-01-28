@@ -168,6 +168,7 @@ class LocalizedTextInputWidget(QWidget):
 
     changed = pyqtSignal()
 
+    TRIM_EMPTY_VALUES: ClassVar[bool] = True
     HIDE_LABEL_WHEN_SHOW_PRIMARY_LANGUAGE_ONLY: ClassVar[bool] = True
 
     def __init__(self, editable: bool = True):  # noqa: FBT001, FBT002
@@ -248,7 +249,12 @@ class LocalizedTextInputWidget(QWidget):
     def get_value(self) -> LocalizedText | None:
         result: LocalizedText = {}
         for language_code, widget in self.input_widgets.items():
-            result[language_code] = widget.get_value() or ""
+            value = widget.get_value()
+            if self.TRIM_EMPTY_VALUES and value in ["", None]:
+                continue
+
+            result[language_code] = value or ""
+
         return result or None
 
     def get_value_for_language_code(self, language_code: str) -> str | None:
