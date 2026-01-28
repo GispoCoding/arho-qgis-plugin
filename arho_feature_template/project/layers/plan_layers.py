@@ -189,16 +189,13 @@ class PlanLayer(AbstractPlanLayer):
 
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Plan:
-        group_ids = list(RegulationGroupAssociationLayer.get_group_ids_for_feature(feature["id"], cls.name))
-        general_regulation_features = list(RegulationGroupLayer.get_features_by_attribute_value("id", group_ids))
-
         return Plan(
             geom=feature.geometry(),
             name=get_localized_text(feature["name"]),
             description=get_localized_text(feature["description"]),
             scale=feature["scale"],
             lifecycle_status_id=feature["lifecycle_status_id"],
-            general_regulations=RegulationGroupLayer.models_from_features(general_regulation_features),
+            general_regulations=RegulationGroupLayer.get_general_regulation_groups(feature["id"]),
             legal_effect_ids=list(LegalEffectAssociationLayer.get_legal_effect_ids_for_plan(feature["id"])),
             documents=[
                 DocumentLayer.model_from_feature(feat)
@@ -454,6 +451,12 @@ class RegulationGroupLayer(AbstractPlanLayer):
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> RegulationGroup:
         return cls.models_from_features([feature])[0]
+
+    @classmethod
+    def get_general_regulation_groups(cls, plan_id: str) -> list[RegulationGroup]:
+        group_ids = list(RegulationGroupAssociationLayer.get_group_ids_for_feature(plan_id, PlanLayer.name))
+        general_regulation_features = list(RegulationGroupLayer.get_features_by_attribute_value("id", group_ids))
+        return RegulationGroupLayer.models_from_features(general_regulation_features)
 
 
 class RegulationGroupAssociationLayer(AbstractPlanLayer):

@@ -29,12 +29,14 @@ from arho_feature_template.project.layers.plan_layers import (
     OtherAreaLayer,
     PlanObjectLayer,
     PointLayer,
+    RegulationGroupLayer,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import iface, symbol_fingerprint
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface, symbol_fingerprint
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
+    from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
+
 
 logger = logging.getLogger(__name__)
 
@@ -43,18 +45,14 @@ logger = logging.getLogger(__name__)
 class RegulationPrintElement:
     """Represents a unique printable regulation entry."""
 
-    symbol: QgsSymbol
+    symbol: QgsSymbol | None
     letter_code: str
     heading: str  # As localized text
     regulation_texts: list[str]  # As localized texts
 
     @classmethod
-    def create(
-        cls,
-        feat: QgsFeature,
-        plan_object: PlanObject,
-        symbol: QgsSymbol,
-        language: str,  # TODO: multiple languages
+    def from_plan_object(
+        cls, feat: QgsFeature, plan_object: PlanObject, symbol: QgsSymbol, language: str
     ) -> RegulationPrintElement:
         # Get element letter code (can be empty)
         letter_code = PlanObjectLayer.feature_letter_codes_as_text(feat) or ""
@@ -90,6 +88,25 @@ class RegulationPrintElement:
 
         return cls(symbol, letter_code, heading, regulation_texts)
 
+    @classmethod
+    def from_general_regulation_group(cls, general_regulation_group: RegulationGroup) -> RegulationPrintElement:
+        return cls(
+            None,
+            "",
+            general_regulation_group.heading or "",
+            RegulationPrintElement.get_regulation_texts(general_regulation_group),
+        )
+
+    @staticmethod
+    def get_regulation_texts(group: RegulationGroup) -> list[str]:
+        regulation_texts: list[str] = []
+        regulation_texts.extend(
+            regulation.value.text_value
+            for regulation in group.regulations
+            if regulation.is_verbal_regulation() and regulation.value and regulation.value.text_value
+        )
+        return regulation_texts
+
     def data_hash(self) -> str:
         combined = {
             "symbol": json.loads(symbol_fingerprint(self.symbol)),
@@ -114,8 +131,10 @@ class RegulationsPrintGenerator:
     SPACE_BETWEEN_ELEMENTS = 5
 
     # State vars
-    CURRENT_PAGE_NUMBER = 0
-    PAGE_HEIGHT = 297  # A4
+    CURRENT_PAGE_NUMBER: int = 0
+    PAGE_HEIGHT: float = 297  # A4
+    X_COORD: float = COL_1_START_X
+    Y_COORD: float = START_Y
 
     @classmethod
     def new_regulations_print_layout(
@@ -196,42 +215,29 @@ class RegulationsPrintGenerator:
     def add_regulation_print_elements(
         cls, layout: QgsPrintLayout, active_regulation_groups_library: RegulationGroupLibrary
     ):
-        x_coord: float = cls.COL_1_START_X
-        y_coord: float = cls.START_Y
-
         print_element_hashes: set[str] = set()
 
         language = SettingsManager.get_primary_language()  # TODO: Multiple languages
 
-        def move_y_coordinate(y: float, item: QgsLayoutItem) -> float:
-            return float(y + max(item.sizeWithUnits().height(), cls.ELEMENT_MIN_HEIGHT) + cls.SPACE_BETWEEN_ELEMENTS)
+        # Reset coordinates
+        cls.X_COORD = cls.COL_1_START_X
+        cls.Y_COORD = cls.START_Y
 
-        def compare_elements(
-            a: tuple[RegulationPrintElement, int, str, str], b: tuple[RegulationPrintElement, int, str, str]
-        ) -> int:
-            """Compare tuples with RegulationPrintElements to sort them."""
-            # 1. Compare symbol indices (legend order)
-            if a[1] != b[1]:
-                return -1 if a[1] < b[1] else 1
+        # General regulations
+        general_regulation_groups = RegulationGroupLayer.get_general_regulation_groups(get_active_plan_id())
+        for group in general_regulation_groups:
+            element = RegulationPrintElement.from_general_regulation_group(group)
+            cls._add_element_to_layout(element, layout)
 
-            # 2. Compare letter codes if needed
-            if a[2] != b[2]:
-                return -1 if a[2] < b[2] else 1
-
-            # 2. Compare headings if needed
-            if a[3] != b[3]:
-                return -1 if a[3] < b[3] else 1
-
-            return 0
-
+        # Plan object regulations
         regulation_groups = active_regulation_groups_library.regulation_groups
 
         ordered_plan_object_layers = [LandUseAreaLayer, OtherAreaLayer, LineLayer, PointLayer]
         for i, layer in enumerate(ordered_plan_object_layers):
             # Change column, set coordinates
             if i == 2 and cls.COLUMNS == 2:  # noqa: PLR2004
-                y_coord = cls.START_Y
-                x_coord = cls.COL_2_START_X
+                cls.Y_COORD = cls.START_Y
+                cls.X_COORD = cls.COL_2_START_X
 
             vector_layer = layer.get_from_project()
             feats = list(vector_layer.getFeatures())
@@ -252,7 +258,7 @@ class RegulationsPrintGenerator:
 
             # Collection of RegulationPrintElements with symbol index, letter code and heading.
             # Order of the elements is based on them
-            elements_to_sort: list[tuple[RegulationPrintElement, int, str, str]] = []
+            elements_collection: list[tuple[RegulationPrintElement, int, str, str]] = []
 
             symbols_for_feats = PlanObjectIconRenderer.get_symbols_for_layer_features(vector_layer, feats)
 
@@ -265,41 +271,65 @@ class RegulationsPrintGenerator:
                 # Symbol must be cloned, otherwise QGIS crashes later when dereferencing ref dropped by renderer
                 cloned_symbol = symbol.clone()
 
-                element = RegulationPrintElement.create(feat, plan_object, cloned_symbol, language)
+                # element = RegulationPrintElement.create(feat, plan_object, cloned_symbol, language)
+                element = RegulationPrintElement.from_plan_object(feat, plan_object, cloned_symbol, language)
 
                 # Check if element exists already. If it does, skip creating a duplicate
                 hash_value = element.data_hash()
                 if hash_value in print_element_hashes:
                     continue
+                print_element_hashes.add(hash_value)
 
                 # Default to large index if symbol is not found in map
                 symbol_index = symbol_index_map.get(symbol_fingerprint(symbol), 10000)
-                elements_to_sort.append(
+                elements_collection.append(
                     (element, symbol_index, element.letter_code.casefold(), element.heading.casefold())
                 )
 
-            # Sort elements to add them in correct order
-            elements_to_sort.sort(key=cmp_to_key(compare_elements))
-
-            # Add elements to layout
-            for element, _, _, _ in elements_to_sort:
-                item = LayoutItemFactory.new_regulation_print_item(element, layout, (x_coord, y_coord))
-                print_element_hashes.add(hash_value)
-
-                if cls._item_does_not_fit_to_page(y_coord, item):
-                    cls.add_page_to_layout(layout)
-
-                    # Set Y coord
-                    page_index = cls.CURRENT_PAGE_NUMBER - 1
-                    y_coord = cls.START_Y + cls.PAGE_HEIGHT * page_index
-
-                # Place the new item, X coord should be correct already
-                item.attemptMove(QgsLayoutPoint(item.x(), y_coord))
-
-                # Move Y coordinate to be ready for next item
-                y_coord = move_y_coordinate(y_coord, item)
+            # Sort elements to add them in correct order to layout
+            elements_collection.sort(key=cmp_to_key(cls._compare_elements))
+            for element, _, _, _ in elements_collection:
+                cls._add_element_to_layout(element, layout)
 
     @classmethod
-    def _item_does_not_fit_to_page(cls, y_coord: float, item: QgsLayoutItem) -> bool:
-        item_bottom_y = y_coord + item.sizeWithUnits().height()
+    def _add_element_to_layout(cls, element: RegulationPrintElement, layout: QgsPrintLayout):
+        item = LayoutItemFactory.new_regulation_print_item(element, layout, (cls.X_COORD, cls.Y_COORD))
+
+        if cls._item_does_not_fit_to_page(item):
+            cls.add_page_to_layout(layout)
+
+            # Set Y coord
+            page_index = cls.CURRENT_PAGE_NUMBER - 1
+            cls.Y_COORD = cls.START_Y + cls.PAGE_HEIGHT * page_index
+
+        # Place the new item, X coord should be correct already
+        item.attemptMove(QgsLayoutPoint(item.x(), cls.Y_COORD))
+
+        # Move Y coordinate to be ready for next item
+        cls.Y_COORD = float(
+            cls.Y_COORD + max(item.sizeWithUnits().height(), cls.ELEMENT_MIN_HEIGHT) + cls.SPACE_BETWEEN_ELEMENTS
+        )
+
+    @staticmethod
+    def _compare_elements(
+        a: tuple[RegulationPrintElement, int, str, str], b: tuple[RegulationPrintElement, int, str, str]
+    ) -> int:
+        """Compare tuples with RegulationPrintElements to sort them."""
+        # 1. Compare symbol indices (legend order)
+        if a[1] != b[1]:
+            return -1 if a[1] < b[1] else 1
+
+        # 2. Compare letter codes if needed
+        if a[2] != b[2]:
+            return -1 if a[2] < b[2] else 1
+
+        # 2. Compare headings if needed
+        if a[3] != b[3]:
+            return -1 if a[3] < b[3] else 1
+
+        return 0
+
+    @classmethod
+    def _item_does_not_fit_to_page(cls, item: QgsLayoutItem) -> bool:
+        item_bottom_y = cls.Y_COORD + item.sizeWithUnits().height()
         return item_bottom_y + cls.BOTTOM_MARGIN > cls.PAGE_HEIGHT * cls.CURRENT_PAGE_NUMBER
