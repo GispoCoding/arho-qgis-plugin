@@ -19,7 +19,7 @@ from arho_feature_template.project.layers.code_layers import (
 )
 
 if TYPE_CHECKING:
-    from datetime import datetime
+    from datetime import date
 
     from qgis.PyQt.QtWidgets import QLineEdit, QPushButton
 
@@ -144,7 +144,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
         if not self.expanded:
             self._on_expand_hide_btn_clicked()
 
-    def _add_arrival_date(self, default_value: datetime | None = None):
+    def _add_arrival_date(self, default_value: date | None = None):
         if not self.arrival_date_widget:
             self.arrival_date_widget = QgsDateTimeEdit()
             self.arrival_date_widget.setDisplayFormat("d.M.yyyy")
@@ -152,7 +152,7 @@ class DocumentWidget(QWidget, FormClass):  # type: ignore
                 self.arrival_date_widget.setDateTime(default_value)
             self._add_widgets(QLabel("Saapumispäivämäärä"), self.arrival_date_widget)
 
-    def _add_confirmation_date(self, default_value: datetime | None = None):
+    def _add_confirmation_date(self, default_value: date | None = None):
         if not self.confirmation_date_widget:
             self.confirmation_date_widget = QgsDateTimeEdit()
             self.confirmation_date_widget.setDisplayFormat("d.M.yyyy")

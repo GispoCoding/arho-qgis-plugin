@@ -35,13 +35,38 @@
       <widget class="QLabel" name="label_2">
        <property name="font">
         <font>
-         <pointsize>11</pointsize>
+         <pointsize>13</pointsize>
          <weight>75</weight>
          <bold>true</bold>
         </font>
        </property>
        <property name="text">
         <string>Kaavasuositus</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="ValidityLabel" name="validity_label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>24</width>
+         <height>24</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap>../../resources/icons/valid_mark2.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -145,7 +170,12 @@
    <class>LocalizedMultilineTextInputWidget</class>
    <extends>QWidget</extends>
    <header>arho_feature_template.gui.components.value_input_widgets</header>
+  </customwidget>
+  <customwidget>
    <container>1</container>
+   <class>ValidityLabel</class>
+   <extends>QLabel</extends>
+   <header>arho_feature_template.gui.components.validity_label</header>
   </customwidget>
  </customwidgets>
  <resources/>

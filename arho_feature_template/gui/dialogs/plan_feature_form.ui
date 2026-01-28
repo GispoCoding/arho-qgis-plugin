@@ -29,19 +29,11 @@
       <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout">
-      <item row="0" column="0">
-       <widget class="QLabel" name="feature_name_label">
-        <property name="text">
-         <string>Nimi:</string>
-        </property>
-       </widget>
+      <item row="0" column="1">
+       <widget class="LocalizedSinglelineTextInputWidget" name="feature_name" native="true"/>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="feature_description_label">
-        <property name="text">
-         <string>Kuvaus:</string>
-        </property>
-       </widget>
+      <item row="1" column="1">
+       <widget class="LocalizedMultilineTextInputWidget" name="feature_description" native="true"/>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="feature_underground_label">
@@ -53,11 +45,19 @@
       <item row="2" column="1">
        <widget class="CodeComboBox" name="feature_type_of_underground"/>
       </item>
-      <item row="0" column="1">
-       <widget class="LocalizedSinglelineTextInputWidget" name="feature_name" native="true"/>
+      <item row="3" column="0">
+       <widget class="QLabel" name="validity_start_label">
+        <property name="text">
+         <string>Voimassa alkaen:</string>
+        </property>
+       </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="LocalizedMultilineTextInputWidget" name="feature_description" native="true"/>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="validity_start_date">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

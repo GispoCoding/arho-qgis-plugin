@@ -180,6 +180,9 @@ class PlanLayer(AbstractPlanLayer):
         feature["scale"] = model.scale
         feature["lifecycle_status_id"] = model.lifecycle_status_id
         feature["plan_matter_id"] = model.plan_matter_id
+        feature["approval_date"] = model.approval_date
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
         feature["locked"] = model.locked
 
         return feature
@@ -203,6 +206,9 @@ class PlanLayer(AbstractPlanLayer):
             ],
             id_=feature["id"],
             plan_matter_id=feature["plan_matter_id"],
+            approval_date=feature["approval_date"],
+            period_of_validity_start=feature["period_of_validity_start"],
+            period_of_validity_end=feature["period_of_validity_end"],
             locked=feature["locked"],
             modified=False,
         )
@@ -262,6 +268,9 @@ class PlanLayer(AbstractPlanLayer):
                 documents=documents_by_plan_id[feature["id"]],
                 id_=feature["id"],
                 plan_matter_id=feature["plan_matter_id"],
+                approval_date=feature["approval_date"],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 locked=feature["locked"],
                 modified=False,
             )
@@ -294,6 +303,9 @@ class PlanObjectLayer(AbstractPlanLayer):
         feature["type_of_underground_id"] = model.type_of_underground_id
         feature["description"] = model.description
         feature["plan_id"] = plan_id if plan_id else get_active_plan_id()
+        feature["lifecycle_status_id"] = model.lifecycle_status_id
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
 
         return feature
 
@@ -341,6 +353,9 @@ class PlanObjectLayer(AbstractPlanLayer):
                 description=feature["description"],
                 regulation_groups=groups_by_plan_object_id[feature["id"]],
                 plan_id=feature["plan_id"],
+                lifecycle_status_id=feature["lifecycle_status_id"],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 modified=False,
                 id_=feature["id"],
             )
@@ -600,6 +615,9 @@ class PlanRegulationLayer(AbstractPlanLayer):
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["type_of_plan_regulation_id"] = model.regulation_type_id
         feature["subject_identifiers"] = model.subject_identifiers
+        feature["lifecycle_status_id"] = model.lifecycle_status_id
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
 
         update_feature_from_attribute_value_model(model.value, feature)
 
@@ -647,6 +665,9 @@ class PlanRegulationLayer(AbstractPlanLayer):
                 subject_identifiers=feature["subject_identifiers"],
                 regulation_group_id=feature["plan_regulation_group_id"],
                 verbal_regulation_type_ids=verbal_regulation_types_by_regulation_id[feature["id"]],
+                lifecycle_status_id=feature["lifecycle_status_id"],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 modified=False,
                 id_=feature["id"],
             )
@@ -775,6 +796,9 @@ class PlanPropositionLayer(AbstractPlanLayer):
         feature["text_value"] = model.value
         feature["plan_regulation_group_id"] = model.regulation_group_id
         feature["ordering"] = model.proposition_number
+        feature["lifecycle_status_id"] = model.lifecycle_status_id
+        feature["period_of_validity_start"] = model.period_of_validity_start
+        feature["period_of_validity_end"] = model.period_of_validity_end
         feature["id"] = model.id_ if model.id_ else feature["id"]
 
         return feature
@@ -796,6 +820,9 @@ class PlanPropositionLayer(AbstractPlanLayer):
                 regulation_group_id=feature["plan_regulation_group_id"],
                 proposition_number=feature["ordering"],
                 theme_ids=plan_theme_ids_by_proposition_id[feature["id"]],
+                lifecycle_status_id=feature["lifecycle_status_id"],
+                period_of_validity_start=feature["period_of_validity_start"],
+                period_of_validity_end=feature["period_of_validity_end"],
                 modified=False,
                 id_=feature["id"],
             )

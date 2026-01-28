@@ -59,6 +59,43 @@
           </property>
          </widget>
         </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_validity_start">
+          <property name="visible">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Voimassa alkaen:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_approval">
+          <property name="text">
+           <string>Hyväksytty:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QgsDateTimeEdit" name="approval_date">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="currentSection">
+           <enum>QDateTimeEdit::DaySection</enum>
+          </property>
+          <property name="displayFormat">
+           <string>d.M.yyyy</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QgsDateTimeEdit" name="validity_start_date">
+          <property name="displayFormat">
+           <string>d.M.yyyy</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -142,6 +179,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsDateTimeEdit</class>
+   <extends>QDateTimeEdit</extends>
+   <header>qgsdatetimeedit.h</header>
+  </customwidget>
   <customwidget>
    <class>CodeComboBox</class>
    <extends>QComboBox</extends>

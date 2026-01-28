@@ -13,8 +13,11 @@ from arho_feature_template.project.layers.code_layers import (
     UndergroundTypeLayer,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
+from arho_feature_template.utils.misc_utils import date_as_str
 
 if TYPE_CHECKING:
+    from qgis.PyQt.QtWidgets import QLineEdit
+
     from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
     from arho_feature_template.gui.components.value_input_widgets import (
@@ -45,6 +48,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.feature_name: LocalizedSinglelineTextInputWidget
         self.feature_description: LocalizedMultilineTextInputWidget
         self.feature_type_of_underground: CodeComboBox
+        self.validity_start_date: QLineEdit
 
         self.save_to_library_button: QPushButton
         self.button_box: QDialogButtonBox
@@ -78,6 +82,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.feature_description.set_value(plan_feature.description)
         for regulation_group in plan_feature.regulation_groups:
             self.regulation_groups_view.add_plan_regulation_group(regulation_group)
+        self.validity_start_date.setText(date_as_str(plan_feature.period_of_validity_start))
 
         self.plan_feature_libraries = plan_feature_libraries
         self._init_save_to_library_button()

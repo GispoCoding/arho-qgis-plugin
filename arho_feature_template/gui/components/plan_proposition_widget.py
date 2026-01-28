@@ -18,6 +18,9 @@ from arho_feature_template.gui.components.value_input_widgets import (
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
 
+    from arho_feature_template.gui.components.validity_label import ValidityLabel
+
+
 ui_path = resources.files(__package__) / "plan_proposition_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
@@ -38,6 +41,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
         self.form_layout: QFormLayout
         self.text_input: LocalizedMultilineTextInputWidget
         self.expand_hide_btn: QToolButton
+        self.validity_label: ValidityLabel
 
         # INIT
         self.proposition = proposition
@@ -66,6 +70,8 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
                 self._add_theme(theme_id)
         if self.proposition.proposition_number:
             self._add_proposition_number(self.proposition.proposition_number)
+
+        self.validity_label.set_from_model(self.proposition)
 
     def _add_widget(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)
