@@ -13,6 +13,7 @@ from qgis.PyQt.QtCore import (
     QModelIndex,
     QPoint,
     QRegularExpression,
+    QSize,
     QSortFilterProxyModel,
     Qt,
 )
@@ -23,6 +24,7 @@ from arho_feature_template.core import feature_editing
 from arho_feature_template.core.feature_editing import save_plan_object
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import LayerNotFoundError
+from arho_feature_template.gui.components.validity_label import VALIDITY_SORT_ROLE, validity_item_from_model
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
@@ -43,7 +45,7 @@ if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
     from arho_feature_template.core.plan_manager import PlanManager
 
-DATA_COLUMN = 0
+DATA_COLUMN = 1
 PLAN_OBJECT_TYPE_COLUMN = 1
 DATA_ROLE = Qt.UserRole
 LAYER_NAME_TO_FEATURE_TYPE = {
@@ -72,7 +74,8 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
         if not filter_text:
             text_match = True
         else:
-            for column in range(model.columnCount()):
+            # Ignore valid mark column
+            for column in range(1, model.columnCount()):
                 index = model.index(source_row, column, source_parent)
                 data = model.data(index)
                 if data and filter_text.lower() in data.lower():
@@ -89,6 +92,22 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
             type_match = feature_type in self.allowed_types
 
         return text_match and type_match
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:  # noqa: N802
+        # Custom sorting defined for validity mark column
+        if left.column() == 0:
+            a = left.data(VALIDITY_SORT_ROLE)
+            b = right.data(VALIDITY_SORT_ROLE)
+
+            # Handle missing values
+            if a is None:
+                a = 2
+            if b is None:
+                b = 2
+
+            return int(a) < int(b)
+
+        return super().lessThan(left, right)
 
 
 class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
@@ -121,16 +140,24 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self._initialized = False
 
         self.model = QStandardItemModel()
-        self.model.setColumnCount(3)
+        self.model.setColumnCount(4)
         self.model.setHorizontalHeaderLabels(
             [
+                "",
                 "Nimi",
                 "Tyyppi",
                 "Kuvaus",
             ]
         )
+
         self.filter_proxy_model = PlanObjectsDockFilterProxyModel(self.model)
         self.table.setModel(self.filter_proxy_model)
+
+        self.table.setIconSize(QSize(23, 23))
+
+        # self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        # self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.setColumnWidth(0, 26)
 
         self.selection_model = self.table.selectionModel()
 
@@ -226,14 +253,15 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.update_selected_rows()
 
     def _update_row(self, row: int, plan_feature_model: PlanObject):
-        self.model.item(row, 0).setText(get_localized_text(plan_feature_model.name) or "")
-        self.model.item(row, 2).setText(get_localized_text(plan_feature_model.description) or "")
+        self.model.item(row, 1).setText(get_localized_text(plan_feature_model.name) or "")
+        self.model.item(row, 3).setText(get_localized_text(plan_feature_model.description) or "")
         # Feat ID remains the same
         feat_id = self.model.item(row, DATA_COLUMN).data(DATA_ROLE)[1]
         self.model.item(row, DATA_COLUMN).setData((plan_feature_model, feat_id), DATA_ROLE)
 
     def _plan_feature_into_items(self, plan_feature_model: PlanObject, feat_id: int) -> list[QStandardItem]:
         items = [
+            validity_item_from_model(plan_feature_model),
             QStandardItem(get_localized_text(plan_feature_model.name) or ""),
             QStandardItem(LAYER_NAME_TO_FEATURE_TYPE.get(plan_feature_model.layer_name or "", "")),
             QStandardItem(get_localized_text(plan_feature_model.description) or ""),
