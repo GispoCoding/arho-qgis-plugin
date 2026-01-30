@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.project.layers.code_layers import LanguageLayer
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import LocalizedText
@@ -33,6 +34,14 @@ def localized_text_as_str(localized_text: LocalizedText | None = None, indent_si
         result += f"{indent}{language_code}: {text}\n"
 
     return result
+
+
+def str_as_localized_text(text: str, language_id: str) -> LocalizedText | None:
+    language_code = LanguageLayer.get_language_code_by_id(language_id)
+    if not language_code or not text:
+        return None
+
+    return {language_code: text}
 
 
 def read_localized_field_backward_compatible(value: LocalizedText | str | None) -> LocalizedText | None:

@@ -25,6 +25,7 @@ from arho_feature_template.core.feature_editing import (
 from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
 from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
 from arho_feature_template.project.layers.code_layers import (
+    LanguageLayer,
     PlanRegulationGroupTypeLayer,
     UndergroundTypeLayer,
     code_layers,
@@ -34,6 +35,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_feature_layers,
     plan_layers,
 )
+from arho_feature_template.utils.localization_utils import str_as_localized_text
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 
 if TYPE_CHECKING:
@@ -63,7 +65,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.selected_features_only: QCheckBox
 
         self.name_selection: QgsFieldComboBox
+        self.name_language_selection: CodeComboBox
         self.description_selection: QgsFieldComboBox
+        self.description_language_selection: CodeComboBox
         self.feature_type_of_underground_selection: CodeComboBox
 
         self.target_layer_selection: QgsMapLayerComboBox
@@ -110,10 +114,16 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.name_selection.setFilters(QgsFieldProxyModel.Filter.String)
         self.name_selection.setField("")
 
+        self.name_language_selection.populate_from_code_layer(LanguageLayer)
+        self.name_language_selection.remove_item_by_text("NULL")
+
         # Description field initialization
         self.description_selection.setAllowEmptyFieldName(True)
         self.description_selection.setFilters(QgsFieldProxyModel.Filter.String)
         self.description_selection.setField("")
+
+        self.description_language_selection.populate_from_code_layer(LanguageLayer)
+        self.description_language_selection.remove_item_by_text("NULL")
 
         # Underground type initialization
         # Remove NULL from the selections and set Maanpäällinen as default
@@ -217,8 +227,18 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 geom=_check_geom(feature.geometry()),
                 type_of_underground_id=type_of_underground_id,
                 layer_name=self.target_layer_name,
-                name=feature[source_layer_name_field] if source_layer_name_field else None,
-                description=feature[source_layer_description_field] if source_layer_description_field else None,
+                name=(
+                    str_as_localized_text(feature[source_layer_name_field], self.name_language_selection.value())
+                    if source_layer_name_field
+                    else None
+                ),
+                description=(
+                    str_as_localized_text(
+                        feature[source_layer_description_field], self.description_language_selection.value()
+                    )
+                    if source_layer_description_field
+                    else None
+                ),
                 regulation_groups=regulation_groups,
             )
             self.progress_bar.setValue(int((i + 1) / total_count * 100))

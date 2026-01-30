@@ -78,22 +78,42 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Nimikenttä tuontitasolla</string>
+         <string>Nimikenttä tuontitasolla:</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
        <widget class="QgsFieldComboBox" name="name_selection"/>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
-         <string>Kuvauskenttä tuontitasolla</string>
+         <string>Kuvauskenttä tuontitasolla:</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QgsFieldComboBox" name="description_selection"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="CodeComboBox" name="name_language_selection"/>
+      </item>
+      <item row="3" column="1">
+       <widget class="CodeComboBox" name="description_language_selection"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Nimikentän kieli:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Kuvauskentän kieli:</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -113,7 +133,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
-         <string>Maanalaisuuden laji</string>
+         <string>Maanalaisuuden laji:</string>
         </property>
        </widget>
       </item>
