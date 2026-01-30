@@ -54,12 +54,14 @@ class VersionedBase(Base):
         primary_key=True,
         server_default=func.gen_random_uuid(),
     )
+    creator: Mapped[str | None]
     created_at: Mapped[datetime | None] = mapped_column(
         server_default=FetchedValue()
     )  # Set always in before insert trigger. Must be nullable for clients
     modified_at: Mapped[datetime | None] = mapped_column(
         server_default=FetchedValue(), server_onupdate=FetchedValue()
     )  # Set always in before insert/update trigger. Must be nullable for clients
+    modifier: Mapped[str | None]
 
 
 class AttributeValueMixin:

@@ -53,6 +53,7 @@ def generate_created_at_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
         RETURNS TRIGGER AS $$
         BEGIN
             NEW.created_at = CURRENT_TIMESTAMP;
+            NEW.creator = SESSION_USER;
             return NEW;
         END;
         $$ language 'plpgsql'
@@ -89,6 +90,7 @@ def generate_no_created_at_update_triggers() -> tuple[
         RETURNS TRIGGER AS $$
         BEGIN
             NEW.created_at = OLD.created_at;
+            NEW.creator = OLD.creator;
             return NEW;
         END;
         $$ language 'plpgsql'
@@ -122,7 +124,10 @@ def generate_modified_at_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
     trgfunc_definition = """
         RETURNS TRIGGER AS $$
         BEGIN
-            NEW.modified_at = CURRENT_TIMESTAMP;
+            IF NEW IS DISTINCT FROM OLD THEN
+                NEW.modified_at = CURRENT_TIMESTAMP;
+                NEW.modifier = SESSION_USER;
+            END IF;
             return NEW;
         END;
         $$ language 'plpgsql'
