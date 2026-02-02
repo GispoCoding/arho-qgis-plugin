@@ -58,15 +58,11 @@ def move_label_above_symbol(
         )
 
 
-def move_label_next_to_item(
-    label_item: QgsLayoutItemLabel, item: QgsLayoutItem, line_symbol_width: float, x_move: float | None = None
-) -> None:
-    extra_y_move = -line_symbol_width / 2 if isinstance(item, QgsLayoutItemPolyline) else 0.0
+def move_label_next_to_item(label_item: QgsLayoutItemLabel, item: QgsLayoutItem) -> None:
     label_item.attemptMove(
         QgsLayoutPoint(
-            # Use item width if x move not defined
-            item.x() + x_move if x_move is not None else item.sizeWithUnits().width(),
-            item.y() + extra_y_move,
+            item.x() + item.sizeWithUnits().width(),
+            item.y(),
             QgsUnitTypes.LayoutMillimeters,
         )
     )

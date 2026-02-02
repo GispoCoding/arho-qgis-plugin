@@ -20,9 +20,12 @@ from qgis.core import (
 )
 from qgis.PyQt.QtWidgets import QMessageBox
 
+from arho_feature_template.core.models import LocalizedText
 from arho_feature_template.core.plan_object_icons import PlanObjectIconRenderer
 from arho_feature_template.core.prints.layout_items import LayoutItemFactory
 from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.exceptions import UnexpectedNoneError
+from arho_feature_template.gui.dialogs.regulations_print_settings_dialog import RegulationsPrintSettingsDialog
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
@@ -31,7 +34,6 @@ from arho_feature_template.project.layers.plan_layers import (
     PointLayer,
     RegulationGroupLayer,
 )
-from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface, symbol_fingerprint
 
 if TYPE_CHECKING:
@@ -47,35 +49,30 @@ class RegulationPrintElement:
 
     symbol: QgsSymbol | None
     letter_code: str
-    heading: str  # As localized text
-    regulation_texts: list[str]  # As localized texts
+    heading: LocalizedText
+    regulation_texts: list[LocalizedText]
 
     @classmethod
-    def from_plan_object(
-        cls, feat: QgsFeature, plan_object: PlanObject, symbol: QgsSymbol, language: str
-    ) -> RegulationPrintElement:
+    def from_plan_object(cls, feat: QgsFeature, plan_object: PlanObject, symbol: QgsSymbol) -> RegulationPrintElement:
         # Get element letter code (can be empty)
         letter_code = PlanObjectLayer.feature_letter_codes_as_text(feat) or ""
 
         # Determine element heading (can be empty) and regulation texts (can be empty)
-        heading = ""  # "[PUUTTUVA OTSIKKO]"
-        found_headings: list[str] = []
-        regulation_texts: list[str] = []
+        heading = LocalizedText()
+        found_headings: list[LocalizedText] = []
+        regulation_texts: list[LocalizedText] = []
         for group in plan_object.regulation_groups:
             if group.heading:
-                localized_heading = get_localized_text(group.heading, language)
-                if not localized_heading:
-                    continue
-                found_headings.append(localized_heading)
+                found_headings.append(group.heading)
                 # Use heading of primary use group if it exists
                 if group.is_primary_use_group():
-                    heading = localized_heading
+                    heading = group.heading
 
             # Save all found verbal regulation texts
             regulation_texts.extend(
                 text
                 for text in (
-                    get_localized_text(regulation.value.text_value, language)
+                    regulation.value.text_value
                     for regulation in group.regulations
                     if regulation.is_verbal_regulation() and regulation.value and regulation.value.text_value
                 )
@@ -83,7 +80,7 @@ class RegulationPrintElement:
             )
 
         # Otherwise, use heading of first group with a heading defined if one exists
-        if heading == "" and len(found_headings) > 0:
+        if heading == LocalizedText() and len(found_headings) > 0:
             heading = found_headings[0]
 
         return cls(symbol, letter_code, heading, regulation_texts)
@@ -93,13 +90,13 @@ class RegulationPrintElement:
         return cls(
             None,
             "",
-            general_regulation_group.heading or "",
+            general_regulation_group.heading or LocalizedText(),
             RegulationPrintElement.get_regulation_texts(general_regulation_group),
         )
 
     @staticmethod
-    def get_regulation_texts(group: RegulationGroup) -> list[str]:
-        regulation_texts: list[str] = []
+    def get_regulation_texts(group: RegulationGroup) -> list[LocalizedText]:
+        regulation_texts: list[LocalizedText] = []
         regulation_texts.extend(
             regulation.value.text_value
             for regulation in group.regulations
@@ -108,33 +105,36 @@ class RegulationPrintElement:
         return regulation_texts
 
     def data_hash(self) -> str:
+        # Combine texts with each language into one for hashing
+        texts_to_hash = [
+            "".join(value for value in localized_text.values()) for localized_text in self.regulation_texts
+        ]
+
         combined = {
             "symbol": json.loads(symbol_fingerprint(self.symbol)),
             "letter_code": self.letter_code or "",
             "heading": self.heading or "",
-            "regulation_texts": tuple(sorted(self.regulation_texts)),
+            "regulation_texts": tuple(sorted(texts_to_hash)),
         }
         key_str = json.dumps(combined, sort_keys=True)
         return sha256(key_str.encode("utf-8")).hexdigest()
 
 
 class RegulationsPrintGenerator:
-    # General settings
-    BOTTOM_MARGIN = 10
-
     # Regulation elements columns placing
-    COLUMNS = 1  # 1 or 2 for now
-    COL_1_START_X = 20
-    COL_2_START_X = 115
-    START_Y = 35
     ELEMENT_MIN_HEIGHT = 10
     SPACE_BETWEEN_ELEMENTS = 5
+    SPACE_AFTER_HEADING = 10
 
     # State vars
     CURRENT_PAGE_NUMBER: int = 0
     PAGE_HEIGHT: float = 297  # A4
-    X_COORD: float = COL_1_START_X
-    Y_COORD: float = START_Y
+    PAGE_WIDTH: float = 210
+    X_COORD: float = 0
+    Y_COORD: float = 0
+
+    # SETTINGS
+    SETTINGS = None
 
     @classmethod
     def new_regulations_print_layout(
@@ -155,10 +155,23 @@ class RegulationsPrintGenerator:
                 iface.openLayoutDesigner(existing)
                 return existing
 
+        # Open settings dialog
+        dialog = RegulationsPrintSettingsDialog()
+        if dialog.exec():
+            cls.SETTINGS = dialog.get_settings()
+            LayoutItemFactory.SETTINGS = cls.SETTINGS  # Copy settings to factory class
+        else:
+            # If user clicked Cancel, simply exit
+            return
+
+        # Remove old layout if exists after user has selected settings
+        if existing:
             manager.removeLayout(existing)
             existing = None
 
         cls.CURRENT_PAGE_NUMBER = 0
+        cls.X_COORD = cls.SETTINGS.x_margins
+        cls.Y_COORD = cls.SETTINGS.y_margins
 
         # Create layout
         layout = QgsPrintLayout(project)
@@ -192,9 +205,12 @@ class RegulationsPrintGenerator:
         label = QgsLayoutItemLabel(layout)
         label.setMode(QgsLayoutItemLabel.Mode.ModeHtml)
         label.setText("<h1>Määräysosa</h1>")
-        label.attemptMove(QgsLayoutPoint(20, 15))
+        label.attemptMove(QgsLayoutPoint(cls.X_COORD, cls.Y_COORD))
         label.attemptResize(QgsLayoutSize(46, 9.2))
         layout.addLayoutItem(label)
+
+        # Move y cordinate
+        cls.Y_COORD = float(cls.Y_COORD + label.sizeWithUnits().height() + cls.SPACE_AFTER_HEADING)
 
         return label
 
@@ -215,13 +231,11 @@ class RegulationsPrintGenerator:
     def add_regulation_print_elements(
         cls, layout: QgsPrintLayout, active_regulation_groups_library: RegulationGroupLibrary
     ):
+        if cls.SETTINGS is None:
+            msg = "Print settings not defined!"
+            raise UnexpectedNoneError(msg)
+
         print_element_hashes: set[str] = set()
-
-        language = SettingsManager.get_primary_language()  # TODO: Multiple languages
-
-        # Reset coordinates
-        cls.X_COORD = cls.COL_1_START_X
-        cls.Y_COORD = cls.START_Y
 
         # General regulations
         general_regulation_groups = RegulationGroupLayer.get_general_regulation_groups(get_active_plan_id())
@@ -232,13 +246,7 @@ class RegulationsPrintGenerator:
         # Plan object regulations
         regulation_groups = active_regulation_groups_library.regulation_groups
 
-        ordered_plan_object_layers = [LandUseAreaLayer, OtherAreaLayer, LineLayer, PointLayer]
-        for i, layer in enumerate(ordered_plan_object_layers):
-            # Change column, set coordinates
-            if i == 2 and cls.COLUMNS == 2:  # noqa: PLR2004
-                cls.Y_COORD = cls.START_Y
-                cls.X_COORD = cls.COL_2_START_X
-
+        for layer in [LandUseAreaLayer, OtherAreaLayer, LineLayer, PointLayer]:
             vector_layer = layer.get_from_project()
             feats = list(vector_layer.getFeatures())
             plan_objects = layer.models_from_features(feats, regulation_groups)
@@ -272,7 +280,7 @@ class RegulationsPrintGenerator:
                 cloned_symbol = symbol.clone()
 
                 # element = RegulationPrintElement.create(feat, plan_object, cloned_symbol, language)
-                element = RegulationPrintElement.from_plan_object(feat, plan_object, cloned_symbol, language)
+                element = RegulationPrintElement.from_plan_object(feat, plan_object, cloned_symbol)
 
                 # Check if element exists already. If it does, skip creating a duplicate
                 hash_value = element.data_hash()
@@ -282,8 +290,9 @@ class RegulationsPrintGenerator:
 
                 # Default to large index if symbol is not found in map
                 symbol_index = symbol_index_map.get(symbol_fingerprint(symbol), 10000)
+                heading_in_primary_language = element.heading.get(SettingsManager.get_primary_language(), "")
                 elements_collection.append(
-                    (element, symbol_index, element.letter_code.casefold(), element.heading.casefold())
+                    (element, symbol_index, element.letter_code.casefold(), heading_in_primary_language.casefold())
                 )
 
             # Sort elements to add them in correct order to layout
@@ -294,13 +303,15 @@ class RegulationsPrintGenerator:
     @classmethod
     def _add_element_to_layout(cls, element: RegulationPrintElement, layout: QgsPrintLayout):
         item = LayoutItemFactory.new_regulation_print_item(element, layout, (cls.X_COORD, cls.Y_COORD))
+        if item is None:
+            return
 
         if cls._item_does_not_fit_to_page(item):
             cls.add_page_to_layout(layout)
 
             # Set Y coord
             page_index = cls.CURRENT_PAGE_NUMBER - 1
-            cls.Y_COORD = cls.START_Y + cls.PAGE_HEIGHT * page_index
+            cls.Y_COORD = cls.SETTINGS.y_margins + cls.PAGE_HEIGHT * page_index  # type: ignore
 
         # Place the new item, X coord should be correct already
         item.attemptMove(QgsLayoutPoint(item.x(), cls.Y_COORD))
@@ -323,7 +334,7 @@ class RegulationsPrintGenerator:
         if a[2] != b[2]:
             return -1 if a[2] < b[2] else 1
 
-        # 2. Compare headings if needed
+        # 2. Compare headings in primary langauge if needed
         if a[3] != b[3]:
             return -1 if a[3] < b[3] else 1
 
@@ -332,4 +343,4 @@ class RegulationsPrintGenerator:
     @classmethod
     def _item_does_not_fit_to_page(cls, item: QgsLayoutItem) -> bool:
         item_bottom_y = cls.Y_COORD + item.sizeWithUnits().height()
-        return item_bottom_y + cls.BOTTOM_MARGIN > cls.PAGE_HEIGHT * cls.CURRENT_PAGE_NUMBER
+        return item_bottom_y + cls.SETTINGS.y_margins > cls.PAGE_HEIGHT * cls.CURRENT_PAGE_NUMBER  # type: ignore
