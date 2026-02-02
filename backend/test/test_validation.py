@@ -1,78 +1,10 @@
 from datetime import datetime, timedelta
 
 import pytest
-from geoalchemy2.shape import from_shape
-from shapely.geometry import MultiLineString, MultiPolygon
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
 from database import codes, models
-
-
-def test_validate_polygon_geometry_triggers(
-    session: Session,
-    code_instance: codes.LifeCycleStatus,
-    type_of_underground_instance: codes.TypeOfUnderground,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
-) -> None:
-    invalid_polygon = MultiPolygon(
-        [(((0.0, 0.0), (1.0, 1.0), (0.0, 1.0), (1.0, 0.0)),)]
-    )
-
-    invalid_plan_instance = models.Plan(
-        name={"fin": "Invalid Plan"},
-        geom=from_shape(invalid_polygon),
-        lifecycle_status=code_instance,
-    )
-    session.add(invalid_plan_instance)
-    with pytest.raises(ProgrammingError):
-        session.commit()
-
-    session.rollback()
-    invalid_land_use_area_instance = models.LandUseArea(
-        geom=from_shape(invalid_polygon),
-        lifecycle_status=code_instance,
-        type_of_underground=type_of_underground_instance,
-        plan_regulation_groups=[plan_regulation_group_instance],
-    )
-    session.add(invalid_land_use_area_instance)
-    with pytest.raises(ProgrammingError):
-        session.commit()
-
-    session.rollback()
-    invalid_other_area_instance = models.OtherArea(
-        geom=from_shape(invalid_polygon),
-        lifecycle_status=code_instance,
-        type_of_underground=type_of_underground_instance,
-        plan_regulation_groups=[plan_regulation_group_instance],
-    )
-    session.add(invalid_other_area_instance)
-    with pytest.raises(ProgrammingError):
-        session.commit()
-    session.rollback()
-
-
-def test_validate_line_geometry(
-    session: Session,
-    code_instance: codes.LifeCycleStatus,
-    type_of_underground_instance: codes.TypeOfUnderground,
-    plan_regulation_group_instance: models.PlanRegulationGroup,
-) -> None:
-    # Create line_instance that intersects itself
-    another_line_instance = models.Line(
-        geom=from_shape(
-            MultiLineString(
-                [[[0.25, 0.25], [0.75, 0.75]], [[0.25, 0.75], [0.75, 0.25]]]
-            )
-        ),
-        lifecycle_status=code_instance,
-        type_of_underground=type_of_underground_instance,
-        plan_regulation_groups=[plan_regulation_group_instance],
-    )
-    with pytest.raises(ProgrammingError):
-        session.add(another_line_instance)
-        session.commit()
-    session.rollback()
 
 
 def test_validate_lifecycle_dates(

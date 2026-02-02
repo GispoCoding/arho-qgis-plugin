@@ -25,17 +25,14 @@ from database.triggers import (
     generate_no_created_at_update_triggers
 )
 from database.validation import (
-    generate_validate_polygon_geometry_triggers,
     trg_validate_event_date,
     trg_validate_event_date_inside_status_date,
     trg_validate_event_type,
     trg_validate_lifecycle_date,
-    trg_validate_line_geometry,
     trgfunc_validate_event_date,
     trgfunc_validate_event_date_inside_status_date,
     trgfunc_validate_event_type,
     trgfunc_validate_lifecycle_date,
-    trgfunc_validate_line_geometry,
 )
 from database.views import views
 
@@ -61,12 +58,7 @@ modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
     new_lifecycle_status_trgfuncs,
 ) = generate_new_lifecycle_status_triggers()
 
-
 add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_triggers()
-(
-    validate_polygon_geometry_trgs,
-    validate_polygon_geometry_trgfuncs,
-) = generate_validate_polygon_geometry_triggers()
 
 (
     created_at_trgs,
@@ -97,16 +89,12 @@ imported_triggers = (
     + new_lifecycle_status_trgs
     + add_plan_id_fkey_trgfuncs
     + add_plan_id_fkey_trgs
-    + validate_polygon_geometry_trgfuncs
-    + validate_polygon_geometry_trgs
     + instead_of_trigger_func_for_visualization_view
     + instead_of_triggers_for_visualization_views
     + created_at_trgs
     + created_at_trgfuncs
     + no_created_at_update_trgs
     + no_created_at_update_trgfuncs
-    + [trg_validate_line_geometry]
-    + [trgfunc_validate_line_geometry]
     + [trgfunc_validate_lifecycle_date]
     + [trg_validate_lifecycle_date]
     + [trgfunc_validate_event_date]
