@@ -9,11 +9,9 @@ from qgis.PyQt.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLineEdit,
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import Plan
-from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.utils.misc_utils import (
-    check_layer_changes,
     get_active_plan_id,
     get_active_plan_matter_id,
     iface,
@@ -92,30 +90,13 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         active_plan_id = get_active_plan_id()
         selected_index = None
         self.source_plan.addItem("NULL")
-        for index, plan in enumerate(self._get_plans(), start=1):
+        for index, plan in enumerate(PlanLayer.get_plans_for_active_plan_matter(), start=1):
             self.source_plan.addItem(plan.name, plan.id_)
             if plan.id_ == active_plan_id:
                 selected_index = index
 
         if selected_index is not None:
             self.source_plan.setCurrentIndex(selected_index)
-
-    def _get_plans(self) -> list[Plan]:
-        if check_layer_changes():
-            raise UnsavedChangesError
-
-        active_plan_matter_id = get_active_plan_matter_id()
-        layer = PlanLayer.get_from_project()
-        original_filter = layer.subsetString()
-        plans = []
-        try:
-            if self.previously_in_edit_mode:
-                self.plan_layer.rollBack()
-            layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")
-            plans = PlanLayer.models_from_features(list(PlanLayer.get_features()))
-        finally:
-            layer.setSubsetString(original_filter)
-        return plans
 
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
