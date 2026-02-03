@@ -68,7 +68,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
         self.name_edit.setText(plan.name or "")
         self.description_text_edit.setText(plan.description if plan.description else "")
-        self.lock_checkbox.setChecked(plan.locked)
 
         self.name_edit.textChanged.connect(self._check_required_fields)
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
@@ -120,6 +119,25 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self._check_required_fields()
         self._update_legal_effect_widgets_visibility()
+
+        if plan.locked:
+            self._show_as_locked()
+
+    def _show_as_locked(self):
+        self.lock_checkbox.setChecked(True)
+
+        self.name_edit.setEnabled(False)
+        self.description_text_edit.setEnabled(False)
+        self.scale_spin_box.setEnabled(False)
+        self.lifecycle_status_combo_box.setEnabled(False)
+        if self.plan.approval_date:
+            self.approved_date.setEnabled(False)
+        if self.plan.period_of_validity_start:
+            self.validity_start_date.setEnabled(False)
+        if self.plan.period_of_validity_end:
+            self.validity_end_date.setEnabled(False)
+        for _label, widget in self.legal_effect_widgets:
+            widget.setEnabled(False)
 
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
