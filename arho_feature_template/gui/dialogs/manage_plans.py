@@ -10,15 +10,18 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QPushButton, QTableWidget, QTableWidgetItem
 
 from arho_feature_template.core.feature_editing import save_plan
-from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
-from arho_feature_template.project.layers.plan_layers import PlanLayer, plan_layers
+from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.utils.layer_utils import (
+    plan_layers_temporarily_unlocked,
+    temporary_subset,
+    update_lock_status_if_needed,
+)
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
-    check_layer_changes,
     get_active_plan_id,
     get_active_plan_matter_id,
     iface,
@@ -83,31 +86,13 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
 
     def show_plans_in_table(self, resize: bool = True):  # noqa: FBT001, FBT002
         self.plans_table.setRowCount(0)
-        for plan in self._get_plans():
+        for plan in PlanLayer.get_plans_for_active_plan_matter():
             self._add_plan_row(plan)
         if resize:
             self.plans_table.resizeColumnsToContents()
 
     def _get_plan_data(self, row: int) -> Plan:
         return self.plans_table.item(row, 1).data(DATA_ROLE)
-
-    def _get_plans(self) -> list[Plan]:
-        if check_layer_changes():
-            raise UnsavedChangesError
-
-        active_plan_matter_id = get_active_plan_matter_id()
-        layer = PlanLayer.get_from_project()
-        original_filter = layer.subsetString()
-        plans = []
-        try:
-            # Make sure plan layer is not in edit state to set new filter
-            if self.previously_in_edit_mode:
-                self.plan_layer.rollBack()
-            layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # set temporary filter
-            plans = PlanLayer.models_from_features(list(PlanLayer.get_features()))
-        finally:
-            layer.setSubsetString(original_filter)  # restore filter
-        return plans
 
     def _add_plan_row(self, plan: Plan, select: bool = False):  # noqa: FBT001, FBT002
         row = self.plans_table.rowCount()
@@ -161,34 +146,19 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             self.plans_table.setRowHidden(row, not match)
 
     def _on_row_double_clicked(self, item: QTableWidgetItem):
-        row = item.row()
-        plan = self._get_plan_data(row)
+        plan = self._get_plan_data(item.row())
         form = PlanAttributeForm(plan, self.regulation_group_libraries)
 
-        active_plan_matter_id = get_active_plan_matter_id()
-        original_filter = self.plan_layer.subsetString()
         if form.exec():
-            try:
-                edited_plan = form.model
-                self.plan_layer.setSubsetString(f"\"plan_matter_id\"='{active_plan_matter_id}'")  # Set temporary filter
-
-                # Unlock to allow edits
-                self.unlock_plan_layers()
-
+            edited_plan = form.model
+            with (
+                plan_layers_temporarily_unlocked(),
+                temporary_subset(self.plan_layer, f"\"plan_matter_id\"='{get_active_plan_matter_id()}'"),
+            ):
                 save_plan(edited_plan)
 
-                # If we edited the active plan, update lock status
-                if edited_plan.id_ == get_active_plan_id():
-                    if edited_plan.locked:
-                        self.lock_plan_layers()
-                    else:
-                        self.unlock_plan_layers()
-            finally:
-                # Make sure plan layer is not in edit state to set new filter
-                if self.plan_layer.isEditable():
-                    self.plan_layer.rollBack()
-                self.plan_layer.setSubsetString(original_filter)  # restore filter
-                self._update_plan_row(row, edited_plan)
+            update_lock_status_if_needed(edited_plan)
+            self._update_plan_row(item.row(), edited_plan)
 
     def _on_new_plan_button_clicked(self):
         form = NewPlanDialog()
@@ -227,16 +197,3 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     def _on_cancel_clicked(self):
         self._restore_plan_layer_edit_state()
         self.reject()
-
-    # DUPLICATED FROM PLAN MANAGER
-    def lock_plan_layers(self):
-        for layer in plan_layers:
-            vlayer = layer.get_from_project()
-            vlayer.rollBack()
-            vlayer.setReadOnly(True)
-
-    def unlock_plan_layers(self):
-        for layer in plan_layers:
-            layer.get_from_project().setReadOnly(False)
-
-        PlanLayer.get_from_project().startEditing()

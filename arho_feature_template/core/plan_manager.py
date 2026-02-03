@@ -90,6 +90,12 @@ from arho_feature_template.resources.libraries.regulation_groups import (
     get_user_regulation_group_library_config_files,
 )
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
+from arho_feature_template.utils.layer_utils import (
+    lock_plan_layers,
+    plan_layers_temporarily_unlocked,
+    unlock_plan_layers,
+    update_lock_status_if_needed,
+)
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -473,17 +479,14 @@ class PlanManager(QObject):
         if attribute_form.exec_():
             plan_model = attribute_form.model
 
-            # Make sure plan layer is unlocked so we can update plan (includng locked state)
-            self.unlock_plan_layers()
+            with plan_layers_temporarily_unlocked():
+                plan_id = save_plan(plan_model)
 
-            plan_id = save_plan(plan_model)
-            if plan_id is not None:
-                self.update_active_plan_regulation_group_library()
+                # TODO: Don't update groups always, can be redundant
+                if plan_id is not None:
+                    self.update_active_plan_regulation_group_library()
 
-            if plan_model.locked:
-                self.lock_plan_layers()
-            else:
-                self.unlock_plan_layers()
+            update_lock_status_if_needed(plan_model)
 
     def edit_plan_matter(self):
         plan_matter_layer = PlanMatterLayer.get_from_project()
@@ -701,9 +704,9 @@ class PlanManager(QObject):
             if plan_feat:
                 locked = plan_feat["locked"]
                 if locked:
-                    self.lock_plan_layers()
+                    lock_plan_layers()
                 else:
-                    self.unlock_plan_layers()
+                    unlock_plan_layers()
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
@@ -850,18 +853,6 @@ class PlanManager(QObject):
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
-
-    def lock_plan_layers(self):
-        for layer in plan_layers:
-            vlayer = layer.get_from_project()
-            vlayer.rollBack()
-            vlayer.setReadOnly(True)
-
-    def unlock_plan_layers(self):
-        for layer in plan_layers:
-            layer.get_from_project().setReadOnly(False)
-
-        PlanLayer.get_from_project().startEditing()
 
     def generate_plan_regulations_print(self):
         RegulationsPrintGenerator.new_regulations_print_layout(self.active_plan_regulation_group_library)
