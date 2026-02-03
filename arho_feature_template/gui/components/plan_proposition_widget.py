@@ -129,6 +129,9 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
                 theme_widget.get_value() for theme_widget in self.theme_widgets if theme_widget.get_value() != NULL
             ],
             proposition_number=self.proposition_number_widget.get_value() if self.proposition_number_widget else None,
+            lifecycle_status_id=self.proposition.lifecycle_status_id,
+            period_of_validity_start=self.proposition.period_of_validity_start,
+            period_of_validity_end=self.proposition.period_of_validity_end,
             modified=self.proposition.modified,
             id_=self.proposition.id_ if not force_new else None,
         )

@@ -250,6 +250,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             ],
             verbal_regulation_type_ids=[value for value in verbal_regulation_type_ids if value is not None],
             regulation_group_id=self.regulation.regulation_group_id,
+            lifecycle_status_id=self.regulation.lifecycle_status_id,
+            period_of_validity_start=self.regulation.period_of_validity_start,
+            period_of_validity_end=self.regulation.period_of_validity_end,
             modified=self.regulation.modified,
             id_=self.regulation.id_ if not force_new else None,
         )
