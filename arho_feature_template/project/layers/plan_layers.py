@@ -21,11 +21,21 @@ from arho_feature_template.core.models import (
     Regulation,
     RegulationGroup,
 )
-from arho_feature_template.exceptions import FeatureNotFoundError, LayerEditableError, LayerNotFoundError
+from arho_feature_template.exceptions import (
+    FeatureNotFoundError,
+    LayerEditableError,
+    LayerNotFoundError,
+    UnsavedChangesError,
+)
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.project.layers.code_layers import PlanTypeLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+from arho_feature_template.utils.misc_utils import (
+    check_layer_changes,
+    get_active_plan_id,
+    get_active_plan_matter_id,
+    iface,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -285,6 +295,19 @@ class PlanLayer(AbstractPlanLayer):
     def get_active_plan(cls) -> Plan | None:
         feat = cls.get_feature_by_id(get_active_plan_id(), no_geometries=False)
         return cls.model_from_feature(feat) if feat else None
+
+    @classmethod
+    def get_plans_for_active_plan_matter(cls) -> list[Plan]:
+        if check_layer_changes():
+            raise UnsavedChangesError
+
+        # NOTE: Workaround to avoid circular import..
+        from arho_feature_template.utils.layer_utils import temporary_subset
+
+        with temporary_subset(cls.get_from_project(), f"\"plan_matter_id\"='{get_active_plan_matter_id()}'"):
+            return cls.models_from_features(list(cls.get_features()))
+
+        return []
 
 
 class PlanObjectLayer(AbstractPlanLayer):
