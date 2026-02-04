@@ -45,8 +45,6 @@ DEFAULT_SPACE_BETWEEN_COLUMNS = 10
 
 DEFAULT_LETTER_CODE_LABEL_HEIGHT = 4.4
 
-DEFAULT_HEADING_LABEL_HEIGHT = 6.4
-
 
 class LayoutItemFactory:
     SETTINGS: RegulationPrintSettings
@@ -80,7 +78,7 @@ class LayoutItemFactory:
             heading_element = LayoutItemFactory.new_regulation_heading_label(layout, element.heading, 0)
             move_label_next_to_item(
                 heading_element,
-                symbol_and_code_grouped,
+                letter_code_element,
             )
             items.append(heading_element)
 
@@ -217,7 +215,10 @@ class LayoutItemFactory:
         label.setMarginX(2)
         # label.setMarginY(2)
         label.attemptResize(
-            QgsLayoutSize(width=cls.get_text_box_width(language_index), height=DEFAULT_HEADING_LABEL_HEIGHT)
+            QgsLayoutSize(
+                width=cls.get_text_box_width(language_index),
+                height=cls.get_approx_required_height_for_label(label, language_index),
+            )
         )
         layout.addLayoutItem(label)
 
