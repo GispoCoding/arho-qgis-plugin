@@ -11,7 +11,7 @@ from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.project.layers.code_layers import LanguageLayer
 
 if TYPE_CHECKING:
-    from qgis.gui import QgsSpinBox
+    from qgis.gui import QgsFontButton, QgsSpinBox
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
@@ -27,10 +27,14 @@ class RegulationsPrintSettingsDialog(QDialog, FormClass):  # type: ignore
         # TYPES
         self.include_regulation_headings_checkbox: QCheckBox
         self.include_regulation_texts_checkbox: QCheckBox
-        self.language_1_selection: CodeComboBox
-        self.language_2_selection: CodeComboBox
+        self.heading_font_selection: QgsFontButton
+        self.text_font_selection: QgsFontButton
         self.symbol_width_spinbox: QgsSpinBox
         self.symbol_height_spinbox: QgsSpinBox
+
+        self.language_1_selection: CodeComboBox
+        self.language_2_selection: CodeComboBox
+
         self.x_margins_spinbox: QgsSpinBox
         self.y_margins_spinbox: QgsSpinBox
 
@@ -48,6 +52,8 @@ class RegulationsPrintSettingsDialog(QDialog, FormClass):  # type: ignore
             self.include_regulation_texts_checkbox.isChecked(),
             self.symbol_width_spinbox.value(),
             self.symbol_height_spinbox.value(),
+            self.heading_font_selection.currentFont(),
+            self.text_font_selection.currentFont(),
             self.x_margins_spinbox.value(),
             self.y_margins_spinbox.value(),
             self.get_language_codes(),

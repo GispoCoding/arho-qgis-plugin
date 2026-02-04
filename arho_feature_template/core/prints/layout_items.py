@@ -20,7 +20,7 @@ from qgis.core import (
     QgsUnitTypes,
 )
 from qgis.PyQt.QtCore import QPointF, QSizeF, Qt
-from qgis.PyQt.QtGui import QFont, QPolygonF
+from qgis.PyQt.QtGui import QPolygonF
 
 from arho_feature_template.core.prints.layout_utils import (
     move_label_above_symbol,
@@ -48,9 +48,6 @@ DEFAULT_LETTER_CODE_LABEL_HEIGHT = 4.4
 
 class LayoutItemFactory:
     SETTINGS: RegulationPrintSettings
-
-    BOLD_FONT = QFont()
-    BOLD_FONT.setBold(True)
 
     @classmethod
     def new_regulation_print_item(
@@ -215,7 +212,7 @@ class LayoutItemFactory:
         label.setMode(QgsLayoutItemLabel.Mode.ModeFont)
         text = get_localized_text(heading, cls.SETTINGS.languages[language_index])
         label.setText(text if text else "")
-        label.setFont(cls.BOLD_FONT)
+        label.setFont(cls.SETTINGS.heading_font)
         label.setMarginX(2)
         # label.setMarginY(2)
         label.attemptResize(
@@ -235,6 +232,7 @@ class LayoutItemFactory:
         label = QgsLayoutItemLabel(layout)
         label.setMode(QgsLayoutItemLabel.Mode.ModeFont)
         label.setText(get_localized_text(text, cls.SETTINGS.languages[language_index]) or "")
+        label.setFont(cls.SETTINGS.text_font)
         label.setMarginX(2)
         label.attemptResize(
             QgsLayoutSize(
