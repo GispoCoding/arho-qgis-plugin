@@ -389,15 +389,13 @@ def handler(
 
         elif event_type is Action.GET_PLAN_MATTERS:
             # just return the JSON to the user
-            LOGGER.info("Formatting plan matter data...")
-            plan_matters = database_client.get_plan_matters()
-            response_title = "Returning serialized plan matters from database."
+            response_title = "Serializing plan matters not implemented yet."
             LOGGER.info(response_title)
             lambda_response = Response(
-                statusCode=200,
+                statusCode=405,
                 body=ResponseBody(
                     title=response_title,
-                    details=cast("dict", plan_matters),
+                    details={"error": "Not implemented yet."},
                     ryhti_responses={},
                 ),
             )
@@ -441,57 +439,26 @@ def handler(
             )
 
         elif event_type is Action.VALIDATE_PLAN_MATTERS:
-            LOGGER.info("Authenticating to X-road Ryhti API...")
-            client.xroad_ryhti_authenticate()
-            # Documents are exported separately from plan matter. Also, they need to be
-            # present in Ryhti *before* plan matter is validated or created.
-            #
-            # Therefore, let's export all the documents right away, and update them to
-            # the latest version when needed. Otherwise, the plan matter would never be
-            # valid. Only upload documents for those plans that have permanent plan
-            # identifiers.
-            # 1) If changed documents exist, upload documents
-            LOGGER.info("Checking and updating plan documents for plans...")
-            plan_documents = client.upload_plan_documents()
-            LOGGER.info("Marking documents exported...")
-            database_client.set_plan_documents(plan_documents)
-            # 2) Validate plan matters with identifiers with X-Road API
-            LOGGER.info("Validating plan matters for plans...")
-            responses = client.validate_plan_matters()
-            # 3) Save and return plan matter validation data
-            LOGGER.info("Saving plan matter validation data for plans...")
-            save_details = database_client.save_plan_matter_validation_responses(
-                responses
-            )
+            # Plan matter support removed from Arho. See git history for previous
+            # implementation.
             lambda_response = Response(
-                statusCode=200,
+                statusCode=405,
                 body=ResponseBody(
-                    title="Plan matter validations run.",
-                    details=save_details,  # type: ignore[typeddict-item]
-                    ryhti_responses=responses,
+                    title="Plan matter validation not implemented.",
+                    details={},  # type: ignore[typeddict-item]
+                    ryhti_responses={},
                 ),
             )
 
         elif event_type is Action.POST_PLAN_MATTERS:
-            LOGGER.info("Authenticating to X-road Ryhti API...")
-            client.xroad_ryhti_authenticate()
-            # 1) If changed documents exist, upload documents
-            LOGGER.info("Checking and updating plan documents for plans...")
-            plan_documents = client.upload_plan_documents()
-            LOGGER.info("Marking documents exported...")
-            database_client.set_plan_documents(plan_documents)
-            # 2) Create or update Ryhti plan matters
-            LOGGER.info("POSTing plan matters...")
-            responses = client.post_plan_matters()
-            # 3) Save and return plan matter update responses
-            LOGGER.info("Saving plan matter POST data for posted plans...")
-            save_details = database_client.save_plan_matter_post_responses(responses)
+            # Plan matter support removed from Arho. See git history for previous
+            # implementation.
             lambda_response = Response(
-                statusCode=200,
+                statusCode=405,
                 body=ResponseBody(
-                    title="Plan matters POSTed.",
-                    details=save_details,  # type: ignore[typeddict-item]
-                    ryhti_responses=responses,
+                    title="Plan matter posting not implemented.",
+                    details={},  # type: ignore[typeddict-item]
+                    ryhti_responses={},
                 ),
             )
         elif event_type is Action.COPY_PLAN:

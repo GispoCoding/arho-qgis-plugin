@@ -19,7 +19,6 @@ viewpoints:
       - hame.document
       - hame.source_data
       - hame.organisation
-      - hame.lifecycle_date
       - codes.administrative_region
       - codes.lifecycle_status
       - codes.plan_theme
@@ -56,7 +55,6 @@ viewpoints:
           - hame.document
           - hame.source_data
           - hame.organisation
-          - hame.lifecycle_date
       -
         name: Code tables
         desc: These tables contain all national (koodistot.suomi.fi) and local codes used for classifying plan data.

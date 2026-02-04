@@ -25,17 +25,14 @@ if TYPE_CHECKING:
         LegalEffectsOfMasterPlan,
         LifeCycleStatus,
         Municipality,
-        NameOfPlanCaseDecision,
         PersonalDataContent,
         PlanTheme,
         PlanType,
         RetentionTime,
         TypeOfAdditionalInformation,
         TypeOfDocument,
-        TypeOfInteractionEvent,
         TypeOfPlanRegulation,
         TypeOfPlanRegulationGroup,
-        TypeOfProcessingEvent,
         TypeOfSourceData,
         TypeOfUnderground,
         TypeOfVerbalPlanRegulation,
@@ -44,8 +41,8 @@ if TYPE_CHECKING:
 regulation_group_association = Table(
     "regulation_group_association",
     Base.metadata,
-    Column("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
-    Column(
+    Column[UUID]("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column[UUID](
         "plan_regulation_group_id",
         ForeignKey(
             "hame.plan_regulation_group.id",
@@ -56,30 +53,30 @@ regulation_group_association = Table(
     ),
     # General groups cannot actually be n2n but use this approach anyway
     # to make the approach uniform with the plan objects
-    Column(
+    Column[UUID](
         "plan_id",
         ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
         index=True,
         comment="A plan in which the regulation group is a general regulation group",
     ),
-    Column(
+    Column[UUID](
         "land_use_area_id",
         ForeignKey(
             "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
         ),
         index=True,
     ),
-    Column(
+    Column[UUID](
         "other_area_id",
         ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE"),
         index=True,
     ),
-    Column(
+    Column[UUID](
         "line_id",
         ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE"),
         index=True,
     ),
-    Column(
+    Column[UUID](
         "point_id",
         ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE"),
         index=True,
@@ -91,13 +88,13 @@ regulation_group_association = Table(
 legal_effects_association = Table(
     "legal_effects_association",
     Base.metadata,
-    Column(
+    Column[UUID](
         "plan_id",
         ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
         primary_key=True,
         # indexed by the primary key
     ),
-    Column(
+    Column[UUID](
         "legal_effects_of_master_plan_id",
         ForeignKey(
             "codes.legal_effects_of_master_plan.id",
@@ -115,8 +112,8 @@ legal_effects_association = Table(
 plan_theme_association = Table(
     "plan_theme_association",
     Base.metadata,
-    Column("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
-    Column(
+    Column[UUID]("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column[UUID](
         "plan_regulation_id",
         ForeignKey(
             "hame.plan_regulation.id",
@@ -125,7 +122,7 @@ plan_theme_association = Table(
         ),
         index=True,
     ),
-    Column(
+    Column[UUID](
         "plan_proposition_id",
         ForeignKey(
             "hame.plan_proposition.id",
@@ -134,7 +131,7 @@ plan_theme_association = Table(
         ),
         index=True,
     ),
-    Column(
+    Column[UUID](
         "plan_theme_id",
         ForeignKey(
             "codes.plan_theme.id", name="plan_theme_id_fkey", ondelete="CASCADE"
@@ -207,19 +204,6 @@ class PlanBase(VersionedBase):
     def lifecycle_status(cls) -> Mapped[LifeCycleStatus]:
         return relationship(
             "LifeCycleStatus", back_populates=f"{cls.__tablename__}s", lazy="joined"
-        )
-
-    # Let's add backreference to allow lazy loading from this side.
-    @declared_attr
-    @classmethod
-    def lifecycle_dates(cls) -> Mapped[list[LifeCycleDate]]:
-        return relationship(
-            "LifeCycleDate",
-            back_populates=f"{cls.__tablename__}",
-            lazy="joined",
-            cascade="all, delete-orphan",
-            passive_deletes=True,
-            order_by="LifeCycleDate.starting_at",
         )
 
 
@@ -536,7 +520,7 @@ class AdditionalInformation(VersionedBase, AttributeValueMixin):
 type_of_verbal_regulation_association = Table(
     "type_of_verbal_regulation_association",
     Base.metadata,
-    Column(
+    Column[UUID](
         "plan_regulation_id",
         ForeignKey(
             "hame.plan_regulation.id",
@@ -545,7 +529,7 @@ type_of_verbal_regulation_association = Table(
         ),
         primary_key=True,
     ),
-    Column(
+    Column[UUID](
         "type_of_verbal_plan_regulation_id",
         ForeignKey(
             "codes.type_of_verbal_plan_regulation.id",
@@ -767,131 +751,3 @@ class Document(VersionedBase):
     decision_date: Mapped[datetime | None]
     document_date: Mapped[datetime]
     url: Mapped[str | None]
-
-
-class LifeCycleDate(VersionedBase):
-    """Elinkaaritilan päivämäärät"""
-
-    __tablename__ = "lifecycle_date"
-
-    lifecycle_status_id: Mapped[UUID] = mapped_column(
-        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
-        index=True,
-    )
-    plan_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"), index=True
-    )
-    land_use_area_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
-        ),
-        index=True,
-    )
-    other_area_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE"),
-        index=True,
-    )
-    line_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE"), index=True
-    )
-    point_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE"),
-        index=True,
-    )
-    plan_regulation_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "hame.plan_regulation.id",
-            name="plan_regulation_id_fkey",
-            ondelete="CASCADE",
-        ),
-        index=True,
-    )
-    plan_proposition_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "hame.plan_proposition.id",
-            name="plan_proposition_id_fkey",
-            ondelete="CASCADE",
-        ),
-        index=True,
-    )
-
-    plan: Mapped[Plan | None] = relationship(back_populates="lifecycle_dates")
-    land_use_area: Mapped[LandUseArea | None] = relationship(
-        back_populates="lifecycle_dates"
-    )
-    other_area: Mapped[OtherArea | None] = relationship(
-        back_populates="lifecycle_dates"
-    )
-    line: Mapped[Line | None] = relationship(back_populates="lifecycle_dates")
-    point: Mapped[Point | None] = relationship(back_populates="lifecycle_dates")
-    plan_regulation: Mapped[PlanRegulation | None] = relationship(
-        back_populates="lifecycle_dates"
-    )
-    plan_proposition: Mapped[PlanProposition | None] = relationship(
-        back_populates="lifecycle_dates"
-    )
-    # Let's load all the codes for objects joined.
-    lifecycle_status: Mapped[LifeCycleStatus] = relationship(
-        back_populates="lifecycle_dates", lazy="joined"
-    )
-    # Let's add backreference to allow lazy loading from this side.
-    event_dates: Mapped[list[EventDate]] = relationship(
-        back_populates="lifecycle_date",
-        lazy="joined",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-    starting_at: Mapped[datetime]
-    ending_at: Mapped[datetime | None]
-
-
-class EventDate(VersionedBase):
-    """Tapahtuman päivämäärät
-
-    Jokaisessa elinkaaritilassa voi olla tiettyjä tapahtumia. Liitetään tapahtuma
-    sille sallittuun elinkaaritilaan. Tapahtuman päivämäärien tulee olla aina
-    elinkaaritilan päivämäärien välissä.
-    """
-
-    __tablename__ = "event_date"
-
-    lifecycle_date_id: Mapped[UUID] = mapped_column(
-        ForeignKey(
-            "hame.lifecycle_date.id", name="lifecycle_date_id_fkey", ondelete="CASCADE"
-        ),
-        index=True,
-    )
-    decision_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "codes.name_of_plan_case_decision.id",
-            name="name_of_plan_case_decision_id_fkey",
-        )
-    )
-    processing_event_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "codes.type_of_processing_event.id", name="type_of_processing_event_fkey"
-        )
-    )
-    interaction_event_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey(
-            "codes.type_of_interaction_event.id", name="type_of_interaction_event_fkey"
-        )
-    )
-
-    # Let's load all the codes for objects joined.
-    lifecycle_date: Mapped[LifeCycleDate] = relationship(
-        back_populates="event_dates", lazy="joined"
-    )
-    decision: Mapped[NameOfPlanCaseDecision] = relationship(
-        back_populates="event_dates", lazy="joined"
-    )
-    processing_event: Mapped[TypeOfProcessingEvent] = relationship(
-        back_populates="event_dates", lazy="joined"
-    )
-    interaction_event: Mapped[TypeOfInteractionEvent] = relationship(
-        back_populates="event_dates", lazy="joined"
-    )
-
-    starting_at: Mapped[datetime]
-    ending_at: Mapped[datetime | None]

@@ -13,9 +13,7 @@ from database.base import Base, VersionedBase, language_str, unique_str
 if TYPE_CHECKING:
     from database.models import (
         Document,
-        EventDate,
         LandUseArea,
-        LifeCycleDate,
         Line,
         Organisation,
         OtherArea,
@@ -124,9 +122,6 @@ class LifeCycleStatus(CodeBase):
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
-    lifecycle_dates: Mapped[list[LifeCycleDate]] = relationship(
-        back_populates="lifecycle_status"
-    )
     allowed_interaction_events: Mapped[list[TypeOfInteractionEvent]] = relationship(
         secondary="codes.allowed_events", back_populates="allowed_statuses"
     )
@@ -446,10 +441,6 @@ class TypeOfInteractionEvent(CodeBase):
         overlaps="allowed_decisions,allowed_processing_events",
     )
 
-    event_dates: Mapped[list[EventDate]] = relationship(
-        back_populates="interaction_event"
-    )
-
 
 class NameOfPlanCaseDecision(CodeBase):
     """Kaava-asian päätöksen nimi"""
@@ -463,8 +454,6 @@ class NameOfPlanCaseDecision(CodeBase):
         overlaps="allowed_interaction_events,allowed_processing_events,allowed_statuses",
     )
 
-    event_dates: Mapped[list[EventDate]] = relationship(back_populates="decision")
-
 
 class TypeOfProcessingEvent(CodeBase):
     """Käsittelytapahtuman laji"""
@@ -476,10 +465,6 @@ class TypeOfProcessingEvent(CodeBase):
         secondary="codes.allowed_events",
         back_populates="allowed_processing_events",
         overlaps="allowed_interaction_events,allowed_decisions,allowed_statuses",
-    )
-
-    event_dates: Mapped[list[EventDate]] = relationship(
-        back_populates="processing_event"
     )
 
 

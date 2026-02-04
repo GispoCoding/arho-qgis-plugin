@@ -92,7 +92,6 @@ def test_modified_at_triggers(
     source_data_instance: models.SourceData,
     organisation_instance: models.Organisation,
     plan_map_instance: models.Document,
-    lifecycle_date_instance: models.LifeCycleDate,
 ) -> None:
     # Save old modified_at timestamps
     plan_old_modified_at = plan_instance.modified_at
@@ -108,7 +107,6 @@ def test_modified_at_triggers(
     source_data_instance_old_modified_at = source_data_instance.modified_at
     organisation_instance_old_modified_at = organisation_instance.modified_at
     plan_map_instance_old_modified_at = plan_map_instance.modified_at
-    lifecycle_date_instance_old_modified_at = lifecycle_date_instance.modified_at
 
     # Edit tables to fire the triggers
     plan_instance.exported_at = datetime.now()
@@ -122,7 +120,7 @@ def test_modified_at_triggers(
     source_data_instance.additional_information_uri = "http://test2.fi"
     organisation_instance.business_id = "foo"
     plan_map_instance.name = {"fin": "foo"}
-    lifecycle_date_instance.ending_at = datetime.now()
+
     session.flush()
     session.refresh(plan_instance)
     session.refresh(land_use_area_instance)
@@ -135,7 +133,6 @@ def test_modified_at_triggers(
     session.refresh(source_data_instance)
     session.refresh(organisation_instance)
     session.refresh(plan_map_instance)
-    session.refresh(lifecycle_date_instance)
 
     assert plan_instance.modified_at != plan_old_modified_at
     assert land_use_area_instance.modified_at != land_use_area_instance_old_modified_at
@@ -154,178 +151,6 @@ def test_modified_at_triggers(
     assert source_data_instance.modified_at != source_data_instance_old_modified_at
     assert organisation_instance.modified_at != organisation_instance_old_modified_at
     assert plan_map_instance != plan_map_instance_old_modified_at
-    assert (
-        lifecycle_date_instance.modified_at != lifecycle_date_instance_old_modified_at
-    )
-
-
-def test_new_object_add_lifecycle_date_triggers(
-    plan_instance: models.Plan,
-    text_plan_regulation_instance: models.PlanRegulation,
-    plan_proposition_instance: models.PlanProposition,
-    land_use_area_instance: models.LandUseArea,
-    other_area_instance: models.OtherArea,
-    line_instance: models.Line,
-    point_instance: models.Point,
-) -> None:
-    assert plan_instance.lifecycle_dates
-    lifecycle_date = next(iter(plan_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == plan_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert text_plan_regulation_instance.lifecycle_status
-    lifecycle_date = next(iter(text_plan_regulation_instance.lifecycle_dates))
-    assert (
-        lifecycle_date.lifecycle_status
-        == text_plan_regulation_instance.lifecycle_status
-    )
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert plan_proposition_instance.lifecycle_dates
-    lifecycle_date = next(iter(plan_proposition_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == plan_proposition_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert land_use_area_instance.lifecycle_dates
-    lifecycle_date = next(iter(land_use_area_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == land_use_area_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert other_area_instance.lifecycle_dates
-    lifecycle_date = next(iter(other_area_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == other_area_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert line_instance.lifecycle_dates
-    lifecycle_date = next(iter(line_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == line_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-    assert point_instance.lifecycle_dates
-    lifecycle_date = next(iter(point_instance.lifecycle_dates))
-    assert lifecycle_date.lifecycle_status == point_instance.lifecycle_status
-    assert lifecycle_date.starting_at
-    assert not lifecycle_date.ending_at
-
-
-def test_new_lifecycle_date_triggers(
-    session: Session,
-    plan_instance: models.Plan,
-    text_plan_regulation_instance: models.PlanRegulation,
-    plan_proposition_instance: models.PlanProposition,
-    land_use_area_instance: models.LandUseArea,
-    other_area_instance: models.OtherArea,
-    line_instance: models.Line,
-    point_instance: models.Point,
-    code_instance: codes.LifeCycleStatus,
-    another_code_instance: codes.LifeCycleStatus,
-) -> None:
-    assert plan_instance.lifecycle_status_id != another_code_instance.id
-    assert text_plan_regulation_instance.lifecycle_status_id != another_code_instance.id
-    assert plan_proposition_instance.lifecycle_status_id != another_code_instance.id
-    assert land_use_area_instance.lifecycle_status_id != another_code_instance.id
-    assert other_area_instance.lifecycle_status_id != another_code_instance.id
-    assert line_instance.lifecycle_status_id != another_code_instance.id
-    assert point_instance.lifecycle_status_id != another_code_instance.id
-
-    # Update lifecycle_statuses to populate starting_at fields
-    plan_instance.lifecycle_status = another_code_instance
-    text_plan_regulation_instance.lifecycle_status = another_code_instance
-    plan_proposition_instance.lifecycle_status = another_code_instance
-    land_use_area_instance.lifecycle_status = another_code_instance
-    other_area_instance.lifecycle_status = another_code_instance
-    line_instance.lifecycle_status = another_code_instance
-    point_instance.lifecycle_status = another_code_instance
-    session.flush()
-
-    # Update again to populate ending_at fields
-    plan_instance.lifecycle_status = code_instance
-    text_plan_regulation_instance.lifecycle_status = code_instance
-    plan_proposition_instance.lifecycle_status = code_instance
-    land_use_area_instance.lifecycle_status = code_instance
-    other_area_instance.lifecycle_status = code_instance
-    line_instance.lifecycle_status = code_instance
-    point_instance.lifecycle_status = code_instance
-    session.flush()
-    session.refresh(plan_instance)
-    session.refresh(text_plan_regulation_instance)
-    session.refresh(plan_proposition_instance)
-    session.refresh(land_use_area_instance)
-    session.refresh(other_area_instance)
-    session.refresh(line_instance)
-    session.refresh(point_instance)
-
-    # Get old and new entries in lifecycle_date table
-    def get_new_lifecycle_date(instance: models.PlanBase) -> models.LifeCycleDate:
-        return next(
-            date
-            for date in instance.lifecycle_dates
-            if date.lifecycle_status == code_instance
-        )
-
-    def get_old_lifecycle_date(instance: models.PlanBase) -> models.LifeCycleDate:
-        return next(
-            date
-            for date in instance.lifecycle_dates
-            if date.lifecycle_status == another_code_instance
-        )
-
-    plan_new_lifecycle_date = get_new_lifecycle_date(plan_instance)
-    plan_regulation_new_lifecycle_date = get_new_lifecycle_date(
-        text_plan_regulation_instance
-    )
-    plan_proposition_new_lifecycle_date = get_new_lifecycle_date(
-        plan_proposition_instance
-    )
-    land_use_area_new_lifecycle_date = get_new_lifecycle_date(land_use_area_instance)
-    other_area_new_lifecycle_date = get_new_lifecycle_date(other_area_instance)
-    line_new_lifecycle_date = get_new_lifecycle_date(line_instance)
-    point_new_lifecycle_date = get_new_lifecycle_date(point_instance)
-    plan_old_lifecycle_date = get_old_lifecycle_date(plan_instance)
-    plan_regulation_old_lifecycle_date = get_old_lifecycle_date(
-        text_plan_regulation_instance
-    )
-    plan_proposition_old_lifecycle_date = get_old_lifecycle_date(
-        plan_proposition_instance
-    )
-    land_use_area_old_lifecycle_date = get_old_lifecycle_date(land_use_area_instance)
-    other_area_old_lifecycle_date = get_old_lifecycle_date(other_area_instance)
-    line_old_lifecycle_date = get_old_lifecycle_date(line_instance)
-    point_old_lifecycle_date = get_old_lifecycle_date(point_instance)
-
-    assert plan_new_lifecycle_date.lifecycle_status_id == code_instance.id
-    assert plan_new_lifecycle_date.starting_at is not None
-    assert plan_old_lifecycle_date.ending_at is not None
-
-    assert plan_regulation_new_lifecycle_date.lifecycle_status_id == code_instance.id
-    assert plan_regulation_new_lifecycle_date.starting_at is not None
-    assert plan_regulation_old_lifecycle_date.ending_at is not None
-
-    assert plan_proposition_new_lifecycle_date.lifecycle_status_id == code_instance.id
-    assert plan_proposition_new_lifecycle_date.starting_at is not None
-    assert plan_proposition_old_lifecycle_date.ending_at is not None
-
-    assert land_use_area_instance.lifecycle_status_id == code_instance.id
-    assert land_use_area_new_lifecycle_date.starting_at is not None
-    assert land_use_area_old_lifecycle_date.ending_at is not None
-
-    assert other_area_instance.lifecycle_status_id == code_instance.id
-    assert other_area_new_lifecycle_date.starting_at is not None
-    assert other_area_old_lifecycle_date.ending_at is not None
-
-    assert line_instance.lifecycle_status_id == code_instance.id
-    assert line_new_lifecycle_date.starting_at is not None
-    assert line_old_lifecycle_date.ending_at is not None
-
-    assert point_instance.lifecycle_status_id == code_instance.id
-    assert point_new_lifecycle_date.starting_at is not None
-    assert point_old_lifecycle_date.ending_at is not None
 
 
 def test_new_lifecycle_status_triggers(

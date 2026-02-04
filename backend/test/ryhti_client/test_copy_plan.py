@@ -129,9 +129,7 @@ def test_copy_plan(
     assert copied_land_use_area_1 is not None
     assert copied_land_use_area_1.lifecycle_status.value == valid_status_instance.value
     assert copied_land_use_area_1.period_of_validity_start == period_of_validity_start
-    assert len(land_use_area_1.lifecycle_dates) == len(
-        copied_land_use_area_1.lifecycle_dates
-    )
+
     assert (
         land_use_area_1.type_of_underground
         == copied_land_use_area_1.type_of_underground
@@ -150,7 +148,7 @@ def test_copy_plan(
     )
     assert copied_other_area_1 is not None
     assert copied_other_area_1.lifecycle_status.value == valid_status_instance.value
-    assert len(other_area_1.lifecycle_dates) == len(copied_other_area_1.lifecycle_dates)
+
     assert other_area_1.type_of_underground == copied_other_area_1.type_of_underground
 
     # complete_test_plan fixture has no lines
@@ -164,7 +162,7 @@ def test_copy_plan(
     )
     assert copied_point_1 is not None
     assert copied_point_1.lifecycle_status.value == valid_status_instance.value
-    assert len(point_1.lifecycle_dates) == len(copied_point_1.lifecycle_dates)
+
     assert point_1.type_of_underground == copied_point_1.type_of_underground
 
     # General regulation groups

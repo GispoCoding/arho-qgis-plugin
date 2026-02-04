@@ -17,36 +17,14 @@ from database.triggers import (
     generate_add_plan_id_fkey_triggers,
     generate_instead_of_triggers_for_visualization_views,
     generate_modified_at_triggers,
-    generate_new_lifecycle_date_triggers,
     generate_new_lifecycle_status_triggers,
-    generate_new_object_add_lifecycle_date_triggers,
     generate_update_lifecycle_status_triggers,
     generate_created_at_triggers,
     generate_no_created_at_update_triggers
 )
-from database.validation import (
-    trg_validate_event_date,
-    trg_validate_event_date_inside_status_date,
-    trg_validate_event_type,
-    trg_validate_lifecycle_date,
-    trgfunc_validate_event_date,
-    trgfunc_validate_event_date_inside_status_date,
-    trgfunc_validate_event_type,
-    trgfunc_validate_lifecycle_date,
-)
 from database.views import views
 
 modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
-
-(
-    new_object_add_lifecycle_date_trgs,
-    new_object_add_lifecycle_date_trgfuncs,
-) = generate_new_object_add_lifecycle_date_triggers()
-
-(
-    new_lifecycle_date_trgs,
-    new_lifecycle_date_trgfuncs,
-) = generate_new_lifecycle_date_triggers()
 
 (
     update_lifecycle_status_trgs,
@@ -79,10 +57,6 @@ add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_tri
 imported_triggers = (
     modified_at_trgfuncs
     + modified_at_trgs
-    + new_object_add_lifecycle_date_trgfuncs
-    + new_object_add_lifecycle_date_trgs
-    + new_lifecycle_date_trgfuncs
-    + new_lifecycle_date_trgs
     + update_lifecycle_status_trgfuncs
     + update_lifecycle_status_trgs
     + new_lifecycle_status_trgfuncs
@@ -95,14 +69,6 @@ imported_triggers = (
     + created_at_trgfuncs
     + no_created_at_update_trgs
     + no_created_at_update_trgfuncs
-    + [trgfunc_validate_lifecycle_date]
-    + [trg_validate_lifecycle_date]
-    + [trgfunc_validate_event_date]
-    + [trg_validate_event_date]
-    + [trgfunc_validate_event_date_inside_status_date]
-    + [trg_validate_event_date_inside_status_date]
-    + [trgfunc_validate_event_type]
-    + [trg_validate_event_type]
 )
 
 register_entities(imported_triggers)

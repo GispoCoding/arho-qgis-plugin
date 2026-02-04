@@ -1484,139 +1484,6 @@ def plan_map_instance(
     return temp_session_feature(instance)
 
 
-# Date fixtures
-
-
-@pytest.fixture
-def lifecycle_date_instance(
-    temp_session_feature: ReturnSame[models.LifeCycleDate],
-    code_instance: codes.LifeCycleStatus,
-) -> models.LifeCycleDate:
-    instance = models.LifeCycleDate(
-        lifecycle_status=code_instance,
-        starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2025, 1, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def pending_date_instance(
-    temp_session_feature: ReturnSame[models.LifeCycleDate],
-    plan_instance: codes.Plan,
-    pending_status_instance: codes.LifeCycleStatus,
-) -> models.LifeCycleDate:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=pending_status_instance,
-        starting_at=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def preparation_date_instance(
-    temp_session_feature: ReturnSame[models.LifeCycleDate],
-    plan_instance: codes.Plan,
-    preparation_status_instance: codes.LifeCycleStatus,
-) -> models.LifeCycleDate:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=preparation_status_instance,
-        starting_at=datetime(2024, 2, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 3, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def plan_proposal_date_instance(
-    temp_session_feature: ReturnSame[models.LifeCycleDate],
-    plan_instance: codes.Plan,
-    plan_proposal_status_instance: codes.LifeCycleStatus,
-) -> models.LifeCycleDate:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=plan_proposal_status_instance,
-        starting_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 5, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def approved_date_instance(
-    temp_session_feature: ReturnSame[models.LifeCycleDate],
-    plan_instance: codes.Plan,
-    approved_status_instance: codes.LifeCycleStatus,
-) -> models.LifeCycleDate:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=approved_status_instance,
-        starting_at=datetime(2024, 4, 1, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 5, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def valid_date_instance(
-    temp_session_feature: ReturnSame[models.LifeCycleDate],
-    plan_instance: codes.Plan,
-    valid_status_instance: codes.LifeCycleStatus,
-) -> models.LifeCycleDate:
-    instance = models.LifeCycleDate(
-        plan=plan_instance,
-        lifecycle_status=valid_status_instance,
-        starting_at=datetime(2024, 5, 1, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def decision_date_instance(
-    temp_session_feature: ReturnSame[models.EventDate],
-    preparation_date_instance: models.LifeCycleDate,
-    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
-) -> models.EventDate:
-    instance = models.EventDate(
-        lifecycle_date=preparation_date_instance,
-        decision=participation_plan_presenting_for_public_decision,
-        starting_at=datetime(2024, 2, 5, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def processing_event_date_instance(
-    temp_session_feature: ReturnSame[models.EventDate],
-    preparation_date_instance: models.LifeCycleDate,
-    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
-) -> models.EventDate:
-    instance = models.EventDate(
-        lifecycle_date=preparation_date_instance,
-        processing_event=participation_plan_presenting_for_public_event,
-        starting_at=datetime(2024, 2, 15, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
-@pytest.fixture
-def interaction_event_date_instance(
-    temp_session_feature: ReturnSame[models.EventDate],
-    preparation_date_instance: models.LifeCycleDate,
-    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
-) -> models.EventDate:
-    instance = models.EventDate(
-        lifecycle_date=preparation_date_instance,
-        interaction_event=presentation_to_the_public_interaction,
-        starting_at=datetime(2024, 2, 15, tzinfo=LOCAL_TZ),
-        ending_at=datetime(2024, 2, 28, tzinfo=LOCAL_TZ),
-    )
-    return temp_session_feature(instance)
-
-
 # Additional information fixtures
 
 
@@ -1717,11 +1584,6 @@ def complete_test_plan(
     plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
     presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
     decisionmaker_type: codes.TypeOfDecisionMaker,
-    pending_date_instance: models.LifeCycleDate,
-    preparation_date_instance: models.LifeCycleDate,
-    decision_date_instance: models.EventDate,
-    processing_event_date_instance: models.EventDate,
-    interaction_event_date_instance: models.EventDate,
 ) -> models.Plan:
     """Plan data that might be more or less complete, to be tested and validated with the
     Ryhti API.
@@ -1730,11 +1592,6 @@ def complete_test_plan(
     linked to the plan in the database) to be committed to the database, and some
     dates for the plan lifecycle statuses to be set.
     """
-    # In tests, we need known dates for the phases. Plan has a trigger-generated additional
-    # date for the preparation phase that we must delete before testing.
-    session.delete(plan_instance.lifecycle_dates[2])
-    session.commit()
-
     # Add the optional (nullable) relationships. We don't want them to be present in
     # all fixtures.
     plan_instance.legal_effects_of_master_plan.append(
