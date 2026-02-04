@@ -20,7 +20,7 @@ from qgis.core import (
     QgsUnitTypes,
 )
 from qgis.PyQt.QtCore import QPointF, QSizeF, Qt
-from qgis.PyQt.QtGui import QPolygonF
+from qgis.PyQt.QtGui import QFont, QPolygonF
 
 from arho_feature_template.core.prints.layout_utils import (
     move_label_above_symbol,
@@ -48,6 +48,9 @@ DEFAULT_LETTER_CODE_LABEL_HEIGHT = 4.4
 
 class LayoutItemFactory:
     SETTINGS: RegulationPrintSettings
+
+    BOLD_FONT = QFont()
+    BOLD_FONT.setBold(True)
 
     @classmethod
     def new_regulation_print_item(
@@ -195,7 +198,7 @@ class LayoutItemFactory:
     @classmethod
     def new_letter_code_label(cls, letter_code: str, layout: QgsPrintLayout) -> QgsLayoutItemLabel:
         label = QgsLayoutItemLabel(layout)
-        label.setMode(QgsLayoutItemLabel.Mode.ModeHtml)
+        label.setMode(QgsLayoutItemLabel.Mode.ModeFont)
         label.setText(letter_code)
         label.attemptResize(QgsLayoutSize(cls.SETTINGS.symbol_width, DEFAULT_LETTER_CODE_LABEL_HEIGHT))
         label.setHAlign(Qt.AlignHCenter)
@@ -209,9 +212,10 @@ class LayoutItemFactory:
         cls, layout: QgsPrintLayout, heading: LocalizedText, language_index: int = 0
     ) -> QgsLayoutItemLabel:
         label = QgsLayoutItemLabel(layout)
-        label.setMode(QgsLayoutItemLabel.Mode.ModeHtml)
+        label.setMode(QgsLayoutItemLabel.Mode.ModeFont)
         text = get_localized_text(heading, cls.SETTINGS.languages[language_index])
-        label.setText(f"<b>{text}</b>" if text else "")
+        label.setText(text if text else "")
+        label.setFont(cls.BOLD_FONT)
         label.setMarginX(2)
         # label.setMarginY(2)
         label.attemptResize(
@@ -229,8 +233,7 @@ class LayoutItemFactory:
         cls, layout: QgsPrintLayout, text: LocalizedText, language_index: int = 0
     ) -> QgsLayoutItemLabel:
         label = QgsLayoutItemLabel(layout)
-        label.setMode(QgsLayoutItemLabel.Mode.ModeHtml)
-        # html = f"<b>{title}</b><br/>{text}"
+        label.setMode(QgsLayoutItemLabel.Mode.ModeFont)
         label.setText(get_localized_text(text, cls.SETTINGS.languages[language_index]) or "")
         label.setMarginX(2)
         label.attemptResize(
