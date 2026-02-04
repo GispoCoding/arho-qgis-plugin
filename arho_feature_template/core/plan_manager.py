@@ -625,7 +625,7 @@ class PlanManager(QObject):
 
     @use_wait_cursor
     @status_message("Avataan kaava-asia ...")
-    def set_active_plan_matter(self, plan_matter_id: str) -> None:
+    def set_active_plan_matter(self, plan_matter_id: str | None) -> None:
         if check_layer_changes():
             raise UnsavedChangesError
 
@@ -646,6 +646,12 @@ class PlanManager(QObject):
             plan_matter_name = PlanMatterLayer.get_plan_matter_name(plan_matter_id)
             # Don't save Nimetön as plan name in project variables
             set_active_plan_matter_name(plan_matter_name if plan_matter_name != "Nimetön" else "")
+
+            permanent_plan_identifier = PlanMatterLayer.get_attribute_by_id("permanent_plan_identifier", plan_matter_id)
+            if QgsVariantUtils.isNull(permanent_plan_identifier):
+                permanent_plan_identifier = None
+
+            self.set_permanent_identifier(permanent_plan_identifier)
         else:
             for layer in plan_matter_layers:
                 layer.hide_all_features()
@@ -654,16 +660,9 @@ class PlanManager(QObject):
             set_active_plan_matter_name("")
 
         self.set_active_plan(None)
-        PlanLayer.hide_all_features()
 
         if previously_in_edit_mode:
             plan_matter_layer.startEditing()
-
-        permanent_plan_identifier = PlanMatterLayer.get_attribute_by_id("permanent_plan_identifier", plan_matter_id)
-        if QgsVariantUtils.isNull(permanent_plan_identifier):
-            permanent_plan_identifier = None
-
-        self.set_permanent_identifier(permanent_plan_identifier)
 
     @use_wait_cursor
     @status_message("Avataan kaavasuunnitelma ...")
@@ -876,10 +875,13 @@ class PlanManager(QObject):
             self.project_loaded.emit()
 
             active_plan_matter_id = get_active_plan_matter_id()
+            # Need to access active plan ID here since `set_active_plan_matter` (temporarily) sets it to None
             active_plan_id = get_active_plan_id()
+            if active_plan_matter_id not in [feat["id"] for feat in PlanMatterLayer.get_features()]:
+                self.set_active_plan_matter(None)
+                return
+            self.set_active_plan_matter(active_plan_matter_id)
 
-            if active_plan_matter_id:
-                self.set_active_plan_matter(active_plan_matter_id)
             if active_plan_id:
                 self.set_active_plan(active_plan_id)
 
