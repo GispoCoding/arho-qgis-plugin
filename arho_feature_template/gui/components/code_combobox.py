@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QComboBox, QTreeWidget, QTreeWidgetItem
 
 from arho_feature_template.utils.localization_utils import get_localized_text
@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class CodeComboBox(QComboBox):
+    changed = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -24,6 +26,8 @@ class CodeComboBox(QComboBox):
         self.setItemData(0, None)
 
         self.setCurrentIndex(0)
+
+        self.currentIndexChanged.connect(lambda _: self.changed.emit())
 
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         for id_, attributes in layer_type.get_attribute_dict().items():

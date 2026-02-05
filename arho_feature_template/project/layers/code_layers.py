@@ -236,6 +236,8 @@ class AdditionalInformationTypeLayer(AbstractCodeLayer):
                     "default_value": AttributeValue(
                         value_data_type=AttributeValueDataType(info_data["data_type"]),
                         unit=info_data.get("unit"),
+                        code_list=info_data.get("code_list"),
+                        code_title=info_data.get("code_list"),
                     )
                 }
                 for info_data in config_data["additional_information"]
@@ -434,3 +436,11 @@ class LegalEffectsLayer(AbstractCodeLayer):
 
 
 code_layers = AbstractCodeLayer.__subclasses__()
+
+
+def get_code_layer(name: str) -> type[AbstractCodeLayer] | None:
+    for code_layer in code_layers:
+        if code_layer.name == name:
+            return code_layer
+
+    return None

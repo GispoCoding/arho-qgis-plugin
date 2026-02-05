@@ -61,6 +61,7 @@ from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     LanguageLayer,
     LifeCycleStatusLayer,
+    LegalEffectsLayer,
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
     PlanType,
@@ -251,6 +252,7 @@ class PlanManager(QObject):
             AdditionalInformationTypeLayer.build_cache()
             LanguageLayer.build_cache()
             LifeCycleStatusLayer.build_cache()
+            LegalEffectsLayer.build_cache()
 
         _cache_code_layers()
 
