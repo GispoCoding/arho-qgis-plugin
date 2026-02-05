@@ -60,6 +60,7 @@ from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPl
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     LanguageLayer,
+    LifeCycleStatusLayer,
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
     PlanType,
@@ -249,6 +250,7 @@ class PlanManager(QObject):
             PlanRegulationTypeLayer.build_cache()
             AdditionalInformationTypeLayer.build_cache()
             LanguageLayer.build_cache()
+            LifeCycleStatusLayer.build_cache()
 
         _cache_code_layers()
 
