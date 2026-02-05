@@ -231,9 +231,9 @@ class AttributeValue(PlanBaseModel):
     text_value: LocalizedText | None = None
     text_syntax: str | None = None
 
-    code_list: str | None = None
-    code_value: str | None = None
-    code_title: str | None = None
+    code_list: str | None = None  # Name of code list / code layer
+    code_value: str | None = None  # ID that belongs to code_list
+    code_title: str | None = None  # Same as code_list
 
     height_reference_point: str | None = None
 
@@ -265,7 +265,7 @@ class AttributeValue(PlanBaseModel):
             text_syntax=data.get("text_syntax"),
             code_list=data.get("code_list"),
             code_value=data.get("code_value"),
-            code_title=data.get("code_title"),
+            code_title=data.get("code_list"),  # Code title = code list
             height_reference_point=data.get("height_reference_point"),
         )
 
@@ -280,7 +280,7 @@ class AttributeValue(PlanBaseModel):
             "text_syntax": self.text_syntax,
             "code_list": self.code_list,
             "code_value": self.code_value,
-            "code_title": self.code_title,
+            "code_title": self.code_title,  # Code title = code list
             "height_reference_point": self.height_reference_point,
         }
 

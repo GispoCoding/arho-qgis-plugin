@@ -19,8 +19,8 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import AttributeValue, AttributeValueDataType, LocalizedText
 from arho_feature_template.core.settings_manager import SettingsManager
-from arho_feature_template.gui.components.code_combobox import HierarchicalCodeComboBox
-from arho_feature_template.project.layers.code_layers import LegalEffectsLayer, VerbalRegulationType
+from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
+from arho_feature_template.project.layers.code_layers import LegalEffectsLayer, VerbalRegulationType, get_code_layer
 
 logger = logging.getLogger(__name__)
 
@@ -270,33 +270,6 @@ class LocalizedMultilineTextInputWidget(LocalizedTextInputWidget):
     WIDGET_CLS = MultilineTextInputWidget
 
 
-class CodeInputWidget(QWidget):
-    changed = pyqtSignal()
-
-    def __init__(self, title: str | None = None, code_list: str | None = None, code_value: str | None = None):
-        super().__init__()
-
-        self.title_widget = SinglelineTextInputWidget(default_value=title, editable=True)
-        self.code_list_widget = SinglelineTextInputWidget(default_value=code_list, editable=True)
-        self.code_value_widget = SinglelineTextInputWidget(default_value=code_value, editable=True)
-
-        layout = QFormLayout()
-        layout.addRow("Otsikko:", self.title_widget)
-        layout.addRow("Koodisto:", self.code_list_widget)
-        layout.addRow('<span style="color: red;">*</span> Koodiarvo:', self.code_value_widget)
-        self.setLayout(layout)
-
-        self.title_widget.changed.connect(lambda: self.changed.emit())
-        self.code_list_widget.changed.connect(lambda: self.changed.emit())
-        self.code_value_widget.changed.connect(lambda: self.changed.emit())
-
-    def get_value(self) -> tuple[str | None, str | None, str | None]:
-        title = self.title_widget.get_value()
-        code_list = self.code_list_widget.get_value()
-        code_value = self.code_value_widget.get_value()
-        return (title if title else None, code_list if code_list else None, code_value if code_value else None)
-
-
 class TypeOfVerbalRegulationWidget(QWidget):
     changed = pyqtSignal()
 
@@ -432,11 +405,18 @@ class ValueWidgetManager(QObject):
                 self.value_widget.set_value(text_value)
 
         elif self.value_data_type == AttributeValueDataType.CODE:
-            self.value_widget = CodeInputWidget(
-                value.code_title or default_value.code_title,
-                value.code_list or default_value.code_list,
-                value.code_value or default_value.code_value,
-            )
+            self.value_widget = CodeComboBox()
+            if not default_value.code_list:
+                logger.critical("Code list missing for %s", default_value)
+                return
+
+            code_layer = get_code_layer(default_value.code_list)
+            if code_layer:
+                self.value_widget.populate_from_code_layer(code_layer)
+                if value.code_value:
+                    self.value_widget.set_value(value.code_value)
+            else:
+                logger.critical("Could not find code layer with name %s for value widget", default_value.code_list)
 
         else:
             logger.warning("No value input implemented for data type: %s", default_value.value_data_type)
@@ -477,9 +457,11 @@ class ValueWidgetManager(QObject):
             )
 
         if self.value_data_type == AttributeValueDataType.CODE:
-            title, code_list, code_value = self.value_widget.get_value() if self.value_widget else (None, None, None)
             return AttributeValue(
-                value_data_type=self.value_data_type, code_title=title, code_list=code_list, code_value=code_value
+                value_data_type=self.value_data_type,
+                code_list=self.default_value.code_list,
+                code_value=self.value_widget.value() if self.value_widget else None,
+                code_title=self.default_value.code_list,
             )
 
         return AttributeValue()
