@@ -123,6 +123,8 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.selection_model = self.table.selectionModel()
 
+        self.plan_locked = False
+
     def initialize(self):
         # Connect feat remove signals for each plan object layer so the linked plan object counts
         # stay updated
@@ -152,6 +154,21 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.remove_selected_action.triggered.connect(self.on_remove_selected_btn_clicked)
         self.add_selected_action.triggered.connect(self.on_add_selected_btn_clicked)
         self.filter_line.textChanged.connect(self._filter_table)
+
+    def update_lock_status(self, locked: bool):  # noqa: FBT001
+        self.plan_locked = locked
+        self.new_btn.setEnabled(not locked)
+        self.delete_btn.setEnabled(not locked)
+        self.modify_selected_features_btn.setEnabled(not locked)
+
+        if locked:
+            self.new_btn.setToolTip("Kaavasuunnitelma on lukittu, kaavamääräysryhmiä ei voi lisätä.")
+            self.delete_btn.setToolTip("Kaavasuunnitelma on lukittu, kaavamääräysryhmiä ei voi poistaa.")
+            self.modify_selected_features_btn.setToolTip("Kaavasuunnitelma on lukittu, kaavakohteita ei voi muokata.")
+        else:
+            self.new_btn.setToolTip("")
+            self.delete_btn.setToolTip("")
+            self.modify_selected_features_btn.setToolTip("")
 
     def _filter_table(self):
         # Set text filter
@@ -341,11 +358,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             self._on_highlight_plan_objects,
         )
         menu.addSeparator()
-        menu.addAction(
+        del_action = menu.addAction(
             QgsApplication.getThemeIcon("mActionDeleteSelected.svg"),
             "Poista kaavamääräysryhmä" if nr_of_selected_groups == 1 else "Poista valitut kaavamääräysryhmät",
             self.on_delete_btn_clicked,
         )
+        del_action.setEnabled(not self.plan_locked)
+
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
     def _on_select_plan_objects(self):

@@ -18,7 +18,6 @@ from arho_feature_template.qgis_plugin_tools.tools.resources import resources_pa
 from arho_feature_template.utils.layer_utils import (
     plan_layers_temporarily_unlocked,
     temporary_subset,
-    update_lock_status_if_needed,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
@@ -31,7 +30,8 @@ from arho_feature_template.utils.misc_utils import (
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
 
-    from arho_feature_template.core.models import Plan
+    from arho_feature_template.core.models import Plan, RegulationGroupLibrary
+    from arho_feature_template.core.plan_manager import PlanManager
 
 ui_path = resources.files(__package__) / "manage_plans.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -44,7 +44,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     UNLOCKED_ICON: QIcon = QgsApplication.getThemeIcon("unlocked.svg")
 
     @use_wait_cursor
-    def __init__(self, regulation_group_libraries):
+    def __init__(self, regulation_group_libraries: list[RegulationGroupLibrary], plan_manager_ref: PlanManager):
         super().__init__()
         self.setupUi(self)
 
@@ -57,6 +57,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
 
         # INIT
         self.regulation_group_libraries = regulation_group_libraries
+        self.plan_manager_ref = plan_manager_ref
         self.selected_plan = None
         self.plan_layer = PlanLayer.get_from_project()
         self.previously_in_edit_mode = self.plan_layer.isEditable()
@@ -157,7 +158,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
             ):
                 save_plan(edited_plan)
 
-            update_lock_status_if_needed(edited_plan)
+            self.plan_manager_ref.update_lock_status(edited_plan)
             self._update_plan_row(item.row(), edited_plan)
 
     def _on_new_plan_button_clicked(self):

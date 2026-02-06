@@ -55,6 +55,13 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
         TemplateManager.signal_manager.feature_object_added_to_library.connect(self.update_template_list)
 
+    def update_lock_status(self, locked: bool):  # noqa: FBT001
+        self.new_feature_grid.setEnabled(not locked)
+        if locked:
+            self.new_feature_grid.setToolTip("Kaavasuunnitelma on lukittu, kaavakohteita ei voi lisätä.")
+        else:
+            self.new_feature_grid.setToolTip("")
+
     def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanFeatureLibrary]):
         self.plan_feature_libraries = plan_feature_libraries
         self.library_selection.clear()
