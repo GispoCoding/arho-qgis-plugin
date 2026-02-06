@@ -22,6 +22,8 @@ class CodeComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        self.code_layer: type[AbstractCodeLayer] | None = None
+
         self.addItem("NULL")
         self.setItemData(0, None)
 
@@ -35,6 +37,7 @@ class CodeComboBox(QComboBox):
             if isinstance(text, dict):
                 text = get_localized_text(text)
             self.addItem(text, id_)
+        self.code_layer = layer_type
 
     def value(self) -> str:
         return self.currentData()

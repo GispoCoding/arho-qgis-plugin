@@ -60,8 +60,8 @@ from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPl
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     LanguageLayer,
-    LifeCycleStatusLayer,
     LegalEffectsLayer,
+    LifeCycleStatusLayer,
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
     PlanType,

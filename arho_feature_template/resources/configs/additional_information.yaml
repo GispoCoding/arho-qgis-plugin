@@ -2,12 +2,12 @@ version: 1
 additional_information:
   - code: poisluettavaKayttotarkoitus
     data_type: Code
-    code_list: Kaavamääräyslaji
+    code_list: http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji
   - code: kerroksetJotaMaaraysKoskee
     data_type: NumericRange
   - code: kayttotarkoituskohdistus
     data_type: Code
-    code_list: Kaavamääräyslaji
+    code_list: http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji
   - code: kayttotarkoituksenOsuusKerrosalastaK-m2
     data_type: PositiveNumeric
     unit: k-m2
@@ -25,6 +25,6 @@ additional_information:
     unit: "%"
   - code: rakennusluvanPeruste
     data_type: Code
-    code_list: Yleiskaavan oikeusvaikutus
+    code_list: http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK
   - code: autopaikkojenSijoittuminenSallittu
     data_type: PositiveNumeric
