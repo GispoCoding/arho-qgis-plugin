@@ -32,6 +32,7 @@ class AbstractCodeLayer(AbstractLayer):
     _attributes_to_leave_out_from_cache: ClassVar[list[str]] = ["created_at", "modified_at"]
     _field_names: ClassVar[list[str]] = []
     category_only_codes: ClassVar[list[str]] = []
+    URI: ClassVar[str | None] = None
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -132,6 +133,7 @@ class AbstractCodeLayer(AbstractLayer):
 
 class PlanTypeLayer(AbstractCodeLayer):
     name = "Kaavalaji"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji"
 
     category_only_codes: ClassVar[list[str]] = ["1", "2", "3"]  # "Maakuntakaava", "Asemakaava", "Yleiskaava"
 
@@ -178,6 +180,7 @@ class RegionLayer(AbstractCodeLayer):
 
 class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
+    URI = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
     valid_status_values: ClassVar[list[str]] = ["11", "13"]  # "Voimassa ennen kaavan lainvoimaisuutta", "Voimassa"
     repealed_status_values: ClassVar[list[str]] = ["14"]  # "Kumoutunut"
@@ -197,14 +200,17 @@ class OrganisationLayer(AbstractCodeLayer):
 
 class UndergroundTypeLayer(AbstractCodeLayer):
     name = "Maanalaisuuden tyyppi"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji"
 
 
 class PlanThemeLayer(AbstractCodeLayer):
     name = "Kaavoitusteemat"
+    URI = "http://uri.suomi.fi/codelist/rytj/kaavoitusteema"
 
 
 class AdditionalInformationTypeLayer(AbstractCodeLayer):
     name = "Lisätiedonlaji"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji"
 
     ADDITIONAL_INFORMATION_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "additional_information.yaml"))
 
@@ -298,6 +304,7 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
 
 class PlanRegulationTypeLayer(AbstractCodeLayer):
     name = "Kaavamääräyslaji"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
 
     PLAN_REGULATIONS_CONFIG_PATH = Path(os.path.join(resources_path(), "configs", "kaavamaaraykset.yaml"))
     # Attributes added from config: 'category_only' and 'default_value'
@@ -374,18 +381,21 @@ class PlanRegulationTypeLayer(AbstractCodeLayer):
 
 class VerbalRegulationType(AbstractCodeLayer):
     name = "Sanallisen määräyksen laji"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji"
 
     category_only_codes: ClassVar[list[str]] = ["maarayksenTyyppi"]
 
 
 class CategoryOfPublicityLayer(AbstractCodeLayer):
     name = "Julkisuusluokka"
+    URI = "http://uri.suomi.fi/codelist/rytj/julkisuus"
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class TypeOfDocumentLayer(AbstractCodeLayer):
     name = "Asiakirjatyyppi"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_AsiakirjanLaji_YKAK"
 
     category_only_codes: ClassVar[list[str]] = []
 
@@ -419,18 +429,21 @@ class LanguageLayer(AbstractCodeLayer):
 
 class PersonalDataContentLayer(AbstractCodeLayer):
     name = "Henkilötietosisältö"
+    URI = "http://uri.suomi.fi/codelist/rytj/henkilotietosisalto"
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class RetentionTimeLayer(AbstractCodeLayer):
     name = "Säilytysaika"
+    URI = "http://uri.suomi.fi/codelist/rytj/sailytysaika"
 
     category_only_codes: ClassVar[list[str]] = []
 
 
 class LegalEffectsLayer(AbstractCodeLayer):
     name = "Yleiskaavan oikeusvaikutus"
+    URI = "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK"
 
     category_only_codes: ClassVar[list[str]] = []
 
