@@ -2,12 +2,11 @@ from contextlib import contextmanager
 
 from qgis.core import QgsVectorLayer
 
-from arho_feature_template.core.models import Plan
 from arho_feature_template.project.layers.plan_layers import PlanLayer, plan_layers
-from arho_feature_template.utils.misc_utils import get_active_plan_id
 
 
 def lock_plan_layers():
+    """NOTE: Should be used from PlanManager if not temporary, otherwise PlanManager.plan_locked gets out of sync."""
     for layer in plan_layers:
         vlayer = layer.get_from_project()
         if vlayer is None:
@@ -20,6 +19,7 @@ def lock_plan_layers():
 
 
 def unlock_plan_layers(start_editing_plan_layer: bool = True):  # noqa: FBT001, FBT002
+    """NOTE: Should be used from PlanManager if not temporary, otherwise PlanManager.plan_locked gets out of sync."""
     for layer in plan_layers:
         vlayer = layer.get_from_project()
         if vlayer is None:
@@ -29,15 +29,6 @@ def unlock_plan_layers(start_editing_plan_layer: bool = True):  # noqa: FBT001, 
 
     if start_editing_plan_layer:
         PlanLayer.get_from_project().startEditing()
-
-
-def update_lock_status_if_needed(edited_plan_model: Plan):
-    """If edited plan is the active plan, applies locked/unlocked state from the given model."""
-    if edited_plan_model.id_ == get_active_plan_id():
-        if edited_plan_model.locked:
-            lock_plan_layers()
-        else:
-            unlock_plan_layers()
 
 
 @contextmanager

@@ -309,6 +309,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
             regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
             active_plan_regulation_groups_library=self.plan_manager_ref.active_plan_regulation_group_library,
+            enable_save=not self.plan_manager_ref.plan_locked,
         )
         if form.exec():
             updated_plan_feature_model = form.model
