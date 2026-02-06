@@ -40,6 +40,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
         plan_feature_libraries: list[PlanFeatureLibrary] | None = None,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
+        enable_save: bool = True,  # noqa: FBT001, FBT002
         template_form: bool = False,  # noqa: FBT001, FBT002
     ):
         super().__init__()
@@ -103,6 +104,11 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self._init_save_to_library_button()
 
         self.button_box.accepted.connect(self._on_ok_clicked)
+
+        if not enable_save:
+            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            tooltip = "Kaavasuunnitelma on lukittu, kaavakohdetta ei voi muokata."
+            self.button_box.button(QDialogButtonBox.Ok).setToolTip(tooltip)
 
     def _init_save_to_library_button(self) -> None:
         if self.plan_feature_libraries:
