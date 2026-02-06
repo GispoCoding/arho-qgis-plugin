@@ -20,7 +20,11 @@ from qgis.PyQt.QtWidgets import (
 from arho_feature_template.core.models import AttributeValue, AttributeValueDataType, LocalizedText
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
-from arho_feature_template.project.layers.code_layers import LegalEffectsLayer, VerbalRegulationType, get_code_layer
+from arho_feature_template.project.layers.code_layers import (
+    LegalEffectsLayer,
+    VerbalRegulationType,
+    get_code_layer_by_uri,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -410,11 +414,15 @@ class ValueWidgetManager(QObject):
                 logger.critical("Code list missing for %s", default_value)
                 return
 
-            code_layer = get_code_layer(default_value.code_list)
+            code_layer = get_code_layer_by_uri(default_value.code_list)
             if code_layer:
                 self.value_widget.populate_from_code_layer(code_layer)
                 if value.code_value:
-                    self.value_widget.set_value(value.code_value)
+                    value_id = code_layer.get_id_by_attribute("value", value.code_value)
+                    if value_id:
+                        self.value_widget.set_value(value_id)
+                    else:
+                        logger.critical("Could not find code value %s for value widget", value.code_value)
             else:
                 logger.critical("Could not find code layer with name %s for value widget", default_value.code_list)
 
@@ -457,11 +465,15 @@ class ValueWidgetManager(QObject):
             )
 
         if self.value_data_type == AttributeValueDataType.CODE:
+            if self.value_widget:
+                code_value = self.value_widget.code_layer.get_attribute_by_id("value", self.value_widget.value())
+            else:
+                code_value = None
             return AttributeValue(
                 value_data_type=self.value_data_type,
                 code_list=self.default_value.code_list,
-                code_value=self.value_widget.value() if self.value_widget else None,
-                code_title=self.default_value.code_list,
+                code_value=code_value,
+                code_title=self.default_value.code_title,
             )
 
         return AttributeValue()

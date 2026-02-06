@@ -451,9 +451,9 @@ class LegalEffectsLayer(AbstractCodeLayer):
 code_layers = AbstractCodeLayer.__subclasses__()
 
 
-def get_code_layer(name: str) -> type[AbstractCodeLayer] | None:
+def get_code_layer_by_uri(uri: str) -> type[AbstractCodeLayer] | None:
     for code_layer in code_layers:
-        if code_layer.name == name:
+        if uri == code_layer.URI:
             return code_layer
 
     return None
