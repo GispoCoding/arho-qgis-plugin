@@ -91,6 +91,11 @@ from arho_feature_template.resources.libraries.regulation_groups import (
     get_user_regulation_group_library_config_files,
 )
 from arho_feature_template.utils.db_utils import get_existing_database_connection_names
+from arho_feature_template.utils.layer_utils import (
+    lock_plan_layers,
+    plan_layers_temporarily_unlocked,
+    unlock_plan_layers,
+)
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
@@ -147,12 +152,15 @@ class PlanManager(QObject):
     project_loaded = pyqtSignal()
     project_cleared = pyqtSignal()
     plan_identifier_set = pyqtSignal(str)
+    plan_lock_status_changed = pyqtSignal(bool)  # True = now locked, false = now unlocked
 
     def __init__(self):
         super().__init__()
         self.json_plan_path = None
         self.json_plan_outline_path = None
         self.json_plan_matter_path = None
+
+        self.plan_locked = False  # Change this only through `update_lock_status` method
 
         self.plan_feature_libraries = []
         self.regulation_group_libraries = []
@@ -296,7 +304,7 @@ class PlanManager(QObject):
         self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
 
     def open_manage_plans(self):
-        dialog = ManagePlans(self.regulation_group_libraries)
+        dialog = ManagePlans(self.regulation_group_libraries, self)
         if dialog.exec():
             selected_plan = dialog.selected_plan
             # If the active plan was changed, update state
@@ -313,6 +321,20 @@ class PlanManager(QObject):
             self.regulation_group_libraries, self.active_plan_regulation_group_library, self
         )
         self.import_features_form.show()
+
+    def update_lock_status(self, plan_model: Plan):
+        """If input plan is the active plan, applies locked/unlocked state from the given model."""
+        if plan_model.id_ == get_active_plan_id():
+            if plan_model.locked:
+                lock_plan_layers()
+                self.plan_locked = True
+            else:
+                unlock_plan_layers()
+                self.plan_locked = False
+            self.plan_lock_status_changed.emit(plan_model.locked)
+
+            self.regulation_groups_dock.update_lock_status(plan_model.locked)
+            self.new_feature_dock.update_lock_status(plan_model.locked)
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(self):
@@ -341,7 +363,9 @@ class PlanManager(QObject):
             self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
-        regulation_group_form = PlanRegulationGroupForm(regulation_group, self.active_plan_regulation_group_library)
+        regulation_group_form = PlanRegulationGroupForm(
+            regulation_group, self.active_plan_regulation_group_library, not self.plan_locked
+        )
 
         if regulation_group_form.exec_():
             model = regulation_group_form.model
@@ -472,17 +496,14 @@ class PlanManager(QObject):
         if attribute_form.exec_():
             plan_model = attribute_form.model
 
-            # Make sure plan layer is unlocked so we can update plan (includng locked state)
-            self.unlock_plan_layers()
+            with plan_layers_temporarily_unlocked():
+                plan_id = save_plan(plan_model)
 
-            plan_id = save_plan(plan_model)
-            if plan_id is not None:
-                self.update_active_plan_regulation_group_library()
+                # TODO: Don't update groups always, can be redundant
+                if plan_id is not None:
+                    self.update_active_plan_regulation_group_library()
 
-            if plan_model.locked:
-                self.lock_plan_layers()
-            else:
-                self.unlock_plan_layers()
+            self.update_lock_status(plan_model)
 
     def edit_plan_matter(self):
         plan_matter_layer = PlanMatterLayer.get_from_project()
@@ -608,6 +629,7 @@ class PlanManager(QObject):
             self.regulation_group_libraries,
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
+            not self.plan_locked,
         )
         if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
@@ -623,6 +645,7 @@ class PlanManager(QObject):
             self.regulation_group_libraries,
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
+            not self.plan_locked,
         )
         if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
             self.update_active_plan_regulation_group_library()
@@ -696,13 +719,8 @@ class PlanManager(QObject):
                 else:
                     layer.show_all_features()
 
-            plan_feat = PlanLayer.get_feature_by_id(plan_id)
-            if plan_feat:
-                locked = plan_feat["locked"]
-                if locked:
-                    self.lock_plan_layers()
-                else:
-                    self.unlock_plan_layers()
+            plan_model = PlanLayer.model_from_feature(PlanLayer.get_feature_by_id(plan_id))
+            self.update_lock_status(plan_model)
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
@@ -849,18 +867,6 @@ class PlanManager(QObject):
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
-
-    def lock_plan_layers(self):
-        for layer in plan_layers:
-            vlayer = layer.get_from_project()
-            vlayer.rollBack()
-            vlayer.setReadOnly(True)
-
-    def unlock_plan_layers(self):
-        for layer in plan_layers:
-            layer.get_from_project().setReadOnly(False)
-
-        PlanLayer.get_from_project().startEditing()
 
     def generate_plan_regulations_print(self):
         RegulationsPrintGenerator.new_regulations_print_layout(self.active_plan_regulation_group_library)

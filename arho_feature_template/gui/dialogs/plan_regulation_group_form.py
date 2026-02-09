@@ -52,6 +52,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self,
         regulation_group: RegulationGroup,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None,
+        enable_save: bool = True,  # noqa: FBT001, FBT002
     ):
         super().__init__()
         self.setupUi(self)
@@ -153,6 +154,11 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
             self.regulation_group_info_tab.layout().insertLayout(1, layout)
             self.setWindowTitle("Muokkaa kaavamääräysryhmää")
+
+        if not enable_save:
+            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            tooltip = "Kaavasuunnitelma on lukittu, kaavamääräysryhmää ei voi muokata."
+            self.button_box.button(QDialogButtonBox.Ok).setToolTip(tooltip)
 
     def initialize_regulation_library(self):
         """Initializes the tree menu for regulations."""
