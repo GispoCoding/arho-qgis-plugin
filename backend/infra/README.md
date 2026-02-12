@@ -43,15 +43,15 @@ To make changes to instances, first check that your variables and current infra 
 
 ```shell
 terraform init
-terraform plan --var-file hame-dev.tfvars.json
+terraform plan --var-file var-files/hame-dev.tfvars.json
 ```
 
-This should report that terraform state is up to date with infra and configuration. You may make changes to configuration or variables and run `terraform plan --var-file hame-dev.tfvars.json` again to check what your changes would mean to the infrastructure.
+This should report that terraform state is up to date with infra and configuration. You may make changes to configuration or variables and run `terraform plan --var-file var-files/hame-dev.tfvars.json` again to check what your changes would mean to the infrastructure.
 
 When you are sure that you want to change AWS infra, run
 
 ```shell
-terraform apply --var-file hame-dev.tfvars.json
+terraform apply --var-file var-files/hame-dev.tfvars.json
 ```
 
 Please verify that the reported changes are desired, and respond `yes` to apply the changes to infrastructure.
@@ -94,7 +94,7 @@ To launch new instances, running the following commands should be sufficient:
 
 ```shell
 terraform init
-terraform apply --var-file your-deployment.tfvars.json
+terraform apply --var-file var-files/your-deployment.tfvars.json
 ```
 
 But in practice it is little bit more complicated, as some manual steps are required in between. `Terraform apply` would encounter some errors that need to be fixed manually before proceeding. Here is an example session for deploying a new `arho-dev` instance:
@@ -112,12 +112,12 @@ cp arho.tfvars.sample.json arho-dev.tfvars.json
 # Edit arho-dev.tfvars.json
 
 # Test the plan first
-terraform plan -var-file=arho-dev.tfvars.json
+terraform plan -var-file=var-files/arho-dev.tfvars.json
 
-terraform apply -var-file=arho-dev.tfvars.json
+terraform apply -var-file=var-files/arho-dev.tfvars.json
 # Error is expected: Error: creating RDS DB Subnet Group (arho-dev-db): operation error RDS: CreateDBSubnetGroup, https response error StatusCode: 400, RequestID: f89c1d41-e247-48d2-9003-5a40b0e018aa, InvalidSubnet: Subnet IDs are required.
 
-terraform apply -var-file=arho-dev.tfvars.json
+terraform apply -var-file=var-files/arho-dev.tfvars.json
 # Error is expected: Error: creating Lambda Function (arho-dev-db_manager): operation error Lambda: CreateFunction, https response error StatusCode: 400, RequestID: acc82829-26b3-4c88-af07-c9bae6f27b81, InvalidParameterValueException: Source image 631260641272.dkr.ecr.eu-central-1.amazonaws.com/arho-dev-db_manager:latest does not exist. Provide a valid source image.
 
 # Set AWS_REGION and AWS_ACCOUNT_ID environment variables for Makefile
@@ -127,12 +127,12 @@ export prefix=arho-dev
 # Build and push lambda images
 make push-lambdas
 
-terraform apply -var-file=arho-dev.tfvars.json
+terraform apply -var-file=var-files/arho-dev.tfvars.json
 # Error is expected: Error: creating Lambda Provisioned Concurrency Config (arho-dev-ryhti_client,live): operation error Lambda: PutProvisionedConcurrencyConfig, https response error StatusCode: 400, RequestID: 284038e3-650d-4ccb-951f-764e6cd9161d, InvalidParameterValueException: Provisioned Concurrency Configs cannot be applied to unpublished function versions.
 
 # Update lambda functions
 make update-lambdas
-terraform apply -var-file=arho-dev.tfvars.json
+terraform apply -var-file=var-files/arho-dev.tfvars.json
 
 # Now the infra should be deployed, but the database is still empty. Initialize the database with:
 make create-db
@@ -155,7 +155,7 @@ This is because you need to apply for a separate permit for your subsystem to be
 When your application is accepted, you are provided with the configuration anchor file needed later.
 2. Create an SSH key and add the public key to `bastion_ec2_user_public_keys` in `your-deployment.tfvars.json`.
 3. Fill in the desired admin username and password in `x-road_secrets`, your desired  `x-road_db_password` (password for x-road database) and your desired `x-road_token_pin` (for accessing authentication tokens), in `your-deployment.tfvars.json`.
-4. Apply the variables to AWS with `terraform apply --var-file your-deployment.tfvars.json`.
+4. Apply the variables to AWS with `terraform apply --var-file var-files/your-deployment.tfvars.json`.
 5. Check the private IP address of your `your-deployment-x-road_securityserver` service task under your AWS Elastic Container Service `your-deployment-x-road_securityserver` cluster in your AWS web console.
 6. Open an SSH tunnel to the X-Road server admin interface (e.g. `ssh -N -L4001:<private-ip>:4000 -i "~/.ssh/arho-ec2-user.pem" ec2-user@your-deployment.<bastion_subdomain>.<aws_hosted_domain>`, where `arho-ec2-user.pem` contains your SSH key created in step 2, and `bastion_subdomain` and `aws_hosted_domain` are the settings in your `your-deployment.tfvars.json`).
 7. Point your web browser to [https://localhost:4001](https://localhost:4001). The connection
@@ -226,7 +226,7 @@ Congratulations! You now have access to X-Road Ryhti APIs!
 
 ## Teardown of instances
 
-Shut down and destroy the instances with `terraform destroy --var-file your-deployment.tfvars.json`
+Shut down and destroy the instances with `terraform destroy --var-file var-files/your-deployment.tfvars.json`
 
 ## Manual interactions
 

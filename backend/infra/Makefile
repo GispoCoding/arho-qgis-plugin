@@ -70,8 +70,8 @@ load-mml:
 
 decrypt-workspace-secrets:
 	sops -d public_keys/$(shell terraform workspace show).enc > public_keys/$(shell terraform workspace show)
-	sops -d $(shell terraform workspace show).tfvars.enc.json > $(shell terraform workspace show).tfvars.json
+	sops -d var-files/$(shell terraform workspace show).tfvars.enc.json > var-files/$(shell terraform workspace show).tfvars.json
 
 encrypt-workspace-secrets:
 	sops -e public_keys/$(shell terraform workspace show) > public_keys/$(shell terraform workspace show).enc
-	sops -e $(shell terraform workspace show).tfvars.json > $(shell terraform workspace show).tfvars.enc.json
+	sops -e var-files/$(shell terraform workspace show).tfvars.json > var-files/$(shell terraform workspace show).tfvars.enc.json
