@@ -70,11 +70,6 @@ variable "enable_route53_record" {
   default = false
 }
 
-variable "SLACK_HOOK_URL" {
-  description = "Slack URL to post cloudwatch notifications to"
-  type        = string
-}
-
 variable "bastion_ec2_user_public_keys" {
   description = "Public ssh key for bastion EC2 superuser"
   type        = list
