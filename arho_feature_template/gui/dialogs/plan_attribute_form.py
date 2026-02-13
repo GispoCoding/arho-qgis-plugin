@@ -3,7 +3,6 @@ from __future__ import annotations
 from importlib import resources
 from typing import TYPE_CHECKING, cast
 
-from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import (
     QCheckBox,
@@ -16,19 +15,17 @@ from qgis.PyQt.QtWidgets import (
     QTextEdit,
 )
 
-from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
-from arho_feature_template.gui.components.general_regulation_group_widget import GeneralRegulationGroupWidget
-from arho_feature_template.gui.components.plan_document_widget import DocumentWidget
+from arho_feature_template.core.models import Plan
 from arho_feature_template.gui.components.value_input_widgets import LegalEffectWidget
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     PlanTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
-from arho_feature_template.utils.misc_utils import date_as_str, disconnect_signal, get_active_plan_matter_id
+from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
+from arho_feature_template.utils.misc_utils import date_as_str, get_active_plan_matter_id
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
+    from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit
 
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
 
@@ -41,10 +38,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     description_text_edit: QTextEdit
     scale_spin_box: QSpinBox
     lifecycle_status_combo_box: CodeComboBox
-    regulations_layout: QVBoxLayout
-    add_general_regulation_group_btn: QPushButton
-    documents_layout: QVBoxLayout
-    add_document_btn: QPushButton
     approved_date_label: QLabel
     approved_date: QLineEdit
     validity_start_label: QLabel
@@ -55,7 +48,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     button_box: QDialogButtonBox
     general_data_layout: QFormLayout
 
-    def __init__(self, plan: Plan, _regulation_group_libraries: list[RegulationGroupLibrary], parent=None):
+    def __init__(self, plan: Plan, parent=None):
         super().__init__(parent)
         self.setupUi(self)
 
@@ -74,16 +67,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.lifecycle_status_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         self.scroll_area_spacer = None
-        self.regulation_group_widgets: list[GeneralRegulationGroupWidget] = []
         self.legal_effect_widgets: list[tuple[QLabel, LegalEffectWidget]] = []
-
-        for regulation_group in plan.general_regulations:
-            self.add_plan_regulation_group(regulation_group)
-
-        # Documents
-        self.document_widgets: list[DocumentWidget] = []
-        for document in plan.documents:
-            self.add_document(document)
 
         # Legal effects
         for legal_effect_id in plan.legal_effect_ids:
@@ -109,12 +93,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         else:
             self.general_data_layout.removeRow(self.validity_end_label)
 
-        self.add_general_regulation_group_btn.clicked.connect(self.add_new_regulation_group)
-        self.add_general_regulation_group_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
-
-        self.add_document_btn.clicked.connect(self.add_new_document)
-        self.add_document_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
-
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
         self.button_box.accepted.connect(self._on_ok_clicked)
 
@@ -123,11 +101,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
-        if (
-            self.name_edit.text() != ""
-            and self.lifecycle_status_combo_box.value() is not None
-            and all(document_widget.is_ok() for document_widget in self.document_widgets)
-        ):
+        if self.name_edit.text() != "" and self.lifecycle_status_combo_box.value() is not None:
             ok_button.setEnabled(True)
         else:
             ok_button.setEnabled(False)
@@ -185,40 +159,6 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
                 widget.deleteLater()
                 label.deleteLater()
 
-    def add_new_regulation_group(self):
-        self.add_plan_regulation_group(RegulationGroup())
-
-    def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = GeneralRegulationGroupWidget(regulation_group, layer_name=PlanLayer.name)
-        regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
-        self.regulations_layout.insertWidget(1, regulation_group_widget)
-        self.regulation_group_widgets.append(regulation_group_widget)
-
-    def remove_plan_regulation_group(self, regulation_group_widget: GeneralRegulationGroupWidget):
-        disconnect_signal(regulation_group_widget.delete_signal)
-        self.regulations_layout.removeWidget(regulation_group_widget)
-        self.regulation_group_widgets.remove(regulation_group_widget)
-        regulation_group_widget.deleteLater()
-
-    def add_new_document(self):
-        self.add_document(Document())
-        self._check_required_fields()
-
-    def add_document(self, document: Document):
-        widget = DocumentWidget(document)
-        widget.delete_signal.connect(self.delete_document)
-        widget.document_edited.connect(self._check_required_fields)
-        self.documents_layout.insertWidget(1, widget)
-        self.document_widgets.append(widget)
-
-    def delete_document(self, document_widget: DocumentWidget):
-        document_widget.delete_signal.disconnect()
-        document_widget.document_edited.disconnect()
-        self.documents_layout.removeWidget(document_widget)
-        self.document_widgets.remove(document_widget)
-        document_widget.deleteLater()
-        self._check_required_fields()
-
     def into_model(self) -> Plan:
         if self.is_general_plan_type:
             legal_effect_ids = [legal_effect_widget[1].get_value() for legal_effect_widget in self.legal_effect_widgets]
@@ -231,9 +171,9 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             description=self.description_text_edit.toPlainText() or None,
             scale=self.scale_spin_box.value() or None,
             lifecycle_status_id=self.lifecycle_status_combo_box.value(),
-            general_regulations=[reg_group_widget.into_model() for reg_group_widget in self.regulation_group_widgets],
+            general_regulations=self.plan.general_regulations,
             legal_effect_ids=[value for value in legal_effect_ids if value is not None],
-            documents=[document_widget.into_model() for document_widget in self.document_widgets],
+            documents=self.plan.documents,
             modified=self.plan.modified,
             plan_matter_id=self.plan.plan_matter_id,
             approval_date=self.plan.approval_date,

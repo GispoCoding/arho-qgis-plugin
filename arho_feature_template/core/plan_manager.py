@@ -41,6 +41,7 @@ from arho_feature_template.core.prints.regulations_print_generator import Regula
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import UnsavedChangesError
+from arho_feature_template.gui.dialogs.general_regulations_form import GeneralRegulationsForm
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
@@ -303,6 +304,22 @@ class PlanManager(QObject):
             if selected_plan.id_ and selected_plan.id_ != get_active_plan_id():
                 self.set_active_plan(selected_plan.id_)
 
+    def open_general_regulations(self):
+        plan_layer = PlanLayer.get_from_project()
+        if not plan_layer:
+            return
+
+        feature = PlanLayer.get_feature_by_id(get_active_plan_id(), no_geometries=False)
+        if feature is None:
+            iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
+            return
+        plan_model = PlanLayer.model_from_feature(feature)
+
+        form = GeneralRegulationsForm(plan_model)
+        if form.exec():
+            plan_model = form.model
+            save_plan(plan_model)
+
     def open_import_plan_dialog(self):
         dialog = ImportPlanForm(iface.mainWindow())
         if dialog.exec_() and dialog.imported_plan_id:
@@ -468,7 +485,7 @@ class PlanManager(QObject):
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
-        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
+        attribute_form = PlanAttributeForm(plan_model)
         if attribute_form.exec_():
             plan_model = attribute_form.model
 

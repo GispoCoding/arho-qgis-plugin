@@ -303,6 +303,17 @@ class Plugin:
         )
         plan_menu.addAction(self.edit_plan_action)
 
+        self.general_regulations_action = self.add_action(
+            text="Yleismääräykset",
+            icon=QgsApplication.getThemeIcon("mActionOpenTable.svg"),
+            triggered_callback=self.plan_manager.open_general_regulations,
+            parent=iface.mainWindow(),
+            add_to_menu=False,
+            add_to_toolbar=False,
+            status_tip="Näytä aktiivisen kaavasuunnitelman yleismääräykset",
+        )
+        plan_menu.addAction(self.general_regulations_action)
+
         self.import_plan_action = self.add_action(
             text="Tuo kaavasuunnitelma",
             icon=QgsApplication.getThemeIcon("mActionSharingImport.svg"),
