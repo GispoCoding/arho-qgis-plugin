@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from arho_feature_template.core.plan_manager import PlanManager
 
 DATA_COLUMN = 1
-PLAN_OBJECT_TYPE_COLUMN = 1
+PLAN_OBJECT_TYPE_COLUMN = 2
 DATA_ROLE = Qt.UserRole
 LAYER_NAME_TO_FEATURE_TYPE = {
     LineLayer.name: "Viiva",
