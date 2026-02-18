@@ -9,7 +9,11 @@ resource "aws_lambda_function" "db_manager" {
     subnet_ids         = data.aws_subnets.private.ids
     security_group_ids = [aws_security_group.lambda.id]
   }
-
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "INFO"
+  }
   environment {
     variables = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME
@@ -47,7 +51,11 @@ resource "aws_lambda_function" "koodistot_loader" {
     subnet_ids         = data.aws_subnets.private.ids
     security_group_ids = [aws_security_group.lambda.id]
   }
-
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "INFO"
+  }
   environment {
     variables = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME
@@ -92,7 +100,11 @@ resource "aws_lambda_function" "ryhti_client" {
     subnet_ids         = data.aws_subnets.private.ids
     security_group_ids = [aws_security_group.lambda.id]
   }
-
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "INFO"
+  }
   environment {
     variables = local.ryhti_client_env
   }
@@ -147,7 +159,11 @@ resource "aws_lambda_function" "mml_loader" {
     subnet_ids         = data.aws_subnets.private.ids
     security_group_ids = [aws_security_group.lambda.id]
   }
-
+  logging_config {
+    log_format            = "JSON"
+    application_log_level = "INFO"
+    system_log_level      = "INFO"
+  }
   environment {
     variables = {
       AWS_REGION_NAME     = var.AWS_REGION_NAME

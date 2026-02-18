@@ -20,7 +20,6 @@ Hame-ryhti database manager, adapted from Tarmo db_manager.
 """
 
 LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.INFO)
 
 
 class Action(enum.Enum):

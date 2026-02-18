@@ -40,7 +40,6 @@ if TYPE_CHECKING:
 # method is run. It is run with burst CPU, so we will get faster initialization.
 # Boto3 and db helper initialization should go here.
 LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.INFO)
 
 user_credentials = get_user_credentials(
     DbUser.DBA

@@ -28,7 +28,6 @@ Tarmo lambda functions
 """
 
 LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.INFO)
 
 user_credentials = get_user_credentials(
     DbUser.DBA
