@@ -76,7 +76,7 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   type        = "AWS_PROXY"
   # Our lambdas may run long if everything is processed. For a single
   # plan, the request will be much faster.
-  timeout_milliseconds = 120000
+  timeout_milliseconds = 29000
   uri         = aws_lambda_function.ryhti_client.invoke_arn
 }
 
