@@ -9,12 +9,25 @@ data "cloudinit_config" "bastion_config" {
   gzip          = true  # Compresses data to fit more in the 16KB limit
   base64_encode = true  # AWS requires base64
 
+  # Part 1: Cloud-Config (Runs first by default)
   part {
     content_type = "text/cloud-config"
     content      = templatefile(
       "bastion_config/cloud-config.yaml.tftpl",
       {
         ec2_user_public_keys    = var.bastion_ec2_user_public_keys,
+      }
+    )
+  }
+
+  # Part 2: Shell Script (Runs after)
+  part {
+    content_type = "text/x-shellscript"
+    content      = templatefile(
+      "bastion_config/host_key_setup.sh",
+      {
+        ssm_parameter_name = "/infra/${var.prefix}-bastion/host_key_ed25519"
+        aws_region         = data.aws_region.current.name
       }
     )
   }

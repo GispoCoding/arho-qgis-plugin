@@ -202,6 +202,29 @@ data "aws_iam_policy_document" "bastion_trust" {
   }
 }
 
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+data "aws_iam_policy_document" "bastion_ssm_read" {
+  statement {
+    sid     = "AllowReadingBastionHostKey"
+    actions = ["ssm:GetParameter"]
+
+    resources = [
+      "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/infra/${var.prefix}-bastion/host_key_rsa"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "bastion_ssm_read_policy" {
+  name        = "${var.prefix}-bastion-ssm-read-policy"
+  description = "Allows bastion to read its own host key from SSM"
+  policy      = data.aws_iam_policy_document.bastion_ssm_read.json
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-bastion_ssm_read_policy"
+  })
+}
+
 # Adding a role for the EC2 machine allows making AWS service APIs available via IAM policies
 resource "aws_iam_role" "ec2-role" {
   name               = "${var.prefix}-ec2-iam-role"
@@ -211,6 +234,11 @@ resource "aws_iam_role" "ec2-role" {
   tags = merge(local.default_tags, {
     Name = "${var.prefix}-ec2-iam-role"
   })
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_attach" {
+  role       = aws_iam_role.ec2-role.name
+  policy_arn = aws_iam_policy.bastion_ssm_read_policy.arn
 }
 
 resource "aws_iam_instance_profile" "ec2-iam-profile" {

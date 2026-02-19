@@ -90,6 +90,24 @@ ansible-playbook ansible/playbook.yml \
 
 ## Deploying instances
 
+Change to the `infra` directory and set your AWS MFA session variables:
+```
+cd infra
+# Set AWS MFA session variables
+. get-mfa-vars.sh
+```
+
+Generate the Host Key for the bastion host and add to AWS SSM Parameter Store. This is required for the bastion host to be able to use the same host key across reboots, and to avoid SSH warnings about changed host key when the bastion host is restarted.
+```
+ssh-keygen -t ed25519 -f bastion_key -N ""
+
+aws ssm put-parameter \
+    --name "/infra/<instance-name>-bastion/host_key_ed25519" \
+    --value "$(cat bastion_key)" \
+    --type "SecureString" \
+    --region eu-central-1
+```
+
 To launch new instances, running the following commands should be sufficient:
 
 ```shell
@@ -97,42 +115,39 @@ terraform init
 terraform apply --var-file var-files/your-deployment.tfvars.json
 ```
 
-But in practice it is little bit more complicated, as some manual steps are required in between. `Terraform apply` would encounter some errors that need to be fixed manually before proceeding. Here is an example session for deploying a new `arho-dev` instance:
+**But in practice it is little bit more complicated**, as some manual steps are required in between. `Terraform apply` would encounter some errors that need to be fixed manually before proceeding. Here is the complete list of steps to deploy new instances, including the manual steps to fix the errors:
 
 ```shell
-cd infra
-# Set AWS MFA session variables
-. get-mfa-vars.sh
 
 # Create new terraform workspace
-terraform workspace new arho-dev
+terraform workspace new <instance-name>
 
 # Copy sample variables and edit them
-cp arho.tfvars.sample.json arho-dev.tfvars.json
-# Edit arho-dev.tfvars.json
+cp arho.tfvars.sample.json <instance-name>.tfvars.json
+# Edit <instance-name>.tfvars.json
 
 # Test the plan first
-terraform plan -var-file=var-files/arho-dev.tfvars.json
+terraform plan -var-file=var-files/<instance-name>.tfvars.json
 
-terraform apply -var-file=var-files/arho-dev.tfvars.json
-# Error is expected: Error: creating RDS DB Subnet Group (arho-dev-db): operation error RDS: CreateDBSubnetGroup, https response error StatusCode: 400, RequestID: f89c1d41-e247-48d2-9003-5a40b0e018aa, InvalidSubnet: Subnet IDs are required.
+terraform apply -var-file=var-files/<instance-name>.tfvars.json
+# Error is expected: Error: creating RDS DB Subnet Group (<instance-name>-db): operation error RDS: CreateDBSubnetGroup, https response error StatusCode: 400, RequestID: f89c1d41-e247-48d2-9003-5a40b0e018aa, InvalidSubnet: Subnet IDs are required.
 
-terraform apply -var-file=var-files/arho-dev.tfvars.json
-# Error is expected: Error: creating Lambda Function (arho-dev-db_manager): operation error Lambda: CreateFunction, https response error StatusCode: 400, RequestID: acc82829-26b3-4c88-af07-c9bae6f27b81, InvalidParameterValueException: Source image 631260641272.dkr.ecr.eu-central-1.amazonaws.com/arho-dev-db_manager:latest does not exist. Provide a valid source image.
+terraform apply -var-file=var-files/<instance-name>.tfvars.json
+# Error is expected: Error: creating Lambda Function (<instance-name>-db_manager): operation error Lambda: CreateFunction, https response error StatusCode: 400, RequestID: acc82829-26b3-4c88-af07-c9bae6f27b81, InvalidParameterValueException: Source image 631260641272.dkr.ecr.eu-central-1.amazonaws.com/<instance-name>-db_manager:latest does not exist. Provide a valid source image.
 
 # Set AWS_REGION and AWS_ACCOUNT_ID environment variables for Makefile
 export AWS_REGION=<region>
 export AWS_ACCOUNT_ID=<account id>
-export prefix=arho-dev
+export prefix=<instance-name>
 # Build and push lambda images
 make push-lambdas
 
-terraform apply -var-file=var-files/arho-dev.tfvars.json
-# Error is expected: Error: creating Lambda Provisioned Concurrency Config (arho-dev-ryhti_client,live): operation error Lambda: PutProvisionedConcurrencyConfig, https response error StatusCode: 400, RequestID: 284038e3-650d-4ccb-951f-764e6cd9161d, InvalidParameterValueException: Provisioned Concurrency Configs cannot be applied to unpublished function versions.
+terraform apply -var-file=var-files/<instance-name>.tfvars.json
+# Error is expected: Error: creating Lambda Provisioned Concurrency Config (<instance-name>-ryhti_client,live): operation error Lambda: PutProvisionedConcurrencyConfig, https response error StatusCode: 400, RequestID: 284038e3-650d-4ccb-951f-764e6cd9161d, InvalidParameterValueException: Provisioned Concurrency Configs cannot be applied to unpublished function versions.
 
 # Update lambda functions
 make update-lambdas
-terraform apply -var-file=var-files/arho-dev.tfvars.json
+terraform apply -var-file=var-files/<instance-name>.tfvars.json
 
 # Now the infra should be deployed, but the database is still empty. Initialize the database with:
 make create-db
