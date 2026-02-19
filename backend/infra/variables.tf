@@ -200,10 +200,4 @@ locals {
     "Name"      = var.prefix
     "Terraform" = "true"
   })
-  bastion_user_data = templatefile(
-    "bastion_user_data.tpl",
-    {
-      ec2_user_public_keys    = var.bastion_ec2_user_public_keys,
-    }
-  )
 }
