@@ -192,25 +192,21 @@ resource "aws_iam_role_policy_attachment" "api-gateway-cloudwatch" {
 # Bastion
 #
 
+data "aws_iam_policy_document" "bastion_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
 # Adding a role for the EC2 machine allows making AWS service APIs available via IAM policies
 resource "aws_iam_role" "ec2-role" {
   name               = "${var.prefix}-ec2-iam-role"
   path               = "/"
-  assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": "sts:AssumeRole",
-            "Principal": {
-               "Service": "ec2.amazonaws.com"
-            },
-            "Effect": "Allow",
-            "Sid": ""
-        }
-    ]
-}
-EOF
+  assume_role_policy = data.aws_iam_policy_document.bastion_trust.json
 
   tags = merge(local.default_tags, {
     Name = "${var.prefix}-ec2-iam-role"
