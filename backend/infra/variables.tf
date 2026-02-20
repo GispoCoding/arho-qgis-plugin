@@ -185,6 +185,12 @@ variable "prefix" {
   type        = string
 }
 
+variable "project_srid" {
+  description = "SRID to use for geometries in the database"
+  type        = number
+  default     = 3067
+}
+
 variable "extra_tags" {
   description = "Some extra tags for all resources. Use JSON format"
   type        = any

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import datetime
 from typing import Annotated, Any, ClassVar
@@ -12,7 +13,7 @@ from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP, Enum as SQLAlchemyEnum
 
 from database.enums import AttributeValueDataType
 
-PROJECT_SRID = 3067
+PROJECT_SRID = int(os.environ.get("PROJECT_SRID", "3067"))
 
 
 class Base(DeclarativeBase):

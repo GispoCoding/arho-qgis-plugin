@@ -164,6 +164,7 @@ class Deserializer:
         return self.get_code_instance(CodeModel, code)
 
     def deserialize_ryhti_geometry(self, geometry: RyhtiGeometry) -> WKBElement:
+        # TODO: Support on-the-fly reprojection if SRID is different
         if int(geometry.srid) != PROJECT_SRID:
             raise ValueError(
                 f"Unsupported SRID: {geometry.srid}, expected: {PROJECT_SRID}"
