@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, cast
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 import simplejson as json
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
-from sqlalchemy import create_engine, select
+from sqlalchemy import Table, create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from geoalchemy2 import WKBElement
+    from sqlalchemy.sql import FromClause
 
     from database.base import DbId
     from ryhti_client.ryhti_client import RyhtiResponse
@@ -44,6 +45,11 @@ LIFECYCLE_VALID_STATUS = 13
 
 
 MODEL = TypeVar("MODEL", bound=models.Base)
+
+
+class Geometrical(Protocol):
+    geom: WKBElement
+    __table__: ClassVar[FromClause]
 
 
 class PlanAlreadyExistsError(Exception):
@@ -90,6 +96,7 @@ class DatabaseClient:
         self.plans: dict[DbId, models.Plan] = {}
         # Cache plan dictionaries
         self.plan_dictionaries: dict[DbId, RyhtiPlan] = {}
+        self._table_srids: dict[tuple[str, str], int] = {}
 
         # We only ever need code uri values, not codes themselves, so let's not bother
         # fetching codes from the database at all. URI is known from class and value.
@@ -138,15 +145,40 @@ class DatabaseClient:
                 seen_plan_matter_ids.add(plan.plan_matter.id)
                 yield plan.plan_matter
 
-    def get_geojson(self, geometry: WKBElement) -> dict:
-        """Returns geojson format dict with the correct SRID set."""
+    def _get_srid_of_table(self, table: Table) -> int:
+        table_schema = table.schema
+        table_name = table.name
+        if not table_schema:
+            raise ValueError(f"Table {table_name} does not have a schema defined.")
+
+        srid = self._table_srids.get((table_schema, table_name))
+        if srid is not None:
+            return srid
+
+        with self.Session() as session:
+            srid = session.execute(
+                text(
+                    "SELECT srid FROM public.geometry_columns "
+                    "WHERE f_table_schema = :schema AND f_table_name = :table"
+                ),
+                {"schema": table_schema, "table": table_name},
+            ).scalar_one()
+            self._table_srids[(table_schema, table_name)] = srid
+        return srid
+
+    def get_geometry_as_json(self, obj: Geometrical) -> dict[str, Any]:
+        """Returns Ryhti formatted geom dict with the correct SRID and
+        geometry as geojson
+        """
         # We cannot use postgis geojson functions here, because the data has already
         # been fetched from the database. So let's create geojson the python way, it's
         # probably faster than doing extra database queries for the conversion.
         # However, it seems that to_shape forgets to add the SRID information from the
         # EWKB (https://github.com/geoalchemy/geoalchemy2/issues/235), so we have to
         # paste the SRID back manually :/
-        shape = to_shape(geometry)
+
+        shape = to_shape(obj.geom)
+        srid = self._get_srid_of_table(cast("Table", obj.__table__))
         if len(shape.geoms) == 1:
             # Ryhti API may not allow single geometries in multigeometries in all cases.
             # Let's make them into single geometries instead:
@@ -154,10 +186,7 @@ class DatabaseClient:
         # Also, we don't want to serialize the geojson quite yet. Looks like the only
         # way to do get python dict to actually convert the json back to dict until we
         # are ready to reserialize it :/
-        return {
-            "srid": str(base.PROJECT_SRID),
-            "geometry": json.loads(to_geojson(shape)),
-        }
+        return {"srid": str(srid), "geometry": json.loads(to_geojson(shape))}
 
     def get_isoformat_value_with_z(self, datetime_value: datetime.datetime) -> str:
         """Returns isoformatted datetime in UTC with Z instead of +00:00."""
@@ -364,7 +393,7 @@ class DatabaseClient:
         plan_object_dict["planObjectKey"] = plan_object.id
         plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
         plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
-        plan_object_dict["geometry"] = self.get_geojson(plan_object.geom)
+        plan_object_dict["geometry"] = self.get_geometry_as_json(plan_object)
         plan_object_dict["name"] = self.format_language_string_value(plan_object.name)
         plan_object_dict["description"] = self.format_language_string_value(
             plan_object.description
@@ -524,7 +553,7 @@ class DatabaseClient:
             else None
         )
         plan_dictionary["scale"] = plan.scale
-        plan_dictionary["geographicalArea"] = self.get_geojson(plan.geom)
+        plan_dictionary["geographicalArea"] = self.get_geometry_as_json(plan)
         # For reasons unknown, Ryhti does not allow multilanguage description.
         plan_description = (
             plan.description.get("fin") if isinstance(plan.description, dict) else None
