@@ -599,5 +599,7 @@ class Plugin:
         iface.removeDockWidget(self.validation_dock)
         self.validation_dock.deleteLater()
 
+        iface.unregisterOptionsWidgetFactory(self._arho_options_page_factory)
+
         # Handle logger
         teardown_logger(Plugin.name)
