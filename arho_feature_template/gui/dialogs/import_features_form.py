@@ -25,7 +25,6 @@ from arho_feature_template.core.feature_editing import (
 from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
 from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
 from arho_feature_template.project.layers.code_layers import (
-    LanguageLayer,
     PlanRegulationGroupTypeLayer,
     UndergroundTypeLayer,
     code_layers,
@@ -35,7 +34,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_feature_layers,
     plan_layers,
 )
-from arho_feature_template.utils.localization_utils import str_as_localized_text
+from arho_feature_template.utils.localization_utils import LANGUAGES
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
 
 if TYPE_CHECKING:
@@ -114,7 +113,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.name_selection.setFilters(QgsFieldProxyModel.Filter.String)
         self.name_selection.setField("")
 
-        self.name_language_selection.populate_from_code_layer(LanguageLayer)
+        self.name_language_selection.populate_from_dict(LANGUAGES)
         self.name_language_selection.remove_item_by_text("NULL")
 
         # Description field initialization
@@ -122,7 +121,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.description_selection.setFilters(QgsFieldProxyModel.Filter.String)
         self.description_selection.setField("")
 
-        self.description_language_selection.populate_from_code_layer(LanguageLayer)
+        self.description_language_selection.populate_from_dict(LANGUAGES)
         self.description_language_selection.remove_item_by_text("NULL")
 
         # Underground type initialization
@@ -228,14 +227,14 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 type_of_underground_id=type_of_underground_id,
                 layer_name=self.target_layer_name,
                 name=(
-                    str_as_localized_text(feature[source_layer_name_field], self.name_language_selection.value())
+                    {self.name_language_selection.value(): feature[source_layer_name_field]}
                     if source_layer_name_field
                     else None
                 ),
                 description=(
-                    str_as_localized_text(
-                        feature[source_layer_description_field], self.description_language_selection.value()
-                    )
+                    {
+                        self.description_language_selection.value(): feature[source_layer_description_field],
+                    }
                     if source_layer_description_field
                     else None
                 ),

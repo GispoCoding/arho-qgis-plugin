@@ -250,7 +250,6 @@ class PlanManager(QObject):
         def _cache_code_layers():
             PlanRegulationTypeLayer.build_cache()
             AdditionalInformationTypeLayer.build_cache()
-            LanguageLayer.build_cache()
             LifeCycleStatusLayer.build_cache()
             LegalEffectsLayer.build_cache()
 
