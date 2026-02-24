@@ -44,10 +44,11 @@ class AdditionalInformationWidget(QWidget, FormClass):  # type: ignore
 
     def from_model(self, additional_information: AdditionalInformation):
         self.additional_information = additional_information
-        text = AdditionalInformationTypeLayer.get_name_by_id(additional_information.additional_information_type_id)
-        if isinstance(text, dict):
-            text = get_localized_text(text)
-        self.additional_info.setText(text)
+        text = get_localized_text(
+            AdditionalInformationTypeLayer.get_name_by_id(additional_information.additional_information_type_id)
+        )
+        if text:
+            self.additional_info.setText(text)
 
         self.value_widget_manager: ValueWidgetManager | None = None
         default_value = AdditionalInformationTypeLayer.get_default_value_by_id(

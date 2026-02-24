@@ -121,6 +121,13 @@ class AbstractCodeLayer(AbstractLayer):
         return cls._cache[id_]
 
     @classmethod
+    def get_name_by_id(cls, id_: str) -> dict[str, str] | None:
+        """Returns the name value of a feature
+
+        Name fields in the database are always localized dictionaries."""
+        return cls.get_attribute_by_id("name", id_)
+
+    @classmethod
     def get_attribute_value_by_another_attribute_value(
         cls, target_attribute: str, filter_attribute: str, filter_value: str
     ) -> Any | None:
@@ -266,10 +273,6 @@ class AdditionalInformationTypeLayer(AbstractCodeLayer):
         return cls.get_attribute_by_id("value", id_)
 
     @classmethod
-    def get_name_by_id(cls, id_: str) -> str | None:
-        return cls.get_attribute_by_id("name", id_)
-
-    @classmethod
     def get_default_value_by_id(cls, id_: str) -> AttributeValue | None:
         attribute_value = cls._cache.get(id_, {}).get("default_value", "not_found")
         # Attribute value could be None and we don't want to access DB in that without a need
@@ -365,10 +368,6 @@ class PlanRegulationTypeLayer(AbstractCodeLayer):
     @classmethod
     def get_type_by_id(cls, id_: str) -> str | None:
         return cls.get_attribute_by_id("value", id_)
-
-    @classmethod
-    def get_name_by_id(cls, id_: str) -> dict[str, str] | None:
-        return cls.get_attribute_by_id("name", id_)
 
     @classmethod
     def get_default_value_by_id(cls, id_: str) -> AttributeValue | None:

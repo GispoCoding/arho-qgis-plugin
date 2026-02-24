@@ -175,10 +175,9 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def update_selected_regulation(self, item: QTreeWidgetItem, column: int):
         _, regulation_type_attributes = item.data(column, Qt.UserRole)
-        text = regulation_type_attributes["description"]
-        if isinstance(text, dict):
-            text = get_localized_text(text)
-        self.regulation_info.setText(text)
+        text = get_localized_text(regulation_type_attributes["description"])
+        if text:
+            self.regulation_info.setText(text)
 
     def add_selected_regulation(self, item: QTreeWidgetItem, column: int):
         regulation_type_id, regulation_type_attributes = item.data(column, Qt.UserRole)
