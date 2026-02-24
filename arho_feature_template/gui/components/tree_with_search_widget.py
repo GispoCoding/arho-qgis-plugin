@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qgis.gui import QgsFilterLineEdit
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QSizePolicy, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 from arho_feature_template.utils.localization_utils import get_localized_text
+
+if TYPE_CHECKING:
+    from arho_feature_template.core.models import LocalizedText
 
 
 class TreeWithSearchWidget(QWidget):
@@ -37,15 +40,14 @@ class TreeWithSearchWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
     def add_item_to_tree(
-        self, text: str | None, data: Any | None = None, parent: QTreeWidgetItem | None = None
+        self, text: str | LocalizedText | None, data: Any | None = None, parent: QTreeWidgetItem | None = None
     ) -> QTreeWidgetItem:
         item = QTreeWidgetItem(parent)
-        if text:
-            if isinstance(text, dict):
-                text = get_localized_text(text)
-            item.setText(self.DATA_COLUMN, text)
+        label = text if isinstance(text, str) else get_localized_text(text)
+        if label:
+            item.setText(self.DATA_COLUMN, label)
             item.setToolTip(
-                self.DATA_COLUMN, text
+                self.DATA_COLUMN, label
             )  # Set text as tooltip in case the tree width is not enough to show item text
         if data:
             item.setData(self.DATA_COLUMN, self.DATA_ROLE, data)

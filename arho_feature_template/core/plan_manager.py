@@ -59,7 +59,6 @@ from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGro
 from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
-    LanguageLayer,
     LegalEffectsLayer,
     LifeCycleStatusLayer,
     PlanRegulationGroupTypeLayer,

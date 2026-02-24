@@ -83,10 +83,9 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self.regulation_details_container.hide()
         self.expanded = False
 
-        name_text = PlanRegulationTypeLayer.get_name_by_id(self.regulation.regulation_type_id)
-        if isinstance(name_text, dict):
-            name_text = get_localized_text(name_text)
-        self.regulation_name.setText(name_text)
+        name = get_localized_text(PlanRegulationTypeLayer.get_name_by_id(self.regulation.regulation_type_id))
+        if name:
+            self.regulation_name.setText(name)
 
         self.del_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.del_btn.clicked.connect(lambda: self.delete_signal.emit(self))

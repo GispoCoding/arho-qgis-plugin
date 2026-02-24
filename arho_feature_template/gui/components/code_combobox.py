@@ -33,9 +33,7 @@ class CodeComboBox(QComboBox):
 
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         for id_, attributes in layer_type.get_attribute_dict().items():
-            text = attributes.get("name")
-            if isinstance(text, dict):
-                text = get_localized_text(text)
+            text = get_localized_text(attributes.get("name"))
             self.addItem(text, id_)
         self.code_layer = layer_type
 
@@ -88,16 +86,15 @@ class HierarchicalCodeComboBox(QComboBox):
             items[id_] = item
 
             # Text
-            name = attributes.get("name")
-            if isinstance(name, dict):
-                name = get_localized_text(name)
-            item.setText(0, name)
+            name = get_localized_text(attributes.get("name"))
+            if name:
+                item.setText(0, name)
 
             # Tooltip
-            description = attributes.get("description")
-            if isinstance(description, dict):
-                description = get_localized_text(description)
-            item.setToolTip(0, description if description else name)
+            description = get_localized_text(attributes.get("description"))
+            tooltip_text = description if description else name
+            if tooltip_text:
+                item.setToolTip(0, tooltip_text)
 
             # Data
             item.setData(0, Qt.UserRole, id_)
