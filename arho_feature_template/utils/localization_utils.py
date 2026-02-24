@@ -13,7 +13,17 @@ def _primary_language_code() -> str:
     return SettingsManager.get_primary_language()
 
 
-def get_localized_text(localized_text: LocalizedText | None | Any, language_code: str | None = None) -> str | None:
+LANGUAGES = {
+    "fin": "suomi",
+    "swe": "ruotsi",
+    "eng": "englanti",
+    "sme": "pohjoissaame",
+    "sms": "koltansaame",
+    "smn": "inarinsaame",
+}
+
+
+def get_localized_text(localized_text: LocalizedText | None, language_code: str | None = None) -> str | None:
     """Returns text for one language from input LocalizedText (dict).
 
     If `language_code` is not defined, primary language from settings is used."""

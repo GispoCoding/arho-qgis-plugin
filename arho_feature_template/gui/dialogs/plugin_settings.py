@@ -18,7 +18,7 @@ from arho_feature_template.core.plan_manager import (
 )
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.components.code_combobox import CodeComboBox
-from arho_feature_template.project.layers.code_layers import LanguageLayer, PlanType
+from arho_feature_template.project.layers.code_layers import PlanType
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
@@ -26,6 +26,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
     PointLayer,
 )
+from arho_feature_template.utils.localization_utils import LANGUAGES
 from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
@@ -103,7 +104,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self._set_file_filter()
 
         # INIT
-        self.primary_language_combobox.populate_from_code_layer(LanguageLayer)
+        self.primary_language_combobox.populate_from_dict(LANGUAGES)
         self.primary_language_combobox.remove_item_by_text("NULL")  # Language must be defined
         self.language_widgets: list[CodeComboBox] = [self.primary_language_combobox]
 
@@ -116,7 +117,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         layout = QHBoxLayout()
 
         language_combobox = CodeComboBox()
-        language_combobox.populate_from_code_layer(LanguageLayer)
+        language_combobox.populate_from_dict(LANGUAGES)
         language_combobox.remove_item_by_text("NULL")  # Language must be defined
         self.language_widgets.append(language_combobox)
         layout.addWidget(language_combobox)
@@ -172,12 +173,8 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         if invalid_file_types:
             iface.messageBar().pushCritical("Väärä tiedostotyyppi:", ", ".join(invalid_file_types))
 
-        SettingsManager.set_primary_language(
-            LanguageLayer.get_language_code_by_id(self.primary_language_combobox.value())
-        )
-        SettingsManager.set_languages(
-            [LanguageLayer.get_language_code_by_id(widget.value()) for widget in self.language_widgets]
-        )
+        SettingsManager.set_primary_language(self.primary_language_combobox.value())
+        SettingsManager.set_languages([widget.value() for widget in self.language_widgets])
 
         SettingsManager.set_show_only_primary_language(self.show_only_primary_language_checkbox.isChecked())
 
@@ -209,12 +206,12 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         # Keep track of added languages to avoid duplicates (should concern only primary language)
         added_languages: set[str] = set()
         primary_language = SettingsManager.get_primary_language()
-        self.primary_language_combobox.set_value(LanguageLayer.get_id_by_language_code(primary_language))
+        self.primary_language_combobox.set_value(primary_language)
         added_languages.add(primary_language)
         for language in SettingsManager.get_languages():
             if language in added_languages:
                 continue
-            self._add_language_combobox().set_value(LanguageLayer.get_id_by_language_code(language))
+            self._add_language_combobox().set_value(language)
             added_languages.add(language)
 
         self.show_only_primary_language_checkbox.setChecked(SettingsManager.get_show_only_primary_language())

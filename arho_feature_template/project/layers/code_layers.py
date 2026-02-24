@@ -367,7 +367,7 @@ class PlanRegulationTypeLayer(AbstractCodeLayer):
         return cls.get_attribute_by_id("value", id_)
 
     @classmethod
-    def get_name_by_id(cls, id_: str) -> str | None:
+    def get_name_by_id(cls, id_: str) -> dict[str, str] | None:
         return cls.get_attribute_by_id("name", id_)
 
     @classmethod

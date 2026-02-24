@@ -39,6 +39,10 @@ class CodeComboBox(QComboBox):
             self.addItem(text, id_)
         self.code_layer = layer_type
 
+    def populate_from_dict(self, options: dict[str, str]) -> None:
+        for id_, text in options.items():
+            self.addItem(text, id_)
+
     def value(self) -> str:
         return self.currentData()
 
