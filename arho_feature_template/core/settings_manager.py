@@ -135,6 +135,14 @@ class SettingsManager:
         return cls._get("add_only_selected_languages", default)
 
     @classmethod
+    def set_code_value_language(cls, value: str):
+        return cls._set("code_value_language", value)
+
+    @classmethod
+    def get_code_value_language(cls, default: str = "fin") -> str:
+        return cls._get("code_value_language", default)
+
+    @classmethod
     def _migrate_keys(cls):
         # Old settings
         settings = QSettings("ArhoFeatureTemplate")

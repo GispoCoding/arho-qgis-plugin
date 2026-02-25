@@ -76,6 +76,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self.add_language_btn: QPushButton
         self.show_only_primary_language_checkbox: QCheckBox
         self.check_box_add_only_selected_languages: QCheckBox
+        self.code_value_language_combo_box: CodeComboBox
 
         tooltip_text = """
         Käyttääksesi tasoille jotain muuta kuin Arhossa tulevaa Katja-asetuksen mukaista visualisaatiota,
@@ -111,6 +112,9 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
 
         self.add_language_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         self.add_language_btn.clicked.connect(self._add_language_combobox)
+
+        self.code_value_language_combo_box.populate_from_dict(LANGUAGES)
+        self.code_value_language_combo_box.remove_item_by_text("NULL")  # Language must be defined
 
         self.load_settings()
 
@@ -179,6 +183,8 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
 
         SettingsManager.set_show_only_primary_language(self.show_only_primary_language_checkbox.isChecked())
         SettingsManager.set_add_only_selected_languages(self.check_box_add_only_selected_languages.isChecked())
+
+        SettingsManager.set_code_value_language(self.code_value_language_combo_box.value())
         SettingsManager.finish()
 
     def load_settings(self):
@@ -217,6 +223,8 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
 
         self.show_only_primary_language_checkbox.setChecked(SettingsManager.get_show_only_primary_language())
         self.check_box_add_only_selected_languages.setChecked(SettingsManager.get_add_only_selected_languages())
+
+        self.code_value_language_combo_box.set_value(SettingsManager.get_code_value_language())
 
 
 class ArhoOptionsPageFactory(QgsOptionsWidgetFactory):
