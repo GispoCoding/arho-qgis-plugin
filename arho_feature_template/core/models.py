@@ -261,7 +261,7 @@ class AttributeValue(PlanBaseModel):
             numeric_range_min=data.get("numeric_range_min"),
             numeric_range_max=data.get("numeric_range_max"),
             unit=data.get("unit", default_value.unit if default_value else None),
-            text_value=data.get("text_value"),
+            text_value=read_localized_field_backward_compatible(data.get("text_value")),
             text_syntax=data.get("text_syntax"),
             code_list=data.get("code_list"),
             code_value=data.get("code_value"),
