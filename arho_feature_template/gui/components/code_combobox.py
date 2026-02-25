@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QComboBox, QTreeWidget, QTreeWidgetItem
 
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.utils.localization_utils import get_localized_text
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class CodeComboBox(QComboBox):
 
     def populate_from_code_layer(self, layer_type: type[AbstractCodeLayer]) -> None:
         for id_, attributes in layer_type.get_attribute_dict().items():
-            text = get_localized_text(attributes.get("name"))
+            text = get_localized_text(attributes.get("name"), SettingsManager.get_code_value_language())
             self.addItem(text, id_)
         self.code_layer = layer_type
 
@@ -86,12 +87,12 @@ class HierarchicalCodeComboBox(QComboBox):
             items[id_] = item
 
             # Text
-            name = get_localized_text(attributes.get("name"))
+            name = get_localized_text(attributes.get("name"), SettingsManager.get_code_value_language())
             if name:
                 item.setText(0, name)
 
             # Tooltip
-            description = get_localized_text(attributes.get("description"))
+            description = get_localized_text(attributes.get("description"), SettingsManager.get_code_value_language())
             tooltip_text = description if description else name
             if tooltip_text:
                 item.setToolTip(0, tooltip_text)
