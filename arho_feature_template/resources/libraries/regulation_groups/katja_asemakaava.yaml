@@ -4,6 +4,7 @@ library_type: regulation_group
 plan_regulation_groups:
   - heading:
       fin: Asuinrakennusten alue
+      swe: Område för bostadshus
     category: Aluevaraukset
     geometry: Alue
     letter_code: A
@@ -14,6 +15,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Asuinkerrostalojen alue
+      swe: Område för flervåningshus
     category: Aluevaraukset
     geometry: Alue
     letter_code: AK
@@ -24,6 +26,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Asuinpientalojen alue
+      swe: Område för småhus
     category: Aluevaraukset
     geometry: Alue
     letter_code: AP
@@ -34,6 +37,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rivitalojen ja muiden kytkettyjen asuinrakennusten alue
+      swe: Område för radhus och andra kopplade bostadshus
     category: Aluevaraukset
     geometry: Alue
     letter_code: AR
@@ -44,6 +48,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Erillispientalojen alue
+      swe: Område för fristående småhus
     category: Aluevaraukset
     geometry: Alue
     letter_code: AO
@@ -54,6 +59,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Asuin-, liike- ja toimistorakennusten alue
+      swe: Område för bostads-, affärs- och kontorsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: AL
@@ -70,6 +76,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Asumista palveleva yhteiskäyttöinen alue
+      swe: Område i sambruk som betjänar boendet
     category: Aluevaraukset
     geometry: Alue
     letter_code: AH
@@ -80,6 +87,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maatilojen talouskeskusten alue
+      swe: Område för lantbrukslägenheters driftscentrum
     category: Aluevaraukset
     geometry: Alue
     letter_code: AM
@@ -90,6 +98,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Keskustatoimintojen alue
+      swe: Område för centrumfunktioner
     category: Aluevaraukset
     geometry: Alue
     letter_code: C
@@ -100,6 +109,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yleisten rakennusten alue
+      swe: Område för allmänna byggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: Y
@@ -111,6 +121,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Palvelurakennusten alue
+      swe: Område för servicebyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: P
@@ -122,6 +133,7 @@ plan_regulation_groups:
     # p. 4
   - heading:
       fin: Julkisten palvelurakennusten alue
+      swe: Område för byggnader för offentlig service
     category: Aluevaraukset
     geometry: Alue
     letter_code: PY
@@ -133,6 +145,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Lähipalvelurakennusten alue
+      swe: Område för närservicebyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: PL
@@ -144,6 +157,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Julkisten lähipalvelurakennusten alue
+      swe: Område för byggnader för offentlig närservice
     category: Aluevaraukset
     geometry: Alue
     letter_code: YL
@@ -156,6 +170,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Toimistorakennusten alue
+      swe: Område för kontorsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: KT
@@ -166,6 +181,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Hallinto- ja virastorakennusten alue
+      swe: Område för förvaltningsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: YH
@@ -177,6 +193,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Opetusrakennusten alue
+      swe: Område för undervisningsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: YO
@@ -188,6 +205,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Terveydenhuolto- ja sosiaalipalvelurakennusten alue
+      swe: Område för byggnader för hälso- och sjukvård och socialservice
     category: Aluevaraukset
     geometry: Alue
     letter_code: YS
@@ -199,6 +217,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kulttuuritoiminnan rakennusten alue
+      swe: Område för byggnader för kulturverksamhet
     category: Aluevaraukset
     geometry: Alue
     letter_code: YY
@@ -210,6 +229,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Museorakennusten alue
+      swe: Område för museibyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: YM
@@ -221,6 +241,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kirkkojen ja muiden seurakunnallisten rakennusten alue
+      swe: Område för kyrkor och andra församlingsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: YK
@@ -232,6 +253,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Urheilutoimintaa palvelevien rakennusten alue
+      swe: Område för byggnader för idrottsverksamhet
     category: Aluevaraukset
     geometry: Alue
     letter_code: YU
@@ -243,6 +265,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Huvi- ja viihderakennusten alue
+      swe: Område för byggnader för nöjes- och underhållningstjänster
     category: Aluevaraukset
     geometry: Alue
     letter_code: PV
@@ -253,6 +276,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Liike- ja toimistorakennusten alue
+      swe: Område för affärs- och kontorsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: K
@@ -266,6 +290,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Liikerakennusten alue
+      swe: Område för affärsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: KL
@@ -276,6 +301,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Myymälärakennusten alue
+      swe: Område för butiksbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: KLM
@@ -286,6 +312,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Myymälärakennusten alue, jolle saa sijoittaa vähittäiskaupan suuryksikön
+      swe: Område för butiksbyggnader där en stor detaljhandelsenhet får placeras
     category: Aluevaraukset
     geometry: Alue
     letter_code: KM
@@ -297,6 +324,7 @@ plan_regulation_groups:
     # p. 5
   - heading:
       fin: Myymälärakennusten alue, jolle saa sijoittaa vähittäiskaupan myymäläkeskittymän
+      swe: Område för butiksbyggnader där en koncentration av affärer inom detaljhandel får placeras
     category: Aluevaraukset
     geometry: Alue
     letter_code: KMK
@@ -307,6 +335,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Toimitilarakennusten alue
+      swe: Område för verksamhetsbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: KTY
@@ -317,6 +346,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Teollisuus- ja varastorakennusten alue
+      swe: Område för industri- och lagerbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: T
@@ -330,6 +360,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Teollisuusrakennusten alue
+      swe: Område för industribyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: TT
@@ -340,6 +371,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Teollisuusrakennusten alue, jolla ympäristö asettaa toiminnan laadulle erityisiä vaatimuksia
+      swe: Område för industribyggnader där miljön ställer särskilda krav på verksamhetens art
     category: Aluevaraukset
     geometry: Alue
     letter_code: TY
@@ -351,6 +383,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Varastorakennusten alue
+      swe: Område för lagerbyggnader
     category: Aluevaraukset
     geometry: Alue
     letter_code: TV
@@ -361,6 +394,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Teollisuus- ja varastorakennusten alue, jolla on/jolle saa sijoittaa merkittävän, vaarallisia kemikaaleja valmistavan tai varastoivan laitoksen
+      swe: Område för industri- och lagerbyggnader där en betydande anläggning för produktion eller lagring av farliga kemikalier finns/får placeras
     category: Aluevaraukset
     geometry: Alue
     letter_code: T/kem
@@ -376,6 +410,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Virkistysalue
+      swe: Rekreationsområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: V
@@ -386,6 +421,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Puisto
+      swe: Park
     category: Aluevaraukset
     geometry: Alue
     letter_code: VP
@@ -396,6 +432,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Lähivirkistysalue
+      swe: Område för närrekreation
     category: Aluevaraukset
     geometry: Alue
     letter_code: VL
@@ -406,6 +443,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Leikkipuisto
+      swe: Lekpark
     category: Aluevaraukset
     geometry: Alue
     letter_code: VK
@@ -416,6 +454,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Urheilu- ja virkistyspalvelujen alue
+      swe: Område för idrotts- och rekreationsanläggningar
     category: Aluevaraukset
     geometry: Alue
     letter_code: VU
@@ -426,6 +465,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Retkeily- ja ulkoilualue
+      swe: Frilufts- och strövområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: VR
@@ -436,6 +476,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Uimaranta-alue
+      swe: Område för badstrand
     category: Aluevaraukset
     geometry: Alue
     letter_code: VV
@@ -446,6 +487,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Vapaa-ajan asumisen ja matkailun alue
+      swe: Område för fritid och turism
     category: Aluevaraukset
     geometry: Alue
     letter_code: R
@@ -456,6 +498,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Vapaa-ajan asumisen alue
+      swe: Område för fritidsbostäder
     category: Aluevaraukset
     geometry: Alue
     letter_code: RA
@@ -466,6 +509,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Matkailupalvelujen
+      swe: Område för turistanläggningar
     category: Aluevaraukset
     geometry: Alue
     letter_code: RM
@@ -477,6 +521,7 @@ plan_regulation_groups:
     # p. 6
   - heading:
       fin: Leirintäalue
+      swe: Campingområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: RL
@@ -487,6 +532,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Asuntovaunualue
+      swe: Husvagnsområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: RV
@@ -497,6 +543,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Siirtolapuutarha-alue
+      swe: Område för koloniträdgård
     category: Aluevaraukset
     geometry: Alue
     letter_code: RSP
@@ -507,6 +554,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Palstaviljelyalue
+      swe: Område för odlingslotter
     category: Aluevaraukset
     geometry: Alue
     letter_code: RP
@@ -517,6 +565,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Liikennealue
+      swe: Trafikområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: L
@@ -527,6 +576,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maantieliikenteen alue
+      swe: Område för landsvägstrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: LT
@@ -537,6 +587,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maantiehen kuuluva jalankulku- ja pyörätie
+      swe: Gång- och cykelväg som hör till landsväg
     category: Aluevaraukset
     geometry: Alue
     letter_code: LT/jkpp
@@ -547,6 +598,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Katu
+      swe: Gata
     category: Aluevaraukset
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -557,6 +609,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Jalankululle varattu katu
+      swe: Gata reserverad för gångtrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: jk
@@ -569,6 +622,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Jalankululle ja pyöräilylle varattu katu
+      swe: Gata reserverad för gång- och cykeltrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: jk/pp
@@ -583,6 +637,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Jalankululle varattu katu, jolla huoltoajo on sallittu
+      swe: Gata reserverad för gångtrafik där servicetrafik är tillåten
     category: Aluevaraukset
     geometry: Alue
     letter_code: jk/h
@@ -597,6 +652,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Jalankululle varattu katu, jolla tontille/rakennuspaikalle ajo on sallittu
+      swe: Gata reserverad för gångtrafik där infart till tomt/byggnadsplats är tillåten
     category: Aluevaraukset
     geometry: Alue
     letter_code: jk/ajo
@@ -610,6 +666,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Joukkoliikenteelle varattu katu
+      swe: Gata reserverad för kollektivtrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: jl
@@ -623,6 +680,7 @@ plan_regulation_groups:
     # p. 7
   - heading:
       fin: Raitioliikenteelle varattu katu
+      swe: Gata reserverad för spårtrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: rt
@@ -635,6 +693,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pihakatu
+      swe: Gårdsgata
     category: Aluevaraukset
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -647,6 +706,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Hidaskatu
+      swe: Lågfartsgata
     category: Aluevaraukset
     geometry: Alue
     letter_code: jl
@@ -659,6 +719,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Katuaukio tai tori
+      swe: Öppen plats eller torg
     category: Aluevaraukset
     geometry: Alue
     letter_code: hk
@@ -671,6 +732,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rautatieliikenteen alue
+      swe: Område för järnvägstrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: LR
@@ -681,6 +743,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Lentokenttäalue
+      swe: flygfältsområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: LL
@@ -691,6 +754,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Satama-alue
+      swe: Hamnområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: LS
@@ -701,6 +765,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kanava-alue
+      swe: Kanalområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: LK
@@ -711,6 +776,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Venesatama-alue
+      swe: Småbåtshamn
     category: Aluevaraukset
     geometry: Alue
     letter_code: LV
@@ -721,6 +787,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Venevalkama
+      swe: Småbåtsplats
     category: Aluevaraukset
     geometry: Alue
     letter_code: LVV
@@ -731,6 +798,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yleinen pysäköintialue
+      swe: Område för allmän parkering
     category: Aluevaraukset
     geometry: Alue
     letter_code: LP
@@ -742,6 +810,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yleisten pysäköintilaitosten alue
+      swe: Område för allmänna parkeringsanläggningar
     category: Aluevaraukset
     geometry: Alue
     letter_code: LPY
@@ -753,6 +822,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Autopaikkojen alue
+      swe: Område för bilplatser
     category: Aluevaraukset
     geometry: Alue
     letter_code: LPA
@@ -763,6 +833,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pysäköintilaitosten alue
+      swe: Område för parkeringsanläggningar
     category: Aluevaraukset
     geometry: Alue
     letter_code: LPL
@@ -773,6 +844,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Huoltoaseman alue
+      swe: Område för servicestation
     category: Aluevaraukset
     geometry: Alue
     letter_code: LH
@@ -783,6 +855,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Henkilöliikenteen terminaalialue
+      swe: Terminalområde för persontrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: LHA
@@ -793,6 +866,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tavaraliikenteen terminaalialue
+      swe: Terminalområde för godstrafik
     category: Aluevaraukset
     geometry: Alue
     letter_code: LTA
@@ -803,6 +877,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Varikkoalue
+      swe: Depåområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: LVH
@@ -814,6 +889,7 @@ plan_regulation_groups:
     # p. 8
   - heading:
       fin: Erityisalue
+      swe: Specialområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: E
@@ -824,6 +900,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yhdyskuntateknistä huoltoa palvelevien rakennusten ja laitosten alue
+      swe: Område för byggnader och anläggningar för samhällsteknisk försörjning
     category: Aluevaraukset
     geometry: Alue
     letter_code: ET
@@ -834,6 +911,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Energiahuollon alue
+      swe: Område för energiförsörjning
     category: Aluevaraukset
     geometry: Alue
     letter_code: EN
@@ -844,6 +922,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tuulivoimatuotantoon tarkoitettu energiatuotannon alue
+      swe: Område för energiproduktion som är avsett för vindkraftsproduktion
     category: Aluevaraukset
     geometry: Alue
     letter_code: EN/tv
@@ -856,6 +935,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Aurinkovoimatuotantoon tarkoitettu energiatuotannon alue
+      swe: Område för energiproduktion som är avsett för solkraftsproduktion
     category: Aluevaraukset
     geometry: Alue
     letter_code: EN/au
@@ -868,6 +948,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Jätteenkäsittelyalue
+      swe: Område för avfallshantering
     category: Aluevaraukset
     geometry: Alue
     letter_code: EJ
@@ -878,6 +959,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Jätehuollon alue
+      swe: Område för avfallsservice
     category: Aluevaraukset
     geometry: Alue
     letter_code: EJH
@@ -888,6 +970,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maa-ainesten ottoalue
+      swe: Täktområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: EO
@@ -898,6 +981,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Turvetuotannon alue
+      swe: Område för torvtäkt
     category: Aluevaraukset
     geometry: Alue
     letter_code: EOT
@@ -908,6 +992,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kaivosalue
+      swe: Gruvområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: EK
@@ -918,6 +1003,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Moottoriurheilun alue
+      swe: Område för motorsport
     category: Aluevaraukset
     geometry: Alue
     letter_code: EU
@@ -928,6 +1014,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Mastoalue
+      swe: Mastområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: EMT
@@ -938,6 +1025,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ampumarata-alue
+      swe: Område för skjutbana
     category: Aluevaraukset
     geometry: Alue
     letter_code: EA
@@ -948,6 +1036,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Puolustusvoimien alue
+      swe: Försvarsmaktens område
     category: Aluevaraukset
     geometry: Alue
     letter_code: EP
@@ -958,6 +1047,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Hautausmaa-alue
+      swe: Område för begravningsplats
     category: Aluevaraukset
     geometry: Alue
     letter_code: EH
@@ -968,6 +1058,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suojaviheralue
+      swe: Skyddsgrönområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: EV
@@ -978,6 +1069,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suojelualue
+      swe: Skyddsområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: S
@@ -988,6 +1080,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Luonnonsuojelualue
+      swe: Naturskyddsområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: SL
@@ -998,6 +1091,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Muinaismuistoalue
+      swe: Fornminnesområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: SM
@@ -1009,6 +1103,7 @@ plan_regulation_groups:
     # p. 9
   - heading:
       fin: Rakennussuojelualue
+      swe: Byggnadsskyddsområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: SR
@@ -1019,6 +1114,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltujen rakennusten alue
+      swe: Område för byggnader som skyddats med stöd av lagen om skyddande av byggnadsarvet
     category: Aluevaraukset
     geometry: Alue
     letter_code: SRS
@@ -1029,6 +1125,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maa- ja metsätalousalue
+      swe: Jord- och skogsbruksområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: M
@@ -1039,6 +1136,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Metsätalousalue
+      swe: Skogsbruksområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: MM
@@ -1049,6 +1147,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maatalousalue
+      swe: Jordbruksområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: MT
@@ -1059,6 +1158,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kotieläintalouden suuryksikön alue
+      swe: Område för storenhet inom husdjursproduktionen
     category: Aluevaraukset
     geometry: Alue
     letter_code: ME
@@ -1069,6 +1169,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Puutarha- ja kasvihuonealue
+      swe: Område för trädgårdsodling och växthus
     category: Aluevaraukset
     geometry: Alue
     letter_code: MP
@@ -1079,6 +1180,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pelto
+      swe: Åker
     category: Aluevaraukset
     geometry: Alue
     letter_code: MTP
@@ -1089,6 +1191,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maisemallisesti arvokas peltoalue
+      swe: Landskapsmässigt värdefullt åkerområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: MA
@@ -1102,6 +1205,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maa- ja metsätalousalue, jolla on erityistä ulkoilun ohjaamistarvetta
+      swe: Jord- och skogsbruksområde med särskilt behov av att styra friluftslivet
     category: Aluevaraukset
     geometry: Alue
     letter_code: MU
@@ -1112,6 +1216,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maa- ja metsätalousalue, jolla on erityisiä ympäristöarvoja
+      swe: Jord- och skogsbruksområde med särskilda miljövärden
     category: Aluevaraukset
     geometry: Alue
     letter_code: MY
@@ -1122,6 +1227,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Vesialue
+      swe: Vattenområde
     category: Aluevaraukset
     geometry: Alue
     letter_code: W
@@ -1132,7 +1238,8 @@ plan_regulation_groups:
 
     # p. 10
   - heading:
-      fin: Asuntovaltainen alue, jolla ympäristö säilytetään
+      fin: Asuntoalue, jolla ympäristö säilytetään
+      swe: Område för bostadshus där miljön bevaras
     category: Ympäristöltään säilytettävät aluevaraukset
     geometry: Alue
     letter_code: A/s
@@ -1144,7 +1251,8 @@ plan_regulation_groups:
 
     # p. 11
   - heading:
-      fin: Kunnan tai kaupunginosan raja
+      fin: Kaupungin- tai kunnanosan raja
+      swe: Stadsdels- eller kommundelsgräns
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1155,6 +1263,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Korttelialue tai korttelialueen osa
+      swe: Kvartersområde eller del av kvartersområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1165,6 +1274,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Sitovan tonttijaon mukainen tontti
+      swe: Tomt enligt bindande tomtindelning
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1175,6 +1285,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ohjeellinen tontti/rakennuspaikka
+      swe: Riktgivande tomt/byggnadsplats
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1185,6 +1296,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusala
+      swe: Byggnadsyta
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1195,6 +1307,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Auton säilytyspaikan rakennusala
+      swe: Byggnadsyta för förvaringsplats för bil
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: a
@@ -1206,7 +1319,8 @@ plan_regulation_groups:
             code_value: pysakoinninAlue
 
   - heading:
-      fin: Rakennusala, jolle saa sijoittaa lasten päiväkodin
+      fin: Rakennusala, jolle saa sijoittaa päiväkodin
+      swe: Byggnadsyta där daghem får placeras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pk
@@ -1219,6 +1333,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusala, jolle saa sijoittaa myymälän
+      swe: Byggnadsyta där butik får placeras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: m
@@ -1232,6 +1347,7 @@ plan_regulation_groups:
     # p. 12
   - heading:
       fin: Rakennusala, jolle saa sijoittaa maatilan talouskeskuksen
+      swe: Byggnadsyta där en lantbrukslägenhets driftscentrum får placeras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: am
@@ -1244,6 +1360,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusala, jolle saa sijoittaa talousrakennuksen
+      swe: Byggnadsyta där ekonomibyggnad får placeras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: t
@@ -1254,6 +1371,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusala, jolle saa sijoittaa saunan
+      swe: Byggnadsyta där bastu får placeras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: sa
@@ -1264,6 +1382,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kaupunki- tai kyläkuvallisesti tärkeä alue tai alueen osa
+      swe: Område eller del av område som är viktigt med tanke på stads- eller bybilden
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: sk
@@ -1274,6 +1393,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennetun kulttuuriympäristön ja maiseman vaalimisen kannalta tärkeä alue muinaisjäännös
+      swe: Område som är viktigt med tanke på bevarandet av den byggda kulturmiljön eller landskapet
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: kyma
@@ -1287,6 +1407,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maisemallisesti arvokas alue
+      swe: Landskapsmässigt värdefullt område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ma
@@ -1297,6 +1418,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kansainvälisesti arvokas maisema-alue
+      swe: Internationellt värdefullt landskapsområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: kvma
@@ -1308,6 +1430,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Valtakunnallisesti arvokas maisema-alue
+      swe: Nationellt värdefullt landskapsområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: vama
@@ -1319,6 +1442,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maakunnallisesti arvokas maisema-alue
+      swe: Värdefullt landskapsområde på landskapsnivå
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mma
@@ -1330,6 +1454,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Paikallisesti arvokas maisema-alue
+      swe: Lokalt värdefullt landskapsområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pma
@@ -1341,6 +1466,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Merkittävä rakennettu kulttuuriympäristö
+      swe: Betydande byggd kulturmiljö
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ky
@@ -1351,6 +1477,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kansainvälisesti merkittävä rakennettu kulttuuriympäristö
+      swe: Internationellt betydande byggd kulturmiljö
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: kvky
@@ -1362,6 +1489,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Valtakunnallisesti merkittävä rakennettu kulttuuriympäristö
+      swe: Nationellt betydande byggd kulturmiljö
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: rky
@@ -1373,6 +1501,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maakunnallisesti merkittävä rakennettu kulttuuriympäristö
+      swe: Betydande byggd kulturmiljö på landskapsnivå
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mky
@@ -1384,6 +1513,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Paikallisesti merkittävä rakennettu kulttuuriympäristö
+      swe: Lokalt betydande byggd kultumiljö
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pky
@@ -1394,7 +1524,8 @@ plan_regulation_groups:
           - type: paikallinen
 
   - heading:
-      fin: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä
+      fin: Muu arkeologinen kohde, joka ei ole muinaismuistolain nojalla rauhoitettu kiinteä muinaisjäännös
+      swe: Annat arkeologiskt objekt som inte är en fast fornlämning som har fredats med stöd av lagen om fornminnen
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ark
@@ -1405,6 +1536,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Valtakunnallisesti merkittävä arkeologinen kohde
+      swe: Nationellt betydande arkeologiskt objekt
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     letter_code: vark
     plan_regulations:
@@ -1416,6 +1548,7 @@ plan_regulation_groups:
     # p. 13
   - heading:
       fin: Arvokas harjualue tai muu geologinen muodostuma
+      swe: Värdefull ås eller annan värdefull geologisk formation
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ge
@@ -1426,6 +1559,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tärkeä veden hankintaan soveltuva pohjavesialue
+      swe: Viktigt grundvattensområde som lämpar sig för vattentäkt
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pv
@@ -1436,6 +1570,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Natura 2000 -verkostoon kuuluva alue
+      swe: Område som hör till nätverket Natura 2000
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: nat
@@ -1446,6 +1581,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Luonnon monimuotoisuuden kannalta erityisen tärkeä alue
+      swe: Område som är särskilt viktigt med tanke på naturens mångfald
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: luo
@@ -1456,6 +1592,7 @@ plan_regulation_groups:
 
   - heading:
       fin: UNESCO:n maailmanperintökohde
+      swe: Objekt som ingår i UNESCO:s världsarvslista
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: un
@@ -1466,6 +1603,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kansallinen kaupunkipuisto
+      swe: Nationalstadspark
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: kp
@@ -1476,6 +1614,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kehittämisalue
+      swe: Utvecklingsområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ke
@@ -1486,6 +1625,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alue, jolle määrätään asemakaavassa määräaikainen kielto rakennuksen rakentamiseksi
+      swe: Område för vilket detaljplanen ger ett tidsbegränsat förbud att uppföra byggnad
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mrk
@@ -1496,6 +1636,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tuulivoimaloiden alue
+      swe: Område för vindkraftverk
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: tv
@@ -1506,6 +1647,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Aurinkovoimaloiden alue
+      swe: Område för solkraftverk
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: aur
@@ -1516,6 +1658,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ympäristöhäiriöalue
+      swe: Område med miljöstörning
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: häiriö
@@ -1526,6 +1669,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Melualue
+      swe: Bullerområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: melu
@@ -1536,6 +1680,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tärinäalue
+      swe: Vibrationsområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: tärinä
@@ -1546,6 +1691,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Radonriskialue
+      swe: Radonriskområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: radon
@@ -1556,6 +1702,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pilaantunut maa-alue
+      swe: Förorenat markområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pima
@@ -1566,6 +1713,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Vaara-alue
+      swe: Faroområde
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: vaara
@@ -1576,6 +1724,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tulvariskialue
+      swe: Område med risk för översvämning
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: tulva
@@ -1586,6 +1735,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suojavyöhyke
+      swe: Skyddszon
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: suojav
@@ -1596,6 +1746,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Konsultointivyöhyke
+      swe: Konsultationszon
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: konsu
@@ -1606,6 +1757,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suojeltava alueen osa
+      swe: Del av område som ska skyddas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: s
@@ -1617,6 +1769,7 @@ plan_regulation_groups:
     # p. 14
   - heading:
       fin: Alueen osa, jolla sijaitsee luonnonsuojelulain mukainen luonnonsuojelualue tai -kohde
+      swe: Del av område där ett i naturvårdslagen avsett naturskyddsområde eller naturskyddsobjekt är beläget
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: sl
@@ -1627,6 +1780,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suojeltu rakennus, jota ei saa purkaa
+      swe: Byggnad som ska skyddas och får inte rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: sr
@@ -1637,6 +1791,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kansainvälisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      swe: Internationellt betydande skyddad byggnad som inte får rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: kvSR
@@ -1648,6 +1803,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Valtakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      swe: Nationellt betydande skyddad byggnad som inte får rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: vaSR
@@ -1659,6 +1815,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maakunnallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      swe: På landskapsnivå betydande skyddad byggnad som inte får rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mSR
@@ -1670,6 +1827,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Paikallisesti merkittävä suojeltu rakennus, jota ei saa purkaa
+      swe: Lokalt betydande skyddad byggnad som inte får rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pSR
@@ -1681,6 +1839,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusperinnön suojelemisesta annetun lain nojalla suojeltu rakennus, jota ei saa purkaa
+      swe: Byggnad som har skyddats med stöd av lagen om skyddande av byggnadsarvet och som inte får rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: srs
@@ -1691,6 +1850,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alueen osa, jolla sijaitsee muinaismuistolailla rauhoitettu kiinteä muinaisjäännös
+      swe: Del av område, på vilken finns en fornlämning som har fredats med stöd av lagen om fornminnen
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: sm
@@ -1701,6 +1861,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Valtion omistamien rakennusten suojelusta annetun asetuksen nojalla suojeltu rakennus, jota ei saa purkaa
+      swe: Byggnad som har skyddats med stöd av förordningen om skydd för staten tillhöriga byggnader och som inte får rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: sra
@@ -1711,6 +1872,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kirkkolain nojalla suojeltu kirkollinen rakennus
+      swe: Kyrklig byggnad som har skyddats med stöd av kyrkolagen
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: srk
@@ -1721,6 +1883,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ortodoksisesta kirkosta annetun lain nojalla suojeltu kirkko tai rukoushuone
+      swe: Kyrka eller bönehus som har skyddats med stöd av lagen om ortodoxa kyrkan och får inte rivas
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: srko
@@ -1731,6 +1894,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ekologisen kompensaation alue
+      swe: Område för ekologisk kompensation
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ekok
@@ -1741,6 +1905,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Hulevesien hallintaan tarkoitettu alue
+      swe: Område för dagvattenhantering
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: hule
@@ -1751,6 +1916,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maa-ainesten vastaanotto- tai läjitysalue
+      swe: Mottagningsområde eller sidotipp för marksubstanser
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: läji
@@ -1761,6 +1927,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maanalainen tila
+      swe: Underjordiskt utrymme
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: maa
@@ -1772,6 +1939,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maanalainen pysäköintilaitos
+      swe: Underjordiskt utrymme för bilparkering
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: maaLP
@@ -1784,6 +1952,7 @@ plan_regulation_groups:
     # p. 15
   - heading:
       fin: Maanalainen yleinen pysäköintilaitos
+      swe: Underjordiskt utrymme för allmän bilparkering
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: maaLPY
@@ -1796,6 +1965,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Liikennetunneli
+      swe: Trafiktunnel
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: lt
@@ -1806,6 +1976,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maanalainen liikennetunneli
+      swe: Underjordisk trafiktunnel
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: maalt
@@ -1817,6 +1988,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alue, jolle saa sijoittaa polttoaineen jakeluaseman
+      swe: Område där försäljningsplats för drivmedel får placeras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pj
@@ -1827,6 +1999,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Uloke
+      swe: Utsprång
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: u
@@ -1837,6 +2010,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennukseen jätettävä kulkuaukko
+      swe: Genomfartsöppning i byggnad
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1847,6 +2021,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Valokatteinen tila
+      swe: Glasövertäckt utrymme
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: vk
@@ -1857,6 +2032,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Leikki- ja oleskelualueeksi varattu alueen osa
+      swe: För lek och utevistelse reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: le
@@ -1867,6 +2043,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Istutettava alueen osa
+      swe: Del av område som ska planteras
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -1877,6 +2054,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ajoyhteys
+      swe: Körförbindelse
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ajo
@@ -1887,6 +2065,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Eritasoristeys
+      swe: Planskild korsning
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: eri
@@ -1897,6 +2076,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alueen sisäiselle huoltoliikenteelle varattu alueen osa
+      swe: För områdets interna servicetrafik reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: h
@@ -1908,6 +2088,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alueen sisäiselle jalankululle varattu alueen osa
+      swe: För områdets interna gångtrafik reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: jk
@@ -1919,6 +2100,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yleiselle jalankululle varattu alueen osa
+      swe: För områdets interna gångtrafik reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: jk
@@ -1930,6 +2112,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yleiselle pyöräilylle varattu alueen osa
+      swe: För allmän cykeltrafik reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pp
@@ -1941,6 +2124,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Yleiselle jalankululle ja pyöräilylle varattu alueen osa
+      swe: För allmän gång- och cykeltrafik reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: jk/pp
@@ -1957,6 +2141,7 @@ plan_regulation_groups:
     # p. 16
   - heading:
       fin: Maantien suoja-alueeksi varattu alueen osa
+      swe: För skyddsområde för landsväg reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mtsu
@@ -1967,6 +2152,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maantien näkemäalueeksi varattu alueen osa
+      swe: För frisiktsområde för landsväg reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mtnä
@@ -1977,6 +2163,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rautatien suoja-alueeksi varattu alueen osa
+      swe: För skyddsområde för järnväg reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: rtsu
@@ -1987,6 +2174,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rautatien näkemäalueeksi varattu alueen osa
+      swe: För frisiktsområde för järnväg reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: rtnä
@@ -1997,6 +2185,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alikulku
+      swe: Underfart
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: ali
@@ -2007,6 +2196,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ylikulku
+      swe: Överfart
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: yli
@@ -2017,6 +2207,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alueen osa, jolla sijaitsee tai jolle on rakennettava melueste
+      swe: Del av område som har eller ska förses med bullerhinder
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: mee
@@ -2027,6 +2218,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pysäköimispaikka
+      swe: Parkeringsplats
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: p
@@ -2037,6 +2229,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pysäkki
+      swe: Hållplats
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: pys
@@ -2047,6 +2240,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Johtoa varten varattu alueen osa
+      swe: För ledning reserverad del av område
     category: Rakennusalat, alueiden erityisominaisuudet ja alueen osat
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2058,6 +2252,7 @@ plan_regulation_groups:
     # p. 17
   - heading:
       fin: Kaupungin- tai kunnanosan numero
+      swe: Stadsdels- eller kommundelsnummer
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2065,6 +2260,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kaupungin- tai kunnanosan nimi
+      swe: Namn på stads- eller kommundel
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2072,6 +2268,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Korttelin numero
+      swe: Kvartersnummer
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2079,6 +2276,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tontin tai rakennuspaikan numero
+      swe: Nummer på tomt- eller byggnadsplats
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2086,6 +2284,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ohjeellisen tontin tai rakennuspaikan numero
+      swe: Nummer på riktgivande tomt eller byggnadsplats
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2093,6 +2292,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kadun tai tien nimi
+      swe: Namn på gata eller väg
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2100,6 +2300,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Torin tai katuaukion nimi
+      swe: Namn på torg eller öppen plats
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2107,6 +2308,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Puiston tai muun yleisen alueen nimi
+      swe: Namn på park eller annat allmänt område
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2114,6 +2316,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusoikeus kerrosalaneliömetreinä
+      swe: Byggnadsrätt i kvadratmeter våningsyta
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2121,6 +2324,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusoikeus kuutiometreinä
+      swe: Byggnadsrätt i kubikmeter
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2128,6 +2332,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakentamisen suhde alueen pinta-alaan (%)
+      swe: Byggandets förhållande till områdets yta (%)
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Luku osoittaa, kuinka suuren osan alueesta tai rakennusalasta saa käyttää rakentamiseen
@@ -2136,6 +2341,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Väljyysluku
+      swe: Rymlighetstal
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Luku osoittaa, kuinka suuri osa alueesta tai rakennusalasta tulee jättää rakentamatta
@@ -2144,6 +2350,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suurin sallittu maanpäällinen kerrosluku (luku)
+      swe: Största tillåtna våningsantal ovan jord (tal)
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman sallitun kerrosluvun
@@ -2153,6 +2360,7 @@ plan_regulation_groups:
     # p. 18
   - heading:
       fin: Maanpäällinen vähimmäis- ja enimmäiskerrosluku (arvoväli)
+      swe: Minsta och högsta antalet våningar ovan jord (värdeintervall)
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
@@ -2161,6 +2369,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Suurin sallittu maanalainen kerrosluku (luku)
+      swe: Största tillåtna antalet underjordiska våningar (tal)
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Roomalainen numero osoittaa rakennusten, rakennuksen tai sen osan suurimman maan alle sijoitettavan sallitun kerrosluvun
@@ -2169,6 +2378,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maanalainen vähimmäis- ja enimmäiskerrosluku (arvoväli)
+      swe: Minsta och högsta antalet underjordiska våningar (värdeintervall)
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Roomalaisin numeroin ilmaistu arvoväli osoittaa rakennusten, rakennuksen tai sen osan kerrosluvun vähimmäis- ja enimmäismäärän
@@ -2177,6 +2387,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kansipihan suurin sallittu kerrosluku kansipihalta ylöspäin
+      swe: Gårdsbjälklagets största tillåtna antal våningar från gårdsbjälklaget uppåt
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2184,6 +2395,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kansipihan suurin sallittu kerrosluku kansipihalta alaspäin
+      swe: Gårdsbjälklagets största tillåtna antal våningar från gårdsbjälklaget neråt
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2191,6 +2403,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kellarin sallittu osuus kerrosalasta
+      swe: Källarens tillåtna andel av våningsytan
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Murtoluku roomalaisen numeron edessä osoittaa, kuinka suuren osan rakennuksen suurimman kerroksen alasta saa kellarikerroksessa käyttää kerrosalaan luettavaksi tilaksi
@@ -2199,6 +2412,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ullakon sallittu osuus kerrosalasta
+      swe: Vindens tillåtna andel av våningsytan
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Murtoluku roomalaisen numeron jäljessä osoittaa, kuinka suuren osan rakennuksen suurimman kerroksen alasta ullakon tasolla saa käyttää kerrosalaan laskettavaksi tilaksi
@@ -2207,6 +2421,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tehokkuusluku
+      swe: Exploateringstal
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Tehokkuusluku eli kerrosalan suhde tontin/kerrosalan suhde tontin/rakennuspaikan pinta-alaan
@@ -2215,6 +2430,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Vihertehokkuus
+      swe: Gröneffektivitet
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Vihertehokkuus eli kasvillisuuden peittämän pinnan suhde alueen pinta-alaan
@@ -2223,6 +2439,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kattokaltevuus
+      swe: Taklutning
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2230,6 +2447,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Maanpinnan likimääräinen korkeusasema
+      swe: Ungefärlig markhöjd
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2237,6 +2455,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennuksen vesikaton ylimmän kohdan korkeusasema
+      swe: Högsta höjd för byggnadens vattentak
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2244,6 +2463,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennuksen julkisivupinnan ja vesikaton leikkauskohdan ylin korkeusasema
+      swe: Högsta höjd för skärningspunkten mellan fasad och vattentak
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2252,6 +2472,7 @@ plan_regulation_groups:
     # p. 19
   - heading:
       fin: Rakennuksen julkisivun enimmäiskorkeus metreinä
+      swe: Fasadens högsta höjd i meter
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2259,6 +2480,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennuksen, rakenteiden ja laitteiden ylin korkeusasema
+      swe: Byggnadens, konstruktionernas och anläggningarnas högsta höjd
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2266,6 +2488,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennuksen, rakenteiden ja laitteiden alin korkeusasema
+      swe: Byggnadens, konstruktionernas och anläggningarnas lägsta höjd
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2273,6 +2496,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alin painovoimainen viemäröintitaso
+      swe: Lägsta nivå för gravitationsavlopp
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2280,6 +2504,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kosteudelle alttiiden rakenteiden alin rakentamiskorkeus
+      swe: Lägsta bygghöjd för fuktkänsliga konstruktioner
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     plan_regulations:
@@ -2287,6 +2512,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tuulivoimalan enimmäiskorkeus
+      swe: Vindkraftverkets högsta höjd
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa tuulivoimalan suurimman sallitun kokonaiskorkeuden
@@ -2295,6 +2521,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Tuulivoimaloiden määrä
+      swe: Antal vindkraftverk
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta tuulivoimalaa alueelle saa rakentaa
@@ -2303,6 +2530,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Asuntojen määrä
+      swe: Antal bostäder
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta asuntoa alueelle on rakennettava
@@ -2311,6 +2539,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pyöräpaikkojen määrä
+      swe: Antal cykelplatser
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta pyöräpaikkaa alueelle on rakennettava
@@ -2319,6 +2548,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Autopaikkojen määrä
+      swe: Antal bilplatser
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: ääräys osoittaa, kuinka monta autopaikkaa alueelle on rakennettava
@@ -2327,6 +2557,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kerrosneliömäärä yhtä pyöräpaikkaa kohden
+      swe: Våningsyta per cykelplats
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta kerrosalaneliömetriä kohti on rakennettava yksi pyöräpaikka
@@ -2335,6 +2566,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Kerrosneliömäärä yhtä autopaikkaa kohden
+      swe: Våningsyta per bilplats
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta kerrosalaneliömetriä kohti on rakennettava yksi autopaikka
@@ -2343,6 +2575,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Pyöräpaikkojen määrä asuntoa kohden
+      swe: Antal cykelplatser per bostad
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta pyöräpaikkaa asuntoa kohti on rakennettava
@@ -2351,6 +2584,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Autopaikkojen määrä asuntoa kohden
+      swe: Antal bilplatser per bostad
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, kuinka monta autopaikkaa asuntoa kohti on rakennettava
@@ -2359,6 +2593,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Alueelle sijoitettavien rakenteiden ääneneristavyys vähintään 00 dB
+      swe: Konstruktioner som placeras på området ska ha en ljudisolering på minst 00 dB
     category: Kaavamääräysryhmät, joihin liittyy jokin numeerinen tai tekstimuotoinen arvo
     geometry: Alue
     description: Määräys osoittaa, että alueelle sijoitettavien rakenteiden ääneneristävyyden tulee olla vähintään 00 dB
@@ -2368,6 +2603,7 @@ plan_regulation_groups:
     # p. 20
   - heading:
       fin: Rakennusalalle sallittu kerrosalan prosenttiosuus (%) asuinhuoneistoja varten
+      swe: Tillåten procentandel (%) av byggnadsytans våningsyta för bostadslägenheter
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2379,6 +2615,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrosalan kerrosneliömetrimäärä (k-m2) asuinhuoneistoja varten
+      swe: Tillåten våningsytas kvadratmeter (k-m2) för bostadslägenheter inom byggnadsytan
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2390,6 +2627,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrostilavuuden prosenttiosuus (%) asuinhuoneistoja varten
+      swe: Tillåten procentandel (%) av byggnadsytans våningsvolym för bostadslägenheter
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2401,6 +2639,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrostilavuuden kuutiometrimäärä (k-m3) asuinhuoneistoja varten
+      swe: Tillåten kubikmeter (k-m³) av byggnadsytans våningsvolym för bostadslägenheter
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2412,6 +2651,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrosalan prosenttiosuus (%) myymälätiloja varten
+      swe: Tillåten procentandel (%) av byggnadsytans våningsyta för butikslokaler
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2423,6 +2663,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrosalan kerrosneliömetrimäärä (k-m2) myymälätiloja varten
+      swe: Tillåten kvadratmeter (k-m2) av byggnadsytans våningsyta för butikslokaler
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2434,6 +2675,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrostilavuuden prosenttiosuus (%) myymälätiloja varten
+      swe: Tillåten procentandel (%) av byggnadsytans våningsvolym för butikslokaler
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2445,6 +2687,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalalle sallittu kerrostilavuuden kuutiometrimäärä (k-m3) myymälätiloja varten
+      swe: Tillåten kubikmeter (k-m³) av byggnadsytans våningsvolym för butikslokaler
     category: Rakennusalaan liittyvien käyttötarkoituksen osuutta koskevat kaavamääräysryhmät
     geometry: Alue
     letter_code: # NOTE: Check symbol
@@ -2457,6 +2700,7 @@ plan_regulation_groups:
     # p. 21
   - heading:
       fin: Maanalaisiin tiloihin johtava ajoluiska
+      swe: Körramp till underjordiskt utrymme
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2465,6 +2709,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalan sivu, jota koskee tarkempi määräys
+      swe: Den sida av byggnadsytan som omfattas av en närmare bestämmelse
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2473,6 +2718,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalan sivu, johon rakennus on rakennettava kiinni
+      swe: Den sida av byggnadsytan som byggnaden ska tangera
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2481,6 +2727,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennuksen sivu, jossa suora uloskäynti porrashuoneista
+      swe: Den sida av byggnaden som har direkt utgång från trapphusen
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2489,6 +2736,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennusalan sivu, jonka puoleiseen rakennuksen seinään ei saa sijoittaa ikkunoita
+      swe: Den sida av byggnaden på vars vägg fönster inte får placeras
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: ik
@@ -2497,6 +2745,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Rakennuksen harjasuuntaa osoittava viiva
+      swe: Linje som anger takåsens riktning
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2505,6 +2754,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Istutettava puurivi
+      swe: Trädrad som ska planteras
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2513,6 +2763,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Istutettava puu
+      swe: Träd som ska planteras
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Piste
     letter_code: # NOTE: Check symbol
@@ -2521,6 +2772,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Säilytettävä puurivi
+      swe: Trädrad som ska bevaras
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2531,6 +2783,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Säilytettävä puu
+      swe: Träd som ska bevaras
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Piste
     letter_code: # NOTE: Check symbol
@@ -2541,6 +2794,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ulkoilureitti
+      swe: Friluftsled
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2549,6 +2803,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Katualueen rajan osa, jonka kohdalta ei saa järjestää ajoneuvoliittymää
+      swe: Del av gatuområdes gräns där in- och utfart är förbjuden
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2557,6 +2812,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Meluesteen tai melusuojauksen likimääräinen sijainti
+      swe: Ungefärlig placering av bullerhinder eller bullerskydd
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Viiva
     letter_code: # NOTE: Check symbol
@@ -2565,6 +2821,7 @@ plan_regulation_groups:
 
   - heading:
       fin: Ajoneuvoliittymän likimääräinen sijainti
+      swe: Ungefärlig placering av in- och utfart för fordon
     category: Viivamaisiin ja pistemäisiin kaavakohteisiin liittyvät kaavamääräysryhmät
     geometry: Piste
     letter_code: # NOTE: Check symbol
