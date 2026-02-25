@@ -10,6 +10,7 @@ from dataclasses import dataclass, field, fields
 from hashlib import sha256
 from typing import TYPE_CHECKING, TypeAlias, cast
 
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     PlanRegulationTypeLayer,
@@ -419,6 +420,14 @@ class RegulationGroup(PlanBaseModel):
     modified: bool = field(compare=False, default=True)
     category: str | None = field(compare=False, default=None)
     id_: str | None = field(compare=False, default=None)
+
+    def apply_language_selection(self) -> None:
+        languages = SettingsManager.get_languages()
+        self.heading = (
+            {language: text for language, text in self.heading.items() if language in languages}
+            if self.heading
+            else None
+        )
 
     @classmethod
     def from_template_dict(cls, data: dict) -> RegulationGroup:
