@@ -18,6 +18,7 @@ from qgis.PyQt.QtWidgets import (
     QTreeWidgetItem,
 )
 
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.components.plan_regulation_group_widget import RegulationGroupWidget
 from arho_feature_template.gui.components.tree_with_search_widget import TreeWithSearchWidget
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
@@ -155,6 +156,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         if not item.parent():
             return
         regulation_group: RegulationGroup = item.data(column, Qt.UserRole)
+        if SettingsManager.get_add_only_selected_languages():
+            regulation_group.apply_language_selection()
         self.add_plan_regulation_group(regulation_group)
 
     def add_plan_regulation_group(self, regulation_group: RegulationGroup):

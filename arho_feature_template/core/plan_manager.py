@@ -319,12 +319,15 @@ class PlanManager(QObject):
 
     def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
         if from_template:
-            regulation_group_template_selection_form = TemplateSelectionForm(
+            regulation_group_template_selection_form = TemplateSelectionForm[RegulationGroup](
                 libraries=[*self.regulation_group_libraries, self.active_plan_regulation_group_library]
             )
             if regulation_group_template_selection_form.exec():
                 model = regulation_group_template_selection_form.selected_template
-                self._open_regulation_group_form(model)  # type: ignore
+                if model:
+                    if SettingsManager.get_add_only_selected_languages():
+                        model.apply_language_selection()
+                    self._open_regulation_group_form(model)  # type: ignore
         else:
             self._open_regulation_group_form(RegulationGroup())
 

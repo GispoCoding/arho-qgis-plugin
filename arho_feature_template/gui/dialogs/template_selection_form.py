@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from importlib import resources
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Generic, TypeVar, cast
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
@@ -34,8 +34,10 @@ FormClass, _ = uic.loadUiType(ui_path)
 DATA_COLUMN = 0
 DATA_ROLE = Qt.UserRole
 
+T = TypeVar("T", bound=RegulationGroup | PlanObject)
 
-class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
+
+class TemplateSelectionForm(Generic[T], QDialog, FormClass):  # type: ignore
     def __init__(self, libraries: list[Library]):
         super().__init__()
         self.setupUi(self)
@@ -49,7 +51,7 @@ class TemplateSelectionForm(QDialog, FormClass):  # type: ignore
         self.template_categories: dict[str, QTreeWidgetItem] = {}
 
         self.selected_item: QTreeWidgetItem | None = None
-        self.selected_template: RegulationGroup | PlanObject | None = None
+        self.selected_template: T | None = None
 
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
 

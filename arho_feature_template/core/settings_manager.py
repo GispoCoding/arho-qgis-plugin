@@ -127,6 +127,14 @@ class SettingsManager:
         return cls._set("show_only_primary_language", value)
 
     @classmethod
+    def set_add_only_selected_languages(cls, value: bool):  # noqa: FBT001
+        return cls._set("add_only_selected_languages", value)
+
+    @classmethod
+    def get_add_only_selected_languages(cls, default: bool = False) -> bool:  # noqa: FBT001, FBT002
+        return cls._get("add_only_selected_languages", default)
+
+    @classmethod
     def _migrate_keys(cls):
         # Old settings
         settings = QSettings("ArhoFeatureTemplate")
