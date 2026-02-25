@@ -71,8 +71,6 @@ class LayoutItemFactory:
         items.append(symbol_and_code_grouped)
 
         # --- 2. Create the heading element in first defined language---
-        first_language = cls.SETTINGS.languages[0]
-
         heading_element = None
         if cls.SETTINGS.include_regulation_headings:
             heading_element = LayoutItemFactory.new_regulation_heading_label(layout, element.heading, 0)
@@ -84,14 +82,10 @@ class LayoutItemFactory:
 
         # --- 3. Create the regulation text items in first defined language ---
         if cls.SETTINGS.include_regulation_texts and len(element.regulation_texts) > 0:
-            cls.add_regulation_texts(
-                layout, element, first_language, heading_element, symbol_and_code_grouped, items, 0
-            )
+            cls.add_regulation_texts(layout, element, heading_element, symbol_and_code_grouped, items, 0)
 
         # --- 4. Create the heading and regulation text items in secondary language if defined ---
         if cls.is_multilanguage_print():
-            second_language = cls.SETTINGS.languages[1]
-
             # 4.a Second language heading element
             second_language_heading_element = None
             if cls.SETTINGS.include_regulation_headings:
@@ -108,7 +102,7 @@ class LayoutItemFactory:
             # 4.b Second language text elements
             if cls.SETTINGS.include_regulation_texts and len(element.regulation_texts) > 0:
                 cls.add_regulation_texts(
-                    layout, element, second_language, second_language_heading_element, symbol_and_code_grouped, items, 1
+                    layout, element, second_language_heading_element, symbol_and_code_grouped, items, 1
                 )
 
         # --- 5. Remove empty headings ---
@@ -272,7 +266,6 @@ class LayoutItemFactory:
         cls,
         layout: QgsPrintLayout,
         element: RegulationPrintElement,
-        language: str,
         heading_element: QgsLayoutItemLabel | None,
         symbol_and_code_grouped: QgsLayoutItemGroup,
         items: list,
@@ -281,11 +274,9 @@ class LayoutItemFactory:
         previous_element = heading_element
         num_text_elements = 0
         for text in element.regulation_texts:
-            localized_text = get_localized_text(text, language)
-            if localized_text is None or localized_text == "":
+            verbal_regulation_label = LayoutItemFactory.new_regulation_text_label(layout, text, language_index)
+            if not verbal_regulation_label:
                 continue
-
-            verbal_regulation_label = LayoutItemFactory.new_regulation_text_label(layout, text)
             # Include 4.4 mm extra space if multiple verbal regulations exist
             if previous_element:
                 move_label_below_item(verbal_regulation_label, previous_element, 4.4 if num_text_elements > 0 else 0)
