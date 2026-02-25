@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from arho_feature_template.core.settings_manager import SettingsManager
-from arho_feature_template.project.layers.code_layers import LanguageLayer
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import LocalizedText
-
-
-def _primary_language_code() -> str:
-    return SettingsManager.get_primary_language()
 
 
 LANGUAGES = {
@@ -18,19 +13,28 @@ LANGUAGES = {
     "swe": "ruotsi",
     "eng": "englanti",
     "sme": "pohjoissaame",
-    "sms": "koltansaame",
     "smn": "inarinsaame",
+    "sms": "koltansaame",
 }
 
 
 def get_localized_text(localized_text: LocalizedText | None, language_code: str | None = None) -> str | None:
     """Returns text for one language from input LocalizedText (dict).
 
-    If `language_code` is not defined, primary language from settings is used."""
-    if not isinstance(localized_text, dict):
+    If the `language_code` is not defined the first language found in order of importance is used.
+    """
+    if localized_text is None:
         return None
 
-    return localized_text.get(language_code if language_code else _primary_language_code())
+    if language_code:
+        return localized_text.get(language_code)
+
+    for language in SettingsManager.get_languages() + list(LANGUAGES.keys()):
+        text = localized_text.get(language)
+        if text:
+            return text
+
+    return None
 
 
 def localized_text_as_str(localized_text: LocalizedText | None = None, indent_size: int = 0) -> str:
@@ -44,14 +48,6 @@ def localized_text_as_str(localized_text: LocalizedText | None = None, indent_si
         result += f"{indent}{language_code}: {text}\n"
 
     return result
-
-
-def str_as_localized_text(text: str, language_id: str) -> LocalizedText | None:
-    language_code = LanguageLayer.get_language_code_by_id(language_id)
-    if not language_code or not text:
-        return None
-
-    return {language_code: text}
 
 
 def read_localized_field_backward_compatible(value: LocalizedText | str | None) -> LocalizedText | None:
