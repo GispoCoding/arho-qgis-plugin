@@ -417,8 +417,8 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         layer_name = vector_layer.name()
         logger.debug("Committed features removed layer=%s ids=%s", layer_name, list(feature_ids))
 
-        feats_to_delete = list(feature_ids)
-        # Loop all rows
+        feats_to_delete = set(feature_ids)
+        rows_to_delete: list[int] = []
         for row in range(self.model.rowCount()):
             item = self.model.item(row, DATA_COLUMN)
             plan_feature_model: PlanObject = item.data(DATA_ROLE)[0]
@@ -426,12 +426,14 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                 continue
             plan_feat_id = item.data(DATA_ROLE)[1]
             if plan_feat_id in feature_ids:
-                self._remove_plan_feature_from_view(row)
+                rows_to_delete.append(row)
                 feats_to_delete.remove(plan_feat_id)
 
             # We have deleted all features that needed to be deleted
             if len(feats_to_delete) == 0:
-                return
+                break
+        for row in reversed(rows_to_delete):
+            self._remove_plan_feature_from_view(row)
 
     def _on_feat_attributes_changed(self, layer_id: str, changed_attribute_values_map: dict):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
