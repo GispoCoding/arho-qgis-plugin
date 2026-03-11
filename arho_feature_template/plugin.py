@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
+import traceback
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
+import qgis
 from qgis.core import QgsApplication, QgsExpressionContextUtils, QgsProject
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator, QUrl
 from qgis.PyQt.QtGui import QDesktopServices, QIcon
@@ -38,6 +41,14 @@ class Plugin:
     def __init__(self) -> None:
         setup_logger(arho_feature_template.__name__)
         logger.debug("\n\n*** Initializing plugin instance ***")
+
+        # Extend the default QGIS exception handling by logging the unhandled exceptions
+        if not any(plugin in qgis.utils.active_plugins for plugin in ("report", "firstaid")):
+            self.qgis_show_exception = qgis.utils.showException
+            qgis.utils.showException = self.show_exception
+        else:
+            self.qgis_show_exception = None
+
         self.digitizing_tool = None
 
         # initialize locale
@@ -56,6 +67,21 @@ class Plugin:
         self.toolbar = iface.addToolBar("ARHO Toolbar")
         logger.debug("Toolbar created name=%s", self.toolbar.objectName())
         # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+    def show_exception(self, *args, **kwargs):
+        """Extend the default QGIS exception handling by logging the exception if it originates from our code.
+
+        Is enabled only if the QGIS plugins "report" and "firstaid" are not active, to avoid conflicts with their exception handling.
+        """
+        exc_type, exc_value, exc_traceback, *rest = args
+        extracted_tb = traceback.extract_tb(exc_traceback)
+        last_frame_file_path = Path(extracted_tb[-1].filename)
+        plugin_package_directory = Path(arho_feature_template.__file__).parent
+        is_from_our_code = last_frame_file_path.is_relative_to(plugin_package_directory)
+        if is_from_our_code:
+            logger.critical("An unhandled exception occurred", exc_info=(exc_type, exc_value, exc_traceback))
+
+        self.qgis_show_exception(*args, **kwargs)
 
     def check_timezone_variable(self):
         """Check if PGTZ environment variable is correctly set."""
@@ -663,6 +689,9 @@ class Plugin:
 
         iface.unregisterOptionsWidgetFactory(self._arho_options_page_factory)
         logger.debug("Options widget factory unregistered")
+
+        if self.qgis_show_exception:
+            qgis.utils.showException = self.qgis_show_exception
 
         # Handle logger
         teardown_logger(arho_feature_template.__name__)
