@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, cast
 
 from qgis.core import QgsProject
@@ -39,30 +40,50 @@ if TYPE_CHECKING:
         RegulationGroup,
     )
 
+logger = logging.getLogger(__name__)
+
 created_object_models: dict[str, PlanObject] = {}
 
 
 def add_to_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = "") -> bool:
+    action = "add" if id_ is None else "update"
+    logger.debug(
+        "Edit buffer action=%s layer=%s feature_id=%s command=%s",
+        action,
+        layer.name(),
+        feature["id"],
+        edit_text,
+    )
     layer.beginEditCommand(edit_text)
 
     result = layer.addFeature(feature) if id_ is None else layer.updateFeature(feature)
 
     layer.endEditCommand()
+    logger.debug("Edit buffer result=%s", result)
     return result
 
 
 def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
+    logger.debug(
+        "Edit buffer action=delete layer=%s feature_id=%s command=%s",
+        layer.name(),
+        feature["id"],
+        delete_text,
+    )
     layer.beginEditCommand(delete_text)
 
     result = layer.deleteFeature(feature.id())
 
     layer.endEditCommand()
+    logger.debug("Edit buffer result=%s", result)
     return result
 
 
 def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
+    logger.debug("Deleting feature from layer=%s feature_id=%s", layer.name(), feature["id"])
     delete_in_edit_buffer(feature, layer, delete_text)
-    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
+    logger.debug("Delete commit result=%s errors=%s", result, commit_errors)
 
     return result
 
@@ -72,10 +93,12 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
 def save_plan_matter(plan_matter: PlanMatter) -> str | None:
     plan_matter_id = plan_matter.id_
     editing = plan_matter_id is not None
+    logger.info("Saving plan matter id=%s editing=%s modified=%s", plan_matter_id, editing, plan_matter.modified)
     if plan_matter.id_ is None or plan_matter.modified:
         layer = PlanMatterLayer.get_from_project()
         feature = PlanMatterLayer.feature_from_model(plan_matter)
         if not layer.isEditable():
+            logger.debug("Layer %s not editable, starting edit session", layer.name())
             QgsProject.instance().startEditing(layer)
 
         if not add_to_edit_buffer(
@@ -88,9 +111,12 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
             return None
         plan_matter_id = cast(str, feature["id"])
 
-        result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+        result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
+        logger.debug("Plan matter commit result=%s id=%s errors=%s", result, plan_matter_id, commit_errors)
         if not result:
             return None
+    else:
+        logger.debug("Skipping plan matter save, no changes detected for id=%s", plan_matter_id)
 
     return plan_matter_id
 
@@ -101,11 +127,20 @@ def save_plan(plan: Plan) -> str | None:
     plan_id = plan.id_
     if not plan.plan_matter_id:
         plan.plan_matter_id = get_active_plan_matter_id()
+    logger.info(
+        "Saving plan id=%s modified=%s general_regs=%s legal_effects=%s documents=%s",
+        plan_id,
+        plan.modified,
+        len(plan.general_regulations),
+        len(plan.legal_effect_ids),
+        len(plan.documents),
+    )
     editing = plan_id is not None
     if plan_id is None or plan.modified:
         layer = PlanLayer.get_from_project()
         feature = PlanLayer.feature_from_model(plan)
         if not layer.isEditable():
+            logger.debug("Layer %s not editable, starting edit session", layer.name())
             QgsProject.instance().startEditing(layer)
 
         if not add_to_edit_buffer(
@@ -117,6 +152,8 @@ def save_plan(plan: Plan) -> str | None:
             iface.messageBar().pushCritical("", "Kaavasuunnitelman tallentaminen epäonnistui.")
             return None
         plan_id = cast(str, feature["id"])
+    else:
+        logger.debug("Skipping plan feature update, no direct plan changes for id=%s", plan_id)
 
     if editing:
         # Check for deleted general regulations
@@ -160,7 +197,8 @@ def save_plan(plan: Plan) -> str | None:
         document.plan_id = plan_id
         add_document_to_edit_buffer(document)
 
-    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
+    logger.debug("Plan commit result=%s id=%s errors=%s", result, plan_id, commit_errors)
     if not result:
         return None
 
@@ -170,9 +208,16 @@ def save_plan(plan: Plan) -> str | None:
 @use_wait_cursor
 @status_message("Tallennetaan kaavakohdetta ...")
 def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str | None:
+    logger.info("Saving plan object %s:%s", plan_object.layer_name, plan_object.id_)
     object_id = add_plan_object_to_edit_buffer(plan_object, enable_editing=True, plan_id=plan_id)
-    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
-    if not result:
+    if object_id is None:
+        logger.warning("Plan object edit-buffer save failed for layer=%s", plan_object.layer_name)
+        return None
+
+    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
+    logger.debug("Plan object commit result=%s object_id=%s errors=%s", result, object_id, commit_errors)
+    if result is not True:
+        logger.error("Failed to commit transaction %s", commit_errors)
         return None
 
     return object_id
@@ -192,6 +237,13 @@ def add_plan_object_to_edit_buffer(
     """
     layer_class = get_plan_feature_layer_class_by_model(plan_object)
     layer_name = cast(str, plan_object.layer_name)
+    logger.debug(
+        "Adding plan object to edit buffer layer=%s id=%s modified=%s enable_editing=%s",
+        layer_name,
+        plan_object.id_,
+        plan_object.modified,
+        enable_editing,
+    )
 
     object_id = plan_object.id_
     editing = object_id is not None
@@ -199,6 +251,7 @@ def add_plan_object_to_edit_buffer(
     if object_id is None or plan_object.modified:
         layer = layer_class.get_from_project()
         if not layer.isEditable():
+            logger.debug("Layer %s not editable, starting edit session", layer.name())
             QgsProject.instance().startEditing(layer)
 
         if not add_to_edit_buffer(
@@ -212,6 +265,9 @@ def add_plan_object_to_edit_buffer(
         object_id = cast(str, feature["id"])
         # Add id to model so that up-to-date model can be sent to plan objects table
         plan_object.id_ = object_id
+        logger.debug("Plan object buffered layer=%s object_id=%s", layer_name, object_id)
+    else:
+        logger.debug("Skipping plan object feature update, no direct changes for id=%s", object_id)
 
     if enable_editing and editing:
         # Check for deleted regulation groups
@@ -236,14 +292,17 @@ def add_plan_object_to_edit_buffer(
         add_regulation_group_association_to_edit_buffer(group_id, layer_name, object_id)
 
     created_object_models[feature["id"]] = plan_object
+    logger.debug("Stored created_object_models entry id=%s", feature["id"])
 
     return object_id
 
 
 @use_wait_cursor
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
+    logger.info("Saving regulation group id=%s modified=%s", regulation_group.id_, regulation_group.modified)
     group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
-    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
+    logger.debug("Regulation group commit result=%s group_id=%s errors=%s", result, group_id, commit_errors)
     if not result:
         return None
 
@@ -254,10 +313,19 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
 def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
     group_id = regulation_group.id_
     editing = group_id is not None
+    logger.debug(
+        "Adding regulation group to edit buffer id=%s editing=%s modified=%s regulations=%s propositions=%s",
+        group_id,
+        editing,
+        regulation_group.modified,
+        len(regulation_group.regulations),
+        len(regulation_group.propositions),
+    )
     if group_id is None or regulation_group.modified:
         layer = RegulationGroupLayer.get_from_project()
         feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
         if not layer.isEditable():
+            logger.debug("Layer %s not editable, starting edit session", layer.name())
             QgsProject.instance().startEditing(layer)
 
         if not add_to_edit_buffer(
@@ -269,6 +337,9 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
             iface.messageBar().pushCritical("", "Kaavamääräysryhmän tallentaminen epäonnistui.")
             return None
         group_id = cast(str, feature["id"])
+        logger.debug("Regulation group buffered id=%s", group_id)
+    else:
+        logger.debug("Skipping regulation group feature update, no direct changes for id=%s", group_id)
 
     if editing:
         # Check for regulations to be deleted

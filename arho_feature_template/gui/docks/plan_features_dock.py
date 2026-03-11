@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from contextlib import suppress
 from importlib import resources
 from typing import TYPE_CHECKING, Iterable, cast
@@ -54,6 +55,8 @@ LAYER_NAME_TO_FEATURE_TYPE = {
     LandUseAreaLayer.name: "Aluevaraus",
     PointLayer.name: "Piste",
 }
+
+logger = logging.getLogger(__name__)
 
 
 class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
@@ -114,6 +117,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def __init__(self, plan_manager_ref: PlanManager, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+        logger.debug("Initializing PlanObjectsDock")
 
         # TYPES
         self.land_use_area_btn: QPushButton
@@ -178,14 +182,17 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             btn.toggled.connect(self._filter_table)
 
     def initialize(self):
+        logger.debug("Initializing PlanObjectsDock layer signal connections")
         for layer in plan_feature_layers:
             vector_layer = layer.get_from_project()
+            logger.debug("Connecting feature layer signals layer=%s", vector_layer.name())
             vector_layer.selectionChanged.connect(self._on_feature_selection_changed)
             vector_layer.committedFeaturesAdded.connect(self._on_feat_added)
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
             vector_layer.committedAttributeValuesChanges.connect(self._on_feat_attributes_changed)
 
     def unload(self) -> None:
+        logger.debug("Unloading PlanObjectsDock and disconnecting signals")
         # Disconnect signals
         self.table.doubleClicked.disconnect(self._open_form)
         self.selection_model.selectionChanged.disconnect(self._on_table_selection_changed)
@@ -197,12 +204,14 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             # the signals need to be disconnected to avoid duplicate connections
             with suppress(LayerNotFoundError):
                 vector_layer = layer.get_from_project()
+                logger.debug("Disconnecting feature layer signals layer=%s", vector_layer.name())
                 vector_layer.selectionChanged.disconnect(self._on_feature_selection_changed)
                 vector_layer.committedFeaturesAdded.disconnect(self._on_feat_added)
                 vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
                 vector_layer.committedAttributeValuesChanges.disconnect(self._on_feat_attributes_changed)
 
     def create_plan_feature_view(self):
+        logger.debug("Creating plan feature table view")
         # Clear table
         self.model.setRowCount(0)
 
@@ -210,10 +219,12 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         # Idea: add `get_models` method for all layer classes
         for layer in plan_feature_layers:
             features = list(layer.get_features())
+            logger.debug("Adding features from layer=%s count=%s", layer.name, len(features))
             for plan_feature_model, feature in zip(layer.models_from_features(features), features):
                 self._add_plan_feature_to_view(plan_feature_model, feature.id())
 
     def update_selected_rows(self):
+        logger.debug("Updating selected rows based on map selections")
         self.selection_model.clearSelection()
 
         for row in range(self.filter_proxy_model.rowCount()):
@@ -249,10 +260,12 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             allowed_types.add("Piste")
         self.filter_proxy_model.allowed_types = allowed_types
         self.filter_proxy_model.invalidateFilter()
+        logger.debug("Applied table filter text=%s allowed_types=%s", search_text, sorted(allowed_types))
 
         self.update_selected_rows()
 
     def _update_row(self, row: int, plan_feature_model: PlanObject):
+        logger.debug("Updating table row=%s plan_feature_id=%s", row, plan_feature_model.id_)
         self.model.item(row, 1).setText(get_localized_text(plan_feature_model.name) or "")
         self.model.item(row, 3).setText(get_localized_text(plan_feature_model.description) or "")
         # Feat ID remains the same
@@ -294,14 +307,20 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             item = self.model.item(row, DATA_COLUMN)
             plan_feature_model: PlanObject = item.data(DATA_ROLE)[0]
             if plan_feature_model and plan_feature_model.id_ == plan_feature_id:
+                logger.debug("Found table row for plan feature id=%s row=%s", plan_feature_id, row)
                 return row
         return None
 
     def _open_form(self, index: QModelIndex):
         plan_feature_model = self._plan_feature_from_index(index)
         if not plan_feature_model:
+            logger.debug("No plan feature found for table index, cannot open form")
             iface.messageBar().pushWarning("", "Kaavakohdetta ei löydetty.")
             return
+
+        logger.debug(
+            "Opening plan feature form for id=%s layer=%s", plan_feature_model.id_, plan_feature_model.layer_name
+        )
 
         form = PlanObjectForm(
             plan_feature=plan_feature_model,
@@ -314,6 +333,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         if form.exec():
             updated_plan_feature_model = form.model
             if save_plan_object(updated_plan_feature_model) is not None:
+                logger.debug("Plan feature saved from form id=%s", updated_plan_feature_model.id_)
                 # Update table row if saving was succesfull
                 model_index = self.filter_proxy_model.mapToSource(index)
                 row = model_index.row()
@@ -324,6 +344,8 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         plan_feature_model = self._plan_feature_from_index(index)
         if not plan_feature_model:
             return
+
+        logger.debug("Opening context menu for plan feature id=%s", plan_feature_model.id_)
 
         menu = QMenu()
         menu.addAction(
@@ -358,6 +380,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         menu.exec_(self.table.viewport().mapToGlobal(pos))
 
     def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
+        logger.debug("Zoom to feature requested id=%s", plan_feature_model.id_)
         layer_class = get_plan_feature_layer_class_by_model(plan_feature_model)
         feat = layer_class.feature_from_model(plan_feature_model)
 
@@ -365,6 +388,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         iface.mapCanvas().redrawAllLayers()
 
     def _on_pan_to_feature(self, plan_feature_model: PlanObject):
+        logger.debug("Pan to feature requested id=%s", plan_feature_model.id_)
         layer_class = get_plan_feature_layer_class_by_model(plan_feature_model)
         feat = layer_class.feature_from_model(plan_feature_model)
 
@@ -372,13 +396,18 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         iface.mapCanvas().redrawAllLayers()
 
     def _on_highlight_feature(self, plan_feature_model: PlanObject):
+        logger.debug("Highlight feature requested id=%s", plan_feature_model.id_)
         iface.mapCanvas().flashGeometries(geometries=[plan_feature_model.geom])
         iface.mapCanvas().redrawAllLayers()
 
     def _on_save_plan_object_to_library(self, plan_feature_model: PlanObject, library: PlanFeatureLibrary):
+        logger.debug(
+            "Saving plan object to library plan_feature_id=%s library=%s", plan_feature_model.id_, library.name
+        )
         TemplateManager.save_plan_object_to_library(plan_feature_model, library)
 
     def _on_feat_added(self, _: str, added_features: Iterable[QgsFeature]):
+        logger.debug("Committed features added to layer")
         for feature in added_features:
             plan_object_model = feature_editing.created_object_models.pop(feature["id"])
             self._add_plan_feature_to_view(plan_object_model, feature.id())
@@ -386,6 +415,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def _on_feats_removed(self, layer_id: int, feature_ids: Iterable[int]):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
         layer_name = vector_layer.name()
+        logger.debug("Committed features removed layer=%s ids=%s", layer_name, list(feature_ids))
 
         feats_to_delete = list(feature_ids)
         # Loop all rows
@@ -405,6 +435,11 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def _on_feat_attributes_changed(self, layer_id: str, changed_attribute_values_map: dict):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
+        logger.debug(
+            "Committed attribute changes layer=%s changed_count=%s",
+            vector_layer.name(),
+            len(changed_attribute_values_map),
+        )
         features = [vector_layer.getFeature(feat_id) for feat_id in changed_attribute_values_map]
         for feature in features:
             feat_id = feature["id"]
@@ -433,6 +468,11 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             return
         self._syncing_selections = True
         try:
+            logger.debug(
+                "Table selection changed selected_indexes=%s deselected_indexes=%s",
+                len(selected.indexes()),
+                len(deselected.indexes()),
+            )
             # SELECT
             # NOTE: It seems every time we select a table row, two selected indexes are returned that
             # give the same plan feature

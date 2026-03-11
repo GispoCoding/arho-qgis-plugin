@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import TYPE_CHECKING, Callable
 
@@ -26,6 +27,9 @@ if TYPE_CHECKING:
     from qgis.gui import QgsDockWidget
 
 
+logger = logging.getLogger(__name__)
+
+
 class Plugin:
     """QGIS Plugin Implementation."""
 
@@ -33,6 +37,7 @@ class Plugin:
 
     def __init__(self) -> None:
         setup_logger(arho_feature_template.__name__)
+        logger.debug("\n\n*** Initializing plugin instance ***")
         self.digitizing_tool = None
 
         # initialize locale
@@ -42,18 +47,21 @@ class Plugin:
             self.translator.load(file_path)
             # noinspection PyCallByClass
             QCoreApplication.installTranslator(self.translator)
+            logger.debug("Installed translator locale=%s file=%s", locale, file_path)
         else:
-            pass
+            logger.debug("No translation file found for locale=%s", locale)
         self.actions: list[QAction] = []
         self.menu = Plugin.name
 
         self.toolbar = iface.addToolBar("ARHO Toolbar")
+        logger.debug("Toolbar created name=%s", self.toolbar.objectName())
         # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def check_timezone_variable(self):
         """Check if PGTZ environment variable is correctly set."""
-
-        if os.environ.get("PGTZ") != "Europe/Helsinki":
+        pgtz = os.environ.get("PGTZ")
+        logger.debug("Checking timezone environment variable PGTZ=%s", pgtz)
+        if pgtz != "Europe/Helsinki":
             iface.messageBar().pushWarning(
                 "Varoitus",
                 (
@@ -61,6 +69,7 @@ class Plugin:
                     "Tämä voi johtaa väärään aikavyöhykkeeseen tallennettuihin kellonaikoihin."
                 ),
             )
+            logger.debug("PGTZ warning shown, expected Europe/Helsinki")
 
     def add_action(
         self,
@@ -110,6 +119,14 @@ class Plugin:
         if not icon:
             icon = QIcon("")
         action = QAction(icon, text, parent)
+        logger.debug(
+            "Creating action text=%s object_name=%s add_to_menu=%s add_to_toolbar=%s checkable=%s",
+            text,
+            object_name,
+            add_to_menu,
+            add_to_toolbar,
+            checkable,
+        )
         # noinspection PyUnresolvedReferences
         if triggered_callback:
             action.triggered.connect(triggered_callback)
@@ -138,10 +155,12 @@ class Plugin:
             iface.addPluginToMenu(self.menu, action)
 
         self.actions.append(action)
+        logger.debug("Action registered text=%s total_actions=%s", text, len(self.actions))
 
         return action
 
     def initGui(self) -> None:  # noqa N802
+        logger.debug("Initializing plugin GUI")
         # Plan manager
         self.plan_manager = PlanManager()
 
@@ -165,6 +184,7 @@ class Plugin:
         self.plan_manager.regulation_groups_dock.hide()
         self.plan_manager.features_dock.hide()
         self.validation_dock.hide()
+        logger.debug("Docks initialized and hidden until plan context is active")
 
         # Actions
 
@@ -470,6 +490,7 @@ class Plugin:
         # Check if project opened and if not disable actions
         if not self.plan_manager.check_required_layers():
             self.on_project_cleared()
+            logger.debug("Required layers missing at init; project-dependent actions disabled")
 
         # Connect signals
         self.plan_manager.inspect_plan_feature_tool.deactivated.connect(
@@ -484,19 +505,27 @@ class Plugin:
         if SettingsManager.get_data_exchange_layer_enabled():
             self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
         self.plan_manager.plan_identifier_set.connect(self.validation_dock.on_permanent_identifier_set)
+        logger.debug("Plugin signals connected")
 
         # (Re)initialize whenever a project is opened
         iface.projectRead.connect(self.plan_manager.on_project_loaded)
         # Try initializing the plugin immediately in case the project is already open
         self.plan_manager.on_project_loaded()
+        logger.debug("Triggered immediate project initialization after GUI setup")
 
         self.check_timezone_variable()
 
     def on_open_log_folder(self):
         folder = get_log_folder()
+        logger.debug("Opening log folder path=%s", folder)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 
     def toggle_dock_visibility(self, dock_widget: QgsDockWidget):
+        logger.debug(
+            "Toggling dock visibility dock=%s currently_visible=%s",
+            dock_widget.objectName(),
+            dock_widget.isUserVisible(),
+        )
         if dock_widget.isUserVisible():
             dock_widget.hide()
         else:
@@ -504,39 +533,48 @@ class Plugin:
             dock_widget.raise_()
 
     def load_existing_plan_matter(self):
+        logger.debug("Loading existing plan matter")
         self.plan_manager.load_plan_matter()
 
     def export_plan(self):
         """Export the active plan to json."""
+        logger.debug("Export plan requested from plugin action")
         self.plan_manager.export_plan()
 
     def open_manage_plans(self):
+        logger.debug("Open manage plans requested from plugin action")
         self.plan_manager.open_manage_plans()
 
     def export_plan_matter(self):
         """Export the plan matter of the activate plan."""
+        logger.debug("Export plan matter requested from plugin action")
         self.plan_manager.export_plan_matter()
 
     def open_about(self):
         """Open the plugin about dialog."""
+        logger.debug("Opening about dialog")
         about = PluginAbout()
         about.exec()
 
     def open_plan_object_icons_preview(self):
         """Open plan object icons preview dialog."""
+        logger.debug("Opening plan object icons preview dialog")
         preview = PlanObjectIconPreview()
         preview.exec()
 
     def generate_plan_regulations_print(self):
+        logger.debug("Generate plan regulations print requested from plugin action")
         self.plan_manager.generate_plan_regulations_print()
 
     def create_geotiff(self):
         """Create geotiff from currently active plan."""
+        logger.debug("Create GeoTIFF requested")
         geotiff_creator = GeoTiffCreator()
         geotiff_creator.select_output_file()
 
     def post_plan_matter(self):
         """Exports plan matter to Ryhti."""
+        logger.debug("Opening post plan matter dialog")
         dialog = PostPlanDialog()
         dialog.exec_()
 
@@ -545,6 +583,7 @@ class Plugin:
         permanent_identifier = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable(
             "permanent_identifier"
         )
+        logger.debug("Updating Ryhti buttons permanent_identifier_set=%s", bool(permanent_identifier))
 
         if permanent_identifier:
             self.get_permanent_identifier_action.setEnabled(False)
@@ -558,26 +597,32 @@ class Plugin:
             self.get_permanent_identifier_action.setToolTip("Hae pysyvä kaavatunnus")
 
     def on_active_plan_matter_set(self):
+        logger.debug("Active plan matter set: enabling dependent actions")
         for action in self.plan_matter_depending_actions:
             action.setEnabled(True)
 
     def on_active_plan_matter_unset(self):
+        logger.debug("Active plan matter unset: disabling dependent actions")
         for action in self.plan_matter_depending_actions:
             action.setEnabled(False)
 
     def on_active_plan_set(self):
+        logger.debug("Active plan set: enabling dependent actions")
         for action in self.plan_depending_actions:
             action.setEnabled(True)
 
     def on_active_plan_unset(self):
+        logger.debug("Active plan unset: disabling dependent actions")
         for action in self.plan_depending_actions:
             action.setEnabled(False)
 
     def on_project_loaded(self):
+        logger.debug("Project loaded in plugin: enabling project-dependent actions")
         for action in self.project_depending_actions:
             action.setEnabled(True)
 
     def on_project_cleared(self):
+        logger.debug("Project cleared in plugin: disabling dependent actions")
         for action in self.project_depending_actions:
             action.setEnabled(False)
         for action in self.plan_depending_actions:
@@ -586,10 +631,12 @@ class Plugin:
             action.setEnabled(False)
 
     def on_plan_lock_status_changed(self, locked: bool):  # noqa: FBT001
+        logger.debug("Plan lock status changed locked=%s", locked)
         self.import_features_action.setEnabled(not locked)
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""
+        logger.debug("Unloading plugin")
         # Handle signals
         disconnect_signal(self.plan_manager.new_feature_dock.visibilityChanged)
         iface.projectRead.disconnect()
@@ -600,10 +647,12 @@ class Plugin:
             iface.removeToolBarIcon(action)
             action.deleteLater()
         self.actions.clear()
+        logger.debug("Plugin actions removed and cleared")
 
         # Handle toolbar
         iface.mainWindow().removeToolBar(self.toolbar)
         self.toolbar = None
+        logger.debug("Plugin toolbar removed")
 
         # Handle plan manager
         self.plan_manager.unload()
@@ -613,6 +662,7 @@ class Plugin:
         self.validation_dock.deleteLater()
 
         iface.unregisterOptionsWidgetFactory(self._arho_options_page_factory)
+        logger.debug("Options widget factory unregistered")
 
         # Handle logger
         teardown_logger(arho_feature_template.__name__)
