@@ -79,11 +79,23 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
     return result
 
 
+def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
+    project = QgsProject.instance()
+    result, commit_errors = project.commitChanges(stopEditing=stop_editing)
+    if result:
+        logger.debug("Committed succesfully. Details=%s", commit_errors)
+    else:
+        logger.error("Failed to commit transaction. Details=%s", commit_errors)
+    if any("VIRHE" in error for error in commit_errors):
+        logger.error("Commit errors: %s", commit_errors)
+
+    return result
+
+
 def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
     logger.debug("Deleting feature from layer=%s feature_id=%s", layer.name(), feature["id"])
     delete_in_edit_buffer(feature, layer, delete_text)
-    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
-    logger.debug("Delete commit result=%s errors=%s", result, commit_errors)
+    result = commit_edit_buffer(stop_editing=False)
 
     return result
 
@@ -111,8 +123,7 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
             return None
         plan_matter_id = cast(str, feature["id"])
 
-        result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
-        logger.debug("Plan matter commit result=%s id=%s errors=%s", result, plan_matter_id, commit_errors)
+        result = commit_edit_buffer(stop_editing=False)
         if not result:
             return None
     else:
@@ -197,8 +208,7 @@ def save_plan(plan: Plan) -> str | None:
         document.plan_id = plan_id
         add_document_to_edit_buffer(document)
 
-    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
-    logger.debug("Plan commit result=%s id=%s errors=%s", result, plan_id, commit_errors)
+    result = commit_edit_buffer(stop_editing=False)
     if not result:
         return None
 
@@ -214,10 +224,8 @@ def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str
         logger.warning("Plan object edit-buffer save failed for layer=%s", plan_object.layer_name)
         return None
 
-    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
-    logger.debug("Plan object commit result=%s object_id=%s errors=%s", result, object_id, commit_errors)
+    result = commit_edit_buffer(stop_editing=False)
     if result is not True:
-        logger.error("Failed to commit transaction %s", commit_errors)
         return None
 
     return object_id
@@ -301,8 +309,7 @@ def add_plan_object_to_edit_buffer(
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
     logger.info("Saving regulation group id=%s modified=%s", regulation_group.id_, regulation_group.modified)
     group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
-    result, commit_errors = QgsProject.instance().commitChanges(stopEditing=False)
-    logger.debug("Regulation group commit result=%s group_id=%s errors=%s", result, group_id, commit_errors)
+    result = commit_edit_buffer(stop_editing=False)
     if not result:
         return None
 
@@ -388,7 +395,7 @@ def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | No
 
 def save_regulation_group_association(regulation_group_id: str, layer_name: str, feature_id: str) -> bool:
     add_regulation_group_association_to_edit_buffer(regulation_group_id, layer_name, feature_id)
-    result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+    result = commit_edit_buffer(stop_editing=False)
     return result
 
 
