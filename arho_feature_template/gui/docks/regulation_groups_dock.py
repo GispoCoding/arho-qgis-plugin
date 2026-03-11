@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from importlib import resources
 from typing import TYPE_CHECKING, Generator
 
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
 
 ui_path = resources.files(__package__) / "regulation_groups_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
+logger = logging.getLogger(__name__)
 
 
 # COLUMNS
@@ -78,6 +80,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+        logger.debug("Initializing RegulationGroupsDock")
 
         # TYPES
         self.filter_line: QgsFilterLineEdit
@@ -126,14 +129,17 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.plan_locked = False
 
     def initialize(self):
+        logger.debug("Initializing RegulationGroupsDock layer signal connections")
         # Connect feat remove signals for each plan object layer so the linked plan object counts
         # stay updated
         for plan_object_layer in plan_feature_layers:
+            logger.debug("Connecting committedFeaturesRemoved for layer=%s", plan_object_layer.name)
             plan_object_layer.get_from_project().committedFeaturesRemoved.connect(
                 lambda _layer_id, ids, layer_name=plan_object_layer.name: self._on_feats_removed(layer_name, ids)
             )
 
     def _disconnect_signals(self):
+        logger.debug("Disconnecting RegulationGroupsDock UI signals")
         disconnect_signal(self.new_group_empty_action.triggered)
         disconnect_signal(self.new_group_from_template_action.triggered)
         disconnect_signal(self.edit_btn.clicked)
@@ -144,6 +150,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.filter_line.textChanged)
 
     def _connect_signals(self):
+        logger.debug("Connecting RegulationGroupsDock UI signals")
         self._disconnect_signals()
 
         self.new_group_empty_action.triggered.connect(self.request_new_regulation_group_empty.emit)
@@ -156,6 +163,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.filter_line.textChanged.connect(self._filter_table)
 
     def update_lock_status(self, locked: bool):  # noqa: FBT001
+        logger.debug("Updating regulation groups dock lock status locked=%s", locked)
         self.plan_locked = locked
         self.new_btn.setEnabled(not locked)
         self.delete_btn.setEnabled(not locked)
@@ -176,8 +184,13 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         regex = QRegularExpression(search_text) if search_text else QRegularExpression("")
         self.filter_proxy_model.setFilterRegularExpression(regex)
         self.filter_proxy_model.invalidateFilter()
+        logger.debug("Applied regulation group filter text=%s", search_text)
 
     def update_regulation_groups(self, regulation_group_library: RegulationGroupLibrary):
+        logger.debug(
+            "Updating regulation groups table groups=%s",
+            len(regulation_group_library.regulation_groups),
+        )
         # Clear table
         self.model.setRowCount(0)
 
@@ -202,6 +215,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         for group in regulation_group_library.regulation_groups:
             plan_object_ids_map = plan_object_ids_by_group_id.get(group.id_)  # type: ignore
             self.model.appendRow(self._regulation_group_into_items(group, plan_object_ids_map, plan_objects_by_layer))
+        logger.debug("Regulation groups table updated row_count=%s", self.model.rowCount())
 
     def _regulation_group_into_items(
         self,
@@ -240,6 +254,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def get_selected_plan_object_ids(self) -> list[tuple[str, Generator[str]]]:
         """Returns selected plan object IDs for each plan object layer (name)."""
+        logger.debug("Collecting selected plan object IDs from all plan feature layers")
         return [(layer_class.name, layer_class.get_selected_feature_ids()) for layer_class in plan_feature_layers]
 
     def get_selected_regulation_groups(self) -> list[RegulationGroup]:
@@ -248,10 +263,12 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             group = self._regulation_group_from_index(proxy_index)
             if group is not None:
                 groups.append(group)
+        logger.debug("Selected regulation groups count=%s", len(groups))
         return groups
 
     def on_edit_btn_clicked(self):
         selected = self.get_selected_regulation_groups()
+        logger.debug("Edit regulation group requested selected_count=%s", len(selected))
         if len(selected) == 0:
             return
         if len(selected) == 1:
@@ -296,14 +313,17 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def _open_form(self, index: QModelIndex):
         group_model = self._regulation_group_from_index(index)
         if not group_model:
+            logger.debug("No regulation group found for selected table index")
             iface.messageBar().pushWarning("", "Kaavamääräysryhmää ei löytynyt.")
             return
 
+        logger.debug("Opening regulation group form id=%s", group_model.id_)
         self.request_edit_regulation_group.emit(group_model)
 
     def on_delete_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
         nr_of_groups = len(selected_groups)
+        logger.debug("Delete regulation groups requested count=%s", nr_of_groups)
         if nr_of_groups > 0:
             response = QMessageBox.question(
                 None,
@@ -314,18 +334,22 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
                 QMessageBox.Yes | QMessageBox.No,
             )
             if response == QMessageBox.Yes:
+                logger.debug("Delete regulation groups confirmed count=%s", nr_of_groups)
                 self.request_delete_regulation_groups.emit(selected_groups)
 
     def on_remove_all_btn_clicked(self):
+        logger.debug("Remove all regulation groups from selected features requested")
         self.request_remove_all_regulation_groups.emit(self.get_selected_plan_object_ids())
 
     def on_remove_selected_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
+        logger.debug("Remove selected regulation groups from features requested count=%s", len(selected_groups))
         if len(selected_groups) > 0:
             self.request_remove_selected_groups.emit(selected_groups, self.get_selected_plan_object_ids())
 
     def on_add_selected_btn_clicked(self):
         selected_groups = self.get_selected_regulation_groups()
+        logger.debug("Add selected regulation groups to features requested count=%s", len(selected_groups))
         if len(selected_groups) > 0:
             self.request_add_groups_to_features.emit(selected_groups, self.get_selected_plan_object_ids())
 
@@ -337,6 +361,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         # associated_plan_object_fids_and_geoms = data[1]
         nr_of_selected_groups = len(self.get_selected_regulation_groups())
+        logger.debug("Opening regulation group context menu selected_count=%s", nr_of_selected_groups)
 
         menu = QMenu()
         menu.addAction(
@@ -369,12 +394,14 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def _on_select_plan_objects(self):
         fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()
+        logger.debug("Selecting associated plan objects layers=%s", len(fids_and_geoms_map))
         for layer_name, fids_and_geoms in fids_and_geoms_map.items():
             layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
             layer_class.get_from_project().selectByIds(list(fids_and_geoms.keys()), Qgis.SelectBehavior.SetSelection)
 
     def _on_highlight_plan_objects(self):
         fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()
+        logger.debug("Highlighting associated plan objects layers=%s", len(fids_and_geoms_map))
         for fids_and_geoms in fids_and_geoms_map.values():
             iface.mapCanvas().flashGeometries(geometries=list(fids_and_geoms.values()))
         iface.mapCanvas().redrawAllLayers()
@@ -390,9 +417,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
             assoc_data.append(data[1])
 
         if not assoc_data:
+            logger.debug("No selected regulation groups with association data")
             return {}
 
         if len(assoc_data) == 1:
+            logger.debug("Single selected regulation group association data returned")
             return assoc_data[0]
 
         common: dict[str, dict[int, QgsGeometry]] = assoc_data[0].copy()
@@ -408,9 +437,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
                 common_fids = set(current_map.keys()) & set(next_map.keys())
                 common[layer_name] = {fid: current_map[fid] for fid in common_fids}
 
+            logger.debug("Computed common associated plan objects layers=%s", len(common))
         return common
 
     def unload(self):
+        logger.debug("Unloading RegulationGroupsDock")
         self._disconnect_signals()
 
         disconnect_signal(self.request_new_regulation_group_empty)
@@ -422,6 +453,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.request_add_groups_to_features)
 
     def _on_feats_removed(self, layer_name: str, feat_ids):
+        logger.debug("Handling removed features for regulation group counts layer=%s", layer_name)
         feat_ids_set = set(feat_ids)
 
         for row in range(self.model.rowCount()):
@@ -455,3 +487,4 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
             # Set the updated association map to table
             self._update_row_data(row, group, assoc_data)
+        logger.debug("Finished updating regulation group counts for removed features")

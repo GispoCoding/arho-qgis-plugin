@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from importlib import resources
 from pathlib import Path
 
@@ -17,6 +18,8 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 DATA_ROLE = Qt.UserRole
 
+logger = logging.getLogger(__name__)
+
 
 class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
     def __init__(
@@ -26,6 +29,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
     ):
         super().__init__()
         self.setupUi(self)
+        logger.debug("Initializing ManageLibrariesForm")
 
         # TYPES
         self.library_tabs: QTabWidget
@@ -44,6 +48,11 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             for library in regulation_group_libraries
             if library.library_type == RegulationGroupLibrary.LibraryType.CUSTOM
         ]
+        logger.debug(
+            "Library dialog received regulation_group_libraries=%s custom_plan_feature_libraries=%s",
+            len(regulation_group_libraries),
+            len(custom_plan_feature_libraries),
+        )
 
         # Create tabs for regulation group libraries and plan feature libraries
         self.regulation_group_library_widget = LibaryDisplayWidget(
@@ -62,6 +71,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self.button_box.clicked.connect(self.reject)
 
     def _on_regulation_groups_updated(self, new_custom_regulation_groups: list):
+        logger.debug("Regulation group libraries updated new_custom_count=%s", len(new_custom_regulation_groups))
         # Update plan feature library widgets regulation group libraries when custom regulation group libraries
         # are modified
         self.plan_feature_library_widget.regulation_group_libraries = (
@@ -69,18 +79,26 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         )
 
     def _delete_all_invalid_libraries(self):
+        logger.debug("Deleting invalid libraries from both library widgets")
         self._delete_invalid_libraries(self.regulation_group_library_widget)
         self._delete_invalid_libraries(self.plan_feature_library_widget)
 
     def _delete_invalid_libraries(self, library_widget: LibaryDisplayWidget):
+        logger.debug("Checking widget libraries for invalid entries")
         for library in library_widget.get_current_libraries():
             # Check for library missing file path or name, or if library is not saved into file
             if not library.file_path or not library.name or not Path(library.file_path).exists():
+                logger.debug("Deleting invalid library name=%s file_path=%s", library.name, library.file_path)
                 library_widget.delete_library(library)
 
     def _handle_unsaved_libraries(self) -> bool:
         unsaved_regulation_group_libraries = self.regulation_group_library_widget.unsaved_libraries
         unsaved_plan_object_libraries = self.plan_feature_library_widget.unsaved_libraries
+        logger.debug(
+            "Handling unsaved libraries unsaved_regulation_groups=%s unsaved_plan_features=%s",
+            len(unsaved_regulation_group_libraries),
+            len(unsaved_plan_object_libraries),
+        )
         if (
             unsaved_regulation_group_libraries
             and QMessageBox.question(
@@ -91,6 +109,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             )
             == QMessageBox.No
         ):
+            logger.debug("User cancelled closing due to unsaved regulation group libraries")
             return False
 
         if unsaved_plan_object_libraries and (
@@ -102,15 +121,23 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             )
             == QMessageBox.No
         ):
+            logger.debug("User cancelled closing due to unsaved plan feature libraries")
             return False
 
         self._delete_all_invalid_libraries()
+        logger.debug("Unsaved library checks completed successfully")
         return True
 
     def reject(self):
+        logger.debug("Closing ManageLibrariesForm requested")
         if self._handle_unsaved_libraries():
             updated_regulation_group_libraries = self.regulation_group_library_widget.get_current_libraries()
             updated_plan_feature_libraries = self.plan_feature_library_widget.get_current_libraries()
+            logger.debug(
+                "Persisting library paths regulation_group_count=%s plan_feature_count=%s",
+                len(updated_regulation_group_libraries),
+                len(updated_plan_feature_libraries),
+            )
 
             set_user_regulation_group_library_config_files(
                 library.file_path for library in updated_regulation_group_libraries
@@ -118,3 +145,4 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
 
             super().reject()
+            logger.debug("ManageLibrariesForm closed")

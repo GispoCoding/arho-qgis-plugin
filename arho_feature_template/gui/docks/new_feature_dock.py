@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from importlib import resources
 from typing import TYPE_CHECKING
 
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
 
+logger = logging.getLogger(__name__)
+
 
 class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     library_selection: QComboBox
@@ -33,6 +36,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setupUi(self)
+        logger.debug("Initializing NewFeatureDock")
 
         # INIT
         # 1. New feature grid
@@ -56,6 +60,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         TemplateManager.signal_manager.feature_object_added_to_library.connect(self.update_template_list)
 
     def update_lock_status(self, locked: bool):  # noqa: FBT001
+        logger.debug("Updating new feature dock lock status locked=%s", locked)
         self.new_feature_grid.setEnabled(not locked)
         if locked:
             self.new_feature_grid.setToolTip("Kaavasuunnitelma on lukittu, kaavakohteita ei voi lisätä.")
@@ -63,22 +68,30 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
             self.new_feature_grid.setToolTip("")
 
     def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanFeatureLibrary]):
+        logger.debug("Initializing plan feature libraries in new feature dock count=%s", len(plan_feature_libraries))
         self.plan_feature_libraries = plan_feature_libraries
         self.library_selection.clear()
         self.library_selection.addItems([library.name for library in self.plan_feature_libraries])
         self.set_active_plan_feature_library(0)
 
     def on_active_feature_type_changed(self, feature_name: str, layer_name: str):
+        logger.debug("Active feature type changed feature=%s layer=%s", feature_name, layer_name)
         self.active_feature_type = feature_name if feature_name else None
         self.active_feature_layer = layer_name if layer_name else None
         self.clear_template_selection()
         self.filter_plan_feature_templates()
         if self.active_feature_type:
+            logger.debug("Emitting tool_activated for feature_type=%s", self.active_feature_type)
             self.tool_activated.emit()
 
     def filter_plan_feature_templates(self) -> None:
         # Consider both search text and active plan feature type
         search_text = self.search_box.value().lower()
+        logger.debug(
+            "Filtering plan feature templates search_text=%s active_layer=%s",
+            search_text,
+            self.active_feature_layer,
+        )
 
         for index in range(self.template_list.count()):
             item = self.template_list.item(index)
@@ -92,35 +105,43 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
             # Clear selection if the selected template was filtered
             if self.active_template and self.active_template is plan_feature and item.isHidden():
+                logger.debug("Active template filtered out, clearing selection")
                 self.template_list.clearSelection()
 
     def on_template_item_clicked(self, index: int):
         item = self.template_list.itemFromIndex(index)
         template: PlanObject = item.data(Qt.UserRole)
+        logger.debug("Template list item clicked template_name=%s", item.text())
         # Clicked new list item => activate new template
         if template != self.active_template:
             self.active_template = template
+            logger.debug("Activated template from list")
             # NOTE: Workaround to fix make sure clicked item is selected. At least after a selected item has been
             # filtered out, clicking on a new template will select, immediately deselect (but keep focus)
             self.template_list.setCurrentItem(item)
         else:
             # Clicked selected list item => clear selection
             self.active_template = None
+            logger.debug("Clicked active template again, clearing active template")
             self.template_list.clearSelection()
 
     def deactivate_and_clear_selections(self):
+        logger.debug("Deactivating new feature dock and clearing selections")
         self.on_active_feature_type_changed("", "")
         self.new_feature_grid.clear_selections()
         self.clear_template_selection()
 
     def clear_template_selection(self):
+        logger.debug("Clearing template selection")
         self.active_template = None
         self.template_list.clearSelection()
 
     def set_active_plan_feature_library(self, index: int) -> None:
+        logger.debug("Setting active plan feature library index=%s", index)
         self.update_template_list(index)
 
     def update_template_list(self, index: int | None = None) -> None:
+        logger.debug("Updating template list requested_index=%s", index)
         if self.plan_feature_libraries and len(self.plan_feature_libraries) > 0:
             self.template_list.clear()
             library = (
@@ -128,6 +149,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
                 if index
                 else self.plan_feature_libraries[self.library_selection.currentIndex()]
             )
+            logger.debug("Using template library name=%s template_count=%s", library.name, len(library.plan_features))
 
             for feature_template in library.plan_features:
                 item = QListWidgetItem(
@@ -137,3 +159,4 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
                 )
                 item.setData(Qt.UserRole, feature_template)
                 self.template_list.addItem(item)
+            logger.debug("Template list updated count=%s", self.template_list.count())

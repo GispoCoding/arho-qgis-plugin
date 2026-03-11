@@ -155,6 +155,7 @@ class PlanManager(QObject):
 
     def __init__(self):
         super().__init__()
+        logger.debug("Initializing PlanManager")
         self.json_plan_path = None
         self.json_plan_outline_path = None
         self.json_plan_matter_path = None
@@ -218,11 +219,13 @@ class PlanManager(QObject):
         self.lambda_service.plan_matter_data_received.connect(self.save_exported_plan_matter)
 
     def initialize_from_project(self):
+        logger.debug("Initializing plan manager state from project")
         self.cache_code_layers()
         self.initialize_libraries()
 
     def check_compatible_project_version(self) -> bool:
         project_version, ok = QgsProject.instance().readEntry("arho", "project_version")
+        logger.debug("Project version entry read: ok=%s version=%s", ok, project_version)
         if not ok:
             msg = "Projektitiedostosta ei löytynyt ARHO versiomerkintää. Käytäthän varmasti yhteensopivaa projektiedostoa?"
             iface.messageBar().pushCritical("", msg)
@@ -234,8 +237,14 @@ class PlanManager(QObject):
                 f"(havaittu versio {project_version}, vaadittu {SUPPORTED_PROJECT_VERSION})"
             )
             iface.messageBar().pushCritical("", msg)
+            logger.warning(
+                "Project version mismatch: found=%s required=%s",
+                project_version,
+                SUPPORTED_PROJECT_VERSION,
+            )
             return False
 
+        logger.debug("Project version is compatible: %s", project_version)
         return True
 
     def check_required_layers(self) -> bool:
@@ -243,18 +252,22 @@ class PlanManager(QObject):
         for layer in code_layers + plan_layers:
             if not layer.exists():
                 missing_layers.append(layer.name)  # noqa: PERF401
-        if len(missing_layers) > 0:  # noqa: SIM103
+        if len(missing_layers) > 0:
             # iface.messageBar().pushWarning("", f"Project is missing required layers: {', '.join(missing_layers)}")
+            logger.warning("Required layers missing: %s", missing_layers)
             return False
+        logger.debug("All required layers are available")
         return True
 
     def cache_code_layers(self):
         # Cannot cache code layers if layers are not present
         if not self.check_required_layers():
+            logger.warning("Skipping code layer caching due to missing required layers")
             return
 
         @use_wait_cursor
         def _cache_code_layers():
+            logger.debug("Building code layer caches")
             PlanRegulationTypeLayer.build_cache()
             AdditionalInformationTypeLayer.build_cache()
             LifeCycleStatusLayer.build_cache()
@@ -263,12 +276,14 @@ class PlanManager(QObject):
         _cache_code_layers()
 
     def initialize_libraries(self):
+        logger.debug("Initializing regulation group and plan feature libraries")
         self._initialize_regulation_group_libraries()
         self._initialize_plan_feature_libraries()
 
     def _initialize_regulation_group_libraries(self):
         # Cannot initialize regulation group librarires if regulation layer is not found
         if not self.check_required_layers():
+            logger.warning("Skipping regulation group library initialization due to missing required layers")
             return
 
         self.regulation_group_libraries: list[RegulationGroupLibrary] = []
@@ -288,6 +303,7 @@ class PlanManager(QObject):
             )
             for file_path in get_user_regulation_group_library_config_files()
         )
+        logger.debug("Initialized regulation group libraries: count=%s", len(self.regulation_group_libraries))
 
     def _initialize_plan_feature_libraries(self):
         """Make sure regulation group libraries are updated before initializing plan feature libraries."""
@@ -300,21 +316,27 @@ class PlanManager(QObject):
             for file_path in get_user_plan_feature_library_config_files()
         ]
         self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
+        logger.debug("Initialized plan feature libraries: count=%s", len(self.plan_feature_libraries))
 
     def open_manage_plans(self):
+        logger.debug("Opening manage plans dialog")
         dialog = ManagePlans(self.regulation_group_libraries, self)
         if dialog.exec():
             selected_plan = dialog.selected_plan
             # If the active plan was changed, update state
             if selected_plan.id_ and selected_plan.id_ != get_active_plan_id():
+                logger.debug("Manage plans selected new active plan id=%s", selected_plan.id_)
                 self.set_active_plan(selected_plan.id_)
 
     def open_import_plan_dialog(self):
+        logger.debug("Opening import plan dialog")
         dialog = ImportPlanForm(iface.mainWindow())
         if dialog.exec_() and dialog.imported_plan_id:
+            logger.debug("Imported plan selected id=%s", dialog.imported_plan_id)
             self.set_active_plan(dialog.imported_plan_id)
 
     def open_import_features_dialog(self):
+        logger.debug("Opening import features dialog")
         self.import_features_form = ImportFeaturesForm(
             self.regulation_group_libraries, self.active_plan_regulation_group_library, self
         )
@@ -323,6 +345,7 @@ class PlanManager(QObject):
     def update_lock_status(self, plan_model: Plan):
         """If input plan is the active plan, applies locked/unlocked state from the given model."""
         if plan_model.id_ == get_active_plan_id():
+            logger.debug("Updating lock status for active plan id=%s locked=%s", plan_model.id_, plan_model.locked)
             if plan_model.locked:
                 lock_plan_layers()
                 self.plan_locked = True
@@ -336,10 +359,12 @@ class PlanManager(QObject):
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(self):
+        logger.debug("Refreshing active plan regulation group library")
         self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
         self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
 
     def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
+        logger.debug("Creating new regulation group from_template=%s", from_template)
         if from_template:
             regulation_group_template_selection_form = TemplateSelectionForm[RegulationGroup](
                 libraries=[*self.regulation_group_libraries, self.active_plan_regulation_group_library]
@@ -364,13 +389,16 @@ class PlanManager(QObject):
             self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
+        logger.debug("Opening regulation group form id=%s", regulation_group.id_)
         regulation_group_form = PlanRegulationGroupForm(
             regulation_group, self.active_plan_regulation_group_library, not self.plan_locked
         )
 
         if regulation_group_form.exec_():
             model = regulation_group_form.model
+            logger.debug("Regulation group form accepted id=%s", model.id_)
             if save_regulation_group(model) is None:
+                logger.warning("Saving regulation group failed id=%s", model.id_)
                 return None
             # NOTE: Should we reinitialize regulation group dock even if saving failed?
             self.update_active_plan_regulation_group_library()
@@ -379,15 +407,19 @@ class PlanManager(QObject):
         return None
 
     def delete_regulation_groups(self, groups: Iterable[RegulationGroup]):
+        logger.debug("Deleting regulation groups")
         groups_changed = False
         for group in groups:
             if delete_regulation_group(group):
                 groups_changed = True
+            else:
+                logger.warning("Failed to delete regulation group id=%s", group.id_)
 
         if groups_changed:
             self.update_active_plan_regulation_group_library()
 
     def remove_all_regulation_groups_from_features(self, features: list[tuple[str, Generator[str]]]):
+        logger.debug("Removing all regulation group associations from selected features")
         for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
                 for association in RegulationGroupAssociationLayer.get_associations_for_feature(
@@ -403,6 +435,7 @@ class PlanManager(QObject):
     def add_regulation_groups_to_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
     ):
+        logger.debug("Adding regulation groups to selected features groups=%s", len(groups))
         for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
                 for group in groups:
@@ -412,6 +445,7 @@ class PlanManager(QObject):
     def remove_selected_regulation_groups_from_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
     ):
+        logger.debug("Removing selected regulation groups from features groups=%s", len(groups))
         group_ids = [cast(str, group.id_) for group in groups]
         for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
@@ -429,6 +463,7 @@ class PlanManager(QObject):
                             )
 
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
+        logger.debug("Toggling identify plan features activate=%s", activate)
         if activate:
             self.previous_map_tool = iface.mapCanvas().mapTool()
             iface.mapCanvas().setMapTool(self.inspect_plan_feature_tool)
@@ -437,6 +472,7 @@ class PlanManager(QObject):
 
     # check this
     def digitize_plan_geometry(self):
+        logger.debug("Starting plan geometry digitization flow")
         self.previous_map_tool = iface.mapCanvas().mapTool()
         self.previous_active_plan_id = get_active_plan_id()
 
@@ -445,6 +481,7 @@ class PlanManager(QObject):
 
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
+            logger.warning("Plan layer not found, aborting digitize_plan_geometry")
             return
         self.previously_editable = plan_layer.isEditable()
 
@@ -458,8 +495,10 @@ class PlanManager(QObject):
         iface.mapCanvas().setMapTool(self.plan_digitize_map_tool)
 
     def import_plan_geometry(self):
+        logger.debug("Starting plan geometry import flow")
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
+            logger.warning("Plan layer not found, aborting import_plan_geometry")
             return
         self.previously_editable = plan_layer.isEditable()
         self.previous_active_plan_id = get_active_plan_id()
@@ -474,15 +513,18 @@ class PlanManager(QObject):
             iface.messageBar().pushWarning("", "Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni.")
             return
         features = layer.selectedFeatures()
+        logger.debug("Import source layer=%s selected_features=%s", layer.name(), len(features))
         if not features:
             iface.messageBar().pushWarning("", "Ei valittuja kohteita kaavasuunnitelman ulkorajaksi.")
             return
 
         plan_saved = self._plan_geom_ready(features)
+        logger.debug("Imported plan geometry save result=%s", plan_saved)
         if plan_saved:
             set_imported_layer_invisible(layer)
 
     def edit_plan(self):
+        logger.debug("Editing active plan id=%s", get_active_plan_id())
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
             return
@@ -496,9 +538,11 @@ class PlanManager(QObject):
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
         if attribute_form.exec_():
             plan_model = attribute_form.model
+            logger.debug("Plan form accepted id=%s", plan_model.id_)
 
             with plan_layers_temporarily_unlocked():
                 plan_id = save_plan(plan_model)
+                logger.debug("Plan save returned id=%s", plan_id)
 
                 # TODO: Don't update groups always, can be redundant
                 if plan_id is not None:
@@ -507,6 +551,7 @@ class PlanManager(QObject):
             self.update_lock_status(plan_model)
 
     def edit_plan_matter(self):
+        logger.debug("Editing active plan matter id=%s", get_active_plan_matter_id())
         plan_matter_layer = PlanMatterLayer.get_from_project()
         if not plan_matter_layer:
             return
@@ -519,10 +564,12 @@ class PlanManager(QObject):
 
         attribute_form = PlanMatterAttributeForm(plan_matter_model)
         if attribute_form.exec_():
-            save_plan_matter(attribute_form.model)
+            saved_id = save_plan_matter(attribute_form.model)
+            logger.debug("Plan matter save returned id=%s", saved_id)
 
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
+        logger.debug("Creating new plan matter")
 
         # Handle unsaved changes first
         if not handle_unsaved_changes():
@@ -532,6 +579,7 @@ class PlanManager(QObject):
         plan_matter_layer = PlanMatterLayer.get_from_project()
         if not plan_matter_layer:
             iface.messageBar().pushWarning("", "Kaava-asia tasoa ei löytynyt projektista.")
+            logger.warning("Plan matter layer not found, aborting new_plan_matter")
             return
 
         self.previously_editable = plan_matter_layer.isEditable()
@@ -546,10 +594,12 @@ class PlanManager(QObject):
 
         if attribute_form.exec_():
             saved_id = save_plan_matter(attribute_form.model)
+            logger.debug("New plan matter save returned id=%s", saved_id)
 
             self.set_active_plan_matter(saved_id)
 
     def add_new_plan_feature(self):
+        logger.debug("Adding new plan feature by digitizing")
         if not handle_unsaved_changes():
             return
 
@@ -562,6 +612,7 @@ class PlanManager(QObject):
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
         if not layer_class:
             msg = f"Could not find plan feature layer class for layer name {layer_name}"
+            logger.error(msg)
             raise ValueError(msg)
         layer = layer_class.get_from_project()
 
@@ -575,8 +626,10 @@ class PlanManager(QObject):
 
     def _plan_geom_ready(self, features: QgsFeature | list[QgsFeature]) -> bool:
         """Callback for when new feature(s) is added to the plan layer."""
+        logger.debug("Plan geometry ready callback invoked features_type=%s", type(features).__name__)
         plan_layer = PlanLayer.get_from_project()
         if not plan_layer:
+            logger.warning("Plan layer not found in _plan_geom_ready")
             return False
 
         if isinstance(features, QgsFeature):
@@ -604,10 +657,16 @@ class PlanManager(QObject):
             plan_layer.startEditing()
 
         iface.mapCanvas().setMapTool(self.previous_map_tool)
+        logger.debug(
+            "Plan geometry flow completed plan_saved=%s activated_plan_id=%s",
+            plan_saved,
+            plan_to_be_activated,
+        )
 
         return plan_saved
 
     def _plan_feature_geom_digitized(self, feature: QgsFeature):
+        logger.debug("Plan feature geometry digitized")
         # NOTE: What if user has changed dock selections while digitizng?
         if self.new_feature_dock.active_template:
             plan_feat_template = self.new_feature_dock.active_template
@@ -633,9 +692,11 @@ class PlanManager(QObject):
             not self.plan_locked,
         )
         if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
+            logger.debug("Plan feature saved successfully from digitized geometry")
             self.update_active_plan_regulation_group_library()
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
+        logger.debug("Editing plan feature layer=%s feature_id=%s", layer_name, feature.id())
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP[layer_name]
         plan_feature = layer_class.model_from_feature(feature)
 
@@ -649,16 +710,19 @@ class PlanManager(QObject):
             not self.plan_locked,
         )
         if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
+            logger.debug("Plan feature saved successfully after edit")
             self.update_active_plan_regulation_group_library()
 
     @use_wait_cursor
     @status_message("Avataan kaava-asia ...")
     def set_active_plan_matter(self, plan_matter_id: str | None) -> None:
+        logger.debug("Setting active plan matter id=%s", plan_matter_id)
         if check_layer_changes():
             raise UnsavedChangesError
 
         plan_matter_layer = PlanMatterLayer.get_from_project()
         previously_in_edit_mode = plan_matter_layer.isEditable()
+        logger.debug("Plan matter layer previously_in_edit_mode=%s", previously_in_edit_mode)
         if previously_in_edit_mode:
             plan_matter_layer.rollBack()
 
@@ -680,6 +744,9 @@ class PlanManager(QObject):
                 permanent_plan_identifier = None
 
             self.set_permanent_identifier(permanent_plan_identifier)
+            logger.debug(
+                "Active plan matter set id=%s permanent_identifier=%s", plan_matter_id, permanent_plan_identifier
+            )
         else:
             for layer in plan_matter_layers:
                 layer.hide_all_features()
@@ -702,11 +769,13 @@ class PlanManager(QObject):
         Therefore if there are unsaved changes, this method will raise an exception.
         """
 
+        logger.debug("Setting active plan id=%s", plan_id)
         if check_layer_changes():
             raise UnsavedChangesError
 
         plan_layer = PlanLayer.get_from_project()
         previously_in_edit_mode = plan_layer.isEditable()
+        logger.debug("Plan layer previously_in_edit_mode=%s", previously_in_edit_mode)
         if previously_in_edit_mode:
             plan_layer.rollBack()
 
@@ -722,6 +791,7 @@ class PlanManager(QObject):
 
             plan_model = PlanLayer.model_from_feature(PlanLayer.get_feature_by_id(plan_id))
             self.update_lock_status(plan_model)
+            logger.debug("Active plan set id=%s locked=%s", plan_id, plan_model.locked)
         else:
             self.plan_unset.emit()
             for layer in plan_layers:
@@ -745,6 +815,7 @@ class PlanManager(QObject):
             plan_name = PlanLayer.get_plan_name(plan_id)
             # Don't save Nimetön as plan name in project variables
             set_active_plan_name(plan_name if plan_name != "Nimetön" else "")
+            logger.debug("Updated active plan name=%s", plan_name)
         else:
             set_active_plan_name("")
 
@@ -752,6 +823,7 @@ class PlanManager(QObject):
         """Zoom to the active plan layer."""
         active_plan_feature = next(PlanLayer.get_features(), None)
         if active_plan_feature:
+            logger.debug("Zooming to active plan feature_id=%s", active_plan_feature.id())
             bounding_box = active_plan_feature.geometry().boundingBox()
             canvas = iface.mapCanvas()
             canvas.zoomToFeatureExtent(bounding_box.buffered(50))
@@ -759,7 +831,9 @@ class PlanManager(QObject):
 
     def load_plan_matter(self):
         """Load an existing plan matter using a dialog selection."""
+        logger.debug("Opening load plan matter flow")
         connection_names = get_existing_database_connection_names()
+        logger.debug("Found database connections count=%s", len(connection_names))
 
         if not connection_names:
             iface.messageBar().pushCritical("", "Tietokantayhteyksiä ei löytynyt.")
@@ -772,12 +846,15 @@ class PlanManager(QObject):
 
         if dialog.exec_() == QDialog.Accepted:
             selected_plan_matter_id = dialog.get_selected_plan_matter_id()
+            logger.debug("Load plan matter selected id=%s", selected_plan_matter_id)
             self.set_active_plan_matter(selected_plan_matter_id)
 
     def commit_all_editable_layers(self):
         """Commit all changes in any editable layers."""
+        logger.debug("Committing all editable vector layers")
         for layer in QgsProject.instance().mapLayers().values():
             if isinstance(layer, QgsVectorLayer) and layer.isEditable():
+                logger.debug("Committing layer=%s", layer.name())
                 layer.commitChanges()
 
     def export_plan(self):
@@ -786,6 +863,7 @@ class PlanManager(QObject):
         Calls async export_plan method of lambda services.
         The plan_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
+        logger.debug("Export plan requested active_plan_id=%s", plan_id)
         if not plan_id:
             iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
@@ -794,6 +872,11 @@ class PlanManager(QObject):
         if dialog.exec_() == QDialog.Accepted:
             self.json_plan_path = str(dialog.plan_file.filePath())
             self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
+            logger.debug(
+                "Export plan target paths plan=%s outline=%s",
+                self.json_plan_path,
+                self.json_plan_outline_path,
+            )
 
             self.lambda_service.export_plan(plan_id)
 
@@ -803,6 +886,7 @@ class PlanManager(QObject):
         Calls async export_plan_matter method of lambda services.
         The plan_matter_data_received signal is emitted when response is received."""
         plan_id = get_active_plan_id()
+        logger.debug("Export plan matter requested active_plan_id=%s", plan_id)
         if not plan_id:
             iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
@@ -810,12 +894,14 @@ class PlanManager(QObject):
         dialog = SerializePlanMatter()
         if dialog.exec_() == QDialog.Accepted:
             self.json_plan_matter_path = str(dialog.plan_matter_file.filePath())
+            logger.debug("Export plan matter target path=%s", self.json_plan_matter_path)
 
             self.lambda_service.export_plan_matter(plan_id)
 
     def get_permanent_plan_identifier(self):
         """Gets the permanent plan identifier for the active plan."""
         plan_matter_id = get_active_plan_matter_id()
+        logger.debug("Requesting permanent plan identifier plan_matter_id=%s", plan_matter_id)
         if not plan_matter_id:
             iface.messageBar().pushWarning("", "Mikään kaava-asia ei ole aktiivisena.")
             return
@@ -829,11 +915,13 @@ class PlanManager(QObject):
         self.lambda_service.get_permanent_identifier(get_active_plan_id())
 
     def set_permanent_identifier(self, identifier):
+        logger.debug("Setting project permanent identifier=%s", identifier)
         QgsExpressionContextUtils.setProjectVariable(QgsProject.instance(), "permanent_identifier", identifier)
         self.plan_identifier_set.emit(identifier)
 
     def save_exported_plan(self, plan_data: dict, outline_data: dict):
         """This slot saves the plan and outline data to JSON files."""
+        logger.debug("Saving exported plan payloads")
         if plan_data is None or outline_data is None:
             iface.messageBar().pushCritical("", "Kaavasuunnitelmaa tai sen ulkorajaa ei löytynyt.")
             return
@@ -844,6 +932,7 @@ class PlanManager(QObject):
             return
 
         # Save the JSONs
+        logger.debug("Writing exported plan to %s and outline to %s", self.json_plan_path, self.json_plan_outline_path)
         with open(self.json_plan_path, "w", encoding="utf-8") as full_file:
             json.dump(plan_data, full_file, ensure_ascii=False, indent=2)
 
@@ -854,6 +943,7 @@ class PlanManager(QObject):
 
     def save_exported_plan_matter(self, plan_matter_data):
         """Saves the plan matter data to a JSON file."""
+        logger.debug("Saving exported plan matter payload")
         if plan_matter_data is None:
             iface.messageBar().pushCritical("", "Kaava-asiaa ei löytynyt.")
             return
@@ -864,17 +954,21 @@ class PlanManager(QObject):
             return
 
         # Save the JSON
+        logger.debug("Writing exported plan matter to %s", self.json_plan_matter_path)
         with open(self.json_plan_matter_path, "w", encoding="utf-8") as file:
             json.dump(plan_matter_data, file, ensure_ascii=False, indent=2)
 
         iface.messageBar().pushSuccess("", "Kaava-asia tallennettu.")
 
     def generate_plan_regulations_print(self):
+        logger.debug("Generating plan regulations print")
         RegulationsPrintGenerator.new_regulations_print_layout(self.active_plan_regulation_group_library)
 
     def on_project_loaded(self):
+        logger.debug("Project loaded signal received")
         if QgsProject.instance().fileName() == "":
             # No project is open. Ignoring signal.
+            logger.debug("No project filename set, ignoring project loaded signal")
             return
 
         self.initialize_from_project()
@@ -884,24 +978,29 @@ class PlanManager(QObject):
         if self.check_compatible_project_version() and self.check_required_layers():
             QgsProject.instance().cleared.connect(self.on_project_cleared)
             self.project_loaded.emit()
+            logger.debug("Project initialization checks passed")
 
             active_plan_matter_id = get_active_plan_matter_id()
             # Need to access active plan ID here since `set_active_plan_matter` (temporarily) sets it to None
             active_plan_id = get_active_plan_id()
             if active_plan_matter_id not in [feat["id"] for feat in PlanMatterLayer.get_features()]:
+                logger.warning("Stored active plan matter id not found: %s", active_plan_matter_id)
                 self.set_active_plan_matter(None)
                 return
             self.set_active_plan_matter(active_plan_matter_id)
 
             if active_plan_id:
+                logger.debug("Restoring active plan id=%s", active_plan_id)
                 self.set_active_plan(active_plan_id)
 
     def on_project_cleared(self):
+        logger.debug("Project cleared signal received")
         QgsProject.instance().cleared.disconnect(self.on_project_cleared)
 
         self.project_cleared.emit()
 
     def unload(self):
+        logger.debug("Unloading PlanManager resources")
         # Set pan map tool as active (to deactivate our custom tools to avoid errors)
         iface.actionPan().trigger()
 
@@ -944,6 +1043,7 @@ class PlanManager(QObject):
 
 @status_message("Haetaan kaavasuunitelman kaavamääräysryhmiä ...")
 def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
+    logger.debug("Building regulation group library from active plan")
     if get_active_plan_id():
         id_of_general_regulation_group_type = (
             PlanRegulationGroupTypeLayer.get_attribute_value_by_another_attribute_value(
@@ -958,6 +1058,8 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     else:
         regulation_groups = []
 
+    logger.debug("Active plan regulation group library size=%s", len(regulation_groups))
+
     return RegulationGroupLibrary(
         name="Käytössä olevat kaavamääräysryhmät",
         file_path=None,
@@ -969,12 +1071,15 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
 
 
 def _apply_style(layer: QgsVectorLayer) -> None:
+    logger.debug("Applying style for layer=%s", layer.name())
     active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
     if not active_plan_matter:
+        logger.debug("No active plan matter found, skipping style application")
         return
 
     plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
     if not plan_type:
+        logger.warning("No plan type resolved for active plan matter, skipping style application")
         return
 
     if plan_type == PlanType.REGIONAL:
@@ -984,6 +1089,7 @@ def _apply_style(layer: QgsVectorLayer) -> None:
     elif plan_type == PlanType.TOWN:
         folder = TOWN_PLAN_PATH
     else:
+        logger.warning("Unsupported plan type %s for style application", plan_type)
         return
 
     default = os.path.join(folder, f"{LAYER_NAME_TRANSLATION_MAP[layer.name()]}.qml")
@@ -996,6 +1102,7 @@ def _apply_style(layer: QgsVectorLayer) -> None:
         SettingsManager.get_layer_style_path(plan_type, FEATURE_LAYER_NAME_TO_CLASS_MAP[layer.name()], default)
     )
     if not result:
+        logger.warning("Failed to load named style for layer=%s message=%s", layer.name(), msg)
         iface.messageBar().pushCritical("", msg)
         return
     layer.setRenderer(temp_layer.renderer().clone())

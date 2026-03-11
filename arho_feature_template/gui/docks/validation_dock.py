@@ -48,6 +48,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
     def __init__(self, plan_manager: PlanManager, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+        logger.debug("Initializing ValidationDock")
 
         self.plan_manager = plan_manager
         self.lambda_service = LambdaService()
@@ -61,6 +62,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         if not SettingsManager.get_data_exchange_layer_enabled():
             self.validate_plan_matter_button.hide()
+            logger.debug("Data exchange layer disabled, hiding validate plan matter button")
 
     def handle_validation_call_errors(self, error: str):
         self.validation_label.setText("Validoinnissa tapahtui virhe.")
@@ -72,6 +74,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
     def on_permanent_identifier_set(self, identifier: str | None):
         """Enable the validate plan matter button when a valid permanent identifier is received."""
+        logger.debug("Permanent identifier updated in validation dock is_set=%s", bool(identifier))
         if identifier:
             self.validate_plan_matter_button.setEnabled(True)
             self.validate_plan_matter_button.setToolTip("Lähetä liitteet Ryhtiin ja validoi kaava-asia")
@@ -81,6 +84,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
     def validate_plan(self):
         """Handles the button press to trigger the validation process."""
+        logger.debug("Validate plan requested")
         # Get IDs from all layers
         # self.layer_features = self.get_all_features()
 
@@ -92,6 +96,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
+            logger.debug("No active plan id, aborting validate_plan")
             iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavasuunnitelmaa.", level=3)
             return
 
@@ -99,11 +104,13 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.validate_button.setEnabled(False)
         self.validate_plan_matter_button.setEnabled(False)
         self.progress_bar.setVisible(True)
+        logger.debug("Plan validation started for active_plan_id=%s", active_plan_id)
 
         self.lambda_service.validate_plan(active_plan_id)
 
     def validate_plan_matter(self):
         """Handles the button press to trigger the plan matter validation process."""
+        logger.debug("Validate plan matter requested")
 
         self.validation_label.setText("Kaava-asian validointivirheet:")
         self.validation_label.setStyleSheet("")
@@ -113,6 +120,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
+            logger.debug("No active plan id, aborting validate_plan_matter")
             iface.messageBar().pushMessage("Virhe", "Ei aktiivista kaavasuunnitelmaa.", level=3)
             return
 
@@ -120,11 +128,13 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.validate_plan_matter_button.setEnabled(False)
         self.validate_button.setEnabled(False)
         self.progress_bar.setVisible(True)
+        logger.debug("Plan matter validation started for active_plan_id=%s", active_plan_id)
 
         self.lambda_service.validate_plan_matter(active_plan_id)
 
     def enable_validation(self):
         """Hide progress bar and re-enable the button"""
+        logger.debug("Enabling validation controls")
         self.progress_bar.setVisible(False)
         self.validate_button.setEnabled(True)
 
@@ -138,6 +148,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             self.validate_plan_matter_button.setEnabled(True)
         else:
             self.validate_plan_matter_button.setEnabled(False)
+        logger.debug("Validation controls updated permanent_identifier_set=%s", bool(permanent_identifier))
 
         # Ensure the validation results are visible and properly resized
         self.validation_result_tree_view.expandAll()
@@ -145,14 +156,17 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
     def list_validation_errors(self, validation_json):
         """Slot for listing validation errors and warnings."""
+        logger.debug("Listing validation errors")
 
         if not validation_json:
+            logger.debug("Validation response JSON missing")
             iface.messageBar().pushMessage("Virhe", "Validaatio json puuttuu.", level=1)
             self.enable_validation()
             return
 
         # If no errors or warnings, display a message and exit
         if not any(validation_json.values()):
+            logger.debug("Validation response contains no errors or warnings")
             iface.messageBar().pushMessage("Virhe", "Ei virheitä havaittu.", level=1)
             self.enable_validation()
             return
@@ -189,24 +203,28 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                 )
 
         # Always enable validation at the end
+        logger.debug("Validation results populated feature_refs=%s", len(self.layer_features))
         self.enable_validation()
 
     def on_item_clicked(self, index):
         model = self.validation_result_tree_view.model
         clicked_item = model.itemFromIndex(index)
         feature_id = clicked_item.feature_id
+        logger.debug("Validation item clicked feature_id=%s", feature_id)
 
         if not feature_id:
             return
 
         feature_found, _ = self.layer_features.get(feature_id, (None, None))
         if feature_found and feature_found.geometry():
+            logger.debug("Zooming to feature from validation click feature_id=%s", feature_id)
             self._zoom_to_feature(feature_found.geometry())
 
     def on_item_double_clicked(self, index):
         model = self.validation_result_tree_view.model
         clicked_item = model.itemFromIndex(index)
         feature_id = clicked_item.feature_id
+        logger.debug("Validation item double-clicked feature_id=%s", feature_id)
 
         if not feature_id:
             iface.messageBar().pushWarning(
@@ -219,8 +237,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         if feature_found:
             if feature_found.geometry():
                 if "plan_type_id" in feature_found.fields().names():
+                    logger.debug("Opening plan form from validation item feature_id=%s", feature_id)
                     self.plan_manager.edit_plan()
                 else:
+                    logger.debug("Opening plan feature form from validation item feature_id=%s", feature_id)
                     self.plan_manager.edit_plan_feature(feature=feature_found, layer_name=layer.name)
             else:
                 if layer.name in ("Kaavamääräys", "Kaavasuositus"):
@@ -230,6 +250,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
                 regulation_group_feature, _ = self.layer_features[regulation_group_id]
                 if regulation_group_feature:
+                    logger.debug(
+                        "Opening regulation group form from validation item regulation_group_id=%s",
+                        regulation_group_id,
+                    )
                     regulation_group = RegulationGroupLayer.model_from_feature(regulation_group_feature)
                     self.plan_manager.edit_regulation_group(regulation_group)
         else:
@@ -239,6 +263,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         key = validation_json.get("classKey", "")
         object_path = validation_json.get("instance", "")
         if not key or not object_path:
+            logger.debug("Skipping validation error without classKey/instance")
             return
 
         object_path = object_path.lower()
@@ -249,6 +274,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         if object_with_id:
             # Remove square brackets and the number within
             object_with_id = re.sub(r"\[(\d+)\]", "", object_with_id)
+        logger.debug("Resolving validation error object key=%s object_type=%s", key, object_with_id)
 
         # If "plan" is in object path parts while there is no object with square brackets, it is likely we need plan feature for signal connections.
         if not object_with_id and "plan" in parts:
@@ -311,6 +337,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             self.layer_features[key] = (feature, RegulationGroupLayer)
 
     def _zoom_to_feature(self, geom: QgsGeometry):
+        logger.debug("Zooming and flashing geometry from validation result")
         bounding_box = geom.boundingBox()
         canvas = iface.mapCanvas()
         canvas.zoomToFeatureExtent(bounding_box.buffered(1000))
@@ -318,5 +345,6 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         canvas.redrawAllLayers()
 
     def unload(self):
+        logger.debug("Unloading ValidationDock")
         disconnect_signal(self.validation_result_tree_view.clicked)
         disconnect_signal(self.validation_result_tree_view.doubleClicked)
