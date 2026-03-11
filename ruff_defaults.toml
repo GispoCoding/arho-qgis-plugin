@@ -336,7 +336,6 @@ select = [
   "PYI056",
   "PYI058",
   "RET503",
-  "RET504",
   "RET505",
   "RET506",
   "RET507",
