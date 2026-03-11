@@ -4,10 +4,11 @@ import os
 from typing import TYPE_CHECKING, Callable
 
 from qgis.core import QgsApplication, QgsExpressionContextUtils, QgsProject
-from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator, QUrl
+from qgis.PyQt.QtGui import QDesktopServices, QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
+import arho_feature_template
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.core.settings_manager import SettingsManager
@@ -16,7 +17,7 @@ from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
 from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
-from arho_feature_template.qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
+from arho_feature_template.qgis_plugin_tools.tools.custom_logging import get_log_folder, setup_logger, teardown_logger
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
@@ -31,7 +32,7 @@ class Plugin:
     name = plugin_name()
 
     def __init__(self) -> None:
-        setup_logger(Plugin.name)
+        setup_logger(arho_feature_template.__name__)
         self.digitizing_tool = None
 
         # initialize locale
@@ -438,6 +439,10 @@ class Plugin:
             status_tip="Muokkaa pluginin asetuksia",
         )
 
+        self.open_log_folder_action = self.add_action(
+            text="Avaa lokikansio", triggered_callback=self.on_open_log_folder, add_to_menu=True, add_to_toolbar=False
+        )
+
         self.project_depending_actions = [self.plan_matter_action]
         self.plan_matter_depending_actions = [
             self.edit_plan_matter_action,
@@ -486,6 +491,10 @@ class Plugin:
         self.plan_manager.on_project_loaded()
 
         self.check_timezone_variable()
+
+    def on_open_log_folder(self):
+        folder = get_log_folder()
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
 
     def toggle_dock_visibility(self, dock_widget: QgsDockWidget):
         if dock_widget.isUserVisible():
@@ -606,4 +615,4 @@ class Plugin:
         iface.unregisterOptionsWidgetFactory(self._arho_options_page_factory)
 
         # Handle logger
-        teardown_logger(Plugin.name)
+        teardown_logger(arho_feature_template.__name__)

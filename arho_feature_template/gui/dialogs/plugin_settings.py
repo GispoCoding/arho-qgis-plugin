@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from qgis.core import QgsApplication
 from qgis.gui import QgsFileWidget, QgsOptionsPageWidget, QgsOptionsWidgetFactory
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QHBoxLayout, QPushButton
+from qgis.PyQt.QtWidgets import QComboBox, QHBoxLayout, QPushButton
 
 from arho_feature_template.core.plan_manager import (
     GENERAL_PLAN_PATH,
@@ -26,6 +26,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
     PointLayer,
 )
+from arho_feature_template.qgis_plugin_tools.tools.custom_logging import LogTarget
 from arho_feature_template.utils.localization_utils import LANGUAGES
 from arho_feature_template.utils.misc_utils import iface
 
@@ -43,40 +44,53 @@ class FileWidgetConfig(NamedTuple):
     file_widget: QgsFileWidget
 
 
+LOG_LEVELS = [
+    "DEBUG",
+    "INFO",
+    "WARNING",
+    "ERROR",
+    "CRITICAL",
+]
+
+
 class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
-    def __init__(self, parent=None):
+    # TYPES
+    host: QLineEdit
+    port: QgsSpinBox
+    lambda_address: QLineEdit
+    data_exchange_layer_enabled: QCheckBox
+
+    visualisations_group_box: QGroupBox
+
+    region_land_use_area: QgsFileWidget
+    region_other_area: QgsFileWidget
+    region_line: QgsFileWidget
+    region_point: QgsFileWidget
+
+    general_land_use_area: QgsFileWidget
+    general_other_area: QgsFileWidget
+    general_line: QgsFileWidget
+    general_point: QgsFileWidget
+
+    town_land_use_area: QgsFileWidget
+    town_other_area: QgsFileWidget
+    town_line: QgsFileWidget
+    town_point: QgsFileWidget
+
+    language_widgets_container: QWidget
+    primary_language_combobox: CodeComboBox
+    add_language_btn: QPushButton
+    show_only_primary_language_checkbox: QCheckBox
+    check_box_add_only_selected_languages: QCheckBox
+    code_value_language_combo_box: CodeComboBox
+
+    combo_box_log_stream: QComboBox
+    combo_box_log_file: QComboBox
+    combo_box_log_msgbar: QComboBox
+
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setupUi(self)
-
-        # TYPES
-        self.host: QLineEdit
-        self.port: QgsSpinBox
-        self.lambda_address: QLineEdit
-        self.data_exchange_layer_enabled: QCheckBox
-
-        self.visualisations_group_box: QGroupBox
-
-        self.region_land_use_area: QgsFileWidget
-        self.region_other_area: QgsFileWidget
-        self.region_line: QgsFileWidget
-        self.region_point: QgsFileWidget
-
-        self.general_land_use_area: QgsFileWidget
-        self.general_other_area: QgsFileWidget
-        self.general_line: QgsFileWidget
-        self.general_point: QgsFileWidget
-
-        self.town_land_use_area: QgsFileWidget
-        self.town_other_area: QgsFileWidget
-        self.town_line: QgsFileWidget
-        self.town_point: QgsFileWidget
-
-        self.language_widgets_container: QWidget
-        self.primary_language_combobox: CodeComboBox
-        self.add_language_btn: QPushButton
-        self.show_only_primary_language_checkbox: QCheckBox
-        self.check_box_add_only_selected_languages: QCheckBox
-        self.code_value_language_combo_box: CodeComboBox
 
         tooltip_text = """
         Käyttääksesi tasoille jotain muuta kuin Arhossa tulevaa Katja-asetuksen mukaista visualisaatiota,
@@ -116,6 +130,11 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self.code_value_language_combo_box.populate_from_dict(LANGUAGES)
         self.code_value_language_combo_box.remove_item_by_text("NULL")  # Language must be defined
 
+        for level_name in LOG_LEVELS:
+            self.combo_box_log_stream.addItem(level_name)
+            self.combo_box_log_file.addItem(level_name)
+            self.combo_box_log_msgbar.addItem(level_name)
+
         self.load_settings()
 
     def _add_language_combobox(self) -> CodeComboBox:
@@ -137,7 +156,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
 
         return language_combobox
 
-    def _delete_language_combobox(self, layout: QHBoxLayout, widget_to_delete: CodeComboBox):
+    def _delete_language_combobox(self, layout: QHBoxLayout, widget_to_delete: CodeComboBox) -> None:
         self.language_widgets_container.layout().removeItem(layout)
         self.language_widgets.remove(widget_to_delete)
         while layout.count():
@@ -150,7 +169,7 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
             widget: QgsFileWidget = config.file_widget
             widget.setFilter("*.qml")
 
-    def apply(self):
+    def apply(self) -> None:
         SettingsManager.set_proxy_host(self.host.text())
         SettingsManager.set_proxy_port(self.port.value())
         SettingsManager.set_lambda_url(self.lambda_address.text())
@@ -185,9 +204,14 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         SettingsManager.set_add_only_selected_languages(self.check_box_add_only_selected_languages.isChecked())
 
         SettingsManager.set_code_value_language(self.code_value_language_combo_box.value())
+
+        SettingsManager.set_log_level(LogTarget.STREAM, self.combo_box_log_stream.currentText())
+        SettingsManager.set_log_level(LogTarget.FILE, self.combo_box_log_file.currentText())
+        SettingsManager.set_log_level(LogTarget.BAR, self.combo_box_log_msgbar.currentText())
+
         SettingsManager.finish()
 
-    def load_settings(self):
+    def load_settings(self) -> None:
         # Load lambda settings
         self.host.setText(SettingsManager.get_proxy_host())
         self.port.setValue(SettingsManager.get_proxy_port() or 0)
@@ -225,6 +249,10 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         self.check_box_add_only_selected_languages.setChecked(SettingsManager.get_add_only_selected_languages())
 
         self.code_value_language_combo_box.set_value(SettingsManager.get_code_value_language())
+
+        self.combo_box_log_stream.setCurrentText(SettingsManager.get_log_level(LogTarget.STREAM))
+        self.combo_box_log_file.setCurrentText(SettingsManager.get_log_level(LogTarget.FILE))
+        self.combo_box_log_msgbar.setCurrentText(SettingsManager.get_log_level(LogTarget.BAR))
 
 
 class ArhoOptionsPageFactory(QgsOptionsWidgetFactory):
