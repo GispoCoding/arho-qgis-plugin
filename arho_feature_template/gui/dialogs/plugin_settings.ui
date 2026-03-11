@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>701</width>
-    <height>651</height>
+    <height>631</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,6 +31,9 @@
         <property name="text">
          <string>Proxy isäntä:</string>
         </property>
+        <property name="buddy">
+         <cstring>host</cstring>
+        </property>
        </widget>
       </item>
       <item row="0" column="1">
@@ -46,6 +49,9 @@
         </property>
         <property name="text">
          <string>Proxy portti:</string>
+        </property>
+        <property name="buddy">
+         <cstring>port</cstring>
         </property>
        </widget>
       </item>
@@ -361,6 +367,9 @@
         <property name="text">
          <string>Näytä vain pääkieli:</string>
         </property>
+        <property name="buddy">
+         <cstring>show_only_primary_language_checkbox</cstring>
+        </property>
        </widget>
       </item>
       <item row="1" column="1">
@@ -384,6 +393,9 @@
         <property name="text">
          <string>Lisää pohjista vain valitut kielet:</string>
         </property>
+        <property name="buddy">
+         <cstring>check_box_add_only_selected_languages</cstring>
+        </property>
        </widget>
       </item>
       <item row="2" column="1">
@@ -401,7 +413,61 @@
         <property name="text">
          <string>Koodiarvojen esityskieli:</string>
         </property>
+        <property name="buddy">
+         <cstring>code_value_language_combo_box</cstring>
+        </property>
        </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QgsCollapsibleGroupBox" name="mGroupBox">
+     <property name="title">
+      <string>Lokitusasetukset</string>
+     </property>
+     <property name="collapsed">
+      <bool>false</bool>
+     </property>
+     <layout class="QFormLayout" name="formLayout_6">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_17">
+        <property name="text">
+         <string>Konsoli:</string>
+        </property>
+        <property name="buddy">
+         <cstring>combo_box_log_stream</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="combo_box_log_stream"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_18">
+        <property name="text">
+         <string>Tiedosto:</string>
+        </property>
+        <property name="buddy">
+         <cstring>combo_box_log_file</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_19">
+        <property name="text">
+         <string>Viestipalkki:</string>
+        </property>
+        <property name="buddy">
+         <cstring>combo_box_log_msgbar</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="combo_box_log_file"/>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="combo_box_log_msgbar"/>
       </item>
      </layout>
     </widget>
@@ -422,6 +488,12 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>QgsCollapsibleGroupBox</class>
+   <extends>QGroupBox</extends>
+   <header>qgscollapsiblegroupbox.h</header>
+   <container>1</container>
+  </customwidget>
   <customwidget>
    <class>QgsFileWidget</class>
    <extends>QWidget</extends>

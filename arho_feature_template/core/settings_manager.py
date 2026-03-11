@@ -6,6 +6,13 @@ from typing import TYPE_CHECKING, Any
 from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
 
+from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
+    LogTarget,
+    get_log_level_key,
+    get_log_level_name,
+)
+from arho_feature_template.qgis_plugin_tools.tools.settings import set_setting
+
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.code_layers import PlanType
     from arho_feature_template.project.layers.plan_layers import PlanObjectLayer
@@ -141,6 +148,16 @@ class SettingsManager:
     @classmethod
     def get_code_value_language(cls, default: str = "fin") -> str:
         return cls._get("code_value_language", default)
+
+    @classmethod
+    def set_log_level(cls, log_target: LogTarget, value: str) -> None:
+        # Set using plugin tools so that the setting is saved so that the logger of plugin tools can pick it up
+        set_setting(get_log_level_key(log_target), value)
+
+    @classmethod
+    def get_log_level(cls, log_target: LogTarget) -> str:
+        # Get using plugin tools because it is saved using plugin tools
+        return get_log_level_name(log_target)
 
     @classmethod
     def _migrate_keys(cls):
