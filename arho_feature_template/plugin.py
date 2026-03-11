@@ -21,9 +21,16 @@ from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
 from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.docks.validation_dock import ValidationDock
-from arho_feature_template.qgis_plugin_tools.tools.custom_logging import get_log_folder, setup_logger, teardown_logger
+from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
+    LogTarget,
+    get_log_folder,
+    get_log_level_key,
+    setup_logger,
+    teardown_logger,
+)
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
+from arho_feature_template.qgis_plugin_tools.tools.settings import get_setting
 from arho_feature_template.utils.misc_utils import disconnect_signal, iface
 
 if TYPE_CHECKING:
@@ -39,6 +46,7 @@ class Plugin:
     name = plugin_name()
 
     def __init__(self) -> None:
+        self.set_file_log_level_if_not_set()
         setup_logger(arho_feature_template.__name__)
         logger.debug("\n\n*** Initializing plugin instance ***")
 
@@ -67,6 +75,12 @@ class Plugin:
         self.toolbar = iface.addToolBar("ARHO Toolbar")
         logger.debug("Toolbar created name=%s", self.toolbar.objectName())
         # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+
+    def set_file_log_level_if_not_set(self):
+        file_log_level = get_setting(get_log_level_key(LogTarget.FILE))
+        if file_log_level is None:
+            # Set default file log level to DEBUG if not set, to ensure that debug logs are captured in the log file
+            SettingsManager.set_log_level(LogTarget.FILE, "DEBUG")
 
     def show_exception(self, *args, **kwargs):
         """Extend the default QGIS exception handling by logging the exception if it originates from our code.
