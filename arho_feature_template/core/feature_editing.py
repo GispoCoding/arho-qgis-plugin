@@ -19,9 +19,9 @@ from arho_feature_template.project.layers.plan_layers import (
     TypeOfVerbalRegulationAssociationLayer,
     get_plan_feature_layer_class_by_model,
 )
+from arho_feature_template.qgis_plugin_tools.tools.messages import MsgBar
 from arho_feature_template.utils.misc_utils import (
     get_active_plan_matter_id,
-    iface,
     status_message,
     use_wait_cursor,
 )
@@ -119,7 +119,7 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
             id_=plan_matter_id,
             edit_text="Kaava-asian muokkaus" if editing else "Kaava-asian luominen",
         ):
-            iface.messageBar().pushCritical("", "Kaava-asian tallentaminen epäonnistui")
+            MsgBar.error("", "Kaava-asian tallentaminen epäonnistui")
             return None
         plan_matter_id = cast(str, feature["id"])
 
@@ -160,7 +160,7 @@ def save_plan(plan: Plan) -> str | None:
             id_=plan_id,
             edit_text="Kaavasuunnitelman muokkaus" if editing else "Kaavasuunnitelman luominen",
         ):
-            iface.messageBar().pushCritical("", "Kaavasuunnitelman tallentaminen epäonnistui.")
+            MsgBar.error("", "Kaavasuunnitelman tallentaminen epäonnistui.")
             return None
         plan_id = cast(str, feature["id"])
     else:
@@ -176,20 +176,20 @@ def save_plan(plan: Plan) -> str | None:
                 RegulationGroupAssociationLayer.get_from_project(),
                 "Kaavamääräysryhmän assosiaation poisto",
             ):
-                iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+                MsgBar.error("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
 
         # Check for deleted legal effects
         for association in LegalEffectAssociationLayer.get_dangling_associations(plan_id, plan.legal_effect_ids):
             if not delete_in_edit_buffer(
                 association, LegalEffectAssociationLayer.get_from_project(), "Oikeusvaikutuksen assosiaation poisto"
             ):
-                iface.messageBar().pushCritical("", "Oikeusvaikutuksen assosiaation poistaminen epäonnistui.")
+                MsgBar.error("", "Oikeusvaikutuksen assosiaation poistaminen epäonnistui.")
 
         # Check for documents to be deleted
         doc_layer = DocumentLayer.get_from_project()
         for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan_id):
             if not delete_in_edit_buffer(doc_feature, doc_layer, "Asiakirjan poisto"):
-                iface.messageBar().pushCritical("", "Asiakirjan poistaminen epäonnistui.")
+                MsgBar.error("", "Asiakirjan poistaminen epäonnistui.")
 
     # Save general regulations
     if plan.general_regulations:
@@ -268,7 +268,7 @@ def add_plan_object_to_edit_buffer(
             id_=object_id,
             edit_text="Kaavakohteen muokkaus" if editing else "Kaavakohteen lisäys",
         ):
-            iface.messageBar().pushCritical("", "Kaavakohteen tallentaminen epäonnistui.")
+            MsgBar.error("", "Kaavakohteen tallentaminen epäonnistui.")
             return None
         object_id = cast(str, feature["id"])
         # Add id to model so that up-to-date model can be sent to plan objects table
@@ -287,7 +287,7 @@ def add_plan_object_to_edit_buffer(
                 RegulationGroupAssociationLayer.get_from_project(),
                 "Kaavamääräysryhmän assosiaation poisto",
             ):
-                iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+                MsgBar.error("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
 
     # Save regulation groups
     for group in plan_object.regulation_groups:
@@ -341,7 +341,7 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
             id_=group_id,
             edit_text="Kaavamääräysryhmän muokkaus" if editing else "Kaavamääräysryhmän lisäys",
         ):
-            iface.messageBar().pushCritical("", "Kaavamääräysryhmän tallentaminen epäonnistui.")
+            MsgBar.error("", "Kaavamääräysryhmän tallentaminen epäonnistui.")
             return None
         group_id = cast(str, feature["id"])
         logger.debug("Regulation group buffered id=%s", group_id)
@@ -353,13 +353,13 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
         regulation_layer = PlanRegulationLayer.get_from_project()
         for reg_feature in PlanRegulationLayer.get_regulations_to_delete(regulation_group.regulations, group_id):
             if not delete_in_edit_buffer(reg_feature, regulation_layer, "Kaavamääräyksen poisto"):
-                iface.messageBar().pushCritical("", "Kaavamääräyksen poistaminen epäonnistui.")
+                MsgBar.error("", "Kaavamääräyksen poistaminen epäonnistui.")
 
         # Check for propositions to be deleted
         proposition_layer = PlanPropositionLayer.get_from_project()
         for prop_feature in PlanPropositionLayer.get_propositions_to_delete(regulation_group.propositions, group_id):
             if not delete_in_edit_buffer(prop_feature, proposition_layer, "Kaavasuosituksen poisto"):
-                iface.messageBar().pushCritical("", "Kaavasuosituksen poistaminen epäonnistui.")
+                MsgBar.error("", "Kaavasuosituksen poistaminen epäonnistui.")
 
     # Save regulations
     if regulation_group.regulations:
@@ -378,7 +378,7 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
 
 def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> bool:
     if regulation_group.id_ is None:
-        iface.messageBar().pushCritical("", "Kaavamääräysryhmän poistaminen epäonnistui (ei IDtä).")
+        MsgBar.error("", "Kaavamääräysryhmän poistaminen epäonnistui (ei IDtä).")
         return False
 
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
@@ -387,7 +387,7 @@ def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | No
         QgsProject.instance().startEditing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Kaavamääräysryhmän poisto"):
-        iface.messageBar().pushCritical("", "Kaavamääräysryhmän poistaminen epäonnistui.")
+        MsgBar.error("", "Kaavamääräysryhmän poistaminen epäonnistui.")
         return False
 
     return True
@@ -410,7 +410,7 @@ def add_regulation_group_association_to_edit_buffer(regulation_group_id: str, la
     if not add_to_edit_buffer(
         feature=feature, layer=layer, id_=None, edit_text="Kaavamääräysryhmän assosiaation lisäys"
     ):
-        iface.messageBar().pushCritical("", "Kaavamääräysryhmän assosiaation tallentaminen epäonnistui.")
+        MsgBar.error("", "Kaavamääräysryhmän assosiaation tallentaminen epäonnistui.")
         return False
 
     return True
@@ -431,7 +431,7 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
             id_=reg_id,
             edit_text="Kaavamääräyksen muokkaus" if editing else "Kaavamääräyksen lisäys",
         ):
-            iface.messageBar().pushCritical("", "Kaavamääräyksen tallentaminen epäonnistui.")
+            MsgBar.error("", "Kaavamääräyksen tallentaminen epäonnistui.")
             return None
         reg_id = cast(str, regulation_feature["id"])
 
@@ -442,7 +442,7 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
             regulation.additional_information, reg_id
         ):
             if not delete_in_edit_buffer(info_feature, info_layer, "Lisätiedon poisto"):
-                iface.messageBar().pushCritical("", "Liätiedon poistaminen epäonnistui.")
+                MsgBar.error("", "Liätiedon poistaminen epäonnistui.")
 
         # Check for verbal regulation types to be deleted
         for association in TypeOfVerbalRegulationAssociationLayer.get_dangling_associations(
@@ -453,16 +453,14 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
                 TypeOfVerbalRegulationAssociationLayer.get_from_project(),
                 "Sanallisen kaavamääräyksen lajin assosiaation poisto",
             ):
-                iface.messageBar().pushCritical(
-                    "", "Sanallisen kaavamääräyksen lajin assosiaation poistaminen epäonnistui."
-                )
+                MsgBar.error("", "Sanallisen kaavamääräyksen lajin assosiaation poistaminen epäonnistui.")
 
         # Check for plan theme to be deleted
         for association in PlanThemeAssociationLayer.get_dangling_regulation_associations(reg_id, regulation.theme_ids):
             if not delete_in_edit_buffer(
                 association, PlanThemeAssociationLayer.get_from_project(), "Kaavoitusteeman assosiaation poisto"
             ):
-                iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
+                MsgBar.error("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
 
     for additional_information in regulation.additional_information:
         additional_information.plan_regulation_id = reg_id
@@ -497,7 +495,7 @@ def add_plan_theme_association_to_edit_buffer(
         QgsProject.instance().startEditing(layer)
 
     if not add_to_edit_buffer(feature=feature, layer=layer, id_=None, edit_text="Kaavoitusteeman assosiaation lisäys"):
-        iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation tallentaminen epäonnistui.")
+        MsgBar.error("", "Kaavoitusteeman assosiaation tallentaminen epäonnistui.")
         return False
 
     return True
@@ -516,7 +514,7 @@ def add_type_of_verbal_regulation_association_to_edit_buffer(
     if not add_to_edit_buffer(
         feature=feature, layer=layer, id_=None, edit_text="Sanallisen kaavamääräyksen lajin assosiaation lisäys"
     ):
-        iface.messageBar().pushCritical("", "Sanallisen kaavamääräyksen lajin assosiaation tallentaminen epäonnistui.")
+        MsgBar.error("", "Sanallisen kaavamääräyksen lajin assosiaation tallentaminen epäonnistui.")
         return False
 
     return True
@@ -533,7 +531,7 @@ def add_legal_effect_association_to_edit_buffer(plan_id: str, legal_effect_id: s
     if not add_to_edit_buffer(
         feature=feature, layer=layer, id_=None, edit_text="Oikeusvaikutuksen assosiaation lisäys"
     ):
-        iface.messageBar().pushCritical("", "Oikeusvaikutuksen assosiaation tallentaminen epäonnistui.")
+        MsgBar.error("", "Oikeusvaikutuksen assosiaation tallentaminen epäonnistui.")
         return False
 
     return True
@@ -554,7 +552,7 @@ def add_additional_information_to_edit_buffer(additional_information: Additional
         id_=additional_information.id_,
         edit_text="Lisätiedon lisäys" if additional_information.id_ is None else "Lisätiedon muokkaus",
     ):
-        iface.messageBar().pushCritical("", "Lisätiedon tallentaminen epäonnistui.")
+        MsgBar.error("", "Lisätiedon tallentaminen epäonnistui.")
         return None
 
     return feature["id"]
@@ -567,7 +565,7 @@ def delete_additional_information(additional_information: AdditionalInformation)
         QgsProject.instance().startEditing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Lisätiedon poisto"):
-        iface.messageBar().pushCritical("", "Lisätiedon poistaminen epäonnistui.")
+        MsgBar.error("", "Lisätiedon poistaminen epäonnistui.")
         return False
 
     return True
@@ -580,7 +578,7 @@ def delete_regulation(regulation: Regulation) -> bool:
         QgsProject.instance().startEditing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Kaavamääräyksen poisto"):
-        iface.messageBar().pushCritical("", "Lisätiedon poistaminen epäonnistui.")
+        MsgBar.error("", "Lisätiedon poistaminen epäonnistui.")
         return False
 
     return True
@@ -603,7 +601,7 @@ def add_proposition_to_edit_buffer(proposition: Proposition) -> str | None:
         id_=prop_id,
         edit_text="Kaavasuosituksen lisäys" if prop_id is None else "Kaavasuosituksen muokkaus",
     ):
-        iface.messageBar().pushCritical("", "Kaavasuosituksen tallentaminen epäonnistui.")
+        MsgBar.error("", "Kaavasuosituksen tallentaminen epäonnistui.")
         return None
     prop_id = cast(str, feature["id"])
 
@@ -615,7 +613,7 @@ def add_proposition_to_edit_buffer(proposition: Proposition) -> str | None:
             if not delete_in_edit_buffer(
                 association, PlanThemeAssociationLayer.get_from_project(), "Kaavoitusteeman assosiaation poisto"
             ):
-                iface.messageBar().pushCritical("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
+                MsgBar.error("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
 
     for plan_theme_id in proposition.theme_ids:
         add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, proposition_id=prop_id)
@@ -630,7 +628,7 @@ def delete_proposition(proposition: Proposition) -> bool:
         QgsProject.instance().startEditing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Kaavasuosituksen poisto"):
-        iface.messageBar().pushCritical("", "Kaavasuosituksen poistaminen epäonnistui.")
+        MsgBar.error("", "Kaavasuosituksen poistaminen epäonnistui.")
         return False
 
     return True
@@ -651,7 +649,7 @@ def add_document_to_edit_buffer(document: Document) -> str | None:
         id_=document.id_,
         edit_text="Asiakirjan lisäys" if document.id_ is None else "Asiakirjan muokkaus",
     ):
-        iface.messageBar().pushCritical("", "Asiakirjan tallentaminen epäonnistui.")
+        MsgBar.error("", "Asiakirjan tallentaminen epäonnistui.")
         return None
 
     return feature["id"]
