@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -40,7 +41,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.core.prints.regulations_print_generator import RegulationsPrintGenerator
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.exceptions import UnsavedChangesError
+from arho_feature_template.exceptions import LayerNotFoundError, UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
@@ -976,6 +977,7 @@ class PlanManager(QObject):
         self.regulation_groups_dock.initialize()
 
         if self.check_compatible_project_version() and self.check_required_layers():
+            self.connect_layer_error_signals()
             QgsProject.instance().cleared.connect(self.on_project_cleared)
             self.project_loaded.emit()
             logger.debug("Project initialization checks passed")
@@ -992,6 +994,25 @@ class PlanManager(QObject):
             if active_plan_id:
                 logger.debug("Restoring active plan id=%s", active_plan_id)
                 self.set_active_plan(active_plan_id)
+
+    def connect_layer_error_signals(self):
+        logger.debug("Connecting layer error signals")
+        layers = plan_layers + plan_matter_layers
+        for layer in layers:
+            map_layer = layer.get_from_project()
+            map_layer.raiseError.connect(self.on_layer_error)
+
+    def disconnect_layer_error_signals(self):
+        layers = plan_layers + plan_matter_layers
+        for layer in layers:
+            # Plugin might be unloaded while there is no arho project or layers open
+            with contextlib.suppress(LayerNotFoundError):
+                map_layer = layer.get_from_project()
+                map_layer.raiseError.disconnect(self.on_layer_error)
+
+    def on_layer_error(self, message: str):
+        sender_layer = self.sender()
+        logger.error("Layer error: Layer=%s Error=%s", sender_layer.name(), message.rstrip())
 
     def on_project_cleared(self):
         logger.debug("Project cleared signal received")
@@ -1039,6 +1060,7 @@ class PlanManager(QObject):
         self.features_dock.deleteLater()
 
         disconnect_signal(self.plan_set)
+        self.disconnect_layer_error_signals()
 
 
 @status_message("Haetaan kaavasuunitelman kaavamääräysryhmiä ...")
