@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 import simplejson as json
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
+from shapely.geometry.base import BaseMultipartGeometry
 from sqlalchemy import Table, create_engine, select, text
 from sqlalchemy.orm import sessionmaker
 
@@ -178,6 +179,8 @@ class DatabaseClient:
         # paste the SRID back manually :/
 
         shape = to_shape(obj.geom)
+        if not isinstance(shape, BaseMultipartGeometry):
+            raise TypeError(f"Geometry is not multigeometry: {shape.geom_type}")
         srid = self._get_srid_of_table(cast("Table", obj.__table__))
         if len(shape.geoms) == 1:
             # Ryhti API may not allow single geometries in multigeometries in all cases.
