@@ -443,7 +443,7 @@ class DatabaseClient:
         object based on the validation rule
         58 quality/req-spatialplanregulationtype-reference-spatialplanobject.
         """
-        return isinstance(plan_object, models.OtherArea) and any(
+        return isinstance(plan_object, (models.OtherArea, models.Point)) and any(
             regulation.type_of_plan_regulation.value
             in {
                 "sitovanTonttijaonMukainenTontti",
