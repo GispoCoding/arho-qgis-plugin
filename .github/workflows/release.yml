@@ -1,35 +1,19 @@
 name: Release
 on:
-  push:
-    tags:
-      - v*.*.*
+  release:
+    types: [published]
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
-      version: ${{ steps.version.outputs.version }}
+  deploy:
+    runs-on: ubuntu-24.04
     steps:
       - name: version
         id: version
         run: |
-          tag=${GITHUB_REF/refs\/tags\//}
-          version=${tag#v}
+          tag="${{ github.event.release.tag_name }}"
+          version="${tag#v}"
           echo "tag=${tag}" >> $GITHUB_OUTPUT
           echo "version=${version}" >> $GITHUB_OUTPUT
-
-      - uses: release-drafter/release-drafter@v7
-        with:
-          version: ${{ steps.version.outputs.version }}
-          publish: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  deploy:
-    runs-on: ubuntu-24.04
-    needs: release
-    steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -41,8 +25,8 @@ jobs:
           sudo pip install qgis-plugin-ci --break-system-packages
       - name: Release
         run: |
-          qgis-plugin-ci release ${{ needs.release.outputs.version }} \
-              --release-tag ${{ needs.release.outputs.tag }} \
+          qgis-plugin-ci release ${{ steps.version.outputs.version }} \
+              --release-tag ${{ steps.version.outputs.tag }} \
               --disable-submodule-update \
               --github-token ${{ secrets.GITHUB_TOKEN }} \
               --create-plugin-repo
