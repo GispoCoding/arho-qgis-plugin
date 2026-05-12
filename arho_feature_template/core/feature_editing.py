@@ -45,13 +45,21 @@ logger = logging.getLogger(__name__)
 created_object_models: dict[str, PlanObject] = {}
 
 
+def feature_id(feature: QgsFeature) -> str:
+    """Get the id field value from the feature. Use the internal feature id as a fallback if the id field is not found."""
+    try:
+        return cast(str, feature["id"])
+    except KeyError:
+        return str(feature.id())
+
+
 def add_to_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = "") -> bool:
     action = "add" if id_ is None else "update"
     logger.debug(
         "Edit buffer action=%s layer=%s feature_id=%s command=%s",
         action,
         layer.name(),
-        feature["id"],
+        feature_id(feature),
         edit_text,
     )
     layer.beginEditCommand(edit_text)
@@ -67,7 +75,7 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
     logger.debug(
         "Edit buffer action=delete layer=%s feature_id=%s command=%s",
         layer.name(),
-        feature["id"],
+        feature_id(feature),
         delete_text,
     )
     layer.beginEditCommand(delete_text)
@@ -93,7 +101,7 @@ def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
 
 
 def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
-    logger.debug("Deleting feature from layer=%s feature_id=%s", layer.name(), feature["id"])
+    logger.debug("Deleting feature from layer=%s feature_id=%s", layer.name(), feature_id(feature))
     delete_in_edit_buffer(feature, layer, delete_text)
     result = commit_edit_buffer(stop_editing=False)
 
