@@ -34,6 +34,17 @@ APPORVED_LIFECYCLE_VALUE = "06"  # Hyväksytty kaava
 
 
 class NewPlanDialog(QDialog, FormClass):  # type: ignore
+    plan_name: QLineEdit
+    plan_lifecycle: CodeComboBox
+    source_plan: QComboBox
+    button_box: QDialogButtonBox
+    widget_input: QWidget
+    widget_progress: QWidget
+    label_validity_start: QLabel
+    validity_start_date: QgsDateTimeEdit
+    label_approval: QLabel
+    approval_date: QgsDateTimeEdit
+
     plan_copied = pyqtSignal(str)
 
     def __init__(self):
@@ -43,18 +54,6 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.setFixedWidth(550)
         self.widget_progress.hide()
         self.adjustSize()
-
-        # TYPES
-        self.plan_name: QLineEdit
-        self.plan_lifecycle: CodeComboBox
-        self.source_plan: QComboBox
-        self.button_box: QDialogButtonBox
-        self.widget_input: QWidget
-        self.widget_progress: QWidget
-        self.label_validity_start: QLabel
-        self.validity_start_date: QgsDateTimeEdit
-        self.label_approval: QLabel
-        self.approval_date: QgsDateTimeEdit
 
         # INIT
         self.plan = None
