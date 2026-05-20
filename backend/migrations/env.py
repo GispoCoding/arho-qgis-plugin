@@ -18,18 +18,12 @@ from database.triggers import (
     generate_instead_of_triggers_for_visualization_views,
     generate_modified_at_triggers,
     generate_new_lifecycle_status_triggers,
-    generate_update_lifecycle_status_triggers,
     generate_created_at_triggers,
     generate_no_created_at_update_triggers
 )
 from database.views import views
 
 modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
-
-(
-    update_lifecycle_status_trgs,
-    update_lifecycle_status_trgfuncs,
-) = generate_update_lifecycle_status_triggers()
 
 (
     new_lifecycle_status_trgs,
@@ -57,8 +51,6 @@ add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_tri
 imported_triggers = (
     modified_at_trgfuncs
     + modified_at_trgs
-    + update_lifecycle_status_trgfuncs
-    + update_lifecycle_status_trgs
     + new_lifecycle_status_trgfuncs
     + new_lifecycle_status_trgs
     + add_plan_id_fkey_trgfuncs
