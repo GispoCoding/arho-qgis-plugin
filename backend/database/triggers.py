@@ -160,7 +160,9 @@ def generate_new_lifecycle_status_triggers() -> tuple[
         RETURNS TRIGGER AS $$
         BEGIN
             NEW.lifecycle_status_id = (
-                SELECT lifecycle_status_id FROM hame.plan WHERE plan.id = NEW.plan_id
+                SELECT lifecycle_status_id
+                FROM hame.plan
+                WHERE plan.id = NEW.plan_id
             );
             RETURN NEW;
         END;
@@ -176,7 +178,7 @@ def generate_new_lifecycle_status_triggers() -> tuple[
         trg_definition = f"""
         BEFORE INSERT ON {object_table}
         FOR EACH ROW
-        WHEN (NEW.plan_id IS NOT NULL)
+        WHEN (NEW.lifecycle_status_id IS NULL)
         EXECUTE FUNCTION hame.{trgfunc_signature}
         """
         trg = PGTrigger(
@@ -215,6 +217,7 @@ def generate_new_lifecycle_status_triggers() -> tuple[
         trg_definition = f"""
             BEFORE INSERT ON hame.{regulation_table}
             FOR EACH ROW
+            WHEN (NEW.lifecycle_status_id IS NULL)
             EXECUTE FUNCTION hame.{trgfunc_signature}
         """
         trg = PGTrigger(
