@@ -81,8 +81,8 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.approval_date.setDateTime(QDateTime(QDate.currentDate()))
 
         # Show/hide start date based on lifecycle stage
-        self.plan_lifecycle.currentIndexChanged.connect(self._update_validity_widgets)
-        self._update_validity_widgets(self.plan_lifecycle.currentIndex())
+        self.plan_lifecycle.currentIndexChanged.connect(self._update_validity_widget_visibility)
+        self._update_validity_widget_visibility(self.plan_lifecycle.currentIndex())
 
         self._check_required_fields()
 
@@ -112,14 +112,19 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
         ok_button.setEnabled(required_fields_filled)
 
-    def _update_validity_widgets(self, index: int):
+    def _set_validity_date_visibility(self, visible: bool):  # noqa: FBT001
+        self.label_validity_start.setVisible(visible)
+        self.validity_start_date.setVisible(visible)
+
+    def _set_approval_date_visibility(self, visible: bool):  # noqa: FBT001
+        self.label_approval.setVisible(visible)
+        self.approval_date.setVisible(visible)
+
+    def _update_validity_widget_visibility(self, index: int):
         lifecycle_value = self.plan_lifecycle.itemData(index, ValueDataRole)
 
-        self.label_validity_start.setVisible(lifecycle_value == VALID_LIFECYCLE_VALUE)
-        self.validity_start_date.setVisible(lifecycle_value == VALID_LIFECYCLE_VALUE)
-
-        self.label_approval.setVisible(lifecycle_value == APPORVED_LIFECYCLE_VALUE)
-        self.approval_date.setVisible(lifecycle_value == APPORVED_LIFECYCLE_VALUE)
+        self._set_validity_date_visibility(lifecycle_value == VALID_LIFECYCLE_VALUE)
+        self._set_approval_date_visibility(lifecycle_value == APPORVED_LIFECYCLE_VALUE)
 
         # Re-check required fields after visibility change
         self._check_required_fields()
