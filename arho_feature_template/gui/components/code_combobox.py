@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+ValueDataRole = Qt.UserRole + 1
+
 
 class CodeComboBox(QComboBox):
     changed = pyqtSignal()
@@ -36,6 +38,8 @@ class CodeComboBox(QComboBox):
         for id_, attributes in layer_type.get_attribute_dict().items():
             text = get_localized_text(attributes.get("name"), SettingsManager.get_code_value_language())
             self.addItem(text, id_)
+            self.setItemData(self.count() - 1, attributes.get("value"), ValueDataRole)
+
         self.code_layer = layer_type
 
     def populate_from_dict(self, options: dict[str, str]) -> None:
