@@ -9,6 +9,7 @@ from qgis.PyQt.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLineEdit,
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import Plan
+from arho_feature_template.gui.components.code_combobox import ValueDataRole
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.utils.misc_utils import (
@@ -28,8 +29,8 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 DATA_ROLE = Qt.UserRole
 
-VALID_LIFECYCLE_TEXT = "Voimassa"
-APPORVED_LIFECYCLE_TEXT = "Hyväksytty kaava"
+VALID_LIFECYCLE_VALUE = "13"  # Voimassa
+APPORVED_LIFECYCLE_VALUE = "06"  # Hyväksytty kaava
 
 
 class NewPlanDialog(QDialog, FormClass):  # type: ignore
@@ -81,8 +82,8 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.approval_date.setDateTime(QDateTime(QDate.currentDate()))
 
         # Show/hide start date based on lifecycle stage
-        self.plan_lifecycle.currentTextChanged.connect(self._update_validity_widgets)
-        self._update_validity_widgets(self.plan_lifecycle.currentText())
+        self.plan_lifecycle.currentIndexChanged.connect(self._update_validity_widgets)
+        self._update_validity_widgets(self.plan_lifecycle.currentIndex())
 
         self._check_required_fields()
 
@@ -112,29 +113,26 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
         ok_button.setEnabled(required_fields_filled)
 
-    def _update_validity_widgets(self, text: str):
-        self.label_validity_start.setVisible(text == VALID_LIFECYCLE_TEXT)
-        self.validity_start_date.setVisible(text == VALID_LIFECYCLE_TEXT)
+    def _update_validity_widgets(self, index: int):
+        lifecycle_value = self.plan_lifecycle.itemData(index, ValueDataRole)
 
-        self.label_approval.setVisible(text == APPORVED_LIFECYCLE_TEXT)
-        self.approval_date.setVisible(text == APPORVED_LIFECYCLE_TEXT)
+        self.label_validity_start.setVisible(lifecycle_value == VALID_LIFECYCLE_VALUE)
+        self.validity_start_date.setVisible(lifecycle_value == VALID_LIFECYCLE_VALUE)
+
+        self.label_approval.setVisible(lifecycle_value == APPORVED_LIFECYCLE_VALUE)
+        self.approval_date.setVisible(lifecycle_value == APPORVED_LIFECYCLE_VALUE)
 
         # Re-check required fields after visibility change
         self._check_required_fields()
 
     def _on_ok_clicked(self):
         plan_id = self.source_plan.currentData(DATA_ROLE)
+        lifecycle_value = self.plan_lifecycle.currentData(ValueDataRole)
 
         period_of_validity_start = (
-            self.validity_start_date.date().toPyDate()
-            if self.plan_lifecycle.currentText() == VALID_LIFECYCLE_TEXT
-            else None
+            self.validity_start_date.date().toPyDate() if lifecycle_value == VALID_LIFECYCLE_VALUE else None
         )
-        approval_date = (
-            self.approval_date.date().toPyDate()
-            if self.plan_lifecycle.currentText() == APPORVED_LIFECYCLE_TEXT
-            else None
-        )
+        approval_date = self.approval_date.date().toPyDate() if lifecycle_value == APPORVED_LIFECYCLE_VALUE else None
 
         if plan_id is not None:
             self.widget_input.hide()
