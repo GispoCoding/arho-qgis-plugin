@@ -59,7 +59,7 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="label_validity_start">
           <property name="visible">
            <bool>true</bool>
@@ -69,14 +69,14 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_approval">
           <property name="text">
            <string>Hyväksytty:</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="5" column="1">
          <widget class="QgsDateTimeEdit" name="approval_date">
           <property name="enabled">
            <bool>true</bool>
@@ -89,10 +89,25 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QgsDateTimeEdit" name="validity_start_date">
           <property name="displayFormat">
            <string>d.M.yyyy</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QCheckBox" name="check_box_partially_valid">
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_partially_valid">
+          <property name="text">
+           <string>Asetetaanko kaavasuunnitelma
+osittain voimaan?</string>
           </property>
          </widget>
         </item>

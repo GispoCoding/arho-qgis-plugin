@@ -95,6 +95,7 @@ class LambdaService(QObject):
         plan_id: str,
         lifecycle_status_id: str,
         plan_name: str,
+        partially_valid: bool,  # noqa: FBT001
         period_of_validity_start: date | None,
         approval_date: date | None,
     ):
@@ -107,6 +108,8 @@ class LambdaService(QObject):
                 "plan_name": {"fin": plan_name},
             },
         }
+        if partially_valid:
+            payload["data"]["partially_valid"] = True
         if period_of_validity_start:
             payload["data"]["period_of_validity_start"] = period_of_validity_start.isoformat()
         if approval_date:
@@ -151,6 +154,7 @@ class LambdaService(QObject):
         if not payload or plan_id:
             payload = {"plan_uuid": plan_id}
         payload["action"] = action
+        payload["save_json"] = True
 
         request = QNetworkRequest(QUrl(self.lambda_url))
         request.setAttribute(LambdaService.ActionAttribute, action)
