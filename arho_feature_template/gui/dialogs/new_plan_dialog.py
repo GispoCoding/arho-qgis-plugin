@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QDate, QDateTime, Qt, pyqtSignal
-from qgis.PyQt.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLineEdit, QWidget
+from qgis.PyQt.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QLineEdit, QWidget
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import Plan
@@ -31,6 +31,9 @@ DATA_ROLE = Qt.UserRole
 
 VALID_LIFECYCLE_VALUE = "13"  # Voimassa
 APPORVED_LIFECYCLE_VALUE = "06"  # Hyväksytty kaava
+UNDER_APPEAL_VALUE = "08"  # Valituksen alainen
+UNDER_RECTIFICATION_REMINDER_VALUE = "07"  # Oikaisukehotuksen alainen
+UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL_VALUE = "09"  # Oikaisukehotuksen alainen ja valituksen alainen
 
 
 class NewPlanDialog(QDialog, FormClass):  # type: ignore
@@ -44,6 +47,8 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
     validity_start_date: QgsDateTimeEdit
     label_approval: QLabel
     approval_date: QgsDateTimeEdit
+    label_partially_valid: QLabel
+    check_box_partially_valid: QCheckBox
 
     plan_copied = pyqtSignal(str)
 
@@ -82,7 +87,11 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
         # Show/hide start date based on lifecycle stage
         self.plan_lifecycle.currentIndexChanged.connect(self._update_validity_widget_visibility)
+        self.plan_lifecycle.currentIndexChanged.connect(self._update_partially_valid_visibility)
         self._update_validity_widget_visibility(self.plan_lifecycle.currentIndex())
+        self._update_partially_valid_visibility(self.plan_lifecycle.currentIndex())
+
+        self.check_box_partially_valid.stateChanged.connect(self._set_validity_date_visibility)
 
         self._check_required_fields()
 
@@ -112,6 +121,20 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
         ok_button.setEnabled(required_fields_filled)
 
+    def _update_partially_valid_visibility(self, index: int):
+        lifecycle_value = self.plan_lifecycle.itemData(index, ValueDataRole)
+        is_partially_valid_visible = lifecycle_value in {
+            UNDER_APPEAL_VALUE,
+            UNDER_RECTIFICATION_REMINDER_VALUE,
+            UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL_VALUE,
+        }
+        self.check_box_partially_valid.setChecked(False)
+        self._set_partially_valid_visibility(is_partially_valid_visible)
+
+    def _set_partially_valid_visibility(self, visible: bool):  # noqa: FBT001
+        self.label_partially_valid.setVisible(visible)
+        self.check_box_partially_valid.setVisible(visible)
+
     def _set_validity_date_visibility(self, visible: bool):  # noqa: FBT001
         self.label_validity_start.setVisible(visible)
         self.validity_start_date.setVisible(visible)
@@ -131,12 +154,11 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
     def _on_ok_clicked(self):
         plan_id = self.source_plan.currentData(DATA_ROLE)
-        lifecycle_value = self.plan_lifecycle.currentData(ValueDataRole)
 
         period_of_validity_start = (
-            self.validity_start_date.date().toPyDate() if lifecycle_value == VALID_LIFECYCLE_VALUE else None
+            self.validity_start_date.date().toPyDate() if self.validity_start_date.isVisible() else None
         )
-        approval_date = self.approval_date.date().toPyDate() if lifecycle_value == APPORVED_LIFECYCLE_VALUE else None
+        approval_date = self.approval_date.date().toPyDate() if self.approval_date.isVisible() else None
 
         if plan_id is not None:
             self.widget_input.hide()
@@ -148,6 +170,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
                 plan_id,
                 self.plan_lifecycle.value(),
                 self.plan_name.text(),
+                partially_valid=self.check_box_partially_valid.isChecked(),
                 period_of_validity_start=period_of_validity_start,
                 approval_date=approval_date,
             )
