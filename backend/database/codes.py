@@ -119,6 +119,9 @@ class CodeBase(VersionedBase):
 class LifeCycleStatus(CodeBase):
     """Elinkaaren vaihe"""
 
+    VALID_VALUE = "13"  # Voimassa
+    VALID_BEFORE_LEGAL_VALIDITY_VALUE = "11"  # Voimassa ennen kaavan lainvoimaisuutta
+
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
@@ -158,10 +161,19 @@ class LifeCycleStatus(CodeBase):
 class PlanType(CodeBase):
     """Kaavalaji"""
 
+    REGIONAL_PLAN_VALUE = "1"
+
     __tablename__ = "plan_type"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_Kaavalaji"
 
     plan_matters: Mapped[list[PlanMatter]] = relationship(back_populates="plan_type")
+
+    def is_regional_plan(self) -> bool:
+        if self.value == PlanType.REGIONAL_PLAN_VALUE:
+            return True
+        if self.parent:
+            return self.parent.is_regional_plan()
+        return False
 
 
 class TypeOfPlanRegulation(CodeBase):

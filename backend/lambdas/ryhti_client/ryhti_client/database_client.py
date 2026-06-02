@@ -15,6 +15,7 @@ from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
 from database.enums import AttributeValueDataType
+from ryhti_client import lifecycles
 from ryhti_client.deserializer import (
     Deserializer,
     extra_import_data_from_dict,
@@ -41,8 +42,6 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
-LIFECYCLE_APPROVED_VALUE = 6
-LIFECYCLE_VALID_STATUS = 13
 
 
 MODEL = TypeVar("MODEL", bound=models.Base)
@@ -85,7 +84,8 @@ class ApprovalDateRequiredError(Exception):
 class StartDateRequiredError(Exception):
     def __init__(self) -> None:
         super().__init__(
-            "Period of validity start date must be provided when copying plan to valid status or later."
+            "Period of validity start date must be provided when copying plan "
+            "to valid status or later or is set partially valid."
         )
 
 
@@ -1002,6 +1002,7 @@ class DatabaseClient:
         plan_id: str,
         lifecycle_status_id: str,
         plan_name: dict[str, str],
+        partially_valid: bool | None = None,
         approval_date: datetime.date | None = None,
         period_of_validity_start: datetime.date | None = None,
     ) -> DbId | None:
@@ -1019,7 +1020,7 @@ class DatabaseClient:
 
             approval_date = approval_date or plan.approval_date
             if (
-                int(new_lifecycle_status.value) >= LIFECYCLE_APPROVED_VALUE
+                int(new_lifecycle_status.value) >= lifecycles.APPROVED_VALUE
                 and not approval_date
             ):
                 raise ApprovalDateRequiredError
@@ -1028,15 +1029,25 @@ class DatabaseClient:
                 period_of_validity_start or plan.period_of_validity_start
             )
             if (
-                int(new_lifecycle_status.value) >= LIFECYCLE_VALID_STATUS
-                and not period_of_validity_start
-            ):
+                int(new_lifecycle_status.value) >= lifecycles.VALID_STATUS
+                or (
+                    partially_valid is True
+                    and int(new_lifecycle_status.value)
+                    in {
+                        lifecycles.UNDER_APPEAL_VALUE,
+                        lifecycles.UNDER_RECTIFICATION_REMINDER_VALUE,
+                        lifecycles.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL_VALUE,
+                    }
+                )
+            ) and not period_of_validity_start:
                 raise StartDateRequiredError
 
             plan_copier = PlanCopier(
+                session=session,
                 plan=plan,
                 lifecycle_status=new_lifecycle_status,
                 plan_name=plan_name,
+                partially_valid=partially_valid,
                 approval_date=approval_date,
                 period_of_validity_start=period_of_validity_start,
             )

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+import contextlib
+import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import uuid4
 
-from sqlalchemy.orm import class_mapper
+from sqlalchemy.orm import Session, class_mapper
+from sqlalchemy.orm.exc import UnmappedColumnError
 
 from database import codes, models
 
 if TYPE_CHECKING:
     from datetime import date
+
+logger = logging.getLogger(__name__)
 
 MODEL = TypeVar("MODEL", bound=models.Base)
 PLAN_OBJECT_MODEL = TypeVar("PLAN_OBJECT_MODEL", bound=models.PlanObjectBase)
@@ -17,42 +22,96 @@ PLAN_OBJECT_MODEL = TypeVar("PLAN_OBJECT_MODEL", bound=models.PlanObjectBase)
 class PlanCopier:
     def __init__(
         self,
+        session: Session,
         plan: models.Plan,
         lifecycle_status: codes.LifeCycleStatus,
         plan_name: dict[str, str],
+        partially_valid: bool | None = None,
         approval_date: date | None = None,
         period_of_validity_start: date | None = None,
     ) -> None:
+        self.session = session
         self.plan = plan
         self.lifecycle_status = lifecycle_status
         self.plan_name = plan_name
         self.approval_date = approval_date
         self.period_of_validity_start = period_of_validity_start
+        self.partially_valid = partially_valid
+
+        self.regulation_lifecycle_status = (
+            self.define_regulation_lifecycle_status()
+        )  # for duplicated plan objects, regulations and propositions
+        logger.debug(
+            "regulation lifecycle status: %s",
+            self.regulation_lifecycle_status.value
+            if self.regulation_lifecycle_status
+            else None,
+        )
 
         # Mapping original regulation group ID → duplicated regulation group
         self.regulation_group_mapping: dict[str, models.PlanRegulationGroup] = {}
 
     @classmethod
     def clone_model(cls, obj: MODEL, **overrides: Any) -> MODEL:
-        """Clone a SQLAlchemy model instance with the same column data and overrides."""
+        """Clone a SQLAlchemy model instance with the same column data and overrides.
+
+        Overrides may use relationship attribute names (e.g. plan=new_plan) instead of
+        FK column names; the corresponding FK columns are excluded from the copied data
+        to avoid conflicts.
+        """
         model_class = type(obj)
         mapper = class_mapper(model_class)
+
+        rel_by_key = {rel.key: rel for rel in mapper.relationships}
+        fk_attrs_to_skip: set[str] = set()
+        for key in overrides:
+            if key not in rel_by_key:
+                continue
+            for col in rel_by_key[key].local_columns:
+                with contextlib.suppress(UnmappedColumnError):
+                    fk_attrs_to_skip.add(mapper.get_property_by_column(col).key)
+
         data = {
             column.key: getattr(obj, column.key)
             for column in mapper.columns
-            if column.key not in overrides
+            if column.key not in overrides and column.key not in fk_attrs_to_skip
         }
         data.update(overrides)
         return model_class(**data)
 
+    def define_regulation_lifecycle_status(self) -> codes.LifeCycleStatus | None:
+        """Defines the lifecycle status for the duplicated plan objects, regulations and
+        propositions.
+
+        If the plan is partially valid, the lifecycle status for regional plans must be
+        set to "Valid before legal validity of plan" and for other plans to "Valid".
+        """
+        if self.partially_valid:
+            logger.debug("is partially valid")
+            if self.plan.plan_matter.plan_type.is_regional_plan():  # maakuntakaava
+                logger.debug("is regional plan")
+                return codes.get_code(
+                    self.session,
+                    codes.LifeCycleStatus,
+                    codes.LifeCycleStatus.VALID_BEFORE_LEGAL_VALIDITY_VALUE,
+                )  # Voimassa ennen kaavan lainvoimaisuutta
+            return codes.get_code(
+                self.session, codes.LifeCycleStatus, codes.LifeCycleStatus.VALID_VALUE
+            )  # Voimassa
+        return self.lifecycle_status
+
+    def define_plan_validity_start_date(self) -> date | None:
+        return self.period_of_validity_start if not self.partially_valid else None
+
     def copy_plan(self) -> models.Plan:
+        plan_id = uuid4()
         self.duplicate_plan = self.clone_model(
             self.plan,
-            id=uuid4(),
+            id=plan_id,
             name=self.plan_name,
             lifecycle_status=self.lifecycle_status,
             approval_date=self.approval_date,
-            period_of_validity_start=self.period_of_validity_start,
+            period_of_validity_start=self.define_plan_validity_start_date(),
         )
 
         # Documents
@@ -121,7 +180,7 @@ class PlanCopier:
                 regulation,
                 id=uuid4(),
                 plan_regulation_group=duplicate_regulation_group,
-                lifecycle_status=self.lifecycle_status,
+                lifecycle_status=self.regulation_lifecycle_status,
                 period_of_validity_start=self.period_of_validity_start,
             )
 
@@ -143,7 +202,7 @@ class PlanCopier:
                 proposition,
                 id=uuid4(),
                 plan_regulation_group=duplicate_regulation_group,
-                lifecycle_status=self.lifecycle_status,
+                lifecycle_status=self.regulation_lifecycle_status,
                 period_of_validity_start=self.period_of_validity_start,
             )
             duplicate_proposition.plan_themes = proposition.plan_themes
@@ -157,7 +216,7 @@ class PlanCopier:
                 plan_object,
                 id=uuid4(),
                 plan=self.duplicate_plan,
-                lifecycle_status=self.lifecycle_status,
+                lifecycle_status=self.regulation_lifecycle_status,
                 period_of_validity_start=self.period_of_validity_start,
             )
             duplicate_regulation_groups = [

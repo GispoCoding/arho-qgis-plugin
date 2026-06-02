@@ -90,7 +90,7 @@ def ryhti_plan_from_json(json_data: str) -> RyhtiPlan:
     return ryhti_plan
 
 
-def extra_import_data_from_dict(extra_data: dict) -> ExtraImportData:
+def extra_import_data_from_dict(extra_data: dict[str, Any]) -> ExtraImportData:
     try:
         plan_matter_data = ExtraImportData.model_validate(extra_data)
     except ValidationError as e:

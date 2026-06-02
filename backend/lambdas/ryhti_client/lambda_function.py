@@ -286,6 +286,7 @@ def normalize_payload(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEv
 class CopyPlanData(BaseModel):
     lifecycle_status_uuid: str
     plan_name: dict[str, str]
+    partially_valid: bool | None = None
     approval_date: datetime.date | None = None
     period_of_validity_start: datetime.date | None = None
 
@@ -486,6 +487,7 @@ def handler(
                             plan_uuid,
                             copy_data.lifecycle_status_uuid,
                             copy_data.plan_name,
+                            partially_valid=copy_data.partially_valid,
                             approval_date=copy_data.approval_date,
                             period_of_validity_start=copy_data.period_of_validity_start,
                         )
