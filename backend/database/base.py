@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from datetime import datetime
-from typing import Annotated, Any, ClassVar
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, cast
 
 from sqlalchemy import FetchedValue
 from sqlalchemy.dialects import postgresql
@@ -12,6 +12,9 @@ from sqlalchemy.sql import func
 from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP, Enum as SQLAlchemyEnum
 
 from database.enums import AttributeValueDataType
+
+if TYPE_CHECKING:
+    from sqlalchemy import Table
 
 PROJECT_SRID = int(os.environ.get("PROJECT_SRID", "3067"))
 
@@ -45,6 +48,21 @@ class VersionedBase(Base):
 
     __abstract__ = True
     __table_args__: Any = {"schema": "hame"}  # noqa: RUF012  # No can do, sqlalchemy has Any annotation for this
+
+    subclasses: ClassVar[list[type[VersionedBase]]] = []
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        # SQLAlchemy sets __table__ only on mapped (non-abstract) classes.
+        if not cls.__dict__.get("__abstract__", False) and hasattr(cls, "__table__"):
+            VersionedBase.subclasses.append(cls)
+
+    @classmethod
+    def subclass_names(cls) -> list[tuple[str, str]]:
+        return [
+            (cast("Table", cls.__table__).schema or "", cls.__tablename__)
+            for cls in VersionedBase.subclasses
+        ]
 
     # Go figure. We have to *explicitly state* id is a mapped column, because id will
     # have to be defined inside all the subclasses for relationship remote_side

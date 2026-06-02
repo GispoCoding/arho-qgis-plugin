@@ -104,6 +104,11 @@ def test_copy_plan(
     assert copied_plan is not None
     assert copied_plan.id != original_plan_id
 
+    assert copied_plan.creator == original_plan.creator
+    assert copied_plan.created_at == original_plan.created_at
+    assert copied_plan.modifier == original_plan.modifier
+    assert copied_plan.modified_at == original_plan.modified_at
+
     assert copied_plan.plan_matter == original_plan.plan_matter
     assert len(copied_plan.documents) == len(original_plan.documents)
 
@@ -130,6 +135,11 @@ def test_copy_plan(
     assert copied_land_use_area_1.lifecycle_status.value == valid_status_instance.value
     assert copied_land_use_area_1.period_of_validity_start == period_of_validity_start
 
+    assert copied_land_use_area_1.creator == land_use_area_1.creator
+    assert copied_land_use_area_1.created_at == land_use_area_1.created_at
+    assert copied_land_use_area_1.modifier == land_use_area_1.modifier
+    assert copied_land_use_area_1.modified_at == land_use_area_1.modified_at
+
     assert (
         land_use_area_1.type_of_underground
         == copied_land_use_area_1.type_of_underground
@@ -149,6 +159,11 @@ def test_copy_plan(
     assert copied_other_area_1 is not None
     assert copied_other_area_1.lifecycle_status.value == valid_status_instance.value
 
+    assert copied_other_area_1.creator == other_area_1.creator
+    assert copied_other_area_1.created_at == other_area_1.created_at
+    assert copied_other_area_1.modifier == other_area_1.modifier
+    assert copied_other_area_1.modified_at == other_area_1.modified_at
+
     assert other_area_1.type_of_underground == copied_other_area_1.type_of_underground
 
     # complete_test_plan fixture has no lines
@@ -162,7 +177,10 @@ def test_copy_plan(
     )
     assert copied_point_1 is not None
     assert copied_point_1.lifecycle_status.value == valid_status_instance.value
-
+    assert copied_point_1.creator == point_1.creator
+    assert copied_point_1.created_at == point_1.created_at
+    assert copied_point_1.modifier == point_1.modifier
+    assert copied_point_1.modified_at == point_1.modified_at
     assert point_1.type_of_underground == copied_point_1.type_of_underground
 
     # General regulation groups
@@ -180,6 +198,16 @@ def test_copy_plan(
     )
     assert copied_general_regulation_group is not None
     assert copied_general_regulation_group.plan_id == copied_plan.id
+    assert copied_general_regulation_group.creator == general_regulation_group.creator
+    assert (
+        copied_general_regulation_group.created_at
+        == general_regulation_group.created_at
+    )
+    assert copied_general_regulation_group.modifier == general_regulation_group.modifier
+    assert (
+        copied_general_regulation_group.modified_at
+        == general_regulation_group.modified_at
+    )
     assert (
         general_regulation_group.type_of_plan_regulation_group
         == copied_general_regulation_group.type_of_plan_regulation_group
@@ -200,6 +228,10 @@ def test_copy_plan(
         None,
     )
     assert copied_general_regulation is not None
+    assert copied_general_regulation.creator == general_regulation.creator
+    assert copied_general_regulation.created_at == general_regulation.created_at
+    assert copied_general_regulation.modifier == general_regulation.modifier
+    assert copied_general_regulation.modified_at == general_regulation.modified_at
     assert (
         copied_general_regulation.period_of_validity_start == period_of_validity_start
     )

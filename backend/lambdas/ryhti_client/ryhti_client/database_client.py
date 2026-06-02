@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import datetime
 import logging
+from contextlib import contextmanager
+from string import Template
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeVar, cast
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
@@ -34,6 +36,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from geoalchemy2 import WKBElement
+    from sqlalchemy.orm import Session
     from sqlalchemy.sql import FromClause
 
     from database.base import DbId
@@ -997,6 +1000,32 @@ class DatabaseClient:
 
         return plan.id
 
+    @contextmanager
+    def _disable_edit_triggers(self, session: Session) -> Generator[None]:
+        """Temporarily disable all triggers on all tables in hame schema."""
+        triggers_to_disable = [
+            Template("trg_${table}_created_at"),
+            Template("trg_${table}_001_no_created_at_update"),
+            Template("trg_${table}_modified_at"),
+        ]
+
+        def _alter_triggers(state: str) -> None:
+            for schema, table in base.VersionedBase.subclass_names():
+                if schema != "hame":
+                    continue
+                for trigger_template in triggers_to_disable:
+                    trigger_name = trigger_template.substitute(table=table)
+                    disable_sql = text(
+                        f"ALTER TABLE {schema}.{table} {state} TRIGGER {trigger_name}"
+                    )
+                    session.execute(disable_sql)
+
+        _alter_triggers("DISABLE")
+        try:
+            yield
+        finally:
+            _alter_triggers("ENABLE")
+
     def copy_plan(
         self,
         plan_id: str,
@@ -1051,9 +1080,12 @@ class DatabaseClient:
                 approval_date=approval_date,
                 period_of_validity_start=period_of_validity_start,
             )
-
-            copied_plan = plan_copier.copy_plan()
-            session.add(copied_plan)
+            with self._disable_edit_triggers(session):
+                copied_plan = plan_copier.copy_plan()
+                session.add(copied_plan)
+                # do the actual insert while the triggers are still disabled to avoid
+                # created_at and modified_at updates.
+                session.flush()
             session.commit()
 
             return copied_plan.id

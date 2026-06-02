@@ -7,22 +7,14 @@ from alembic_utils.pg_trigger import PGTrigger
 from database import models
 from database.base import VersionedBase
 
-
-def all_subclasses(cls: type) -> set[type]:
-    """Recursively find all subclasses of a class."""
-    return set(cls.__subclasses__()).union(
-        [s for c in cls.__subclasses__() for s in all_subclasses(c)]
-    )
-
-
-all_versioned_tables = [
-    (cls.__table__.schema, cls.__table__.name)
-    for cls in all_subclasses(VersionedBase)
-    if hasattr(cls, "__table__")
-    # If new table are added a new revision must be created in two steps.
-    # First to create the table, second to add triggers to it.
-    # To skip triggers for a new table, uncomment the next line and fill the table name.
-    # and cls.__table__.name != "<table name>"
+# If new tables are added a new migration must be created in two steps.
+# First to create the table, second to add triggers to it.
+# To skip triggers for a new table, add a guard on the table name below.
+all_versioned_tables: list[tuple[str, str]] = [
+    (schema, table)
+    for (schema, table) in VersionedBase.subclass_names()
+    if table
+    != "new_table_to_skip_triggers"  # Replace with actual table name to skip triggers for
 ]
 
 
