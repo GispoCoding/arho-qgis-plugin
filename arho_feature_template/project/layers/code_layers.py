@@ -185,12 +185,25 @@ class RegionLayer(AbstractCodeLayer):
     name = "Maakunta"
 
 
+class LifeCycleStatusValue(enum.StrEnum):
+    APPORVED_LIFECYCLE = "06"  # Hyväksytty kaava
+    UNDER_RECTIFICATION_REMINDER = "07"  # Oikaisukehotuksen alainen
+    UNDER_APPEAL = "08"  # Valituksen alainen
+    UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL = "09"  # Oikaisukehotuksen alainen ja valituksen alainen
+    VALID_BEFORE_LEGAL_VALIDITY = "11"  # Voimassa ennen kaavan lainvoimaisuutta
+    VALID_LIFECYCLE = "13"  # Voimassa
+    REPEALED_LIFECYCLE = "14"  # Kumoutunut
+
+
 class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
     URI = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
-    valid_status_values: ClassVar[list[str]] = ["11", "13"]  # "Voimassa ennen kaavan lainvoimaisuutta", "Voimassa"
-    repealed_status_values: ClassVar[list[str]] = ["14"]  # "Kumoutunut"
+    valid_status_values: ClassVar[list[str]] = [
+        LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY,
+        LifeCycleStatusValue.VALID_LIFECYCLE,
+    ]  # "Voimassa ennen kaavan lainvoimaisuutta", "Voimassa"
+    repealed_status_values: ClassVar[list[str]] = [LifeCycleStatusValue.REPEALED_LIFECYCLE]  # "Kumoutunut"
 
     @classmethod
     def is_valid_status(cls, _id: str) -> bool:

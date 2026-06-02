@@ -10,7 +10,7 @@ from qgis.PyQt.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox,
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.models import Plan
 from arho_feature_template.gui.components.code_combobox import ValueDataRole
-from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, LifeCycleStatusValue
 from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.utils.misc_utils import (
     get_active_plan_id,
@@ -28,12 +28,6 @@ ui_path = resources.files(__package__) / "new_plan_dialog.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 DATA_ROLE = Qt.UserRole
-
-VALID_LIFECYCLE_VALUE = "13"  # Voimassa
-APPORVED_LIFECYCLE_VALUE = "06"  # Hyväksytty kaava
-UNDER_APPEAL_VALUE = "08"  # Valituksen alainen
-UNDER_RECTIFICATION_REMINDER_VALUE = "07"  # Oikaisukehotuksen alainen
-UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL_VALUE = "09"  # Oikaisukehotuksen alainen ja valituksen alainen
 
 
 class NewPlanDialog(QDialog, FormClass):  # type: ignore
@@ -124,9 +118,9 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
     def _update_partially_valid_visibility(self, index: int):
         lifecycle_value = self.plan_lifecycle.itemData(index, ValueDataRole)
         is_partially_valid_visible = lifecycle_value in {
-            UNDER_APPEAL_VALUE,
-            UNDER_RECTIFICATION_REMINDER_VALUE,
-            UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL_VALUE,
+            LifeCycleStatusValue.UNDER_APPEAL,
+            LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER,
+            LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL,
         }
         self.check_box_partially_valid.setChecked(False)
         self._set_partially_valid_visibility(is_partially_valid_visible)
@@ -146,8 +140,8 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
     def _update_validity_widget_visibility(self, index: int):
         lifecycle_value = self.plan_lifecycle.itemData(index, ValueDataRole)
 
-        self._set_validity_date_visibility(lifecycle_value == VALID_LIFECYCLE_VALUE)
-        self._set_approval_date_visibility(lifecycle_value == APPORVED_LIFECYCLE_VALUE)
+        self._set_validity_date_visibility(lifecycle_value == LifeCycleStatusValue.VALID_LIFECYCLE)
+        self._set_approval_date_visibility(lifecycle_value == LifeCycleStatusValue.APPORVED_LIFECYCLE)
 
         # Re-check required fields after visibility change
         self._check_required_fields()
