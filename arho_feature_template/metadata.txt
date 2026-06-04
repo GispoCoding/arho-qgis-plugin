@@ -1,11 +1,11 @@
 [general]
 name=ARHO feature template
-description=Create new features from configurable templates
-about=
+description=QGIS plugin for land use planning
+about=QGIS plugin for land use planning
 version=0.1.0
 qgisMinimumVersion=3.16
-author=
-email=
+author=Gispo Ltd.
+email=info@gispo.fi
 changelog=
 tags=
 repository=https://github.com/GispoCoding/arho-feature-template
