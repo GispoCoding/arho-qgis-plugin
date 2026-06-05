@@ -37,7 +37,10 @@ class RyhtiResponse(TypedDict):
 
 
 def save_debug_json(filename: str, data: Any) -> None:
-    with Path("logs", filename).open("w", encoding="utf-8") as f:
+    logging_folder = Path("/tmp/logs")  # noqa: S108
+    logging_folder.mkdir(exist_ok=True)
+
+    with Path(logging_folder, filename).open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
 
