@@ -147,7 +147,7 @@ class LambdaService(QObject):
         if not payload or plan_id:
             payload = {"plan_uuid": plan_id}
         payload["action"] = action
-        payload["save_json"] = True
+        payload["save_json"] = True  # Uncomment for debugging to save the payload and response json in the lambda
 
         request = QNetworkRequest(QUrl(self.lambda_url))
         request.setAttribute(LambdaService.ActionAttribute, action)
