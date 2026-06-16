@@ -109,6 +109,30 @@
       </attribute>
      </widget>
     </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontal_layout_tools">
+      <item>
+       <widget class="PushButtonEditLifecycle" name="push_button_edit_lifecycle">
+        <property name="text">
+         <string>Vaihda elinkaaren tilaa</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
    </layout>
   </widget>
  </widget>
@@ -117,6 +141,11 @@
    <class>QgsFilterLineEdit</class>
    <extends>QLineEdit</extends>
    <header>qgsfilterlineedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>PushButtonEditLifecycle</class>
+   <extends>QPushButton</extends>
+   <header>arho_feature_template.gui.components.push_button_edit_lifecycle</header>
   </customwidget>
  </customwidgets>
  <resources/>

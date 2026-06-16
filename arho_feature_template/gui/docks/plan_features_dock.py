@@ -9,6 +9,7 @@ from qgis.core import Qgis, QgsApplication, QgsFeature, QgsProject, QgsVectorLay
 from qgis.gui import QgsDockWidget, QgsFilterLineEdit
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import (
+    QDate,
     QItemSelection,
     QItemSelectionModel,
     QModelIndex,
@@ -19,7 +20,7 @@ from qgis.PyQt.QtCore import (
     Qt,
 )
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
-from qgis.PyQt.QtWidgets import QMenu, QPushButton, QTableView
+from qgis.PyQt.QtWidgets import QHBoxLayout, QMenu, QPushButton, QTableView
 
 from arho_feature_template.core import feature_editing
 from arho_feature_template.core.feature_editing import save_plan_object
@@ -27,16 +28,18 @@ from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.components.validity_label import VALIDITY_SORT_ROLE, validity_item_from_model
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, LifeCycleStatusValue
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
     OtherAreaLayer,
+    PlanLayer,
     PointLayer,
     get_plan_feature_layer_class_by_model,
     plan_feature_layers,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 ui_path = resources.files(__package__) / "plan_features_dock.ui"
@@ -45,6 +48,7 @@ FormClass, _ = uic.loadUiType(ui_path)
 if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
     from arho_feature_template.core.plan_manager import PlanManager
+    from arho_feature_template.gui.components.push_button_edit_lifecycle import PushButtonEditLifecycle
 
 DATA_COLUMN = 1
 PLAN_OBJECT_TYPE_COLUMN = 2
@@ -124,6 +128,8 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.other_area_btn: QPushButton
         self.line_btn: QPushButton
         self.point_btn: QPushButton
+        self.push_button_edit_lifecycle: PushButtonEditLifecycle
+        self.horizontal_layout_tools: QHBoxLayout
 
         self.table: QTableView
         self.filter_line: QgsFilterLineEdit
@@ -181,6 +187,46 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         ):
             btn.toggled.connect(self._filter_table)
 
+        self.push_button_edit_lifecycle.lifecycle_change_requested.connect(self._on_lifecycle_change_requested)
+
+    def _update_edit_lifecycle_visibility(self):
+        active_lifecycle_id = PlanLayer.get_attribute_by_id("lifecycle_status_id", get_active_plan_id())
+        active_lifecycle_value = LifeCycleStatusLayer.get_lifecycle_status_by_id(active_lifecycle_id)
+
+        visible = active_lifecycle_value is not None and int(active_lifecycle_value.value) >= int(
+            LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER
+        )
+        self.push_button_edit_lifecycle.setVisible(visible)
+
+    def _on_lifecycle_change_requested(self, lifecycle_value: LifeCycleStatusValue, date: QDate | None):
+        lifecycle_id = LifeCycleStatusLayer.get_id_from_lifecycle_status_value(lifecycle_value)
+        for arho_layer in plan_feature_layers:
+            layer = arho_layer.get_from_project()
+
+            selected_features = layer.selectedFeatures()
+            for feature in selected_features:
+                feature["lifecycle_status_id"] = lifecycle_id
+                feature["period_of_validity_start"] = date
+
+                model = arho_layer.model_from_feature(feature)  # TODO: change to models_from_features
+                feature_editing.created_object_models[feature["id"]] = model
+                layer.updateFeature(feature)
+
+        feature_editing.commit_edit_buffer(stop_editing=False)
+
+    def get_selected_plan_objects(self) -> list[PlanObject]:
+        objects: list[PlanObject] = []
+        for proxy_index in self.selection_model.selectedRows(DATA_COLUMN):
+            plan_object = self._plan_feature_from_index(proxy_index)
+            if plan_object is not None:
+                objects.append(plan_object)
+        logger.debug("Selected plan objects count=%s", len(objects))
+        return objects
+
+    def _plan_object_from_index(self, proxy_index: QModelIndex) -> PlanObject | None:
+        data = self._data_from_index(proxy_index)
+        return data[0] if data else None
+
     def initialize(self):
         logger.debug("Initializing PlanObjectsDock layer signal connections")
         for layer in plan_feature_layers:
@@ -190,6 +236,8 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             vector_layer.committedFeaturesAdded.connect(self._on_feat_added)
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
             vector_layer.committedAttributeValuesChanges.connect(self._on_feat_attributes_changed)
+
+        self.push_button_edit_lifecycle.populate_menu()
 
     def unload(self) -> None:
         logger.debug("Unloading PlanObjectsDock and disconnecting signals")
@@ -222,6 +270,8 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             logger.debug("Adding features from layer=%s count=%s", layer.name, len(features))
             for plan_feature_model, feature in zip(layer.models_from_features(features), features):
                 self._add_plan_feature_to_view(plan_feature_model, feature.id())
+
+        self._update_edit_lifecycle_visibility()
 
     def update_selected_rows(self):
         logger.debug("Updating selected rows based on map selections")
@@ -266,6 +316,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def _update_row(self, row: int, plan_feature_model: PlanObject):
         logger.debug("Updating table row=%s plan_feature_id=%s", row, plan_feature_model.id_)
+        self.model.setItem(row, 0, validity_item_from_model(plan_feature_model))
         self.model.item(row, 1).setText(get_localized_text(plan_feature_model.name) or "")
         self.model.item(row, 3).setText(get_localized_text(plan_feature_model.description) or "")
         # Feat ID remains the same

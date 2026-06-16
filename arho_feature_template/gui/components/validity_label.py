@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qgis.PyQt.QtCore import QSize, Qt
-from qgis.PyQt.QtGui import QIcon, QStandardItem
-from qgis.PyQt.QtWidgets import QLabel, QSizePolicy
+from qgis.PyQt.QtCore import QSize, Qt, pyqtSignal
+from qgis.PyQt.QtGui import QIcon, QMouseEvent, QStandardItem
+from qgis.PyQt.QtWidgets import QLabel, QSizePolicy, QWidget
 
 from arho_feature_template.project.layers.code_layers import (
     LIFECYCLE_PIXMAPS,
@@ -21,12 +21,18 @@ VALIDITY_SORT_ROLE = Qt.UserRole
 
 
 class ValidityLabel(QLabel):
-    def __init__(self, parent=None):
+    clicked = pyqtSignal()
+
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setMaximumSize(23, 23)
         self.setScaledContents(True)
+
+    def mousePressEvent(self, ev: QMouseEvent):  # noqa: N802
+        self.clicked.emit()
+        super().mousePressEvent(ev)
 
     def set_from_model(self, model: LifecycleBase) -> None:
         if not hasattr(model, "lifecycle_status_id") or model.lifecycle_status_id is None:

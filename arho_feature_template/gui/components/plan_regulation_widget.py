@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import dataclasses
 from importlib import resources
 from typing import TYPE_CHECKING, cast
 
-from qgis.core import NULL, QgsApplication
+from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt, pyqtSignal
+from qgis.PyQt.QtCore import NULL, QDate, Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import (
     QFormLayout,
     QLabel,
@@ -21,6 +22,7 @@ from arho_feature_template.core.models import (
     Regulation,
 )
 from arho_feature_template.gui.components.additional_information_widget import AdditionalInformationWidget
+from arho_feature_template.gui.components.edit_lifecycle_menu import EditLifecycleMenu
 from arho_feature_template.gui.components.required_field_label import RequiredFieldLabel
 from arho_feature_template.gui.components.subject_identifier_widget import SubjectIdentifierWidget
 from arho_feature_template.gui.components.theme_widget import ThemeWidget
@@ -28,7 +30,12 @@ from arho_feature_template.gui.components.value_input_widgets import (
     TypeOfVerbalRegulationWidget,
     ValueWidgetManager,
 )
-from arho_feature_template.project.layers.code_layers import AdditionalInformationTypeLayer, PlanRegulationTypeLayer
+from arho_feature_template.project.layers.code_layers import (
+    AdditionalInformationTypeLayer,
+    LifeCycleStatusLayer,
+    LifeCycleStatusValue,
+    PlanRegulationTypeLayer,
+)
 from arho_feature_template.utils.localization_utils import get_localized_text
 
 if TYPE_CHECKING:
@@ -60,6 +67,8 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
 
         # INIT
         self.regulation = regulation
+        self.lifecycle_status_id = regulation.lifecycle_status_id
+        self.period_of_validity_start = regulation.period_of_validity_start
         self.default_value = PlanRegulationTypeLayer.get_default_value_by_id(self.regulation.regulation_type_id)
 
         self.value_widget_manager = None
@@ -94,6 +103,25 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
         self._init_widgets()
 
         self.validity_label.set_from_model(self.regulation)
+        self.edit_lifecycle_menu = EditLifecycleMenu()
+        self.edit_lifecycle_menu.lifecycle_change_requested.connect(self._on_lifecycle_change_requested)
+        self.validity_label.clicked.connect(self._show_lifecycle_menu)
+
+    def _show_lifecycle_menu(self):
+        pos = self.validity_label.mapToGlobal(self.validity_label.rect().bottomLeft())
+        self.edit_lifecycle_menu.exec_(pos)
+
+    def _on_lifecycle_change_requested(self, lifecycle: LifeCycleStatusValue, date: QDate | None):
+        lifecycle_status_id = LifeCycleStatusLayer.get_id_from_lifecycle_status_value(lifecycle)
+        self.lifecycle_status_id = lifecycle_status_id
+        self.period_of_validity_start = date or None
+        self.validity_label.set_from_model(
+            dataclasses.replace(
+                self.regulation,
+                lifecycle_status_id=self.lifecycle_status_id,
+                period_of_validity_start=self.period_of_validity_start,
+            )
+        )
 
     def _init_widgets(self):
         # Value input
@@ -249,8 +277,8 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             ],
             verbal_regulation_type_ids=[value for value in verbal_regulation_type_ids if value is not None],
             regulation_group_id=self.regulation.regulation_group_id,
-            lifecycle_status_id=self.regulation.lifecycle_status_id,
-            period_of_validity_start=self.regulation.period_of_validity_start,
+            lifecycle_status_id=self.lifecycle_status_id,
+            period_of_validity_start=self.period_of_validity_start,
             period_of_validity_end=self.regulation.period_of_validity_end,
             modified=self.regulation.modified,
             id_=self.regulation.id_ if not force_new else None,

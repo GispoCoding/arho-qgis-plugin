@@ -317,6 +317,18 @@ class LifeCycleStatusLayer(AbstractCodeLayer):
         }
 
     @classmethod
+    def is_under_appeal_id(cls, _id: str) -> bool:
+        try:
+            value = LifeCycleStatusValue(cast(str, cls.get_attribute_by_id("value", _id)))
+        except ValueError:
+            return False
+        return cls.is_under_appeal(value)
+
+    @classmethod
+    def get_id_from_lifecycle_status_value(cls, lifecycle_status_value: LifeCycleStatusValue) -> str | None:
+        return cls.get_id_by_attribute("value", lifecycle_status_value.value)
+
+    @classmethod
     def get_name_from_lifecycle_status_value(
         cls, lifecycle_status_value: LifeCycleStatusValue
     ) -> dict[str, str] | None:
