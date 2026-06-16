@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import yaml
+from qgis.PyQt.QtGui import QColor, QPixmap
 
 from arho_feature_template.exceptions import ConfigSyntaxError, LayerNameNotFoundError
+from arho_feature_template.gui.components.text_icon import text_icon
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
@@ -203,8 +205,16 @@ class LifeCycleStatusValue(enum.StrEnum):
     LAPSED = "15"  # Rauennut
     REJECTED = "16"  # Hylätty
     SUSPENDED = "17"  # Keskeytetty
-    VALID_LIFECYCLE = "13"  # Voimassa
-    REPEALED_LIFECYCLE = "14"  # Kumoutunut
+
+
+LIFECYCLE_PIXMAPS = {
+    LifeCycleStatusValue.VALID: QPixmap(resources_path("icons", "valid_mark.svg")),
+    LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY: QPixmap(resources_path("icons", "valid_mark.svg")),
+    LifeCycleStatusValue.REPEALED: QPixmap(resources_path("icons", "repealed_mark.svg")),
+    LifeCycleStatusValue.UNDER_APPEAL: text_icon("§", QColor(255, 0, 0)),
+    LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER: text_icon("§", QColor(0, 0, 255)),
+    LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL: text_icon("§", QColor(140, 0, 190)),
+}
 
 
 def get_allowed_plan_lifecycle_transitions(source_lifecycle: LifeCycleStatusValue) -> list[LifeCycleStatusValue]:
@@ -278,19 +288,33 @@ class LifeCycleStatusLayer(AbstractCodeLayer):
     name = "Elinkaaren tila"
     URI = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 
-    valid_status_values: ClassVar[list[str]] = [
-        LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY,
-        LifeCycleStatusValue.VALID_LIFECYCLE,
-    ]  # "Voimassa ennen kaavan lainvoimaisuutta", "Voimassa"
-    repealed_status_values: ClassVar[list[str]] = [LifeCycleStatusValue.REPEALED_LIFECYCLE]  # "Kumoutunut"
+    @classmethod
+    def get_lifecycle_status_by_id(cls, _id: str | None) -> LifeCycleStatusValue | None:
+        if _id is None:
+            return None
+        attribute_value = cls.get_attribute_by_id("value", _id)
+        if not attribute_value:
+            return None
+        return LifeCycleStatusValue(attribute_value)
 
     @classmethod
     def is_valid_status(cls, _id: str) -> bool:
-        return cls.get_attribute_by_id("value", _id) in cls.valid_status_values
+        return cls.get_attribute_by_id("value", _id) in {
+            LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY,
+            LifeCycleStatusValue.VALID,
+        }
 
     @classmethod
     def is_repealed_status(cls, _id: str) -> bool:
-        return cls.get_attribute_by_id("value", _id) in cls.repealed_status_values
+        return cls.get_attribute_by_id("value", _id) == LifeCycleStatusValue.REPEALED
+
+    @classmethod
+    def is_under_appeal(cls, lifecycle_value: LifeCycleStatusValue | None) -> bool:
+        return lifecycle_value in {
+            LifeCycleStatusValue.UNDER_APPEAL,
+            LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL,
+            LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER,
+        }
 
     @classmethod
     def get_name_from_lifecycle_status_value(
