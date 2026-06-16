@@ -7,7 +7,7 @@ import logging
 import re
 import uuid
 from http import HTTPStatus
-from typing import Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 from qgis.PyQt.QtCore import QByteArray, QDate, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
@@ -16,6 +16,10 @@ from qgis.utils import iface
 
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.utils.misc_utils import get_active_plan_id
+
+if TYPE_CHECKING:
+    from arho_feature_template.gui.dialogs.new_plan_dialog import UnderAppealScopeOption
+
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +95,8 @@ class LambdaService(QObject):
         plan_id: str,
         lifecycle_status_id: str,
         plan_name: str,
+        under_appeal_scope: UnderAppealScopeOption | None,
+        keep_current_feature_lifecycle: bool | None,
         period_of_validity_start: QDate | None,
         approval_date: QDate | None,
     ):
@@ -103,15 +109,20 @@ class LambdaService(QObject):
                 "plan_name": {"fin": plan_name},
             },
         }
+        if under_appeal_scope:
+            payload["data"]["under_appeal_scope"] = under_appeal_scope.value
+        if keep_current_feature_lifecycle:
+            payload["data"]["keep_current_feature_lifecycle"] = keep_current_feature_lifecycle
         if period_of_validity_start:  # pyright: ignore[reportGeneralTypeIssues]
             payload["data"]["period_of_validity_start"] = period_of_validity_start.toPyDate().isoformat()
         if approval_date:  # pyright: ignore[reportGeneralTypeIssues]
             payload["data"]["approval_date"] = approval_date.toPyDate().isoformat()
 
         logger.debug(
-            "Copying plan source_plan_id=%s lifecycle_status_id=%s has_period_start=%s has_approval_date=%s",
+            "Copying plan source_plan_id=%s lifecycle_status_id=%s under_appeal_scope=%s has_period_start=%s has_approval_date=%s",
             plan_id,
             lifecycle_status_id,
+            under_appeal_scope,
             bool(period_of_validity_start),
             bool(approval_date),
         )

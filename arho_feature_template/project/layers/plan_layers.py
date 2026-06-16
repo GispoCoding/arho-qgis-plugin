@@ -171,6 +171,13 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
             return None
         return cast(str, producers_id)
 
+    @classmethod
+    def is_regional_plan(cls, plan_matter_id: str) -> bool:
+        plan_type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_matter_id)
+        if plan_type_id is None:
+            return False
+        return PlanTypeLayer.is_regional_plan_type(plan_type_id)
+
 
 class PlanLayer(AbstractPlanLayer):
     name = "Kaavasuunnitelma"
