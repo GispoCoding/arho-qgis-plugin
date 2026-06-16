@@ -12,8 +12,6 @@ from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
 
 if TYPE_CHECKING:
-    from datetime import date
-
     from qgis.core import QgsMapLayer
     from qgis.gui import QgisInterface
 
@@ -200,6 +198,6 @@ def symbol_fingerprint(symbol: QgsSymbol) -> str:
     return json.dumps(data, sort_keys=True)
 
 
-def date_as_str(date: date | None) -> str:
-    return QDate(date).toString(QLocale().dateFormat(QLocale.FormatType.ShortFormat)) if date else ""
+def date_as_str(date: QDate | None) -> str:
+    return date.toString(QLocale().dateFormat(QLocale.FormatType.ShortFormat)) if date else ""
     # return QDate(date).toString("dd.MM.yyyy") if date else ""

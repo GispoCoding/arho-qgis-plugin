@@ -7,19 +7,15 @@ import logging
 import re
 import uuid
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import Any, Callable, cast
 
-from qgis.PyQt.QtCore import QByteArray, QObject, QUrl, pyqtSignal
+from qgis.PyQt.QtCore import QByteArray, QDate, QObject, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import iface
 
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.utils.misc_utils import get_active_plan_id
-
-if TYPE_CHECKING:
-    from datetime import date
-
 
 logger = logging.getLogger(__name__)
 
@@ -95,9 +91,8 @@ class LambdaService(QObject):
         plan_id: str,
         lifecycle_status_id: str,
         plan_name: str,
-        partially_valid: bool,  # noqa: FBT001
-        period_of_validity_start: date | None,
-        approval_date: date | None,
+        period_of_validity_start: QDate | None,
+        approval_date: QDate | None,
     ):
         payload: dict[str, Any] = {
             # For now use a random non existing UUID so backend won't find any existing plan
@@ -108,12 +103,10 @@ class LambdaService(QObject):
                 "plan_name": {"fin": plan_name},
             },
         }
-        if partially_valid:
-            payload["data"]["partially_valid"] = True
-        if period_of_validity_start:
-            payload["data"]["period_of_validity_start"] = period_of_validity_start.isoformat()
-        if approval_date:
-            payload["data"]["approval_date"] = approval_date.isoformat()
+        if period_of_validity_start:  # pyright: ignore[reportGeneralTypeIssues]
+            payload["data"]["period_of_validity_start"] = period_of_validity_start.toPyDate().isoformat()
+        if approval_date:  # pyright: ignore[reportGeneralTypeIssues]
+            payload["data"]["approval_date"] = approval_date.toPyDate().isoformat()
 
         logger.debug(
             "Copying plan source_plan_id=%s lifecycle_status_id=%s has_period_start=%s has_approval_date=%s",

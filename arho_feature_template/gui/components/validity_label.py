@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from qgis.PyQt.QtCore import QSize, Qt
 from qgis.PyQt.QtGui import QIcon, QPixmap, QStandardItem
 from qgis.PyQt.QtWidgets import QLabel, QSizePolicy
@@ -6,6 +10,9 @@ from arho_feature_template.core.models import PlanBaseModel
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.misc_utils import date_as_str
+
+if TYPE_CHECKING:
+    from arho_feature_template.core.models import LifecycleBase, PlanBaseModel
 
 VALIDITY_SORT_ROLE = Qt.UserRole
 
@@ -21,8 +28,8 @@ class ValidityLabel(QLabel):
         self.setMaximumSize(23, 23)
         self.setScaledContents(True)
 
-    def set_from_model(self, model: PlanBaseModel) -> None:
-        if not hasattr(model, "lifecycle_status_id"):
+    def set_from_model(self, model: LifecycleBase) -> None:
+        if not hasattr(model, "lifecycle_status_id") or model.lifecycle_status_id is None:
             self.hide_widget()
             return
 
