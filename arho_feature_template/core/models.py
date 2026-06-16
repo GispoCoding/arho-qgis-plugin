@@ -25,9 +25,8 @@ from arho_feature_template.utils.localization_utils import (
 from arho_feature_template.utils.misc_utils import null_to_none
 
 if TYPE_CHECKING:
-    from datetime import date
-
     from qgis.core import QgsGeometry
+    from qgis.PyQt.QtCore import QDate
 
 
 # Type alias for localized text fields for models
@@ -219,6 +218,13 @@ class PlanBaseModel:
         return hash(tuple(hash_components))
 
 
+@dataclass(kw_only=True)
+class LifecycleBase:
+    lifecycle_status_id: str | None = None
+    period_of_validity_start: QDate | None = None
+    period_of_validity_end: QDate | None = None
+
+
 @dataclass
 class AttributeValue(PlanBaseModel):
     value_data_type: AttributeValueDataType | None = None
@@ -316,7 +322,7 @@ class AdditionalInformation(PlanBaseModel):
 
 
 @dataclass
-class Regulation(PlanBaseModel):
+class Regulation(PlanBaseModel, LifecycleBase):
     regulation_type_id: str
     value: AttributeValue | None = None
     additional_information: list[AdditionalInformation] = field(
@@ -328,9 +334,6 @@ class Regulation(PlanBaseModel):
     subject_identifiers: list[str] = field(default_factory=list)
     verbal_regulation_type_ids: list[str] = field(default_factory=list)
     regulation_group_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
-    lifecycle_status_id: str | None = None
-    period_of_validity_start: date | None = None
-    period_of_validity_end: date | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -389,14 +392,11 @@ class Regulation(PlanBaseModel):
 
 
 @dataclass
-class Proposition(PlanBaseModel):
+class Proposition(PlanBaseModel, LifecycleBase):
     value: LocalizedText | None
     theme_ids: list[str] = field(default_factory=list, compare=False, metadata={"hash": True})
     proposition_number: int | None = None
     regulation_group_id: str | None = field(compare=False, default=None)
-    lifecycle_status_id: str | None = None
-    period_of_validity_start: date | None = None
-    period_of_validity_end: date | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 
@@ -500,15 +500,12 @@ class RegulationGroup(PlanBaseModel):
 
 
 @dataclass
-class PlanObject(PlanBaseModel):
+class PlanObject(PlanBaseModel, LifecycleBase):
     geom: QgsGeometry | None = None  # Need to allow None for feature templates
     type_of_underground_id: str | None = None
     layer_name: str | None = None
     name: LocalizedText | None = None
     description: LocalizedText | None = None
-    lifecycle_status_id: str | None = None
-    period_of_validity_start: date | None = None
-    period_of_validity_end: date | None = None
     regulation_groups: list[RegulationGroup] = field(default_factory=list, compare=False)
     plan_id: int | None = None
     modified: bool = field(compare=False, default=True)
@@ -564,19 +561,16 @@ class PlanObject(PlanBaseModel):
 
 
 @dataclass
-class Plan(PlanBaseModel):
+class Plan(PlanBaseModel, LifecycleBase):
     name: str | None = None
     description: str | None = None
     scale: int | None = None
-    lifecycle_status_id: str | None = None
     general_regulations: list[RegulationGroup] = field(default_factory=list, compare=False)
     documents: list[Document] = field(default_factory=list, compare=False)
     legal_effect_ids: list[str] = field(default_factory=list)
     geom: QgsGeometry | None = None
     plan_matter_id: str | None = None
-    approval_date: date | None = None
-    period_of_validity_start: date | None = None
-    period_of_validity_end: date | None = None
+    approval_date: QDate | None = None
     locked: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
@@ -607,11 +601,11 @@ class Document(PlanBaseModel):
     personal_data_content_id: str | None = None
     retention_time_id: str | None = None
     language_id: str | None = None
-    document_date: date | None = None
+    document_date: QDate | None = None
     # exported_at: str | None = None
     # exported_file_key:
-    confirmation_date: date | None = None
-    arrival_date: date | None = None
+    confirmation_date: QDate | None = None
+    arrival_date: QDate | None = None
     plan_id: str | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
