@@ -3,24 +3,24 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qgis.PyQt.QtCore import QSize, Qt
-from qgis.PyQt.QtGui import QIcon, QPixmap, QStandardItem
+from qgis.PyQt.QtGui import QIcon, QStandardItem
 from qgis.PyQt.QtWidgets import QLabel, QSizePolicy
 
-from arho_feature_template.core.models import PlanBaseModel
-from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
-from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.project.layers.code_layers import (
+    LIFECYCLE_PIXMAPS,
+    LifeCycleStatusLayer,
+    LifeCycleStatusValue,
+)
+from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import date_as_str
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import LifecycleBase, PlanBaseModel
+    from arho_feature_template.core.models import LifecycleBase
 
 VALIDITY_SORT_ROLE = Qt.UserRole
 
 
 class ValidityLabel(QLabel):
-    VALID_MARK = QPixmap(resources_path("icons", "valid_mark2.png"))
-    REPEALED_MARK = QPixmap(resources_path("icons", "repealed_mark.png"))
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -33,8 +33,13 @@ class ValidityLabel(QLabel):
             self.hide_widget()
             return
 
+        lifecycle_status = LifeCycleStatusLayer.get_lifecycle_status_by_id(model.lifecycle_status_id)
+        if lifecycle_status is None:
+            self.hide_widget()
+            return
+        lifecycle_name = LifeCycleStatusLayer.get_name_by_id(model.lifecycle_status_id)
         if LifeCycleStatusLayer.is_repealed_status(model.lifecycle_status_id):
-            self.setPixmap(self.REPEALED_MARK)
+            self.setPixmap(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.REPEALED])
 
             if model.period_of_validity_start is not None and model.period_of_validity_end is not None:  # type: ignore
                 self.setToolTip(
@@ -48,8 +53,14 @@ class ValidityLabel(QLabel):
                 self.setToolTip("KUMOTTU")
 
         elif LifeCycleStatusLayer.is_valid_status(model.lifecycle_status_id):
-            self.setPixmap(self.VALID_MARK)
+            self.setPixmap(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.VALID])
             self.setToolTip(f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}")  # type: ignore
+        elif LifeCycleStatusLayer.is_under_appeal(lifecycle_status):
+            pixmap = LIFECYCLE_PIXMAPS[lifecycle_status]
+            self.setPixmap(pixmap)
+            lifecycle_name_translated = get_localized_text(lifecycle_name)
+            if lifecycle_name_translated:
+                self.setToolTip(lifecycle_name_translated)
 
         else:
             self.hide_widget()
@@ -59,7 +70,7 @@ class ValidityLabel(QLabel):
         self.hide()
 
 
-def validity_item_from_model(model: PlanBaseModel) -> QStandardItem:
+def validity_item_from_model(model: LifecycleBase) -> QStandardItem:
     """
     Create a QStandardItem with valid icon, repealed icon or no icon depending on model status.
 
@@ -73,12 +84,17 @@ def validity_item_from_model(model: PlanBaseModel) -> QStandardItem:
 
     item.setData(QSize(23, 23), Qt.SizeHintRole)
 
-    if not hasattr(model, "lifecycle_status_id"):
+    if not hasattr(model, "lifecycle_status_id") or model.lifecycle_status_id is None:
         item.setData(2, VALIDITY_SORT_ROLE)
         return item
 
+    lifecycle_status = LifeCycleStatusLayer.get_lifecycle_status_by_id(model.lifecycle_status_id)
+    if lifecycle_status is None:
+        item.setData(2, VALIDITY_SORT_ROLE)
+        return item
+    lifecycle_name = LifeCycleStatusLayer.get_name_by_id(model.lifecycle_status_id)
     if LifeCycleStatusLayer.is_repealed_status(model.lifecycle_status_id):
-        item.setData(QIcon(ValidityLabel.REPEALED_MARK), Qt.DecorationRole)
+        item.setData(QIcon(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.REPEALED]), Qt.DecorationRole)
 
         if model.period_of_validity_start and model.period_of_validity_end:  # type: ignore
             tooltip = (
@@ -95,8 +111,14 @@ def validity_item_from_model(model: PlanBaseModel) -> QStandardItem:
         item.setData(tooltip, Qt.ToolTipRole)
 
     elif LifeCycleStatusLayer.is_valid_status(model.lifecycle_status_id):
-        item.setData(QIcon(ValidityLabel.VALID_MARK), Qt.DecorationRole)
+        item.setData(QIcon(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.VALID]), Qt.DecorationRole)
         item.setData(f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}", Qt.ToolTipRole)  # type: ignore
         item.setData(0, VALIDITY_SORT_ROLE)
+
+    elif LifeCycleStatusLayer.is_under_appeal(lifecycle_status):
+        icon = LIFECYCLE_PIXMAPS[lifecycle_status]
+        item.setData(QIcon(icon), Qt.DecorationRole)
+        item.setData(get_localized_text(lifecycle_name), Qt.ToolTipRole)
+        item.setData(3, VALIDITY_SORT_ROLE)
 
     return item
