@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import dataclasses
 from importlib import resources
 from typing import TYPE_CHECKING
 
-from qgis.core import NULL, QgsApplication
+from qgis.core import QgsApplication
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import Qt, pyqtSignal
+from qgis.PyQt.QtCore import NULL, QDate, Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QFormLayout, QLabel, QMenu, QToolButton, QWidget
 
 from arho_feature_template.core.models import Proposition
+from arho_feature_template.gui.components.edit_lifecycle_menu import EditLifecycleMenu
 from arho_feature_template.gui.components.theme_widget import ThemeWidget
 from arho_feature_template.gui.components.value_input_widgets import (
     IntegerInputWidget,
     LocalizedMultilineTextInputWidget,
 )
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, LifeCycleStatusValue
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
@@ -45,6 +48,8 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
 
         # INIT
         self.proposition = proposition
+        self.lifecycle_status_id = proposition.lifecycle_status_id
+        self.period_of_validity_start = proposition.period_of_validity_start
         self.proposition_number_widget: IntegerInputWidget | None = None
 
         self.theme_widgets: list[ThemeWidget] = []
@@ -72,6 +77,25 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
             self._add_proposition_number(self.proposition.proposition_number)
 
         self.validity_label.set_from_model(self.proposition)
+        self.edit_lifecycle_menu = EditLifecycleMenu()
+        self.edit_lifecycle_menu.lifecycle_change_requested.connect(self._on_lifecycle_change_requested)
+        self.validity_label.clicked.connect(self._show_lifecycle_menu)
+
+    def _show_lifecycle_menu(self):
+        pos = self.validity_label.mapToGlobal(self.validity_label.rect().bottomLeft())
+        self.edit_lifecycle_menu.exec_(pos)
+
+    def _on_lifecycle_change_requested(self, lifecycle: LifeCycleStatusValue, date: QDate | None):
+        lifecycle_status_id = LifeCycleStatusLayer.get_id_from_lifecycle_status_value(lifecycle)
+        self.lifecycle_status_id = lifecycle_status_id
+        self.period_of_validity_start = date or None
+        self.validity_label.set_from_model(
+            dataclasses.replace(
+                self.proposition,
+                lifecycle_status_id=self.lifecycle_status_id,
+                period_of_validity_start=self.period_of_validity_start,
+            )
+        )
 
     def _add_widget(self, label: QLabel, widget: QWidget):
         self.form_layout.addRow(label, widget)
@@ -129,8 +153,8 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
                 theme_widget.get_value() for theme_widget in self.theme_widgets if theme_widget.get_value() != NULL
             ],
             proposition_number=self.proposition_number_widget.get_value() if self.proposition_number_widget else None,
-            lifecycle_status_id=self.proposition.lifecycle_status_id,
-            period_of_validity_start=self.proposition.period_of_validity_start,
+            lifecycle_status_id=self.lifecycle_status_id,
+            period_of_validity_start=self.period_of_validity_start,
             period_of_validity_end=self.proposition.period_of_validity_end,
             modified=self.proposition.modified,
             id_=self.proposition.id_ if not force_new else None,
