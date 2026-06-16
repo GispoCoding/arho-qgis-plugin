@@ -123,6 +123,11 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         if plan.locked:
             self._show_as_locked()
 
+        if plan.id_ is None:
+            self.lifecycle_status_combo_box.setEnabled(True)
+        else:
+            self.lifecycle_status_combo_box.setEnabled(False)
+
     def _show_as_locked(self):
         self.lock_checkbox.setChecked(True)
 
