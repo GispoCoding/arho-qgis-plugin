@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import datetime
 import enum
 import gzip
 import logging
@@ -13,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 import boto3
 import simplejson as json
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from database.db_helper import (
     DbUser,
@@ -30,6 +29,7 @@ from ryhti_client.database_client import (
     PlanNotFoundError,
     StartDateRequiredError,
 )
+from ryhti_client.plan_copier import CopyPlanData
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
@@ -292,14 +292,6 @@ def normalize_payload(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEv
     return {"raw_event": raw_event, "headers": headers, "body": body}
 
 
-class CopyPlanData(BaseModel):
-    lifecycle_status_uuid: str
-    plan_name: dict[str, str]
-    partially_valid: bool | None = None
-    approval_date: datetime.date | None = None
-    period_of_validity_start: datetime.date | None = None
-
-
 @return_500_on_unhandled_exceptions
 def handler(
     payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
@@ -492,14 +484,7 @@ def handler(
                 else:
                     LOGGER.info("Copying plan...")
                     try:
-                        copied_plan_id = database_client.copy_plan(
-                            plan_uuid,
-                            copy_data.lifecycle_status_uuid,
-                            copy_data.plan_name,
-                            partially_valid=copy_data.partially_valid,
-                            approval_date=copy_data.approval_date,
-                            period_of_validity_start=copy_data.period_of_validity_start,
-                        )
+                        copied_plan_id = database_client.copy_plan(plan_uuid, copy_data)
                         status_code = 200
                         title = "Plan copied."
                         copy_details = {"copied_plan_id": str(copied_plan_id)}

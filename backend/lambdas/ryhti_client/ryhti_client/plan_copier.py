@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
 import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import uuid4
 
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, class_mapper
 from sqlalchemy.orm.exc import UnmappedColumnError
 
@@ -227,3 +229,11 @@ class PlanCopier:
             duplicate_plan_objects.append(duplicate_plan_object)
 
         return duplicate_plan_objects
+
+
+class CopyPlanData(BaseModel):
+    lifecycle_status_id: str
+    plan_name: dict[str, str]
+    partially_valid: bool | None = None
+    approval_date: datetime.date | None = None
+    period_of_validity_start: datetime.date | None = None

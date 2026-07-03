@@ -23,7 +23,7 @@ from ryhti_client.deserializer import (
     extra_import_data_from_dict,
     ryhti_plan_from_json,
 )
-from ryhti_client.plan_copier import PlanCopier
+from ryhti_client.plan_copier import CopyPlanData, PlanCopier
 from ryhti_client.ryhti_schema import (
     Period,
     RyhtiAdditionalInformation,
@@ -1026,15 +1026,8 @@ class DatabaseClient:
         finally:
             _alter_triggers("ENABLE")
 
-    def copy_plan(
-        self,
-        plan_id: str,
-        lifecycle_status_id: str,
-        plan_name: dict[str, str],
-        partially_valid: bool | None = None,
-        approval_date: datetime.date | None = None,
-        period_of_validity_start: datetime.date | None = None,
-    ) -> DbId | None:
+    def copy_plan(self, plan_id: str, copy_data: CopyPlanData) -> DbId | None:
+        """Deep copy plan instance with all associated child objects and relationships."""
         """Deep copy plan instance with all associated child objects and relationships."""
         with self.Session(autoflush=False, expire_on_commit=False) as session:
             plan = session.get(models.Plan, plan_id)
@@ -1042,12 +1035,12 @@ class DatabaseClient:
                 raise PlanNotFoundError(UUID(plan_id))
 
             new_lifecycle_status = session.get(
-                codes.LifeCycleStatus, lifecycle_status_id
+                codes.LifeCycleStatus, copy_data.lifecycle_status_id
             )
             if new_lifecycle_status is None:
-                raise LifeCycleStatusNotFoundError(UUID(lifecycle_status_id))
+                raise LifeCycleStatusNotFoundError(UUID(copy_data.lifecycle_status_id))
 
-            approval_date = approval_date or plan.approval_date
+            approval_date = copy_data.approval_date or plan.approval_date
             if (
                 int(new_lifecycle_status.value) >= lifecycles.APPROVED_VALUE
                 and not approval_date
@@ -1055,12 +1048,12 @@ class DatabaseClient:
                 raise ApprovalDateRequiredError
 
             period_of_validity_start = (
-                period_of_validity_start or plan.period_of_validity_start
+                copy_data.period_of_validity_start or plan.period_of_validity_start
             )
             if (
                 int(new_lifecycle_status.value) >= lifecycles.VALID_STATUS
                 or (
-                    partially_valid is True
+                    copy_data.partially_valid is True
                     and int(new_lifecycle_status.value)
                     in {
                         lifecycles.UNDER_APPEAL_VALUE,
@@ -1075,8 +1068,7 @@ class DatabaseClient:
                 session=session,
                 plan=plan,
                 lifecycle_status=new_lifecycle_status,
-                plan_name=plan_name,
-                partially_valid=partially_valid,
+                plan_name=copy_data.plan_name,
                 approval_date=approval_date,
                 period_of_validity_start=period_of_validity_start,
             )
