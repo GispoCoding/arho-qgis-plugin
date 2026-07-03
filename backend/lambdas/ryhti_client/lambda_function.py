@@ -478,7 +478,7 @@ def handler(
             except ValidationError as e:
                 status_code = 400
                 title = "Error in provided data."
-                details = {"error": str(e)}
+                copy_details = {"error": str(e)}
 
             else:
                 if plan_uuid is None:
