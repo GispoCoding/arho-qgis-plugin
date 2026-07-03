@@ -120,9 +120,6 @@ class CodeBase(VersionedBase):
 class LifeCycleStatus(CodeBase):
     """Elinkaaren vaihe"""
 
-    VALID_VALUE = "13"  # Voimassa
-    VALID_BEFORE_LEGAL_VALIDITY_VALUE = "11"  # Voimassa ennen kaavan lainvoimaisuutta
-
     __tablename__ = "lifecycle_status"
     code_list_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari"
 

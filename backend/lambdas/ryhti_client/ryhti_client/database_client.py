@@ -17,11 +17,15 @@ from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
 from database.enums import AttributeValueDataType
-from ryhti_client import lifecycles
 from ryhti_client.deserializer import (
     Deserializer,
     extra_import_data_from_dict,
     ryhti_plan_from_json,
+)
+from ryhti_client.lifecycles import (
+    LifeCycleStatusValue,
+    UnderAppealScopeOption,
+    is_under_appeal,
 )
 from ryhti_client.plan_copier import CopyPlanData, PlanCopier
 from ryhti_client.ryhti_schema import (
@@ -1028,49 +1032,57 @@ class DatabaseClient:
 
     def copy_plan(self, plan_id: str, copy_data: CopyPlanData) -> DbId | None:
         """Deep copy plan instance with all associated child objects and relationships."""
-        """Deep copy plan instance with all associated child objects and relationships."""
         with self.Session(autoflush=False, expire_on_commit=False) as session:
             plan = session.get(models.Plan, plan_id)
             if plan is None:
                 raise PlanNotFoundError(UUID(plan_id))
 
-            new_lifecycle_status = session.get(
-                codes.LifeCycleStatus, copy_data.lifecycle_status_id
-            )
-            if new_lifecycle_status is None:
-                raise LifeCycleStatusNotFoundError(UUID(copy_data.lifecycle_status_id))
-
-            approval_date = copy_data.approval_date or plan.approval_date
-            if (
-                int(new_lifecycle_status.value) >= lifecycles.APPROVED_VALUE
-                and not approval_date
-            ):
-                raise ApprovalDateRequiredError
-
-            period_of_validity_start = (
-                copy_data.period_of_validity_start or plan.period_of_validity_start
-            )
-            if (
-                int(new_lifecycle_status.value) >= lifecycles.VALID_STATUS
-                or (
-                    copy_data.partially_valid is True
-                    and int(new_lifecycle_status.value)
-                    in {
-                        lifecycles.UNDER_APPEAL_VALUE,
-                        lifecycles.UNDER_RECTIFICATION_REMINDER_VALUE,
-                        lifecycles.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL_VALUE,
-                    }
+            new_lifecycle_status = None
+            approval_date = None
+            period_of_validity_start = None
+            if not copy_data.deep_copy:
+                new_lifecycle_status = session.get(
+                    codes.LifeCycleStatus, copy_data.lifecycle_status_id
                 )
-            ) and not period_of_validity_start:
-                raise StartDateRequiredError
+                if new_lifecycle_status is None:
+                    raise LifeCycleStatusNotFoundError(
+                        UUID(copy_data.lifecycle_status_id)
+                    )
+
+                approval_date = copy_data.approval_date or plan.approval_date
+                if (
+                    int(new_lifecycle_status.value)
+                    >= int(LifeCycleStatusValue.APPORVED)
+                    and not approval_date
+                ):
+                    raise ApprovalDateRequiredError
+
+                period_of_validity_start = (
+                    copy_data.period_of_validity_start or plan.period_of_validity_start
+                )
+                if (
+                    int(new_lifecycle_status.value) >= int(LifeCycleStatusValue.VALID)
+                    or (
+                        is_under_appeal(
+                            LifeCycleStatusValue(new_lifecycle_status.value)
+                        )
+                        and copy_data.under_appeal_scope
+                        == UnderAppealScopeOption.PARTIALLY_VALID
+                    )
+                ) and not period_of_validity_start:
+                    raise StartDateRequiredError
 
             plan_copier = PlanCopier(
                 session=session,
                 plan=plan,
                 lifecycle_status=new_lifecycle_status,
                 plan_name=copy_data.plan_name,
+                under_appeal_scope=copy_data.under_appeal_scope,
+                keep_under_appeal_lifecycle=copy_data.keep_under_appeal_lifecycle,
+                deep_copy=copy_data.deep_copy,
                 approval_date=approval_date,
                 period_of_validity_start=period_of_validity_start,
+                lock=copy_data.lock,
             )
             with self._disable_edit_triggers(session):
                 copied_plan = plan_copier.copy_plan()

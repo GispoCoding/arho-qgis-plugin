@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database import codes, models
 from ryhti_client.database_client import DatabaseClient
-from ryhti_client.plan_copier import PlanCopier
+from ryhti_client.plan_copier import CopyPlanData, PlanCopier
 
 
 @pytest.fixture
@@ -87,13 +87,13 @@ def test_copy_plan(
     approval_date = date(2026, 1, 1)
     period_of_validity_start = date(2026, 2, 1)
 
-    copied_plan_id = database_client.copy_plan(
-        original_plan_id,
+    data = CopyPlanData(
         lifecycle_status_id=valid_status_instance.id,
         plan_name={"fin": "Copied plan"},
         approval_date=approval_date,
         period_of_validity_start=period_of_validity_start,
     )
+    copied_plan_id = database_client.copy_plan(original_plan_id, data)
     assert copied_plan_id is not None
 
     original_plan = session.get(models.Plan, original_plan_id)
