@@ -18,6 +18,7 @@ ARHO land use planning database compatible with [national Ryhti data model](http
 - [Data model](#data-model)
 - [Development requirements](#development-requirements)
 - [Development](#development)
+  - [Debugging the ryhti_client lambda in VS Code](#debugging-the-ryhti_client-lambda-in-vs-code)
   - [Tests](#tests)
   - [Database changes](#database-changes)
     - [Adding a new table](#adding-a-new-table)
@@ -80,6 +81,16 @@ To start and create a database:
 > To stop development containers use `make stop`. To delete containers and the database volume use `make down`.
 
 > To create plans in the database, you must add at least one `organization` to the organization table (i.e. a test region or test municipality), with foreign key to the national code table which contains the geometry of your region or municipality. All plans that you create must have a foreign key to a valid region or municipality.
+
+### Debugging the ryhti_client lambda in VS Code
+
+The `ryhti_client` lambda can be debugged from VS Code while it runs in its dev Docker container.
+
+1. Bring up `ryhti_client` with debugpy enabled: `make dev-debug-ryhti`. This uses the `docker-compose.debug.yml` override to install `debugpy`, expose port `5678`, and set `DEBUGPY=1`.
+2. In VS Code's Run and Debug panel pick **Python: Attach to ryhti_client (docker)** and start it. The debugger attaches via `localhost:5678`.
+3. Set breakpoints in `lambdas/ryhti_client/lambda_function.py`, `lambdas/ryhti_client/ryhti_client/`, or `database/` and invoke the lambda — e.g. `make dev-ryhti-validate`.
+
+To debug module-level / cold-start code, set `DEBUGPY_WAIT=1` in `docker-compose.debug.yml`; the container will block on startup until VS Code attaches.
 
 ### Tests
 

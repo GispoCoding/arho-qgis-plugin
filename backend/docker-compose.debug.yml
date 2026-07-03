@@ -1,0 +1,22 @@
+name: arho
+
+# Overrides for debugging the ryhti_client lambda from VS Code.
+# Usage:
+#   docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml up -d ryhti_client
+# or:
+#   make dev-debug-ryhti
+#
+# Then attach VS Code using the "Python: Attach to ryhti_client (docker)" launch config.
+
+services:
+  ryhti_client:
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - pip install --quiet debugpy && exec /lambda-entrypoint.sh lambda_function.handler
+    ports:
+      - "5678:5678"
+    environment:
+      - DEBUGPY=1
+      # Set DEBUGPY_WAIT=1 to block lambda startup until VS Code attaches
+      # (useful for debugging module-level / cold-start code).
+      - DEBUGPY_WAIT=1

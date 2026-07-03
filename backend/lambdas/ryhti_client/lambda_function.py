@@ -41,6 +41,15 @@ if TYPE_CHECKING:
 # Boto3 and db helper initialization should go here.
 LOGGER = logging.getLogger()
 
+if os.environ.get("DEBUGPY") == "1":
+    import debugpy  # type: ignore[import-not-found]  # noqa: T100
+
+    debugpy.listen(("0.0.0.0", 5678))  # noqa: S104, T100
+    print("debugpy listening on port 5678", flush=True)
+    if os.environ.get("DEBUGPY_WAIT") == "1":
+        print("Waiting for VS Code debugger to attach...", flush=True)
+        debugpy.wait_for_client()  # noqa: T100
+
 user_credentials = get_user_credentials(
     DbUser.DBA
 )  # Get DB credentials once at cold start.

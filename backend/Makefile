@@ -45,6 +45,10 @@ pytest-fail:
 up:
 	docker compose -f docker-compose.dev.yml up -d
 
+dev-debug-ryhti:
+	@echo "Starting ryhti_client with debugpy on port 5678..."
+	docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml up -d --force-recreate ryhti_client
+
 stop:
 	docker compose -f docker-compose.dev.yml stop
 
@@ -61,6 +65,14 @@ revision:
 	DB_INSTANCE_ADDRESS=$(DB_INSTANCE_ADDRESS) \
 	DB_INSTANCE_PORT=$(DB_INSTANCE_PORT) \
 	alembic revision --autogenerate -m "$(name)"
+
+downgrade:
+	DBA_USER=$(DBA_USER) \
+	DBA_USER_PW=$(DBA_USER_PW) \
+	DB_MAIN_NAME=$(DB_MAIN_NAME) \
+	DB_INSTANCE_ADDRESS=$(DB_INSTANCE_ADDRESS) \
+	DB_INSTANCE_PORT=$(DB_INSTANCE_PORT) \
+	alembic downgrade -1
 
 pip-compile:
 	pip-compile requirements.in
