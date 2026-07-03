@@ -193,6 +193,12 @@ class PlanBase(VersionedBase):
     # is it worth the trouble?
     exported_at: Mapped[datetime | None]
 
+
+class RyhtiLifecycleBase(Base):
+    """Mixin for period of validity fields."""
+
+    __abstract__ = True
+
     lifecycle_status_id: Mapped[UUID] = mapped_column(
         ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
         index=True,
@@ -206,15 +212,11 @@ class PlanBase(VersionedBase):
             "LifeCycleStatus", back_populates=f"{cls.__tablename__}s", lazy="joined"
         )
 
-
-class PeriodOfValidityMixin:
-    """Mixin for period of validity fields."""
-
     period_of_validity_start: Mapped[date | None]
     period_of_validity_end: Mapped[date | None]
 
 
-class Plan(PlanBase, PeriodOfValidityMixin):
+class Plan(PlanBase, RyhtiLifecycleBase):
     """Maakuntakaava, compatible with Ryhti 2.0 specification"""
 
     __tablename__ = "plan"
@@ -289,7 +291,7 @@ class Plan(PlanBase, PeriodOfValidityMixin):
     )
 
 
-class PlanObjectBase(PlanBase, PeriodOfValidityMixin):
+class PlanObjectBase(PlanBase, RyhtiLifecycleBase):
     """All plan object tables have the same fields, apart from geometry."""
 
     __abstract__ = True
@@ -543,7 +545,7 @@ type_of_verbal_regulation_association = Table(
 )
 
 
-class PlanRegulation(PlanBase, AttributeValueMixin, PeriodOfValidityMixin):
+class PlanRegulation(PlanBase, AttributeValueMixin, RyhtiLifecycleBase):
     """Kaavamääräys"""
 
     __tablename__ = "plan_regulation"
@@ -606,7 +608,7 @@ class PlanRegulation(PlanBase, AttributeValueMixin, PeriodOfValidityMixin):
     subject_identifiers: Mapped[list[str] | None]
 
 
-class PlanProposition(PlanBase, PeriodOfValidityMixin):
+class PlanProposition(PlanBase, RyhtiLifecycleBase):
     """Kaavasuositus"""
 
     __tablename__ = "plan_proposition"
