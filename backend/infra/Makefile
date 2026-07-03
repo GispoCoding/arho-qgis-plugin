@@ -62,10 +62,10 @@ migrate-db:
 	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "migrate_db"}' ../logs/response_migrate_db.json
 
 load-koodistot:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-koodistot_loader --payload '{}' ../logs/response_load_koodistot.json
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-koodistot_loader --payload '{}' ../logs/response_load_koodistot.json
 
 load-mml:
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-mml_loader --payload '{}' ../logs/response_load_mml.json
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-mml_loader --payload '{}' ../logs/response_load_mml.json
 
 
 decrypt-workspace-secrets:
@@ -75,3 +75,18 @@ decrypt-workspace-secrets:
 encrypt-workspace-secrets:
 	sops -e public_keys/$(shell terraform workspace show) > public_keys/$(shell terraform workspace show).enc
 	sops -e var-files/$(shell terraform workspace show).tfvars.json > var-files/$(shell terraform workspace show).tfvars.enc.json
+
+tf-plan:
+	terraform plan -var-file=var-files/$(shell terraform workspace show).tfvars.json
+
+tf-apply:
+	terraform apply -var-file=var-files/$(shell terraform workspace show).tfvars.json
+
+update-ssh-keys:
+	ansible-playbook ansible/playbook.yml \
+	-i ansible/inventory/hosts.yml \
+	--extra-vars " \
+		bastion_host=$(shell terraform output -raw bastion_address) \
+		ssh_key_file=../public_keys/$(shell terraform workspace show) \
+	" \
+	$(if $(ssh_private_key),--private-key $(ssh_private_key))
