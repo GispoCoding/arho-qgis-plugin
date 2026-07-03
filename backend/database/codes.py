@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeVar
 from uuid import UUID  # Sqlalchemy uses UUID type annotation runtime
 
@@ -490,6 +491,7 @@ class TypeOfDecisionMaker(CodeBase):
 T = TypeVar("T", bound=CodeBase)
 
 
+@lru_cache(maxsize=64)
 def get_code[T: CodeBase](
     session: Session, code_class: type[T], value: str
 ) -> T | None:
