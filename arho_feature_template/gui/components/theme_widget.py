@@ -43,7 +43,7 @@ class ThemeWidget(QWidget, FormClass):  # type: ignore
 
         self.theme.currentIndexChanged.connect(lambda _: self.changed.emit())
 
-    def get_value(self) -> str:
+    def get_value(self) -> str | None:
         return self.theme.value()
 
     def set_value(self, value: str | None):

@@ -3,8 +3,8 @@ from __future__ import annotations
 from qgis.PyQt.QtCore import QDate, pyqtSignal
 from qgis.PyQt.QtWidgets import QPushButton, QWidget
 
+from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.gui.components.edit_lifecycle_menu import EditLifecycleMenu
-from arho_feature_template.project.layers.code_layers import LifeCycleStatusValue
 
 
 class PushButtonEditLifecycle(QPushButton):

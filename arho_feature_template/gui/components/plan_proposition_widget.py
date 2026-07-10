@@ -16,11 +16,12 @@ from arho_feature_template.gui.components.value_input_widgets import (
     IntegerInputWidget,
     LocalizedMultilineTextInputWidget,
 )
-from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, LifeCycleStatusValue
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QPushButton
 
+    from arho_feature_template.core.lifecycles import LifeCycleStatusValue
     from arho_feature_template.gui.components.validity_label import ValidityLabel
 
 
@@ -150,7 +151,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
             regulation_group_id=self.proposition.regulation_group_id,
             value=self.text_input.get_value(),
             theme_ids=[
-                theme_widget.get_value() for theme_widget in self.theme_widgets if theme_widget.get_value() != NULL
+                theme for theme_widget in self.theme_widgets if (theme := theme_widget.get_value()) and theme != NULL
             ],
             proposition_number=self.proposition_number_widget.get_value() if self.proposition_number_widget else None,
             lifecycle_status_id=self.lifecycle_status_id,

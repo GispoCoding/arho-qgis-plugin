@@ -197,13 +197,16 @@ class ArhoOptionsPage(QgsOptionsPageWidget, FormClass):  # type: ignore
         if invalid_file_types:
             iface.messageBar().pushCritical("Väärä tiedostotyyppi:", ", ".join(invalid_file_types))
 
-        SettingsManager.set_primary_language(self.primary_language_combobox.value())
-        SettingsManager.set_languages([widget.value() for widget in self.language_widgets])
+        if lang := self.primary_language_combobox.value():
+            SettingsManager.set_primary_language(lang)
+
+        SettingsManager.set_languages([lang for widget in self.language_widgets if (lang := widget.value())])
 
         SettingsManager.set_show_only_primary_language(self.show_only_primary_language_checkbox.isChecked())
         SettingsManager.set_add_only_selected_languages(self.check_box_add_only_selected_languages.isChecked())
 
-        SettingsManager.set_code_value_language(self.code_value_language_combo_box.value())
+        if lang := self.code_value_language_combo_box.value():
+            SettingsManager.set_code_value_language(lang)
 
         SettingsManager.set_log_level(LogTarget.STREAM, self.combo_box_log_stream.currentText())
         SettingsManager.set_log_level(LogTarget.FILE, self.combo_box_log_file.currentText())

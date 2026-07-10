@@ -117,4 +117,8 @@ class AbstractLayer(ABC):
             quoted_values = [f"'{val}'" for val in value]
             expression = f'"{attribute}" IN ({", ".join(map(str, quoted_values))})'
 
-        return expression
+        try:
+            return expression
+        except Exception as e:
+            msg = f"Error creating filter expression for attribute '{attribute}' and value '{value}': {e}"
+            raise ValueError(msg) from e

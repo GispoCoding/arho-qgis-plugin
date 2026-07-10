@@ -227,15 +227,13 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 type_of_underground_id=type_of_underground_id,
                 layer_name=self.target_layer_name,
                 name=(
-                    {self.name_language_selection.value(): feature[source_layer_name_field]}
-                    if source_layer_name_field
+                    {lang: feature[source_layer_name_field]}
+                    if source_layer_name_field and (lang := self.name_language_selection.value())
                     else None
                 ),
                 description=(
-                    {
-                        self.description_language_selection.value(): feature[source_layer_description_field],
-                    }
-                    if source_layer_description_field
+                    {lang: feature[source_layer_description_field]}
+                    if source_layer_description_field and (lang := self.description_language_selection.value())
                     else None
                 ),
                 regulation_groups=regulation_groups,

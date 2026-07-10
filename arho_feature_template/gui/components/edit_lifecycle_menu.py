@@ -4,25 +4,13 @@ from qgis.PyQt.QtCore import QDate, pyqtSignal
 from qgis.PyQt.QtGui import QAction, QIcon
 from qgis.PyQt.QtWidgets import QDateEdit, QDialog, QDialogButtonBox, QLabel, QMenu, QVBoxLayout, QWidget
 
+from arho_feature_template.core.lifecycles import LIFECYCLE_PIXMAPS, LifeCycleStatusValue
 from arho_feature_template.project.layers.code_layers import (
-    LIFECYCLE_PIXMAPS,
     LifeCycleStatusLayer,
-    LifeCycleStatusValue,
 )
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
-from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
-
-lifecycle_status_icons = {
-    LifeCycleStatusValue.REPEALED: QIcon(resources_path("icons", "repealed_mark.svg")),
-    LifeCycleStatusValue.VALID: QIcon(resources_path("icons", "valid_mark.svg")),
-    LifeCycleStatusValue.UNDER_APPEAL: QIcon(resources_path("icons", "under_appeal.svg")),
-    LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER: QIcon(resources_path("icons", "under_appeal.svg")),
-    LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL: QIcon(
-        resources_path("icons", "under_appeal.svg")
-    ),
-}
 
 
 class EditLifecycleMenu(QMenu):
@@ -32,13 +20,15 @@ class EditLifecycleMenu(QMenu):
         super().__init__(parent)
 
         lifecycle_values = [
+            LifeCycleStatusValue.LEGALLY_VALID,
             LifeCycleStatusValue.VALID,
             LifeCycleStatusValue.UNDER_APPEAL,
             LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER,
             LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL,
             LifeCycleStatusValue.REPEALED,
         ]
-        if PlanMatterLayer.is_regional_plan(get_active_plan_matter_id()):
+        active_plan_matter_id = get_active_plan_matter_id()
+        if active_plan_matter_id and PlanMatterLayer.is_regional_plan(get_active_plan_matter_id()):
             lifecycle_values.insert(1, LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY)
 
         for lifecycle_value in lifecycle_values:

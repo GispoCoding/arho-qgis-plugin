@@ -7,15 +7,21 @@ from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QDate, QDateTime, Qt, pyqtSignal
-from qgis.PyQt.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QLineEdit, QWidget
+from qgis.PyQt.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QLineEdit,
+    QWidget,
+)
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.core.lifecycles import LifeCycleStatusValue, get_allowed_plan_lifecycle_transitions
 from arho_feature_template.core.models import Plan
 from arho_feature_template.gui.components.code_combobox import ValueDataRole
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
-    LifeCycleStatusValue,
-    get_allowed_plan_lifecycle_transitions,
 )
 from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
@@ -51,12 +57,16 @@ UNDER_APPEAL_SCOPE_LABELS = {
 }
 UNDER_APPEAL_SCOPE_DESCRIPTIONS = {
     UnderAppealScopeOption.SUBSET_OF_PLAN: Template(
-        "Kaavasuunnitelman kohteet jätetään elinkaaren tilaan $lifecycle.\n"
+        "Kaavasuunnitelman kaavakohteet, -määräykset ja suositukset jätetään \n"
+        "elinkaaren tilaan $lifecycle.\n"
         "Avaa kaavasuunnitelma ja päivitä tarvittavien kohteiden elinkaaren tila."
     ),
-    UnderAppealScopeOption.WHOLE_PLAN: Template("Kaavasuunnitelman kohteet asetetaan elinkaaren tilaan $lifecycle."),
+    UnderAppealScopeOption.WHOLE_PLAN: Template(
+        "Kaavasuunnitelman kaavakohteet, -määräykset ja suositukset asetetaan \n" "elinkaaren tilaan $lifecycle."
+    ),
     UnderAppealScopeOption.PARTIALLY_VALID: Template(
-        "Kaavasuunnitelman kohteet asetetaan elinkaaren tilaan $lifecycle.\n"
+        "Kaavasuunnitelman kaavakohteet, -määräykset ja suositukset asetetaan \n"
+        "elinkaaren tilaan $lifecycle.\n"
         "Avaa kaavasuunnitelma ja päivitä tarvittavien kohteiden elinkaaren tila."
     ),
 }
@@ -66,18 +76,25 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
     widget_input: QWidget
     plan_name: QLineEdit
     source_plan: QComboBox
-    plan_lifecycle: CodeComboBox
+    label_source_plan: QLabel
+    check_box_deep_copy: QCheckBox
+    plan_target_lifecycle: CodeComboBox
+    label_plan_target_lifecycle: QLabel
     check_box_show_allowed_transitions_only: QCheckBox
     label_under_appeal_scope: QLabel
-    label_under_appeal_scope_description: QLabel
-    check_box_keep_current_feature_lifecycle: QCheckBox
     combo_box_under_appeal_scope: QComboBox
-    label_validity_start: QLabel
+    label_under_appeal_scope_description: QLabel
+    check_box_keep_under_appeal_lifecycle: QCheckBox
+    label_validity_start_date: QLabel
     validity_start_date: QgsDateTimeEdit
-    label_approval: QLabel
+    label_approval_date: QLabel
     approval_date: QgsDateTimeEdit
+    check_box_lock: QCheckBox
     button_box: QDialogButtonBox
     widget_progress: QWidget
+
+    widget_under_appeal_scope: QWidget
+    widget_target_lifecycle: QWidget
 
     plan_copied = pyqtSignal(str)
 
@@ -94,13 +111,16 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.plan_layer = PlanLayer.get_from_project()
         self.previously_in_edit_mode = self.plan_layer.isEditable()
 
-        self.populate_plan_combobox()
-        self.plan_lifecycle.populate_from_code_layer(LifeCycleStatusLayer)
+        self._populate_plan_combobox()
+        self.plan_target_lifecycle.populate_from_code_layer(LifeCycleStatusLayer)
         self._update_allowed_plan_lifecycles()
         self._add_lifecycle_status_data_to_target_lifecycle_combobox()
         self._populate_combo_box_under_appeal_scope()
         self.plan_name.textChanged.connect(self._check_required_fields)
-        self.plan_lifecycle.currentIndexChanged.connect(self._check_required_fields)
+        self.plan_target_lifecycle.currentIndexChanged.connect(self._check_required_fields)
+        self.check_box_deep_copy.stateChanged.connect(self._check_required_fields)
+        self.approval_date.valueChanged.connect(self._check_required_fields)
+        self.validity_start_date.valueChanged.connect(self._check_required_fields)
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         self.source_plan.currentIndexChanged.connect(self._on_source_plan_changed)
@@ -111,9 +131,9 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.lambda_service.plan_copy_failed.connect(self._handle_copy_failed)
 
         # Start date widget initially invisible
-        self.label_validity_start.setVisible(False)
+        self.label_validity_start_date.setVisible(False)
         self.validity_start_date.setVisible(False)
-        self.label_approval.setVisible(False)
+        self.label_approval_date.setVisible(False)
         self.approval_date.setVisible(False)
 
         # Set dates as today initially
@@ -121,12 +141,21 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.approval_date.setDateTime(QDateTime(QDate.currentDate()))
 
         # Show/hide start date based on lifecycle stage
-        self._on_plan_lifecycle_changed(self.plan_lifecycle.currentIndex())
-        self.plan_lifecycle.currentIndexChanged.connect(self._on_plan_lifecycle_changed)
+        self._on_plan_lifecycle_changed(self.plan_target_lifecycle.currentIndex())
+        self.plan_target_lifecycle.currentIndexChanged.connect(self._on_plan_lifecycle_changed)
 
         self.combo_box_under_appeal_scope.currentIndexChanged.connect(self._on_combo_box_under_appeal_scope_changed)
 
+        self.check_box_deep_copy.stateChanged.connect(self._on_check_box_deep_copy_changed)
+
         self._check_required_fields()
+
+    def _on_check_box_deep_copy_changed(self, state: int):  # noqa: ARG002
+        self._set_validity_date_visibility()
+        self._set_approval_date_visibility()
+        self._set_under_appeal_scope_visibility()
+        self._set_keep_under_appeal_lifecycle_visibility()
+        self._set_target_lifecycle_visibility()
 
     def _update_under_appeal_scope_description(self, scope: UnderAppealScopeOption) -> None:
         description_template = UNDER_APPEAL_SCOPE_DESCRIPTIONS.get(scope)
@@ -137,16 +166,29 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
                 else:
                     lifecycle_value = LifeCycleStatusValue.VALID
             elif scope == UnderAppealScopeOption.WHOLE_PLAN:
-                lifecycle_value = self.plan_lifecycle.currentData(ValueDataRole)
+                lifecycle_value = self.plan_target_lifecycle.currentData(ValueDataRole)
             elif scope == UnderAppealScopeOption.SUBSET_OF_PLAN:
                 lifecycle_value = LifeCycleStatusValue.APPORVED
             else:
                 self.label_under_appeal_scope_description.setText("")
                 return
+
             lifecycle_name = get_localized_text(
                 LifeCycleStatusLayer.get_name_from_lifecycle_status_value(lifecycle_value)
             )
             self.label_under_appeal_scope_description.setText(description_template.substitute(lifecycle=lifecycle_name))
+
+    def _set_keep_under_appeal_lifecycle_visibility(self):
+        visible = (
+            LifeCycleStatusLayer.is_under_appeal(self._get_source_plan_lifecycle())
+            and self.plan_target_lifecycle.currentData(ValueDataRole)
+            in {
+                LifeCycleStatusValue.LEGALLY_VALID,
+                LifeCycleStatusValue.VALID,
+            }
+            and not self.check_box_deep_copy.isChecked()
+        )
+        self.check_box_keep_under_appeal_lifecycle.setVisible(visible)
 
     def _on_combo_box_under_appeal_scope_changed(self, index: int):
         self._set_validity_date_visibility()
@@ -160,13 +202,13 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
             )
 
     def _add_lifecycle_status_data_to_target_lifecycle_combobox(self):
-        for i in range(self.plan_lifecycle.model().rowCount()):
-            lifecycle_value = self.plan_lifecycle.itemData(i, ValueDataRole)
+        for i in range(self.plan_target_lifecycle.model().rowCount()):
+            lifecycle_value = self.plan_target_lifecycle.itemData(i, ValueDataRole)
             if lifecycle_value is not None:
                 lifecycle_status = LifeCycleStatusValue(lifecycle_value)
-                self.plan_lifecycle.setItemData(i, lifecycle_status, LIFECYCLE_STATUS_DATA_ROLE)
+                self.plan_target_lifecycle.setItemData(i, lifecycle_status, LIFECYCLE_STATUS_DATA_ROLE)
 
-    def populate_plan_combobox(self):
+    def _populate_plan_combobox(self):
         active_plan_id = get_active_plan_id()
         selected_index = None
         self.source_plan.addItem("NULL", None)
@@ -185,57 +227,82 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         ok_button = self.button_box.button(QDialogButtonBox.Ok)
 
         # Required: plan name + lifecycle
-        required_fields_filled = self.plan_name.text() != "" and self.plan_lifecycle.value() is not None
-
-        # Require valid/approved date for corresponding lifecycle statuses
-        if self.validity_start_date.isVisible():
-            required_fields_filled = required_fields_filled and self.validity_start_date.date() is not None
-        if self.approval_date.isVisible():
-            required_fields_filled = required_fields_filled and self.approval_date.date() is not None
+        required_fields_filled = self.plan_name.text() != "" and (
+            self.check_box_deep_copy.isChecked()
+            or (
+                self.plan_target_lifecycle.value() is not None
+                and ((not self.validity_start_date.isVisible()) or self.validity_start_date.date().isValid())
+                and ((not self.approval_date.isVisible()) or self.approval_date.date().isValid())
+            )
+        )
 
         ok_button.setEnabled(required_fields_filled)
 
+    def _set_deep_copy_visibility(self):
+        visible = self.source_plan.currentData(DATA_ROLE) is not None
+        self.check_box_deep_copy.setVisible(visible)
+
+    def _set_target_lifecycle_visibility(self):
+        visible = not self.check_box_deep_copy.isChecked()
+        self.label_plan_target_lifecycle.setVisible(visible)
+        self.widget_target_lifecycle.setVisible(visible)
+
+        self.check_box_show_allowed_transitions_only.setVisible(self.source_plan.currentData(DATA_ROLE) is not None)
+
     def _set_under_appeal_scope_visibility(self):
-        visible = LifeCycleStatusLayer.is_under_appeal(self.plan_lifecycle.currentData(ValueDataRole))
+        visible = (
+            LifeCycleStatusLayer.is_under_appeal(self.plan_target_lifecycle.currentData(ValueDataRole))
+            and not self.check_box_deep_copy.isChecked()
+        )
 
         self.label_under_appeal_scope.setVisible(visible)
-        self.label_under_appeal_scope_description.setVisible(visible)
-        self.combo_box_under_appeal_scope.setVisible(visible)
+        self.widget_under_appeal_scope.setVisible(visible)
 
     def _set_validity_date_visibility(self):
-        visible = self.plan_lifecycle.currentData(ValueDataRole) == LifeCycleStatusValue.VALID or (
-            LifeCycleStatusLayer.is_under_appeal(self.plan_lifecycle.currentData(ValueDataRole))
-            and self.combo_box_under_appeal_scope.currentData() == UnderAppealScopeOption.PARTIALLY_VALID
+        visible = not self.check_box_deep_copy.isChecked() and (
+            self.plan_target_lifecycle.currentData(ValueDataRole) == LifeCycleStatusValue.VALID
+            or (
+                LifeCycleStatusLayer.is_under_appeal(self.plan_target_lifecycle.currentData(ValueDataRole))
+                and self.combo_box_under_appeal_scope.currentData() == UnderAppealScopeOption.PARTIALLY_VALID
+            )
         )
-        self.label_validity_start.setVisible(visible)
+        self.label_validity_start_date.setVisible(visible)
         self.validity_start_date.setVisible(visible)
 
     def _set_approval_date_visibility(self):
-        visible = self.plan_lifecycle.currentData(ValueDataRole) == LifeCycleStatusValue.APPORVED
-        self.label_approval.setVisible(visible)
+        visible = (
+            self.plan_target_lifecycle.currentData(ValueDataRole) == LifeCycleStatusValue.APPORVED
+            and not self.check_box_deep_copy.isChecked()
+        )
+        self.label_approval_date.setVisible(visible)
         self.approval_date.setVisible(visible)
 
     def _on_plan_lifecycle_changed(self, index: int):  # noqa: ARG002
         self._set_validity_date_visibility()
         self._set_approval_date_visibility()
         self._set_under_appeal_scope_visibility()
+        self._set_keep_under_appeal_lifecycle_visibility()
 
         self._on_combo_box_under_appeal_scope_changed(self.combo_box_under_appeal_scope.currentIndex())
 
     def _on_show_allowed_transitions_changed(self, state: int):  # noqa: ARG002
         self._update_allowed_plan_lifecycles()
 
-    def _update_allowed_plan_lifecycles(self) -> None:
+    def _get_source_plan_lifecycle(self) -> LifeCycleStatusValue | None:
         source_lifecycle: LifeCycleStatusValue | None = self.source_plan.currentData(LIFECYCLE_STATUS_DATA_ROLE)
+        return source_lifecycle
+
+    def _update_allowed_plan_lifecycles(self) -> None:
+        source_lifecycle = self._get_source_plan_lifecycle()
         if source_lifecycle is None:
             allowed_lifecycle_values = set(LifeCycleStatusValue)
         else:
             allowed_lifecycle_values = set(get_allowed_plan_lifecycle_transitions(source_lifecycle))
-        view = self.plan_lifecycle.view()
-        model = self.plan_lifecycle.model()
+        view = self.plan_target_lifecycle.view()
+        model = self.plan_target_lifecycle.model()
 
         for row_num in range(model.rowCount()):
-            item_lifecycle = self.plan_lifecycle.itemData(row_num, ValueDataRole)
+            item_lifecycle = self.plan_target_lifecycle.itemData(row_num, ValueDataRole)
             if item_lifecycle is None:
                 continue
             item = model.item(row_num)
@@ -249,13 +316,23 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
     def _on_source_plan_changed(self, index: int):  # noqa: ARG002
         self._update_allowed_plan_lifecycles()
+        self._set_keep_under_appeal_lifecycle_visibility()
+        self._set_deep_copy_visibility()
+        self._set_target_lifecycle_visibility()
+
+    def _get_keep_under_appeal_lifecycle(self) -> bool | None:
+        return (
+            self.check_box_keep_under_appeal_lifecycle.isChecked()
+            if self.check_box_keep_under_appeal_lifecycle.isVisible()
+            else None
+        )
 
     def _on_ok_clicked(self):
         plan_id = self.source_plan.currentData(DATA_ROLE)
 
         period_of_validity_start = self.validity_start_date.date() if self.validity_start_date.isVisible() else None
         approval_date = self.approval_date.date() if self.approval_date.isVisible() else None
-
+        keep_under_appeal_lifecycle = self._get_keep_under_appeal_lifecycle()
         if plan_id is not None:
             self.widget_input.hide()
             self.widget_progress.show()
@@ -263,17 +340,19 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
             self.lambda_service.copy_plan(
                 plan_id,
-                self.plan_lifecycle.value(),
+                self.plan_target_lifecycle.value(),
                 self.plan_name.text(),
                 under_appeal_scope=self.combo_box_under_appeal_scope.currentData(),
-                keep_current_feature_lifecycle=self.check_box_keep_current_feature_lifecycle.isChecked(),
+                keep_under_appeal_lifecycle=keep_under_appeal_lifecycle,
+                deep_copy=self.check_box_deep_copy.isChecked(),
                 period_of_validity_start=period_of_validity_start,
                 approval_date=approval_date,
+                lock=self.check_box_lock.isChecked(),
             )
         else:
             self.plan = Plan(
                 name=self.plan_name.text(),
-                lifecycle_status_id=self.plan_lifecycle.value(),
+                lifecycle_status_id=self.plan_target_lifecycle.value(),
                 plan_matter_id=get_active_plan_matter_id(),
                 period_of_validity_start=period_of_validity_start,
                 approval_date=approval_date,

@@ -4,7 +4,7 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor, QFont, QPainter, QPixmap
 
 
-def text_icon(text: str, color: QColor | None = None, size: int = 24, font_size: int = 20) -> QPixmap:
+def text_icon(text: str, color: QColor | None = None, size: int = 128, font_size: int = 104) -> QPixmap:
     color = color or QColor(0, 0, 0)
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.transparent)
