@@ -46,7 +46,7 @@ class CodeComboBox(QComboBox):
         for id_, text in options.items():
             self.addItem(text, id_)
 
-    def value(self) -> str:
+    def value(self) -> str | None:
         return self.currentData()
 
     def set_value(self, value: str | None) -> None:

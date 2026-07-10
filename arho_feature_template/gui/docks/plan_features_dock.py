@@ -24,11 +24,12 @@ from qgis.PyQt.QtWidgets import QHBoxLayout, QMenu, QPushButton, QTableView
 
 from arho_feature_template.core import feature_editing
 from arho_feature_template.core.feature_editing import save_plan_object
+from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.components.validity_label import VALIDITY_SORT_ROLE, validity_item_from_model
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
-from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, LifeCycleStatusValue
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
     LineLayer,
@@ -190,12 +191,16 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.push_button_edit_lifecycle.lifecycle_change_requested.connect(self._on_lifecycle_change_requested)
 
     def _update_edit_lifecycle_visibility(self):
-        active_lifecycle_id = PlanLayer.get_attribute_by_id("lifecycle_status_id", get_active_plan_id())
-        active_lifecycle_value = LifeCycleStatusLayer.get_lifecycle_status_by_id(active_lifecycle_id)
+        active_plan_id = get_active_plan_id()
+        if not active_plan_id:
+            visible = False
+        else:
+            active_lifecycle_id = PlanLayer.get_attribute_by_id("lifecycle_status_id", get_active_plan_id())
+            active_lifecycle_value = LifeCycleStatusLayer.get_lifecycle_status_by_id(active_lifecycle_id)
 
-        visible = active_lifecycle_value is not None and int(active_lifecycle_value.value) >= int(
-            LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER
-        )
+            visible = active_lifecycle_value is not None and int(active_lifecycle_value.value) >= int(
+                LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER
+            )
         self.push_button_edit_lifecycle.setVisible(visible)
 
     def _on_lifecycle_change_requested(self, lifecycle_value: LifeCycleStatusValue, date: QDate | None):

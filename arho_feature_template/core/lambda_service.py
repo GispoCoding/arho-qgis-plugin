@@ -90,33 +90,54 @@ class LambdaService(QObject):
 
         self._send_request(action=self.ACTION_IMPORT_PLAN, payload=payload)
 
+    def deep_copy_plan(self, plan_id: str, plan_name: str, lock: bool = False):  # noqa: FBT001, FBT002
+        payload: dict[str, Any] = {
+            "plan_uuid": plan_id,
+            "data": {
+                "plan_name": {"fin": plan_name},
+                "lock": lock,
+            },
+        }
+        logger.debug(
+            "Deep copying plan source_plan_id=%s plan_name=%s lock=%s",
+            plan_id,
+            plan_name,
+            lock,
+        )
+
+        self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
+
     def copy_plan(
         self,
         plan_id: str,
-        lifecycle_status_id: str,
+        lifecycle_status_id: str | None,
         plan_name: str,
         under_appeal_scope: UnderAppealScopeOption | None,
-        keep_current_feature_lifecycle: bool | None,
+        keep_under_appeal_lifecycle: bool | None,
+        deep_copy: bool,  # noqa: FBT001
         period_of_validity_start: QDate | None,
         approval_date: QDate | None,
+        lock: bool,  # noqa: FBT001
     ):
         payload: dict[str, Any] = {
-            # For now use a random non existing UUID so backend won't find any existing plan
-            # TODO: Change this when backend supports importing without UUID
             "plan_uuid": plan_id,
             "data": {
-                "lifecycle_status_uuid": lifecycle_status_id,
                 "plan_name": {"fin": plan_name},
             },
         }
+        if lifecycle_status_id:
+            payload["data"]["lifecycle_status_id"] = lifecycle_status_id
         if under_appeal_scope:
             payload["data"]["under_appeal_scope"] = under_appeal_scope.value
-        if keep_current_feature_lifecycle:
-            payload["data"]["keep_current_feature_lifecycle"] = keep_current_feature_lifecycle
+        if keep_under_appeal_lifecycle:
+            payload["data"]["keep_under_appeal_lifecycle"] = keep_under_appeal_lifecycle
         if period_of_validity_start:  # pyright: ignore[reportGeneralTypeIssues]
             payload["data"]["period_of_validity_start"] = period_of_validity_start.toPyDate().isoformat()
         if approval_date:  # pyright: ignore[reportGeneralTypeIssues]
             payload["data"]["approval_date"] = approval_date.toPyDate().isoformat()
+        if deep_copy:
+            payload["data"]["deep_copy"] = deep_copy
+        payload["data"]["lock"] = lock
 
         logger.debug(
             "Copying plan source_plan_id=%s lifecycle_status_id=%s under_appeal_scope=%s has_period_start=%s has_approval_date=%s",

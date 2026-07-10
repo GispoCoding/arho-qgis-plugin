@@ -33,12 +33,12 @@ from arho_feature_template.gui.components.value_input_widgets import (
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     LifeCycleStatusLayer,
-    LifeCycleStatusValue,
     PlanRegulationTypeLayer,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 
 if TYPE_CHECKING:
+    from arho_feature_template.core.lifecycles import LifeCycleStatusValue
     from arho_feature_template.gui.components.validity_label import ValidityLabel
 
 
@@ -270,7 +270,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             ],
             files=[],
             theme_ids=[
-                theme_widget.get_value() for theme_widget in self.theme_widgets if theme_widget.get_value() != NULL
+                theme for theme_widget in self.theme_widgets if (theme := theme_widget.get_value()) and theme != NULL
             ],
             subject_identifiers=[
                 widget.get_value() for widget in self.subject_identifier_widgets if widget.get_value() != ""

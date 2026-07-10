@@ -6,10 +6,9 @@ from qgis.PyQt.QtCore import QSize, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QIcon, QMouseEvent, QStandardItem
 from qgis.PyQt.QtWidgets import QLabel, QSizePolicy, QWidget
 
+from arho_feature_template.core.lifecycles import LIFECYCLE_PIXMAPS, LifeCycleStatusValue
 from arho_feature_template.project.layers.code_layers import (
-    LIFECYCLE_PIXMAPS,
     LifeCycleStatusLayer,
-    LifeCycleStatusValue,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import date_as_str
