@@ -60,15 +60,16 @@ class ValidityLabel(QLabel):
         elif LifeCycleStatusLayer.is_valid_status(model.lifecycle_status_id):
             self.setPixmap(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.VALID])
             self.setToolTip(f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}")  # type: ignore
-        elif LifeCycleStatusLayer.is_under_appeal(lifecycle_status):
-            pixmap = LIFECYCLE_PIXMAPS[lifecycle_status]
+
+        else:
+            pixmap = LIFECYCLE_PIXMAPS.get(lifecycle_status)
+            if pixmap is None:
+                self.hide_widget()
+                return
             self.setPixmap(pixmap)
             lifecycle_name_translated = get_localized_text(lifecycle_name)
             if lifecycle_name_translated:
                 self.setToolTip(lifecycle_name_translated)
-
-        else:
-            self.hide_widget()
 
     def hide_widget(self):
         self.setToolTip("")

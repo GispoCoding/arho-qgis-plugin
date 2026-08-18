@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import enum
 
-from qgis.PyQt.QtGui import QColor, QPixmap
+from qgis.PyQt.QtGui import QColor
 
 from arho_feature_template.gui.components.text_icon import text_icon
-from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 
 
 class LifeCycleStatusValue(enum.StrEnum):
@@ -29,9 +28,10 @@ class LifeCycleStatusValue(enum.StrEnum):
 
 
 LIFECYCLE_PIXMAPS = {
-    LifeCycleStatusValue.LEGALLY_VALID: text_icon("✓", QColor(200, 200, 200)),
+    LifeCycleStatusValue.APPORVED: text_icon("✓", QColor(200, 200, 200)),
+    LifeCycleStatusValue.LEGALLY_VALID: text_icon("✓", QColor(222, 215, 34)),
     LifeCycleStatusValue.VALID: text_icon("✓", QColor(48, 166, 26)),
-    LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY: QPixmap(resources_path("icons", "valid_mark.svg")),
+    LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY: text_icon("✓", QColor(27, 203, 183)),
     LifeCycleStatusValue.REPEALED: text_icon("X", QColor(255, 0, 0)),
     LifeCycleStatusValue.UNDER_APPEAL: text_icon("§", QColor(255, 0, 0)),
     LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER: text_icon("§", QColor(0, 0, 255)),
