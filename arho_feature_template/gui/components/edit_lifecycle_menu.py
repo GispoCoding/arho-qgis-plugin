@@ -20,6 +20,7 @@ class EditLifecycleMenu(QMenu):
         super().__init__(parent)
 
         lifecycle_values = [
+            LifeCycleStatusValue.APPORVED,
             LifeCycleStatusValue.LEGALLY_VALID,
             LifeCycleStatusValue.VALID,
             LifeCycleStatusValue.UNDER_APPEAL,
@@ -29,7 +30,7 @@ class EditLifecycleMenu(QMenu):
         ]
         active_plan_matter_id = get_active_plan_matter_id()
         if active_plan_matter_id and PlanMatterLayer.is_regional_plan(get_active_plan_matter_id()):
-            lifecycle_values.insert(1, LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY)
+            lifecycle_values.insert(2, LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY)
 
         for lifecycle_value in lifecycle_values:
             lifecycle_name = get_localized_text(
