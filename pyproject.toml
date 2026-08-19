@@ -28,6 +28,19 @@ unfixable = [
     "F841", # unused variables
 ]
 
+# Overrides the whole table from ruff_defaults.toml, so the base entries are repeated here
+[tool.ruff.lint.per-file-ignores]
+"**/scripts/*" = ["INP001", "T201"]
+"**/tests/**/*" = [
+    "PLC1901",
+    "PLR2004",
+    "PLR6301",
+    "S",
+    "TID252",
+    "SLF001", # tests exercise private members
+    "N802",   # test fakes mimic Qt's camelCase API
+]
+
 [[tool.mypy.overrides]]
 module = "arho_feature_template.qgis_plugin_tools.*"
 ignore_errors = true
