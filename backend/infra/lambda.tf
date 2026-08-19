@@ -199,6 +199,7 @@ locals {
       SYKE_APIKEY         = var.syke_apikey
       DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
       PROJECT_SRID        = var.project_srid
+      RYHTI_FILES_BUCKET  = aws_s3_bucket.ryhti_files.id
   }
   ryhti_client_x-road_environment = var.enable_x_road ? {
       XROAD_SERVER_ADDRESS = module.x-road["this"].dns_record

@@ -256,3 +256,15 @@ resource "aws_vpc_endpoint" "lambda_api" {
     Name = "${var.prefix}-lambda-api-endpoint"
   })
 }
+
+# Gateway endpoint so lambdas in private subnets reach S3 without NAT traffic
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = [aws_route_table.private.id]
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-s3-endpoint"
+  })
+}

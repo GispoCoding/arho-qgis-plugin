@@ -88,7 +88,7 @@ variable "db_instance_type" {
 }
 
 variable "db_postgres_version" {
-  description = "Version number of the PostgreSQL DB. Default: 13.20"
+  description = "Version number of the PostgreSQL DB. Default: 17.9"
   type        = string
   default     = "17.9"
 }

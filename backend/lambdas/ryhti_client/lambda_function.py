@@ -5,6 +5,7 @@ import enum
 import gzip
 import logging
 import os
+import uuid
 from collections.abc import Callable
 from copy import deepcopy
 from functools import wraps
@@ -12,6 +13,7 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 import boto3
 import simplejson as json
+from botocore.config import Config
 from pydantic import ValidationError
 
 from database.db_helper import (
@@ -79,6 +81,29 @@ xroad_instance = os.environ.get("XROAD_INSTANCE", "FI-TEST")
 xroad_member_class = os.environ.get("XROAD_MEMBER_CLASS", "MUN")
 xroad_syke_client_id = os.environ.get("XROAD_SYKE_CLIENT_ID", "")
 
+# Bucket for transferring large plan files (import/export) via presigned URLs.
+ryhti_files_bucket = os.environ.get("RYHTI_FILES_BUCKET", "")
+if not ryhti_files_bucket:
+    raise ValueError(
+        "Please set RYHTI_FILES_BUCKET environment variable to run Ryhti client."
+    )
+presigned_url_expiry_seconds = int(os.environ.get("PRESIGNED_URL_EXPIRY_SECONDS", 3600))
+# Presigned URLs require SigV4. In local development AWS_ENDPOINT_URL_S3 points
+# the client at MinIO. Against AWS, pin the client to the regional endpoint:
+# the global endpoint redirects (307) requests for newly created buckets until
+# DNS propagates, and clients cannot follow the redirect because the presigned
+# signature covers the Host header.
+s3_region = os.environ.get("AWS_REGION_NAME", "") or None
+s3_endpoint_url = os.environ.get("AWS_ENDPOINT_URL_S3", "") or (
+    f"https://s3.{s3_region}.amazonaws.com" if s3_region else None
+)
+s3_client = boto3.client(
+    "s3",
+    region_name=s3_region,
+    endpoint_url=s3_endpoint_url,
+    config=Config(signature_version="s3v4"),
+)
+
 
 class ResponseBody(TypedDict):
     """Data returned in lambda function response."""
@@ -125,7 +150,9 @@ class ArhoPayload(TypedDict):
     # True if we want JSON files to be saved in ryhti_debug
     save_json: NotRequired[bool | None]
 
-    # Additional data to be used in the action, if needed
+    # Additional data to be used in the action, if needed. For import_plan,
+    # data must contain "s3_key" (returned by get_upload_url, after the plan
+    # file has been uploaded with the presigned URL) and "extra_data".
     data: NotRequired[dict[str, Any] | None]
 
     # True if we want to force the action, if needed
@@ -173,6 +200,7 @@ class Action(enum.Enum):
     POST_PLAN_MATTERS = "post_plan_matters"
     IMPORT_PLAN = "import_plan"
     COPY_PLAN = "copy_plan"
+    GET_UPLOAD_URL = "get_upload_url"
 
 
 def compress(dict_data: ResponseBody) -> str:
@@ -336,6 +364,31 @@ def handler(
         )
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
+
+    if event_type is Action.GET_UPLOAD_URL:
+        # No database access needed; just return a presigned upload URL that the
+        # client can PUT the plan file to before calling import_plan.
+        key = f"import/{uuid.uuid4()}.json"
+        upload_url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": ryhti_files_bucket, "Key": key},
+            ExpiresIn=presigned_url_expiry_seconds,
+        )
+        response_title = "Upload URL created."
+        LOGGER.info(response_title)
+        return format_response(
+            Response(
+                statusCode=200,
+                body=ResponseBody(
+                    title=response_title,
+                    details={"upload_url": upload_url, "key": key},
+                    ryhti_responses={},
+                ),
+            ),
+            using_api_gateway,
+            compress_response,
+        )
+
     if (
         event_type is Action.GET_PERMANENT_IDENTIFIERS
         or event_type is Action.VALIDATE_PLAN_MATTERS
@@ -376,14 +429,32 @@ def handler(
 
     if database_client.plans:
         if event_type is Action.GET_PLANS:
-            # just return the JSON to the user
+            # Upload the JSON to S3 and return a presigned download URL. The
+            # serialized plans may exceed the lambda 6 MB response limit, so
+            # they are never returned inline.
             response_title = "Returning serialized plans from database."
             LOGGER.info(response_title)
+            plans_bytes = gzip.compress(
+                json.dumps(database_client.plan_dictionaries).encode("utf-8")
+            )
+            key = f"export/{uuid.uuid4()}.json"
+            s3_client.put_object(
+                Bucket=ryhti_files_bucket,
+                Key=key,
+                Body=plans_bytes,
+                ContentType="application/json",
+                ContentEncoding="gzip",
+            )
+            download_url = s3_client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": ryhti_files_bucket, "Key": key},
+                ExpiresIn=presigned_url_expiry_seconds,
+            )
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(
                     title=response_title,
-                    details=cast("dict", database_client.plan_dictionaries),
+                    details={"download_url": download_url, "key": key},
                     ryhti_responses={},
                 ),
             )
@@ -517,42 +588,61 @@ def handler(
 
     elif event_type is Action.IMPORT_PLAN:
         data = event.get("data") or {}
-        plan_json = data.get("plan_json")
+        s3_key = data.get("s3_key")
         extra_data = data.get("extra_data")
 
-        if plan_json is None or extra_data is None:
+        if s3_key is None or extra_data is None:
             status_code = 400
-            title = "Missing plan data or extra data."
+            title = "Missing plan file key or extra data."
             details = {}
+        elif not isinstance(s3_key, str) or not s3_key.startswith("import/"):
+            status_code = 400
+            title = "Invalid s3_key."
+            details = {"error": "s3_key must point to an uploaded import file."}
         else:
-            plan_json = cast("str", plan_json)
             extra_data = cast("dict[str, Any]", extra_data)
             overwrite = event.get("force") is True
 
             try:
-                imported_id = database_client.import_plan(
-                    plan_json, extra_data, overwrite
+                plan_object = s3_client.get_object(
+                    Bucket=ryhti_files_bucket, Key=s3_key
                 )
-                status_code = 200
-                title = "Plan imported."
-                details = {"plan_id": str(imported_id)}
-            except PlanAlreadyExistsError as e:
-                status_code = 200  # TODO change to to 409 after plugin fixed.
-                title = "Plan already exists."
-                details = {"plan_id": str(e.plan_id)}
-            except PlanMatterNotFoundError as e:
+                plan_json = plan_object["Body"].read().decode("utf-8")
+            except s3_client.exceptions.NoSuchKey:
                 status_code = 400
-                title = "Plan matter not found."
-                details = {"plan_matter_id": str(e.plan_matter_id)}
-            except ValueError as e:
-                status_code = 400
-                title = "Error in provided data."
-                details = {"error": str(e)}
-            except Exception as e:
-                LOGGER.exception("Error importing plan.")
-                status_code = 500
-                title = "Error importing plan."
-                details = {"error": str(e)}
+                title = "Uploaded plan file not found."
+                details = {
+                    "error": (
+                        "No uploaded file found for the provided s3_key. Request "
+                        "an upload URL with the get_upload_url action and upload "
+                        "the plan file first."
+                    )
+                }
+            else:
+                try:
+                    imported_id = database_client.import_plan(
+                        plan_json, extra_data, overwrite
+                    )
+                    status_code = 200
+                    title = "Plan imported."
+                    details = {"plan_id": str(imported_id)}
+                except PlanAlreadyExistsError as e:
+                    status_code = 200  # TODO change to to 409 after plugin fixed.
+                    title = "Plan already exists."
+                    details = {"plan_id": str(e.plan_id)}
+                except PlanMatterNotFoundError as e:
+                    status_code = 400
+                    title = "Plan matter not found."
+                    details = {"plan_matter_id": str(e.plan_matter_id)}
+                except ValueError as e:
+                    status_code = 400
+                    title = "Error in provided data."
+                    details = {"error": str(e)}
+                except Exception as e:
+                    LOGGER.exception("Error importing plan.")
+                    status_code = 500
+                    title = "Error importing plan."
+                    details = {"error": str(e)}
 
         lambda_response = Response(
             statusCode=status_code,

@@ -57,6 +57,41 @@ resource "aws_iam_role_policy_attachment" "lambda_secrets_attachment" {
   policy_arn = aws_iam_policy.secrets-policy.arn
 }
 
+# Create the policy to access the ryhti files transfer bucket
+resource "aws_iam_policy" "s3-transfer-policy" {
+  # We need a separate policy for each hame instance, since they have separate buckets
+  name        = "${var.prefix}-lambda-s3-transfer-policy"
+  path        = "/"
+  description = "Lambda ryhti files bucket policy"
+
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action   = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ],
+        Effect   = "Allow",
+        Resource = "${aws_s3_bucket.ryhti_files.arn}/*"
+      },
+      {
+        # Required so a missing key raises NoSuchKey instead of AccessDenied
+        Action   = ["s3:ListBucket"],
+        Effect   = "Allow",
+        Resource = aws_s3_bucket.ryhti_files.arn
+      }
+    ]
+  })
+  tags   = merge(local.default_tags, { Name = "${var.prefix}-lambda-s3-transfer-policy" })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_s3_transfer_attachment" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.s3-transfer-policy.arn
+}
+
 
 # Lambda update user
 resource "aws_iam_user" "lambda_update_user" {
