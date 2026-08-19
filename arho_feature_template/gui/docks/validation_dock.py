@@ -155,7 +155,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.validation_result_tree_view.resizeColumnToContents(0)
 
     def list_validation_errors(self, validation_json):
-        """Slot for listing validation errors and warnings."""
+        """Slot for listing validation errors and warnings.
+
+        Receives a single ryhti_response object: {status, detail, errors, warnings}.
+        """
         logger.debug("Listing validation errors")
 
         if not validation_json:
@@ -164,43 +167,40 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             self.enable_validation()
             return
 
+        errors = validation_json.get("errors") or []
+        warnings = validation_json.get("warnings") or []
+
         # If no errors or warnings, display a message and exit
-        if not any(validation_json.values()):
+        if not errors and not warnings:
             logger.debug("Validation response contains no errors or warnings")
             iface.messageBar().pushMessage("Virhe", "Ei virheitä havaittu.", level=1)
             self.enable_validation()
             return
         self.layer_features = {}
 
-        for error_data in validation_json.values():
-            if not isinstance(error_data, dict):
-                continue
+        # Sort so that errors with classKey are first
+        errors = sorted(errors, key=lambda x: "classKey" not in x)
+        for error in errors:
+            self.get_feature_from_validation_error(error)
+            self.validation_result_tree_view.add_error(
+                error.get("ruleId", ""),
+                error.get("instance", ""),
+                error.get("message", ""),
+                error.get("classKey", ""),
+                self.layer_features,
+            )
 
-            errors = error_data.get("errors") or []
-            # Sort so that errors with classKey are first
-            errors = sorted(errors, key=lambda x: "classKey" not in x)
-            for error in errors:
-                self.get_feature_from_validation_error(error)
-                self.validation_result_tree_view.add_error(
-                    error.get("ruleId", ""),
-                    error.get("instance", ""),
-                    error.get("message", ""),
-                    error.get("classKey", ""),
-                    self.layer_features,
-                )
-
-            warnings = error_data.get("warnings") or []
-            # Sort so that warnings with classKey are first
-            warnings = sorted(warnings, key=lambda x: "classKey" not in x)
-            for warning in warnings:
-                self.get_feature_from_validation_error(warning)
-                self.validation_result_tree_view.add_warning(
-                    warning.get("ruleId", ""),
-                    warning.get("instance", ""),
-                    warning.get("message", ""),
-                    warning.get("classKey", ""),
-                    self.layer_features,
-                )
+        # Sort so that warnings with classKey are first
+        warnings = sorted(warnings, key=lambda x: "classKey" not in x)
+        for warning in warnings:
+            self.get_feature_from_validation_error(warning)
+            self.validation_result_tree_view.add_warning(
+                warning.get("ruleId", ""),
+                warning.get("instance", ""),
+                warning.get("message", ""),
+                warning.get("classKey", ""),
+                self.layer_features,
+            )
 
         # Always enable validation at the end
         logger.debug("Validation results populated feature_refs=%s", len(self.layer_features))

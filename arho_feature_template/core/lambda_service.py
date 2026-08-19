@@ -5,7 +5,6 @@ import gzip
 import json
 import logging
 import re
-import uuid
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Callable, cast
 
@@ -39,12 +38,12 @@ class LambdaService(QObject):
     # On PyQt5 QNetworkRequest.Attribute.User is an int, but on PyQt6 it is an Enum.
     _USER_ATTR = cast(int, getattr(QNetworkRequest.Attribute.User, "value", QNetworkRequest.Attribute.User))
     ActionAttribute = QNetworkRequest.Attribute(_USER_ATTR + 1)
-    ACTION_VALIDATE_PLANS = "validate_plans"
+    ACTION_VALIDATE_PLAN = "validate_plan"
     ACTION_VALIDATE_PLAN_MATTERS = "validate_plan_matters"
-    ACTION_GET_PLANS = "get_plans"
+    ACTION_GET_PLAN = "get_plan"
     ACTION_GET_PLAN_MATTERS = "get_plan_matters"
     ACTION_POST_PLAN_MATTERS = "post_plan_matters"
-    ACTION_GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
+    ACTION_GET_PERMANENT_IDENTIFIER = "get_permanent_plan_identifier"
     ACTION_IMPORT_PLAN = "import_plan"
     ACTION_COPY_PLAN = "copy_plan"
     ACTION_GET_UPLOAD_URL = "get_upload_url"
@@ -64,7 +63,7 @@ class LambdaService(QObject):
 
     def export_plan(self, plan_id: str):
         logger.debug("Requesting plan export plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_GET_PLANS, plan_id=plan_id)
+        self._send_request(action=self.ACTION_GET_PLAN, plan_id=plan_id)
 
     def export_plan_matter(self, plan_id: str):
         logger.debug("Requesting plan matter export plan_id=%s", plan_id)
@@ -72,7 +71,7 @@ class LambdaService(QObject):
 
     def validate_plan(self, plan_id: str):
         logger.debug("Requesting plan validation plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_VALIDATE_PLANS, plan_id=plan_id)
+        self._send_request(action=self.ACTION_VALIDATE_PLAN, plan_id=plan_id)
 
     def validate_plan_matter(self, plan_id: str):
         logger.debug("Requesting plan matter validation plan_id=%s", plan_id)
@@ -84,7 +83,7 @@ class LambdaService(QObject):
 
     def get_permanent_identifier(self, plan_id: str):
         logger.debug("Requesting permanent identifier plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_GET_PERMANENT_IDENTIFIERS, plan_id=plan_id)
+        self._send_request(action=self.ACTION_GET_PERMANENT_IDENTIFIER, plan_id=plan_id)
 
     def import_plan(self, plan_json: str, extra_data: dict, force: bool = False):  # noqa: FBT001, FBT002
         """Imports a plan by uploading it to S3 with a presigned URL and then calling the import action.
@@ -102,15 +101,12 @@ class LambdaService(QObject):
             return
 
         self._cached_upload = None
-        self._send_request(action=self.ACTION_GET_UPLOAD_URL, payload={"plan_uuid": str(uuid.uuid4())})
+        self._send_request(action=self.ACTION_GET_UPLOAD_URL)
 
     def _send_import_plan_request(self, s3_key: str):
         if self._pending_import is None:
             return
         payload: dict[str, Any] = {
-            # For now use a random non existing UUID so backend won't find any existing plan
-            # TODO: Change this when backend supports importing without UUID
-            "plan_uuid": str(uuid.uuid4()),
             "data": {"s3_key": s3_key, "extra_data": self._pending_import["extra_data"]},
         }
         if self._pending_import["force"]:
@@ -204,8 +200,10 @@ class LambdaService(QObject):
             self.network_manager.setProxy(QNetworkProxy())
             logger.debug("Using direct connection without proxy")
 
-        if not payload or plan_id:
-            payload = {"plan_uuid": plan_id}
+        if payload is None:
+            payload = {}
+        if plan_id:
+            payload["plan_uuid"] = plan_id
         payload["action"] = action
         payload["save_json"] = True  # Uncomment for debugging to save the payload and response json in the lambda
 
@@ -256,6 +254,34 @@ class LambdaService(QObject):
         return request
 
     @staticmethod
+    def _read_error_body(response: QNetworkReply) -> dict | None:
+        """Reads and parses the lambda response body of a failed reply, or None.
+
+        Qt delivers the body of HTTP 4xx/5xx replies, but connection-level failures
+        have no body. The backend gzips error bodies like success bodies; Qt does not
+        decompress them transparently here because the Accept-Encoding header is set
+        manually, so sniff the gzip magic bytes.
+        """
+        try:
+            raw = bytes(response.readAll().data())
+            if not raw:
+                return None
+            if raw[:2] == b"\x1f\x8b":
+                raw = gzip.decompress(raw)
+            body = json.loads(raw.decode("utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            return None
+        return body if isinstance(body, dict) else None
+
+    @staticmethod
+    def _format_error_body(body: dict) -> str:
+        """Formats a flat lambda error body ({title, details, ...}) into one message string."""
+        title = body.get("title") or ""
+        details = body.get("details")
+        detail_text = details.get("error", "") if isinstance(details, dict) else (details or "")
+        return " ".join(part for part in (str(title), str(detail_text)) if part) or str(body)
+
+    @staticmethod
     def _presigned_reply_error(response: QNetworkReply) -> str | None:
         """Returns an error description if a presigned S3 request failed, otherwise None.
 
@@ -274,28 +300,28 @@ class LambdaService(QObject):
 
     def _get_response_handler(self, action: str) -> Callable[[dict], None]:
         handlers = {
-            self.ACTION_GET_PLANS: self._process_export_plan_response,
+            self.ACTION_GET_PLAN: self._process_export_plan_response,
             self.ACTION_GET_UPLOAD_URL: self._process_get_upload_url_response,
             self.ACTION_GET_PLAN_MATTERS: self._process_export_plan_matter_response,
             self.ACTION_IMPORT_PLAN: self._process_import_plan_response,
-            self.ACTION_VALIDATE_PLANS: self._process_validation_response,
+            self.ACTION_VALIDATE_PLAN: self._process_validation_response,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_response,
             self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_response,
-            self.ACTION_GET_PERMANENT_IDENTIFIERS: self._process_identifier_response,
+            self.ACTION_GET_PERMANENT_IDENTIFIER: self._process_identifier_response,
             self.ACTION_COPY_PLAN: self._process_copy_plan_response,
         }
         return handlers[action]
 
     def _get_error_handler(self, action: str) -> Callable[[str], None]:
         handlers = {
-            self.ACTION_GET_PLANS: lambda x: None,  # noqa: ARG005
+            self.ACTION_GET_PLAN: lambda x: None,  # noqa: ARG005
             self.ACTION_GET_UPLOAD_URL: self._handle_get_upload_url_error,
             self.ACTION_GET_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
             self.ACTION_IMPORT_PLAN: self._handle_import_error,
-            self.ACTION_VALIDATE_PLANS: self._handle_validation_error,
+            self.ACTION_VALIDATE_PLAN: self._handle_validation_error,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._handle_validation_error,
             self.ACTION_POST_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
-            self.ACTION_GET_PERMANENT_IDENTIFIERS: lambda x: None,  # noqa: ARG005
+            self.ACTION_GET_PERMANENT_IDENTIFIER: lambda x: None,  # noqa: ARG005
             self.ACTION_COPY_PLAN: self._handle_copy_error,
         }
         return handlers[action]
@@ -314,6 +340,10 @@ class LambdaService(QObject):
         error_handler = self._get_error_handler(action)
         if response.error() != QNetworkReply.NetworkError.NoError:  # type: ignore  # wrong type annotation in the stubs
             error = response.errorString()
+            # HTTP 4xx/5xx replies carry the lambda error body; prefer its message
+            error_body = self._read_error_body(response)
+            if error_body is not None:
+                error = self._format_error_body(error_body)
             logger.debug("Network error for action=%s error=%s", action, error)
             QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
             error_handler(error)
@@ -347,7 +377,12 @@ class LambdaService(QObject):
 
                 status_code = int(response_data.get("statusCode", 0))
                 if status_code != HTTPStatus.OK:
-                    error = response_data["body"] if "body" in response_data else response_data["errorMessage"]
+                    # Error handlers emit str-typed signals, so format the body into a string
+                    body = response_data.get("body")
+                    if isinstance(body, dict):
+                        error = self._format_error_body(body)
+                    else:
+                        error = str(body if body is not None else response_data.get("errorMessage"))
                     logger.debug("Non-OK lambda status for action=%s status=%s", action, status_code)
                     QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
                     error_handler(error)
@@ -377,55 +412,53 @@ class LambdaService(QObject):
         self.plan_matter_received.emit(ryhti_responses)
 
     def _process_identifier_response(self, response_body: dict):
-        """Process the identifier reply and update project variable for the active plan."""
-        ryhti_responses = response_body.get("ryhti_responses", {})
+        """Process the identifier reply and update project variable for the active plan.
 
+        `details` holds the identifier string on success, or a Finnish error message when
+        the Ryhti API refused. `ryhti_response` is null when the plan matter already had
+        a permanent identifier.
+        """
         plan_id = get_active_plan_id()
+        ryhti_response = response_body.get("ryhti_response")
+        details = response_body.get("details")
+        status = ryhti_response.get("status") if isinstance(ryhti_response, dict) else None
 
-        value = ryhti_responses.get(plan_id)
-
-        if value and value.get("status") == HTTPStatus.OK:
-            identifier = value.get("detail")
+        if (ryhti_response is None or status == HTTPStatus.OK) and isinstance(details, str) and details:
             logger.debug("Permanent identifier fetch succeeded plan_id=%s", plan_id)
             iface.messageBar().pushSuccess(
                 "Success", f"Pysyvän kaavatunnuksen haku onnistui kaavasuunnitelman {plan_id} kaava-asialle."
             )
-            self.plan_identifier_received.emit({"plan_id": plan_id, "status": "success", "identifier": identifier})
+            self.plan_identifier_received.emit({"plan_id": plan_id, "status": "success", "identifier": details})
         else:
-            logger.debug(
-                "Permanent identifier fetch failed plan_id=%s status=%s",
-                plan_id,
-                value.get("status") if value else None,
+            logger.debug("Permanent identifier fetch failed plan_id=%s status=%s", plan_id, status)
+            message = (
+                details
+                if isinstance(details, str) and details
+                else (
+                    f"Pysyvän kaavatunnuksen haku epäonnistui kaavasuunnitelmalla {plan_id} kaava-asialle "
+                    f"statuksella {status if status is not None else 'N/A'}."
+                )
             )
-            iface.messageBar().pushWarning(
-                "Virhe",
-                f"Pysyvän kaavatunnuksen haku epäonnistui kaavasuunnitelmalla {plan_id} kaava-asialle statuksella {value.get('status') if value else 'N/A'}.",
-            )
-            # self.plan_identifiers_received.emit({"plan_id": plan_id, "status": "failure"})
+            iface.messageBar().pushWarning("Virhe", message)
 
     def _process_validation_response(self, response_body: dict):
         """Processes the validation reply from the lambda and emits a signal."""
-        validation_errors = response_body["ryhti_responses"]
-        plan_id = get_active_plan_id()
-        logger.debug("Processing validation response for active_plan_id=%s", plan_id)
-
-        validation_errors_of_active_plan = validation_errors.get(plan_id)
-        if not validation_errors_of_active_plan:
-            logger.debug("Validation response missing active plan entry plan_id=%s", plan_id)
-            self.validation_failed.emit(f"Arhovirhe - Lambdavastaus ei odotetun muotoinen: {validation_errors}")
+        ryhti_response = response_body.get("ryhti_response")
+        if not isinstance(ryhti_response, dict):
+            logger.debug("Validation response missing ryhti_response object")
+            self.validation_failed.emit(f"Arhovirhe - Lambdavastaus ei odotetun muotoinen: {response_body}")
             return
 
         SERVER_ERROR_MIN_STATUS = 500  # noqa: N806
         SERVER_ERROR_MAX_STATUS = 599  # noqa: N806
-        if (
-            status := validation_errors_of_active_plan.get("status")
-        ) and SERVER_ERROR_MIN_STATUS <= status <= SERVER_ERROR_MAX_STATUS:
+        status = ryhti_response.get("status")
+        if status is not None and SERVER_ERROR_MIN_STATUS <= status <= SERVER_ERROR_MAX_STATUS:
             logger.debug("Validation response indicates server error status=%s", status)
-            self.validation_failed.emit(f"Ryhtivirhe: {validation_errors_of_active_plan}")
+            self.validation_failed.emit(f"Ryhtivirhe: {ryhti_response}")
             return
 
-        logger.debug("Validation response accepted for plan_id=%s", plan_id)
-        self.validation_received.emit(validation_errors)
+        logger.debug("Validation response accepted status=%s", status)
+        self.validation_received.emit(ryhti_response)
 
     def _process_export_plan_response(self, response_body: dict):
         """Processes the reply from the lambda and starts the download of the exported plans."""
@@ -463,7 +496,7 @@ class LambdaService(QObject):
             if response_bytes[:2] == b"\x1f\x8b":
                 response_bytes = gzip.decompress(response_bytes)
             try:
-                plans_by_id = json.loads(response_bytes.decode("utf-8"))
+                plan_data = json.loads(response_bytes.decode("utf-8"))
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
                 logger.debug("Failed to parse downloaded plan file error=%s", e)
                 QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {e}")
@@ -471,13 +504,10 @@ class LambdaService(QObject):
         finally:
             response.deleteLater()
 
-        plan_id = get_active_plan_id()
-        logger.debug("Processing downloaded plan export data for plan_id=%s", plan_id)
-
-        # Extract the plan JSON for the given plan_id
-        plan_data = plans_by_id.get(plan_id, {})
+        # The downloaded file is a single bare plan JSON
         if not isinstance(plan_data, dict):
             plan_data = {}
+        logger.debug("Processing downloaded plan export data")
 
         outline_data = {}
         if plan_data:

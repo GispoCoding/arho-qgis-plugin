@@ -17,16 +17,32 @@ PLAN_JSON = json.dumps({"planKey": PLAN_ID, "name": "Testikaava"})
 EXTRA_DATA = {"name": "Testikaava", "plan_matter_id": "22222222-2222-2222-2222-222222222222"}
 
 
+class FakeRequest:
+    """Stands in for QNetworkRequest carrying the action attribute."""
+
+    def __init__(self, action):
+        self._action = action
+
+    def attribute(self, _attribute):
+        return self._action
+
+
 class FakeReply:
     """Stands in for QNetworkReply in response handlers."""
 
     def __init__(
-        self, data: bytes = b"", error=QNetworkReply.NetworkError.NoError, error_string: str = "", status_code=200
+        self,
+        data: bytes = b"",
+        error=QNetworkReply.NetworkError.NoError,
+        error_string: str = "",
+        status_code=200,
+        action=None,
     ):
         self._data = data
         self._error = error
         self._error_string = error_string
         self._status_code = status_code
+        self._action = action
         self.deleted = False
 
     def error(self):
@@ -37,6 +53,9 @@ class FakeReply:
 
     def attribute(self, _attribute):
         return self._status_code
+
+    def request(self):
+        return FakeRequest(self._action)
 
     def readAll(self):
         return QByteArray(self._data)
@@ -82,6 +101,35 @@ def sent_requests(service, monkeypatch):
         service, "_send_request", lambda action, _plan_id=None, payload=None: requests.append((action, payload))
     )
     return requests
+
+
+class FakeMessageBar:
+    """Records pushed message bar messages."""
+
+    def __init__(self):
+        self.successes = []
+        self.warnings = []
+
+    def pushSuccess(self, title, message):
+        self.successes.append((title, message))
+
+    def pushWarning(self, title, message):
+        self.warnings.append((title, message))
+
+
+class FakeIface:
+    def __init__(self, message_bar):
+        self._message_bar = message_bar
+
+    def messageBar(self):
+        return self._message_bar
+
+
+@pytest.fixture
+def message_bar(monkeypatch):
+    bar = FakeMessageBar()
+    monkeypatch.setattr(lambda_service_module, "iface", FakeIface(bar))
+    return bar
 
 
 def signal_spy(signal) -> list:
@@ -137,13 +185,12 @@ def test_export_response_old_backend_format_is_rejected(service, network):
 
 def test_download_response_emits_plan_and_outline(service):
     emitted = signal_spy(service.plan_data_received)
-    plans_by_id = {
-        PLAN_ID: {
-            "planKey": PLAN_ID,
-            "geographicalArea": {"srid": "3067", "geometry": {"type": "MultiPolygon", "coordinates": []}},
-        }
+    # The downloaded file is a single bare plan JSON
+    plan = {
+        "planKey": PLAN_ID,
+        "geographicalArea": {"srid": "3067", "geometry": {"type": "MultiPolygon", "coordinates": []}},
     }
-    reply = FakeReply(json.dumps(plans_by_id).encode("utf-8"))
+    reply = FakeReply(json.dumps(plan).encode("utf-8"))
     service._handle_s3_download_response(reply)
     assert reply.deleted
     assert len(emitted) == 1
@@ -154,7 +201,7 @@ def test_download_response_emits_plan_and_outline(service):
 
 def test_download_response_decompresses_gzip_manually(service):
     emitted = signal_spy(service.plan_data_received)
-    body = gzip.compress(json.dumps({PLAN_ID: {"planKey": PLAN_ID}}).encode("utf-8"))
+    body = gzip.compress(json.dumps({"planKey": PLAN_ID}).encode("utf-8"))
     service._handle_s3_download_response(FakeReply(body))
     assert len(emitted) == 1
     assert emitted[0][0]["planKey"] == PLAN_ID
@@ -184,8 +231,10 @@ def test_download_response_network_error_emits_nothing(service):
 def test_import_plan_requests_upload_url(service, sent_requests):
     service.import_plan(PLAN_JSON, EXTRA_DATA)
     assert len(sent_requests) == 1
-    action, _payload = sent_requests[0]
+    action, payload = sent_requests[0]
     assert action == LambdaService.ACTION_GET_UPLOAD_URL
+    # get_upload_url needs no payload; especially no dummy plan_uuid
+    assert payload is None
     assert service._pending_import == {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
 
 
@@ -225,6 +274,7 @@ def test_upload_response_sends_import_request(service, sent_requests):
     assert payload["data"]["s3_key"] == "import/abc.json"
     assert payload["data"]["extra_data"] == EXTRA_DATA
     assert "plan_json" not in payload["data"]
+    assert "plan_uuid" not in payload
     assert "force" not in payload
 
 
@@ -287,6 +337,7 @@ def test_force_retry_reuses_uploaded_file(service, sent_requests):
     action, payload = sent_requests[0]
     assert action == LambdaService.ACTION_IMPORT_PLAN
     assert payload["data"]["s3_key"] == "import/abc.json"
+    assert "plan_uuid" not in payload
     assert payload["force"] is True
 
 
@@ -338,3 +389,170 @@ def test_s3_replies_are_routed_past_lambda_handlers(service, monkeypatch):
     service._handle_response(FakeRoutedReply(LambdaService.S3_DOWNLOAD_PLAN))
     service._handle_response(FakeRoutedReply(LambdaService.S3_UPLOAD_PLAN))
     assert [kind for kind, _reply in routed] == ["download", "upload"]
+
+
+# Validation response parsing
+
+
+def test_validation_response_emits_single_ryhti_response(service):
+    emitted = signal_spy(service.validation_received)
+    ryhti_response = {"status": 400, "detail": None, "errors": [{"ruleId": "r1"}], "warnings": None}
+    service._process_validation_response(
+        {
+            "title": "Plan validation run.",
+            "details": f"Plan validation FAILED for {PLAN_ID}.",
+            "ryhti_response": ryhti_response,
+        }
+    )
+    assert emitted == [(ryhti_response,)]
+
+
+def test_validation_response_none_status_with_errors_is_accepted(service):
+    emitted = signal_spy(service.validation_received)
+    ryhti_response = {"status": None, "detail": None, "errors": [{"ruleId": "r1"}], "warnings": None}
+    service._process_validation_response({"title": "Plan validation run.", "ryhti_response": ryhti_response})
+    assert emitted == [(ryhti_response,)]
+
+
+def test_validation_response_server_error_fails_validation(service):
+    received = signal_spy(service.validation_received)
+    failed = signal_spy(service.validation_failed)
+    service._process_validation_response(
+        {"title": "Plan validation run.", "ryhti_response": {"status": 502, "detail": "Bad gateway"}}
+    )
+    assert not received
+    assert len(failed) == 1
+    assert "Ryhtivirhe" in failed[0][0]
+
+
+def test_validation_response_missing_ryhti_response_fails_validation(service):
+    received = signal_spy(service.validation_received)
+    failed = signal_spy(service.validation_failed)
+    service._process_validation_response({"title": "Plan validation run.", "ryhti_response": None})
+    assert not received
+    assert len(failed) == 1
+    assert "ei odotetun muotoinen" in failed[0][0]
+
+
+# Permanent identifier response parsing
+
+
+def test_identifier_response_success_emits_identifier(service, message_bar):
+    emitted = signal_spy(service.plan_identifier_received)
+    service._process_identifier_response(
+        {
+            "title": "Possible permanent plan identifier set.",
+            "details": "MML-123",
+            "ryhti_response": {"status": 200, "detail": "MML-123", "errors": None, "warnings": None},
+        }
+    )
+    assert emitted == [({"plan_id": PLAN_ID, "status": "success", "identifier": "MML-123"},)]
+    assert len(message_bar.successes) == 1
+
+
+def test_identifier_response_existing_identifier_emits_identifier(service, message_bar):
+    """ryhti_response is null when the plan matter already had a permanent identifier."""
+    emitted = signal_spy(service.plan_identifier_received)
+    service._process_identifier_response(
+        {"title": "Possible permanent plan identifier set.", "details": "MML-123", "ryhti_response": None}
+    )
+    assert emitted == [({"plan_id": PLAN_ID, "status": "success", "identifier": "MML-123"},)]
+    assert len(message_bar.successes) == 1
+
+
+def test_identifier_response_ryhti_error_shows_backend_message(service, message_bar):
+    emitted = signal_spy(service.plan_identifier_received)
+    message = "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
+    service._process_identifier_response(
+        {
+            "title": "Possible permanent plan identifier set.",
+            "details": message,
+            "ryhti_response": {"status": 401, "detail": None, "errors": {}, "warnings": None},
+        }
+    )
+    assert not emitted
+    assert message_bar.warnings == [("Virhe", message)]
+
+
+def test_identifier_response_empty_details_shows_generic_message(service, message_bar):
+    emitted = signal_spy(service.plan_identifier_received)
+    service._process_identifier_response(
+        {"title": "Possible permanent plan identifier set.", "details": "", "ryhti_response": {"status": 502}}
+    )
+    assert not emitted
+    assert len(message_bar.warnings) == 1
+    assert "502" in message_bar.warnings[0][1]
+
+
+# Lambda error body parsing
+
+
+def test_read_error_body_parses_gzipped_body():
+    body = {"title": "Plan not found.", "details": {"error": "no plan"}, "ryhti_response": None}
+    reply = FakeReply(gzip.compress(json.dumps(body).encode("utf-8")))
+    assert LambdaService._read_error_body(reply) == body
+
+
+def test_read_error_body_parses_plain_body():
+    body = {"title": "Missing plan_uuid.", "details": {"error": "plan_uuid is required."}}
+    assert LambdaService._read_error_body(FakeReply(json.dumps(body).encode("utf-8"))) == body
+
+
+def test_read_error_body_returns_none_without_body():
+    assert LambdaService._read_error_body(FakeReply(b"")) is None
+
+
+def test_read_error_body_returns_none_for_non_json_body():
+    assert LambdaService._read_error_body(FakeReply(b"<html>Bad Gateway</html>")) is None
+
+
+def test_format_error_body_variants():
+    assert (
+        LambdaService._format_error_body({"title": "Plan not found.", "details": {"error": "no plan"}})
+        == "Plan not found. no plan"
+    )
+    assert LambdaService._format_error_body({"title": "Invalid plan_uuid.", "details": None}) == "Invalid plan_uuid."
+    assert LambdaService._format_error_body({"title": "", "details": "just text"}) == "just text"
+
+
+def test_api_gateway_error_reply_uses_lambda_error_body(service):
+    """4xx replies through API Gateway carry the (gzipped) lambda error body."""
+    failed = signal_spy(service.validation_failed)
+    body = {
+        "title": "Plan matter actions not supported.",
+        "details": {"error": "Plan matter support has been removed from Arho."},
+        "ryhti_response": None,
+    }
+    reply = FakeReply(
+        data=gzip.compress(json.dumps(body).encode("utf-8")),
+        error=QNetworkReply.ContentOperationNotPermittedError,
+        error_string="Error transferring - server replied: Method Not Allowed",
+        action=LambdaService.ACTION_VALIDATE_PLAN_MATTERS,
+    )
+    service._handle_response(reply)
+    assert reply.deleted
+    assert len(failed) == 1
+    assert failed[0][0] == "Plan matter actions not supported. Plan matter support has been removed from Arho."
+
+
+def test_direct_invocation_error_passes_string_to_error_handler(service):
+    """The direct-invocation non-200 branch must emit a str, not a dict, on str-typed signals."""
+    failed = signal_spy(service.validation_failed)
+    envelope = {
+        "statusCode": 405,
+        "body": {
+            "title": "Plan matter actions not supported.",
+            "details": {"error": "Plan matter support has been removed from Arho."},
+            "ryhti_response": None,
+        },
+    }
+    service.lambda_url = "http://localhost:8000/lambda"  # direct invocation, not API Gateway
+    reply = FakeReply(
+        data=json.dumps(envelope).encode("utf-8"),
+        action=LambdaService.ACTION_VALIDATE_PLAN_MATTERS,
+    )
+    service._handle_response(reply)
+    assert reply.deleted
+    assert len(failed) == 1
+    assert isinstance(failed[0][0], str)
+    assert "Plan matter actions not supported." in failed[0][0]
