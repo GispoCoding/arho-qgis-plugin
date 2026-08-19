@@ -222,12 +222,36 @@ def test_populate_local_koodistot(
         conn.close()
 
 
-# Test getting all plans with both direct lambda call and HTTPS API call.
+# Test getting a plan with both direct lambda call and HTTPS API call.
 # The HTTPS API call body will be a JSON string.
-@pytest.fixture(
-    params=[
-        {"action": "get_plans", "save_json": True},
-        {
+@pytest.fixture(params=["direct", "api_gateway"])
+def get_plan(
+    request: pytest.FixtureRequest,
+    ryhti_client_url: str,
+    fetch_presigned: Callable[..., requests.Response],
+    complete_test_plan: Plan,
+    another_test_plan: Plan,
+    desired_plan_dict: dict,
+) -> None:
+    """Get invalid plan JSON from lambda. The plan should be validated separately.
+
+    Getting a plan should make lambda return http 200 OK (to indicate that
+    serialization has been run successfully), with ryhti_response empty, and
+    details containing the download URL for the serialized plan. The downloaded
+    file contains a single bare plan JSON; another plan in the database must not
+    be serialized.
+
+    If the request is coming through the API Gateway with stringified JSON body, the
+    response to the API gateway must similarly contain stringified JSON body.
+    """
+    event = {
+        "action": "get_plan",
+        "plan_uuid": complete_test_plan.id,
+        "save_json": True,
+    }
+    payload: dict[str, Any] = event
+    if request.param == "api_gateway":
+        payload = {
             "version": "2.0",
             "routeKey": "",
             "rawPath": "",
@@ -236,46 +260,26 @@ def test_populate_local_koodistot(
             "headers": {},
             "queryStringParameters": {},
             "requestContext": {},
-            "body": '{"action": "get_plans", "save_json": true}',
+            "body": json.dumps(event),
             "pathParameters": {},
             "isBase64Encoded": False,
             "stageVariables": {},
-        },
-    ]
-)
-def get_all_plans(
-    request: pytest.FixtureRequest,
-    ryhti_client_url: str,
-    fetch_presigned: Callable[..., requests.Response],
-    complete_test_plan: Plan,
-    another_test_plan: Plan,
-    desired_plan_dict: dict,
-    another_plan_dict: dict,
-) -> None:
-    """Get invalid plan JSONs from lambda. The plans should be validated separately.
-
-    Getting plans should make lambda return http 200 OK (to indicate that serialization
-    has been run successfully), with the ryhti_responses dict empty, and details
-    dict containing the serialized plans.
-
-    If the request is coming through the API Gateway with stringified JSON body, the
-    response to the API gateway must similarly contain stringified JSON body.
-    """
-    r = requests.post(ryhti_client_url, data=json.dumps(request.param))
+        }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
     data = r.json()
     print(data)
     assert data["statusCode"] == 200
     body = data["body"]
-    if request.param != {"action": "get_plans", "save_json": True}:
+    if request.param == "api_gateway":
         # API gateway response must have JSON body stringified.
         body = json.loads(body)
-    assert body["title"] == "Returning serialized plans from database."
+    assert body["title"] == "Returning serialized plan from database."
     assert body["details"]["key"].startswith("export/")
     download_response = fetch_presigned(body["details"]["download_url"])
     assert download_response.status_code == HTTPStatus.OK
-    plan_dictionaries = download_response.json()
+    plan_dictionary = download_response.json()
     deepcompare(
-        plan_dictionaries[complete_test_plan.id],
+        plan_dictionary,
         desired_plan_dict,
         ignore_order_for_keys=[
             "planRegulationGroups",
@@ -283,21 +287,10 @@ def get_all_plans(
             "additionalInformations",
         ],
     )
-    deepcompare(
-        plan_dictionaries[another_test_plan.id],
-        another_plan_dict,
-        ignore_order_for_keys=[
-            "planRegulationGroups",
-            "planRegulationGroupRelations",
-            "additionalInformations",
-        ],
-    )
-    assert not body["ryhti_responses"]
+    assert body["ryhti_response"] is None
 
 
-def test_get_all_plans(
-    get_all_plans: None, main_db_params: ConnectionParameters
-) -> None:
+def test_get_plan(get_plan: None, main_db_params: ConnectionParameters) -> None:
     """Test the whole lambda endpoint with an invalid plan"""
     # getting plan JSON from lambda should not run validations
     conn = psycopg.connect(**main_db_params)
@@ -321,22 +314,16 @@ def test_get_all_plans(
 
 
 @pytest.fixture
-def get_single_plan(
-    ryhti_client_url: str,
-    fetch_presigned: Callable[..., requests.Response],
-    complete_test_plan: Plan,
-    another_test_plan: Plan,
-    desired_plan_dict: dict,
+def validate_single_valid_plan(
+    ryhti_client_url: str, complete_test_plan: Plan, another_test_plan
 ) -> None:
-    """Get single plan JSON from lambda by id. Another plan in the database should not be
-    serialized.
+    """Validate a valid Ryhti plan against the Ryhti API.
 
-    Getting plan should make lambda return http 200 OK (to indicate that serialization
-    has been run successfully), with the ryhti_responses dict empty, and details
-    dict containing the serialized plan.
+    A valid plan should make lambda return http 200 OK, with no validation
+    errors in the payload.
     """
     payload = {
-        "action": "get_plans",
+        "action": "validate_plan",
         "plan_uuid": complete_test_plan.id,
         "save_json": True,
     }
@@ -345,100 +332,35 @@ def get_single_plan(
     print(data)
     assert data["statusCode"] == 200
     body = data["body"]
-    assert body["title"] == "Returning serialized plans from database."
-    download_response = fetch_presigned(body["details"]["download_url"])
-    assert download_response.status_code == HTTPStatus.OK
-    plan_dictionaries = download_response.json()
-    # Check that other plan is NOT returned
-    assert len(plan_dictionaries) == 1
-    deepcompare(
-        plan_dictionaries[complete_test_plan.id],
-        desired_plan_dict,
-        ignore_order_for_keys=[
-            "planRegulationGroups",
-            "planRegulationGroupRelations",
-            "additionalInformations",
-        ],
-    )
-    assert not body["ryhti_responses"]
-
-
-def test_get_single_plan(
-    get_single_plan: None, main_db_params: ConnectionParameters
-) -> None:
-    """Test the whole lambda endpoint with single_plan"""
-    # getting plan JSON from lambda should not run validations
-    conn = psycopg.connect(**main_db_params)
-    try:
-        with conn.cursor() as cur:
-            # Check that plans are NOT validated
-            cur.execute("SELECT validated_at, validation_errors FROM hame.plan")
-            row = cur.fetchone()
-            assert row is not None
-            validation_date, errors = row
-            assert not validation_date
-            assert not errors
-
-            row = cur.fetchone()
-            assert row is not None
-            validation_date, errors = row
-            assert not validation_date
-            assert not errors
-    finally:
-        conn.close()
-
-
-@pytest.fixture
-def validate_all_plans(
-    ryhti_client_url: str, complete_test_plan: Plan, another_test_plan
-) -> None:
-    """Validate valid and invalid Ryhti plans against the Ryhti API.
-
-    An invalid plan should make lambda return http 200 OK (to indicate that the validation
-    has been run successfully), with the validation errors returned in the payload.
-    """
-    payload = {"action": "validate_plans", "save_json": True}
-    r = requests.post(ryhti_client_url, data=json.dumps(payload))
-    data = r.json()
-    print(data)
-    assert data["statusCode"] == 200
-    body = data["body"]
-    assert body["title"] == "Plan validations run."
-    assert (
-        body["details"][complete_test_plan.id]
-        == f"Plan validation successful for {complete_test_plan.id}!"
-    )
-    assert (
-        body["details"][another_test_plan.id]
-        == f"Plan validation FAILED for {another_test_plan.id}."
-    )
+    assert body["title"] == "Plan validation run."
+    assert body["details"] == f"Plan validation successful for {complete_test_plan.id}!"
     # Our test plan is valid
-    assert body["ryhti_responses"][complete_test_plan.id]["status"] == 200
-    assert not body["ryhti_responses"][complete_test_plan.id]["errors"]
-    # Another test plan contains nothing really
-    assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
-    assert body["ryhti_responses"][another_test_plan.id]["errors"]
+    assert body["ryhti_response"]["status"] == 200
+    assert not body["ryhti_response"]["errors"]
 
 
-def test_validate_all_plans(
-    validate_all_plans: None, main_db_params: ConnectionParameters
+def test_validate_single_valid_plan(
+    validate_single_valid_plan: None, main_db_params: ConnectionParameters
 ) -> None:
-    """Test the whole lambda endpoint with valid and invalid plans"""
+    """Test the whole lambda endpoint with a valid plan"""
     conn = psycopg.connect(**main_db_params)
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT validated_at, validation_errors FROM hame.plan")
+            cur.execute(
+                "SELECT validated_at, validation_errors FROM hame.plan ORDER BY modified_at DESC"
+            )
             row = cur.fetchone()
             assert row is not None
             validation_date, errors = row
             assert validation_date
             assert errors == "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
 
+            # Check that other plan is NOT marked validated
             row = cur.fetchone()
             assert row is not None
             validation_date, errors = row
-            assert validation_date
-            assert errors
+            assert not validation_date
+            assert not errors
     finally:
         conn.close()
 
@@ -453,7 +375,7 @@ def validate_single_invalid_plan(
     has been run successfully), with the validation errors returned in the payload.
     """
     payload = {
-        "action": "validate_plans",
+        "action": "validate_plan",
         "plan_uuid": another_test_plan.id,
         "save_json": True,
     }
@@ -462,16 +384,10 @@ def validate_single_invalid_plan(
     print(data)
     assert data["statusCode"] == 200
     body = data["body"]
-    assert body["title"] == "Plan validations run."
-    # Check that other plan is NOT reported validated
-    assert len(body["details"]) == 1
-    assert (
-        body["details"][another_test_plan.id]
-        == f"Plan validation FAILED for {another_test_plan.id}."
-    )
-    assert len(body["ryhti_responses"]) == 1
-    assert body["ryhti_responses"][another_test_plan.id]["status"] == 400
-    assert body["ryhti_responses"][another_test_plan.id]["errors"]
+    assert body["title"] == "Plan validation run."
+    assert body["details"] == f"Plan validation FAILED for {another_test_plan.id}."
+    assert body["ryhti_response"]["status"] == 400
+    assert body["ryhti_response"]["errors"]
 
 
 def test_validate_single_invalid_plan(
@@ -513,11 +429,11 @@ def get_permanent_plan_identifier(
     Since local tests or CI/CD cannot connect to X-Road servers, we use a Mock X-Road API
     that returns a permanent plan identifier and responds with 200 OK.
 
-    Getting an identifier should make lambda return http 200 OK, with the ryhti_responses dict
-    and details both containing the identifier.
+    Getting an identifier should make lambda return http 200 OK, with the
+    ryhti_response and details both containing the identifier.
     """
     payload = {
-        "action": "get_permanent_plan_identifiers",
+        "action": "get_permanent_plan_identifier",
         "plan_uuid": complete_test_plan.id,
         "save_json": True,
     }
@@ -526,10 +442,10 @@ def get_permanent_plan_identifier(
     print(data)
     assert data["statusCode"] == 200
     body = data["body"]
-    assert body["title"] == "Possible permanent plan identifiers set."
-    # Check that other plan was NOT processed
-    assert len(body["details"]) == 1
-    assert len(body["ryhti_responses"]) == 1
+    assert body["title"] == "Possible permanent plan identifier set."
+    assert body["details"] == "MK-123456"
+    assert body["ryhti_response"]["status"] == 200
+    assert body["ryhti_response"]["detail"] == "MK-123456"
 
 
 def test_get_permanent_plan_identifier(
@@ -573,13 +489,7 @@ def extra_data(plan_matter_instance: PlanMatter) -> dict:
 
 @pytest.fixture
 def import_payload(extra_data):
-    return {
-        "action": "import_plan",
-        "plan_uuid": str(
-            uuid.uuid4()
-        ),  # Dummy non existing UUID that must be added for now
-        "data": {"s3_key": None, "extra_data": extra_data},
-    }
+    return {"action": "import_plan", "data": {"s3_key": None, "extra_data": extra_data}}
 
 
 def test_import_plan(
@@ -656,3 +566,34 @@ def test_import_missing_upload(codes_loaded, import_payload, ryhti_client_url):
     data = r.json()
     assert data["statusCode"] == HTTPStatus.BAD_REQUEST
     assert data["body"]["title"] == "Uploaded plan file not found."
+
+
+def test_missing_action(ryhti_client_url: str) -> None:
+    """An event without an action should return 400."""
+    r = requests.post(ryhti_client_url, data=json.dumps({}))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["statusCode"] == HTTPStatus.BAD_REQUEST
+    assert data["body"]["title"] == "Missing action."
+
+
+def test_validate_plan_without_plan_uuid(ryhti_client_url: str) -> None:
+    """Validating without a plan_uuid should return 400."""
+    r = requests.post(ryhti_client_url, data=json.dumps({"action": "validate_plan"}))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["statusCode"] == HTTPStatus.BAD_REQUEST
+    assert data["body"]["title"] == "Missing plan_uuid."
+
+
+def test_get_unknown_plan(ryhti_client_url: str, complete_test_plan: Plan) -> None:
+    """Getting a plan that does not exist should return 404."""
+    payload = {"action": "get_plan", "plan_uuid": str(uuid.uuid4())}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["statusCode"] == HTTPStatus.NOT_FOUND
+    assert data["body"]["title"] == "Plan not found."

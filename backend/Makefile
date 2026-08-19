@@ -36,8 +36,8 @@ dev-setup-db: up dev-create-db dev-migrate-db dev-users dev-koodistot
 	@echo "Development database is set up"
 
 dev-ryhti-validate:
-	@echo "Validating database contents with Ryhti API..."
-	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "validate_plans"}'
+	@echo "Validating plan $(uuid) with Ryhti API..."
+	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "validate_plan", "plan_uuid": "$(uuid)"}'
 
 pytest-fail:
 	pytest --maxfail=1

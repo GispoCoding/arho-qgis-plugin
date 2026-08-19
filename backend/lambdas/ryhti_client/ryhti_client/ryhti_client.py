@@ -9,9 +9,12 @@ import requests
 import simplejson as json
 
 if TYPE_CHECKING:
-    from database.base import DbId
-    from ryhti_client.database_client import DatabaseClient
-    from ryhti_client.ryhti_schema import RyhtiPlanMatter, RyhtiPlanMatterPhase
+    from database import models
+    from ryhti_client.ryhti_schema import (
+        RyhtiPlan,
+        RyhtiPlanMatter,
+        RyhtiPlanMatterPhase,
+    )
 
 """
 Client for validating and POSTing all Maakuntakaava data to Ryhti API
@@ -59,7 +62,6 @@ class RyhtiClient:
 
     def __init__(
         self,
-        database_client: DatabaseClient,
         public_api_url: str | None = None,
         public_api_key: str = "",
         xroad_syke_client_id: str | None = "",
@@ -74,8 +76,6 @@ class RyhtiClient:
     ) -> None:
         LOGGER.info("Initializing Ryhti client...")
         self.debug_json = debug_json
-
-        self.database_client = database_client
 
         # Public API only needs an API key and URL
         if public_api_url:
@@ -148,295 +148,237 @@ class RyhtiClient:
         top_level_code = plan_type_uri.split("/")[-1][0]
         return api_paths[top_level_code]
 
-    def validate_plans(self) -> dict[DbId, RyhtiResponse]:
-        """Validates all plans serialized in client plan dictionaries."""
+    def validate_plan(
+        self, plan: models.Plan, plan_dictionary: RyhtiPlan
+    ) -> RyhtiResponse:
+        """Validates a serialized plan with the public Ryhti API."""
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
-        responses: dict[DbId, RyhtiResponse] = {}
-        for plan_id, plan_dict in self.database_client.plan_dictionaries.items():
-            LOGGER.info(f"Validating JSON for plan {plan_id}...")
+        LOGGER.info(f"Validating JSON for plan {plan.id}...")
 
-            # Some plan fields may only be present in plan matter, not in the plan
-            # dictionary. In the context of plan validation, they must be provided as
-            # query parameters.
-            plan = self.database_client.plans[plan_id]
-            plan_type_parameter = plan.plan_matter.plan_type.value
-            # We only support one area id, no need for commas and concat:
-            admin_area_id_parameter = (
-                plan.plan_matter.organisation.municipality.value
-                if plan.plan_matter.organisation.municipality
-                else plan.plan_matter.organisation.administrative_region.value
-            )
-            if self.debug_json:
-                save_debug_json(f"{plan_id}.json", plan_dict)
-            LOGGER.info(f"POSTing JSON: {json.dumps(plan_dict)}")
+        # Some plan fields may only be present in plan matter, not in the plan
+        # dictionary. In the context of plan validation, they must be provided as
+        # query parameters.
+        plan_type_parameter = plan.plan_matter.plan_type.value
+        # We only support one area id, no need for commas and concat:
+        admin_area_id_parameter = (
+            plan.plan_matter.organisation.municipality.value
+            if plan.plan_matter.organisation.municipality
+            else plan.plan_matter.organisation.administrative_region.value
+        )
+        if self.debug_json:
+            save_debug_json(f"{plan.id}.json", plan_dictionary)
+        LOGGER.info(f"POSTing JSON: {json.dumps(plan_dictionary)}")
 
-            # requests apparently uses simplejson automatically if it is installed!
-            # A bit too much magic for my taste, but seems to work.
-            response = requests.post(
-                plan_validation_endpoint,
-                json=plan_dict,
-                headers=self.public_headers,
-                params={
-                    "planType": plan_type_parameter,
-                    "administrativeAreaIdentifiers": admin_area_id_parameter,
-                },
-            )
-            LOGGER.info(f"Got response {response}")
-            if response.status_code == 200:
-                # Successful validation does not return any json!
-                responses[plan_id] = {
-                    "status": 200,
-                    "errors": None,
-                    "detail": None,
-                    "warnings": None,
-                }
-            else:
-                try:
-                    # Validation errors always contain JSON
-                    responses[plan_id] = response.json()
-                except json.JSONDecodeError:
-                    # There is something wrong with the API
-                    response.raise_for_status()
-            if self.debug_json:
-                save_debug_json(f"{plan_id}.response.json", responses[plan_id])
-            LOGGER.info(responses[plan_id])
-        return responses
+        # requests apparently uses simplejson automatically if it is installed!
+        # A bit too much magic for my taste, but seems to work.
+        response = requests.post(
+            plan_validation_endpoint,
+            json=plan_dictionary,
+            headers=self.public_headers,
+            params={
+                "planType": plan_type_parameter,
+                "administrativeAreaIdentifiers": admin_area_id_parameter,
+            },
+        )
+        LOGGER.info(f"Got response {response}")
+        if response.status_code == 200:
+            # Successful validation does not return any json!
+            ryhti_response: RyhtiResponse = {
+                "status": 200,
+                "errors": None,
+                "detail": None,
+                "warnings": None,
+            }
+        else:
+            try:
+                # Validation errors always contain JSON
+                ryhti_response = response.json()
+            except json.JSONDecodeError:
+                # There is something wrong with the API
+                response.raise_for_status()
+        if self.debug_json:
+            save_debug_json(f"{plan.id}.response.json", ryhti_response)
+        LOGGER.info(ryhti_response)
+        return ryhti_response
 
-    def upload_plan_documents(self) -> dict[DbId, list[RyhtiResponse]]:
-        """Upload any changed plan documents. If document has not been modified
-        since it was last uploaded, do nothing.
+    def upload_plan_documents(self, plan: models.Plan) -> list[RyhtiResponse]:
+        """Upload any changed documents of the plan. If a document has not been
+        modified since it was last uploaded, do nothing.
+
+        If the plan has no permanent plan identifier, no documents are uploaded.
         """
-        responses: dict[DbId, list[RyhtiResponse]] = {}
+        responses: list[RyhtiResponse] = []
+        # Only upload documents for plans that are actually going to Ryhti
+        if not plan.plan_matter.permanent_plan_identifier:
+            return responses
         file_endpoint = self.xroad_server_address + self.xroad_api_path + "File"
         upload_headers = self.xroad_headers.copy()
         # We must *not* provide Content-Type header:
         # https://blog.jetbridge.com/multipart-encoded-python-requests/
         del upload_headers["Content-Type"]
-        for plan in self.database_client.plans.values():
-            # Only upload documents for plans that are actually going to Ryhti
-            if not plan.plan_matter.permanent_plan_identifier:
-                continue
-            responses[plan.id] = []
-            municipality = (
-                plan.plan_matter.organisation.municipality.value
-                if plan.plan_matter.organisation.municipality
-                else None
-            )
-            region = plan.plan_matter.organisation.administrative_region.value
-            for document in plan.documents:
-                if document.url:
-                    # No need to upload if document hasn't changed
-                    headers = requests.head(document.url).headers
-                    print(headers)
-                    etag = headers.get("ETag")
-                    last_modified = headers.get("Last-Modified")
-                    if (
-                        document.exported_file_etag
-                        and document.exported_file_etag == etag
-                    ) or (
-                        document.exported_at
-                        and last_modified
-                        and document.exported_at
-                        > email.utils.parsedate_to_datetime(last_modified)
-                    ):
-                        LOGGER.info("File unchanged since last upload.")
-                        responses[plan.id].append(
+        municipality = (
+            plan.plan_matter.organisation.municipality.value
+            if plan.plan_matter.organisation.municipality
+            else None
+        )
+        region = plan.plan_matter.organisation.administrative_region.value
+        for document in plan.documents:
+            if document.url:
+                # No need to upload if document hasn't changed
+                headers = requests.head(document.url).headers
+                print(headers)
+                etag = headers.get("ETag")
+                last_modified = headers.get("Last-Modified")
+                if (
+                    document.exported_file_etag and document.exported_file_etag == etag
+                ) or (
+                    document.exported_at
+                    and last_modified
+                    and document.exported_at
+                    > email.utils.parsedate_to_datetime(last_modified)
+                ):
+                    LOGGER.info("File unchanged since last upload.")
+                    responses.append(
+                        RyhtiResponse(
+                            status=None,
+                            detail="File unchanged since last upload.",
+                            errors=None,
+                            # Let's just piggyback the etag in the response.
+                            warnings={"ETag": etag},
+                        )
+                    )
+                    continue
+                # Let's try streaming the file instead of downloading
+                # and then uploading:
+                file_request = requests.get(document.url, stream=True)
+                if file_request.status_code == 200:
+                    file_name = document.url.split("/")[-1]
+                    file_type = file_request.headers["Content-Type"]
+                    # Just read the whole file to memory when sending it.
+                    # That might require increasing lambda memory for big
+                    # files, but could not get streaming upload to work :(
+                    files = {"file": (file_name, file_request.raw, file_type)}
+                    # TODO: get coordinate system from file. Maybe not easy
+                    # if just streaming it thru.
+                    post_parameters = (
+                        {"municipalityId": municipality}
+                        if municipality
+                        else {"regionId": region}
+                    )
+                    post_response = requests.post(
+                        file_endpoint,
+                        files=files,
+                        params=post_parameters,
+                        headers=upload_headers,
+                    )
+                    if post_response.status_code == 201:
+                        LOGGER.info(f"Posted file {post_response.json()}")
+                        responses.append(
                             RyhtiResponse(
-                                status=None,
-                                detail="File unchanged since last upload.",
+                                status=201,
+                                detail=post_response.json(),
                                 errors=None,
                                 # Let's just piggyback the etag in the response.
                                 warnings={"ETag": etag},
                             )
                         )
-                        continue
-                    # Let's try streaming the file instead of downloading
-                    # and then uploading:
-                    file_request = requests.get(document.url, stream=True)
-                    if file_request.status_code == 200:
-                        file_name = document.url.split("/")[-1]
-                        file_type = file_request.headers["Content-Type"]
-                        # Just read the whole file to memory when sending it.
-                        # That might require increasing lambda memory for big
-                        # files, but could not get streaming upload to work :(
-                        files = {"file": (file_name, file_request.raw, file_type)}
-                        # TODO: get coordinate system from file. Maybe not easy
-                        # if just streaming it thru.
-                        post_parameters = (
-                            {"municipalityId": municipality}
-                            if municipality
-                            else {"regionId": region}
-                        )
-                        post_response = requests.post(
-                            file_endpoint,
-                            files=files,
-                            params=post_parameters,
-                            headers=upload_headers,
-                        )
-                        if post_response.status_code == 201:
-                            LOGGER.info(f"Posted file {post_response.json()}")
-                            responses[plan.id].append(
-                                RyhtiResponse(
-                                    status=201,
-                                    detail=post_response.json(),
-                                    errors=None,
-                                    # Let's just piggyback the etag in the response.
-                                    warnings={"ETag": etag},
-                                )
-                            )
-                        else:
-                            LOGGER.warning(f"Could not upload file {file_name}!")
-                            LOGGER.warning(post_response.json())
-                            responses[plan.id].append(
-                                RyhtiResponse(
-                                    status=post_response.status_code,
-                                    detail=f"Could not upload file {file_name}!",
-                                    errors=post_response.json(),
-                                    warnings=None,
-                                )
-                            )
                     else:
-                        LOGGER.warning("Could not fetch file! Please check file URL.")
-                        responses[plan.id].append(
+                        LOGGER.warning(f"Could not upload file {file_name}!")
+                        LOGGER.warning(post_response.json())
+                        responses.append(
                             RyhtiResponse(
-                                status=None,
-                                detail="Could not fetch file! Please check file URL.",
-                                errors=None,
+                                status=post_response.status_code,
+                                detail=f"Could not upload file {file_name}!",
+                                errors=post_response.json(),
                                 warnings=None,
                             )
                         )
-        return responses
-
-    def get_permanent_plan_identifiers(self) -> dict[DbId, RyhtiResponse]:
-        """Get permanent plan identifiers for all plan matters that do not have identifiers set."""
-        responses: dict[DbId, RyhtiResponse] = {}
-
-        for plan_matter in self.database_client.get_unique_plan_matters():
-            if not plan_matter.permanent_plan_identifier:
-                plan_identifier_endpoint = (
-                    self.xroad_server_address
-                    + self.xroad_api_path
-                    + self.get_plan_matter_api_path(plan_matter.plan_type.uri)
-                    + "permanentPlanIdentifier"
-                )
-                LOGGER.info(
-                    "Getting permanent identifier for plan_matter %s...", plan_matter.id
-                )
-                administrative_area_identifier = (
-                    plan_matter.organisation.municipality.value
-                    if plan_matter.organisation.municipality
-                    else plan_matter.organisation.administrative_region.value
-                )
-                data = {
-                    "administrativeAreaIdentifier": administrative_area_identifier,
-                    "projectName": plan_matter.producers_plan_identifier,
-                }
-                LOGGER.info("Request headers")
-                LOGGER.info(self.xroad_headers)
-                LOGGER.info("Request URL")
-                LOGGER.info(plan_identifier_endpoint)
-                LOGGER.info("Request data")
-                LOGGER.info(data)
-                response = requests.post(
-                    plan_identifier_endpoint, json=data, headers=self.xroad_headers
-                )
-                LOGGER.info("Plan identifier response:")
-                LOGGER.info(response.status_code)
-                LOGGER.info(response.headers)
-                LOGGER.info(response.text)
-                if response.status_code == 401:
-                    detail = "No permission to get plan identifier in this region or municipality!"  # noqa: E501
-                    LOGGER.info(detail)
-                    responses[plan_matter.id] = {
-                        "status": 401,
-                        "errors": response.json(),
-                        "detail": detail,
-                        "warnings": None,
-                    }
-                elif response.status_code == 400:
-                    detail = "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa: E501
-                    LOGGER.info(detail)
-                    responses[plan_matter.id] = {
-                        "status": 400,
-                        "errors": response.json(),
-                        "detail": detail,
-                        "warnings": None,
-                    }
                 else:
-                    response.raise_for_status()
-                    LOGGER.info("Received identifier %s", response.json())
-                    responses[plan_matter.id] = {
-                        "status": 200,
-                        "detail": response.json(),
-                        "errors": None,
-                        "warnings": None,
-                    }
-                if self.debug_json:
-                    with open(
-                        f"logs/{plan_matter.id}.identifier.response.json",
-                        "w",
-                        encoding="utf-8",
-                    ) as response_file:
-                        response_file.write(str(plan_identifier_endpoint) + "\n")
-                        response_file.write(str(self.xroad_headers) + "\n")
-                        response_file.write(str(data) + "\n")
-                        json.dump(
-                            responses[plan_matter.id],
-                            response_file,
-                            indent=4,
-                            ensure_ascii=False,
+                    LOGGER.warning("Could not fetch file! Please check file URL.")
+                    responses.append(
+                        RyhtiResponse(
+                            status=None,
+                            detail="Could not fetch file! Please check file URL.",
+                            errors=None,
+                            warnings=None,
                         )
+                    )
         return responses
 
-    def validate_plan_matters(self) -> dict[DbId, RyhtiResponse]:
-        """Validates all plan matters that have their permanent identifiers set."""
-        responses: dict[DbId, RyhtiResponse] = {}
-        plan_matter_dictionaries = self.database_client.get_plan_matters()
-        for plan_id, plan_matter in plan_matter_dictionaries.items():
-            permanent_id = plan_matter["permanentPlanIdentifier"]
-            if not permanent_id:
-                LOGGER.info("Plan has no permanent id, cannot validate plan matter.")
-                continue
-            plan_matter_validation_endpoint = (
-                self.xroad_server_address
-                + self.xroad_api_path
-                + self.get_plan_matter_api_path(plan_matter["planType"])
-                + f"{permanent_id}/validate"
-            )
-            LOGGER.info(f"Validating JSON for plan matter {permanent_id}...")
+    def get_permanent_plan_identifier(
+        self, plan_matter: models.PlanMatter
+    ) -> RyhtiResponse | None:
+        """Get a permanent plan identifier for the plan matter from the X-Road API.
 
-            if self.debug_json:
-                save_debug_json(f"{permanent_id}.json", plan_matter)
-            LOGGER.info(f"POSTing JSON: {json.dumps(plan_matter)}")
-
-            # requests apparently uses simplejson automatically if it is installed!
-            # A bit too much magic for my taste, but seems to work.
-            response = requests.post(
-                plan_matter_validation_endpoint,
-                json=plan_matter,
-                headers=self.xroad_headers,
+        Returns None if the plan matter already has a permanent identifier.
+        """
+        if plan_matter.permanent_plan_identifier:
+            return None
+        plan_identifier_endpoint = (
+            self.xroad_server_address
+            + self.xroad_api_path
+            + self.get_plan_matter_api_path(plan_matter.plan_type.uri)
+            + "permanentPlanIdentifier"
+        )
+        LOGGER.info(
+            "Getting permanent identifier for plan_matter %s...", plan_matter.id
+        )
+        administrative_area_identifier = (
+            plan_matter.organisation.municipality.value
+            if plan_matter.organisation.municipality
+            else plan_matter.organisation.administrative_region.value
+        )
+        data = {
+            "administrativeAreaIdentifier": administrative_area_identifier,
+            "projectName": plan_matter.producers_plan_identifier,
+        }
+        LOGGER.info("Request headers")
+        LOGGER.info(self.xroad_headers)
+        LOGGER.info("Request URL")
+        LOGGER.info(plan_identifier_endpoint)
+        LOGGER.info("Request data")
+        LOGGER.info(data)
+        response = requests.post(
+            plan_identifier_endpoint, json=data, headers=self.xroad_headers
+        )
+        LOGGER.info("Plan identifier response:")
+        LOGGER.info(response.status_code)
+        LOGGER.info(response.headers)
+        LOGGER.info(response.text)
+        if response.status_code == 401:
+            detail = (
+                "No permission to get plan identifier in this region or municipality!"  # noqa: E501
             )
-            LOGGER.info(f"Got response {response}")
-            LOGGER.info(response.text)
-            if response.status_code == 200:
-                # Successful validation might return warnings
-                responses[plan_id] = {
-                    "status": 200,
-                    "errors": None,
-                    "detail": None,
-                    "warnings": response.json()["warnings"],
-                }
-            else:
-                try:
-                    # Validation errors always contain JSON
-                    responses[plan_id] = response.json()
-                except json.JSONDecodeError:
-                    # There is something wrong with the API
-                    response.raise_for_status()
-            if self.debug_json:
-                save_debug_json(f"{permanent_id}.response.json", responses[plan_id])
-            LOGGER.info(responses[plan_id])
-        return responses
+            LOGGER.info(detail)
+            ryhti_response: RyhtiResponse = {
+                "status": 401,
+                "errors": response.json(),
+                "detail": detail,
+                "warnings": None,
+            }
+        elif response.status_code == 400:
+            detail = "Could not get identifier! Most likely producers_plan_identifier is missing."  # noqa: E501
+            LOGGER.info(detail)
+            ryhti_response = {
+                "status": 400,
+                "errors": response.json(),
+                "detail": detail,
+                "warnings": None,
+            }
+        else:
+            response.raise_for_status()
+            LOGGER.info("Received identifier %s", response.json())
+            ryhti_response = {
+                "status": 200,
+                "detail": response.json(),
+                "errors": None,
+                "warnings": None,
+            }
+        if self.debug_json:
+            save_debug_json(
+                f"{plan_matter.id}.identifier.response.json", ryhti_response
+            )
+        return ryhti_response
 
     def create_new_resource(
         self, endpoint: str, resource_dict: RyhtiPlanMatter | RyhtiPlanMatterPhase
@@ -503,115 +445,3 @@ class RyhtiClient:
                 # There is something wrong with the API
                 response.raise_for_status()
         return cast("RyhtiResponse", ryhti_response)
-
-    def post_plan_matters(self) -> dict[DbId, RyhtiResponse]:
-        """POST all plan matter data with permanent identifiers to Ryhti.
-
-        This means either creating a new plan matter, updating the plan matter,
-        creating a new plan matter phase, or updating the plan matter phase.
-        """
-        responses: dict[DbId, RyhtiResponse] = {}
-        plan_matter_dictionaries = self.database_client.get_plan_matters()
-        for plan_id, plan_matter in plan_matter_dictionaries.items():
-            permanent_id = plan_matter["permanentPlanIdentifier"]
-            if not permanent_id:
-                LOGGER.info("Plan has no permanent id, cannot post plan matter.")
-                continue
-            plan_matter_endpoint = (
-                self.xroad_server_address
-                + self.xroad_api_path
-                + self.get_plan_matter_api_path(plan_matter["planType"])
-                + permanent_id
-            )
-            print(plan_matter_endpoint)
-
-            # 1) Check or create plan matter with the identifier
-            LOGGER.info(f"Checking if plan matter for plan {permanent_id} exists...")
-            get_response = requests.get(
-                plan_matter_endpoint, headers=self.xroad_headers
-            )
-            if get_response.status_code == 404:
-                LOGGER.info(f"Plan matter {permanent_id} not found! Creating...")
-                responses[plan_id] = self.create_new_resource(
-                    plan_matter_endpoint, plan_matter
-                )
-                if self.debug_json:
-                    save_debug_json(
-                        f"{permanent_id}.plan_matter_post_response.json",
-                        responses[plan_id],
-                    )
-                LOGGER.info(responses[plan_id])
-                continue
-            # 2) If plan matter existed, check or create plan matter phase instead
-            if get_response.status_code == 200:
-                LOGGER.info(
-                    f"Plan matter {permanent_id} found! "
-                    "Checking if plan matter phase exists..."
-                )
-                phases: list[RyhtiPlanMatterPhase] = get_response.json()[
-                    "planMatterPhases"
-                ]
-                local_phase = plan_matter["planMatterPhases"][0]
-                local_lifecycle_status = local_phase["lifeCycleStatus"]
-                print(phases)
-                print(local_phase)
-
-                current_phase = next(
-                    (
-                        phase
-                        for phase in phases
-                        if phase["lifeCycleStatus"] == local_lifecycle_status
-                    ),
-                    None,
-                )
-                if not current_phase:
-                    LOGGER.info(
-                        f"Phase {local_lifecycle_status} not found! Creating..."
-                    )
-                    # Create new phase with locally generated id:
-                    plan_matter_phase_endpoint = (
-                        plan_matter_endpoint
-                        + "/phase/"
-                        + local_phase["planMatterPhaseKey"]
-                    )
-                    print(plan_matter_phase_endpoint)
-                    responses[plan_id] = self.create_new_resource(
-                        plan_matter_phase_endpoint, local_phase
-                    )
-                    if self.debug_json:
-                        save_debug_json(
-                            f"{permanent_id}.plan_matter_phase_post_response.json",
-                            responses[plan_id],
-                        )
-                    LOGGER.info(responses[plan_id])
-                    continue
-                # 3) If plan matter phase existed, update plan matter phase instead
-                LOGGER.info(
-                    f"Plan matter phase {current_phase['planMatterPhaseKey']} "
-                    f"with status {local_lifecycle_status} found! Updating phase..."
-                )
-                # Use existing phase id:
-                local_phase["planMatterPhaseKey"] = current_phase["planMatterPhaseKey"]
-                plan_matter_phase_endpoint = (
-                    plan_matter_endpoint
-                    + "/phase/"
-                    + current_phase["planMatterPhaseKey"]
-                )
-                responses[plan_id] = self.update_resource(
-                    plan_matter_phase_endpoint, local_phase
-                )
-                if self.debug_json:
-                    save_debug_json(
-                        f"{permanent_id}.plan_matter_phase_put_response.json",
-                        responses[plan_id],
-                    )
-                LOGGER.info(responses[plan_id])
-            else:
-                try:
-                    # API errors always contain JSON
-                    responses[plan_id] = get_response.json()
-                    LOGGER.info(responses[plan_id])
-                except json.JSONDecodeError:
-                    # There is something wrong with the API
-                    get_response.raise_for_status()
-        return responses

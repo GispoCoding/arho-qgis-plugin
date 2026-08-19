@@ -35,7 +35,6 @@ from ryhti_client.plan_copier import CopyPlanData
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
-    from database.base import DbId
     from ryhti_client.ryhti_client import RyhtiResponse
 
 # All non-request specific initialization should be done *before* the handler
@@ -109,8 +108,11 @@ class ResponseBody(TypedDict):
     """Data returned in lambda function response."""
 
     title: str
-    details: dict[str | DbId, str | None]
-    ryhti_responses: dict[DbId, RyhtiResponse]
+    # A human-readable message, or a small payload dict such as
+    # {"download_url": ..., "key": ...} or {"error": ...}.
+    details: str | dict[str, str] | None
+    # Response from the Ryhti API, for actions that call the Ryhti API.
+    ryhti_response: RyhtiResponse | None
 
 
 class Response(TypedDict):
@@ -137,8 +139,6 @@ class CompressedResponse(TypedDict):
 class ArhoPayload(TypedDict):
     """Support validating, POSTing or getting a desired plan. If provided directly to
     lambda, the lambda request needs only contain these keys.
-
-    If plan_uuid is empty, all plans in database are processed.
 
     If save_json is true, generated JSON as well as Ryhti API response are saved
     as {plan_id}.json and {plan_id}.response.json in the logs directory.
@@ -192,15 +192,32 @@ class AWSAPIGatewayResponse(TypedDict):
 
 
 class Action(enum.Enum):
-    GET_PLANS = "get_plans"
-    VALIDATE_PLANS = "validate_plans"
-    GET_PERMANENT_IDENTIFIERS = "get_permanent_plan_identifiers"
+    GET_PLAN = "get_plan"
+    VALIDATE_PLAN = "validate_plan"
+    GET_PERMANENT_IDENTIFIER = "get_permanent_plan_identifier"
+    # Plan matter support has been removed from Arho. The actions are kept so
+    # that old clients get a clear 405 response instead of an unknown action.
     GET_PLAN_MATTERS = "get_plan_matters"
     VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     POST_PLAN_MATTERS = "post_plan_matters"
     IMPORT_PLAN = "import_plan"
     COPY_PLAN = "copy_plan"
     GET_UPLOAD_URL = "get_upload_url"
+
+
+# Actions that operate on a single plan and require a plan_uuid in the event.
+PLAN_UUID_REQUIRED_ACTIONS = frozenset(
+    {
+        Action.GET_PLAN,
+        Action.VALIDATE_PLAN,
+        Action.GET_PERMANENT_IDENTIFIER,
+        Action.COPY_PLAN,
+    }
+)
+
+REMOVED_PLAN_MATTER_ACTIONS = frozenset(
+    {Action.GET_PLAN_MATTERS, Action.VALIDATE_PLAN_MATTERS, Action.POST_PLAN_MATTERS}
+)
 
 
 def compress(dict_data: ResponseBody) -> str:
@@ -253,6 +270,67 @@ def format_response(
     return format_direct_invocation_response(response, compress_response)
 
 
+def simple_response(
+    status_code: int, title: str, details: str | dict[str, str] | None = None
+) -> Response:
+    """Build a lambda response that has no Ryhti API response attached."""
+    LOGGER.info(title)
+    return Response(
+        statusCode=status_code,
+        body=ResponseBody(title=title, details=details, ryhti_response=None),
+    )
+
+
+def check_action_preconditions(
+    event_type: Action, action_name: str, plan_uuid: str | None
+) -> Response | None:
+    """Check that the action can be run with the given event.
+
+    Returns an error response if the action cannot be run, otherwise None.
+    """
+    if event_type in REMOVED_PLAN_MATTER_ACTIONS:
+        # Plan matter support removed from Arho. See git history for previous
+        # implementation.
+        return simple_response(
+            405,
+            "Plan matter actions not supported.",
+            {"error": "Plan matter support has been removed from Arho."},
+        )
+
+    if event_type is Action.GET_PERMANENT_IDENTIFIER and (
+        not xroad_server_address
+        or not xroad_member_code
+        or not xroad_member_client_name
+        or not xroad_syke_client_id
+        or not xroad_syke_client_secret
+    ):
+        raise ValueError(
+            "Please set your local XROAD_SERVER_ADDRESS and your organization "
+            "XROAD_MEMBER_CODE and XROAD_MEMBER_CLIENT_NAME to make API requests "
+            "to X-Road endpoints. Also, set XROAD_SYKE_CLIENT_ID and "
+            "XROAD_SYKE_CLIENT_SECRET that you have received when registering to "
+            "access SYKE X-Road API. To use production X-Road instead of test "
+            "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
+            "is set to FI-TEST."
+        )
+
+    if event_type in PLAN_UUID_REQUIRED_ACTIONS:
+        if not plan_uuid:
+            return simple_response(
+                400,
+                "Missing plan_uuid.",
+                {"error": f"plan_uuid is required for action {action_name}."},
+            )
+        try:
+            uuid.UUID(plan_uuid)
+        except ValueError:
+            return simple_response(
+                400, "Invalid plan_uuid.", {"error": "plan_uuid must be a valid UUID."}
+            )
+
+    return None
+
+
 type HandlerType = Callable[
     [ArhoPayload | AWSAPIGatewayPayload, dict[str, Any]],
     Response | CompressedResponse | AWSAPIGatewayResponse,
@@ -281,7 +359,7 @@ def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType
                                 "Please contact Arho support team."
                             )
                         },
-                        ryhti_responses={},
+                        ryhti_response=None,
                     ),
                 ),
                 is_api_gateway_event(payload),
@@ -331,8 +409,8 @@ def handler(
     If lambda runs successfully, we always return 200 OK. In case a python
     exception occurs, AWS lambda will return the exception.
 
-    We want to return general result message of the lambda run, as well as all the
-    Ryhti API results and errors, separated by plan id.
+    We want to return general result message of the lambda run, as well as the
+    Ryhti API response for actions that call the Ryhti API.
     """
     LOGGER.info(f"Received payload {payload}...")
 
@@ -343,21 +421,19 @@ def handler(
         "gzip"
         in normalized_payload.get("headers", {}).get("Accept-Encoding", "").lower()
     )
-    try:
-        event_type = Action(event["action"])
-    except KeyError:
-        event_type = Action.VALIDATE_PLANS
-    except ValueError:
-        response_title = "Unknown action."
-        LOGGER.info(response_title)
+    action_name = event.get("action")
+    if action_name is None:
         return format_response(
-            Response(
-                statusCode=400,
-                body=ResponseBody(
-                    title=response_title,
-                    details={event["action"]: "Unknown action."},
-                    ryhti_responses={},
-                ),
+            simple_response(400, "Missing action.", {"error": "action is required."}),
+            using_api_gateway,
+            compress_response,
+        )
+    try:
+        event_type = Action(action_name)
+    except ValueError:
+        return format_response(
+            simple_response(
+                400, "Unknown action.", {"error": f"Unknown action: {action_name}"}
             ),
             using_api_gateway,
             compress_response,
@@ -374,47 +450,21 @@ def handler(
             Params={"Bucket": ryhti_files_bucket, "Key": key},
             ExpiresIn=presigned_url_expiry_seconds,
         )
-        response_title = "Upload URL created."
-        LOGGER.info(response_title)
         return format_response(
-            Response(
-                statusCode=200,
-                body=ResponseBody(
-                    title=response_title,
-                    details={"upload_url": upload_url, "key": key},
-                    ryhti_responses={},
-                ),
+            simple_response(
+                200, "Upload URL created.", {"upload_url": upload_url, "key": key}
             ),
             using_api_gateway,
             compress_response,
         )
 
-    if (
-        event_type is Action.GET_PERMANENT_IDENTIFIERS
-        or event_type is Action.VALIDATE_PLAN_MATTERS
-        or event_type is Action.POST_PLAN_MATTERS
-    ) and (
-        not xroad_server_address
-        or not xroad_member_code
-        or not xroad_member_client_name
-        or not xroad_syke_client_id
-        or not xroad_syke_client_secret
-    ):
-        raise ValueError(
-            "Please set your local XROAD_SERVER_ADDRESS and your organization "
-            "XROAD_MEMBER_CODE and XROAD_MEMBER_CLIENT_NAME to make API requests "
-            "to X-Road endpoints. Also, set XROAD_SYKE_CLIENT_ID and "
-            "XROAD_SYKE_CLIENT_SECRET that you have received when registering to "
-            "access SYKE X-Road API. To use production X-Road instead of test "
-            "X-road, you must also set XROAD_INSTANCE to FI. By default, it "
-            "is set to FI-TEST."
-        )
+    precondition_error = check_action_preconditions(event_type, action_name, plan_uuid)
+    if precondition_error:
+        return format_response(precondition_error, using_api_gateway, compress_response)
+
     connection_params = get_connection_parameters(user_credentials)
-    database_client = DatabaseClient(
-        get_connection_string(**connection_params), plan_uuid=plan_uuid
-    )
+    database_client = DatabaseClient(get_connection_string(**connection_params))
     client = RyhtiClient(
-        database_client=database_client,
         debug_json=debug_json,
         public_api_key=public_api_key,
         xroad_syke_client_id=xroad_syke_client_id,
@@ -427,21 +477,34 @@ def handler(
         xroad_member_client_name=xroad_member_client_name,
     )
 
-    if database_client.plans:
-        if event_type is Action.GET_PLANS:
-            # Upload the JSON to S3 and return a presigned download URL. The
-            # serialized plans may exceed the lambda 6 MB response limit, so
-            # they are never returned inline.
-            response_title = "Returning serialized plans from database."
-            LOGGER.info(response_title)
-            plans_bytes = gzip.compress(
-                json.dumps(database_client.plan_dictionaries).encode("utf-8")
+    if event_type in (
+        Action.GET_PLAN,
+        Action.VALIDATE_PLAN,
+        Action.GET_PERMANENT_IDENTIFIER,
+    ):
+        try:
+            plan = database_client.get_plan(cast("str", plan_uuid))
+        except PlanNotFoundError as e:
+            return format_response(
+                simple_response(404, "Plan not found.", {"error": str(e)}),
+                using_api_gateway,
+                compress_response,
             )
+
+        if event_type is Action.GET_PLAN:
+            # Upload the JSON to S3 and return a presigned download URL. The
+            # serialized plan may exceed the lambda 6 MB response limit, so
+            # it is never returned inline. The file contains a single bare
+            # plan JSON, the same format that import_plan reads.
+            response_title = "Returning serialized plan from database."
+            LOGGER.info(response_title)
+            plan_dictionary = database_client.get_plan_dictionary(plan)
+            plan_bytes = gzip.compress(json.dumps(plan_dictionary).encode("utf-8"))
             key = f"export/{uuid.uuid4()}.json"
             s3_client.put_object(
                 Bucket=ryhti_files_bucket,
                 Key=key,
-                Body=plans_bytes,
+                Body=plan_bytes,
                 ContentType="application/json",
                 ContentEncoding="gzip",
             )
@@ -455,142 +518,98 @@ def handler(
                 body=ResponseBody(
                     title=response_title,
                     details={"download_url": download_url, "key": key},
-                    ryhti_responses={},
+                    ryhti_response=None,
                 ),
             )
 
-        elif event_type is Action.GET_PLAN_MATTERS:
-            # just return the JSON to the user
-            response_title = "Serializing plan matters not implemented yet."
-            LOGGER.info(response_title)
-            lambda_response = Response(
-                statusCode=405,
-                body=ResponseBody(
-                    title=response_title,
-                    details={"error": "Not implemented yet."},
-                    ryhti_responses={},
-                ),
-            )
-
-        elif event_type is Action.VALIDATE_PLANS:
-            # 1) Validate plans in database with public API
-            LOGGER.info("Validating plans...")
-            validation_responses = client.validate_plans()
+        elif event_type is Action.VALIDATE_PLAN:
+            # 1) Validate plan with public API
+            LOGGER.info("Validating plan...")
+            plan_dictionary = database_client.get_plan_dictionary(plan)
+            validation_response = client.validate_plan(plan, plan_dictionary)
             # 2) Save and return plan validation data
             LOGGER.info("Saving plan validation data...")
-            save_details = database_client.save_plan_validation_responses(
-                validation_responses
+            save_detail = database_client.save_plan_validation_response(
+                plan.id, validation_response
             )
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(
-                    title="Plan validations run.",
-                    details=save_details,  # type: ignore[typeddict-item]
-                    ryhti_responses=validation_responses,
+                    title="Plan validation run.",
+                    details=save_detail,
+                    ryhti_response=validation_response,
                 ),
             )
 
-        elif event_type is Action.GET_PERMANENT_IDENTIFIERS:
+        elif event_type is Action.GET_PERMANENT_IDENTIFIER:
             LOGGER.info("Authenticating to X-road Ryhti API...")
             client.xroad_ryhti_authenticate()
-            # 1) Check or create permanent plan identifiers, from X-Road API
-            LOGGER.info("Getting permanent plan identifiers for plans...")
-            plan_identifier_responses = client.get_permanent_plan_identifiers()
-            # 2) Save and return permanent plan identifiers
-            LOGGER.info("Setting permanent plan identifiers for plans...")
-            save_details = database_client.set_permanent_plan_identifiers(
-                plan_identifier_responses
-            )
+            # 1) Check or create permanent plan identifier, from X-Road API
+            LOGGER.info("Getting permanent plan identifier for plan matter...")
+            plan_matter = plan.plan_matter
+            identifier_response = client.get_permanent_plan_identifier(plan_matter)
+            identifier_detail: str | None
+            if identifier_response is None:
+                # The plan matter already has a permanent identifier.
+                identifier_detail = plan_matter.permanent_plan_identifier
+            else:
+                # 2) Save and return permanent plan identifier
+                LOGGER.info("Setting permanent plan identifier for plan matter...")
+                identifier_detail = database_client.set_permanent_plan_identifier(
+                    plan_matter, identifier_response
+                )
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(
-                    title="Possible permanent plan identifiers set.",
-                    details=save_details,  # type: ignore[typeddict-item]
-                    ryhti_responses=plan_identifier_responses,
-                ),
-            )
-
-        elif event_type is Action.VALIDATE_PLAN_MATTERS:
-            # Plan matter support removed from Arho. See git history for previous
-            # implementation.
-            lambda_response = Response(
-                statusCode=405,
-                body=ResponseBody(
-                    title="Plan matter validation not implemented.",
-                    details={},  # type: ignore[typeddict-item]
-                    ryhti_responses={},
-                ),
-            )
-
-        elif event_type is Action.POST_PLAN_MATTERS:
-            # Plan matter support removed from Arho. See git history for previous
-            # implementation.
-            lambda_response = Response(
-                statusCode=405,
-                body=ResponseBody(
-                    title="Plan matter posting not implemented.",
-                    details={},  # type: ignore[typeddict-item]
-                    ryhti_responses={},
-                ),
-            )
-        elif event_type is Action.COPY_PLAN:
-            raw_data = event.get("data")
-            LOGGER.debug("data: %s", raw_data)
-            try:
-                copy_data = CopyPlanData.model_validate(raw_data or {})
-            except ValidationError as e:
-                status_code = 400
-                title = "Error in provided data."
-                copy_details = {"error": str(e)}
-
-            else:
-                if plan_uuid is None:
-                    LOGGER.warning("Copying plan failed. Required parameters missing.")
-                    status_code = 400
-                    title = "Error in provided data."
-                    copy_details = {
-                        "error": "plan_uuid parameter is required for copying a plan."
-                    }
-
-                else:
-                    LOGGER.info("Copying plan...")
-                    try:
-                        copied_plan_id = database_client.copy_plan(plan_uuid, copy_data)
-                        status_code = 200
-                        title = "Plan copied."
-                        copy_details = {"copied_plan_id": str(copied_plan_id)}
-
-                    except (ApprovalDateRequiredError, StartDateRequiredError) as e:
-                        title = "Error copying plan."
-                        status_code = 400
-                        copy_details = {"error": str(e)}
-                    except (PlanNotFoundError, LifeCycleStatusNotFoundError) as e:
-                        title = "Error copying plan."
-                        status_code = 404
-                        copy_details = {"error": str(e)}
-
-            lambda_response = Response(
-                statusCode=status_code,
-                body=ResponseBody(
-                    title=title,
-                    details=copy_details,  # type: ignore[typeddict-item]
-                    ryhti_responses={},
+                    title="Possible permanent plan identifier set.",
+                    details=identifier_detail,
+                    ryhti_response=identifier_response,
                 ),
             )
 
         else:
-            lambda_response = Response(
-                statusCode=400,
-                body=ResponseBody(
-                    title="No action taken.", details={}, ryhti_responses={}
-                ),
-            )
+            lambda_response = simple_response(400, "No action taken.")
+
+    elif event_type is Action.COPY_PLAN:
+        raw_data = event.get("data")
+        LOGGER.debug("data: %s", raw_data)
+        try:
+            copy_data = CopyPlanData.model_validate(raw_data or {})
+        except ValidationError as e:
+            status_code = 400
+            title = "Error in provided data."
+            copy_details = {"error": str(e)}
+
+        else:
+            LOGGER.info("Copying plan...")
+            try:
+                copied_plan_id = database_client.copy_plan(
+                    cast("str", plan_uuid), copy_data
+                )
+                status_code = 200
+                title = "Plan copied."
+                copy_details = {"copied_plan_id": str(copied_plan_id)}
+
+            except (ApprovalDateRequiredError, StartDateRequiredError) as e:
+                title = "Error copying plan."
+                status_code = 400
+                copy_details = {"error": str(e)}
+            except (PlanNotFoundError, LifeCycleStatusNotFoundError) as e:
+                title = "Error copying plan."
+                status_code = 404
+                copy_details = {"error": str(e)}
+
+        lambda_response = Response(
+            statusCode=status_code,
+            body=ResponseBody(title=title, details=copy_details, ryhti_response=None),
+        )
 
     elif event_type is Action.IMPORT_PLAN:
         data = event.get("data") or {}
         s3_key = data.get("s3_key")
         extra_data = data.get("extra_data")
 
+        details: dict[str, str]
         if s3_key is None or extra_data is None:
             status_code = 400
             title = "Missing plan file key or extra data."
@@ -646,19 +665,10 @@ def handler(
 
         lambda_response = Response(
             statusCode=status_code,
-            body=ResponseBody(
-                title=title,
-                details=details,  # type: ignore[typeddict-item]
-                ryhti_responses={},
-            ),
+            body=ResponseBody(title=title, details=details, ryhti_response=None),
         )
 
     else:
-        lambda_response = Response(
-            statusCode=200,
-            body=ResponseBody(
-                title="Plans not found, exiting.", details={}, ryhti_responses={}
-            ),
-        )
+        lambda_response = simple_response(400, "No action taken.")
 
     return format_response(lambda_response, using_api_gateway, compress_response)

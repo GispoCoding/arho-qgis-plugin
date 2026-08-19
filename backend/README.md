@@ -88,10 +88,12 @@ Plan files may exceed the AWS Lambda 6 MB payload/response limit, so `ryhti_clie
 transfers them through a temporary S3 bucket with presigned URLs instead of inline
 JSON:
 
-- **Export** (`get_plans`): the lambda uploads the serialized plans to S3 (gzipped)
-  and returns `details.download_url` (a presigned GET URL, valid for 1 hour) and
-  `details.key`. Fetch the URL to get the plan JSON; HTTP clients decompress it
-  automatically based on the `Content-Encoding: gzip` header.
+- **Export** (`get_plan`, requires `plan_uuid`): the lambda uploads the serialized
+  plan to S3 (gzipped) and returns `details.download_url` (a presigned GET URL,
+  valid for 1 hour) and `details.key`. Fetch the URL to get the plan JSON; HTTP
+  clients decompress it automatically based on the `Content-Encoding: gzip` header.
+  The file contains a single bare plan JSON, in the same format that `import_plan`
+  reads.
 - **Import** (`import_plan`): first call the `get_upload_url` action, which returns
   `details.upload_url` (a presigned PUT URL) and `details.key`. PUT the plan JSON to
   the upload URL, then call `import_plan` with `data.s3_key` set to the returned key
@@ -112,7 +114,7 @@ The `ryhti_client` lambda can be debugged from VS Code while it runs in its dev 
 
 1. Bring up `ryhti_client` with debugpy enabled: `make dev-debug-ryhti`. This uses the `docker-compose.debug.yml` override to install `debugpy`, expose port `5678`, and set `DEBUGPY=1`.
 2. In VS Code's Run and Debug panel pick **Python: Attach to ryhti_client (docker)** and start it. The debugger attaches via `localhost:5678`.
-3. Set breakpoints in `lambdas/ryhti_client/lambda_function.py`, `lambdas/ryhti_client/ryhti_client/`, or `database/` and invoke the lambda — e.g. `make dev-ryhti-validate`.
+3. Set breakpoints in `lambdas/ryhti_client/lambda_function.py`, `lambdas/ryhti_client/ryhti_client/`, or `database/` and invoke the lambda — e.g. `make dev-ryhti-validate uuid=<plan-uuid>`.
 
 To debug module-level / cold-start code, set `DEBUGPY_WAIT=1` in `docker-compose.debug.yml`; the container will block on startup until VS Code attaches.
 
@@ -128,7 +130,7 @@ docker ps --format '{{.Names}}' |grep pytest | awk '{print $1}' | xargs -I {} do
 docker network ls --format {{.Name}} |grep pytest | awk '{print $1}' | xargs -I {} docker network rm {}
 ```
 
-Once you have created plan data in the database, you may test calling the SYKE Ryhti open validation API with your database contents with `make test-ryhti-validate`.
+Once you have created plan data in the database, you may test calling the SYKE Ryhti open validation API with a plan in your database with `make dev-ryhti-validate uuid=<plan-uuid>`.
 
 ### Database changes
 

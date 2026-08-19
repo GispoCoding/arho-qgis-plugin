@@ -33,7 +33,6 @@ from ryhti_client.ryhti_schema import (
     RyhtiAdditionalInformation,
     RyhtiAttributeValue,
     RyhtiPlan,
-    RyhtiPlanMatter,
 )
 
 if TYPE_CHECKING:
@@ -97,13 +96,9 @@ class StartDateRequiredError(Exception):
 
 
 class DatabaseClient:
-    def __init__(self, connection_string: str, plan_uuid: str | None = None) -> None:
+    def __init__(self, connection_string: str) -> None:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
-        # Cache plans fetched from database
-        self.plans: dict[DbId, models.Plan] = {}
-        # Cache plan dictionaries
-        self.plan_dictionaries: dict[DbId, RyhtiPlan] = {}
         self._table_srids: dict[tuple[str, str], int] = {}
 
         # We only ever need code uri values, not codes themselves, so let's not bother
@@ -118,40 +113,21 @@ class DatabaseClient:
         self.approved_status_value = "06"
         self.valid_status_value = "13"
 
-        # Do some prefetching before starting the run.
-        #
-        # Do *not* expire on commit, because we want to cache the old data in plan
-        # objects throughout the session. If we want up-to date plan data, we will
-        # know to explicitly refresh the object from a new session.
-        #
-        # Otherwise, we may access old plan data without having to create a session
-        # and query.
+    def get_plan(self, plan_id: str) -> models.Plan:
+        """Fetch a single plan from the database.
+
+        The returned instance is detached. Since the session does not expire on
+        commit, plan data remains accessible without a session. Relationships
+        configured with lazy loading require reattaching the instance to a new
+        session (see get_plan_dictionary).
+
+        Raises PlanNotFoundError if the plan does not exist.
+        """
         with self.Session(expire_on_commit=False) as session:
-            LOGGER.info("Caching requested plans from database...")
-            # Only process specified plans
-            stmt = select(models.Plan)
-            if plan_uuid:
-                LOGGER.info("Only fetching plan %s", plan_uuid)
-                stmt = stmt.where(models.Plan.id == plan_uuid)
-
-            self.plans = {plan.id: plan for plan in session.scalars(stmt).unique()}
-        if not self.plans:
-            LOGGER.info("No plans found in database.")
-        else:
-            # Serialize plans in database. All actions require serialized plans.
-            # However, plan matters are not always required, they are not serialized
-            # by default.
-            LOGGER.info("Formatting plan data...")
-            self.plan_dictionaries = self.get_plan_dictionaries()
-            LOGGER.info("Client initialized with plans to process:")
-            LOGGER.info(self.plans)
-
-    def get_unique_plan_matters(self) -> Generator[models.PlanMatter]:
-        seen_plan_matter_ids: set[DbId] = set()
-        for plan in self.plans.values():
-            if plan.plan_matter.id not in seen_plan_matter_ids:
-                seen_plan_matter_ids.add(plan.plan_matter.id)
-                yield plan.plan_matter
+            plan = session.get(models.Plan, plan_id)
+            if plan is None:
+                raise PlanNotFoundError(UUID(plan_id))
+            return plan
 
     def _get_srid_of_table(self, table: Table) -> int:
         table_schema = table.schema
@@ -615,15 +591,6 @@ class DatabaseClient:
 
         return plan_dictionary
 
-    def get_plan_dictionaries(self) -> dict[DbId, RyhtiPlan]:
-        """Construct a dict of valid Ryhti compatible plan dictionaries from plans in the
-        local database.
-        """
-        plan_dictionaries = {}
-        for plan_id, plan in self.plans.items():
-            plan_dictionaries[plan_id] = self.get_plan_dictionary(plan)
-        return plan_dictionaries
-
     def get_plan_map(self, document: models.Document) -> dict:
         """Construct a dict of single Ryhti compatible plan map."""
         plan_map: dict[str, Any] = {}
@@ -726,15 +693,9 @@ class DatabaseClient:
         # TODO
         return []
 
-    def get_plan_matter(self, plan: models.Plan) -> RyhtiPlanMatter:
-        raise NotImplementedError
-
-    def get_plan_matters(self) -> dict[DbId, RyhtiPlanMatter]:
-        raise NotImplementedError
-
-    def save_plan_validation_responses(
-        self, responses: dict[DbId, RyhtiResponse]
-    ) -> dict[DbId, str]:
+    def save_plan_validation_response(
+        self, plan_id: DbId, response: RyhtiResponse
+    ) -> str:
         """Save open validation API response data to the database and return lambda
         response.
 
@@ -747,232 +708,87 @@ class DatabaseClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
-            for plan_id, response in responses.items():
-                # Refetch plan from db in case it has been deleted
-                plan = session.get(models.Plan, plan_id)
-                if not plan:
-                    # Plan has been deleted in the middle of validation. Nothing
-                    # to see here, move on
-                    LOGGER.info(
-                        f"Plan {plan_id} no longer found in database! Moving on"
-                    )
-                    continue
-                LOGGER.info(f"Saving response for plan {plan_id}...")
-                LOGGER.info(response)
-                # In case Ryhti API does not respond in the expected manner,
-                # save the response for debugging.
-                if "status" not in response or "errors" not in response:
-                    details[plan_id] = (
-                        f"RYHTI API returned unexpected response: {response}"
-                    )
-                    plan.validation_errors = f"RYHTI API ERROR: {response}"
-                    LOGGER.info(details[plan_id])
-                    LOGGER.info("Ryhti response: %s", json.dumps(response))
-                    continue
-                if response["status"] == 200:
-                    details[plan_id] = f"Plan validation successful for {plan_id}!"
-                    plan.validation_errors = (
-                        "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
-                    )
-                else:
-                    details[plan_id] = f"Plan validation FAILED for {plan_id}."
-                    plan.validation_errors = response["errors"]
-
-                LOGGER.info(details[plan_id])
-                LOGGER.info("Ryhti response: %s", json.dumps(response))
-                plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
-            session.commit()
-        return details
-
-    def set_plan_documents(self, responses: dict[DbId, list[RyhtiResponse]]) -> None:
-        """Save uploaded plan document keys, export times and etags to the database.
-        Also, append document data to the plan dictionaries.
-        """
-        with self.Session(expire_on_commit=False) as session:
-            for plan_id, response in responses.items():
-                # Make sure that the plan in the plans dict stays up to date
-                plan = self.plans[plan_id]
-                session.add(plan)
-                for document, document_response in zip(
-                    plan.documents, response, strict=True
-                ):
-                    session.add(document)
-                    if document_response["status"] == 201:
-                        document.exported_file_key = UUID(document_response["detail"])
-                        document.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
-                        # Save the etag of the uploaded file, piggybacked in response
-                        if document_response["warnings"]:
-                            document.exported_file_etag = document_response["warnings"][
-                                "ETag"
-                            ]
-                    # We can only serialize the document after it has been uploaded
-                    self.add_document_to_plan_dict(
-                        document, self.plan_dictionaries[plan_id]
-                    )
-                session.commit()
-
-    def set_permanent_plan_identifiers(
-        self, responses: dict[DbId, RyhtiResponse]
-    ) -> dict[DbId, str]:
-        """Save permanent plan identifiers returned by RYHTI API to the database."""
-        details: dict[DbId, str] = {}
-        with self.Session(expire_on_commit=False) as session:
-            for plan_matter_id, response in responses.items():
-                plan_matter = next(
-                    pm
-                    for pm in self.get_unique_plan_matters()
-                    if pm.id == plan_matter_id
+            # Refetch plan from db in case it has been deleted
+            plan = session.get(models.Plan, plan_id)
+            if not plan:
+                # Plan has been deleted in the middle of validation. Nothing
+                # to see here, move on
+                detail = f"Plan {plan_id} no longer found in database!"
+                LOGGER.info(detail)
+                return detail
+            LOGGER.info(f"Saving response for plan {plan_id}...")
+            LOGGER.info(response)
+            # In case Ryhti API does not respond in the expected manner,
+            # save the response for debugging.
+            if "status" not in response or "errors" not in response:
+                detail = f"RYHTI API returned unexpected response: {response}"
+                plan.validation_errors = f"RYHTI API ERROR: {response}"
+            elif response["status"] == 200:
+                detail = f"Plan validation successful for {plan_id}!"
+                plan.validation_errors = (
+                    "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
                 )
-                # Make sure that the plan dict stays up to date
-                session.add(plan_matter)
-                if response["status"] == 200:
-                    plan_matter.permanent_plan_identifier = response["detail"]
-                    details[plan_matter_id] = response["detail"]  # type: ignore[assignment]
-                elif response["status"] == 401:
-                    details[plan_matter_id] = (
-                        "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
-                    )
-                elif response["status"] == 400:
-                    details[plan_matter_id] = (
-                        "Kaava-asialta puuttuu tuottajan kaavatunnus."
-                    )
-            session.commit()
-        return details
-
-    def save_plan_matter_validation_responses(
-        self, responses: dict[DbId, RyhtiResponse]
-    ) -> dict[DbId, str]:
-        """Save X-Road validation API response data to the database and return lambda
-        response.
-
-        If validation is successful, update validated_at field and validation_errors
-        field.
-
-        If validation/post is unsuccessful, save the error JSON in plan
-        validation_errors json field (in addition to saving it to AWS logs and
-        returning them in lambda return value).
-
-        If Ryhti request fails unexpectedly, save the returned error.
-        """
-        details: dict[DbId, str] = {}
-        with self.Session(expire_on_commit=False) as session:
-            for plan_id in self.plans:
-                plan: models.Plan | None = session.get(models.Plan, plan_id)
-                if not plan:
-                    # Plan has been deleted in the middle of validation. Nothing
-                    # to see here, move on
-                    LOGGER.info(
-                        f"Plan {plan_id} no longer found in database! Moving on"
-                    )
-                    continue
-                response = responses.get(plan_id)
-                if not response:
-                    # Return error message if we had no plan matter
-                    details[plan_id] = (
-                        f"Plan {plan_id} had no permanent identifier. "
-                        "Could not create plan matter!"
-                    )
-                    plan.validation_errors = details[plan_id]
-                    LOGGER.info(details[plan_id])
-                    continue
-                LOGGER.info(f"Saving response for plan matter {plan_id}...")
-                LOGGER.info(response)
-                # In case Ryhti API does not respond in the expected manner,
-                # save the response for debugging.
-                if "status" not in response or "errors" not in response:
-                    details[plan_id] = (
-                        f"RYHTI API returned unexpected response: {response}"
-                    )
-                    plan.validation_errors = f"RYHTI API ERROR: {response}"
-                    LOGGER.info(details[plan_id])
-                    LOGGER.info("Ryhti response: %s", json.dumps(response))
-                    continue
-                if response["status"] == 200:
-                    details[plan_id] = (
-                        f"Plan matter validation successful for {plan_id}!"
-                    )
-                    plan.validation_errors = (
-                        "Kaava-asia on validi ja sen voi viedä Ryhtiin."
-                    )
-                else:
-                    details[plan_id] = f"Plan matter validation FAILED for {plan_id}."
-                    plan.validation_errors = response["errors"]
-
-                LOGGER.info(details[plan_id])
-                LOGGER.info("Ryhti response: %s", json.dumps(response))
                 plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
+            else:
+                detail = f"Plan validation FAILED for {plan_id}."
+                plan.validation_errors = response["errors"]
+                plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
+
+            LOGGER.info(detail)
+            LOGGER.info("Ryhti response: %s", json.dumps(response))
             session.commit()
-        return details
+        return detail
 
-    def save_plan_matter_post_responses(
-        self, responses: dict[DbId, RyhtiResponse]
-    ) -> dict[DbId, str]:
-        """Save X-Road API POST response data to the database and return lambda response.
+    def set_plan_documents(
+        self,
+        plan: models.Plan,
+        responses: list[RyhtiResponse],
+        plan_dictionary: RyhtiPlan | None = None,
+    ) -> None:
+        """Save uploaded plan document keys, export times and etags to the database.
 
-        If POST is successful, update exported_at and validated_at fields.
+        The responses must come from upload_plan_documents called with the *same*
+        plan instance, so that they pair up with plan.documents in order.
 
-        If POST is unsuccessful, save the error JSON in plan
-        validation_errors json field (in addition to saving it to AWS logs and
-        returning them in lambda return value).
-
-        If Ryhti request fails unexpectedly, save the returned error.
+        If a plan dictionary is provided, the document data is also appended to it.
         """
-        details: dict[DbId, str] = {}
         with self.Session(expire_on_commit=False) as session:
-            for plan_id in self.plans:
-                plan: models.Plan | None = session.get(models.Plan, plan_id)
-                if not plan:
-                    # Plan has been deleted in the middle of POST. Nothing
-                    # to see here, move on
-                    LOGGER.info(
-                        f"Plan {plan_id} no longer found in database! Moving on"
-                    )
-                    continue
-                response = responses.get(plan_id)
-                if not response:
-                    # Return error message if we had no plan matter
-                    details[plan_id] = (
-                        f"Plan {plan_id} had no permanent identifier. "
-                        "Could not create plan matter!"
-                    )
-                    LOGGER.info(details[plan_id])
-                    continue
-                LOGGER.info(f"Saving response for plan matter {plan_id}...")
-                LOGGER.info(response)
-                # In case Ryhti API does not respond in the expected manner,
-                # save the response for debugging.
-                if "status" not in response or "errors" not in response:
-                    details[plan_id] = (
-                        f"RYHTI API returned unexpected response: {response}"
-                    )
-                    plan.validation_errors = f"RYHTI API ERROR: {response}"
-                elif response["status"] == 200:
-                    details[plan_id] = (
-                        f"Plan matter phase PUT successful for {plan_id}!"
-                    )
-                    plan.validation_errors = "Kaava-asian vaihe on päivitetty Ryhtiin."
-                    plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
-                    plan.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
-                elif response["status"] == 201:
-                    details[plan_id] = (
-                        "Plan matter or plan matter phase POST successful for "
-                        + str(plan_id)
-                        + "."
-                    )
-                    plan.validation_errors = "Uusi kaava-asian vaihe on viety Ryhtiin."
-                    plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
-                    plan.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
-                else:
-                    details[plan_id] = f"Plan matter POST FAILED for {plan_id}!"
-                    plan.validation_errors = response["errors"]
-                    plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
-
-                LOGGER.info(details[plan_id])
-                LOGGER.info("Ryhti response: %s", json.dumps(response))
+            session.add(plan)
+            for document, document_response in zip(
+                plan.documents, responses, strict=True
+            ):
+                session.add(document)
+                if document_response["status"] == 201:
+                    document.exported_file_key = UUID(document_response["detail"])
+                    document.exported_at = datetime.datetime.now(tz=LOCAL_TZ)
+                    # Save the etag of the uploaded file, piggybacked in response
+                    if document_response["warnings"]:
+                        document.exported_file_etag = document_response["warnings"][
+                            "ETag"
+                        ]
+                # We can only serialize the document after it has been uploaded
+                if plan_dictionary is not None:
+                    self.add_document_to_plan_dict(document, plan_dictionary)
             session.commit()
-        return details
+
+    def set_permanent_plan_identifier(
+        self, plan_matter: models.PlanMatter, response: RyhtiResponse
+    ) -> str:
+        """Save permanent plan identifier returned by RYHTI API to the database."""
+        detail = ""
+        with self.Session(expire_on_commit=False) as session:
+            # Make sure that the plan matter instance stays up to date
+            session.add(plan_matter)
+            if response["status"] == 200:
+                plan_matter.permanent_plan_identifier = response["detail"]
+                detail = cast("str", response["detail"])
+            elif response["status"] == 401:
+                detail = "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
+            elif response["status"] == 400:
+                detail = "Kaava-asialta puuttuu tuottajan kaavatunnus."
+            session.commit()
+        return detail
 
     def import_plan(
         self, plan_json: str, extra_data_dict: dict[str, Any], overwrite: bool = False
