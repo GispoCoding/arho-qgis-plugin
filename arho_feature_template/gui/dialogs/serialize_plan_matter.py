@@ -29,9 +29,9 @@ class SerializePlanMatter(QDialog, FormClass):  # type: ignore
     def check_inputs(self):
         """Enables ok/save button only if both file paths are defined."""
         if self.plan_matter_file.filePath():
-            self.button_box.button(QDialogButtonBox.Ok).setEnabled(True)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
         else:
-            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
     def get_path(self) -> str:
         return self.plan_matter_file.filePath()

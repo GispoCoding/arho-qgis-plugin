@@ -23,7 +23,7 @@ def move_label_on_symbol(
         QgsLayoutPoint(
             symbol_item.x() + symbol_size.width() / 2 - label_size.width() / 2,
             symbol_item.y() + symbol_size.height() / 2 - label_size.height() / 2,
-            QgsUnitTypes.LayoutMillimeters,
+            QgsUnitTypes.LayoutUnit.LayoutMillimeters,
         )
     )
 
@@ -41,7 +41,7 @@ def move_label_above_symbol(
             QgsLayoutPoint(
                 symbol_item.x() + symbol_size.width() / 2 - label_size.width() / 2,
                 symbol_item.y() - label_size.height(),
-                QgsUnitTypes.LayoutMillimeters,
+                QgsUnitTypes.LayoutUnit.LayoutMillimeters,
             )
         )
     elif isinstance(symbol_item, QgsLayoutItemPolyline):
@@ -49,7 +49,7 @@ def move_label_above_symbol(
             QgsLayoutPoint(
                 symbol_item.x() + symbol_size.width() / 2 - label_size.width() / 2,
                 symbol_item.y() - label_size.height() - line_symbol_width,
-                QgsUnitTypes.LayoutMillimeters,
+                QgsUnitTypes.LayoutUnit.LayoutMillimeters,
             )
         )
     else:
@@ -63,7 +63,7 @@ def move_label_next_to_item(label_item: QgsLayoutItemLabel, item: QgsLayoutItem)
         QgsLayoutPoint(
             item.x() + item.sizeWithUnits().width(),
             item.y(),
-            QgsUnitTypes.LayoutMillimeters,
+            QgsUnitTypes.LayoutUnit.LayoutMillimeters,
         )
     )
 
@@ -71,6 +71,6 @@ def move_label_next_to_item(label_item: QgsLayoutItemLabel, item: QgsLayoutItem)
 def move_label_below_item(label_item: QgsLayoutItemLabel, item: QgsLayoutItem, extra_y_move: float = 0) -> None:
     label_item.attemptMove(
         QgsLayoutPoint(
-            item.x(), item.y() + item.sizeWithUnits().height() + extra_y_move, QgsUnitTypes.LayoutMillimeters
+            item.x(), item.y() + item.sizeWithUnits().height() + extra_y_move, QgsUnitTypes.LayoutUnit.LayoutMillimeters
         )
     )

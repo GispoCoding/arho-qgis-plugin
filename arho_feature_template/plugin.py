@@ -205,18 +205,18 @@ class Plugin:
         self.plan_manager = PlanManager()
 
         # Docks
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.new_feature_dock)
+        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.new_feature_dock)
 
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.regulation_groups_dock)
+        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.regulation_groups_dock)
         iface.mainWindow().tabifyDockWidget(
             self.plan_manager.new_feature_dock, self.plan_manager.regulation_groups_dock
         )
 
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.plan_manager.features_dock)
+        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.features_dock)
         iface.mainWindow().tabifyDockWidget(self.plan_manager.regulation_groups_dock, self.plan_manager.features_dock)
 
         self.validation_dock = ValidationDock(self.plan_manager)
-        iface.addDockWidget(Qt.RightDockWidgetArea, self.validation_dock)
+        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.validation_dock)
         iface.mainWindow().tabifyDockWidget(self.plan_manager.new_feature_dock, self.validation_dock)
 
         # Hide the docks because they cannot be used before a plan has been selected/activated
@@ -231,7 +231,7 @@ class Plugin:
         #####  PLAN MATTER  #####
         self.plan_matter_button = QToolButton()
         self.plan_matter_button.setText("Kaava-asia ")
-        self.plan_matter_button.setPopupMode(QToolButton.InstantPopup)
+        self.plan_matter_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         plan_matter_menu = QMenu()
         self.plan_matter_button.setMenu(plan_matter_menu)
         self.plan_matter_action = self.toolbar.addWidget(self.plan_matter_button)
@@ -305,7 +305,7 @@ class Plugin:
         #####  PLAN  #####
         self.plan_button = QToolButton()
         self.plan_button.setText("Kaavasuunnitelma ")
-        self.plan_button.setPopupMode(QToolButton.InstantPopup)
+        self.plan_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         plan_menu = QMenu()
         self.plan_button.setMenu(plan_menu)
         self.plan_action = self.toolbar.addWidget(self.plan_button)
@@ -616,7 +616,7 @@ class Plugin:
         """Exports plan matter to Ryhti."""
         logger.debug("Opening post plan matter dialog")
         dialog = PostPlanDialog()
-        dialog.exec_()
+        dialog.exec()
 
     def update_ryhti_buttons(self):
         """Update the UI buttons based on whether the active plan has a permanent identifier."""

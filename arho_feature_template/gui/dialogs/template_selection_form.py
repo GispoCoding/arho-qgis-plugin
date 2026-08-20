@@ -32,7 +32,7 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 
 DATA_COLUMN = 0
-DATA_ROLE = Qt.UserRole
+DATA_ROLE = Qt.ItemDataRole.UserRole
 
 T = TypeVar("T", bound=RegulationGroup | PlanObject)
 
@@ -53,7 +53,7 @@ class TemplateSelectionForm(Generic[T], QDialog, FormClass):  # type: ignore
         self.selected_item: QTreeWidgetItem | None = None
         self.selected_template: T | None = None
 
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
         self.libraries = [*(library for library in libraries if library.status)]
 
@@ -72,7 +72,7 @@ class TemplateSelectionForm(Generic[T], QDialog, FormClass):  # type: ignore
 
     def _on_selection_changed(self):
         self.selected_item = self.template_selection_widget.get_selected_item()
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(self.selected_item is not None)
+        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(self.selected_item is not None)
 
     def select_library_by_active_plan_type(self):
         feature = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)

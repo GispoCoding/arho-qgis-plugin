@@ -16,20 +16,20 @@ class TreeWithSearchWidget(QWidget):
     """A widget combining a QTreeWidget and QgsFilterLineEdit."""
 
     DATA_COLUMN = 0
-    DATA_ROLE = Qt.UserRole
+    DATA_ROLE = Qt.ItemDataRole.UserRole
 
     def __init__(self):
         super().__init__()
         self.search = QgsFilterLineEdit(self)
         self.search.setShowClearButton(True)
         self.search.setShowSearchIcon(True)
-        self.search.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        self.search.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         self.search.valueChanged.connect(self.filter_tree_items)
 
         self.tree = QTreeWidget(self)
         self.tree.setHeaderHidden(True)
         self.tree.setSelectionMode(QTreeWidget.SelectionMode.SingleSelection)
-        self.tree.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Expanding)
+        self.tree.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
 
         layout = QVBoxLayout()
         layout.addWidget(self.search)

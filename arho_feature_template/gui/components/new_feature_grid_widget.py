@@ -23,7 +23,7 @@ class NewFeatureGridWidget(QListWidget):
 
     def __init__(self):
         super().__init__()
-        self.viewport().setBackgroundRole(QPalette.Window)
+        self.viewport().setBackgroundRole(QPalette.ColorRole.Window)
         self.setFlow(self.LeftToRight)
         self.setWrapping(True)
         self.setMovement(self.Static)
@@ -42,7 +42,7 @@ class NewFeatureGridWidget(QListWidget):
 
     def add_button(self, button: FeatureButton):
         item = QListWidgetItem()
-        item.setFlags(item.flags() & ~(Qt.ItemIsSelectable | Qt.ItemIsEnabled))
+        item.setFlags(item.flags() & ~(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled))
         self.addItem(item)
         item.setSizeHint(button.sizeHint())
         self.setItemWidget(item, button)

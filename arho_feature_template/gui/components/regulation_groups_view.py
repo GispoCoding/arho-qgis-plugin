@@ -125,7 +125,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.plan_regulation_group_libraries_combobox.setCurrentIndex(0)
 
     def _add_spacer(self):
-        self.scroll_area_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.scroll_area_spacer = QSpacerItem(0, 0, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.plan_regulation_group_scrollarea_contents.layout().addItem(self.scroll_area_spacer)
 
     def _remove_spacer(self):
@@ -155,7 +155,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
     def add_selected_plan_regulation_group(self, item: QTreeWidgetItem, column: int):
         if not item.parent():
             return
-        regulation_group: RegulationGroup = item.data(column, Qt.UserRole)
+        regulation_group: RegulationGroup = item.data(column, Qt.ItemDataRole.UserRole)
         if SettingsManager.get_add_only_selected_languages():
             regulation_group.apply_language_selection()
         self.add_plan_regulation_group(regulation_group)
@@ -182,7 +182,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         group_as_form = PlanRegulationGroupForm(
             regulation_group_widget.into_model(), self.active_plan_regulation_groups_library
         )
-        if group_as_form.exec_():
+        if group_as_form.exec():
             regulation_group_widget.from_model(group_as_form.model)
 
     def remove_plan_regulation_group(self, regulation_group_widget: RegulationGroupWidget):

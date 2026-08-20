@@ -16,7 +16,7 @@ from arho_feature_template.resources.libraries.regulation_groups import set_user
 ui_path = resources.files(__package__) / "manage_libraries.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
-DATA_ROLE = Qt.UserRole
+DATA_ROLE = Qt.ItemDataRole.UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -105,9 +105,9 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
                 None,
                 "Varoitus",
                 f"Tallentamattomia kaavamääräysryhmäkirjastoja: {unsaved_regulation_group_libraries}. Jos valitset Kyllä, muutokset menetetään.",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
-            == QMessageBox.No
+            == QMessageBox.StandardButton.No
         ):
             logger.debug("User cancelled closing due to unsaved regulation group libraries")
             return False
@@ -117,9 +117,9 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
                 None,
                 "Varoitus",
                 f"Tallentamattomia kaavakohdepohjakirjastoja: {unsaved_plan_object_libraries}. Jos valitset Kyllä, muutokset menetetään.",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
-            == QMessageBox.No
+            == QMessageBox.StandardButton.No
         ):
             logger.debug("User cancelled closing due to unsaved plan feature libraries")
             return False

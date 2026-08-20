@@ -149,9 +149,9 @@ class RegulationsPrintGenerator:
                 None,
                 "Tulosteen määräysosan luominen",
                 "Tulosteelle on jo luotuna määräysosa. Haluatko ylikirjoittaa vanhan määräysosan?",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
-            if response == QMessageBox.No:
+            if response == QMessageBox.StandardButton.No:
                 iface.openLayoutDesigner(existing)
                 return existing
 

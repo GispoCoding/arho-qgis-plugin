@@ -96,6 +96,8 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         # Notify user weather the post was successful or not.
         if success_found:
-            iface.messageBar().pushMessage("Kaava-asia viety Ryhtiin onnistuneesti", level=Qgis.Success)
+            iface.messageBar().pushMessage("Kaava-asia viety Ryhtiin onnistuneesti", level=Qgis.MessageLevel.Success)
         else:
-            iface.messageBar().pushMessage("Virhe, kaava-asiaa ei toimitettu Ryhtiin.", level=Qgis.Critical)
+            iface.messageBar().pushMessage(
+                "Virhe, kaava-asiaa ei toimitettu Ryhtiin.", level=Qgis.MessageLevel.Critical
+            )

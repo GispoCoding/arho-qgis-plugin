@@ -106,9 +106,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         if not enable_save:
-            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
             tooltip = "Kaavasuunnitelma on lukittu, kaavakohdetta ei voi muokata."
-            self.button_box.button(QDialogButtonBox.Ok).setToolTip(tooltip)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setToolTip(tooltip)
 
     def _init_save_to_library_button(self) -> None:
         if self.plan_feature_libraries:

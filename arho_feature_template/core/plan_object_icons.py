@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from PyQt5.QtGui import QColor, QFont, QFontMetrics, QPainter, QPixmap
 from qgis.core import (
     QgsExpressionContext,
     QgsExpressionContextUtils,
@@ -12,9 +11,13 @@ from qgis.core import (
     QgsWkbTypes,
 )
 from qgis.PyQt.QtCore import QSize, Qt
+from qgis.PyQt.QtGui import QColor, QFont, QFontMetrics, QPainter, QPixmap
 
 from arho_feature_template.exceptions import NotPlanObjectLayerError
-from arho_feature_template.project.layers.plan_layers import PlanObjectLayer, plan_feature_layers
+from arho_feature_template.project.layers.plan_layers import (
+    PlanObjectLayer,
+    plan_feature_layers,
+)
 from arho_feature_template.utils.misc_utils import iface
 
 
@@ -51,7 +54,8 @@ class PlanObjectIconRenderer:
 
         if failed_count > 0:
             iface.messageBar().pushCritical(
-                "", f"Kuvakkeen luominen epäonnistui {failed_count!s} kaavakohteelle tasolle {layer.name}"
+                "",
+                f"Kuvakkeen luominen epäonnistui {failed_count!s} kaavakohteelle tasolle {layer.name}",
             )
 
         return icons
@@ -130,7 +134,7 @@ class PlanObjectIconRenderer:
         painter = QPainter(pixmap)
         painter.setFont(font)
         painter.drawPixmap(0, pixmap_y, symbol_pixmap)
-        painter.drawText(letter_code_rect, Qt.AlignCenter, letter_code)
+        painter.drawText(letter_code_rect, Qt.AlignmentFlag.AlignCenter, letter_code)
         painter.end()
 
         return pixmap
@@ -142,8 +146,8 @@ class PlanObjectIconRenderer:
 
     @staticmethod
     def _place_text_inside(letter_code: str, geometry_type: QgsWkbTypes.GeometryType) -> bool:
-        is_polygon = geometry_type == QgsWkbTypes.PolygonGeometry
-        is_point_with_short_text = geometry_type == QgsWkbTypes.PointGeometry and len(letter_code) == 1
+        is_polygon = geometry_type == QgsWkbTypes.GeometryType.PolygonGeometry
+        is_point_with_short_text = geometry_type == QgsWkbTypes.GeometryType.PointGeometry and len(letter_code) == 1
         return is_polygon or is_point_with_short_text
 
     @classmethod

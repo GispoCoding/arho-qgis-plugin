@@ -50,7 +50,7 @@ class GeoTiffCreator:
         if not self.plan_layer or not self.feature:
             return
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
         # Set buffered bounding box
         bbox = self.feature.geometry().boundingBox()

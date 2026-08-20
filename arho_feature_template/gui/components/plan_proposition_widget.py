@@ -84,7 +84,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
 
     def _show_lifecycle_menu(self):
         pos = self.validity_label.mapToGlobal(self.validity_label.rect().bottomLeft())
-        self.edit_lifecycle_menu.exec_(pos)
+        self.edit_lifecycle_menu.exec(pos)
 
     def _on_lifecycle_change_requested(self, lifecycle: LifeCycleStatusValue, date: QDate | None):
         lifecycle_status_id = LifeCycleStatusLayer.get_id_from_lifecycle_status_value(lifecycle)

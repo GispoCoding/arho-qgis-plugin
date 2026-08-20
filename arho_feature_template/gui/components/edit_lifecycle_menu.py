@@ -65,7 +65,7 @@ def ask_date(parent: QWidget | None = None, initial: QDate | None = None) -> QDa
     date_edit.setCalendarPopup(True)
     date_edit.setDate(initial or QDate.currentDate())
 
-    buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+    buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
     buttons.accepted.connect(dialog.accept)
     buttons.rejected.connect(dialog.reject)
 
@@ -74,7 +74,7 @@ def ask_date(parent: QWidget | None = None, initial: QDate | None = None) -> QDa
     layout.addWidget(date_edit)
     layout.addWidget(buttons)
 
-    if dialog.exec_() == QDialog.Accepted:
+    if dialog.exec() == QDialog.DialogCode.Accepted:
         return date_edit.date()
 
     return None

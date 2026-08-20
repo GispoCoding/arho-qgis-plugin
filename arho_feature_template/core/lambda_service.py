@@ -36,7 +36,7 @@ class LambdaService(QObject):
     plan_copied = pyqtSignal(str)
     plan_copy_failed = pyqtSignal(str)
 
-    ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.User + 1)
+    ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.Attribute.User + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
     ACTION_VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     ACTION_GET_PLANS = "get_plans"
@@ -193,7 +193,7 @@ class LambdaService(QObject):
         if proxy_host and proxy_port:
             # Set up SOCKS5 Proxy if values are provided
             proxy = QNetworkProxy()
-            proxy.setType(QNetworkProxy.Socks5Proxy)
+            proxy.setType(QNetworkProxy.ProxyType.Socks5Proxy)
             proxy.setHostName(proxy_host)
             proxy.setPort(int(proxy_port))
             self.network_manager.setProxy(proxy)
@@ -209,7 +209,7 @@ class LambdaService(QObject):
 
         request = QNetworkRequest(QUrl(self.lambda_url))
         request.setAttribute(LambdaService.ActionAttribute, action)
-        request.setHeader(QNetworkRequest.ContentTypeHeader, "application/json")
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
         if self._is_api_gateway_request():
             request.setRawHeader(b"Accept-Encoding", b"gzip")
             logger.debug("Request marked as API Gateway call, using Accept-Encoding header")
@@ -262,9 +262,9 @@ class LambdaService(QObject):
         responds with 307 TemporaryRedirect (an XML body) when a newly created bucket is
         accessed through the global endpoint before DNS has propagated.
         """
-        if response.error() != QNetworkReply.NoError:  # type: ignore  # wrong type annotation in the stubs
+        if response.error() != QNetworkReply.NetworkError.NoError:  # type: ignore  # wrong type annotation in the stubs
             return response.errorString()
-        status_code = response.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        status_code = response.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
         if status_code is not None and not HTTPStatus.OK <= status_code < HTTPStatus.MULTIPLE_CHOICES:
             body_excerpt = response.readAll().data()[:500].decode("utf-8", errors="replace")
             return f"HTTP {status_code}: {body_excerpt}"
@@ -310,7 +310,7 @@ class LambdaService(QObject):
             return
         response_handler = self._get_response_handler(action)
         error_handler = self._get_error_handler(action)
-        if response.error() != QNetworkReply.NoError:  # type: ignore  # wrong type annotation in the stubs
+        if response.error() != QNetworkReply.NetworkError.NoError:  # type: ignore  # wrong type annotation in the stubs
             error = response.errorString()
             logger.debug("Network error for action=%s error=%s", action, error)
             QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
