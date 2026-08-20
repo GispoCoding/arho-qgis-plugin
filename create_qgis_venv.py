@@ -4,8 +4,7 @@
 
 # ruff: noqa: T201
 
-"""
-This is a tool for creating a virtual environment for QGIS plugin development.
+"""Tool for creating a virtual environment for QGIS plugin development.
 
 Originated from https://github.com/GispoCoding/qgis-venv-creator
 
@@ -24,7 +23,7 @@ import subprocess
 import sys
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Generator, Protocol, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Iterator, Protocol, TypedDict, cast
 
 if TYPE_CHECKING:
 
@@ -44,13 +43,15 @@ if TYPE_CHECKING:
         def cli_arguments() -> list[CliArg]: ...
 
 
-__version__ = "0.1.0"
+# Keep in sync with [project].version in pyproject.toml (the source of truth).
+# Bump with `uv version --bump <part>`; guarded by tests/unit/test_version.py.
+__version__ = "0.2.0"
 
 cli_args: CliArgsType = {}
 
 
 class CliArg:
-    """Command line argument definition to be passed to argparse.ArgumentParser.add_argument()
+    """Command line argument definition to be passed to argparse.ArgumentParser.add_argument().
 
     ```py
     import argparse
@@ -65,7 +66,7 @@ class CliArg:
     ```
     """
 
-    def __init__(self, *args: str, **kwargs: Any):
+    def __init__(self, *args: str, **kwargs: Any) -> None:
         self.args = args
         self.kwargs = kwargs
 
@@ -74,44 +75,42 @@ logger = logging.getLogger(__name__)
 
 
 class VenvCreationError(RuntimeError):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Failed to create virtual environment")
 
 
 class InvalidPythonExecutableError(RuntimeError):
-    def __init__(self, executable_path: Path | None):
+    def __init__(self, executable_path: Path | str | None) -> None:
         super().__init__(f"{executable_path} is not a valid Python executable.")
 
 
 class InvalidQgisPathError(RuntimeError):
-    def __init__(self, qgis_installation: Path | None):
+    def __init__(self, qgis_installation: Path) -> None:
         super().__init__(f"{qgis_installation} is not a valid QGIS path.")
 
 
 class VenvParentDirectoryNotExistsError(RuntimeError):
-    def __init__(self, venv_directory: Path):
+    def __init__(self, venv_directory: Path) -> None:
         super().__init__(f"Virtual environment directory {venv_directory} does not exist.")
 
 
 class GlobPatternError(ValueError):
-    def __init__(self, pattern: str):
+    def __init__(self, pattern: str) -> None:
         super().__init__(f"Invalid glob pattern: {pattern}. Wildcard in the first directory part is not supported.")
 
 
 class UnsupportedPlatformError(RuntimeError):
-    def __init__(self, platform: str):
+    def __init__(self, platform: str) -> None:
         super().__init__(f"Unsupported platform: {platform}.")
 
 
 def _is_valid_python_executable(python_executable: Path | None) -> bool:
     """Check if the given path is a valid Python executable."""
-
     return python_executable is not None and python_executable.exists() and os.access(python_executable, os.X_OK)
 
 
 def _create_venv(python_executable: Path | None, venv_parent: Path | None = None, venv_name: str | None = None) -> Path:
     """Create a virtual environment for a QGIS plugin project."""
-
     if python_executable is None or not python_executable.exists() or not os.access(python_executable, os.X_OK):
         raise InvalidPythonExecutableError(python_executable)
 
@@ -141,12 +140,11 @@ def _create_venv(python_executable: Path | None, venv_parent: Path | None = None
     return venv_directory
 
 
-def _create_glob_generator_from_pattern(pattern: str) -> Generator[Path, None, None]:
+def _create_glob_generator_from_pattern(pattern: str) -> Iterator[Path]:
     """Create a glob generator from a pattern.
 
     The Path.glob() method does not support absolute paths. This is to overcome that limitation.
     """
-
     glob_parts: list[str] = []
     part_iterator = iter(Path(pattern).parts)
     root_part = next(part_iterator)
@@ -159,7 +157,17 @@ def _create_glob_generator_from_pattern(pattern: str) -> Generator[Path, None, N
         else:
             glob_parts.append(part)
 
-    return path.glob(os.sep.join(glob_parts))
+    # Path.glob() patterns are "/"-separated on every platform.
+    return path.glob("/".join(glob_parts))
+
+
+def _detect_qt_folder_for_qgis(qgis_installation: Path) -> str:
+    """Detect the Qt folder for the given QGIS installation."""
+    core_pyi_file = qgis_installation / "python" / "qgis" / "_core.pyi"
+    core_pyi_content = core_pyi_file.read_text(encoding="utf-8", errors="ignore")
+    if "import PyQt6.sip" in core_pyi_content:
+        return "Qt6"
+    return "Qt5"
 
 
 class Platform(ABC):
@@ -170,21 +178,20 @@ class Platform(ABC):
 
     @staticmethod
     def cli_arguments() -> list[CliArg]:
-        """Returns environment specific command line arguments to be passed to argparse.ArgumentParser.add_argument()"""
-
+        """Return environment specific command line arguments to be passed to argparse.ArgumentParser.add_argument()."""
         return []
 
 
 class MultiQgisPlatform(Platform):
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def _find_qgis_installations(qgis_installation_search_path_pattern: str | None = None) -> list[Path]:
+    def _find_qgis_installations(cls, custom_search_path_pattern: str | None = None) -> list[Path]:
         """Find all QGIS installations from the system."""
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def _is_valid_qgis_path(qgis_path: Path) -> bool:
+    def _is_valid_qgis_path(qgis_installation: Path) -> bool:
         """Validate that the given path is a valid QGIS installation."""
         raise NotImplementedError
 
@@ -209,7 +216,6 @@ class MultiQgisPlatform(Platform):
     @classmethod
     def select_qgis_install(cls, custom_search_path_pattern: str | None = None) -> Path:
         """Prompts the user to select a QGIS installation from the system."""
-
         custom_search_path_pattern = custom_search_path_pattern or os.environ.get(
             "QGIS_INSTALLATION_SEARCH_PATH_PATTERN"
         )
@@ -217,10 +223,10 @@ class MultiQgisPlatform(Platform):
 
         print("Found following QGIS installations from the system. Which one to use for development?")
         for i, path in enumerate(qgis_installations):
-            print(f"  {i+1} - {path}")
+            print(f"  {i + 1} - {path}")
         custom_selection_index = len(qgis_installations) + 1
         print(f"  {custom_selection_index} - Custom")
-        choose_prompt = f"Choose from [{'/'.join(str(i+1) for i in range(custom_selection_index))}]"
+        choose_prompt = f"Choose from [{'/'.join(str(i + 1) for i in range(custom_selection_index))}]"
         while True:
             try:
                 selection = int(input(f"  {choose_prompt}: "))
@@ -278,8 +284,7 @@ class Windows(MultiQgisPlatform):
     @classmethod
     def _find_qgis_installations(cls, custom_search_path_pattern: str | None = None) -> list[Path]:
         """Find all QGIS installations from the Windows system."""
-
-        possible_qgis_installation_generators = [
+        possible_qgis_installation_generators: list[Iterator[Path]] = [
             Path("C:/Program Files").glob("QGIS*/apps/qgis*/"),
             Path("C:/OSGeo4W/apps").glob("qgis*/"),
             Path("C:/OSGeo4W64/apps").glob("qgis*/"),
@@ -306,16 +311,16 @@ class Windows(MultiQgisPlatform):
         root = qgis_installation.parent.parent
         bin_directory = root / "bin"
         qgis_bin_directory = qgis_installation / "bin"
-        qt5_bin_directory = root / "apps" / "Qt5" / "bin"
+        qt_folder = _detect_qt_folder_for_qgis(qgis_installation)
+        qt_bin_directory = root / "apps" / qt_folder / "bin"
         python_path = Windows._find_qgis_python_executable(qgis_installation)
         if not python_path:
             return False
-        return all(d.exists() for d in (bin_directory, qgis_bin_directory, qt5_bin_directory, python_path))
+        return all(d.exists() for d in (bin_directory, qgis_bin_directory, qt_bin_directory, python_path))
 
     @staticmethod
     def _find_qgis_python_executable(qgis_install_directory: Path) -> Path | None:
         """Find the Python executable for the QGIS installation."""
-
         apps_directory = qgis_install_directory.parent
         python_install_directory = next(apps_directory.glob("Python*"), None)
         if not python_install_directory:
@@ -327,14 +332,15 @@ class Windows(MultiQgisPlatform):
         root = qgis_installation.parent.parent
         bin_directory = root / "bin"
         qgis_bin_directory = qgis_installation / "bin"
-        qt5_bin_directory = root / "apps" / "Qt5" / "bin"
+        qt_folder = _detect_qt_folder_for_qgis(qgis_installation)
+        qt_bin_directory = root / "apps" / qt_folder / "bin"
 
         content = (
             "import os\n"
             "\n"
             f"os.add_dll_directory('{bin_directory.as_posix()}')\n"
             f"os.add_dll_directory('{qgis_bin_directory.as_posix()}')\n"
-            f"os.add_dll_directory('{qt5_bin_directory.as_posix()}')\n"
+            f"os.add_dll_directory('{qt_bin_directory.as_posix()}')\n"
         )
         sitecustomize_file_path = venv_directory / "Lib" / "site-packages" / "sitecustomize.py"
         logger.debug("Writing site customize file to '%s'", sitecustomize_file_path)
@@ -381,7 +387,7 @@ class Linux(Platform):
         cls, python_executable: Path | None = None, venv_parent: Path | None = None, venv_name: str | None = None
     ) -> Path:
         if python_executable is None:
-            python3_command = Path("python3")
+            python3_command = "python3"
             python3_executable = shutil.which(python3_command)
             if python3_executable is None:
                 raise InvalidPythonExecutableError(python3_command)
@@ -392,7 +398,6 @@ class Linux(Platform):
 
 def cli() -> None:
     """Create a virtual environment for a QGIS plugin project."""
-
     environments: dict[str, SupportsVenvCreation] = {
         "Windows": Windows,
         "Linux": Linux,
