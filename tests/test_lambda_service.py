@@ -20,7 +20,9 @@ EXTRA_DATA = {"name": "Testikaava", "plan_matter_id": "22222222-2222-2222-2222-2
 class FakeReply:
     """Stands in for QNetworkReply in response handlers."""
 
-    def __init__(self, data: bytes = b"", error=QNetworkReply.NoError, error_string: str = "", status_code=200):
+    def __init__(
+        self, data: bytes = b"", error=QNetworkReply.NetworkError.NoError, error_string: str = "", status_code=200
+    ):
         self._data = data
         self._error = error
         self._error_string = error_string
@@ -170,7 +172,7 @@ def test_download_response_redirect_status_emits_nothing(service):
 
 def test_download_response_network_error_emits_nothing(service):
     emitted = signal_spy(service.plan_data_received)
-    reply = FakeReply(error=QNetworkReply.ContentNotFoundError, error_string="Not found")
+    reply = FakeReply(error=QNetworkReply.NetworkError.ContentNotFoundError, error_string="Not found")
     service._handle_s3_download_response(reply)
     assert reply.deleted
     assert not emitted
@@ -234,7 +236,7 @@ def test_upload_response_error_fails_import(service, sent_requests):
         "force": False,
         "s3_key": "import/abc.json",
     }
-    reply = FakeReply(error=QNetworkReply.ConnectionRefusedError, error_string="Connection refused")
+    reply = FakeReply(error=QNetworkReply.NetworkError.ConnectionRefusedError, error_string="Connection refused")
     service._handle_s3_upload_response(reply)
     assert reply.deleted
     assert not sent_requests
