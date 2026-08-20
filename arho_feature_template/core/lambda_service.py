@@ -36,7 +36,9 @@ class LambdaService(QObject):
     plan_copied = pyqtSignal(str)
     plan_copy_failed = pyqtSignal(str)
 
-    ActionAttribute = cast(QNetworkRequest.Attribute, QNetworkRequest.Attribute.User + 1)
+    # On PyQt5 QNetworkRequest.Attribute.User is an int, but on PyQt6 it is an Enum.
+    _USER_ATTR = cast(int, getattr(QNetworkRequest.Attribute.User, "value", QNetworkRequest.Attribute.User))
+    ActionAttribute = QNetworkRequest.Attribute(_USER_ATTR + 1)
     ACTION_VALIDATE_PLANS = "validate_plans"
     ACTION_VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     ACTION_GET_PLANS = "get_plans"
