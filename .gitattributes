@@ -1,0 +1,8 @@
+# Default: treat every file as text and store/check out with LF line endings.
+# This overrides core.autocrlf, so all clones get LF regardless of platform.
+* text=auto eol=lf
+
+# --- Windows-only files: must keep CRLF ------------------------------------
+*.bat      text eol=crlf
+*.cmd      text eol=crlf
+*.ps1      text eol=crlf
