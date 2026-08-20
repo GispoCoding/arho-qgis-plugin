@@ -139,7 +139,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             layout = QHBoxLayout()
 
             self.link_label_icon = QLabel()
-            self.link_label_icon.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+            self.link_label_icon.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
             self.link_label_icon.setPixmap(QPixmap(resources_path("icons", "linked_img_small.png")))
             self.link_label_icon.setToolTip(tooltip)
             layout.addWidget(self.link_label_icon)
@@ -156,9 +156,9 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             self.setWindowTitle("Muokkaa kaavamääräysryhmää")
 
         if not enable_save:
-            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
             tooltip = "Kaavasuunnitelma on lukittu, kaavamääräysryhmää ei voi muokata."
-            self.button_box.button(QDialogButtonBox.Ok).setToolTip(tooltip)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setToolTip(tooltip)
 
     def initialize_regulation_library(self):
         """Initializes the tree menu for regulations."""
@@ -180,13 +180,13 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             regulation_type_widgets[id_] = tree_widget_item
 
     def update_selected_regulation(self, item: QTreeWidgetItem, column: int):
-        _, regulation_type_attributes = item.data(column, Qt.UserRole)
+        _, regulation_type_attributes = item.data(column, Qt.ItemDataRole.UserRole)
         text = get_localized_text(regulation_type_attributes["description"])
         if text:
             self.regulation_info.setText(text)
 
     def add_selected_regulation(self, item: QTreeWidgetItem, column: int):
-        regulation_type_id, regulation_type_attributes = item.data(column, Qt.UserRole)
+        regulation_type_id, regulation_type_attributes = item.data(column, Qt.ItemDataRole.UserRole)
         if regulation_type_attributes["category_only"]:
             return
         self.add_regulation(Regulation(regulation_type_id))

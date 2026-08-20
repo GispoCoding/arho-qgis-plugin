@@ -332,7 +332,7 @@ class PlanManager(QObject):
     def open_import_plan_dialog(self):
         logger.debug("Opening import plan dialog")
         dialog = ImportPlanForm(iface.mainWindow())
-        if dialog.exec_() and dialog.imported_plan_id:
+        if dialog.exec() and dialog.imported_plan_id:
             logger.debug("Imported plan selected id=%s", dialog.imported_plan_id)
             self.set_active_plan(dialog.imported_plan_id)
 
@@ -384,7 +384,7 @@ class PlanManager(QObject):
 
     def manage_libraries(self):
         manage_libraries_form = ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries)
-        result = manage_libraries_form.exec_()
+        result = manage_libraries_form.exec()
         # Close event return zero
         if result == 0:
             self.initialize_libraries()
@@ -395,7 +395,7 @@ class PlanManager(QObject):
             regulation_group, self.active_plan_regulation_group_library, not self.plan_locked
         )
 
-        if regulation_group_form.exec_():
+        if regulation_group_form.exec():
             model = regulation_group_form.model
             logger.debug("Regulation group form accepted id=%s", model.id_)
             if save_regulation_group(model) is None:
@@ -510,7 +510,7 @@ class PlanManager(QObject):
         if layer.name() in plan_layer_names:
             iface.messageBar().pushWarning("", "Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta.")
             return
-        if layer.geometryType() != QgsWkbTypes.PolygonGeometry:
+        if layer.geometryType() != QgsWkbTypes.GeometryType.PolygonGeometry:
             iface.messageBar().pushWarning("", "Kaavasuunnitelman ulkorajaksi valittu geometria ei ole polygoni.")
             return
         features = layer.selectedFeatures()
@@ -537,7 +537,7 @@ class PlanManager(QObject):
         plan_model = PlanLayer.model_from_feature(feature)
 
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
-        if attribute_form.exec_():
+        if attribute_form.exec():
             plan_model = attribute_form.model
             logger.debug("Plan form accepted id=%s", plan_model.id_)
 
@@ -564,7 +564,7 @@ class PlanManager(QObject):
         plan_matter_model = PlanMatterLayer.model_from_feature(feature)
 
         attribute_form = PlanMatterAttributeForm(plan_matter_model)
-        if attribute_form.exec_():
+        if attribute_form.exec():
             saved_id = save_plan_matter(attribute_form.model)
             logger.debug("Plan matter save returned id=%s", saved_id)
 
@@ -593,7 +593,7 @@ class PlanManager(QObject):
         plan_matter_model = PlanMatter()
         attribute_form = PlanMatterAttributeForm(plan_matter_model, parent=iface.mainWindow())
 
-        if attribute_form.exec_():
+        if attribute_form.exec():
             saved_id = save_plan_matter(attribute_form.model)
             logger.debug("New plan matter save returned id=%s", saved_id)
 
@@ -640,7 +640,7 @@ class PlanManager(QObject):
 
         plan_model = Plan(geom=geom)
         attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
-        if attribute_form.exec_():
+        if attribute_form.exec():
             plan_id = save_plan(attribute_form.model)
             if plan_id is not None:
                 plan_to_be_activated = plan_id
@@ -692,7 +692,7 @@ class PlanManager(QObject):
             self.active_plan_regulation_group_library,
             not self.plan_locked,
         )
-        if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
+        if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
             logger.debug("Plan feature saved successfully from digitized geometry")
             self.update_active_plan_regulation_group_library()
 
@@ -710,7 +710,7 @@ class PlanManager(QObject):
             self.active_plan_regulation_group_library,
             not self.plan_locked,
         )
-        if attribute_form.exec_() and save_plan_object(attribute_form.model) is not None:
+        if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
             logger.debug("Plan feature saved successfully after edit")
             self.update_active_plan_regulation_group_library()
 
@@ -845,7 +845,7 @@ class PlanManager(QObject):
 
         dialog = LoadPlanMatterDialog(None, connection_names)
 
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             selected_plan_matter_id = dialog.get_selected_plan_matter_id()
             logger.debug("Load plan matter selected id=%s", selected_plan_matter_id)
             self.set_active_plan_matter(selected_plan_matter_id)
@@ -870,7 +870,7 @@ class PlanManager(QObject):
             return
 
         dialog = SerializePlan()
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.json_plan_path = str(dialog.plan_file.filePath())
             self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
             logger.debug(
@@ -893,7 +893,7 @@ class PlanManager(QObject):
             return
 
         dialog = SerializePlanMatter()
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
             self.json_plan_matter_path = str(dialog.plan_matter_file.filePath())
             logger.debug("Export plan matter target path=%s", self.json_plan_matter_path)
 

@@ -49,9 +49,9 @@ def prompt_commit_changes() -> bool:
         None,
         "Tallentamattomat muutokset",
         "Tasoilla on tallentamattomia muutoksia. Tallenetaanko muutokset?",
-        QMessageBox.Yes | QMessageBox.No,
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
     )
-    return response == QMessageBox.Yes
+    return response == QMessageBox.StandardButton.Yes
 
 
 def commit_all_layer_changes() -> bool:
@@ -149,7 +149,7 @@ def use_wait_cursor(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with OverrideCursor(Qt.WaitCursor):
+        with OverrideCursor(Qt.CursorShape.WaitCursor):
             return func(*args, **kwargs)
 
     return wrapper

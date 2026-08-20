@@ -96,7 +96,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         for index in range(self.template_list.count()):
             item = self.template_list.item(index)
             item_text = item.text().lower()
-            plan_feature: PlanObject = item.data(Qt.UserRole)
+            plan_feature: PlanObject = item.data(Qt.ItemDataRole.UserRole)
             text_matches = search_text in item_text
             feature_type_matches = (
                 plan_feature.layer_name == self.active_feature_layer if self.active_feature_layer else True
@@ -110,7 +110,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
     def on_template_item_clicked(self, index: int):
         item = self.template_list.itemFromIndex(index)
-        template: PlanObject = item.data(Qt.UserRole)
+        template: PlanObject = item.data(Qt.ItemDataRole.UserRole)
         logger.debug("Template list item clicked template_name=%s", item.text())
         # Clicked new list item => activate new template
         if template != self.active_template:
@@ -157,6 +157,6 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
                     if isinstance(feature_template.name, str)
                     else get_localized_text(feature_template.name)
                 )
-                item.setData(Qt.UserRole, feature_template)
+                item.setData(Qt.ItemDataRole.UserRole, feature_template)
                 self.template_list.addItem(item)
             logger.debug("Template list updated count=%s", self.template_list.count())

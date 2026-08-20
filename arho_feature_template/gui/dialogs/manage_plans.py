@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 ui_path = resources.files(__package__) / "manage_plans.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
-DATA_ROLE = Qt.UserRole
+DATA_ROLE = Qt.ItemDataRole.UserRole
 
 
 class ManagePlans(QDialog, FormClass):  # type: ignore

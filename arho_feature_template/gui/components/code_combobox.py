@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-ValueDataRole = Qt.UserRole + 1
+ValueDataRole = Qt.ItemDataRole.UserRole + 1
 
 
 class CodeComboBox(QComboBox):
@@ -78,7 +78,7 @@ class HierarchicalCodeComboBox(QComboBox):
         self.tree_widget.viewport().installEventFilter(self)
 
         null_item = QTreeWidgetItem(["NULL"])
-        null_item.setData(0, Qt.UserRole, None)
+        null_item.setData(0, Qt.ItemDataRole.UserRole, None)
         self.tree_widget.addTopLevelItem(null_item)
         self.null_index = self.tree_widget.indexFromItem(null_item)
         self.tree_widget.setCurrentIndex(self.null_index)
@@ -102,10 +102,10 @@ class HierarchicalCodeComboBox(QComboBox):
                 item.setToolTip(0, tooltip_text)
 
             # Data
-            item.setData(0, Qt.UserRole, id_)
+            item.setData(0, Qt.ItemDataRole.UserRole, id_)
 
             if attributes["value"] in layer_type.category_only_codes:
-                item.setFlags(item.flags() & ~Qt.ItemIsSelectable)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
 
             if attributes["level"] == 1:
                 self.tree_widget.addTopLevelItem(item)
@@ -123,13 +123,13 @@ class HierarchicalCodeComboBox(QComboBox):
         selected = self.tree_widget.selectedItems()  # TODO: Find a way to get the current item even if not selectable
         if selected:  # current item might not be selectable
             item = selected[0]
-            return item.data(0, Qt.UserRole)
+            return item.data(0, Qt.ItemDataRole.UserRole)
         return None
 
     def _find_item_recursive(self, item: QTreeWidgetItem, value: str) -> QTreeWidgetItem:
         """Recursively try to find item with given value and return the item if found."""
         # Found item, return it
-        if item.data(0, Qt.UserRole) == value:
+        if item.data(0, Qt.ItemDataRole.UserRole) == value:
             return item
 
         # Loop children

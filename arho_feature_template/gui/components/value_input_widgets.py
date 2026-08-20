@@ -51,7 +51,7 @@ def initialize_numeric_input_widget(
     if default_value:
         widget.setValue(default_value)
 
-    widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+    widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
 
 def initialize_text_input_widget(
@@ -181,7 +181,7 @@ class LocalizedTextInputWidget(QWidget):
         self.editable = editable
         self.show_primary_language_only = SettingsManager.get_show_only_primary_language()
 
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 
         layout = QFormLayout()
         layout.setContentsMargins(0, 0, 0, 0)

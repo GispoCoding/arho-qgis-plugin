@@ -57,7 +57,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
     ):
         super().__init__(parent=iface.mainWindow())
         self.setupUi(self)
-        self.setWindowFlags(self.windowFlags() | Qt.Window)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.Window)
 
         # TYPES
         self.source_layer_selection: QgsMapLayerComboBox
@@ -75,7 +75,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.process_button_box: QDialogButtonBox
 
         # INIT
-        self.process_button_box.button(QDialogButtonBox.Ok).setText("Import")
+        self.process_button_box.button(QDialogButtonBox.StandardButton.Ok).setText("Import")
         self.process_button_box.accepted.connect(self.import_features)
         self.process_button_box.rejected.connect(self.reject)
 
@@ -86,7 +86,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         # Source layer initialization
         # Exclude all project layers from valid source layers
         # NOTE: Some project layers are not included in either `plan_layers` or `code_layers`?
-        self.source_layer_selection.setFilters(QgsMapLayerProxyModel.VectorLayer)
+        self.source_layer_selection.setFilters(QgsMapLayerProxyModel.Filter.VectorLayer)
         excluded_layers = [layer.get_from_project() for layer in plan_layers + code_layers]
         excluded_layers += [
             layer
@@ -102,7 +102,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
         # Target layer initialization
         # Set only plan feature layers as valid target layers
-        self.target_layer_selection.setFilters(QgsMapLayerProxyModel.VectorLayer)
+        self.target_layer_selection.setFilters(QgsMapLayerProxyModel.Filter.VectorLayer)
         self.target_layer_selection.clear()
         self.target_layer_selection.setAdditionalLayers(layer.get_from_project() for layer in plan_feature_layers)
         self.target_layer_selection.setCurrentIndex(0)
@@ -150,9 +150,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.description_selection.setLayer(self.source_layer)
 
         if self.source_and_target_layer_types_match():
-            self.process_button_box.button(QDialogButtonBox.Ok).setEnabled(True)
+            self.process_button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
         else:
-            self.process_button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            self.process_button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
     def source_and_target_layer_types_match(self) -> bool:
         if not self.source_layer or not self.target_layer:

@@ -16,7 +16,7 @@ from arho_feature_template.utils.misc_utils import date_as_str
 if TYPE_CHECKING:
     from arho_feature_template.core.models import LifecycleBase
 
-VALIDITY_SORT_ROLE = Qt.UserRole
+VALIDITY_SORT_ROLE = Qt.ItemDataRole.UserRole
 
 
 class ValidityLabel(QLabel):
@@ -25,7 +25,7 @@ class ValidityLabel(QLabel):
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setMaximumSize(23, 23)
         self.setScaledContents(True)
 
@@ -88,7 +88,7 @@ def validity_item_from_model(model: LifecycleBase) -> QStandardItem:
     item = QStandardItem("")
     item.setEditable(False)
 
-    item.setData(QSize(23, 23), Qt.SizeHintRole)
+    item.setData(QSize(23, 23), Qt.ItemDataRole.SizeHintRole)
 
     if not hasattr(model, "lifecycle_status_id") or model.lifecycle_status_id is None:
         item.setData(2, VALIDITY_SORT_ROLE)
@@ -100,7 +100,7 @@ def validity_item_from_model(model: LifecycleBase) -> QStandardItem:
         return item
     lifecycle_name = LifeCycleStatusLayer.get_name_by_id(model.lifecycle_status_id)
     if LifeCycleStatusLayer.is_repealed_status(model.lifecycle_status_id):
-        item.setData(QIcon(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.REPEALED]), Qt.DecorationRole)
+        item.setData(QIcon(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.REPEALED]), Qt.ItemDataRole.DecorationRole)
 
         if model.period_of_validity_start and model.period_of_validity_end:  # type: ignore
             tooltip = (
@@ -114,17 +114,19 @@ def validity_item_from_model(model: LifecycleBase) -> QStandardItem:
             tooltip = "KUMOTTU"
 
         item.setData(1, VALIDITY_SORT_ROLE)
-        item.setData(tooltip, Qt.ToolTipRole)
+        item.setData(tooltip, Qt.ItemDataRole.ToolTipRole)
 
     elif LifeCycleStatusLayer.is_valid_status(model.lifecycle_status_id):
-        item.setData(QIcon(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.VALID]), Qt.DecorationRole)
-        item.setData(f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}", Qt.ToolTipRole)  # type: ignore
+        item.setData(QIcon(LIFECYCLE_PIXMAPS[LifeCycleStatusValue.VALID]), Qt.ItemDataRole.DecorationRole)
+        item.setData(
+            f"VOIMASSA\nVoimassa alkaen: {date_as_str(model.period_of_validity_start)}", Qt.ItemDataRole.ToolTipRole
+        )  # type: ignore
         item.setData(0, VALIDITY_SORT_ROLE)
 
     elif LifeCycleStatusLayer.is_under_appeal(lifecycle_status):
         icon = LIFECYCLE_PIXMAPS[lifecycle_status]
-        item.setData(QIcon(icon), Qt.DecorationRole)
-        item.setData(get_localized_text(lifecycle_name), Qt.ToolTipRole)
+        item.setData(QIcon(icon), Qt.ItemDataRole.DecorationRole)
+        item.setData(get_localized_text(lifecycle_name), Qt.ItemDataRole.ToolTipRole)
         item.setData(3, VALIDITY_SORT_ROLE)
 
     return item

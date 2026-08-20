@@ -30,7 +30,7 @@ class PlanMatterFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, model: QStandardItemModel):
         super().__init__()
         self.setSourceModel(model)
-        self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
     def filterAcceptsRow(self, source_row, source_parent):  # noqa: N802
         model = self.sourceModel()
@@ -67,7 +67,7 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
 
         self.button_box.rejected.connect(self.reject)
         self.button_box.accepted.connect(self.accept)
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
         self.load_btn.clicked.connect(self.load_plan_matters)
         self.search_line_edit.textChanged.connect(self.filter_plan_matters)
@@ -75,8 +75,8 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
         self.connections_selection.addItems(connection_names)
 
         self.plan_matter_table_view: QTableView
-        self.plan_matter_table_view.setSelectionMode(QTableView.SingleSelection)
-        self.plan_matter_table_view.setSelectionBehavior(QTableView.SelectRows)
+        self.plan_matter_table_view.setSelectionMode(QTableView.SelectionMode.SingleSelection)
+        self.plan_matter_table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.plan_matter_table_view.setSortingEnabled(True)
 
         self.model = QStandardItemModel()
@@ -90,8 +90,8 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
 
         header = self.plan_matter_table_view.horizontalHeader()
         for i in range(3):
-            header.setSectionResizeMode(i, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(0, QHeaderView.Stretch)  # stretch name column
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)  # stretch name column
 
         # Show plans for the first connections by default
         # NOTE: Could be changed to the previously used connection if/when plugin can remember it
@@ -121,7 +121,7 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
                     QStandardItem(permanent_plan_identifier or ""),
                 ]
             )
-            self.model.item(i, 0).setData(id_, Qt.UserRole)
+            self.model.item(i, 0).setData(id_, Qt.ItemDataRole.UserRole)
             if active_plan_matter_id == id_:
                 row_to_select = i
 
@@ -178,11 +178,13 @@ class LoadPlanMatterDialog(QDialog, LoadPlanMatterDialogBase):  # type: ignore
         selection = self.plan_matter_table_view.selectionModel().selectedRows()
         if selection:
             selected_row = selection[0].row()
-            self._selected_plan_matter_id = self.plan_matter_table_view.model().index(selected_row, 0).data(Qt.UserRole)
-            self.button_box.button(QDialogButtonBox.Ok).setEnabled(True)
+            self._selected_plan_matter_id = (
+                self.plan_matter_table_view.model().index(selected_row, 0).data(Qt.ItemDataRole.UserRole)
+            )
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
         else:
             self._selected_plan_matter_id = None
-            self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
     def get_selected_connection(self):
         return self.connections_selection.currentText()

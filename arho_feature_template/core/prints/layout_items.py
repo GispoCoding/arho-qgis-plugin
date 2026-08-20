@@ -192,8 +192,8 @@ class LayoutItemFactory:
         label.setMode(QgsLayoutItemLabel.Mode.ModeFont)
         label.setText(letter_code)
         label.attemptResize(QgsLayoutSize(cls.SETTINGS.symbol_width, DEFAULT_LETTER_CODE_LABEL_HEIGHT))
-        label.setHAlign(Qt.AlignHCenter)
-        label.setVAlign(Qt.AlignVCenter)
+        label.setHAlign(Qt.AlignmentFlag.AlignHCenter)
+        label.setVAlign(Qt.AlignmentFlag.AlignVCenter)
         layout.addLayoutItem(label)
 
         return label
@@ -298,7 +298,7 @@ class LayoutItemFactory:
             QgsLayoutPoint(
                 cls.get_column_horizontal_space() + cls.SETTINGS.x_margins + DEFAULT_SPACE_BETWEEN_COLUMNS,
                 item.y(),
-                QgsUnitTypes.LayoutMillimeters,
+                QgsUnitTypes.LayoutUnit.LayoutMillimeters,
             )
         )
 

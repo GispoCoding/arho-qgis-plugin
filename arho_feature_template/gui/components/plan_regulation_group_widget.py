@@ -200,7 +200,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         layout = QHBoxLayout()
 
         self.link_label_icon = QLabel()
-        self.link_label_icon.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
+        self.link_label_icon.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         self.link_label_icon.setPixmap(QPixmap(resources_path("icons", "linked_img_small.png")))
         self.link_label_icon.setToolTip(tooltip)
         layout.addWidget(self.link_label_icon)

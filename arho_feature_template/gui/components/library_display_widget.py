@@ -52,7 +52,7 @@ FEATURE_TYPE_TO_LAYER_NAME = {
     "Piste": PointLayer.name,
 }
 
-DATA_ROLE = Qt.UserRole
+DATA_ROLE = Qt.ItemDataRole.UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -302,9 +302,9 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                     None,
                     "Kirjaston tuominen",
                     "Valitulle tiedostopolulle on jo määritetty kirjasto. Haluatko silti tuoda kirjaston?",
-                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
-                if response == QMessageBox.No:
+                if response == QMessageBox.StandardButton.No:
                     logger.debug("Import library cancelled due to duplicate path confirmation")
                     return
 
@@ -340,9 +340,9 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             None,
             "Kirjaston poisto",
             "Haluatko varmasti poistaa kirjaston?",
-            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
-        if response == QMessageBox.Yes:
+        if response == QMessageBox.StandardButton.Yes:
             self.delete_library(self.active_library)
 
     def delete_library(self, library: Library):
@@ -415,7 +415,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         form.setWindowTitle("Luo kaavamääräysryhmäpohja")
 
         # TODO: Let user select a category for their regulation group template?
-        if form.exec_():
+        if form.exec():
             self._add_library_element_to_list(form.model)
             self._update_active_library_templates_from_view()
             self.unsaved_libraries.add(self.active_library.name)
@@ -439,7 +439,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             template_form=True,
         )
 
-        if form.exec_():
+        if form.exec():
             self._add_library_element_to_list(form.model)
             self._update_active_library_templates_from_view()
             self.unsaved_libraries.add(self.active_library.name)
@@ -472,7 +472,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         else:
             return
 
-        if form.exec_() and element.data_hash() != form.model.data_hash():
+        if form.exec() and element.data_hash() != form.model.data_hash():
             selected_item.setData(DATA_ROLE, form.model)
 
             self._update_active_library_templates_from_view()
@@ -504,7 +504,10 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         else:
             return
 
-        if QMessageBox.question(None, title, text, QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if (
+            QMessageBox.question(None, title, text, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            == QMessageBox.StandardButton.Yes
+        ):
             # Remove selected items from list view
             for item in selected_items:
                 self.library_element_list.takeItem(self.library_element_list.row(item))

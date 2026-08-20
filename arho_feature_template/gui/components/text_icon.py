@@ -7,17 +7,17 @@ from qgis.PyQt.QtGui import QColor, QFont, QPainter, QPixmap
 def text_icon(text: str, color: QColor | None = None, size: int = 128, font_size: int = 104) -> QPixmap:
     color = color or QColor(0, 0, 0)
     pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.transparent)
+    pixmap.fill(Qt.GlobalColor.transparent)
 
     painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
     font = QFont()
     font.setPixelSize(font_size)
     painter.setFont(font)
 
     painter.setPen(color)
-    painter.drawText(pixmap.rect(), Qt.AlignCenter, text)
+    painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, text)
 
     painter.end()
 

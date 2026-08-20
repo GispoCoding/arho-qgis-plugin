@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal
+from qgis.PyQt.QtCore import QObject, QTimer, pyqtSignal
 
 
 class SignalDebouncer(QObject):

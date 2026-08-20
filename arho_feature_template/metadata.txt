@@ -4,6 +4,7 @@ description=QGIS plugin for land use planning
 about=QGIS plugin for land use planning
 version=0.1.0
 qgisMinimumVersion=3.16
+qgisMaximumVersion=4.99
 author=Gispo Ltd.
 email=info@gispo.fi
 changelog=

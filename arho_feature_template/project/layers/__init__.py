@@ -39,14 +39,14 @@ class AbstractLayer(ABC):
         layer = cls.get_from_project()
         request = QgsFeatureRequest()
         if no_geometries:
-            request.setFlags(QgsFeatureRequest.NoGeometry)
+            request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
         yield from layer.getSelectedFeatures(request)
 
     @classmethod
     def get_selected_feature_ids(cls) -> Generator[str]:
         layer = cls.get_from_project()
         request = QgsFeatureRequest()
-        request.setFlags(QgsFeatureRequest.NoGeometry)
+        request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
         request.setSubsetOfAttributes(["id"], layer.fields())
         for feature in layer.getSelectedFeatures(request):
             yield feature["id"]
@@ -61,7 +61,7 @@ class AbstractLayer(ABC):
         layer = cls.get_from_project()
         request = QgsFeatureRequest().setFilterExpression(cls.create_filter_expression(attribute, value))
         if no_geometries:
-            request.setFlags(QgsFeatureRequest.NoGeometry)
+            request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
         yield from layer.getFeatures(request)
 
     @classmethod
@@ -83,7 +83,7 @@ class AbstractLayer(ABC):
 
         request = QgsFeatureRequest().setFilterExpression(expression)
         request.setSubsetOfAttributes([target_attribute], layer.fields())
-        request.setFlags(QgsFeatureRequest.NoGeometry)
+        request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
         for feature in layer.getFeatures(request):
             yield feature[target_attribute]
 

@@ -32,14 +32,14 @@ logger = logging.getLogger(__name__)
 
 # COLUMNS
 DATA_COLUMN = 0
-DATA_ROLE = Qt.UserRole
+DATA_ROLE = Qt.ItemDataRole.UserRole
 
 
 class RegulationGroupsDockFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, model: QStandardItemModel):
         super().__init__()
         self.setSourceModel(model)
-        self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.allowed_types: set[str] = set()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:  # noqa: N802
@@ -119,8 +119,8 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.table.setModel(self.filter_proxy_model)
         self.table.resizeColumnsToContents()
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._open_context_menu)
         self.table.doubleClicked.connect(self._open_form)
 
@@ -331,9 +331,9 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
                 "Haluatko varmasti poistaa kaavamääräysryhmän?"
                 if nr_of_groups == 1
                 else "Haluatko varmasti poistaa kaavamääräysryhmät?",
-                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
-            if response == QMessageBox.Yes:
+            if response == QMessageBox.StandardButton.Yes:
                 logger.debug("Delete regulation groups confirmed count=%s", nr_of_groups)
                 self.request_delete_regulation_groups.emit(selected_groups)
 
@@ -390,7 +390,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         )
         del_action.setEnabled(not self.plan_locked)
 
-        menu.exec_(self.table.viewport().mapToGlobal(pos))
+        menu.exec(self.table.viewport().mapToGlobal(pos))
 
     def _on_select_plan_objects(self):
         fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()

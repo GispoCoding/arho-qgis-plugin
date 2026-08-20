@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 
 DATA_COLUMN = 1
 PLAN_OBJECT_TYPE_COLUMN = 2
-DATA_ROLE = Qt.UserRole
+DATA_ROLE = Qt.ItemDataRole.UserRole
 LAYER_NAME_TO_FEATURE_TYPE = {
     LineLayer.name: "Viiva",
     OtherAreaLayer.name: "Osa-alue",
@@ -68,7 +68,7 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, model: QStandardItemModel):
         super().__init__()
         self.setSourceModel(model)
-        self.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.allowed_types: set[str] = set()
 
     def filterAcceptsRow(self, source_row: int, source_parent: QModelIndex) -> bool:  # noqa: N802
@@ -176,7 +176,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.plan_manager_ref.plan_set.connect(lambda: self.model.setRowCount(0))
         self.table.doubleClicked.connect(self._open_form)
         self.selection_model.selectionChanged.connect(self._on_table_selection_changed)
-        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self._open_context_menu)
         self.filter_line.textChanged.connect(self._filter_table)
 
@@ -289,7 +289,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             for layer_name, feat_ids in self.selected_plan_feature_ids.items():
                 if feat_id in feat_ids and plan_object.layer_name == layer_name:
                     proxy_index = self.filter_proxy_model.index(row, 0)
-                    self.selection_model.select(proxy_index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                    self.selection_model.select(
+                        proxy_index, QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
+                    )
 
     def _add_plan_feature_to_view(self, plan_feature_model: PlanObject, feat_id: int):
         self.model.appendRow(self._plan_feature_into_items(plan_feature_model, feat_id))
@@ -433,7 +435,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                     library.name,
                     lambda library=library: self._on_save_plan_object_to_library(plan_feature_model, library),
                 )
-        menu.exec_(self.table.viewport().mapToGlobal(pos))
+        menu.exec(self.table.viewport().mapToGlobal(pos))
 
     def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
         logger.debug("Zoom to feature requested id=%s", plan_feature_model.id_)

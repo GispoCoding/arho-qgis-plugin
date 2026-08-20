@@ -40,8 +40,8 @@ if TYPE_CHECKING:
 ui_path = resources.files(__package__) / "new_plan_dialog.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
-DATA_ROLE = Qt.UserRole
-LIFECYCLE_STATUS_DATA_ROLE = Qt.UserRole + 1
+DATA_ROLE = Qt.ItemDataRole.UserRole
+LIFECYCLE_STATUS_DATA_ROLE = Qt.ItemDataRole.UserRole + 1
 
 
 class UnderAppealScopeOption(enum.Enum):
@@ -224,7 +224,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
             self.source_plan.setCurrentIndex(selected_index)
 
     def _check_required_fields(self) -> None:
-        ok_button = self.button_box.button(QDialogButtonBox.Ok)
+        ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
 
         # Required: plan name + lifecycle
         required_fields_filled = self.plan_name.text() != "" and (
@@ -307,12 +307,15 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
                 continue
             item = model.item(row_num)
             lifecycle_is_allowed = item_lifecycle in allowed_lifecycle_values
-            if self.check_box_show_allowed_transitions_only.checkState() == Qt.Checked and not lifecycle_is_allowed:
+            if (
+                self.check_box_show_allowed_transitions_only.checkState() == Qt.CheckState.Checked
+                and not lifecycle_is_allowed
+            ):
                 view.setRowHidden(row_num, True)
-                item.setFlags(item.flags() & ~Qt.ItemIsEnabled)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
             else:
                 view.setRowHidden(row_num, False)
-                item.setFlags(item.flags() | Qt.ItemIsEnabled)
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEnabled)
 
     def _on_source_plan_changed(self, index: int):  # noqa: ARG002
         self._update_allowed_plan_lifecycles()

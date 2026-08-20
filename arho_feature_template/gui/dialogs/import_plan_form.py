@@ -46,7 +46,7 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
         self.file_selection.fileChanged.connect(self.check_inputs)
         self.line_edit_name.textChanged.connect(self.check_inputs)
 
-        self.button_box_accept.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box_accept.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
         self.lambda_service = LambdaService()
         self.lambda_service.plan_imported.connect(self.plan_imported)
@@ -59,9 +59,9 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
     def check_inputs(self):
         """Enables ok/save button only if both file paths are defined."""
         if self.file_selection.filePath() and self.line_edit_name.text():
-            self.button_box_accept.button(QDialogButtonBox.Ok).setEnabled(True)
+            self.button_box_accept.button(QDialogButtonBox.StandardButton.Ok).setEnabled(True)
         else:
-            self.button_box_accept.button(QDialogButtonBox.Ok).setEnabled(False)
+            self.button_box_accept.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
     def import_plan(self, overwrite: bool = False) -> None:  # noqa: FBT001, FBT002
         self.widget_input.hide()

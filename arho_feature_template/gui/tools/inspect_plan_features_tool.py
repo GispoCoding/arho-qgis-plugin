@@ -23,7 +23,7 @@ class InspectPlanFeatures(QgsMapToolIdentify):
         self.layers: list[QgsVectorLayer] | None = None
 
         # Set to QgsMapTool cursor
-        self.setCursor(Qt.CrossCursor)
+        self.setCursor(Qt.CursorShape.CrossCursor)
 
         # Disable "Identify all action"
         self.identifyMenu().setAllowMultipleReturn(False)

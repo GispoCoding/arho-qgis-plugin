@@ -52,7 +52,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
         self.plan_type_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         # Disable OK until required fields are valid
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         # Initial validation
@@ -71,7 +71,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
         self.plan_type_combo_box.set_value(self.plan_matter.plan_type_id)
 
     def _check_required_fields(self) -> None:
-        ok_button = self.button_box.button(QDialogButtonBox.Ok)
+        ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
         if (
             self.name_edit.get_value()
             and self.plan_type_combo_box.value() is not None

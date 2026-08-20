@@ -114,7 +114,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
         self.add_document_btn.clicked.connect(self.add_new_document)
         self.add_document_btn.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
 
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
         self.button_box.accepted.connect(self._on_ok_clicked)
 
         self._check_required_fields()
@@ -145,7 +145,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             widget.setEnabled(False)
 
     def _check_required_fields(self) -> None:
-        ok_button = self.button_box.button(QDialogButtonBox.Ok)
+        ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
         if (
             self.name_edit.text() != ""
             and self.lifecycle_status_combo_box.value() is not None
