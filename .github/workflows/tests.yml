@@ -50,7 +50,18 @@ jobs:
           .venv/bin/pytest
 
   windows_tests:
+    name: Windows (${{ matrix.qgis-package }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Bumping a version both installs the new QGIS version and
+        # invalidates the cache for that matrix leg.
+        include:
+          - qgis-package: qgis-ltr
+            qgis-version: "3.44.13"
+          - qgis-package: qgis
+            qgis-version: "4.2.1"
 
     steps:
       - uses: actions/checkout@v7
@@ -59,10 +70,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
 
-      - name: Choco install qgis
+      - name: Cache QGIS installation
+        id: cache-qgis
+        uses: actions/cache@v4
+        with:
+          key: ${{ matrix.qgis-package }}-${{ matrix.qgis-version }}-${{ runner.os }}
+          path: C:\Program Files\QGIS*
+
+      - name: Install QGIS
+        if: steps.cache-qgis.outputs.cache-hit != 'true'
         uses: crazy-max/ghaction-chocolatey@v4
         with:
-          args: install qgis-ltr -y
+          args: install ${{ matrix.qgis-package }} -y --version=${{ matrix.qgis-version }}
+
       - name: Create virtual environment
         shell: pwsh
         run: |
