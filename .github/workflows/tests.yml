@@ -53,21 +53,25 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: true
+      - name: Set up Python
+        uses: actions/setup-python@v7
 
       - name: Choco install qgis
         uses: crazy-max/ghaction-chocolatey@v4
         with:
           args: install qgis-ltr -y
+      - name: Create virtual environment
+        shell: pwsh
+        run: |
+          "1" | python create_qgis_venv.py
+          .venv\Scripts\activate
+          pip install -r requirements-dev.txt -r requirements-test.txt
 
       - name: Run tests
         shell: pwsh
         run: |
-          $env:QGIS_PATH = (Get-ChildItem "C:\Program Files\QGIS *\bin" | Select-Object -First 1 -ExpandProperty FullName)
-          $env:PATH="$env:QGIS_PATH;$env:PATH"
-          $env:QGIS_PLUGIN_IN_CI=1
-          python-qgis-ltr.bat -m pip install -qr requirements-test.txt
-          python-qgis-ltr.bat -m pip install .
-          python-qgis-ltr.bat -m pytest -v
+          .venv\Scripts\activate
+          pytest -v
