@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-import base64
 import gzip
 import json
 import logging
-import re
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable
 
-from qgis.PyQt.QtCore import QByteArray, QDate, QObject, QUrl, pyqtSignal
-from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
+from qgis.PyQt.QtCore import QDate, QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import iface
 
-from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.core.lambda_client import LambdaClient
+from arho_feature_template.core.plan_importer import PlanImporter
 from arho_feature_template.utils.misc_utils import get_active_plan_id
+from arho_feature_template.utils.network_utils import prepare_presigned_request, presigned_reply_error
 
 if TYPE_CHECKING:
+    from qgis.PyQt.QtNetwork import QNetworkReply
+
     from arho_feature_template.gui.dialogs.new_plan_dialog import UnderAppealScopeOption
 
 
@@ -35,101 +36,62 @@ class LambdaService(QObject):
     plan_copied = pyqtSignal(str)
     plan_copy_failed = pyqtSignal(str)
 
-    # On PyQt5 QNetworkRequest.Attribute.User is an int, but on PyQt6 it is an Enum.
-    _USER_ATTR = cast(int, getattr(QNetworkRequest.Attribute.User, "value", QNetworkRequest.Attribute.User))
-    ActionAttribute = QNetworkRequest.Attribute(_USER_ATTR + 1)
-    ACTION_VALIDATE_PLAN = "validate_plan"
-    ACTION_VALIDATE_PLAN_MATTERS = "validate_plan_matters"
-    ACTION_GET_PLAN = "get_plan"
-    ACTION_GET_PLAN_MATTERS = "get_plan_matters"
-    ACTION_POST_PLAN_MATTERS = "post_plan_matters"
-    ACTION_GET_PERMANENT_IDENTIFIER = "get_permanent_plan_identifier"
-    ACTION_IMPORT_PLAN = "import_plan"
-    ACTION_COPY_PLAN = "copy_plan"
-    ACTION_GET_UPLOAD_URL = "get_upload_url"
-    # Pseudo-actions tagging presigned S3 requests; never sent to the lambda
-    S3_DOWNLOAD_PLAN = "s3_download_plan"
-    S3_UPLOAD_PLAN = "s3_upload_plan"
+    # Aliases so existing callers and tests keep working against the facade
+    ActionAttribute = LambdaClient.ActionAttribute
+    ACTION_VALIDATE_PLAN = LambdaClient.ACTION_VALIDATE_PLAN
+    ACTION_VALIDATE_PLAN_MATTERS = LambdaClient.ACTION_VALIDATE_PLAN_MATTERS
+    ACTION_GET_PLAN = LambdaClient.ACTION_GET_PLAN
+    ACTION_GET_PLAN_MATTERS = LambdaClient.ACTION_GET_PLAN_MATTERS
+    ACTION_POST_PLAN_MATTERS = LambdaClient.ACTION_POST_PLAN_MATTERS
+    ACTION_GET_PERMANENT_IDENTIFIER = LambdaClient.ACTION_GET_PERMANENT_IDENTIFIER
+    ACTION_IMPORT_PLAN = LambdaClient.ACTION_IMPORT_PLAN
+    ACTION_COPY_PLAN = LambdaClient.ACTION_COPY_PLAN
+    ACTION_GET_UPLOAD_URL = LambdaClient.ACTION_GET_UPLOAD_URL
+    S3_DOWNLOAD_PLAN = LambdaClient.S3_DOWNLOAD_PLAN
+    S3_UPLOAD_PLAN = LambdaClient.S3_UPLOAD_PLAN
 
     def __init__(self):
         super().__init__()
-        self.network_manager = QNetworkAccessManager()
-        self.network_manager.finished.connect(self._handle_response)
-        # Context of the in-flight import chain; None when no import is running
-        self._pending_import: dict[str, Any] | None = None
-        # (plan_json, s3_key) of the last upload, so a force-retry can reuse the key without re-uploading
-        self._cached_upload: tuple[str, str] | None = None
-        logger.debug("LambdaService initialized and network response handler connected")
+        self._client = LambdaClient(self)
+        self._importer = PlanImporter(self._client, self)
+        self._client.response_received.connect(self._on_response)
+        self._client.request_failed.connect(self._on_request_failed)
+        self._client.parse_failed.connect(self._on_parse_failed)
+        self._client.s3_reply_received.connect(self._on_s3_reply)
+        self._importer.plan_imported.connect(self.plan_imported)
+        self._importer.plan_import_failed.connect(self.plan_import_failed)
+        logger.debug("LambdaService initialized")
 
     def export_plan(self, plan_id: str):
         logger.debug("Requesting plan export plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_GET_PLAN, plan_id=plan_id)
+        self._client.post_action(action=self.ACTION_GET_PLAN, plan_id=plan_id)
 
     def export_plan_matter(self, plan_id: str):
         logger.debug("Requesting plan matter export plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_GET_PLAN_MATTERS, plan_id=plan_id)
+        self._client.post_action(action=self.ACTION_GET_PLAN_MATTERS, plan_id=plan_id)
 
     def validate_plan(self, plan_id: str):
         logger.debug("Requesting plan validation plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_VALIDATE_PLAN, plan_id=plan_id)
+        self._client.post_action(action=self.ACTION_VALIDATE_PLAN, plan_id=plan_id)
 
     def validate_plan_matter(self, plan_id: str):
         logger.debug("Requesting plan matter validation plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_VALIDATE_PLAN_MATTERS, plan_id=plan_id)
+        self._client.post_action(action=self.ACTION_VALIDATE_PLAN_MATTERS, plan_id=plan_id)
 
     def post_plan_matter(self, plan_id: str):
         logger.debug("Posting plan matter plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_POST_PLAN_MATTERS, plan_id=plan_id)
+        self._client.post_action(action=self.ACTION_POST_PLAN_MATTERS, plan_id=plan_id)
 
     def get_permanent_identifier(self, plan_id: str):
         logger.debug("Requesting permanent identifier plan_id=%s", plan_id)
-        self._send_request(action=self.ACTION_GET_PERMANENT_IDENTIFIER, plan_id=plan_id)
+        self._client.post_action(action=self.ACTION_GET_PERMANENT_IDENTIFIER, plan_id=plan_id)
 
     def import_plan(self, plan_json: str, extra_data: dict, force: bool = False):  # noqa: FBT001, FBT002
         """Imports a plan by uploading it to S3 with a presigned URL and then calling the import action.
 
         The chain is: get_upload_url -> HTTP PUT to the presigned URL -> import_plan with the S3 key.
         """
-        logger.debug("Importing plan force=%s extra_data_keys=%s", force, list(extra_data.keys()))
-        self._pending_import = {"plan_json": plan_json, "extra_data": extra_data, "force": force}
-
-        if self._cached_upload and self._cached_upload[0] == plan_json:
-            # The same plan file was already uploaded (e.g. force-retry after "Plan already exists.");
-            # the backend does not delete the file on import, so the key can be reused
-            logger.debug("Reusing already uploaded plan file s3_key=%s", self._cached_upload[1])
-            self._send_import_plan_request(self._cached_upload[1])
-            return
-
-        self._cached_upload = None
-        self._send_request(action=self.ACTION_GET_UPLOAD_URL)
-
-    def _send_import_plan_request(self, s3_key: str):
-        if self._pending_import is None:
-            return
-        payload: dict[str, Any] = {
-            "data": {"s3_key": s3_key, "extra_data": self._pending_import["extra_data"]},
-        }
-        if self._pending_import["force"]:
-            payload["force"] = True
-
-        self._send_request(action=self.ACTION_IMPORT_PLAN, payload=payload)
-
-    def deep_copy_plan(self, plan_id: str, plan_name: str, lock: bool = False):  # noqa: FBT001, FBT002
-        payload: dict[str, Any] = {
-            "plan_uuid": plan_id,
-            "data": {
-                "plan_name": {"fin": plan_name},
-                "lock": lock,
-            },
-        }
-        logger.debug(
-            "Deep copying plan source_plan_id=%s plan_name=%s lock=%s",
-            plan_id,
-            plan_name,
-            lock,
-        )
-
-        self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
+        self._importer.import_plan(plan_json, extra_data, force)
 
     def copy_plan(
         self,
@@ -172,138 +134,14 @@ class LambdaService(QObject):
             bool(approval_date),
         )
 
-        self._send_request(action=self.ACTION_COPY_PLAN, payload=payload)
-
-    def _send_request(self, action: str, plan_id: str | None = None, payload: dict[str, Any] | None = None):
-        """Sends a request to the lambda function."""
-        proxy_host = SettingsManager.get_proxy_host()
-        proxy_port = SettingsManager.get_proxy_port()
-        self.lambda_url = SettingsManager.get_lambda_url()
-        logger.debug(
-            "Preparing lambda request action=%s plan_id=%s lambda_url=%s proxy_enabled=%s",
-            action,
-            plan_id,
-            self.lambda_url,
-            bool(proxy_host and proxy_port),
-        )
-
-        # Initialize or reset proxy each time a request is sent. Incase settings have changed.
-        if proxy_host and proxy_port:
-            # Set up SOCKS5 Proxy if values are provided
-            proxy = QNetworkProxy()
-            proxy.setType(QNetworkProxy.ProxyType.Socks5Proxy)
-            proxy.setHostName(proxy_host)
-            proxy.setPort(int(proxy_port))
-            self.network_manager.setProxy(proxy)
-            logger.debug("Using SOCKS5 proxy host=%s port=%s", proxy_host, proxy_port)
-        else:
-            self.network_manager.setProxy(QNetworkProxy())
-            logger.debug("Using direct connection without proxy")
-
-        if payload is None:
-            payload = {}
-        if plan_id:
-            payload["plan_uuid"] = plan_id
-        payload["action"] = action
-        payload["save_json"] = True  # Uncomment for debugging to save the payload and response json in the lambda
-
-        request = QNetworkRequest(QUrl(self.lambda_url))
-        request.setAttribute(LambdaService.ActionAttribute, action)
-        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
-        if self._is_api_gateway_request():
-            request.setRawHeader(b"Accept-Encoding", b"gzip")
-            logger.debug("Request marked as API Gateway call, using Accept-Encoding header")
-        else:
-            # When calling the lambda directly in development environment,
-            # we need to set the Accept-Encoding header in the payload
-            payload["headers"] = {"Accept-Encoding": "gzip"}
-            logger.debug("Request marked as direct lambda call, using payload headers")
-
-        payload_bytes = QByteArray(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
-        self.network_manager.post(request, payload_bytes)
-        logger.debug("Lambda request sent action=%s payload_size_bytes=%s", action, payload_bytes.size())
-
-    def _is_api_gateway_request(self) -> bool:
-        """Determines if the lambda request is going through the API Gateway."""
-        match = re.match(r"^https://.*execute-api.*amazonaws\.com.*$", self.lambda_url)
-        is_api_gateway = bool(match)
-        logger.debug("Lambda URL classified as api_gateway=%s", is_api_gateway)
-        return is_api_gateway
-
-    @staticmethod
-    def _prepare_presigned_request(url: str) -> QNetworkRequest:
-        """Builds a request for a presigned S3 URL.
-
-        In the local development environment the presigned URLs point at the MinIO container
-        host ``minio``, which only resolves inside the docker compose network. Rewrite the host
-        to ``localhost`` (keeping the port) but send the original host as the raw ``Host``
-        header so the URL signature stays valid. Real AWS URLs pass through untouched.
-
-        No auth, Content-Type or Accept-Encoding headers may be added: the signature covers the
-        request, and Qt only decompresses gzip responses transparently when it manages the
-        Accept-Encoding header itself.
-        """
-        qurl = QUrl(url)
-        request = QNetworkRequest(qurl)
-        if qurl.host() == "minio":
-            original_host = qurl.host() + (f":{qurl.port()}" if qurl.port() != -1 else "")
-            qurl.setHost("localhost")
-            request.setUrl(qurl)
-            request.setRawHeader(b"Host", original_host.encode("utf-8"))
-            logger.debug("Rewrote presigned MinIO URL host to localhost, Host header=%s", original_host)
-        return request
-
-    @staticmethod
-    def _read_error_body(response: QNetworkReply) -> dict | None:
-        """Reads and parses the lambda response body of a failed reply, or None.
-
-        Qt delivers the body of HTTP 4xx/5xx replies, but connection-level failures
-        have no body. The backend gzips error bodies like success bodies; Qt does not
-        decompress them transparently here because the Accept-Encoding header is set
-        manually, so sniff the gzip magic bytes.
-        """
-        try:
-            raw = bytes(response.readAll().data())
-            if not raw:
-                return None
-            if raw[:2] == b"\x1f\x8b":
-                raw = gzip.decompress(raw)
-            body = json.loads(raw.decode("utf-8"))
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
-            return None
-        return body if isinstance(body, dict) else None
-
-    @staticmethod
-    def _format_error_body(body: dict) -> str:
-        """Formats a flat lambda error body ({title, details, ...}) into one message string."""
-        title = body.get("title") or ""
-        details = body.get("details")
-        detail_text = details.get("error", "") if isinstance(details, dict) else (details or "")
-        return " ".join(part for part in (str(title), str(detail_text)) if part) or str(body)
-
-    @staticmethod
-    def _presigned_reply_error(response: QNetworkReply) -> str | None:
-        """Returns an error description if a presigned S3 request failed, otherwise None.
-
-        Qt does not treat 3xx statuses as network errors and does not follow redirects, so
-        the HTTP status must be checked in addition to the network error. For example S3
-        responds with 307 TemporaryRedirect (an XML body) when a newly created bucket is
-        accessed through the global endpoint before DNS has propagated.
-        """
-        if response.error() != QNetworkReply.NetworkError.NoError:  # type: ignore  # wrong type annotation in the stubs
-            return response.errorString()
-        status_code = response.attribute(QNetworkRequest.Attribute.HttpStatusCodeAttribute)
-        if status_code is not None and not HTTPStatus.OK <= status_code < HTTPStatus.MULTIPLE_CHOICES:
-            body_excerpt = response.readAll().data()[:500].decode("utf-8", errors="replace")
-            return f"HTTP {status_code}: {body_excerpt}"
-        return None
+        self._client.post_action(action=self.ACTION_COPY_PLAN, payload=payload)
 
     def _get_response_handler(self, action: str) -> Callable[[dict], None]:
         handlers = {
             self.ACTION_GET_PLAN: self._process_export_plan_response,
-            self.ACTION_GET_UPLOAD_URL: self._process_get_upload_url_response,
+            self.ACTION_GET_UPLOAD_URL: self._importer.handle_upload_url_response,
             self.ACTION_GET_PLAN_MATTERS: self._process_export_plan_matter_response,
-            self.ACTION_IMPORT_PLAN: self._process_import_plan_response,
+            self.ACTION_IMPORT_PLAN: self._importer.handle_import_response,
             self.ACTION_VALIDATE_PLAN: self._process_validation_response,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._process_validation_response,
             self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_response,
@@ -315,9 +153,9 @@ class LambdaService(QObject):
     def _get_error_handler(self, action: str) -> Callable[[str], None]:
         handlers = {
             self.ACTION_GET_PLAN: lambda x: None,  # noqa: ARG005
-            self.ACTION_GET_UPLOAD_URL: self._handle_get_upload_url_error,
+            self.ACTION_GET_UPLOAD_URL: self._importer.handle_upload_url_error,
             self.ACTION_GET_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
-            self.ACTION_IMPORT_PLAN: self._handle_import_error,
+            self.ACTION_IMPORT_PLAN: self._importer.handle_import_error,
             self.ACTION_VALIDATE_PLAN: self._handle_validation_error,
             self.ACTION_VALIDATE_PLAN_MATTERS: self._handle_validation_error,
             self.ACTION_POST_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
@@ -326,79 +164,23 @@ class LambdaService(QObject):
         }
         return handlers[action]
 
-    def _handle_response(self, response: QNetworkReply):
-        action = response.request().attribute(LambdaService.ActionAttribute)
-        logger.debug("Handling lambda response action=%s", action)
-        # Presigned S3 replies are raw HTTP, not lambda response envelopes
-        if action == self.S3_DOWNLOAD_PLAN:
-            self._handle_s3_download_response(response)
-            return
-        if action == self.S3_UPLOAD_PLAN:
-            self._handle_s3_upload_response(response)
-            return
-        response_handler = self._get_response_handler(action)
-        error_handler = self._get_error_handler(action)
-        if response.error() != QNetworkReply.NetworkError.NoError:  # type: ignore  # wrong type annotation in the stubs
-            error = response.errorString()
-            # HTTP 4xx/5xx replies carry the lambda error body; prefer its message
-            error_body = self._read_error_body(response)
-            if error_body is not None:
-                error = self._format_error_body(error_body)
-            logger.debug("Network error for action=%s error=%s", action, error)
-            QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
-            error_handler(error)
-            response.deleteLater()
-            return
-
-        try:
-            response_bytes = response.readAll().data()
-            if self._is_api_gateway_request():
-                is_compressed = bytes(response.rawHeader(b"Content-Encoding")).decode("utf-8") == "gzip"
-                logger.debug("API Gateway response compressed=%s action=%s", is_compressed, action)
-                if is_compressed:
-                    decompressed_data = gzip.decompress(response_bytes)
-                    response_json = decompressed_data.decode("utf-8")
-                else:
-                    response_json = response_bytes.decode("utf-8")
-                response_body = json.loads(response_json)
-            else:
-                # In developement environment lambda is called directly without API Gateway
-                # and has a different response format
-                response_json = response_bytes.decode("utf-8")
-                response_data = json.loads(response_json)
-
-                encoding = response_data.get("encoding")
-                is_compressed = encoding == "gzip+base64"
-                logger.debug("Direct lambda response compressed=%s action=%s", is_compressed, action)
-                if is_compressed:
-                    compressed_data = base64.b64decode(response_data["body"])
-                    decompressed_data = gzip.decompress(compressed_data)
-                    response_data["body"] = json.loads(decompressed_data.decode("utf-8"))
-
-                status_code = int(response_data.get("statusCode", 0))
-                if status_code != HTTPStatus.OK:
-                    # Error handlers emit str-typed signals, so format the body into a string
-                    body = response_data.get("body")
-                    if isinstance(body, dict):
-                        error = self._format_error_body(body)
-                    else:
-                        error = str(body if body is not None else response_data.get("errorMessage"))
-                    logger.debug("Non-OK lambda status for action=%s status=%s", action, status_code)
-                    QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
-                    error_handler(error)
-                    response.deleteLater()
-                    return
-                response_body = response_data["body"]
-
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.debug("Failed to parse lambda response action=%s error=%s", action, e)
-            QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {e}")
-            error_handler(str(e))
-            return
-        finally:
-            response.deleteLater()
+    def _on_response(self, action: str, response_body: dict):
         logger.debug("Dispatching response handler for action=%s", action)
-        response_handler(response_body)
+        self._get_response_handler(action)(response_body)
+
+    def _on_request_failed(self, action: str, error: str):
+        QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
+        self._get_error_handler(action)(error)
+
+    def _on_parse_failed(self, action: str, error: str):
+        QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {error}")
+        self._get_error_handler(action)(error)
+
+    def _on_s3_reply(self, tag: str, response: QNetworkReply):
+        if tag == self.S3_DOWNLOAD_PLAN:
+            self._handle_s3_download_response(response)
+        elif tag == self.S3_UPLOAD_PLAN:
+            self._importer.handle_s3_upload_reply(response)
 
     def _handle_validation_error(self, error: str):
         logger.debug("Validation request failed error=%s", error)
@@ -479,14 +261,14 @@ class LambdaService(QObject):
             return
 
         logger.debug("Plan export response received, downloading exported plans")
-        request = self._prepare_presigned_request(download_url)
+        request = prepare_presigned_request(download_url)
         request.setAttribute(LambdaService.ActionAttribute, self.S3_DOWNLOAD_PLAN)
-        self.network_manager.get(request)
+        self._client.get(request)
 
     def _handle_s3_download_response(self, response: QNetworkReply):
         """Processes the downloaded plan file from S3 and emits signal."""
         try:
-            error = self._presigned_reply_error(response)
+            error = presigned_reply_error(response)
             if error is not None:
                 logger.debug("Exported plan download failed error=%s", error)
                 QMessageBox.critical(None, "API Virhe", f"Kaavan lataus epäonnistui: {error}")
@@ -540,79 +322,6 @@ class LambdaService(QObject):
         # Emit the signal with the JSON
         self.plan_matter_data_received.emit(plan_matter)
         logger.debug("Emitted plan matter export data keys=%s", list(plan_matter.keys()))
-
-    def _process_get_upload_url_response(self, response_body: dict):
-        """Processes the presigned upload URL reply and uploads the plan file to S3."""
-        if self._pending_import is None:
-            logger.debug("Received upload URL but no import is pending, ignoring")
-            return
-        details = response_body.get("details") or {}
-        upload_url = details.get("upload_url")
-        s3_key = details.get("key")
-        if not upload_url or not s3_key:
-            logger.debug("Upload URL response missing url or key, details_keys=%s", list(details.keys()))
-            self._pending_import = None
-            self.plan_import_failed.emit(
-                "error: Taustapalvelu ei palauttanut latausosoitetta. "
-                "Taustapalvelua ei ehkä ole vielä päivitetty tukemaan tätä lisäosan versiota."
-            )
-            return
-
-        logger.debug("Uploading plan file to S3 s3_key=%s", s3_key)
-        self._pending_import["s3_key"] = s3_key
-        request = self._prepare_presigned_request(upload_url)
-        request.setAttribute(LambdaService.ActionAttribute, self.S3_UPLOAD_PLAN)
-        body = QByteArray(self._pending_import["plan_json"].encode("utf-8"))
-        self.network_manager.put(request, body)
-
-    def _handle_get_upload_url_error(self, error: str):
-        logger.debug("Getting upload URL failed error=%s", error)
-        self._pending_import = None
-        self.plan_import_failed.emit(
-            f"error: {error} (Taustapalvelua ei ehkä ole vielä päivitetty tukemaan tätä lisäosan versiota.)"
-        )
-
-    def _handle_s3_upload_response(self, response: QNetworkReply):
-        """Processes the S3 upload reply and sends the actual import request."""
-        try:
-            if self._pending_import is None:
-                logger.debug("Plan file uploaded but no import is pending, ignoring")
-                return
-            error = self._presigned_reply_error(response)
-            if error is not None:
-                logger.debug("Plan file upload failed error=%s", error)
-                self._cached_upload = None
-                QMessageBox.critical(None, "API Virhe", f"Kaavatiedoston siirto epäonnistui: {error}")
-                self._handle_import_error(error)
-                return
-        finally:
-            response.deleteLater()
-
-        s3_key = self._pending_import["s3_key"]
-        logger.debug("Plan file uploaded s3_key=%s", s3_key)
-        self._cached_upload = (self._pending_import["plan_json"], s3_key)
-        self._send_import_plan_request(s3_key)
-
-    def _process_import_plan_response(self, response_body: dict):
-        title = response_body.get("title")
-        logger.debug("Processing import plan response title=%s", title)
-        if title == "Plan imported.":
-            self._pending_import = None
-            self._cached_upload = None
-            details = response_body.get("details") or {}
-            plan_id = details.get("plan_id")
-            logger.debug("Plan import succeeded plan_id=%s", plan_id)
-            self.plan_imported.emit(plan_id)
-        else:
-            self._handle_import_error(str(response_body))
-
-    def _handle_import_error(self, error: str):
-        logger.debug("Plan import failed error=%s", error)
-        self._pending_import = None
-        if "Plan already exists." not in error:
-            # Keep the uploaded file cached only for the force-retry of an existing plan
-            self._cached_upload = None
-        self.plan_import_failed.emit(f"error: {error}")
 
     def _process_copy_plan_response(self, response_body: dict):
         title = response_body.get("title")
