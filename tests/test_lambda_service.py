@@ -525,7 +525,7 @@ def test_api_gateway_error_reply_uses_lambda_error_body(service):
     }
     reply = FakeReply(
         data=gzip.compress(json.dumps(body).encode("utf-8")),
-        error=QNetworkReply.ContentOperationNotPermittedError,
+        error=QNetworkReply.NetworkError.ContentOperationNotPermittedError,
         error_string="Error transferring - server replied: Method Not Allowed",
         action=LambdaService.ACTION_VALIDATE_PLAN_MATTERS,
     )
