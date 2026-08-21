@@ -221,16 +221,47 @@ you have to provide to the database administrator, and the private key in file `
 
 ### Opening an SSH tunnel to AWS
 
-Once the administrator has added your public key to the server, you can connect to the database using ssh:
-- On *Windows*, the easiest way to open the SSH tunnel to the server is by using a batch script. Ready-made per-instance tunnel scripts are maintained in a separate private repository; ask the database administrator for the script for your instance. Save the file to your computer in a convenient location. After this you can open the tunnel by executing this script by double clicking the file. On *Linux/Mac OS* (or if you want to use a command prompt), just copy-paste the command, replacing the placeholders with the values for your instance
+The SSH connection is configured once in your SSH config file. After that, opening the tunnel is a single short command.
+
+#### One-time setup: add the instance to your SSH config
+
+Ask the database administrator for the SSH config block for your instance. It is a few lines of text that look like this (the administrator fills in the real addresses):
+
 ```
-ssh -N  -L 5433:<database-host>.rds.amazonaws.com:5432 -D localhost:5443 -i "~/.ssh/id_ed25519" ec2-tunnel@<instance>.bastion.<hosted-domain>
+Host <instance>
+    HostName <instance>.bastion.<hosted-domain>
+    User ec2-tunnel
+    IdentityFile ~/.ssh/id_ed25519
+    LocalForward 5433 <database-host>:5432
+    DynamicForward 5443
 ```
-In addition to SSH tunnel to the database, the command creates a socks5 proxy that allows the Arho plugin to connect to the lambda functions in AWS.
+
+The block has to be added to the SSH config file, which is a text file named `config` (no file extension) in the `.ssh` folder of your home folder.
+
+On *Windows*, the easiest way to create or edit the file is with Notepad, because saving a file without an extension is otherwise easy to get wrong:
+
+1. Open a command prompt (open the start menu, type `cmd` and hit enter).
+2. Type `notepad %USERPROFILE%\.ssh\config` and hit enter.
+3. If Notepad asks whether you want to create a new file, click *Yes*.
+4. Paste the config block from the administrator into the file, save with `Ctrl+S` and close Notepad.
+
+(If Notepad complains that the path does not exist, the `.ssh` folder is missing: run `mkdir %USERPROFILE%\.ssh` in the command prompt first, then repeat step 2. The folder exists already if you created your SSH key as instructed above.)
+
+On *Linux/Mac OS*, add the block to `~/.ssh/config` with any text editor, creating the file if it does not exist.
+
+#### Opening the tunnel
+
+Once the administrator has added your public key to the server and the config block is in place, open a command prompt and type:
+
+```
+ssh <instance>
+```
+
+using the name on the `Host` line of your config block (for example `ssh arho-dev`).
 
 - Enter the passphrase for the key (if set) and hit enter. If no error messages appear, the tunnel is connected. Do not close the command prompt window, otherwise the SSH tunnel is disconnected.
-- Now you can connect to the database using `localhost` as the host and `5433` as the port. The details how to do this with different software are given in the following sections.
-- Additional tips: the connection can automatically terminate, for example, due to server rebooting or network issues (this is usually accompanied by a message, such as `client_loop: send disconnect: Connection reset`). If this happens, simply double click the file again to reopen the tunnel. In case you want to close an open SSH tunnel, press `Ctrl+C` and answer the confirmation by pressing `Y`.
+- Now you can connect to the database using `localhost` as the host and `5433` as the port. The details how to do this with different software are given in the following sections. The `DynamicForward` line also creates a socks5 proxy on port 5443 that allows the Arho plugin to connect to the lambda functions in AWS.
+- Additional tips: the connection can automatically terminate, for example, due to server rebooting or network issues (this is usually accompanied by a message, such as `client_loop: send disconnect: Connection reset`). If this happens, simply run `ssh <instance>` again to reopen the tunnel. To close the tunnel, type `exit` in the window or just close the window.
 
 ### Connecting to the database from QGIS
 
