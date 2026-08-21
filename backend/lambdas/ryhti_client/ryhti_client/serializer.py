@@ -94,10 +94,6 @@ class PlanSerializer:
         # are ready to reserialize it :/
         return {"srid": str(srid), "geometry": json.loads(to_geojson(shape))}
 
-    def get_isoformat_value_with_z(self, datetime_value: datetime.datetime) -> str:
-        """Returns isoformatted datetime in UTC with Z instead of +00:00."""
-        return datetime_value.isoformat().replace("+00:00", "Z")
-
     def get_date(self, datetime_value: datetime.datetime) -> str:
         """Returns isoformatted date for the given datetime in local timezone."""
         return datetime_value.astimezone(LOCAL_TZ).date().isoformat()
@@ -650,10 +646,3 @@ class PlanSerializer:
                 self.get_plan_attachment_document(document)
             )
         return plan_dictionary
-
-    def get_source_datas(self, plan: models.Plan) -> list[dict]:
-        """Construct a list of Ryhti compatible source datas from plan in the local
-        database.
-        """
-        # TODO
-        return []

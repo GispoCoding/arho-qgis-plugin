@@ -1,6 +1,10 @@
 import enum
 
 
+# TODO: check that valid status is "13" and approval status is "06" when
+# the lifecycle status code list transitions from DRAFT to VALID. Unlike the
+# other code lists, these values are numbers that may change, not descriptive
+# strings.
 class LifeCycleStatusValue(enum.StrEnum):
     PLANNING_INITIATIVE = "01"  # Kaavoitusaloite
     PENDING = "02"  # Vireilletullut

@@ -4,7 +4,7 @@ import datetime
 import logging
 from contextlib import contextmanager
 from string import Template
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import simplejson as json
@@ -35,9 +35,6 @@ if TYPE_CHECKING:
     from ryhti_client.ryhti_schema import RyhtiPlan
 
 LOGGER = logging.getLogger(__name__)
-
-
-MODEL = TypeVar("MODEL", bound=models.Base)
 
 
 class PlanAlreadyExistsError(Exception):
@@ -82,18 +79,6 @@ class DatabaseClient:
         engine = create_engine(connection_string)
         self.Session = sessionmaker(bind=engine)
         self.serializer = PlanSerializer(self.Session)
-
-        # We only ever need code uri values, not codes themselves, so let's not bother
-        # fetching codes from the database at all. URI is known from class and value.
-        # TODO: check that valid status is "13" and approval status is "06" when
-        # the lifecycle status code list transitions from DRAFT to VALID.
-        #
-        # It is exceedingly weird that this, the most important of all codes, is
-        # *not* a descriptive string, but a random number that may change, while all
-        # the other code lists have descriptive strings that will *not* change.
-        self.pending_status_value = "02"
-        self.approved_status_value = "06"
-        self.valid_status_value = "13"
 
     def get_plan(self, plan_id: str) -> models.Plan:
         """Fetch a single plan from the database.
