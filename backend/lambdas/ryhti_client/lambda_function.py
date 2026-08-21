@@ -528,7 +528,7 @@ def handler(
             # plan JSON, the same format that import_plan reads.
             response_title = "Returning serialized plan from database."
             LOGGER.info(response_title)
-            plan_dictionary = database_client.get_plan_dictionary(plan)
+            plan_dictionary = database_client.serializer.get_plan_dictionary(plan)
             plan_bytes = gzip.compress(json.dumps(plan_dictionary).encode("utf-8"))
             key = f"export/{uuid.uuid4()}.json"
             s3_client.put_object(
@@ -555,7 +555,7 @@ def handler(
         elif event_type is Action.VALIDATE_PLAN:
             # 1) Validate plan with public API
             LOGGER.info("Validating plan...")
-            plan_dictionary = database_client.get_plan_dictionary(plan)
+            plan_dictionary = database_client.serializer.get_plan_dictionary(plan)
             validation_response = client.validate_plan(plan, plan_dictionary)
             # 2) Save and return plan validation data
             LOGGER.info("Saving plan validation data...")

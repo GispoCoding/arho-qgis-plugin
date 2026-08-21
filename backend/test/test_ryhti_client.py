@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
     from database import codes
+    from ryhti_client.serializer import PlanSerializer
 
 mock_rule = "random_rule"
 mock_error_string = "There is something wrong with your plan! Good luck!"
@@ -215,6 +216,12 @@ def database_client(dba_connection_string: str) -> DatabaseClient:
 
 
 @pytest.fixture
+def plan_serializer(database_client: DatabaseClient) -> PlanSerializer:
+    """Return the plan serializer bound to the test database."""
+    return database_client.serializer
+
+
+@pytest.fixture
 def ryhti_client() -> RyhtiClient:
     """Return RyhtiClient that is configured to use the mock Ryhti APIs."""
     # Let's mock production x-road with gispo organization client here.
@@ -235,12 +242,13 @@ def test_related_land_use_area(
     land_use_area_instance: models.LandUseArea,
     other_area_instance: models.OtherArea,
     database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
 ) -> None:
     """Test that the land use area that contains the other area of type 'rakennusala'
     is added to the related plan objects list.
     """
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = database_client.get_plan_dictionary(plan)
+    plan_dict = plan_serializer.get_plan_dictionary(plan)
     other_area_in_dict = next(
         (
             plan_object
@@ -264,6 +272,7 @@ def test_related_land_use_area_multiple_containers(
     plan_instance: models.Plan,
     temp_session_feature: ReturnSame[models.LandUseArea],
     database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
 ) -> None:
     """Test that serialization raises if several land use areas contain the same
     plan object that needs a containing land use area.
@@ -284,7 +293,7 @@ def test_related_land_use_area_multiple_containers(
 
     plan = database_client.get_plan(complete_test_plan.id)
     with pytest.raises(MultipleResultsFound):
-        database_client.get_plan_dictionary(plan)
+        plan_serializer.get_plan_dictionary(plan)
 
 
 def test_related_land_use_area_no_container(
@@ -295,6 +304,7 @@ def test_related_land_use_area_no_container(
     construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
     temp_session_feature: ReturnSame[models.OtherArea],
     database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
 ) -> None:
     """Test that no related plan objects are added for a plan object that no
     land use area contains.
@@ -328,7 +338,7 @@ def test_related_land_use_area_no_container(
     temp_session_feature(outside_other_area)
 
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = database_client.get_plan_dictionary(plan)
+    plan_dict = plan_serializer.get_plan_dictionary(plan)
     outside_other_area_in_dict = next(
         (
             plan_object
@@ -348,7 +358,7 @@ def test_get_containing_land_use_area_ids(
     point_instance: models.Point,
     construction_area_plan_regulation_instance: models.PlanRegulation,
     point_text_plan_regulation_instance: models.PlanRegulation,
-    database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
 ) -> None:
     """Test that the batch query returns a mapping only for plan objects that
     need a containing land use area.
@@ -357,13 +367,13 @@ def test_get_containing_land_use_area_ids(
     The point is inside the land use area, but its regulation type does not
     need one.
     """
-    mapping = database_client._get_containing_land_use_area_ids(  # noqa: SLF001
+    mapping = plan_serializer._get_containing_land_use_area_ids(  # noqa: SLF001
         [other_area_instance, point_instance]
     )
     assert mapping == {other_area_instance.id: land_use_area_instance.id}
 
     assert (
-        database_client._get_containing_land_use_area_ids(  # noqa: SLF001
+        plan_serializer._get_containing_land_use_area_ids(  # noqa: SLF001
             [point_instance]
         )
         == {}
@@ -385,12 +395,13 @@ def plan_in_wrong_region(
 
 def test_get_plan_dictionary(
     database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
     complete_test_plan: models.Plan,
     desired_plan_dict: dict,
 ) -> None:
     """Check that correct JSON structure is generated for the plan."""
     plan = database_client.get_plan(complete_test_plan.id)
-    result_plan_dict = database_client.get_plan_dictionary(plan)
+    result_plan_dict = plan_serializer.get_plan_dictionary(plan)
     deepcompare(
         result_plan_dict,
         desired_plan_dict,
@@ -403,13 +414,14 @@ def test_get_plan_dictionary(
 
 def test_validate_plan(
     database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
     ryhti_client: RyhtiClient,
     complete_test_plan: models.Plan,
     mock_public_ryhti_validate_invalid: Callable,
 ) -> None:
     """Check that JSON is posted and response received"""
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = database_client.get_plan_dictionary(plan)
+    plan_dict = plan_serializer.get_plan_dictionary(plan)
     response = ryhti_client.validate_plan(plan, plan_dict)
     assert response["errors"] == [
         {"ruleId": mock_rule, "message": mock_error_string, "instance": mock_instance}
@@ -419,13 +431,14 @@ def test_validate_plan(
 def test_save_plan_validation_response(
     session: Session,
     database_client: DatabaseClient,
+    plan_serializer: PlanSerializer,
     ryhti_client: RyhtiClient,
     complete_test_plan: models.Plan,
     mock_public_ryhti_validate_invalid: Callable,
 ) -> None:
     """Check that Ryhti validation error is saved to database."""
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = database_client.get_plan_dictionary(plan)
+    plan_dict = plan_serializer.get_plan_dictionary(plan)
     response = ryhti_client.validate_plan(plan, plan_dict)
     database_client.save_plan_validation_response(plan.id, response)
     session.refresh(complete_test_plan)
