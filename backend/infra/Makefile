@@ -68,25 +68,33 @@ load-mml:
 	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-mml_loader --payload '{}' ../logs/response_load_mml.json
 
 
-decrypt-workspace-secrets:
-	sops -d public_keys/$(shell terraform workspace show).enc > public_keys/$(shell terraform workspace show)
-	sops -d var-files/$(shell terraform workspace show).tfvars.enc.json > var-files/$(shell terraform workspace show).tfvars.json
+# Path to the private GispoCoding/arho-deploy checkout that holds the instance
+# specific configuration (var-files/, public_keys/, .sops.yaml).
+# Defaults to a sibling checkout of this repository.
+ARHO_DEPLOY_DIR ?= ../../arho-deploy
+WORKSPACE = $(shell terraform workspace show)
 
+decrypt-workspace-secrets:
+	sops -d $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE)
+	sops -d $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json > $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
+
+# sops discovers .sops.yaml from the working directory, so the config of the
+# arho-deploy repository must be passed explicitly when encrypting from here.
 encrypt-workspace-secrets:
-	sops -e public_keys/$(shell terraform workspace show) > public_keys/$(shell terraform workspace show).enc
-	sops -e var-files/$(shell terraform workspace show).tfvars.json > var-files/$(shell terraform workspace show).tfvars.enc.json
+	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE) > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc
+	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json > $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
 
 tf-plan:
-	terraform plan -var-file=var-files/$(shell terraform workspace show).tfvars.json
+	terraform plan -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
 
 tf-apply:
-	terraform apply -var-file=var-files/$(shell terraform workspace show).tfvars.json
+	terraform apply -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
 
 update-ssh-keys:
 	ansible-playbook ansible/playbook.yml \
 	-i ansible/inventory/hosts.yml \
 	--extra-vars " \
 		bastion_host=$(shell terraform output -raw bastion_address) \
-		ssh_key_file=../public_keys/$(shell terraform workspace show) \
+		ssh_key_file=$(abspath $(ARHO_DEPLOY_DIR))/public_keys/$(WORKSPACE) \
 	" \
 	$(if $(ssh_private_key),--private-key $(ssh_private_key))

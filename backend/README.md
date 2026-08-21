@@ -1,8 +1,7 @@
 # ARHO Backend
 
-[![Tests](https://github.com/GispoCoding/hame-ryhti/actions/workflows/tests.yml/badge.svg)](https://github.com/GispoCoding/hame-ryhti/actions/workflows/tests.yml)
-[![Code-style](https://github.com/GispoCoding/hame-ryhti/actions/workflows/code-style.yml/badge.svg)](https://github.com/GispoCoding/hame-ryhti/actions/workflows/code-style.yml)
-[![Deploy](https://github.com/GispoCoding/hame-ryhti/actions/workflows/deploy.yml/badge.svg)](https://github.com/GispoCoding/hame-ryhti/actions/workflows/deploy.yml)
+[![Tests](https://github.com/GispoCoding/arho-backend/actions/workflows/tests.yml/badge.svg)](https://github.com/GispoCoding/arho-backend/actions/workflows/tests.yml)
+[![Code-style](https://github.com/GispoCoding/arho-backend/actions/workflows/code-style.yml/badge.svg)](https://github.com/GispoCoding/arho-backend/actions/workflows/code-style.yml)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
 
 ---
@@ -39,7 +38,7 @@ ARHO Backend consists of
 
 ![diagram of AWS resources and their connections to software and APIs](infra/architecture.svg)
 
-To manage ARHO Backend AWS resources, check the [infra README](https://github.com/GispoCoding/hame-ryhti/blob/main/infra/README.md#hame-infra) in the infra directory.
+To manage ARHO Backend AWS resources, check the [infra README](infra/README.md) in the infra directory.
 
 ## Data model
 
@@ -223,9 +222,9 @@ you have to provide to the database administrator, and the private key in file `
 ### Opening an SSH tunnel to AWS
 
 Once the administrator has added your public key to the server, you can connect to the database using ssh:
-- On *Windows*, the easiest way to open the SSH tunnel to the server is by using a batch script named `create_tunnel.vsl.bat` found [here](docs/create_tunnel.vsl.bat) in this repository. Save the file to your computer in a convenient location. After this you can open the tunnel by executing this script by double clicking the file. On *Linux/Mac OS* (or if you want to use a command prompt), just copy-paste the command
+- On *Windows*, the easiest way to open the SSH tunnel to the server is by using a batch script. Ready-made per-instance tunnel scripts are maintained in a separate private repository; ask the database administrator for the script for your instance. Save the file to your computer in a convenient location. After this you can open the tunnel by executing this script by double clicking the file. On *Linux/Mac OS* (or if you want to use a command prompt), just copy-paste the command, replacing the placeholders with the values for your instance
 ```
-ssh -N  -L 5433:hame-devdb.ctcspesmxrh1.eu-central-1.rds.amazonaws.com:5432 -D localhost:5443 -i "~/.ssh/id_ed25519" ec2-tunnel@hame-dev.bastion.gispocoding.fi
+ssh -N  -L 5433:<database-host>.rds.amazonaws.com:5432 -D localhost:5443 -i "~/.ssh/id_ed25519" ec2-tunnel@<instance>.bastion.<hosted-domain>
 ```
 In addition to SSH tunnel to the database, the command creates a socks5 proxy that allows the Arho plugin to connect to the lambda functions in AWS.
 
@@ -237,20 +236,18 @@ In addition to SSH tunnel to the database, the command creates a socks5 proxy th
 
 The data is read from a PostgreSQL service named `postgres` with a QGIS authentication which id is `ryhtirw`. Here is a way to set up database connection in QGIS:
 
-1. Create a PostgreSQL service file for each environment (at the moment, there is only development environment). The file can be created, for example, with a text editor. Add the following with correct values for each environment:
+1. Create a PostgreSQL service file for each environment. The file can be created, for example, with a text editor. Add the following with correct values for each environment (ask the database administrator for the database name of your instance):
 ```ini
 [postgres]
 host=localhost
 port=5433
-dbname=hame-dev
+dbname=<database-name>
 ```
-Save the file to some folder, an example location could be `<your home folder>/hameconfig/`. Name the saved file for example `pg_service_hame_dev.conf` (yes, the suffix '.conf' is part of the file name). Do not save this file as a text file (with a suffix .txt), but instead choose 'All types' from the 'Save as type' dropdown menu.
+Save the file to some folder, an example location could be `<your home folder>/arhoconfig/`. Name the saved file for example `pg_service_arho.conf` (yes, the suffix '.conf' is part of the file name). Do not save this file as a text file (with a suffix .txt), but instead choose 'All types' from the 'Save as type' dropdown menu.
 
 ![screenshot of pgservice file made with notepad](docs/img/pg_servicefile_notepad.png)
 
-NOTE: the Postgres service file for the dev environment is also included in in this repository under the docs folder, so alternatively you can copy the file from the into a convenient location on your computer.
-
-2. Create a QGIS-profile for each environment. Name the profile for example `ryhti-hame-dev`. A new QGIS window will open to this profile, use that in the following.
+2. Create a QGIS-profile for each environment. Name the profile for example `ryhti-<environment>`. A new QGIS window will open to this profile, use that in the following.
 
 ![screenshot of new profile menu](docs/img/qgis-new-profile.png)
 

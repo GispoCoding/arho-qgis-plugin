@@ -35,56 +35,63 @@ You may set your MFA device ARN in the `AWS_MFA_IDENTIFIER` environment variable
 
 Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. To list existing workspaces in S3, run `terraform workspace list`. To create a new workspace, run `terraform workspace new your-deployment`. To switch to a workspace, run `terraform workspace select your-deployment`.
 
+## Instance configuration repository
+
+The instance specific configuration (encrypted terraform variable files and encrypted ssh public key lists) lives in the private [GispoCoding/arho-deploy](https://github.com/GispoCoding/arho-deploy) repository, together with the deploy workflows. Clone it as a sibling of this repository:
+
+```
+~/projects/arho-backend
+~/projects/arho-deploy
+```
+
+The make targets in this directory find the configuration through the `ARHO_DEPLOY_DIR` variable, which defaults to `../../arho-deploy`. If your checkout is elsewhere, pass `ARHO_DEPLOY_DIR=/path/to/arho-deploy` to make. A sample variable file [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) remains in this repository as a template.
+
 ## Managing existing instances
 
-To manage existing instances, activate the corresponding terraform workspace e.g. `terraform workspace select hame-dev` and decrypt encrypted variable file by running e.g. `sops -d hame-dev.tfvars.enc.json > hame-dev.tfvars.json`.
+To manage existing instances, activate the corresponding terraform workspace e.g. `terraform workspace select <workspace>` and decrypt the encrypted variable file by running `make decrypt-workspace-secrets`.
 
 To make changes to instances, first check that your variables and current infra is up to date with terraform state:
 
 ```shell
 terraform init
-terraform plan --var-file var-files/hame-dev.tfvars.json
+make tf-plan
 ```
 
-This should report that terraform state is up to date with infra and configuration. You may make changes to configuration or variables and run `terraform plan --var-file var-files/hame-dev.tfvars.json` again to check what your changes would mean to the infrastructure.
+This should report that terraform state is up to date with infra and configuration. You may make changes to configuration or variables and run `make tf-plan` again to check what your changes would mean to the infrastructure.
 
 When you are sure that you want to change AWS infra, run
 
 ```shell
-terraform apply --var-file var-files/hame-dev.tfvars.json
+make tf-apply
 ```
 
 Please verify that the reported changes are desired, and respond `yes` to apply the changes to infrastructure.
 
-Remember to commit any changes you made to the terraform configuration, or if you changed any variables, by `sops -e hame-dev.tfvars.json > hame-dev.tfvars.enc.json` and committing the encrypted file.
+Remember to commit any changes you made to the terraform configuration. If you changed any variables, run `make encrypt-workspace-secrets` and commit the encrypted file in the arho-deploy repository.
 
 ### Adding ssh tunneling users
 
 The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. This is done using the Ansible playbook in `infra/ansible/playbook.yml`. The playbook will add the public keys to the authorized keys of the ssh-tunnel user on the bastion host.
 
-Public ssh keys are stored in the `infra/public_keys` directory, and the playbook will read the public key file corresponding to the current terraform workspace. The public key files should be named according to the terraform workspace, e.g. `public_keys/hame-test`. The public key files are encrypted for security, so you should use `sops` to encrypt the public key files before committing them to the repository.
+Public ssh keys are stored in the `public_keys` directory of the arho-deploy repository, and the playbook will read the public key file corresponding to the current terraform workspace. The public key files should be named according to the terraform workspace, e.g. `public_keys/<workspace>`. The public key files are encrypted for security, so you should use `sops` to encrypt the public key files before committing them to the repository.
 
 To add a new ssh key:
-1. Fetch the latest ssh key files running `git pull`
-2. Decrypt the public key file using `make decrypt-ssh-keys`
-3. Add the public key to the `public_keys/<workspace name>` file, or create a new file if it does not exist.
-4. Run the Ansible playbook to add the public key to the bastion host (the ssh key to use to connect can be given with a `--private-key` argument):  
+1. Fetch the latest ssh key files by running `git pull` in the arho-deploy repository
+2. Decrypt the public key file using `make decrypt-workspace-secrets`
+3. Add the public key to the `public_keys/<workspace name>` file in arho-deploy, or create a new file if it does not exist.
+4. Run the Ansible playbook to add the public key to the bastion host (the ssh key to use to connect can be given with a `ssh_private_key` argument):
 ```bash
-ansible-playbook ansible/playbook.yml \
-  -i ansible/inventory/hosts.yml \
-  --extra-vars " \
-      bastion_host=$(terraform output -raw bastion_address) \
-      ssh_key_file=../public_keys/$(terraform workspace show) \
-   " # \
-   # --private-key ~/.ssh/my_private_key
+make update-ssh-keys
+# or with an explicit private key:
+make update-ssh-keys ssh_private_key=~/.ssh/my_private_key
 ```
-5. Encrypt the public key file again using `make encrypt-ssh-keys`
-6. Commit the changes to the repository.
+5. Encrypt the public key file again using `make encrypt-workspace-secrets`
+6. Commit the changes to the arho-deploy repository.
 
 ## Configuring new instances
 
-1. To create a new instance of ARHO Backend, copy [arho.tfvars.sample.json](arho.tfvars.sample.json) to a new file called `your-deployment.tfvars.json`.
-2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in Github secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY`.
+1. To create a new instance of ARHO Backend, copy [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) to a new file called `var-files/your-deployment.tfvars.json` in the arho-deploy repository.
+2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in the Github environment secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY` of the arho-deploy repository.
 3. Change the values in `your-deployment.tfvars.json` as required
 4. Remember to encrypt your variables with `sops` to create `your-deployment.tfvars.enc.json` and commit the encrypted file. The encryption key to allow decrypting the file is safely stored in AWS.
 
@@ -122,17 +129,17 @@ terraform apply --var-file var-files/your-deployment.tfvars.json
 # Create new terraform workspace
 terraform workspace new <instance-name>
 
-# Copy sample variables and edit them
-cp arho.tfvars.sample.json <instance-name>.tfvars.json
-# Edit <instance-name>.tfvars.json
+# Copy sample variables to the arho-deploy repository and edit them
+cp var-files/arho.tfvars.sample.json ../../arho-deploy/var-files/<instance-name>.tfvars.json
+# Edit ../../arho-deploy/var-files/<instance-name>.tfvars.json
 
 # Test the plan first
-terraform plan -var-file=var-files/<instance-name>.tfvars.json
+terraform plan -var-file=../../arho-deploy/var-files/<instance-name>.tfvars.json
 
-terraform apply -var-file=var-files/<instance-name>.tfvars.json
+terraform apply -var-file=../../arho-deploy/var-files/<instance-name>.tfvars.json
 # Error is expected: Error: creating RDS DB Subnet Group (<instance-name>-db): operation error RDS: CreateDBSubnetGroup, https response error StatusCode: 400, RequestID: f89c1d41-e247-48d2-9003-5a40b0e018aa, InvalidSubnet: Subnet IDs are required.
 
-terraform apply -var-file=var-files/<instance-name>.tfvars.json
+terraform apply -var-file=../../arho-deploy/var-files/<instance-name>.tfvars.json
 # Error is expected: Error: creating Lambda Function (<instance-name>-db_manager): operation error Lambda: CreateFunction, https response error StatusCode: 400, RequestID: acc82829-26b3-4c88-af07-c9bae6f27b81, InvalidParameterValueException: Source image 631260641272.dkr.ecr.eu-central-1.amazonaws.com/<instance-name>-db_manager:latest does not exist. Provide a valid source image.
 
 # Set AWS_REGION and AWS_ACCOUNT_ID environment variables for Makefile
@@ -142,12 +149,12 @@ export prefix=<instance-name>
 # Build and push lambda images
 make push-lambdas
 
-terraform apply -var-file=var-files/<instance-name>.tfvars.json
+terraform apply -var-file=../../arho-deploy/var-files/<instance-name>.tfvars.json
 # Error is expected: Error: creating Lambda Provisioned Concurrency Config (<instance-name>-ryhti_client,live): operation error Lambda: PutProvisionedConcurrencyConfig, https response error StatusCode: 400, RequestID: 284038e3-650d-4ccb-951f-764e6cd9161d, InvalidParameterValueException: Provisioned Concurrency Configs cannot be applied to unpublished function versions.
 
 # Update lambda functions
 make update-lambdas
-terraform apply -var-file=var-files/<instance-name>.tfvars.json
+terraform apply -var-file=../../arho-deploy/var-files/<instance-name>.tfvars.json
 
 # Now the infra should be deployed, but the database is still empty. Initialize the database with:
 make create-db
@@ -165,7 +172,7 @@ A simple X-Road security server sidecar container is included in the Terraform c
 This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä, as well as a separate permit to connect to the Ryhti X-Road APIs once your X-Road server works. Follow the steps below:
 
 1. You must apply for permission to join the Palveluväylä test environment first: [Liittyminen kehitysympäristöön](https://palveluhallinta.suomi.fi/fi/sivut/palveluvayla/kayttoonotto/liittyminen-kehitysymparistoon). For the permission application, you will need
-   - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`, e.g. `ryhti-vsl-client`. Set the client name as your terraform variable `x-road_subdomain`.
+   - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`. Set the client name as your terraform variable `x-road_subdomain`.
    - a proper domain name for your x-road server. This can be set using the terraform variables `AWS_HOSTED_DOMAIN` and `x-road_host`. The complete domain name for your X-road server will be `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`. Note that if you have multiple x-road environments (e.g. test and production) for the *same* organization, the subdomain will be the same (as the x-road client name will be the same in test and production). The host name should uniquely determine your x-road server instance as test or production instance for that organization.
 When your application is accepted, you are provided with the configuration anchor file needed later.
 2. Create an SSH key and add the public key to `bastion_ec2_user_public_keys` in `your-deployment.tfvars.json`.

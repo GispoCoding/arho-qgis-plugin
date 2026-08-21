@@ -2,3 +2,4 @@
 *.tfvars.json
 .terraform/
 terraform.tfstate*
+public_keys/

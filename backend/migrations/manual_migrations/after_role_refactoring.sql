@@ -101,4 +101,5 @@ ALTER FUNCTION hame.trgfunc_no_created_at_update() OWNER TO arho_dba;
 ALTER SCHEMA codes OWNER TO arho_dba;
 ALTER SCHEMA hame OWNER TO arho_dba;
 
-ALTER DATABASE "hame-dev" OWNER TO arho_dba;
+-- Replace <database-name> with the database name of the instance.
+ALTER DATABASE "<database-name>" OWNER TO arho_dba;
