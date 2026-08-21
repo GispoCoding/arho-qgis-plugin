@@ -77,7 +77,8 @@ resource "aws_api_gateway_integration" "lambda_integration" {
   # Our lambdas may run long if everything is processed. For a single
   # plan, the request will be much faster.
   timeout_milliseconds = 29000
-  uri         = aws_lambda_function.ryhti_client.invoke_arn
+  # Invoke the live alias so requests hit the provisioned (warm) instance.
+  uri         = aws_lambda_alias.ryhti_client_live.invoke_arn
 }
 
 resource "aws_api_gateway_deployment" "api_deployment" {

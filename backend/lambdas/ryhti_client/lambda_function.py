@@ -5,6 +5,7 @@ import enum
 import gzip
 import logging
 import os
+import time
 import uuid
 from collections.abc import Callable
 from copy import deepcopy
@@ -368,6 +369,34 @@ def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType
     return wrapper
 
 
+def log_action_duration(func: HandlerType) -> HandlerType:
+    """Decorator to log a parseable line with the action name and handler
+    wall time, for CloudWatch Logs Insights duration queries per action.
+    """
+
+    @wraps(func)
+    def wrapper(
+        payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+    ) -> Response | CompressedResponse | AWSAPIGatewayResponse:
+        start = time.perf_counter()
+        try:
+            return func(payload, context)
+        finally:
+            action = "unknown"
+            try:
+                action = str(normalize_payload(payload)["body"].get("action"))
+            except Exception:  # noqa: BLE001
+                # Timing is best effort; never mask the response.
+                LOGGER.warning("Could not resolve action name for timing log.")
+            LOGGER.info(
+                "arho_timing action=%s duration_ms=%d",
+                action,
+                round((time.perf_counter() - start) * 1000),
+            )
+
+    return wrapper
+
+
 def is_api_gateway_event(event: Any) -> bool:
     return isinstance(event, dict) and "requestContext" in event
 
@@ -399,6 +428,7 @@ def normalize_payload(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEv
 
 
 @return_500_on_unhandled_exceptions
+@log_action_duration
 def handler(
     payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
 ) -> Response | CompressedResponse | AWSAPIGatewayResponse:

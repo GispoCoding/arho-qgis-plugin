@@ -6,15 +6,19 @@ from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 import pytest
+from geoalchemy2.shape import from_shape
 from requests import PreparedRequest
 from requests_mock.request import _RequestObjectProxy
+from shapely.geometry import shape
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import Session
 
 from database import models
+from database.base import PROJECT_SRID
 from ryhti_client.database_client import DatabaseClient
 from ryhti_client.ryhti_client import RyhtiClient
 
-from .conftest import deepcompare
+from .conftest import ReturnSame, deepcompare
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -24,7 +28,7 @@ if TYPE_CHECKING:
     from requests_mock.request import _RequestObjectProxy
     from sqlalchemy.orm import Session
 
-    from database import models
+    from database import codes
 
 mock_rule = "random_rule"
 mock_error_string = "There is something wrong with your plan! Good luck!"
@@ -249,6 +253,121 @@ def test_related_land_use_area(
     assert other_area_in_dict
 
     assert other_area_in_dict["relatedPlanObjectKeys"] == [land_use_area_instance.id]
+
+
+def test_related_land_use_area_multiple_containers(
+    complete_test_plan: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: models.Plan,
+    temp_session_feature: ReturnSame[models.LandUseArea],
+    database_client: DatabaseClient,
+) -> None:
+    """Test that serialization raises if several land use areas contain the same
+    plan object that needs a containing land use area.
+    """
+    overlapping_land_use_area = models.LandUseArea(
+        geom=land_use_area_instance.geom,
+        name={"fin": "test_overlapping_land_use_area"},
+        description={"fin": "test_overlapping_land_use_area"},
+        height_min=0.0,
+        height_max=1.0,
+        height_unit="m",
+        ordering=3,
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+    )
+    temp_session_feature(overlapping_land_use_area)
+
+    plan = database_client.get_plan(complete_test_plan.id)
+    with pytest.raises(MultipleResultsFound):
+        database_client.get_plan_dictionary(plan)
+
+
+def test_related_land_use_area_no_container(
+    complete_test_plan: models.Plan,
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: models.Plan,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
+    temp_session_feature: ReturnSame[models.OtherArea],
+    database_client: DatabaseClient,
+) -> None:
+    """Test that no related plan objects are added for a plan object that no
+    land use area contains.
+    """
+    outside_other_area = models.OtherArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [390000, 6690000],
+                                [390000, 6691000],
+                                [391000, 6691000],
+                                [391000, 6690000],
+                                [390000, 6690000],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[construction_area_plan_regulation_group_instance],
+    )
+    temp_session_feature(outside_other_area)
+
+    plan = database_client.get_plan(complete_test_plan.id)
+    plan_dict = database_client.get_plan_dictionary(plan)
+    outside_other_area_in_dict = next(
+        (
+            plan_object
+            for plan_object in plan_dict["planObjects"]
+            if plan_object["planObjectKey"] == outside_other_area.id
+        ),
+        None,
+    )
+
+    assert outside_other_area_in_dict
+    assert "relatedPlanObjectKeys" not in outside_other_area_in_dict
+
+
+def test_get_containing_land_use_area_ids(
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    point_instance: models.Point,
+    construction_area_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
+    database_client: DatabaseClient,
+) -> None:
+    """Test that the batch query returns a mapping only for plan objects that
+    need a containing land use area.
+
+    The other area has a regulation of type "rakennusala", so it needs one.
+    The point is inside the land use area, but its regulation type does not
+    need one.
+    """
+    mapping = database_client._get_containing_land_use_area_ids(  # noqa: SLF001
+        [other_area_instance, point_instance]
+    )
+    assert mapping == {other_area_instance.id: land_use_area_instance.id}
+
+    assert (
+        database_client._get_containing_land_use_area_ids(  # noqa: SLF001
+            [point_instance]
+        )
+        == {}
+    )
 
 
 @pytest.fixture

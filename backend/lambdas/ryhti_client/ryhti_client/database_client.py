@@ -12,7 +12,8 @@ import simplejson as json
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
 from shapely.geometry.base import BaseMultipartGeometry
-from sqlalchemy import Table, create_engine, select, text
+from sqlalchemy import Table, and_, create_engine, select, text
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
@@ -36,7 +37,7 @@ from ryhti_client.ryhti_schema import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Generator, Mapping
 
     from geoalchemy2 import WKBElement
     from sqlalchemy.orm import Session
@@ -373,7 +374,11 @@ class DatabaseClient:
             group_dict["planRegulations"].append(self.get_plan_regulation(regulation))
         return group_dict
 
-    def get_plan_object(self, plan_object: models.PlanObjectBase) -> dict:
+    def get_plan_object(
+        self,
+        plan_object: models.PlanObjectBase,
+        containing_land_use_area_ids: Mapping[DbId, DbId],
+    ) -> dict:
         """Construct a dict of Ryhti compatible plan object."""
         plan_object_dict: dict[str, Any] = {}
         plan_object_dict["planObjectKey"] = plan_object.id
@@ -400,7 +405,9 @@ class DatabaseClient:
             }
 
         # RelatedPlanObjectKeys
-        related_plan_object_keys = self._get_related_plan_object_keys(plan_object)
+        related_plan_object_keys = self._get_related_plan_object_keys(
+            plan_object, containing_land_use_area_ids
+        )
         if related_plan_object_keys:
             plan_object_dict["relatedPlanObjectKeys"] = related_plan_object_keys
 
@@ -444,33 +451,66 @@ class DatabaseClient:
             for regulation in cast("models.PlanRegulationGroup", group).plan_regulations
         )
 
-    def _get_containing_land_use_area(
-        self, plan_object: models.PlanObjectBase
-    ) -> DbId | None:
-        """Returns a land use area id that contains this plan_object.
-        If not found, returns None.
+    def _get_containing_land_use_area_ids(
+        self, plan_objects: list[models.PlanObjectBase]
+    ) -> dict[DbId, DbId]:
+        """Returns {plan object id: id of the land use area that contains it} for
+        plan objects that need a containing land use area.
+
+        Plan objects with no containing land use area are absent from the mapping.
+
+        Raises MultipleResultsFound if several land use areas contain the same
+        plan object.
         """
+        ids_by_model: dict[type[models.PlanObjectBase], list[DbId]] = {}
+        for plan_object in plan_objects:
+            if self._needs_containing_land_use_area(plan_object):
+                ids_by_model.setdefault(type(plan_object), []).append(plan_object.id)
+
+        if not ids_by_model:
+            return {}
+
+        containing_area_ids: dict[DbId, DbId] = {}
         with self.Session(expire_on_commit=False) as session:
-            stmt = select(models.LandUseArea.id).where(
-                models.LandUseArea.plan_id == plan_object.plan_id,
-                models.LandUseArea.geom.ST_Contains(plan_object.geom),
-            )
-            return session.scalars(stmt).one_or_none()
+            # Plan objects live in separate tables, so one query per table.
+            for model, object_ids in ids_by_model.items():
+                stmt = (
+                    select(
+                        model.id.label("plan_object_id"),
+                        models.LandUseArea.id.label("land_use_area_id"),
+                    )
+                    .join(
+                        models.LandUseArea,
+                        and_(
+                            models.LandUseArea.plan_id == model.plan_id,
+                            models.LandUseArea.geom.ST_Contains(model.geom),
+                        ),
+                    )
+                    .where(model.id.in_(object_ids))
+                )
+                for plan_object_id, land_use_area_id in session.execute(stmt):
+                    if plan_object_id in containing_area_ids:
+                        msg = (
+                            "Multiple land use areas contain plan object "
+                            f"{plan_object_id}"
+                        )
+                        raise MultipleResultsFound(msg)
+                    containing_area_ids[plan_object_id] = land_use_area_id
+        return containing_area_ids
 
     def _get_related_plan_object_keys(
-        self, plan_object: models.PlanObjectBase
+        self,
+        plan_object: models.PlanObjectBase,
+        containing_land_use_area_ids: Mapping[DbId, DbId],
     ) -> list[DbId]:
         # TODO: there might be other use cases for related plan objects
         related_plan_object_keys = []
 
         # Address the validation rule
         # 58: quality/req-spatialplanregulationtype-reference-spatialplanobject
-        if self._needs_containing_land_use_area(plan_object):
-            containing_land_use_area_id = self._get_containing_land_use_area(
-                plan_object
-            )
-            if containing_land_use_area_id:
-                related_plan_object_keys.append(containing_land_use_area_id)
+        containing_land_use_area_id = containing_land_use_area_ids.get(plan_object.id)
+        if containing_land_use_area_id:
+            related_plan_object_keys.append(containing_land_use_area_id)
 
         return related_plan_object_keys
 
@@ -478,7 +518,13 @@ class DatabaseClient:
         """Construct a list of Ryhti compatible plan object dicts from plan objects
         in the local database.
         """
-        return [self.get_plan_object(plan_object) for plan_object in plan_objects]
+        containing_land_use_area_ids = self._get_containing_land_use_area_ids(
+            plan_objects
+        )
+        return [
+            self.get_plan_object(plan_object, containing_land_use_area_ids)
+            for plan_object in plan_objects
+        ]
 
     def get_plan_regulation_groups(
         self, plan_objects: list[models.PlanObjectBase]

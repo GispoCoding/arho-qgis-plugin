@@ -167,7 +167,6 @@ class RyhtiClient:
         )
         if self.debug_json:
             save_debug_json(f"{plan.id}.json", plan_dictionary)
-        LOGGER.info(f"POSTing JSON: {json.dumps(plan_dictionary)}")
 
         # requests apparently uses simplejson automatically if it is installed!
         # A bit too much magic for my taste, but seems to work.

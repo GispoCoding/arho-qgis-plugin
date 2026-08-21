@@ -129,6 +129,13 @@ resource "aws_lambda_alias" "ryhti_client_live" {
   description      = "Alias to latest ryhti client"
   function_name    = "${var.prefix}-ryhti_client"
   function_version = aws_lambda_function.ryhti_client.version
+
+  lifecycle {
+    # The deploy Makefile publishes new versions and moves this alias with
+    # the AWS CLI. Do not let terraform roll the alias back to the version
+    # it saw last.
+    ignore_changes = [function_version]
+  }
 }
 
 resource "aws_lambda_provisioned_concurrency_config" "ryhti_client" {
@@ -142,7 +149,10 @@ resource "aws_lambda_provisioned_concurrency_config" "ryhti_client" {
 resource "aws_lambda_permission" "api_gateway_call_ryhti_client" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.ryhti_client.function_name
-  principal     = "apigateway.amazonaws.com"
+  # The API gateway invokes the live alias, so the permission must be
+  # attached to the alias, not to the unqualified function.
+  qualifier = aws_lambda_alias.ryhti_client_live.name
+  principal = "apigateway.amazonaws.com"
   # The /* part allows invocation from any stage, method and resource path
   # within API Gateway.
   source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*"
