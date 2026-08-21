@@ -6,11 +6,13 @@ import gzip
 import json
 
 import pytest
-from qgis.PyQt.QtCore import QByteArray
+from qgis.PyQt.QtCore import QByteArray, QUrl
 from qgis.PyQt.QtNetwork import QNetworkReply
 
 import arho_feature_template.core.lambda_service as lambda_service_module
+from arho_feature_template.core.lambda_client import LambdaClient
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.utils.network_utils import prepare_presigned_request
 
 PLAN_ID = "11111111-1111-1111-1111-111111111111"
 PLAN_JSON = json.dumps({"planKey": PLAN_ID, "name": "Testikaava"})
@@ -18,13 +20,17 @@ EXTRA_DATA = {"name": "Testikaava", "plan_matter_id": "22222222-2222-2222-2222-2
 
 
 class FakeRequest:
-    """Stands in for QNetworkRequest carrying the action attribute."""
+    """Stands in for QNetworkRequest carrying the action attribute and the request URL."""
 
-    def __init__(self, action):
+    def __init__(self, action, url=""):
         self._action = action
+        self._url = url
 
     def attribute(self, _attribute):
         return self._action
+
+    def url(self):
+        return QUrl(self._url)
 
 
 class FakeReply:
@@ -37,12 +43,14 @@ class FakeReply:
         error_string: str = "",
         status_code=200,
         action=None,
+        url: str = "",
     ):
         self._data = data
         self._error = error
         self._error_string = error_string
         self._status_code = status_code
         self._action = action
+        self._url = url
         self.deleted = False
 
     def error(self):
@@ -55,7 +63,7 @@ class FakeReply:
         return self._status_code
 
     def request(self):
-        return FakeRequest(self._action)
+        return FakeRequest(self._action, self._url)
 
     def readAll(self):
         return QByteArray(self._data)
@@ -90,7 +98,7 @@ def service(monkeypatch):
 @pytest.fixture
 def network(service):
     manager = FakeNetworkManager()
-    service.network_manager = manager
+    service._client.network_manager = manager
     return manager
 
 
@@ -98,7 +106,7 @@ def network(service):
 def sent_requests(service, monkeypatch):
     requests = []
     monkeypatch.setattr(
-        service, "_send_request", lambda action, _plan_id=None, payload=None: requests.append((action, payload))
+        service._client, "post_action", lambda action, _plan_id=None, payload=None: requests.append((action, payload))
     )
     return requests
 
@@ -138,12 +146,12 @@ def signal_spy(signal) -> list:
     return emitted
 
 
-# _prepare_presigned_request
+# prepare_presigned_request
 
 
 def test_presigned_request_rewrites_minio_host():
     url = "http://minio:9000/bucket/import/abc.json?X-Amz-Signature=xyz"
-    request = LambdaService._prepare_presigned_request(url)
+    request = prepare_presigned_request(url)
     assert request.url().host() == "localhost"
     assert request.url().port() == 9000
     assert request.url().path() == "/bucket/import/abc.json"
@@ -151,14 +159,14 @@ def test_presigned_request_rewrites_minio_host():
 
 
 def test_presigned_request_rewrites_minio_host_without_port():
-    request = LambdaService._prepare_presigned_request("http://minio/bucket/key.json")
+    request = prepare_presigned_request("http://minio/bucket/key.json")
     assert request.url().host() == "localhost"
     assert bytes(request.rawHeader(b"Host")) == b"minio"
 
 
 def test_presigned_request_leaves_aws_url_untouched():
     url = "https://bucket.s3.eu-central-1.amazonaws.com/export/abc.json?X-Amz-Signature=xyz"
-    request = LambdaService._prepare_presigned_request(url)
+    request = prepare_presigned_request(url)
     assert request.url().toString() == url
     assert not request.hasRawHeader(b"Host")
 
@@ -235,39 +243,39 @@ def test_import_plan_requests_upload_url(service, sent_requests):
     assert action == LambdaService.ACTION_GET_UPLOAD_URL
     # get_upload_url needs no payload; especially no dummy plan_uuid
     assert payload is None
-    assert service._pending_import == {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
+    assert service._importer._pending_import == {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
 
 
 def test_upload_url_response_uploads_plan_file(service, network):
-    service._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
-    service._process_get_upload_url_response(
+    service._importer._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
+    service._importer.handle_upload_url_response(
         {"details": {"upload_url": "http://minio:9000/bucket/import/abc.json?sig", "key": "import/abc.json"}}
     )
     assert len(network.put_requests) == 1
     request, data = network.put_requests[0]
     assert request.attribute(LambdaService.ActionAttribute) == LambdaService.S3_UPLOAD_PLAN
     assert bytes(data) == PLAN_JSON.encode("utf-8")
-    assert service._pending_import["s3_key"] == "import/abc.json"
+    assert service._importer._pending_import["s3_key"] == "import/abc.json"
 
 
 def test_upload_url_response_missing_url_fails_import(service, network):
     emitted = signal_spy(service.plan_import_failed)
-    service._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
-    service._process_get_upload_url_response({"details": {}})
+    service._importer._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
+    service._importer.handle_upload_url_response({"details": {}})
     assert not network.put_requests
     assert len(emitted) == 1
-    assert service._pending_import is None
+    assert service._importer._pending_import is None
 
 
 def test_upload_response_sends_import_request(service, sent_requests):
-    service._pending_import = {
+    service._importer._pending_import = {
         "plan_json": PLAN_JSON,
         "extra_data": EXTRA_DATA,
         "force": False,
         "s3_key": "import/abc.json",
     }
-    service._handle_s3_upload_response(FakeReply())
-    assert service._cached_upload == (PLAN_JSON, "import/abc.json")
+    service._importer.handle_s3_upload_reply(FakeReply())
+    assert service._importer._cached_upload == (PLAN_JSON, "import/abc.json")
     assert len(sent_requests) == 1
     action, payload = sent_requests[0]
     assert action == LambdaService.ACTION_IMPORT_PLAN
@@ -280,56 +288,56 @@ def test_upload_response_sends_import_request(service, sent_requests):
 
 def test_upload_response_error_fails_import(service, sent_requests):
     emitted = signal_spy(service.plan_import_failed)
-    service._pending_import = {
+    service._importer._pending_import = {
         "plan_json": PLAN_JSON,
         "extra_data": EXTRA_DATA,
         "force": False,
         "s3_key": "import/abc.json",
     }
     reply = FakeReply(error=QNetworkReply.NetworkError.ConnectionRefusedError, error_string="Connection refused")
-    service._handle_s3_upload_response(reply)
+    service._importer.handle_s3_upload_reply(reply)
     assert reply.deleted
     assert not sent_requests
     assert len(emitted) == 1
-    assert service._pending_import is None
-    assert service._cached_upload is None
+    assert service._importer._pending_import is None
+    assert service._importer._cached_upload is None
 
 
 def test_upload_response_redirect_status_fails_import(service, sent_requests):
     emitted = signal_spy(service.plan_import_failed)
-    service._pending_import = {
+    service._importer._pending_import = {
         "plan_json": PLAN_JSON,
         "extra_data": EXTRA_DATA,
         "force": False,
         "s3_key": "import/abc.json",
     }
     reply = FakeReply(b"<Error><Code>TemporaryRedirect</Code></Error>", status_code=307)
-    service._handle_s3_upload_response(reply)
+    service._importer.handle_s3_upload_reply(reply)
     assert reply.deleted
     assert not sent_requests
     assert len(emitted) == 1
     assert "307" in emitted[0][0]
-    assert service._cached_upload is None
+    assert service._importer._cached_upload is None
 
 
 def test_import_success_emits_plan_id_and_clears_cache(service):
     emitted = signal_spy(service.plan_imported)
-    service._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
-    service._cached_upload = (PLAN_JSON, "import/abc.json")
-    service._process_import_plan_response({"title": "Plan imported.", "details": {"plan_id": PLAN_ID}})
+    service._importer._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
+    service._importer._cached_upload = (PLAN_JSON, "import/abc.json")
+    service._importer.handle_import_response({"title": "Plan imported.", "details": {"plan_id": PLAN_ID}})
     assert emitted == [(PLAN_ID,)]
-    assert service._pending_import is None
-    assert service._cached_upload is None
+    assert service._importer._pending_import is None
+    assert service._importer._cached_upload is None
 
 
 def test_force_retry_reuses_uploaded_file(service, sent_requests):
     failed = signal_spy(service.plan_import_failed)
-    service._cached_upload = (PLAN_JSON, "import/abc.json")
+    service._importer._cached_upload = (PLAN_JSON, "import/abc.json")
 
-    service._process_import_plan_response({"title": "Plan already exists.", "details": {"plan_id": PLAN_ID}})
+    service._importer.handle_import_response({"title": "Plan already exists.", "details": {"plan_id": PLAN_ID}})
     assert len(failed) == 1
     assert "Plan already exists." in failed[0][0]
-    assert service._cached_upload == (PLAN_JSON, "import/abc.json")
+    assert service._importer._cached_upload == (PLAN_JSON, "import/abc.json")
 
     service.import_plan(PLAN_JSON, EXTRA_DATA, force=True)
     # No new get_upload_url request; the import request is sent directly with the cached key
@@ -343,20 +351,20 @@ def test_force_retry_reuses_uploaded_file(service, sent_requests):
 
 def test_other_import_errors_clear_cached_upload(service):
     failed = signal_spy(service.plan_import_failed)
-    service._cached_upload = (PLAN_JSON, "import/abc.json")
-    service._process_import_plan_response({"title": "Uploaded plan file not found.", "details": {}})
+    service._importer._cached_upload = (PLAN_JSON, "import/abc.json")
+    service._importer.handle_import_response({"title": "Uploaded plan file not found.", "details": {}})
     assert len(failed) == 1
-    assert service._cached_upload is None
+    assert service._importer._cached_upload is None
 
 
 def test_get_upload_url_error_hints_about_backend_version(service):
     emitted = signal_spy(service.plan_import_failed)
-    service._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
-    service._handle_get_upload_url_error("Unknown action.")
+    service._importer._pending_import = {"plan_json": PLAN_JSON, "extra_data": EXTRA_DATA, "force": False}
+    service._importer.handle_upload_url_error("Unknown action.")
     assert len(emitted) == 1
     assert "Unknown action." in emitted[0][0]
     assert "päivitetty" in emitted[0][0]
-    assert service._pending_import is None
+    assert service._importer._pending_import is None
 
 
 # Reply routing
@@ -365,7 +373,7 @@ def test_get_upload_url_error_hints_about_backend_version(service):
 def test_s3_replies_are_routed_past_lambda_handlers(service, monkeypatch):
     routed = []
     monkeypatch.setattr(service, "_handle_s3_download_response", lambda reply: routed.append(("download", reply)))
-    monkeypatch.setattr(service, "_handle_s3_upload_response", lambda reply: routed.append(("upload", reply)))
+    monkeypatch.setattr(service._importer, "handle_s3_upload_reply", lambda reply: routed.append(("upload", reply)))
 
     def handler_lookup_fails(action):
         pytest.fail(f"S3 reply reached lambda handler lookup with action={action}")
@@ -386,8 +394,8 @@ def test_s3_replies_are_routed_past_lambda_handlers(service, monkeypatch):
         def request(self):
             return self._request
 
-    service._handle_response(FakeRoutedReply(LambdaService.S3_DOWNLOAD_PLAN))
-    service._handle_response(FakeRoutedReply(LambdaService.S3_UPLOAD_PLAN))
+    service._client._handle_response(FakeRoutedReply(LambdaService.S3_DOWNLOAD_PLAN))
+    service._client._handle_response(FakeRoutedReply(LambdaService.S3_UPLOAD_PLAN))
     assert [kind for kind, _reply in routed] == ["download", "upload"]
 
 
@@ -490,29 +498,29 @@ def test_identifier_response_empty_details_shows_generic_message(service, messag
 def test_read_error_body_parses_gzipped_body():
     body = {"title": "Plan not found.", "details": {"error": "no plan"}, "ryhti_response": None}
     reply = FakeReply(gzip.compress(json.dumps(body).encode("utf-8")))
-    assert LambdaService._read_error_body(reply) == body
+    assert LambdaClient._read_error_body(reply) == body
 
 
 def test_read_error_body_parses_plain_body():
     body = {"title": "Missing plan_uuid.", "details": {"error": "plan_uuid is required."}}
-    assert LambdaService._read_error_body(FakeReply(json.dumps(body).encode("utf-8"))) == body
+    assert LambdaClient._read_error_body(FakeReply(json.dumps(body).encode("utf-8"))) == body
 
 
 def test_read_error_body_returns_none_without_body():
-    assert LambdaService._read_error_body(FakeReply(b"")) is None
+    assert LambdaClient._read_error_body(FakeReply(b"")) is None
 
 
 def test_read_error_body_returns_none_for_non_json_body():
-    assert LambdaService._read_error_body(FakeReply(b"<html>Bad Gateway</html>")) is None
+    assert LambdaClient._read_error_body(FakeReply(b"<html>Bad Gateway</html>")) is None
 
 
 def test_format_error_body_variants():
     assert (
-        LambdaService._format_error_body({"title": "Plan not found.", "details": {"error": "no plan"}})
+        LambdaClient._format_error_body({"title": "Plan not found.", "details": {"error": "no plan"}})
         == "Plan not found. no plan"
     )
-    assert LambdaService._format_error_body({"title": "Invalid plan_uuid.", "details": None}) == "Invalid plan_uuid."
-    assert LambdaService._format_error_body({"title": "", "details": "just text"}) == "just text"
+    assert LambdaClient._format_error_body({"title": "Invalid plan_uuid.", "details": None}) == "Invalid plan_uuid."
+    assert LambdaClient._format_error_body({"title": "", "details": "just text"}) == "just text"
 
 
 def test_api_gateway_error_reply_uses_lambda_error_body(service):
@@ -529,7 +537,7 @@ def test_api_gateway_error_reply_uses_lambda_error_body(service):
         error_string="Error transferring - server replied: Method Not Allowed",
         action=LambdaService.ACTION_VALIDATE_PLAN_MATTERS,
     )
-    service._handle_response(reply)
+    service._client._handle_response(reply)
     assert reply.deleted
     assert len(failed) == 1
     assert failed[0][0] == "Plan matter actions not supported. Plan matter support has been removed from Arho."
@@ -546,12 +554,12 @@ def test_direct_invocation_error_passes_string_to_error_handler(service):
             "ryhti_response": None,
         },
     }
-    service.lambda_url = "http://localhost:8000/lambda"  # direct invocation, not API Gateway
     reply = FakeReply(
         data=json.dumps(envelope).encode("utf-8"),
         action=LambdaService.ACTION_VALIDATE_PLAN_MATTERS,
+        url="http://localhost:8000/lambda",  # direct invocation, not API Gateway
     )
-    service._handle_response(reply)
+    service._client._handle_response(reply)
     assert reply.deleted
     assert len(failed) == 1
     assert isinstance(failed[0][0], str)
