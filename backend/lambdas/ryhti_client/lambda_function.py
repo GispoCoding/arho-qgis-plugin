@@ -33,6 +33,7 @@ from ryhti_client.database_client import (
     StartDateRequiredError,
 )
 from ryhti_client.plan_copier import CopyPlanData
+from ryhti_client.profiling import log_duration, profile_python
 from ryhti_client.ryhti_client import RyhtiClient
 
 if TYPE_CHECKING:
@@ -513,7 +514,8 @@ def handler(
         Action.GET_PERMANENT_IDENTIFIER,
     ):
         try:
-            plan = database_client.get_plan(cast("str", plan_uuid))
+            with log_duration("fetch_plan"):
+                plan = database_client.get_plan(cast("str", plan_uuid))
         except PlanNotFoundError as e:
             return format_response(
                 simple_response(404, "Plan not found.", {"error": str(e)}),
@@ -528,21 +530,33 @@ def handler(
             # plan JSON, the same format that import_plan reads.
             response_title = "Returning serialized plan from database."
             LOGGER.info(response_title)
-            plan_dictionary = database_client.serializer.get_plan_dictionary(plan)
-            plan_bytes = gzip.compress(json.dumps(plan_dictionary).encode("utf-8"))
+            with profile_python("get_plan_dictionary"), log_duration("serialize_plan"):
+                plan_dictionary = database_client.serializer.get_plan_dictionary(plan)
+            with log_duration("json_dumps"):
+                plan_json = json.dumps(plan_dictionary).encode("utf-8")
+            with log_duration("gzip_compress"):
+                plan_bytes = gzip.compress(plan_json)
+            LOGGER.info(
+                "arho_export json_bytes=%d gzip_bytes=%d",
+                len(plan_json),
+                len(plan_bytes),
+            )
             key = f"export/{uuid.uuid4()}.json"
-            s3_client.put_object(
-                Bucket=ryhti_files_bucket,
-                Key=key,
-                Body=plan_bytes,
-                ContentType="application/json",
-                ContentEncoding="gzip",
-            )
-            download_url = s3_client.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": ryhti_files_bucket, "Key": key},
-                ExpiresIn=presigned_url_expiry_seconds,
-            )
+            with log_duration("s3_put"):
+                s3_client.put_object(
+                    Bucket=ryhti_files_bucket,
+                    Key=key,
+                    Body=plan_bytes,
+                    ContentType="application/json",
+                    ContentEncoding="gzip",
+                )
+            with log_duration("presign"):
+                download_url = s3_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": ryhti_files_bucket, "Key": key},
+                    ExpiresIn=presigned_url_expiry_seconds,
+                )
+            database_client.log_query_summary()
             lambda_response = Response(
                 statusCode=200,
                 body=ResponseBody(

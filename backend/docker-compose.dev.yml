@@ -77,6 +77,8 @@ services:
       - AWS_ACCESS_KEY_ID=minioadmin
       - AWS_SECRET_ACCESS_KEY=minioadmin
       - AWS_REGION_NAME=us-east-1
+      # Without this the runtime drops our INFO logs, arho_timing lines included.
+      - AWS_LAMBDA_LOG_LEVEL=${AWS_LAMBDA_LOG_LEVEL:-INFO}
     ports:
       - ${RYHTI_CLIENT_PORT:-8083}:8080
     depends_on:

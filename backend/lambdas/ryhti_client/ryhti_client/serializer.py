@@ -6,6 +6,7 @@ Counterpart of deserializer.py, which reads Ryhti JSON into ORM models.
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -19,6 +20,7 @@ from sqlalchemy.exc import MultipleResultsFound
 
 from database import base, models
 from database.enums import AttributeValueDataType
+from ryhti_client.profiling import log_duration
 from ryhti_client.ryhti_schema import (
     Period,
     RyhtiAdditionalInformation,
@@ -35,6 +37,8 @@ if TYPE_CHECKING:
     from sqlalchemy.sql import FromClause
 
     from database.base import DbId
+
+LOGGER = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
@@ -465,7 +469,7 @@ class PlanSerializer:
                 self.get_plan_regulation_group(group)
                 for group in plan_regulation_groups
             ]
-
+        LOGGER.info("arho_export regulation_groups=%d", len(group_dicts))
         return group_dicts
 
     def get_plan_regulation_group_relations(
@@ -513,12 +517,25 @@ class PlanSerializer:
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
         plan_objects: list[models.PlanObjectBase] = []
-        with self.Session(expire_on_commit=False) as session:
+        with (
+            log_duration("load_plan_objects"),
+            self.Session(expire_on_commit=False) as session,
+        ):
             session.add(plan)
             plan_objects += plan.land_use_areas
             plan_objects += plan.other_areas
             plan_objects += plan.lines
             plan_objects += plan.points
+            # The object counts are needed to make sense of the step durations.
+            LOGGER.info(
+                "arho_export plan=%s land_use_areas=%d other_areas=%d "
+                "lines=%d points=%d",
+                plan.id,
+                len(plan.land_use_areas),
+                len(plan.other_areas),
+                len(plan.lines),
+                len(plan.points),
+            )
 
         plan_dictionary["generalRegulationGroups"] = [
             self.get_plan_regulation_group(regulation_group, general=True)
@@ -527,7 +544,8 @@ class PlanSerializer:
 
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.
-        plan_dictionary["planObjects"] = self.get_plan_object_dicts(plan_objects)
+        with log_duration("plan_object_dicts"):
+            plan_dictionary["planObjects"] = self.get_plan_object_dicts(plan_objects)
         plan_dictionary["planRegulationGroups"] = self.get_plan_regulation_groups(
             plan_objects
         )

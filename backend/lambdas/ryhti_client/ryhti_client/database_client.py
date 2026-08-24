@@ -23,6 +23,7 @@ from ryhti_client.lifecycles import (
     is_under_appeal,
 )
 from ryhti_client.plan_copier import CopyPlanData, PlanCopier
+from ryhti_client.profiling import attach_query_profiler
 from ryhti_client.serializer import LOCAL_TZ, PlanSerializer
 
 if TYPE_CHECKING:
@@ -77,8 +78,14 @@ class StartDateRequiredError(Exception):
 class DatabaseClient:
     def __init__(self, connection_string: str) -> None:
         engine = create_engine(connection_string)
+        self.query_profiler = attach_query_profiler(engine)
         self.Session = sessionmaker(bind=engine)
         self.serializer = PlanSerializer(self.Session)
+
+    def log_query_summary(self) -> None:
+        """Log the executed SQL statements when SQL profiling is switched on."""
+        if self.query_profiler:
+            self.query_profiler.log_summary()
 
     def get_plan(self, plan_id: str) -> models.Plan:
         """Fetch a single plan from the database.

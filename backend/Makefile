@@ -39,6 +39,10 @@ dev-ryhti-validate:
 	@echo "Validating plan $(uuid) with Ryhti API..."
 	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "validate_plan", "plan_uuid": "$(uuid)"}'
 
+dev-ryhti-export:
+	@echo "Exporting plan $(uuid) to S3..."
+	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "get_plan", "plan_uuid": "$(uuid)"}'
+
 pytest-fail:
 	pytest --maxfail=1
 
