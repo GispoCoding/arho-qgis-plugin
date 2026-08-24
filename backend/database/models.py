@@ -248,9 +248,9 @@ class Plan(PlanBase, RyhtiLifecycleBase):
         back_populates="plans", lazy="joined"
     )
 
-    # Also join plan documents
+    # Load plan documents eagerly with a separate query
     documents: Mapped[list[Document]] = relationship(
-        back_populates="plan", lazy="joined", cascade="all, delete-orphan"
+        back_populates="plan", lazy="selectin", cascade="all, delete-orphan"
     )
     # Load plan objects ordered
     land_use_areas: Mapped[list[LandUseArea]] = relationship(
@@ -277,7 +277,7 @@ class Plan(PlanBase, RyhtiLifecycleBase):
 
     general_plan_regulation_groups: Mapped[list[PlanRegulationGroup]] = relationship(
         secondary=regulation_group_association,
-        lazy="joined",
+        lazy="selectin",
         overlaps=(
             "general_plan_regulation_groups,land_use_areas,other_areas,"
             "points,lines,plan_regulation_groups"
@@ -286,7 +286,7 @@ class Plan(PlanBase, RyhtiLifecycleBase):
     legal_effects_of_master_plan: Mapped[list[LegalEffectsOfMasterPlan]] = relationship(
         "LegalEffectsOfMasterPlan",
         secondary=legal_effects_association,
-        lazy="joined",
+        lazy="selectin",
         back_populates="plans",
     )
 
@@ -355,7 +355,9 @@ class PlanObjectBase(PlanBase, RyhtiLifecycleBase):
                 "points,lines,plan_regulation_groups"
             ),
             order_by="PlanRegulationGroup.ordering",
-            lazy="joined",
+            # selectin avoids joining the whole regulation group tree onto every
+            # plan object row, which is very slow for plans with many objects.
+            lazy="selectin",
         )
 
 
@@ -436,14 +438,14 @@ class PlanRegulationGroup(VersionedBase):
     # Let's add backreference to allow lazy loading from this side.
     plan_regulations: Mapped[list[PlanRegulation]] = relationship(
         back_populates="plan_regulation_group",
-        lazy="joined",
+        lazy="selectin",
         order_by="PlanRegulation.ordering",  # list regulations in right order
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
     # Let's add backreference to allow lazy loading from this side. Unit tests
-    # will not detect missing joined loads, because currently fixtures are created
+    # will not detect missing eager loads, because currently fixtures are created
     # and added in the same database session that is passed on to the unit tests
     # for running. Therefore, any related objects returned by the session may be
     # lazy loaded, because they are already added to the existing session.
@@ -451,7 +453,7 @@ class PlanRegulationGroup(VersionedBase):
     # Maybe has something to do with the lifecycle of pytest session fixture?
     plan_propositions: Mapped[list[PlanProposition]] = relationship(
         back_populates="plan_regulation_group",
-        lazy="joined",
+        lazy="selectin",
         order_by="PlanProposition.ordering",  # list propositions in right order
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -587,19 +589,19 @@ class PlanRegulation(PlanBase, AttributeValueMixin, RyhtiLifecycleBase):
             "TypeOfVerbalPlanRegulation",
             secondary=type_of_verbal_regulation_association,
             back_populates="plan_regulations",
-            lazy="joined",
+            lazy="selectin",
         )
     )
     plan_themes: Mapped[list[PlanTheme]] = relationship(
         secondary=plan_theme_association,
         overlaps="plan_propositions,plan_themes",
         back_populates="plan_regulations",
-        lazy="joined",
+        lazy="selectin",
     )
 
     additional_information: Mapped[list[AdditionalInformation]] = relationship(
         back_populates="plan_regulation",
-        lazy="joined",
+        lazy="selectin",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
@@ -639,7 +641,7 @@ class PlanProposition(PlanBase, RyhtiLifecycleBase):
         secondary=plan_theme_association,
         overlaps="plan_regulations,plan_themes",
         back_populates="plan_propositions",
-        lazy="joined",
+        lazy="selectin",
     )
     text_value: Mapped[language_str | None]
     ordering: Mapped[int | None]

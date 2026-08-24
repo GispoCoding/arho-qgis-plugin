@@ -367,14 +367,18 @@ def test_get_containing_land_use_area_ids(
     The point is inside the land use area, but its regulation type does not
     need one.
     """
+    groups_by_object = {
+        other_area_instance.id: other_area_instance.plan_regulation_groups,
+        point_instance.id: point_instance.plan_regulation_groups,
+    }
     mapping = plan_serializer._get_containing_land_use_area_ids(  # noqa: SLF001
-        [other_area_instance, point_instance]
+        [other_area_instance, point_instance], groups_by_object
     )
     assert mapping == {other_area_instance.id: land_use_area_instance.id}
 
     assert (
         plan_serializer._get_containing_land_use_area_ids(  # noqa: SLF001
-            [point_instance]
+            [point_instance], groups_by_object
         )
         == {}
     )

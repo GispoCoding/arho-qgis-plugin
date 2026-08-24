@@ -535,7 +535,9 @@ def handler(
             with log_duration("json_dumps"):
                 plan_json = json.dumps(plan_dictionary).encode("utf-8")
             with log_duration("gzip_compress"):
-                plan_bytes = gzip.compress(plan_json)
+                # Level 6 makes a file the same size as the maximum level 9, in a
+                # third of the time.
+                plan_bytes = gzip.compress(plan_json, compresslevel=6)
             LOGGER.info(
                 "arho_export json_bytes=%d gzip_bytes=%d",
                 len(plan_json),

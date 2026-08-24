@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import simplejson as json
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, update
 from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
@@ -118,36 +118,46 @@ class DatabaseClient:
 
         If Ryhti request fails unexpectedly, save the returned error.
         """
-        with self.Session(expire_on_commit=False) as session:
-            # Refetch plan from db in case it has been deleted
-            plan = session.get(models.Plan, plan_id)
-            if not plan:
+        LOGGER.info(f"Saving response for plan {plan_id}...")
+        LOGGER.info(response)
+        # In case Ryhti API does not respond in the expected manner,
+        # save the response for debugging.
+        if "status" not in response or "errors" not in response:
+            detail = f"RYHTI API returned unexpected response: {response}"
+            values: dict[str, Any] = {
+                "validation_errors": f"RYHTI API ERROR: {response}"
+            }
+        elif response["status"] == 200:
+            detail = f"Plan validation successful for {plan_id}!"
+            values = {
+                "validation_errors": (
+                    "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
+                ),
+                "validated_at": datetime.datetime.now(tz=LOCAL_TZ),
+            }
+        else:
+            detail = f"Plan validation FAILED for {plan_id}."
+            values = {
+                "validation_errors": response["errors"],
+                "validated_at": datetime.datetime.now(tz=LOCAL_TZ),
+            }
+
+        with self.Session() as session:
+            # Update the plan with a single statement. There is no need to fetch
+            # the whole plan with its relationships just to save the result.
+            result = session.execute(
+                update(models.Plan).where(models.Plan.id == plan_id).values(**values)
+            )
+            if result.rowcount == 0:
                 # Plan has been deleted in the middle of validation. Nothing
                 # to see here, move on
                 detail = f"Plan {plan_id} no longer found in database!"
                 LOGGER.info(detail)
                 return detail
-            LOGGER.info(f"Saving response for plan {plan_id}...")
-            LOGGER.info(response)
-            # In case Ryhti API does not respond in the expected manner,
-            # save the response for debugging.
-            if "status" not in response or "errors" not in response:
-                detail = f"RYHTI API returned unexpected response: {response}"
-                plan.validation_errors = f"RYHTI API ERROR: {response}"
-            elif response["status"] == 200:
-                detail = f"Plan validation successful for {plan_id}!"
-                plan.validation_errors = (
-                    "Kaava on validi. Kaava-asiaa ei ole vielä validoitu."
-                )
-                plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
-            else:
-                detail = f"Plan validation FAILED for {plan_id}."
-                plan.validation_errors = response["errors"]
-                plan.validated_at = datetime.datetime.now(tz=LOCAL_TZ)
-
-            LOGGER.info(detail)
-            LOGGER.info("Ryhti response: %s", json.dumps(response))
             session.commit()
+
+        LOGGER.info(detail)
+        LOGGER.info("Ryhti response: %s", json.dumps(response))
         return detail
 
     def set_plan_documents(

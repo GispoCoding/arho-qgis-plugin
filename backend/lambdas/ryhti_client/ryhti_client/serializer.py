@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 from uuid import uuid4
 from zoneinfo import ZoneInfo
@@ -14,9 +15,9 @@ from zoneinfo import ZoneInfo
 import simplejson as json
 from geoalchemy2.shape import to_shape
 from shapely import to_geojson
-from shapely.geometry.base import BaseMultipartGeometry
-from sqlalchemy import and_, select, text
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.orm import defer, raiseload
 
 from database import base, models
 from database.enums import AttributeValueDataType
@@ -42,61 +43,113 @@ LOGGER = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Helsinki")
 
+# Plan objects live in four tables. They are serialized in this order.
+PLAN_OBJECT_MODELS: tuple[type[models.PlanObjectBase], ...] = (
+    models.LandUseArea,
+    models.OtherArea,
+    models.Line,
+    models.Point,
+)
+# ST_AsGeoJSON prints coordinates with this many decimals. 15 gives the same digits
+# as shapely to_geojson, so the exported geometry does not change.
+GEOJSON_MAX_DECIMALS = 15
+# ST_AsGeoJSON option 0 leaves out the crs member, just like shapely does.
+GEOJSON_WITHOUT_CRS = 0
+
 
 class Geometrical(Protocol):
     geom: WKBElement
     __table__: ClassVar[FromClause]
 
 
+@dataclass(frozen=True)
+class LoadedPlanObjects:
+    """Everything the serializer needs about the plan objects of one plan.
+
+    The geometries and the regulation groups are fetched for the whole plan at once,
+    because a plan may have tens of thousands of objects but only a handful of groups.
+    """
+
+    plan_objects: list[models.PlanObjectBase]
+    # Geojson rendered by PostGIS, by plan object id.
+    geojson_by_id: dict[DbId, str]
+    # Regulation groups of each plan object, ordered, by plan object id. Plan objects
+    # with no regulation group are absent.
+    groups_by_object: dict[DbId, list[models.PlanRegulationGroup]]
+
+
 class PlanSerializer:
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self.Session = session_factory
-        self._table_srids: dict[tuple[str, str], int] = {}
+        # SRIDs of every geometry column, by schema and table name. Filled on demand.
+        self._srids_by_schema: dict[str, dict[str, int]] = {}
+
+    def _load_srids_of_schema(self, schema: str) -> dict[str, int]:
+        """Reads the SRID of every geometry column in the schema, in one query."""
+        with self.Session() as session:
+            rows = session.execute(
+                text(
+                    "SELECT f_table_name, srid FROM public.geometry_columns "
+                    "WHERE f_table_schema = :schema"
+                ),
+                {"schema": schema},
+            )
+            return {table_name: int(srid) for table_name, srid in rows}
 
     def _get_srid_of_table(self, table: Table) -> int:
-        table_schema = table.schema
-        table_name = table.name
-        if not table_schema:
-            raise ValueError(f"Table {table_name} does not have a schema defined.")
+        """Returns the SRID of the geometry column of the table.
 
-        srid = self._table_srids.get((table_schema, table_name))
-        if srid is not None:
-            return srid
-
-        with self.Session() as session:
-            srid = session.execute(
-                text(
-                    "SELECT srid FROM public.geometry_columns "
-                    "WHERE f_table_schema = :schema AND f_table_name = :table"
-                ),
-                {"schema": table_schema, "table": table_name},
-            ).scalar_one()
-            self._table_srids[(table_schema, table_name)] = srid
+        The SRID has to come from the database, not from the model, because a
+        customer database may have been changed to another SRID after the migrations.
+        The values are cached, so a plan with thousands of objects still needs only
+        one query.
+        """
+        if not table.schema:
+            raise ValueError(f"Table {table.name} does not have a schema defined.")
+        if table.schema not in self._srids_by_schema:
+            self._srids_by_schema[table.schema] = self._load_srids_of_schema(
+                table.schema
+            )
+        srid = self._srids_by_schema[table.schema].get(table.name)
+        if srid is None:
+            raise ValueError(
+                f"Table {table.schema}.{table.name} has no geometry column "
+                f"in the database."
+            )
         return srid
 
-    def get_geometry_as_json(self, obj: Geometrical) -> dict[str, Any]:
-        """Returns Ryhti formatted geom dict with the correct SRID and
-        geometry as geojson
-        """
-        # We cannot use postgis geojson functions here, because the data has already
-        # been fetched from the database. So let's create geojson the python way, it's
-        # probably faster than doing extra database queries for the conversion.
-        # However, it seems that to_shape forgets to add the SRID information from the
-        # EWKB (https://github.com/geoalchemy/geoalchemy2/issues/235), so we have to
-        # paste the SRID back manually :/
+    def _format_geometry(self, geojson: str, table: Table) -> dict[str, Any]:
+        """Returns Ryhti formatted geom dict with the correct SRID and the geojson
+        as a dict.
 
-        shape = to_shape(obj.geom)
-        if not isinstance(shape, BaseMultipartGeometry):
-            raise TypeError(f"Geometry is not multigeometry: {shape.geom_type}")
-        srid = self._get_srid_of_table(cast("Table", obj.__table__))
-        if len(shape.geoms) == 1:
+        It seems that geojson carries no SRID information, so we have to paste the
+        SRID back manually :/
+        """
+        # PostGIS prints a whole coordinate without a decimal point, shapely prints it
+        # as a float. parse_int keeps every coordinate a float, whatever the source.
+        geometry = json.loads(geojson, parse_int=float)
+        if not geometry["type"].startswith("Multi"):
+            raise TypeError(f"Geometry is not multigeometry: {geometry['type']}")
+        if len(geometry["coordinates"]) == 1:
             # Ryhti API may not allow single geometries in multigeometries in all cases.
             # Let's make them into single geometries instead:
-            shape = shape.geoms[0]
-        # Also, we don't want to serialize the geojson quite yet. Looks like the only
-        # way to do get python dict to actually convert the json back to dict until we
-        # are ready to reserialize it :/
-        return {"srid": str(srid), "geometry": json.loads(to_geojson(shape))}
+            geometry = {
+                "type": geometry["type"].removeprefix("Multi"),
+                "coordinates": geometry["coordinates"][0],
+            }
+        # We don't want to serialize the geojson quite yet, so it stays a dict until
+        # we are ready to reserialize it :/
+        return {"srid": str(self._get_srid_of_table(table)), "geometry": geometry}
+
+    def get_geometry_as_json(self, obj: Geometrical) -> dict[str, Any]:
+        """Returns Ryhti formatted geom dict for a single object.
+
+        Plan objects get their geojson from PostGIS instead, see _load_plan_objects.
+        Converting one geometry in python is cheaper than an extra database query.
+        """
+        return self._format_geometry(
+            to_geojson(to_shape(obj.geom)), cast("Table", obj.__table__)
+        )
 
     def get_date(self, datetime_value: datetime.datetime) -> str:
         """Returns isoformatted date for the given datetime in local timezone."""
@@ -296,6 +349,7 @@ class PlanSerializer:
     def get_plan_object(
         self,
         plan_object: models.PlanObjectBase,
+        geojson: str,
         containing_land_use_area_ids: Mapping[DbId, DbId],
     ) -> dict:
         """Construct a dict of Ryhti compatible plan object."""
@@ -303,7 +357,9 @@ class PlanSerializer:
         plan_object_dict["planObjectKey"] = plan_object.id
         plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
         plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
-        plan_object_dict["geometry"] = self.get_geometry_as_json(plan_object)
+        plan_object_dict["geometry"] = self._format_geometry(
+            geojson, cast("Table", plan_object.__table__)
+        )
         plan_object_dict["name"] = self.format_language_string_value(plan_object.name)
         plan_object_dict["description"] = self.format_language_string_value(
             plan_object.description
@@ -349,7 +405,9 @@ class PlanSerializer:
         return serialized_str or None
 
     def _needs_containing_land_use_area(
-        self, plan_object: models.PlanObjectBase
+        self,
+        plan_object: models.PlanObjectBase,
+        groups: list[models.PlanRegulationGroup],
     ) -> bool:
         """Returns True if the plan object needs a containing land use area as related plan
         object based on the validation rule
@@ -366,12 +424,14 @@ class PlanSerializer:
                 "rakennusalaJolleSaaSijoittaaSaunan",
                 "korttelialueTaiKorttelialueenOsa",
             }
-            for group in plan_object.plan_regulation_groups
-            for regulation in cast("models.PlanRegulationGroup", group).plan_regulations
+            for group in groups
+            for regulation in group.plan_regulations
         )
 
     def _get_containing_land_use_area_ids(
-        self, plan_objects: list[models.PlanObjectBase]
+        self,
+        plan_objects: list[models.PlanObjectBase],
+        groups_by_object: Mapping[DbId, list[models.PlanRegulationGroup]],
     ) -> dict[DbId, DbId]:
         """Returns {plan object id: id of the land use area that contains it} for
         plan objects that need a containing land use area.
@@ -383,7 +443,8 @@ class PlanSerializer:
         """
         ids_by_model: dict[type[models.PlanObjectBase], list[DbId]] = {}
         for plan_object in plan_objects:
-            if self._needs_containing_land_use_area(plan_object):
+            groups = groups_by_object.get(plan_object.id, [])
+            if self._needs_containing_land_use_area(plan_object, groups):
                 ids_by_model.setdefault(type(plan_object), []).append(plan_object.id)
 
         if not ids_by_model:
@@ -433,47 +494,123 @@ class PlanSerializer:
 
         return related_plan_object_keys
 
-    def get_plan_object_dicts(self, plan_objects: list[models.PlanObjectBase]) -> list:
+    def get_plan_object_dicts(self, loaded: LoadedPlanObjects) -> list:
         """Construct a list of Ryhti compatible plan object dicts from plan objects
         in the local database.
         """
         containing_land_use_area_ids = self._get_containing_land_use_area_ids(
-            plan_objects
+            loaded.plan_objects, loaded.groups_by_object
         )
         return [
-            self.get_plan_object(plan_object, containing_land_use_area_ids)
-            for plan_object in plan_objects
+            self.get_plan_object(
+                plan_object,
+                loaded.geojson_by_id[plan_object.id],
+                containing_land_use_area_ids,
+            )
+            for plan_object in loaded.plan_objects
         ]
 
-    def get_plan_regulation_groups(
-        self, plan_objects: list[models.PlanObjectBase]
-    ) -> list[dict]:
+    def get_plan_regulation_groups(self, loaded: LoadedPlanObjects) -> list[dict]:
         """Construct a list of Ryhti compatible plan regulation groups from plan objects
         in the local database.
         """
-        group_ids = {
-            regulation_group.id
-            for plan_object in plan_objects
-            for regulation_group in plan_object.plan_regulation_groups
-        }
-        # Let's fetch all the plan regulation groups for all the objects with a single
-        # query. Hoping lazy loading does its trick with all the plan regulations.
-        with self.Session(expire_on_commit=False) as session:
-            plan_regulation_groups = (
-                session.query(models.PlanRegulationGroup)
-                .filter(models.PlanRegulationGroup.id.in_(group_ids))
-                .order_by(models.PlanRegulationGroup.ordering)
-                .all()
+        # The groups are already loaded for the whole plan, so there is no need to
+        # query them again. List each group only once.
+        groups_by_id: dict[DbId, models.PlanRegulationGroup] = {}
+        for plan_object in loaded.plan_objects:
+            for regulation_group in loaded.groups_by_object.get(plan_object.id, []):
+                groups_by_id.setdefault(regulation_group.id, regulation_group)
+        # Sort by ordering, nulls last, like ORDER BY in the database.
+        ordered_groups = sorted(
+            groups_by_id.values(),
+            key=lambda group: (group.ordering is None, group.ordering or 0),
+        )
+        LOGGER.info("arho_export regulation_groups=%d", len(ordered_groups))
+        return [self.get_plan_regulation_group(group) for group in ordered_groups]
+
+    def _load_plan_objects(
+        self, session: Session, plan: models.Plan
+    ) -> LoadedPlanObjects:
+        """Load the plan objects of a plan with everything the serializer needs.
+
+        PostGIS renders the geometry as geojson, which is much cheaper than reading the
+        WKB into shapely, and the WKB is not transferred at all. The regulation groups
+        are fetched once for the whole plan, because loading them through every single
+        plan object is slow for plans with tens of thousands of objects.
+        """
+        association = models.regulation_group_association
+        plan_objects: list[models.PlanObjectBase] = []
+        geojson_by_id: dict[DbId, str] = {}
+        group_ids_by_object: dict[DbId, list[DbId]] = {}
+        counts: dict[str, int] = {}
+
+        for model in PLAN_OBJECT_MODELS:
+            object_rows = session.execute(
+                select(
+                    model,
+                    func.ST_AsGeoJSON(
+                        model.geom, GEOJSON_MAX_DECIMALS, GEOJSON_WITHOUT_CRS
+                    ),
+                )
+                # The geometry is only needed as geojson, and the groups are loaded
+                # below. raiseload is loud if some other code still walks them.
+                .options(defer(model.geom), raiseload(model.plan_regulation_groups))
+                .where(model.plan_id == plan.id)
+                .order_by(model.ordering)
             )
-            group_dicts = [
-                self.get_plan_regulation_group(group)
-                for group in plan_regulation_groups
-            ]
-        LOGGER.info("arho_export regulation_groups=%d", len(group_dicts))
-        return group_dicts
+            objects_of_model: list[models.PlanObjectBase] = []
+            for plan_object, geojson in object_rows:
+                objects_of_model.append(plan_object)
+                geojson_by_id[plan_object.id] = geojson
+            plan_objects += objects_of_model
+            counts[model.__tablename__] = len(objects_of_model)
+
+            # The association table has one foreign key column per plan object table.
+            plan_object_id = association.c[f"{model.__tablename__}_id"]
+            group_rows = session.execute(
+                select(plan_object_id, association.c.plan_regulation_group_id)
+                .select_from(association)
+                .join(model, model.id == plan_object_id)
+                .join(
+                    models.PlanRegulationGroup,
+                    models.PlanRegulationGroup.id
+                    == association.c.plan_regulation_group_id,
+                )
+                .where(model.plan_id == plan.id)
+                .order_by(models.PlanRegulationGroup.ordering)
+            )
+            for object_id, group_id in group_rows:
+                group_ids_by_object.setdefault(object_id, []).append(group_id)
+
+        # The object counts are needed to make sense of the step durations.
+        LOGGER.info(
+            "arho_export plan=%s %s",
+            plan.id,
+            " ".join(f"{table}s={count}" for table, count in counts.items()),
+        )
+
+        group_ids = {
+            group_id for ids in group_ids_by_object.values() for group_id in ids
+        }
+        groups_by_id = {
+            group.id: group
+            for group in session.scalars(
+                select(models.PlanRegulationGroup).where(
+                    models.PlanRegulationGroup.id.in_(group_ids)
+                )
+            )
+        }
+        return LoadedPlanObjects(
+            plan_objects=plan_objects,
+            geojson_by_id=geojson_by_id,
+            groups_by_object={
+                object_id: [groups_by_id[group_id] for group_id in ids]
+                for object_id, ids in group_ids_by_object.items()
+            },
+        )
 
     def get_plan_regulation_group_relations(
-        self, plan_objects: list[models.PlanObjectBase]
+        self, loaded: LoadedPlanObjects
     ) -> list[dict[str, DbId]]:
         """Construct a list of Ryhti compatible plan regulation group relations from plan
         objects in the local database.
@@ -483,8 +620,8 @@ class PlanSerializer:
                 "planObjectKey": plan_object.id,
                 "planRegulationGroupKey": regulation_group.id,
             }
-            for plan_object in plan_objects
-            for regulation_group in plan_object.plan_regulation_groups
+            for plan_object in loaded.plan_objects
+            for regulation_group in loaded.groups_by_object.get(plan_object.id, [])
         ]
 
     def get_plan_dictionary(self, plan: models.Plan) -> RyhtiPlan:
@@ -516,26 +653,12 @@ class PlanSerializer:
 
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
-        plan_objects: list[models.PlanObjectBase] = []
         with (
             log_duration("load_plan_objects"),
             self.Session(expire_on_commit=False) as session,
         ):
             session.add(plan)
-            plan_objects += plan.land_use_areas
-            plan_objects += plan.other_areas
-            plan_objects += plan.lines
-            plan_objects += plan.points
-            # The object counts are needed to make sense of the step durations.
-            LOGGER.info(
-                "arho_export plan=%s land_use_areas=%d other_areas=%d "
-                "lines=%d points=%d",
-                plan.id,
-                len(plan.land_use_areas),
-                len(plan.other_areas),
-                len(plan.lines),
-                len(plan.points),
-            )
+            loaded = self._load_plan_objects(session, plan)
 
         plan_dictionary["generalRegulationGroups"] = [
             self.get_plan_regulation_group(regulation_group, general=True)
@@ -545,12 +668,12 @@ class PlanSerializer:
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.
         with log_duration("plan_object_dicts"):
-            plan_dictionary["planObjects"] = self.get_plan_object_dicts(plan_objects)
+            plan_dictionary["planObjects"] = self.get_plan_object_dicts(loaded)
         plan_dictionary["planRegulationGroups"] = self.get_plan_regulation_groups(
-            plan_objects
+            loaded
         )
         plan_dictionary["planRegulationGroupRelations"] = (
-            self.get_plan_regulation_group_relations(plan_objects)
+            self.get_plan_regulation_group_relations(loaded)
         )
 
         if plan.approval_date:

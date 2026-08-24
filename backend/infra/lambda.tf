@@ -92,8 +92,10 @@ resource "aws_lambda_function" "ryhti_client" {
   function_name = "${var.prefix}-ryhti_client"
   image_uri     = "${aws_ecr_repository.ryhti_client.repository_url}:latest"
   package_type  = "Image"
-  memory_size   = 1024
-  timeout       = 120
+  # 1769 MB is the point where lambda gives a full vCPU. Serializing a large plan is
+  # single threaded CPU work, so more memory than this would not help.
+  memory_size = 1769
+  timeout     = 120
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
