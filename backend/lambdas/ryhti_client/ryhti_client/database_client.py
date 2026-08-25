@@ -146,9 +146,12 @@ class DatabaseClient:
             # Update the plan with a single statement. There is no need to fetch
             # the whole plan with its relationships just to save the result.
             result = session.execute(
-                update(models.Plan).where(models.Plan.id == plan_id).values(**values)
+                update(models.Plan)
+                .where(models.Plan.id == plan_id)
+                .values(**values)
+                .returning(models.Plan.id)
             )
-            if result.rowcount == 0:
+            if result.first() is None:
                 # Plan has been deleted in the middle of validation. Nothing
                 # to see here, move on
                 detail = f"Plan {plan_id} no longer found in database!"
