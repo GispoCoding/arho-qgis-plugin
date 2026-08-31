@@ -84,6 +84,17 @@ encrypt-workspace-secrets:
 	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE) > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc
 	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json > $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
 
+# A lambda function cannot be created before its container image exists in ECR, and
+# terraform does not build or push images. So the first deployment creates the four
+# repositories on their own, pushes the images with push-lambdas, and only then runs
+# tf-apply for the rest of the infrastructure.
+tf-bootstrap-ecr:
+	terraform apply -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json \
+		-target=aws_ecr_repository.db_manager \
+		-target=aws_ecr_repository.koodistot_loader \
+		-target=aws_ecr_repository.ryhti_client \
+		-target=aws_ecr_repository.mml_loader
+
 tf-plan:
 	terraform plan -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
 
