@@ -26,6 +26,11 @@ endif
 # they relied on the region being exported. Export it from here instead.
 export AWS_REGION
 
+# The aws cli v2 sends output to a pager when it writes to a terminal, which stops a
+# make recipe until the pager is closed. An empty AWS_PAGER disables the pager. CI
+# never saw this, because the cli uses no pager when the output is not a terminal.
+export AWS_PAGER :=
+
 build:
 	make build-lambda -C ..
 
