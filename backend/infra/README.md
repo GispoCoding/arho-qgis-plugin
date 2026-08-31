@@ -79,14 +79,18 @@ To add a new ssh key:
 1. Fetch the latest ssh key files by running `git pull` in the arho-deploy repository
 2. Decrypt the public key file using `make decrypt-workspace-secrets`
 3. Add the public key to the `public_keys/<workspace name>` file in arho-deploy, or create a new file if it does not exist.
-4. Run the Ansible playbook to add the public key to the bastion host (the ssh key to use to connect can be given with a `ssh_private_key` argument):
+4. If you have not connected to this bastion host before, add its host key to your known hosts. Ansible refuses to connect to an unknown host, so `make update-ssh-keys` fails without this. The key is read from AWS SSM Parameter Store, where the deployment stored it, so you do not have to accept a fingerprint blindly. Run it once per bastion host. It also removes the fingerprint prompt from your own ssh tunnel sessions to the same host:
+```bash
+make bastion-known-host >> ~/.ssh/known_hosts
+```
+5. Run the Ansible playbook to add the public key to the bastion host (the ssh key to use to connect can be given with a `ssh_private_key` argument):
 ```bash
 make update-ssh-keys
 # or with an explicit private key:
 make update-ssh-keys ssh_private_key=~/.ssh/my_private_key
 ```
-5. Encrypt the public key file again using `make encrypt-workspace-secrets`
-6. Commit the changes to the arho-deploy repository.
+6. Encrypt the public key file again using `make encrypt-workspace-secrets`
+7. Commit the changes to the arho-deploy repository.
 
 ## Configuring new instances
 
@@ -145,7 +149,12 @@ make push-lambdas
 # 5. Create the rest of the infrastructure
 make tf-apply
 
-# 6. The infra is now deployed, but the database is still empty. Initialize it with:
+# 6. Add the bastion host key to your known hosts. It is read from SSM, where you
+#    stored it in step 2, so no fingerprint has to be accepted blindly. Without
+#    this, `make update-ssh-keys` and your own ssh tunnels cannot connect.
+make bastion-known-host >> ~/.ssh/known_hosts
+
+# 7. The infra is now deployed, but the database is still empty. Initialize it with:
 make create-db
 make migrate-db
 make load-koodistot

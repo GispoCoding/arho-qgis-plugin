@@ -136,3 +136,14 @@ update-ssh-keys:
 		ssh_key_file=$(abspath $(ARHO_DEPLOY_DIR))/public_keys/$(WORKSPACE) \
 	" \
 	$(if $(ssh_private_key),--private-key $(ssh_private_key))
+
+# The bastion reads its host key from SSM, so the fingerprint can be verified
+# against SSM instead of being accepted blindly on the first connection.
+# Append the printed line to your known hosts:
+#   make bastion-known-host >> ~/.ssh/known_hosts
+bastion-known-host: check-deployment-vars
+	@key=$$(mktemp) && trap 'rm -f "$$key"' EXIT && \
+	aws ssm get-parameter \
+		--name "/infra/$(prefix)-bastion/host_key_ed25519" \
+		--with-decryption --query Parameter.Value --output text > "$$key" && \
+	echo "$$(terraform output -raw bastion_address) $$(ssh-keygen -y -f "$$key" | cut -d' ' -f1,2)"
