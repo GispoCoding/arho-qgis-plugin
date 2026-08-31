@@ -1,3 +1,30 @@
+# Path to the private GispoCoding/arho-deploy checkout that holds the instance
+# specific configuration (var-files/, public_keys/, .sops.yaml).
+# Defaults to a sibling checkout of this repository.
+ARHO_DEPLOY_DIR ?= ../../arho-deploy
+WORKSPACE = $(shell terraform workspace show)
+TFVARS := $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
+TFVARS_ENC := $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
+
+# The deployment values come from the decrypted variable file of the current
+# terraform workspace and from the AWS credentials in use, so that a make target
+# cannot use a different prefix, region or account than the one terraform deploys
+# to. Set any of them in the environment or on the command line to work without a
+# variable file. Simple assignment, so each value is looked up once per make run
+# instead of once per reference.
+ifndef prefix
+prefix := $(shell jq -re '.prefix // empty' $(TFVARS) 2>/dev/null)
+endif
+ifndef AWS_REGION
+AWS_REGION := $(shell jq -re '.AWS_REGION_NAME // empty' $(TFVARS) 2>/dev/null)
+endif
+ifndef AWS_ACCOUNT_ID
+AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query Account --output text 2>/dev/null)
+endif
+
+# create-db, migrate-db and the log targets give the aws cli no --region option, so
+# they relied on the region being exported. Export it from here instead.
+export AWS_REGION
 
 build:
 	make build-lambda -C ..
@@ -68,38 +95,32 @@ load-mml:
 	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-mml_loader --payload '{}' ../logs/response_load_mml.json
 
 
-# Path to the private GispoCoding/arho-deploy checkout that holds the instance
-# specific configuration (var-files/, public_keys/, .sops.yaml).
-# Defaults to a sibling checkout of this repository.
-ARHO_DEPLOY_DIR ?= ../../arho-deploy
-WORKSPACE = $(shell terraform workspace show)
-
 decrypt-workspace-secrets:
 	sops -d $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE)
-	sops -d $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json > $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
+	sops -d $(TFVARS_ENC) > $(TFVARS)
 
 # sops discovers .sops.yaml from the working directory, so the config of the
 # arho-deploy repository must be passed explicitly when encrypting from here.
 encrypt-workspace-secrets:
 	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE) > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc
-	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json > $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
+	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(TFVARS) > $(TFVARS_ENC)
 
 # A lambda function cannot be created before its container image exists in ECR, and
 # terraform does not build or push images. So the first deployment creates the four
 # repositories on their own, pushes the images with push-lambdas, and only then runs
 # tf-apply for the rest of the infrastructure.
 tf-bootstrap-ecr:
-	terraform apply -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json \
+	terraform apply -var-file=$(TFVARS) \
 		-target=aws_ecr_repository.db_manager \
 		-target=aws_ecr_repository.koodistot_loader \
 		-target=aws_ecr_repository.ryhti_client \
 		-target=aws_ecr_repository.mml_loader
 
 tf-plan:
-	terraform plan -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
+	terraform plan -var-file=$(TFVARS)
 
 tf-apply:
-	terraform apply -var-file=$(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
+	terraform apply -var-file=$(TFVARS)
 
 update-ssh-keys:
 	ansible-playbook ansible/playbook.yml \
