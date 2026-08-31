@@ -74,6 +74,26 @@ def create_dba_user_if_not_exists(conn: psycopg.Connection) -> None:
     LOGGER.info("Created DBA user.")
 
 
+def grant_dba_role_to_su_user(conn: psycopg.Connection) -> None:
+    """Allow the SU user to SET ROLE to the DBA user.
+
+    Since PostgreSQL 16, a CREATEROLE user that creates a role gets the role
+    back with SET FALSE, and CREATE DATABASE ... OWNER requires being able to
+    SET ROLE to the owner. The SU user holds ADMIN OPTION on the DBA user it
+    created, so it may grant itself the SET option.
+
+    This runs on every setup, both to cover databases where the DBA user was
+    created without the SET option and because re-granting is a no-op.
+    """
+    conn.execute(
+        SQL("GRANT {dba_user} TO CURRENT_USER WITH SET TRUE").format(
+            dba_user=Identifier(dba_user_credentials["username"])
+        )
+    )
+    conn.commit()
+    LOGGER.info("Granted the DBA role to the SU user.")
+
+
 def create_db_if_not_exists(conn: psycopg.Connection, db_name: str) -> None:
     """Creates empty db."""
     if database_exists(conn, db_name):
@@ -155,6 +175,7 @@ def setup_db() -> None:
         **get_connection_parameters(su_user_credentials, maintenance_db_name)
     ) as su_connection_to_maintenance_db:
         create_dba_user_if_not_exists(su_connection_to_maintenance_db)
+        grant_dba_role_to_su_user(su_connection_to_maintenance_db)
         create_db_if_not_exists(su_connection_to_maintenance_db, main_db_name)
 
     # Connect to main db to install PostGIS and configure permissions
