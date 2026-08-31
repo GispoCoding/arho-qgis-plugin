@@ -63,7 +63,7 @@ update-koodistot-loader: push-koodistot-loader
 	aws lambda update-function-code --function-name $(prefix)-koodistot_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 
 ## With ryhti client, we need to publish new version and update alias for provisioned concurrency.
-## Also, we have to wait until update is complete to publish the new version.
+## Also, we have to wait until the code update is complete before we publish the new version.
 push-ryhti-client: check-deployment-vars
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
 	docker tag arho-ryhti_client:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
@@ -71,7 +71,7 @@ push-ryhti-client: check-deployment-vars
 
 update-ryhti-client: push-ryhti-client
 	aws lambda update-function-code --function-name $(prefix)-ryhti_client --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
-	while aws lambda get-function --function-name $(prefix)-ryhti_client --query "Configuration.LastUpdateStatus" | grep "InProgress" ; do sleep 1; echo "Waiting for AWS to complete function update..."; done
+	aws lambda wait function-updated-v2 --function-name $(prefix)-ryhti_client
 # The alias keeps the routing config it already has when a call sends none, so a leftover
 # weighted split between two versions blocks every later alias move. The empty routing config
 # clears it. A shell variable carries the version, because an "xargs -I {}" replace string
