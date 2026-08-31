@@ -6,9 +6,12 @@ from typing import TYPE_CHECKING
 import alembic
 import psycopg
 import pytest
+from psycopg.sql import SQL, Identifier, Literal
 
+from database.db_helper import UserCredentials
 from database.models import Base
 from database.views import views
+from lambdas.db_manager import db_manager
 
 if TYPE_CHECKING:
     from alembic.config import Config
@@ -233,3 +236,98 @@ def test_all_geometry_columns_have_a_spatial_index(
         assert indexes, (
             f"No spatial index found for geometry column {table_schema}.{table_name}.{column_name}"
         )
+
+
+# A role shaped like the AWS RDS master user, which is NOSUPERUSER. The local SU
+# user is a real superuser, so it would not hit the PostgreSQL 16 rules at all.
+FAKE_RDS_MASTER = "test_rds_master"
+FAKE_RDS_DBA = "test_rds_dba"
+FAKE_RDS_DB = "test_rds_db"
+FAKE_RDS_PASSWORD = "test_rds"  # noqa: S105
+
+
+def drop_fake_rds_objects(conn: Connection) -> None:
+    conn.execute(
+        SQL("DROP DATABASE IF EXISTS {db_name}").format(db_name=Identifier(FAKE_RDS_DB))
+    )
+    for role in (FAKE_RDS_DBA, FAKE_RDS_MASTER):
+        if (
+            conn.execute(
+                "SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)
+            ).fetchone()
+            is None
+        ):
+            continue
+        # Privileges granted to a role must go before the role itself.
+        conn.execute(SQL("DROP OWNED BY {role}").format(role=Identifier(role)))
+        conn.execute(SQL("DROP ROLE {role}").format(role=Identifier(role)))
+
+
+@pytest.fixture
+def fake_rds_master_params(
+    root_db_params: ConnectionParameters, monkeypatch: pytest.MonkeyPatch
+) -> Generator[ConnectionParameters]:
+    """Connection parameters for a non-superuser role that mimics the RDS master.
+
+    Also points db_manager at a throwaway DBA user, so the fixture never touches
+    the real arho_dba role or the main database.
+    """
+    with psycopg.connect(**root_db_params, autocommit=True) as su_conn:
+        drop_fake_rds_objects(su_conn)
+        su_conn.execute(
+            SQL(
+                "CREATE ROLE {master} WITH LOGIN CREATEDB CREATEROLE NOSUPERUSER "
+                "ENCRYPTED PASSWORD {password}"
+            ).format(
+                master=Identifier(FAKE_RDS_MASTER), password=Literal(FAKE_RDS_PASSWORD)
+            )
+        )
+        # On RDS the master user owns the maintenance database. Here it does not,
+        # and configure_db_permissions has revoked CONNECT from PUBLIC.
+        su_conn.execute(
+            SQL("GRANT CONNECT ON DATABASE {db_name} TO {master}").format(
+                db_name=Identifier(root_db_params["dbname"]),
+                master=Identifier(FAKE_RDS_MASTER),
+            )
+        )
+
+    monkeypatch.setattr(
+        db_manager,
+        "dba_user_credentials",
+        UserCredentials(username=FAKE_RDS_DBA, password=FAKE_RDS_PASSWORD),
+    )
+
+    yield {**root_db_params, "user": FAKE_RDS_MASTER, "password": FAKE_RDS_PASSWORD}
+
+    with psycopg.connect(**root_db_params, autocommit=True) as su_conn:
+        drop_fake_rds_objects(su_conn)
+
+
+def test_creating_a_database_needs_the_set_option_on_its_owner(
+    fake_rds_master_params: ConnectionParameters,
+) -> None:
+    """Show why the grant is needed.
+
+    Since PostgreSQL 16 a CREATEROLE user only gets ADMIN OPTION on a role it
+    creates, and CREATE DATABASE ... OWNER needs the SET option as well.
+    """
+    with psycopg.connect(**fake_rds_master_params) as conn:
+        db_manager.create_dba_user_if_not_exists(conn)
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            db_manager.create_db_if_not_exists(conn, FAKE_RDS_DB)
+
+
+def test_non_superuser_can_create_a_database_owned_by_the_dba_user(
+    fake_rds_master_params: ConnectionParameters,
+) -> None:
+    with psycopg.connect(**fake_rds_master_params) as conn:
+        db_manager.create_dba_user_if_not_exists(conn)
+        db_manager.grant_dba_role_to_su_user(conn)
+        db_manager.create_db_if_not_exists(conn, FAKE_RDS_DB)
+
+        owner = conn.execute(
+            "SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = %s",
+            (FAKE_RDS_DB,),
+        ).fetchone()
+
+    assert owner == (FAKE_RDS_DBA,)
