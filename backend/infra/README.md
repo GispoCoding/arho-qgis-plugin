@@ -111,7 +111,11 @@ cd infra
 ```
 
 Then follow these steps. The `make` targets read the variable file of the current
-terraform workspace from the arho-deploy repository, so create the workspace first.
+terraform workspace from the arho-deploy repository, so create the workspace first. They
+take `prefix` and `AWS_REGION` from that file and `AWS_ACCOUNT_ID` from your AWS session,
+so nothing has to be exported by hand. Decrypt the variable file first with
+`make decrypt-workspace-secrets`. To work outside a workspace, set `prefix`, `AWS_REGION`
+or `AWS_ACCOUNT_ID` in the environment or on the command line, and that value wins.
 
 ```shell
 # 1. Create the workspace and the variable file
@@ -134,11 +138,7 @@ rm bastion_key
 # 3. Check what the plan would do
 make tf-plan
 
-# 4. Create the ECR repositories, then build and push the lambda images.
-#    The Makefile takes these three values from the environment.
-export AWS_REGION=<region>
-export AWS_ACCOUNT_ID=<account id>
-export prefix=<instance-name>
+# 4. Create the ECR repositories, then build and push the lambda images
 make tf-bootstrap-ecr
 make push-lambdas
 
