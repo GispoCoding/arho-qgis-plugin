@@ -68,17 +68,6 @@ resource "aws_subnet" "private" {
   })
 }
 
-data "aws_subnets" "private"{
-    filter {
-        name   = "vpc-id"
-        values = [aws_vpc.main.id]
-    }
-
-    tags = {
-        SubnetType = "private"
-    }
-}
-
 # Give lambdas and X-road security server access to Internet
 resource "aws_eip" "eip" {
   domain        = "vpc"
@@ -121,7 +110,7 @@ resource "aws_route_table_association" "private" {
 resource "aws_db_subnet_group" "db" {
   name       = "${var.prefix}-db"
   # only list private subnets in the db subnet group
-  subnet_ids = data.aws_subnets.private.ids
+  subnet_ids = aws_subnet.private[*].id
 
   tags = merge(local.default_tags, {
     Name = "${var.prefix}-db"

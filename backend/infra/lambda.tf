@@ -6,7 +6,7 @@ resource "aws_lambda_function" "db_manager" {
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
-    subnet_ids         = data.aws_subnets.private.ids
+    subnet_ids         = aws_subnet.private[*].id
     security_group_ids = [aws_security_group.lambda.id]
   }
   logging_config {
@@ -48,7 +48,7 @@ resource "aws_lambda_function" "koodistot_loader" {
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
-    subnet_ids         = data.aws_subnets.private.ids
+    subnet_ids         = aws_subnet.private[*].id
     security_group_ids = [aws_security_group.lambda.id]
   }
   logging_config {
@@ -99,7 +99,7 @@ resource "aws_lambda_function" "ryhti_client" {
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
-    subnet_ids         = data.aws_subnets.private.ids
+    subnet_ids         = aws_subnet.private[*].id
     security_group_ids = [aws_security_group.lambda.id]
   }
   logging_config {
@@ -168,7 +168,7 @@ resource "aws_lambda_function" "mml_loader" {
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
-    subnet_ids         = data.aws_subnets.private.ids
+    subnet_ids         = aws_subnet.private[*].id
     security_group_ids = [aws_security_group.lambda.id]
   }
   logging_config {
