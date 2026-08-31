@@ -96,6 +96,9 @@ resource "aws_lambda_function" "ryhti_client" {
   # single threaded CPU work, so more memory than this would not help.
   memory_size = 1769
   timeout     = 120
+  # Provisioned concurrency cannot be attached to $LATEST, so every apply must
+  # publish a numbered version for the live alias to point at.
+  publish = true
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
@@ -129,7 +132,7 @@ resource "aws_ecr_repository" "ryhti_client" {
 resource "aws_lambda_alias" "ryhti_client_live" {
   name             = "live"
   description      = "Alias to latest ryhti client"
-  function_name    = "${var.prefix}-ryhti_client"
+  function_name    = aws_lambda_function.ryhti_client.function_name
   function_version = aws_lambda_function.ryhti_client.version
 
   lifecycle {
