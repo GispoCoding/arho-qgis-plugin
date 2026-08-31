@@ -4,8 +4,9 @@ import enum
 import json
 import logging
 import os
+from contextlib import contextmanager
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict
 
 import psycopg
 from alembic import command
@@ -14,6 +15,9 @@ from alembic.util.exc import CommandError
 from psycopg.sql import SQL, Identifier, Literal
 
 from database.db_helper import DbUser, get_connection_parameters, get_user_credentials
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 """
 Hame-ryhti database manager, adapted from Tarmo db_manager.
@@ -94,6 +98,26 @@ def grant_dba_role_to_su_user(conn: psycopg.Connection) -> None:
     LOGGER.info("Granted the DBA role to the SU user.")
 
 
+@contextmanager
+def as_dba_user(conn: psycopg.Connection) -> Generator[None]:
+    """Run statements as the DBA user, which owns the main database.
+
+    The SU user owns neither the main database nor its public schema, so it
+    cannot grant or revoke privileges on them on its own. Note that a REVOKE
+    by a non-owner only warns instead of failing, so without this the
+    statements would silently do nothing.
+    """
+    conn.execute(
+        SQL("SET ROLE {dba_user}").format(
+            dba_user=Identifier(dba_user_credentials["username"])
+        )
+    )
+    try:
+        yield
+    finally:
+        conn.execute(SQL("RESET ROLE"))
+
+
 def create_db_if_not_exists(conn: psycopg.Connection, db_name: str) -> None:
     """Creates empty db."""
     if database_exists(conn, db_name):
@@ -116,17 +140,24 @@ def create_db_if_not_exists(conn: psycopg.Connection, db_name: str) -> None:
 
 
 def configure_db_permissions(conn: psycopg.Connection) -> None:
-    maintenance_db_name = os.environ["DB_MAINTENANCE_NAME"]
-    main_db_name = os.environ["DB_MAIN_NAME"]
-    with conn.cursor() as cur:
-        for db_name in (maintenance_db_name, main_db_name):
-            cur.execute(
-                SQL("REVOKE ALL ON DATABASE {db_name} FROM PUBLIC").format(
-                    db_name=Identifier(db_name)
-                )
+    """Revoke public access to the databases and hand the public schema to the DBA.
+
+    The maintenance database is owned by the SU user, but the main database and
+    its public schema are owned by the DBA user, so the two need different roles.
+    """
+    conn.execute(
+        SQL("REVOKE ALL ON DATABASE {db_name} FROM PUBLIC").format(
+            db_name=Identifier(os.environ["DB_MAINTENANCE_NAME"])
+        )
+    )
+    with as_dba_user(conn):
+        conn.execute(
+            SQL("REVOKE ALL ON DATABASE {db_name} FROM PUBLIC").format(
+                db_name=Identifier(os.environ["DB_MAIN_NAME"])
             )
-        cur.execute("REVOKE CREATE ON SCHEMA public FROM PUBLIC")
-        cur.execute(
+        )
+        conn.execute(SQL("REVOKE CREATE ON SCHEMA public FROM PUBLIC"))
+        conn.execute(
             SQL("GRANT ALL ON SCHEMA public TO {dba_user}").format(
                 dba_user=Identifier(dba_user_credentials["username"])
             )
