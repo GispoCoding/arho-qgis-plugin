@@ -167,10 +167,30 @@ def configure_db_permissions(conn: psycopg.Connection) -> None:
 
 
 def install_postgis_extension(conn: psycopg.Connection) -> None:
-    """Installs PostGIS extension to the given database connection."""
-    with conn.cursor() as cur:
-        cur.execute(SQL("CREATE EXTENSION IF NOT EXISTS postgis"))
+    """Install the PostGIS extension to the given database connection.
+
+    PostGIS is not a trusted extension, so on RDS only the SU user, which is a
+    member of rds_superuser, may create it. The SU user does not own the public
+    schema, so it is given CREATE on it for the duration of the install only.
+    """
+    su_user = Identifier(su_user_credentials["username"])
+    with as_dba_user(conn):
+        conn.execute(
+            SQL("GRANT CREATE ON SCHEMA public TO {su_user}").format(su_user=su_user)
+        )
     conn.commit()
+    try:
+        conn.execute(SQL("CREATE EXTENSION IF NOT EXISTS postgis"))
+        conn.commit()
+    finally:
+        conn.rollback()  # A failed install leaves the transaction aborted
+        with as_dba_user(conn):
+            conn.execute(
+                SQL("REVOKE CREATE ON SCHEMA public FROM {su_user}").format(
+                    su_user=su_user
+                )
+            )
+        conn.commit()
     LOGGER.info("Installed PostGIS extension.")
 
 
