@@ -79,6 +79,10 @@ To start and create a database:
 
 > To stop development containers use `make stop`. To delete containers and the database volume use `make down`.
 
+> The development database was upgraded from PostgreSQL 13 to 17 to match production.
+> An existing local database volume cannot be read by the new image, so run `make down`
+> once and then `make dev-setup-db` again.
+
 > To create plans in the database, you must add at least one `organization` to the organization table (i.e. a test region or test municipality), with foreign key to the national code table which contains the geometry of your region or municipality. All plans that you create must have a foreign key to a valid region or municipality.
 
 ### Plan import and export via S3
