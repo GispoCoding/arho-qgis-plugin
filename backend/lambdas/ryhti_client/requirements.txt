@@ -45,11 +45,16 @@ jmespath==1.1.0
 lxml==6.1.2
     # via
     #   -c requirements.txt
+    #   owslib
     #   pygml
 numpy==2.5.2
     # via
     #   -c requirements.txt
     #   shapely
+owslib==0.36.0
+    # via
+    #   -c requirements.txt
+    #   -r lambdas/ryhti_client/requirements.in
 packaging==26.3
     # via
     #   -c requirements.txt
@@ -79,11 +84,17 @@ python-dateutil==2.9.0.post0
     # via
     #   -c requirements.txt
     #   botocore
+    #   owslib
     #   ryhti-api-client
+pyyaml==6.0.3
+    # via
+    #   -c requirements.txt
+    #   owslib
 requests==2.34.2
     # via
     #   -c requirements.txt
     #   -r lambdas/ryhti_client/requirements.in
+    #   owslib
 ryhti-api-client @ git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0
     # via
     #   -c requirements.txt

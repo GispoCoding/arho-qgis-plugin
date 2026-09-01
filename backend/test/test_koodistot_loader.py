@@ -416,6 +416,7 @@ def mock_koodistot(requests_mock) -> None:
     requests_mock.get(get_url(codes.Municipality), text="")
     requests_mock.get(get_url(codes.AdministrativeRegion), text="")
     requests_mock.get(get_url(codes.PlanTheme), text="")
+    requests_mock.get(get_url(codes.DigitalOrigin), text="")
     requests_mock.get(get_url(codes.CategoryOfPublicity), text="")
     requests_mock.get(get_url(codes.PersonalDataContent), text="")
     requests_mock.get(get_url(codes.RetentionTime), text="")
@@ -449,7 +450,7 @@ def koodistot_data(
     mock_koodistot: None, loader: KoodistotLoader
 ) -> dict[type[codes.CodeBase], dict[CodeValue, CodeDict]]:
     data = loader.get_objects()
-    assert len(data) == 21  # this must be changed if new code lists with uri are added
+    assert len(data) == 22  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 2
@@ -465,7 +466,7 @@ def koodistot_data(
 @pytest.fixture
 def changed_koodistot_data(changed_mock_koodistot: None, loader: KoodistotLoader):
     data = loader.get_objects()
-    assert len(data) == 21  # this must be changed if new code lists with uri are added
+    assert len(data) == 22  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 3
@@ -627,7 +628,7 @@ def custom_code_loader(dba_connection_string: str) -> Generator[KoodistotLoader]
 @pytest.fixture
 def custom_koodistot_data(mock_koodistot: None, custom_code_loader: KoodistotLoader):
     data = custom_code_loader.get_objects()
-    assert len(data) == 21  # this must be changed if new code lists with uri are added
+    assert len(data) == 22  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 2
@@ -646,7 +647,7 @@ def changed_custom_koodistot_data(
     changed_mock_koodistot: None, custom_code_loader: KoodistotLoader
 ) -> dict[type[codes.CodeBase], dict[CodeValue, CodeDict]]:
     data = custom_code_loader.get_objects()
-    assert len(data) == 21  # this must be changed if new code lists with uri are added
+    assert len(data) == 22  # this must be changed if new code lists with uri are added
     # data should contain the mock data and be empty for other tables
     print(data[codes.LifeCycleStatus])
     assert len(data[codes.LifeCycleStatus]) == 3

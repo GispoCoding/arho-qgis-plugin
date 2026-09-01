@@ -648,6 +648,14 @@ def plan_theme_instance(
 
 
 @pytest.fixture
+def digital_origin_instance(
+    temp_session_feature: ReturnSame[codes.DigitalOrigin],
+) -> codes.DigitalOrigin:
+    instance = codes.DigitalOrigin(value="04", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
 def codes_loaded(
     code_instance: codes.LifeCycleStatus,
     another_code_instance: codes.LifeCycleStatus,
@@ -690,6 +698,7 @@ def codes_loaded(
     administrative_region_instance: codes.AdministrativeRegion,
     another_administrative_region_instance: codes.AdministrativeRegion,
     plan_theme_instance: codes.PlanTheme,
+    digital_origin_instance: codes.DigitalOrigin,
     participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
     draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
@@ -718,11 +727,13 @@ def plan_matter_instance(
     organisation_instance: codes.Organisation,
     another_organisation_instance: codes.Organisation,
     plan_type_instance: codes.PlanType,
+    digital_origin_instance: codes.DigitalOrigin,
 ) -> models.PlanMatter:
     instance = models.PlanMatter(
         name={"fin": "Test Plan Matter"},
         organisation=organisation_instance,
         plan_type=plan_type_instance,
+        digital_origin=digital_origin_instance,
     )
     return temp_session_feature(instance)
 
@@ -777,11 +788,13 @@ def another_plan_matter_instance(
     organisation_instance: codes.Organisation,
     another_organisation_instance: codes.Organisation,
     plan_type_instance: codes.PlanType,
+    digital_origin_instance: codes.DigitalOrigin,
 ) -> models.PlanMatter:
     instance = models.PlanMatter(
         name={"fin": "Test Plan Matter"},
         organisation=organisation_instance,
         plan_type=plan_type_instance,
+        digital_origin=digital_origin_instance,
     )
     return temp_session_feature(instance)
 

@@ -35,13 +35,17 @@ jmespath==1.1.0
     #   boto3
     #   botocore
 lxml==6.1.2
-    # via pygml
+    # via
+    #   owslib
+    #   pygml
 mako==1.4.1
     # via alembic
 markupsafe==3.0.3
     # via mako
 numpy==2.5.2
     # via shapely
+owslib==0.36.0
+    # via -r requirements.in
 packaging==26.3
     # via geoalchemy2
 parse==1.22.1
@@ -61,9 +65,14 @@ pygml==0.3.2
 python-dateutil==2.9.0.post0
     # via
     #   botocore
+    #   owslib
     #   ryhti-api-client
+pyyaml==6.0.3
+    # via owslib
 requests==2.34.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   owslib
 ryhti-api-client @ git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0
     # via -r requirements.in
 s3transfer==0.19.2

@@ -94,6 +94,7 @@ python-dotenv==1.2.3
     #   pytest-dotenv
 pyyaml==6.0.3
     # via
+    #   -c requirements.txt
     #   ansible-core
     #   pre-commit
 requests==2.34.2

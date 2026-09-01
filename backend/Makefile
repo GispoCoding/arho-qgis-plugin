@@ -43,6 +43,14 @@ dev-ryhti-export:
 	@echo "Exporting plan $(uuid) to S3..."
 	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "get_plan", "plan_uuid": "$(uuid)"}'
 
+dev-ryhti-import-wfs:
+	@echo "Importing WFS plans for municipality $(mun)..."
+	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "import_wfs_plans", "data": {"municipality_code": "$(mun)"}}'
+
+dev-ryhti-import-wfs-region:
+	@echo "Importing WFS plans for region $(region)..."
+	curl -XPOST "http://localhost:8083/2015-03-31/functions/function/invocations" -d '{"action": "import_wfs_plans", "data": {"region_code": "$(region)"}}'
+
 pytest-fail:
 	pytest --maxfail=1
 

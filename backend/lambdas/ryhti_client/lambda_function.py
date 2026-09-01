@@ -13,8 +13,10 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
 
 import boto3
+import requests
 import simplejson as json
 from botocore.config import Config
+from owslib.util import ServiceException
 from pydantic import ValidationError
 
 from database.db_helper import (
@@ -35,6 +37,13 @@ from ryhti_client.database_client import (
 from ryhti_client.plan_copier import CopyPlanData
 from ryhti_client.profiling import log_duration, profile_python
 from ryhti_client.ryhti_client import RyhtiClient
+from ryhti_client.wfs_importer import (
+    AreaGeometryMissingError,
+    AreaNotFoundError,
+    ImportWfsPlansData,
+    WfsPlanClient,
+    WfsPlanImporter,
+)
 
 if TYPE_CHECKING:
     from ryhti_client.ryhti_client import RyhtiResponse
@@ -89,6 +98,11 @@ if not ryhti_files_bucket:
         "Please set RYHTI_FILES_BUCKET environment variable to run Ryhti client."
     )
 presigned_url_expiry_seconds = int(os.environ.get("PRESIGNED_URL_EXPIRY_SECONDS", 3600))
+
+# WFS service that publishes valid plans as open data, for import_wfs_plans.
+ryhti_wfs_url = os.environ.get(
+    "RYHTI_WFS_URL", "https://paikkatiedot.ymparisto.fi/geoserver/ryhti_plan/wfs"
+)
 # Presigned URLs require SigV4. In local development AWS_ENDPOINT_URL_S3 points
 # the client at MinIO. Against AWS, pin the client to the regional endpoint:
 # the global endpoint redirects (307) requests for newly created buckets until
@@ -111,8 +125,8 @@ class ResponseBody(TypedDict):
 
     title: str
     # A human-readable message, or a small payload dict such as
-    # {"download_url": ..., "key": ...} or {"error": ...}.
-    details: str | dict[str, str] | None
+    # {"download_url": ..., "key": ...}, {"error": ...} or import counts.
+    details: str | dict[str, Any] | None
     # Response from the Ryhti API, for actions that call the Ryhti API.
     ryhti_response: RyhtiResponse | None
 
@@ -203,6 +217,7 @@ class Action(enum.Enum):
     VALIDATE_PLAN_MATTERS = "validate_plan_matters"
     POST_PLAN_MATTERS = "post_plan_matters"
     IMPORT_PLAN = "import_plan"
+    IMPORT_WFS_PLANS = "import_wfs_plans"
     COPY_PLAN = "copy_plan"
     GET_UPLOAD_URL = "get_upload_url"
 
@@ -715,6 +730,49 @@ def handler(
         lambda_response = Response(
             statusCode=status_code,
             body=ResponseBody(title=title, details=details, ryhti_response=None),
+        )
+
+    elif event_type is Action.IMPORT_WFS_PLANS:
+        raw_data = event.get("data")
+        LOGGER.debug("data: %s", raw_data)
+        wfs_details: dict[str, Any]
+        try:
+            wfs_data = ImportWfsPlansData.model_validate(raw_data or {})
+        except ValidationError as e:
+            status_code = 400
+            title = "Error in provided data."
+            wfs_details = {"error": str(e)}
+
+        else:
+            LOGGER.info("Importing plans from WFS...")
+            wfs_importer = WfsPlanImporter(
+                database_client.Session, WfsPlanClient(ryhti_wfs_url)
+            )
+            try:
+                import_result = wfs_importer.import_plans(
+                    wfs_data, overwrite=event.get("force") is True
+                )
+                status_code = 200
+                title = "WFS plans imported."
+                wfs_details = import_result.to_details()
+
+            except AreaNotFoundError as e:
+                status_code = 404
+                title = "Area not found."
+                wfs_details = {"error": str(e)}
+            except AreaGeometryMissingError as e:
+                status_code = 400
+                title = "Area geometry missing."
+                wfs_details = {"error": str(e)}
+            except (requests.RequestException, ServiceException) as e:
+                LOGGER.exception("WFS request failed.")
+                status_code = 502
+                title = "WFS request failed."
+                wfs_details = {"error": str(e)}
+
+        lambda_response = Response(
+            statusCode=status_code,
+            body=ResponseBody(title=title, details=wfs_details, ryhti_response=None),
         )
 
     else:

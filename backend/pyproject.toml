@@ -87,5 +87,5 @@ explicit_package_bases = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["pygml.*"]
+module = ["pygml.*", "owslib.*"]
 follow_untyped_imports = true
