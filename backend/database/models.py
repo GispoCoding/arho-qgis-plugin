@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from database.codes import (
         AdministrativeRegion,
         CategoryOfPublicity,
+        DigitalOrigin,
         Language,
         LegalEffectsOfMasterPlan,
         LifeCycleStatus,
@@ -155,6 +156,12 @@ class PlanMatter(VersionedBase):
     # TODO: Add mandatory time_of_initiation: Mapped[datetime]
     # TODO: Add related_binding_plot_division_matter_uris
 
+    digital_origin_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.digital_origin.id", name="digital_origin_id_fkey")
+    )
+    digital_origin: Mapped[DigitalOrigin] = relationship(
+        back_populates="plan_matters", lazy="joined"
+    )
     plan_type_id: Mapped[UUID] = mapped_column(
         ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
     )

@@ -185,6 +185,17 @@ class TypeOfPlanRegulation(CodeBase):
     )
 
 
+class DigitalOrigin(CodeBase):
+    """Digitaalinen alkuperä"""
+
+    __tablename__ = "digital_origin"
+    code_list_uri = "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera"
+
+    plan_matters: Mapped[list[PlanMatter]] = relationship(
+        back_populates="digital_origin"
+    )
+
+
 class TypeOfAdditionalInformation(CodeBase):
     """Kaavamääräyksen lisätiedon laji"""
 
