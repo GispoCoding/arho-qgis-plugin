@@ -4,61 +4,61 @@
 #
 #    pip-compile lambdas/mml_loader/requirements.in
 #
-boto3==1.39.16
+boto3==1.43.86
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
-botocore==1.39.16
+botocore==1.43.86
     # via
     #   -c requirements.txt
     #   boto3
     #   s3transfer
-certifi==2025.7.14
+certifi==2026.7.22
     # via
     #   -c requirements.txt
     #   requests
-charset-normalizer==3.4.2
+charset-normalizer==3.5.1
     # via
     #   -c requirements.txt
     #   requests
-geoalchemy2==0.18.0
+geoalchemy2==0.20.0
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
-greenlet==3.2.3
+greenlet==3.5.5
     # via
     #   -c requirements.txt
     #   sqlalchemy
-idna==3.10
+idna==3.19
     # via
     #   -c requirements.txt
     #   requests
-jmespath==1.0.1
+jmespath==1.1.0
     # via
     #   -c requirements.txt
     #   boto3
     #   botocore
-lxml==6.0.0
+lxml==6.1.2
     # via
     #   -c requirements.txt
     #   pygml
-numpy==2.3.2
+numpy==2.5.2
     # via
     #   -c requirements.txt
     #   shapely
-packaging==25.0
+packaging==26.3
     # via
     #   -c requirements.txt
     #   geoalchemy2
-psycopg[binary]==3.2.9
+psycopg[binary]==3.3.5
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
-psycopg-binary==3.2.9
+psycopg-binary==3.3.5
     # via
     #   -c requirements.txt
     #   psycopg
-pygml==0.2.2
+pygml==0.3.2
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
@@ -66,15 +66,15 @@ python-dateutil==2.9.0.post0
     # via
     #   -c requirements.txt
     #   botocore
-requests==2.32.4
+requests==2.34.2
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
-s3transfer==0.13.1
+s3transfer==0.19.2
     # via
     #   -c requirements.txt
     #   boto3
-shapely==2.1.1
+shapely==2.1.2
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
@@ -82,16 +82,16 @@ six==1.17.0
     # via
     #   -c requirements.txt
     #   python-dateutil
-sqlalchemy==2.0.42
+sqlalchemy==2.0.52
     # via
     #   -c requirements.txt
     #   -r lambdas/mml_loader/requirements.in
     #   geoalchemy2
-typing-extensions==4.14.1
+typing-extensions==4.16.0
     # via
     #   -c requirements.txt
     #   sqlalchemy
-urllib3==2.5.0
+urllib3==2.7.0
     # via
     #   -c requirements.txt
     #   botocore

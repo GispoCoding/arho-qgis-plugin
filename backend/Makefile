@@ -85,3 +85,11 @@ pip-compile:
 	pip-compile lambdas/koodistot_loader/requirements.in
 	pip-compile lambdas/mml_loader/requirements.in
 	pip-compile lambdas/ryhti_client/requirements.in
+
+pip-upgrade:
+	pip-compile --upgrade requirements.in
+	pip-compile --upgrade requirements-dev.in
+	pip-compile --upgrade lambdas/db_manager/requirements.in
+	pip-compile --upgrade lambdas/koodistot_loader/requirements.in
+	pip-compile --upgrade lambdas/mml_loader/requirements.in
+	pip-compile --upgrade lambdas/ryhti_client/requirements.in
