@@ -10,6 +10,7 @@ from psycopg.sql import SQL, Identifier, Literal
 
 from database.db_helper import UserCredentials
 from database.models import Base
+from database.valid_views import valid_views
 from database.views import views
 from lambdas.db_manager import db_manager
 
@@ -90,6 +91,10 @@ def hame_tables() -> set[str]:
     return t
 
 
+def hame_valid_views() -> set[str]:
+    return {view.signature for view in valid_views if view.schema == "hame"}
+
+
 def code_tables() -> set[str]:
     return {
         table.name for table in Base.metadata.tables.values() if table.schema == "codes"
@@ -168,6 +173,30 @@ def test_read_write_role_privileges_on_hame_tables(
         assert "DELETE" not in privileges
     else:
         assert "DELETE" in privileges
+
+
+@pytest.mark.parametrize("view_name", hame_valid_views())
+def test_valid_views_exist(db_connection: Connection, view_name: str) -> None:
+    with db_connection.cursor() as cur:
+        cur.execute(
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema='hame' AND table_name=%s",
+            (view_name,),
+        )
+        assert cur.fetchone() == (view_name,)
+
+
+@pytest.mark.parametrize("role", [ROLE_READ_ONLY, ROLE_READ_WRITE])
+@pytest.mark.parametrize("view_name", hame_valid_views())
+def test_role_privileges_on_valid_views(
+    db_connection: Connection, view_name: str, role: str
+) -> None:
+    # The valid views are read only for both roles.
+    privileges = table_privileges(db_connection, "hame", view_name, role)
+    assert "SELECT" in privileges
+    assert "INSERT" not in privileges
+    assert "UPDATE" not in privileges
+    assert "DELETE" not in privileges
 
 
 @pytest.mark.parametrize("table_name", code_tables())

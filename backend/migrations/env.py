@@ -21,6 +21,7 @@ from database.triggers import (
     generate_created_at_triggers,
     generate_no_created_at_update_triggers
 )
+from database.valid_views import valid_views
 from database.views import views
 
 modified_at_trgs, modified_at_trgfuncs = generate_modified_at_triggers()
@@ -66,6 +67,7 @@ imported_triggers = (
 register_entities(imported_triggers)
 register_entities(functions)
 register_entities(views)
+register_entities(valid_views)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
