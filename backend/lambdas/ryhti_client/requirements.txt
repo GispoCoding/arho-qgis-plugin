@@ -84,7 +84,7 @@ requests==2.34.2
     # via
     #   -c requirements.txt
     #   -r lambdas/ryhti_client/requirements.in
-ryhti-api-client @ git+https://github.com/GispoCoding/ryhti-api-client@v2025.23.2
+ryhti-api-client @ git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0
     # via
     #   -c requirements.txt
     #   -r lambdas/ryhti_client/requirements.in

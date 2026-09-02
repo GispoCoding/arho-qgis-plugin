@@ -9,4 +9,4 @@ simplejson
 sqlalchemy
 pygml
 pydantic
-git+https://github.com/GispoCoding/ryhti-api-client@v2025.23.2#egg=ryhti_api_client
+git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0#egg=ryhti_api_client

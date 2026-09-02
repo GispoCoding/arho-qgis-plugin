@@ -701,7 +701,7 @@ class Deserializer:
         )
 
         plan = Plan(
-            id=UUID(ryhti_plan.plan_key),
+            id=ryhti_plan.plan_key,
             name={"fin": name},
             description={"fin": ryhti_plan.plan_description},
             scale=ryhti_plan.scale,
