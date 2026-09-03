@@ -530,10 +530,13 @@ def handler(
             # plan JSON, the same format that import_plan reads.
             response_title = "Returning serialized plan from database."
             LOGGER.info(response_title)
-            with profile_python("get_plan_dictionary"), log_duration("serialize_plan"):
-                plan_dictionary = database_client.serializer.get_plan_dictionary(plan)
+            with profile_python("serialize_plan"), log_duration("serialize_plan"):
+                ryhti_plan = database_client.serializer.serialize_plan(plan)
             with log_duration("json_dumps"):
-                plan_json = json.dumps(plan_dictionary).encode("utf-8")
+                # The model prints its JSON faster than dumping a dict first.
+                plan_json = ryhti_plan.model_dump_json(
+                    by_alias=True, exclude_none=True
+                ).encode("utf-8")
             with log_duration("gzip_compress"):
                 # Level 6 makes a file the same size as the maximum level 9, in a
                 # third of the time.
@@ -571,8 +574,8 @@ def handler(
         elif event_type is Action.VALIDATE_PLAN:
             # 1) Validate plan with public API
             LOGGER.info("Validating plan...")
-            plan_dictionary = database_client.serializer.get_plan_dictionary(plan)
-            validation_response = client.validate_plan(plan, plan_dictionary)
+            ryhti_plan = database_client.serializer.serialize_plan(plan)
+            validation_response = client.validate_plan(plan, ryhti_plan)
             # 2) Save and return plan validation data
             LOGGER.info("Saving plan validation data...")
             save_detail = database_client.save_plan_validation_response(

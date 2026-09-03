@@ -8,13 +8,14 @@ from typing import TYPE_CHECKING, Any, TypedDict, cast
 import requests
 import simplejson as json
 
+from ryhti_client.serializer import to_json_dict
+
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from ryhti_api_client import Plan as RyhtiPlan
+
     from database import models
-    from ryhti_client.ryhti_schema import (
-        RyhtiPlan,
-        RyhtiPlanMatter,
-        RyhtiPlanMatterPhase,
-    )
 
 """
 Client for validating and POSTing all Maakuntakaava data to Ryhti API
@@ -148,12 +149,11 @@ class RyhtiClient:
         top_level_code = plan_type_uri.split("/")[-1][0]
         return api_paths[top_level_code]
 
-    def validate_plan(
-        self, plan: models.Plan, plan_dictionary: RyhtiPlan
-    ) -> RyhtiResponse:
+    def validate_plan(self, plan: models.Plan, ryhti_plan: RyhtiPlan) -> RyhtiResponse:
         """Validates a serialized plan with the public Ryhti API."""
         plan_validation_endpoint = f"{self.public_api_base}/Plan/validate"
         LOGGER.info(f"Validating JSON for plan {plan.id}...")
+        plan_dictionary = to_json_dict(ryhti_plan)
 
         # Some plan fields may only be present in plan matter, not in the plan
         # dictionary. In the context of plan validation, they must be provided as
@@ -380,7 +380,7 @@ class RyhtiClient:
         return ryhti_response
 
     def create_new_resource(
-        self, endpoint: str, resource_dict: RyhtiPlanMatter | RyhtiPlanMatterPhase
+        self, endpoint: str, resource_dict: Mapping[str, Any]
     ) -> RyhtiResponse:
         """POST new resource to Ryhti API."""
         response = requests.post(
@@ -406,7 +406,7 @@ class RyhtiClient:
         return cast("RyhtiResponse", ryhti_response)
 
     def update_resource(
-        self, endpoint: str, resource_dict: RyhtiPlanMatter | RyhtiPlanMatterPhase
+        self, endpoint: str, resource_dict: Mapping[str, Any]
     ) -> RyhtiResponse:
         """PUT resource to Ryhti API."""
         response = requests.put(

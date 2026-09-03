@@ -17,6 +17,7 @@ from database import models
 from database.base import PROJECT_SRID
 from ryhti_client.database_client import DatabaseClient
 from ryhti_client.ryhti_client import RyhtiClient
+from ryhti_client.serializer import to_json_dict
 
 from .conftest import ReturnSame, deepcompare
 
@@ -248,7 +249,7 @@ def test_related_land_use_area(
     is added to the related plan objects list.
     """
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = plan_serializer.get_plan_dictionary(plan)
+    plan_dict = to_json_dict(plan_serializer.serialize_plan(plan))
     other_area_in_dict = next(
         (
             plan_object
@@ -293,7 +294,7 @@ def test_related_land_use_area_multiple_containers(
 
     plan = database_client.get_plan(complete_test_plan.id)
     with pytest.raises(MultipleResultsFound):
-        plan_serializer.get_plan_dictionary(plan)
+        plan_serializer.serialize_plan(plan)
 
 
 def test_related_land_use_area_no_container(
@@ -338,7 +339,7 @@ def test_related_land_use_area_no_container(
     temp_session_feature(outside_other_area)
 
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = plan_serializer.get_plan_dictionary(plan)
+    plan_dict = to_json_dict(plan_serializer.serialize_plan(plan))
     outside_other_area_in_dict = next(
         (
             plan_object
@@ -397,7 +398,7 @@ def plan_in_wrong_region(
     return complete_test_plan
 
 
-def test_get_plan_dictionary(
+def test_serialize_plan(
     database_client: DatabaseClient,
     plan_serializer: PlanSerializer,
     complete_test_plan: models.Plan,
@@ -405,7 +406,7 @@ def test_get_plan_dictionary(
 ) -> None:
     """Check that correct JSON structure is generated for the plan."""
     plan = database_client.get_plan(complete_test_plan.id)
-    result_plan_dict = plan_serializer.get_plan_dictionary(plan)
+    result_plan_dict = to_json_dict(plan_serializer.serialize_plan(plan))
     deepcompare(
         result_plan_dict,
         desired_plan_dict,
@@ -425,8 +426,8 @@ def test_validate_plan(
 ) -> None:
     """Check that JSON is posted and response received"""
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = plan_serializer.get_plan_dictionary(plan)
-    response = ryhti_client.validate_plan(plan, plan_dict)
+    ryhti_plan = plan_serializer.serialize_plan(plan)
+    response = ryhti_client.validate_plan(plan, ryhti_plan)
     assert response["errors"] == [
         {"ruleId": mock_rule, "message": mock_error_string, "instance": mock_instance}
     ]
@@ -442,8 +443,8 @@ def test_save_plan_validation_response(
 ) -> None:
     """Check that Ryhti validation error is saved to database."""
     plan = database_client.get_plan(complete_test_plan.id)
-    plan_dict = plan_serializer.get_plan_dictionary(plan)
-    response = ryhti_client.validate_plan(plan, plan_dict)
+    ryhti_plan = plan_serializer.serialize_plan(plan)
+    response = ryhti_client.validate_plan(plan, ryhti_plan)
     database_client.save_plan_validation_response(plan.id, response)
     session.refresh(complete_test_plan)
     assert complete_test_plan.validated_at

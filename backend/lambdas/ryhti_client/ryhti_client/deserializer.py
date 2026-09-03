@@ -640,13 +640,16 @@ class Deserializer:
         "relatedPlanObjectRegulationGroupRelations",
         "relatedRegulationGroupPlanObjectRelations",
         """
+        # The relations refer to the groups and plan objects by their Ryhti keys.
         plan_regulation_groups = {
-            regulation_group.id: regulation_group
+            ryhti_group.plan_regulation_group_key: regulation_group
             for ryhti_group in ryhti_plan.plan_regulation_groups or []
             if (regulation_group := self.deserialize_plan_regulation_group(ryhti_group))
         }
 
-        groups_of_plan_objects: dict[str, list[PlanRegulationGroup]] = defaultdict(list)
+        groups_of_plan_objects: dict[UUID, list[PlanRegulationGroup]] = defaultdict(
+            list
+        )
         for regulation_group_relation in (
             ryhti_plan.plan_regulation_group_relations or []
         ):

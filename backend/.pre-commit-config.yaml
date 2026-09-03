@@ -37,4 +37,4 @@ repos:
           - types-requests
           - types-shapely
           - types-simplejson
-          - git+https://github.com/GispoCoding/ryhti-api-client@v2025.33.1#egg=ryhti_api_client
+          - git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0#egg=ryhti_api_client

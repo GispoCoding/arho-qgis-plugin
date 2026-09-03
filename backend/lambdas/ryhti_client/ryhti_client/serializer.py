@@ -1,19 +1,55 @@
-"""Serialize ARHO ORM models into Ryhti API plan payloads.
+"""Serialize ARHO ORM models into Ryhti API plan models.
 
-Counterpart of deserializer.py, which reads Ryhti JSON into ORM models.
+Counterpart of deserializer.py, which reads Ryhti models into ORM models. The Ryhti
+models come from the generated ryhti_api_client package, so the serializer builds the
+same objects the deserializer reads. The models are pydantic models, so a value the
+Ryhti schema does not allow raises a ValidationError already here.
+
+The models are built with the camelCase alias names of the Ryhti JSON, because the
+type checkers only know the aliases as constructor arguments. The attributes are read
+with their snake_case names.
 """
 
 from __future__ import annotations
 
 import datetime
+import json
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
-import simplejson as json
 from geoalchemy2.shape import to_shape
+from ryhti_api_client import (
+    AdditionalInformation as RyhtiAdditionalInformation,
+    CodeValue as RyhtiCodeValue,
+    DecimalRange as RyhtiDecimalRange,
+    DecimalValue as RyhtiDecimalValue,
+    GeneralRegulationGroup as RyhtiGeneralRegulationGroup,
+    LanguageString as RyhtiLanguageString,
+    LocalizedTextValue as RyhtiLocalizedTextValue,
+    NumericRange as RyhtiNumericRange,
+    NumericValue as RyhtiNumericValue,
+    OtherPlanMaterial as RyhtiOtherPlanMaterial,
+    Plan as RyhtiPlan,
+    PlanAttachmentDocument as RyhtiPlanAttachmentDocument,
+    PlanMap as RyhtiPlanMap,
+    PlanObject as RyhtiPlanObject,
+    PlanRecommendation as RyhtiPlanRecommendation,
+    PlanRegulation as RyhtiPlanRegulation,
+    PlanRegulationGroup as RyhtiPlanRegulationGroup,
+    PlanRegulationGroupRelations as RyhtiPlanRegulationGroupRelations,
+    PlanReport as RyhtiPlanReport,
+    PositiveDecimalRange as RyhtiPositiveDecimalRange,
+    PositiveDecimalValue as RyhtiPositiveDecimalValue,
+    PositiveNumericRange as RyhtiPositiveNumericRange,
+    PositiveNumericValue as RyhtiPositiveNumericValue,
+    RyhtiGeometry,
+    SpotElevation as RyhtiSpotElevation,
+    TextValue as RyhtiTextValue,
+    TimePeriodDateOnly as RyhtiTimePeriodDateOnly,
+)
 from shapely import to_geojson
 from sqlalchemy import and_, func, select, text
 from sqlalchemy.exc import MultipleResultsFound
@@ -22,17 +58,13 @@ from sqlalchemy.orm import defer, raiseload
 from database import base, models
 from database.enums import AttributeValueDataType
 from ryhti_client.profiling import log_duration
-from ryhti_client.ryhti_schema import (
-    Period,
-    RyhtiAdditionalInformation,
-    RyhtiAttributeValue,
-    RyhtiPlan,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from geoalchemy2 import WKBElement
+    from pydantic import BaseModel
+    from ryhti_api_client import AttributeValue as RyhtiAttributeValue
     from sqlalchemy import Table
     from sqlalchemy.orm import Session, sessionmaker
     from sqlalchemy.sql import FromClause
@@ -55,6 +87,17 @@ PLAN_OBJECT_MODELS: tuple[type[models.PlanObjectBase], ...] = (
 GEOJSON_MAX_DECIMALS = 15
 # ST_AsGeoJSON option 0 leaves out the crs member, just like shapely does.
 GEOJSON_WITHOUT_CRS = 0
+
+LANGUAGES = ("fin", "swe", "smn", "sms", "sme", "eng")
+
+
+def to_json_dict(model: BaseModel) -> dict[str, Any]:
+    """Returns a JSON compatible dict with the camelCase names Ryhti expects.
+
+    Fields that are None are left out, so the result is the same as the JSON the
+    model prints.
+    """
+    return model.model_dump(mode="json", by_alias=True, exclude_none=True)
 
 
 class Geometrical(Protocol):
@@ -118,9 +161,8 @@ class PlanSerializer:
             )
         return srid
 
-    def _format_geometry(self, geojson: str, table: Table) -> dict[str, Any]:
-        """Returns Ryhti formatted geom dict with the correct SRID and the geojson
-        as a dict.
+    def serialize_geometry(self, geojson: str, table: Table) -> RyhtiGeometry:
+        """Returns Ryhti geometry with the correct SRID from geojson of the table.
 
         It seems that geojson carries no SRID information, so we have to paste the
         SRID back manually :/
@@ -137,272 +179,312 @@ class PlanSerializer:
                 "type": geometry["type"].removeprefix("Multi"),
                 "coordinates": geometry["coordinates"][0],
             }
-        # We don't want to serialize the geojson quite yet, so it stays a dict until
-        # we are ready to reserialize it :/
-        return {"srid": str(self._get_srid_of_table(table)), "geometry": geometry}
+        # The geometry type picks the geojson model class.
+        return RyhtiGeometry.model_validate(
+            {"srid": str(self._get_srid_of_table(table)), "geometry": geometry}
+        )
 
-    def get_geometry_as_json(self, obj: Geometrical) -> dict[str, Any]:
-        """Returns Ryhti formatted geom dict for a single object.
+    def serialize_geometry_of(self, obj: Geometrical) -> RyhtiGeometry:
+        """Returns Ryhti geometry of a single object.
 
         Plan objects get their geojson from PostGIS instead, see _load_plan_objects.
         Converting one geometry in python is cheaper than an extra database query.
         """
-        return self._format_geometry(
+        return self.serialize_geometry(
             to_geojson(to_shape(obj.geom)), cast("Table", obj.__table__)
         )
 
-    def get_date(self, datetime_value: datetime.datetime) -> str:
-        """Returns isoformatted date for the given datetime in local timezone."""
-        return datetime_value.astimezone(LOCAL_TZ).date().isoformat()
+    def get_local_date(self, datetime_value: datetime.datetime) -> datetime.date:
+        """Returns the date of the given datetime in local timezone."""
+        return datetime_value.astimezone(LOCAL_TZ).date()
 
     def serialize_date_period(
         self, date_start: datetime.date, date_end: datetime.date | None
-    ) -> Period:
-        return {
-            "begin": date_start.isoformat(),
-            "end": date_end.isoformat() if date_end else None,
+    ) -> RyhtiTimePeriodDateOnly:
+        return RyhtiTimePeriodDateOnly(begin=date_start, end=date_end)
+
+    def serialize_language_string(
+        self, field_value: dict[str, str] | None
+    ) -> RyhtiLanguageString | None:
+        """Serializes a language string dict, returns None if empty."""
+        if not field_value or not isinstance(field_value, dict):
+            return None
+
+        texts = {
+            language: name
+            for (language, name) in field_value.items()
+            if language in LANGUAGES and isinstance(name, str) and name
         }
+        return RyhtiLanguageString(**texts) if texts else None
 
-    def get_plan_recommendation(
+    def serialize_required_language_string(
+        self, field_value: dict[str, str] | None
+    ) -> RyhtiLanguageString:
+        """Serializes a language string dict for a field Ryhti requires.
+
+        An empty language string is sent when there is no text, so Ryhti reports the
+        missing text instead of the serializer failing.
+        """
+        return self.serialize_language_string(field_value) or RyhtiLanguageString()
+
+    def serialize_recommendation(
         self, plan_recommendation: models.PlanProposition
-    ) -> dict:
-        """Construct a dict of Ryhti compatible plan recommendation."""
-        recommendation_dict: dict[str, Any] = {}
-        recommendation_dict["planRecommendationKey"] = plan_recommendation.id
-        recommendation_dict["lifeCycleStatus"] = (
-            plan_recommendation.lifecycle_status.uri
-        )
-        if plan_recommendation.plan_themes:
-            recommendation_dict["planThemes"] = [
-                plan_theme.uri for plan_theme in plan_recommendation.plan_themes
-            ]
-        recommendation_dict["recommendationNumber"] = plan_recommendation.ordering
-
+    ) -> RyhtiPlanRecommendation:
+        period_of_validity = None
         if plan_recommendation.period_of_validity_start:
-            recommendation_dict["periodOfValidity"] = self.serialize_date_period(
+            period_of_validity = self.serialize_date_period(
                 plan_recommendation.period_of_validity_start,
                 plan_recommendation.period_of_validity_end,
             )
-        recommendation_dict["value"] = self.format_language_string_value(
-            plan_recommendation.text_value
+        return RyhtiPlanRecommendation(
+            planRecommendationKey=UUID(plan_recommendation.id),
+            lifeCycleStatus=plan_recommendation.lifecycle_status.uri,
+            planThemes=(
+                [plan_theme.uri for plan_theme in plan_recommendation.plan_themes]
+                if plan_recommendation.plan_themes
+                else None
+            ),
+            recommendationNumber=plan_recommendation.ordering,
+            periodOfValidity=period_of_validity,
+            value=self.serialize_required_language_string(
+                plan_recommendation.text_value
+            ),
         )
-        return recommendation_dict
 
-    def get_attribute_value(
+    def serialize_attribute_value(
         self, attribute_value: base.AttributeValueMixin
     ) -> RyhtiAttributeValue | None:
-        if attribute_value.value_data_type is None:
+        """Serializes the value of a regulation or an additional information.
+
+        Every Ryhti data type has a model class of its own. Numeric types hold whole
+        numbers, decimal types hold floats.
+        """
+        data_type = attribute_value.value_data_type
+        if data_type is None:
             return None
 
-        value: RyhtiAttributeValue = {"dataType": attribute_value.value_data_type.value}
+        number = attribute_value.numeric_value
+        range_min = attribute_value.numeric_range_min
+        range_max = attribute_value.numeric_range_max
+        unit = attribute_value.unit or None
+        text_value = attribute_value.text_value
+        syntax = attribute_value.text_syntax
 
-        def cast_numeric(number: float) -> int | float:
-            if attribute_value.value_data_type in (
-                AttributeValueDataType.NUMERIC,
-                AttributeValueDataType.POSITIVE_NUMERIC,
-                AttributeValueDataType.NUMERIC_RANGE,
-                AttributeValueDataType.POSITIVE_NUMERIC_RANGE,
-                AttributeValueDataType.SPOT_ELEVATION,
-            ):
-                return int(number)
-            return number
-
-        if attribute_value.value_data_type is AttributeValueDataType.CODE:
-            if attribute_value.code_value is not None:
-                value["code"] = attribute_value.code_value
-            if attribute_value.code_list is not None:
-                value["codeList"] = attribute_value.code_list
-            if attribute_value.code_title is not None:
-                value["title"] = attribute_value.code_title
-        elif attribute_value.value_data_type in (
-            AttributeValueDataType.NUMERIC,
-            AttributeValueDataType.POSITIVE_NUMERIC,
-            AttributeValueDataType.DECIMAL,
-            AttributeValueDataType.POSITIVE_DECIMAL,
-            AttributeValueDataType.SPOT_ELEVATION,
-        ):
-            if attribute_value.numeric_value is not None:
-                value["number"] = cast_numeric(attribute_value.numeric_value)
-            if attribute_value.unit:
-                value["unitOfMeasure"] = attribute_value.unit
-        elif attribute_value.value_data_type in (
-            AttributeValueDataType.NUMERIC_RANGE,
-            AttributeValueDataType.POSITIVE_NUMERIC_RANGE,
-            AttributeValueDataType.DECIMAL_RANGE,
-            AttributeValueDataType.POSITIVE_DECIMAL_RANGE,
-        ):
-            if attribute_value.numeric_range_min is not None:
-                value["minimumValue"] = cast_numeric(attribute_value.numeric_range_min)
-            if attribute_value.numeric_range_max is not None:
-                value["maximumValue"] = cast_numeric(attribute_value.numeric_range_max)
-            if attribute_value.unit is not None:
-                value["unitOfMeasure"] = attribute_value.unit
-
-        elif attribute_value.value_data_type is AttributeValueDataType.IDENTIFIER:
-            pass  # TODO: implement identifier values
-
-        elif attribute_value.value_data_type == AttributeValueDataType.LOCALIZED_TEXT:
-            if attribute_value.text_value is not None:
-                value["text"] = self.format_language_string_value(
-                    attribute_value.text_value
+        value: RyhtiAttributeValue | None
+        match data_type:
+            case AttributeValueDataType.CODE:
+                value = RyhtiCodeValue(
+                    dataType="Code",
+                    code=attribute_value.code_value,
+                    codeList=attribute_value.code_list,
+                    title=self.serialize_language_string(attribute_value.code_title),
                 )
-            if attribute_value.text_syntax is not None:
-                value["syntax"] = attribute_value.text_syntax
-
-        elif attribute_value.value_data_type == AttributeValueDataType.TEXT:
-            if isinstance(
-                attribute_value.text_value, str
-            ):  # take advantage that jsonb can contain either a "dict" or "string".
-                value["text"] = attribute_value.text_value
-            if attribute_value.text_syntax is not None:
-                value["syntax"] = attribute_value.text_syntax
-
-        elif attribute_value.value_data_type in (
-            AttributeValueDataType.TIME_PERIOD,
-            AttributeValueDataType.TIME_PERIOD_DATE_ONLY,
-        ):
-            pass  # TODO: implement time period and time period date only values
-
+            case AttributeValueDataType.NUMERIC:
+                value = RyhtiNumericValue(
+                    dataType="Numeric",
+                    number=int(number) if number is not None else None,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.POSITIVE_NUMERIC:
+                value = RyhtiPositiveNumericValue(
+                    dataType="PositiveNumeric",
+                    number=int(number) if number is not None else None,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.SPOT_ELEVATION:
+                value = RyhtiSpotElevation(
+                    dataType="SpotElevation",
+                    number=int(number) if number is not None else None,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.DECIMAL:
+                value = RyhtiDecimalValue(
+                    dataType="Decimal", number=number, unitOfMeasure=unit
+                )
+            case AttributeValueDataType.POSITIVE_DECIMAL:
+                value = RyhtiPositiveDecimalValue(
+                    dataType="PositiveDecimal", number=number, unitOfMeasure=unit
+                )
+            case AttributeValueDataType.NUMERIC_RANGE:
+                value = RyhtiNumericRange(
+                    dataType="NumericRange",
+                    minimumValue=int(range_min) if range_min is not None else None,
+                    maximumValue=int(range_max) if range_max is not None else None,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.POSITIVE_NUMERIC_RANGE:
+                value = RyhtiPositiveNumericRange(
+                    dataType="PositiveNumericRange",
+                    minimumValue=int(range_min) if range_min is not None else None,
+                    maximumValue=int(range_max) if range_max is not None else None,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.DECIMAL_RANGE:
+                value = RyhtiDecimalRange(
+                    dataType="DecimalRange",
+                    minimumValue=range_min,
+                    maximumValue=range_max,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.POSITIVE_DECIMAL_RANGE:
+                value = RyhtiPositiveDecimalRange(
+                    dataType="PositiveDecimalRange",
+                    minimumValue=range_min,
+                    maximumValue=range_max,
+                    unitOfMeasure=unit,
+                )
+            case AttributeValueDataType.LOCALIZED_TEXT:
+                value = RyhtiLocalizedTextValue(
+                    dataType="LocalizedText",
+                    text=(
+                        self.serialize_language_string(text_value)
+                        if isinstance(text_value, dict)
+                        else None
+                    ),
+                    syntax=syntax,
+                )
+            case AttributeValueDataType.TEXT:
+                # jsonb can contain either a "dict" or a "string".
+                value = RyhtiTextValue(
+                    dataType="Text",
+                    text=text_value if isinstance(text_value, str) else None,
+                    syntax=syntax,
+                )
+            case (
+                AttributeValueDataType.IDENTIFIER
+                | AttributeValueDataType.TIME_PERIOD
+                | AttributeValueDataType.TIME_PERIOD_DATE_ONLY
+            ):
+                # TODO: implement identifier and time period values
+                value = None
         return value
 
-    def get_additional_information(
+    def serialize_additional_information(
         self, additional_information: models.AdditionalInformation
     ) -> RyhtiAdditionalInformation:
-        additional_information_dict: RyhtiAdditionalInformation = {
-            "type": additional_information.type_of_additional_information.uri
-        }
+        return RyhtiAdditionalInformation(
+            type=additional_information.type_of_additional_information.uri,
+            value=self.serialize_attribute_value(additional_information),
+        )
 
-        if value := self.get_attribute_value(additional_information):
-            additional_information_dict["value"] = value
-
-        return additional_information_dict
-
-    def get_plan_regulation(self, plan_regulation: models.PlanRegulation) -> dict:
-        """Construct a dict of Ryhti compatible plan regulation."""
-        regulation_dict: dict[str, Any] = {}
-        regulation_dict["planRegulationKey"] = plan_regulation.id
-        regulation_dict["lifeCycleStatus"] = plan_regulation.lifecycle_status.uri
-        regulation_dict["type"] = plan_regulation.type_of_plan_regulation.uri
-        if plan_regulation.plan_themes:
-            regulation_dict["planThemes"] = [
-                plan_theme.uri for plan_theme in plan_regulation.plan_themes
-            ]
-        regulation_dict["subjectIdentifiers"] = plan_regulation.subject_identifiers
-        regulation_dict["regulationNumber"] = str(plan_regulation.ordering)
-
+    def serialize_regulation(
+        self, plan_regulation: models.PlanRegulation
+    ) -> RyhtiPlanRegulation:
+        period_of_validity = None
         if plan_regulation.period_of_validity_start:
-            regulation_dict["periodOfValidity"] = self.serialize_date_period(
+            period_of_validity = self.serialize_date_period(
                 plan_regulation.period_of_validity_start,
                 plan_regulation.period_of_validity_end,
             )
-
-        if plan_regulation.types_of_verbal_plan_regulations:
-            regulation_dict["verbalRegulations"] = [
-                type_code.uri
-                for type_code in plan_regulation.types_of_verbal_plan_regulations
-            ]
-
-        # Additional informations may contain multiple additional info
-        # code values.
-        regulation_dict["additionalInformations"] = [
-            self.get_additional_information(ai)
-            for ai in plan_regulation.additional_information
-        ]
-
-        if value := self.get_attribute_value(plan_regulation):
-            regulation_dict["value"] = value
-
-        return regulation_dict
-
-    def get_plan_regulation_group(
-        self, group: models.PlanRegulationGroup, general: bool = False
-    ) -> dict:
-        """Construct a dict of Ryhti compatible plan regulation group.
-
-        Plan regulation groups and general regulation groups have some minor
-        differences, so you can specify if you want to create a general
-        regulation group.
-        """
-        group_dict: dict[str, Any] = {}
-        if general:
-            group_dict["generalRegulationGroupKey"] = group.id
-        else:
-            group_dict["planRegulationGroupKey"] = group.id
-        group_dict["titleOfPlanRegulation"] = self.format_language_string_value(
-            group.name
+        return RyhtiPlanRegulation(
+            planRegulationKey=UUID(plan_regulation.id),
+            lifeCycleStatus=plan_regulation.lifecycle_status.uri,
+            type=plan_regulation.type_of_plan_regulation.uri,
+            planThemes=(
+                [plan_theme.uri for plan_theme in plan_regulation.plan_themes]
+                if plan_regulation.plan_themes
+                else None
+            ),
+            subjectIdentifiers=plan_regulation.subject_identifiers,
+            # Ryhti wants the regulation number as a string.
+            regulationNumber=(
+                str(plan_regulation.ordering)
+                if plan_regulation.ordering is not None
+                else None
+            ),
+            periodOfValidity=period_of_validity,
+            verbalRegulations=(
+                [
+                    type_code.uri
+                    for type_code in plan_regulation.types_of_verbal_plan_regulations
+                ]
+                if plan_regulation.types_of_verbal_plan_regulations
+                else None
+            ),
+            additionalInformations=[
+                self.serialize_additional_information(ai)
+                for ai in plan_regulation.additional_information
+            ],
+            value=self.serialize_attribute_value(plan_regulation),
         )
-        if group.ordering is not None:
-            group_dict["groupNumber"] = group.ordering
-        if not general:
-            group_dict["letterIdentifier"] = group.short_name
-            group_dict["colorNumber"] = "#FFFFFF"
-        group_dict["planRecommendations"] = []
-        for recommendation in group.plan_propositions:
-            group_dict["planRecommendations"].append(
-                self.get_plan_recommendation(recommendation)
-            )
-        group_dict["planRegulations"] = []
-        for regulation in group.plan_regulations:
-            group_dict["planRegulations"].append(self.get_plan_regulation(regulation))
-        return group_dict
 
-    def get_plan_object(
+    def serialize_plan_regulation_group(
+        self, group: models.PlanRegulationGroup
+    ) -> RyhtiPlanRegulationGroup:
+        return RyhtiPlanRegulationGroup(
+            planRegulationGroupKey=UUID(group.id),
+            titleOfPlanRegulation=self.serialize_required_language_string(group.name),
+            groupNumber=group.ordering,
+            letterIdentifier=group.short_name,
+            colorNumber="#FFFFFF",
+            planRecommendations=[
+                self.serialize_recommendation(recommendation)
+                for recommendation in group.plan_propositions
+            ],
+            planRegulations=[
+                self.serialize_regulation(regulation)
+                for regulation in group.plan_regulations
+            ],
+        )
+
+    def serialize_general_regulation_group(
+        self, group: models.PlanRegulationGroup
+    ) -> RyhtiGeneralRegulationGroup:
+        """General regulation groups have no letter identifier or color."""
+        return RyhtiGeneralRegulationGroup(
+            generalRegulationGroupKey=UUID(group.id),
+            titleOfPlanRegulation=self.serialize_required_language_string(group.name),
+            groupNumber=group.ordering,
+            planRecommendations=[
+                self.serialize_recommendation(recommendation)
+                for recommendation in group.plan_propositions
+            ],
+            planRegulations=[
+                self.serialize_regulation(regulation)
+                for regulation in group.plan_regulations
+            ],
+        )
+
+    def serialize_plan_object(
         self,
         plan_object: models.PlanObjectBase,
         geojson: str,
         containing_land_use_area_ids: Mapping[DbId, DbId],
-    ) -> dict:
-        """Construct a dict of Ryhti compatible plan object."""
-        plan_object_dict: dict[str, Any] = {}
-        plan_object_dict["planObjectKey"] = plan_object.id
-        plan_object_dict["lifeCycleStatus"] = plan_object.lifecycle_status.uri
-        plan_object_dict["undergroundStatus"] = plan_object.type_of_underground.uri
-        plan_object_dict["geometry"] = self._format_geometry(
-            geojson, cast("Table", plan_object.__table__)
-        )
-        plan_object_dict["name"] = self.format_language_string_value(plan_object.name)
-        plan_object_dict["description"] = self.format_language_string_value(
-            plan_object.description
-        )
-        plan_object_dict["objectNumber"] = plan_object.ordering
-
+    ) -> RyhtiPlanObject:
+        period_of_validity = None
         if plan_object.period_of_validity_start:
-            plan_object_dict["periodOfValidity"] = self.serialize_date_period(
+            period_of_validity = self.serialize_date_period(
                 plan_object.period_of_validity_start, plan_object.period_of_validity_end
             )
+        vertical_limit = None
         if plan_object.height_min or plan_object.height_max:
-            plan_object_dict["verticalLimit"] = {
-                "dataType": "DecimalRange",
-                # we have to use simplejson because numbers are Decimal
-                "minimumValue": plan_object.height_min,
-                "maximumValue": plan_object.height_max,
-                "unitOfMeasure": plan_object.height_unit,
-            }
-
-        # RelatedPlanObjectKeys
+            vertical_limit = RyhtiDecimalRange(
+                dataType="DecimalRange",
+                minimumValue=plan_object.height_min,
+                maximumValue=plan_object.height_max,
+                unitOfMeasure=plan_object.height_unit,
+            )
         related_plan_object_keys = self._get_related_plan_object_keys(
             plan_object, containing_land_use_area_ids
         )
-        if related_plan_object_keys:
-            plan_object_dict["relatedPlanObjectKeys"] = related_plan_object_keys
-
-        return plan_object_dict
-
-    def format_language_string_value(
-        self, field_value: dict[str, str] | None
-    ) -> dict[str, str] | None:
-        """Formats language string and returns None if empty."""
-        if not field_value or not isinstance(field_value, dict):
-            return None
-
-        languages = {"fin", "swe", "smn", "sms", "sme", "eng"}
-        serialized_str = {
-            language: name
-            for (language, name) in field_value.items()
-            if language in languages and isinstance(name, str) and name
-        }
-
-        return serialized_str or None
+        return RyhtiPlanObject(
+            planObjectKey=UUID(plan_object.id),
+            lifeCycleStatus=plan_object.lifecycle_status.uri,
+            undergroundStatus=plan_object.type_of_underground.uri,
+            geometry=self.serialize_geometry(
+                geojson, cast("Table", plan_object.__table__)
+            ),
+            name=self.serialize_language_string(plan_object.name),
+            description=self.serialize_language_string(plan_object.description),
+            objectNumber=plan_object.ordering,
+            periodOfValidity=period_of_validity,
+            verticalLimit=vertical_limit,
+            relatedPlanObjectKeys=(
+                [UUID(key) for key in related_plan_object_keys]
+                if related_plan_object_keys
+                else None
+            ),
+        )
 
     def _needs_containing_land_use_area(
         self,
@@ -494,15 +576,15 @@ class PlanSerializer:
 
         return related_plan_object_keys
 
-    def get_plan_object_dicts(self, loaded: LoadedPlanObjects) -> list:
-        """Construct a list of Ryhti compatible plan object dicts from plan objects
-        in the local database.
-        """
+    def serialize_plan_objects(
+        self, loaded: LoadedPlanObjects
+    ) -> list[RyhtiPlanObject]:
+        """Serializes the plan objects of a plan in the local database."""
         containing_land_use_area_ids = self._get_containing_land_use_area_ids(
             loaded.plan_objects, loaded.groups_by_object
         )
         return [
-            self.get_plan_object(
+            self.serialize_plan_object(
                 plan_object,
                 loaded.geojson_by_id[plan_object.id],
                 containing_land_use_area_ids,
@@ -510,9 +592,11 @@ class PlanSerializer:
             for plan_object in loaded.plan_objects
         ]
 
-    def get_plan_regulation_groups(self, loaded: LoadedPlanObjects) -> list[dict]:
-        """Construct a list of Ryhti compatible plan regulation groups from plan objects
-        in the local database.
+    def serialize_plan_regulation_groups(
+        self, loaded: LoadedPlanObjects
+    ) -> list[RyhtiPlanRegulationGroup]:
+        """Serializes the regulation groups of the plan objects of a plan in the local
+        database.
         """
         # The groups are already loaded for the whole plan, so there is no need to
         # query them again. List each group only once.
@@ -526,7 +610,7 @@ class PlanSerializer:
             key=lambda group: (group.ordering is None, group.ordering or 0),
         )
         LOGGER.info("arho_export regulation_groups=%d", len(ordered_groups))
-        return [self.get_plan_regulation_group(group) for group in ordered_groups]
+        return [self.serialize_plan_regulation_group(group) for group in ordered_groups]
 
     def _load_plan_objects(
         self, session: Session, plan: models.Plan
@@ -609,48 +693,25 @@ class PlanSerializer:
             },
         )
 
-    def get_plan_regulation_group_relations(
+    def serialize_plan_regulation_group_relations(
         self, loaded: LoadedPlanObjects
-    ) -> list[dict[str, DbId]]:
-        """Construct a list of Ryhti compatible plan regulation group relations from plan
-        objects in the local database.
-        """
+    ) -> list[RyhtiPlanRegulationGroupRelations]:
+        """Serializes the relations between plan objects and their regulation groups."""
         return [
-            {
-                "planObjectKey": plan_object.id,
-                "planRegulationGroupKey": regulation_group.id,
-            }
+            RyhtiPlanRegulationGroupRelations(
+                planObjectKey=UUID(plan_object.id),
+                planRegulationGroupKey=UUID(regulation_group.id),
+            )
             for plan_object in loaded.plan_objects
             for regulation_group in loaded.groups_by_object.get(plan_object.id, [])
         ]
 
-    def get_plan_dictionary(self, plan: models.Plan) -> RyhtiPlan:
-        """Construct a dict of single Ryhti compatible plan from plan in the
-        local database.
+    def serialize_plan(self, plan: models.Plan) -> RyhtiPlan:
+        """Serializes a plan in the local database into a Ryhti plan.
+
+        The plan may be a detached instance; it is attached to a new session while
+        the plan objects are loaded.
         """
-        plan_dictionary = RyhtiPlan()
-
-        # planKey should always be the local uuid, not the permanent plan matter id.
-        plan_dictionary["planKey"] = str(plan.id)
-        # Let's have all the code values preloaded joined from db.
-        # It makes this super easy:
-        plan_dictionary["lifeCycleStatus"] = plan.lifecycle_status.uri
-        plan_dictionary["legalEffectOfLocalMasterPlans"] = (
-            [effect.uri for effect in plan.legal_effects_of_master_plan]
-            if plan.legal_effects_of_master_plan
-            else None
-        )
-        plan_dictionary["scale"] = plan.scale
-        plan_dictionary["geographicalArea"] = self.get_geometry_as_json(plan)
-        # For reasons unknown, Ryhti does not allow multilanguage description.
-        plan_description = (
-            plan.description.get("fin") if isinstance(plan.description, dict) else None
-        )
-        if plan_description:
-            plan_dictionary["planDescription"] = plan_description
-        if plan.official_use_only:
-            plan_dictionary["officialUseOnly"] = plan.official_use_only
-
         # Here come the dependent objects. They are related to the plan directly or
         # via the plan objects, so we better fetch the objects first and then move on.
         with (
@@ -660,130 +721,153 @@ class PlanSerializer:
             session.add(plan)
             loaded = self._load_plan_objects(session, plan)
 
-        plan_dictionary["generalRegulationGroups"] = [
-            self.get_plan_regulation_group(regulation_group, general=True)
-            for regulation_group in plan.general_plan_regulation_groups
-        ]
-
         # Our plans have lots of different plan objects, each of which has one plan
         # regulation group.
-        with log_duration("plan_object_dicts"):
-            plan_dictionary["planObjects"] = self.get_plan_object_dicts(loaded)
-        plan_dictionary["planRegulationGroups"] = self.get_plan_regulation_groups(
-            loaded
-        )
-        plan_dictionary["planRegulationGroupRelations"] = (
-            self.get_plan_regulation_group_relations(loaded)
-        )
+        with log_duration("plan_objects"):
+            plan_objects = self.serialize_plan_objects(loaded)
 
-        if plan.approval_date:
-            plan_dictionary["approvalDate"] = plan.approval_date.isoformat()
-
+        # For reasons unknown, Ryhti does not allow multilanguage description.
+        plan_description = (
+            plan.description.get("fin") if isinstance(plan.description, dict) else None
+        )
+        period_of_validity = None
         if plan.period_of_validity_start:
-            plan_dictionary["periodOfValidity"] = self.serialize_date_period(
+            period_of_validity = self.serialize_date_period(
                 plan.period_of_validity_start, plan.period_of_validity_end
             )
 
-        # Documents are divided into different categories. They may only be added
-        # to plan *after* they have been uploaded.
-        plan_dictionary["planMaps"] = []
-        plan_dictionary["planAnnexes"] = []
-        plan_dictionary["otherPlanMaterials"] = []
-        plan_dictionary["planReport"] = None
-
-        return plan_dictionary
-
-    def get_plan_map(self, document: models.Document) -> dict:
-        """Construct a dict of single Ryhti compatible plan map."""
-        plan_map: dict[str, Any] = {}
-        plan_map["planMapKey"] = document.id
-        plan_map["name"] = self.format_language_string_value(document.name)
-        plan_map["fileKey"] = (
-            str(document.exported_file_key) if document.exported_file_key else None
+        return RyhtiPlan(
+            # planKey should always be the local uuid, not the permanent plan matter id.
+            planKey=UUID(plan.id),
+            # Let's have all the code values preloaded joined from db.
+            # It makes this super easy:
+            lifeCycleStatus=plan.lifecycle_status.uri,
+            legalEffectOfLocalMasterPlans=(
+                [effect.uri for effect in plan.legal_effects_of_master_plan]
+                if plan.legal_effects_of_master_plan
+                else None
+            ),
+            scale=plan.scale,
+            geographicalArea=self.serialize_geometry_of(plan),
+            planDescription=plan_description or None,
+            officialUseOnly=plan.official_use_only or None,
+            generalRegulationGroups=[
+                self.serialize_general_regulation_group(regulation_group)
+                for regulation_group in plan.general_plan_regulation_groups
+            ],
+            planObjects=plan_objects,
+            planRegulationGroups=self.serialize_plan_regulation_groups(loaded),
+            planRegulationGroupRelations=(
+                self.serialize_plan_regulation_group_relations(loaded)
+            ),
+            approvalDate=plan.approval_date,
+            periodOfValidity=period_of_validity,
+            # Documents are divided into different categories. They may only be added
+            # to plan *after* they have been uploaded, see add_document_to_plan.
+            planMaps=[],
+            planAnnexes=[],
+            otherPlanMaterials=[],
         )
-        # TODO: Take the coordinate system from the actual file?
-        plan_map["coordinateSystem"] = (
-            f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{base.PROJECT_SRID!s}"
-        )
-        return plan_map
 
-    def get_plan_attachment_document(self, document: models.Document) -> dict:
-        """Construct a dict of single Ryhti compatible plan attachment document."""
-        attachment_document: dict[str, Any] = {}
-        attachment_document["attachmentDocumentKey"] = document.id
-        attachment_document["documentIdentifier"] = (
-            document.permanent_document_identifier
-        )
-        attachment_document["name"] = self.format_language_string_value(document.name)
-        attachment_document["personalDataContent"] = document.personal_data_content.uri
-        attachment_document["categoryOfPublicity"] = document.category_of_publicity.uri
-        attachment_document["accessibility"] = document.accessibility
-        attachment_document["retentionTime"] = document.retention_time.uri
-        attachment_document["languages"] = [document.language.uri]
-        attachment_document["fileKey"] = (
-            str(document.exported_file_key) if document.exported_file_key else None
-        )
-        attachment_document["documentDate"] = self.get_date(document.document_date)
-        if document.arrival_date:
-            attachment_document["arrivedDate"] = self.get_date(document.arrival_date)
-        attachment_document["typeOfAttachment"] = document.type_of_document.uri
-        return attachment_document
+    def get_exported_file_key(self, document: models.Document) -> UUID:
+        """Returns the Ryhti file key of an uploaded document.
 
-    def get_other_plan_material(self, document: models.Document) -> dict:
-        """Construct a dict of single Ryhti compatible other plan material item."""
-        other_plan_material: dict[str, Any] = {}
-        other_plan_material["otherPlanMaterialKey"] = document.id
-        other_plan_material["name"] = self.format_language_string_value(document.name)
-        other_plan_material["fileKey"] = (
-            str(document.exported_file_key) if document.exported_file_key else None
-        )
-        other_plan_material["personalDataContent"] = document.personal_data_content.uri
-        other_plan_material["categoryOfPublicity"] = document.category_of_publicity.uri
-        return other_plan_material
-
-    def add_plan_report_to_plan_dict(
-        self, document: models.Document, plan_dictionary: RyhtiPlan
-    ) -> RyhtiPlan:
-        """Construct a dict of single Ryhti compatible plan report and add it to the
-        provided plan dict. The plan dict may already have existing plan reports.
+        Raises ValueError if the document has not been uploaded.
         """
-        if not plan_dictionary["planReport"]:
-            plan_dictionary["planReport"] = {
-                "planReportKey": str(uuid4()),
-                "attachmentDocuments": [self.get_plan_attachment_document(document)],
-            }
-        else:
-            plan_dictionary["planReport"]["attachmentDocuments"].append(
-                self.get_plan_attachment_document(document)
+        if document.exported_file_key is None:
+            raise ValueError(f"Document {document.id} has not been uploaded to Ryhti.")
+        return document.exported_file_key
+
+    def serialize_plan_map(self, document: models.Document) -> RyhtiPlanMap:
+        return RyhtiPlanMap(
+            planMapKey=UUID(document.id),
+            name=self.serialize_required_language_string(document.name),
+            fileKey=self.get_exported_file_key(document),
+            # TODO: Take the coordinate system from the actual file?
+            coordinateSystem=(
+                f"http://uri.suomi.fi/codelist/rakrek/ETRS89/code/EPSG{base.PROJECT_SRID!s}"
+            ),
+        )
+
+    def serialize_plan_annex(
+        self, document: models.Document
+    ) -> RyhtiPlanAttachmentDocument:
+        if not document.permanent_document_identifier:
+            raise ValueError(
+                f"Document {document.id} has no permanent document identifier."
             )
-        return plan_dictionary
+        return RyhtiPlanAttachmentDocument(
+            attachmentDocumentKey=UUID(document.id),
+            documentIdentifier=document.permanent_document_identifier,
+            name=self.serialize_required_language_string(document.name),
+            personalDataContent=document.personal_data_content.uri,
+            categoryOfPublicity=document.category_of_publicity.uri,
+            accessibility=document.accessibility,
+            retentionTime=document.retention_time.uri,
+            languages=[document.language.uri],
+            fileKey=self.get_exported_file_key(document),
+            documentDate=self.get_local_date(document.document_date),
+            arrivedDate=(
+                self.get_local_date(document.arrival_date)
+                if document.arrival_date
+                else None
+            ),
+            typeOfAttachment=document.type_of_document.uri,
+        )
 
-    def add_document_to_plan_dict(
-        self, document: models.Document, plan_dictionary: RyhtiPlan
-    ) -> RyhtiPlan:
-        """Construct a dict of single Ryhti compatible plan document and add it to the
-        provided plan dict.
+    def serialize_other_plan_material(
+        self, document: models.Document
+    ) -> RyhtiOtherPlanMaterial:
+        return RyhtiOtherPlanMaterial(
+            otherPlanMaterialKey=UUID(document.id),
+            name=self.serialize_required_language_string(document.name),
+            fileKey=document.exported_file_key,
+            personalDataContent=document.personal_data_content.uri,
+            categoryOfPublicity=document.category_of_publicity.uri,
+        )
 
-        The exact type of the dictionary to be added depends on the document type.
+    def add_plan_report_to_plan(
+        self, document: models.Document, ryhti_plan: RyhtiPlan
+    ) -> None:
+        """Adds a plan report document to the Ryhti plan.
+
+        The plan has a single plan report that holds all the report documents.
+        """
+        if ryhti_plan.plan_report is None:
+            ryhti_plan.plan_report = RyhtiPlanReport(
+                planReportKey=uuid4(),
+                attachmentDocuments=[self.serialize_plan_annex(document)],
+            )
+        else:
+            ryhti_plan.plan_report.attachment_documents.append(
+                self.serialize_plan_annex(document)
+            )
+
+    def add_document_to_plan(
+        self, document: models.Document, ryhti_plan: RyhtiPlan
+    ) -> None:
+        """Adds a document to the Ryhti plan. The document type picks the category.
+
+        The document must be uploaded first. Raises ValueError if the document has no
+        file key.
         """
         if document.type_of_document.value == "03":
             # Kaavakartta
-            plan_dictionary["planMaps"].append(self.get_plan_map(document))
+            if ryhti_plan.plan_maps is None:
+                ryhti_plan.plan_maps = []
+            ryhti_plan.plan_maps.append(self.serialize_plan_map(document))
         elif document.type_of_document.value == "06":
             # Kaavaselostus
-            # For some reason, if there are multiple plan reports, they will have to be
-            # added inside a single plan report instead of a list of plan reports.
-            plan_dictionary = self.add_plan_report_to_plan_dict(
-                document, plan_dictionary
-            )
+            self.add_plan_report_to_plan(document, ryhti_plan)
         elif document.type_of_document.value == "99":
             # Muu asiakirja
-            plan_dictionary["otherPlanMaterials"].append(
-                self.get_other_plan_material(document)
+            if ryhti_plan.other_plan_materials is None:
+                ryhti_plan.other_plan_materials = []
+            ryhti_plan.other_plan_materials.append(
+                self.serialize_other_plan_material(document)
             )
         else:
             # Kaavan liite
-            plan_dictionary["planAnnexes"].append(
-                self.get_plan_attachment_document(document)
-            )
-        return plan_dictionary
+            if ryhti_plan.plan_annexes is None:
+                ryhti_plan.plan_annexes = []
+            ryhti_plan.plan_annexes.append(self.serialize_plan_annex(document))

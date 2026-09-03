@@ -29,11 +29,11 @@ from ryhti_client.serializer import LOCAL_TZ, PlanSerializer
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    from ryhti_api_client import Plan as RyhtiPlan
     from sqlalchemy.orm import Session
 
     from database.base import DbId
     from ryhti_client.ryhti_client import RyhtiResponse
-    from ryhti_client.ryhti_schema import RyhtiPlan
 
 LOGGER = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class DatabaseClient:
         The returned instance is detached. Since the session does not expire on
         commit, plan data remains accessible without a session. Relationships
         configured with lazy loading require reattaching the instance to a new
-        session (see PlanSerializer.get_plan_dictionary).
+        session (see PlanSerializer.serialize_plan).
 
         Raises PlanNotFoundError if the plan does not exist.
         """
@@ -167,14 +167,14 @@ class DatabaseClient:
         self,
         plan: models.Plan,
         responses: list[RyhtiResponse],
-        plan_dictionary: RyhtiPlan | None = None,
+        ryhti_plan: RyhtiPlan | None = None,
     ) -> None:
         """Save uploaded plan document keys, export times and etags to the database.
 
         The responses must come from upload_plan_documents called with the *same*
         plan instance, so that they pair up with plan.documents in order.
 
-        If a plan dictionary is provided, the document data is also appended to it.
+        If a Ryhti plan is provided, the documents are also added to it.
         """
         with self.Session(expire_on_commit=False) as session:
             session.add(plan)
@@ -191,8 +191,8 @@ class DatabaseClient:
                             "ETag"
                         ]
                 # We can only serialize the document after it has been uploaded
-                if plan_dictionary is not None:
-                    self.serializer.add_document_to_plan_dict(document, plan_dictionary)
+                if ryhti_plan is not None:
+                    self.serializer.add_document_to_plan(document, ryhti_plan)
             session.commit()
 
     def set_permanent_plan_identifier(
@@ -230,7 +230,7 @@ class DatabaseClient:
                     session.delete(existing_plan)
                     session.flush()
                 else:
-                    raise PlanAlreadyExistsError(ryhti_plan.plan_key)
+                    raise PlanAlreadyExistsError(str(ryhti_plan.plan_key))
 
             desesrializer = Deserializer(session)
             plan = desesrializer.deserialise_ryhti_plan(

@@ -1870,7 +1870,6 @@ def desired_plan_dict(
         "planMaps": [],
         "planAnnexes": [],
         "otherPlanMaterials": [],
-        "planReport": None,
         "generalRegulationGroups": [
             {
                 "generalRegulationGroupKey": general_regulation_group_instance.id,
@@ -1900,11 +1899,8 @@ def desired_plan_dict(
                 "planRecommendations": [],
             }
         ],
-        "planDescription": (
-            complete_test_plan.description["fin"]
-            if complete_test_plan.description
-            else None
-        ),  # TODO: should this be a single language string? why?
+        # TODO: should this be a single language string? why?
+        "planDescription": "test_plan",
         "planObjects": [
             {
                 "planObjectKey": land_use_area_instance.id,
@@ -1983,9 +1979,6 @@ def desired_plan_dict(
                         ],
                     },
                 },
-                "name": other_area_instance.name,
-                "description": other_area_instance.description,
-                "objectNumber": None,
                 "relatedPlanObjectKeys": [land_use_area_instance.id],
             },
             {
@@ -1996,9 +1989,6 @@ def desired_plan_dict(
                     "srid": str(PROJECT_SRID),
                     "geometry": {"type": "Point", "coordinates": [382000.0, 6678000.0]},
                 },
-                "name": point_instance.name,
-                "description": point_instance.description,
-                "objectNumber": point_instance.ordering,
             },
         ],
         # groups will not be in order by object, because we join all the group ids together to find
@@ -2149,7 +2139,6 @@ def desired_plan_dict(
                         "planThemes": [
                             "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
                         ],
-                        "recommendationNumber": plan_proposition_instance.ordering,
                         # TODO: plan recommendation documents to be added.
                     }
                 ],
@@ -2284,7 +2273,6 @@ def desired_plan_dict(
                         "planRegulationKey": construction_area_plan_regulation_instance.id,
                         "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
                         "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/rakennusala",
-                        "subjectIdentifiers": construction_area_plan_regulation_instance.subject_identifiers,
                         "additionalInformations": [
                             {
                                 "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/osaAlue"
