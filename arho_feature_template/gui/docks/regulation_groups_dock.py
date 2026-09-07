@@ -4,9 +4,9 @@ import logging
 from importlib import resources
 from typing import TYPE_CHECKING, Generator
 
-from qgis.core import Qgis, QgsApplication, QgsFeature, QgsFeatureRequest, QgsGeometry
+from qgis.core import Qgis, QgsApplication, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsProject, QgsVectorLayer
 from qgis.gui import QgsDockWidget
-from qgis.PyQt import uic
+from qgis.PyQt import sip, uic
 from qgis.PyQt.QtCore import QModelIndex, QPoint, QRegularExpression, QSortFilterProxyModel, Qt, pyqtSignal
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QHeaderView, QMenu, QMessageBox, QPushButton, QTableView
@@ -128,15 +128,28 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.plan_locked = False
 
+        # Project layers outlive the dock, so the layers wired in `initialize` are tracked
+        # and disconnected again in `unload`
+        self._connected_layers: list[QgsVectorLayer] = []
+
     def initialize(self):
         logger.debug("Initializing RegulationGroupsDock layer signal connections")
         # Connect feat remove signals for each plan object layer so the linked plan object counts
         # stay updated
+        self.disconnect_layer_signals()
         for plan_object_layer in plan_feature_layers:
             logger.debug("Connecting committedFeaturesRemoved for layer=%s", plan_object_layer.name)
-            plan_object_layer.get_from_project().committedFeaturesRemoved.connect(
-                lambda _layer_id, ids, layer_name=plan_object_layer.name: self._on_feats_removed(layer_name, ids)
-            )
+            vector_layer = plan_object_layer.get_from_project()
+            vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
+            self._connected_layers.append(vector_layer)
+
+    def disconnect_layer_signals(self):
+        for vector_layer in self._connected_layers:
+            # If we are closing QGIS, the layers are gone already at this point
+            if not sip.isdeleted(vector_layer):
+                logger.debug("Disconnecting committedFeaturesRemoved for layer=%s", vector_layer.name())
+                vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
+        self._connected_layers.clear()
 
     def _disconnect_signals(self):
         logger.debug("Disconnecting RegulationGroupsDock UI signals")
@@ -442,6 +455,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def unload(self):
         logger.debug("Unloading RegulationGroupsDock")
+        self.disconnect_layer_signals()
         self._disconnect_signals()
 
         disconnect_signal(self.request_new_regulation_group_empty)
@@ -452,7 +466,9 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         disconnect_signal(self.request_remove_selected_groups)
         disconnect_signal(self.request_add_groups_to_features)
 
-    def _on_feats_removed(self, layer_name: str, feat_ids):
+    def _on_feats_removed(self, layer_id: str, feat_ids):
+        vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)
+        layer_name = vector_layer.name()
         logger.debug("Handling removed features for regulation group counts layer=%s", layer_name)
         feat_ids_set = set(feat_ids)
 
