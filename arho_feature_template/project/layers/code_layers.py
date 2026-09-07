@@ -12,6 +12,7 @@ from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.exceptions import ConfigSyntaxError, LayerNameNotFoundError
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
+from arho_feature_template.utils.project_utils import CODE_LAYER_GROUP_NAME
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature
@@ -29,6 +30,7 @@ class PlanType(str, enum.Enum):
 
 
 class AbstractCodeLayer(AbstractLayer):
+    group = CODE_LAYER_GROUP_NAME
     _cache: ClassVar[dict[str, dict[str, Any]]] = {}
     _attributes_to_leave_out_from_cache: ClassVar[list[str]] = ["created_at", "modified_at"]
     _field_names: ClassVar[list[str]] = []

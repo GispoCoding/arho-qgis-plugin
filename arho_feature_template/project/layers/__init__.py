@@ -3,32 +3,31 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Generator, cast
 
-from qgis.core import QgsFeatureRequest, QgsProject, QgsVectorLayer
+from qgis.core import QgsFeatureRequest
 
-from arho_feature_template.utils.project_utils import get_vector_layer_from_project
+from arho_feature_template.exceptions import LayerNotFoundError
+from arho_feature_template.utils.project_utils import find_vector_layers, get_vector_layer_from_project
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature
+    from qgis.core import QgsFeature, QgsVectorLayer
 
 
 class AbstractLayer(ABC):
     name: ClassVar[str]
+    # Name of the layer tree group the layer is expected to be in. Layer names alone are
+    # not unique in the project.
+    group: ClassVar[str]
 
     @classmethod
     def exists(cls) -> bool:
-        project = QgsProject.instance()
-        if not project:
+        try:
+            return bool(find_vector_layers(cls.name, cls.group))
+        except LayerNotFoundError:  # Also covers LayerGroupNotFoundError
             return False
-
-        layers = project.mapLayersByName(cls.name)
-        if not layers:
-            return False
-
-        return bool([layer for layer in layers if isinstance(layer, QgsVectorLayer)])
 
     @classmethod
     def get_from_project(cls) -> QgsVectorLayer:
-        return get_vector_layer_from_project(cls.name)
+        return get_vector_layer_from_project(cls.name, cls.group)
 
     @classmethod
     def get_features(cls):

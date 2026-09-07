@@ -506,8 +506,9 @@ class PlanManager(QObject):
         self.previous_map_tool = iface.mapCanvas().mapTool()
 
         layer: QgsVectorLayer = iface.activeLayer()
-        plan_layer_names = [plan_layer.name for plan_layer in plan_layers]
-        if layer.name() in plan_layer_names:
+        # Compare by layer id, not by name: the "Ajantasakaava" views share names with the plan layers
+        arho_layer_ids = {plan_layer.get_from_project().id() for plan_layer in plan_layers}
+        if layer.id() in arho_layer_ids:
             iface.messageBar().pushWarning("", "Kaavasuunnitelman ulkorajaa ei voi tuoda ARHOn tasoilta.")
             return
         if layer.geometryType() != QgsWkbTypes.GeometryType.PolygonGeometry:

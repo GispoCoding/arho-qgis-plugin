@@ -36,11 +36,13 @@ from arho_feature_template.utils.misc_utils import (
     get_active_plan_matter_id,
     iface,
 )
+from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 
 logger = logging.getLogger(__name__)
 
 
 class AbstractFeatureLayer(AbstractLayer):
+    group = PLAN_LAYER_GROUP_NAME
     filter_template: ClassVar[Template | None]
 
     @classmethod
