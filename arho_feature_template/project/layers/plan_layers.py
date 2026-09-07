@@ -128,6 +128,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
         feature["producers_plan_identifier"] = model.producers_plan_identifier
         feature["case_identifier"] = model.case_identifier
         feature["plan_type_id"] = model.plan_type_id
+        feature["digital_origin_id"] = model.digital_origin_id
         feature["organisation_id"] = model.organisation_id
 
         return feature
@@ -142,6 +143,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
             producers_plan_identifier=feature["producers_plan_identifier"],
             case_identifier=feature["case_identifier"],
             plan_type_id=feature["plan_type_id"],
+            digital_origin_id=feature["digital_origin_id"],
             organisation_id=feature["organisation_id"],
             id_=feature["id"],
             modified=False,

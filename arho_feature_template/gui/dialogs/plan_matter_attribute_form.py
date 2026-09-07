@@ -7,7 +7,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit
 
 from arho_feature_template.core.models import PlanMatter
-from arho_feature_template.project.layers.code_layers import OrganisationLayer, PlanTypeLayer
+from arho_feature_template.project.layers.code_layers import DigitalOriginLayer, OrganisationLayer, PlanTypeLayer
 
 if TYPE_CHECKING:
     from arho_feature_template.gui.components.code_combobox import CodeComboBox, HierarchicalCodeComboBox
@@ -27,6 +27,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
     description_edit: LocalizedMultilineTextInputWidget
     organisation_combo_box: CodeComboBox
     plan_type_combo_box: HierarchicalCodeComboBox
+    digital_origin_combo_box: HierarchicalCodeComboBox
     record_number_edit: QLineEdit
     producers_id_edit: QLineEdit
     case_id_edit: QLineEdit
@@ -42,6 +43,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
         # --- Populate comboboxes from code layers ---
         self.organisation_combo_box.populate_from_code_layer(OrganisationLayer)
         self.plan_type_combo_box.populate_from_code_layer(PlanTypeLayer)
+        self.digital_origin_combo_box.populate_from_code_layer(DigitalOriginLayer)
 
         # --- Load model values into form ---
         self._load_model_into_form()
@@ -50,6 +52,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
         self.name_edit.changed.connect(self._check_required_fields)
         self.organisation_combo_box.currentIndexChanged.connect(self._check_required_fields)
         self.plan_type_combo_box.currentIndexChanged.connect(self._check_required_fields)
+        self.digital_origin_combo_box.currentIndexChanged.connect(self._check_required_fields)
 
         # Disable OK until required fields are valid
         self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
@@ -70,12 +73,17 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
         self.organisation_combo_box.set_value(self.plan_matter.organisation_id)
         self.plan_type_combo_box.set_value(self.plan_matter.plan_type_id)
 
+        # New plan matters default to the digital origin of plans made with this plugin
+        digital_origin_id = self.plan_matter.digital_origin_id or DigitalOriginLayer.get_default_id()
+        self.digital_origin_combo_box.set_value(digital_origin_id)
+
     def _check_required_fields(self) -> None:
         ok_button = self.button_box.button(QDialogButtonBox.StandardButton.Ok)
         if (
             self.name_edit.get_value()
             and self.plan_type_combo_box.value() is not None
             and self.organisation_combo_box.value() is not None
+            and self.digital_origin_combo_box.value() is not None
         ):
             ok_button.setEnabled(True)
         else:
@@ -93,6 +101,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
             description=self.description_edit.get_value(),
             organisation_id=self.organisation_combo_box.value(),
             plan_type_id=self.plan_type_combo_box.value(),
+            digital_origin_id=self.digital_origin_combo_box.value(),
             permanent_plan_identifier=self.permanent_identifier_edit.text() or None,
             case_identifier=self.case_id_edit.text() or None,
             record_number=self.record_number_edit.text() or None,

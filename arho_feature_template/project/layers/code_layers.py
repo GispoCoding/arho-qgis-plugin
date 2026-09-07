@@ -485,6 +485,20 @@ class LegalEffectsLayer(AbstractCodeLayer):
     category_only_codes: ClassVar[list[str]] = []
 
 
+class DigitalOriginLayer(AbstractCodeLayer):
+    name = "Digitaalinen alkuperä"
+    URI = "http://uri.suomi.fi/codelist/rytj/RY_DigitaalinenAlkupera"
+
+    category_only_codes: ClassVar[list[str]] = []
+
+    # "Tietomallin mukaan laadittu", the default for plans made with this plugin
+    default_code_value = "01"
+
+    @classmethod
+    def get_default_id(cls) -> str | None:
+        return cls.get_id_by_attribute("value", cls.default_code_value)
+
+
 code_layers = AbstractCodeLayer.__subclasses__()
 
 
