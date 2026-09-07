@@ -47,6 +47,25 @@ def test_regulation_groups_dock_disconnects_layers_on_unload(monkeypatch, plan_o
         plan_object_layer.committedFeaturesRemoved.disconnect(dock._on_feats_removed)
 
 
+def test_plan_objects_dock_disconnects_layers_on_unload(monkeypatch, plan_object_layer, plugin):
+    dock = plugin.plan_manager.features_dock
+    monkeypatch.setattr(
+        "arho_feature_template.gui.docks.plan_features_dock.plan_feature_layers",
+        [FakeLayerClass(plan_object_layer)],
+    )
+    # Needs a project with the code layer groups, and is not what this test is about
+    monkeypatch.setattr(dock.push_button_edit_lifecycle, "populate_menu", lambda: None)
+
+    dock.initialize()
+    assert dock._connected_layers == [plan_object_layer]
+
+    plugin.unload()
+
+    assert dock._connected_layers == []
+    with pytest.raises(TypeError):
+        plan_object_layer.committedFeaturesRemoved.disconnect(dock._on_feats_removed)
+
+
 def test_regulation_groups_dock_does_not_stack_layer_connections(monkeypatch, plan_object_layer):
     """`initialize` runs on every project read."""
     dock = RegulationGroupsDock()

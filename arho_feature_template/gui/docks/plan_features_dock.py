@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import logging
-from contextlib import suppress
 from importlib import resources
 from typing import TYPE_CHECKING, Iterable, cast
 
 from qgis.core import Qgis, QgsApplication, QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsDockWidget, QgsFilterLineEdit
-from qgis.PyQt import uic
+from qgis.PyQt import sip, uic
 from qgis.PyQt.QtCore import (
     QDate,
     QItemSelection,
@@ -26,7 +25,6 @@ from arho_feature_template.core import feature_editing
 from arho_feature_template.core.feature_editing import save_plan_object
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.exceptions import LayerNotFoundError
 from arho_feature_template.gui.components.validity_label import VALIDITY_SORT_ROLE, validity_item_from_model
 from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
@@ -149,6 +147,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         # table select -> trigger map select -> trigger table select.. etc.)
         self._syncing_selections = False
         self._initialized = False
+        # Project layers outlive the dock, so the layers wired in `initialize` are tracked
+        # and disconnected again in `unload`
+        self._connected_layers: list[QgsVectorLayer] = []
 
         self.model = QStandardItemModel()
         self.model.setColumnCount(4)
@@ -173,7 +174,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.selection_model = self.table.selectionModel()
 
         # Connect signals
-        self.plan_manager_ref.plan_set.connect(lambda: self.model.setRowCount(0))
+        self.plan_manager_ref.plan_set.connect(self._clear_rows)
         self.table.doubleClicked.connect(self._open_form)
         self.selection_model.selectionChanged.connect(self._on_table_selection_changed)
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -232,8 +233,12 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         data = self._data_from_index(proxy_index)
         return data[0] if data else None
 
+    def _clear_rows(self):
+        self.model.setRowCount(0)
+
     def initialize(self):
         logger.debug("Initializing PlanObjectsDock layer signal connections")
+        self.disconnect_layer_signals()
         for layer in plan_feature_layers:
             vector_layer = layer.get_from_project()
             logger.debug("Connecting feature layer signals layer=%s", vector_layer.name())
@@ -241,21 +246,24 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             vector_layer.committedFeaturesAdded.connect(self._on_feat_added)
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
             vector_layer.committedAttributeValuesChanges.connect(self._on_feat_attributes_changed)
+            self._connected_layers.append(vector_layer)
 
         self.push_button_edit_lifecycle.populate_menu()
 
-    def unload(self) -> None:
-        logger.debug("Unloading PlanObjectsDock and disconnecting signals")
-        for layer in plan_feature_layers:
-            # If we are closing QGIS, layers are gone already at this point. If we are reloading the plugin,
-            # the signals need to be disconnected to avoid duplicate connections
-            with suppress(LayerNotFoundError):
-                vector_layer = layer.get_from_project()
+    def disconnect_layer_signals(self):
+        for vector_layer in self._connected_layers:
+            # If we are closing QGIS, the layers are gone already at this point
+            if not sip.isdeleted(vector_layer):
                 logger.debug("Disconnecting feature layer signals layer=%s", vector_layer.name())
                 vector_layer.selectionChanged.disconnect(self._on_feature_selection_changed)
                 vector_layer.committedFeaturesAdded.disconnect(self._on_feat_added)
                 vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
                 vector_layer.committedAttributeValuesChanges.disconnect(self._on_feat_attributes_changed)
+        self._connected_layers.clear()
+
+    def unload(self) -> None:
+        logger.debug("Unloading PlanObjectsDock and disconnecting signals")
+        self.disconnect_layer_signals()
 
     def create_plan_feature_view(self):
         logger.debug("Creating plan feature table view")

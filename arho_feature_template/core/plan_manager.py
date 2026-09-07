@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import os
@@ -10,12 +9,14 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsFeature,
     QgsGeometry,
+    QgsMapLayer,
     QgsProject,
     QgsVariantUtils,
     QgsVectorLayer,
     QgsWkbTypes,
 )
 from qgis.gui import QgsMapToolDigitizeFeature
+from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
 
@@ -41,7 +42,7 @@ from arho_feature_template.core.models import (
 from arho_feature_template.core.prints.regulations_print_generator import RegulationsPrintGenerator
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.exceptions import LayerNotFoundError, UnsavedChangesError
+from arho_feature_template.exceptions import UnsavedChangesError
 from arho_feature_template.gui.dialogs.import_features_form import ImportFeaturesForm
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
@@ -109,7 +110,6 @@ from arho_feature_template.utils.layer_utils import (
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
-    disconnect_signal,
     get_active_plan_id,
     get_active_plan_matter_id,
     handle_unsaved_changes,
@@ -179,6 +179,8 @@ class PlanManager(QObject):
         # `QgsProject` outlives the plugin, so the connection to `cleared` has to be tracked
         # and undone. It is made per project load and dropped again when the signal fires.
         self._project_cleared_connected = False
+        # Project layers outlive the plugin too
+        self._error_signal_layers: list[QgsMapLayer] = []
 
         self.plan_feature_libraries = []
         self.regulation_group_libraries = []
@@ -1058,18 +1060,19 @@ class PlanManager(QObject):
 
     def connect_layer_error_signals(self):
         logger.debug("Connecting layer error signals")
+        self.disconnect_layer_error_signals()
         layers = plan_layers + plan_matter_layers
         for layer in layers:
             map_layer = layer.get_from_project()
             map_layer.raiseError.connect(self.on_layer_error)
+            self._error_signal_layers.append(map_layer)
 
     def disconnect_layer_error_signals(self):
-        layers = plan_layers + plan_matter_layers
-        for layer in layers:
-            # Plugin might be unloaded while there is no arho project or layers open
-            with contextlib.suppress(LayerNotFoundError):
-                map_layer = layer.get_from_project()
+        for map_layer in self._error_signal_layers:
+            # If we are closing QGIS, the layers are gone already at this point
+            if not sip.isdeleted(map_layer):
                 map_layer.raiseError.disconnect(self.on_layer_error)
+        self._error_signal_layers.clear()
 
     def on_layer_error(self, message: str):
         sender_layer = self.sender()
@@ -1132,7 +1135,6 @@ class PlanManager(QObject):
         self.features_dock.setParent(None)
         self.features_dock.deleteLater()
 
-        disconnect_signal(self.plan_set)
         self.disconnect_layer_error_signals()
         self.disconnect_project_cleared_signal()
 

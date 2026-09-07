@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import json
 import os
-from contextlib import suppress
 from functools import wraps
 from typing import TYPE_CHECKING, Any, cast
 
 from qgis.core import QgsExpressionContextUtils, QgsProject, QgsSymbol, QgsVectorLayer
-from qgis.PyQt.QtCore import NULL, QDate, QLocale, Qt, pyqtBoundSignal
+from qgis.PyQt.QtCore import NULL, QDate, QLocale, Qt
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
 
@@ -116,16 +115,6 @@ def get_active_plan_matter_id():
 def get_active_plan_matter_name():
     """Retrieve the active plan matter name stored as a project variable."""
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_matter_name")
-
-
-def disconnect_signal(signal: pyqtBoundSignal) -> None:
-    """
-    Disconnects all existing connections of a given signal.
-
-    If no connections are defined for the signal, ignores the raised error silently.
-    """
-    with suppress(TypeError):
-        signal.disconnect()
 
 
 def use_wait_cursor(func):
