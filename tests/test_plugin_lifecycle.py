@@ -122,6 +122,43 @@ def test_unload_disconnects_project_cleared(plugin_factory):
         QgsProject.instance().cleared.disconnect(manager.on_project_cleared)
 
 
+def test_unload_runs_the_plan_manager_before_deleting_the_actions(plugin_factory, monkeypatch):
+    """`PlanManager.unload` triggers actionPan, which reaches back into the actions.
+
+    `deactivated` -> `identify_plan_features_action.setChecked(False)` used to run on
+    actions that had already been passed to `deleteLater`.
+    """
+    plugin = plugin_factory()
+    action_count = len(plugin.actions)
+    assert action_count > 0
+    seen = []
+    real_unload = plugin.plan_manager.unload
+
+    def spy():
+        seen.append((len(plugin.actions), plugin.toolbar is not None))
+        real_unload()
+
+    monkeypatch.setattr(plugin.plan_manager, "unload", spy)
+
+    plugin.unload()
+
+    # The actions and the toolbar were still alive when the plan manager unloaded
+    assert seen == [(action_count, True)]
+    assert plugin.actions == []
+
+
+def test_unload_with_the_identify_tool_active(plugin_factory, iface):
+    """The pan trigger inside `PlanManager.unload` takes our tool off the canvas."""
+    plugin = plugin_factory()
+    plugin.identify_plan_features_action.setChecked(True)
+    inspect_tool = plugin.plan_manager.inspect_plan_feature_tool
+    assert iface.mapCanvas().mapTool() is inspect_tool
+
+    plugin.unload()
+
+    assert iface.mapCanvas().mapTool() is not inspect_tool
+
+
 def test_unload_disconnects_the_plan_manager_signals(plugin_factory):
     """`Plugin` is not a QObject, so Qt drops none of these when the plugin goes away.
 

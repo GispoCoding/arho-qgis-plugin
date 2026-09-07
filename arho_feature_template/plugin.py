@@ -692,6 +692,11 @@ class Plugin:
         self.plan_manager_connections.clear()
         logger.debug("Plan manager signals disconnected")
 
+        # Handle plan manager. This runs before the actions are deleted, because
+        # `PlanManager.unload` starts with `iface.actionPan().trigger()`, which used to
+        # reach `setChecked`/`setEnabled` on actions already passed to `deleteLater`.
+        self.plan_manager.unload()
+
         # Handle actions
         for action in self.actions:
             iface.removePluginMenu(Plugin.name, action)
@@ -704,9 +709,6 @@ class Plugin:
         iface.mainWindow().removeToolBar(self.toolbar)
         self.toolbar = None
         logger.debug("Plugin toolbar removed")
-
-        # Handle plan manager
-        self.plan_manager.unload()
 
         # Docks are unparented explicitly, because removeDockWidget only hides them: without this
         # they stay children of the main window until the deferred deletion is processed, which
