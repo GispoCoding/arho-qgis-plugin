@@ -179,6 +179,9 @@ class PlanManager(QObject):
         # The tool that was active before one of ours took over. We do not own it.
         self.previous_map_tool: QgsMapTool | None = None
 
+        # Shown non-modally, so it outlives the call that opened it
+        self.import_features_form: ImportFeaturesForm | None = None
+
         # `QgsProject` outlives the plugin, so the connection to `cleared` has to be tracked
         # and undone. It is made per project load and dropped again when the signal fires.
         self._project_cleared_connected = False
@@ -360,10 +363,26 @@ class PlanManager(QObject):
 
     def open_import_features_dialog(self):
         logger.debug("Opening import features dialog")
+        self.close_import_features_dialog()
         self.import_features_form = ImportFeaturesForm(
             self.regulation_group_libraries, self.active_plan_regulation_group_library, self
         )
         self.import_features_form.show()
+
+    def close_import_features_dialog(self):
+        """Closes and deletes the import features form if one is open.
+
+        It is shown non-modally and parented to the QGIS main window, so nothing else
+        takes it down: left open at unload it stays a live child of the main window
+        pointing at destroyed managers and docks.
+        """
+        form = self.import_features_form
+        self.import_features_form = None
+        if form is not None and not sip.isdeleted(form):
+            logger.debug("Closing import features dialog")
+            form.close()
+            form.setParent(None)
+            form.deleteLater()
 
     def update_lock_status(self, plan_model: Plan):
         """If input plan is the active plan, applies locked/unlocked state from the given model."""
@@ -1156,6 +1175,8 @@ class PlanManager(QObject):
         iface.removeDockWidget(self.features_dock)
         self.features_dock.setParent(None)
         self.features_dock.deleteLater()
+
+        self.close_import_features_dialog()
 
         self.disconnect_layer_error_signals()
         self.disconnect_project_cleared_signal()

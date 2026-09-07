@@ -10,7 +10,7 @@ import pytest
 import qgis.utils
 from qgis.core import QgsProject
 from qgis.PyQt.QtCore import QCoreApplication
-from qgis.PyQt.QtWidgets import QDockWidget
+from qgis.PyQt.QtWidgets import QDialog, QDockWidget
 
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.core.template_manager import TemplateManager
@@ -194,6 +194,27 @@ def test_unload_with_the_identify_tool_active(plugin_factory, iface):
     plugin.unload()
 
     assert iface.mapCanvas().mapTool() is not inspect_tool
+
+
+def test_import_features_form_starts_as_none(plugin):
+    assert plugin.plan_manager.import_features_form is None
+
+
+def test_unload_closes_the_import_features_form(plugin_factory, iface):
+    """It is shown non-modally, so it used to outlive the docks it points at.
+
+    A plain `QDialog` stands in for `ImportFeaturesForm`, which needs the project layers.
+    """
+    plugin = plugin_factory()
+    form = QDialog(iface.mainWindow())
+    form.show()
+    plugin.plan_manager.import_features_form = form
+
+    plugin.unload()
+
+    assert plugin.plan_manager.import_features_form is None
+    assert form.parent() is None
+    assert form not in iface.mainWindow().findChildren(QDialog)
 
 
 def test_unload_disconnects_the_plan_manager_signals(plugin_factory):
