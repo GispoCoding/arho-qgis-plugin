@@ -92,11 +92,38 @@ def upgrade() -> None:
     op.execute(
         "GRANT SELECT ON codes.digital_origin TO arho_read_only, arho_read_write;"
     )
+    # The koodistot loader only populates the code list later, so insert the code
+    # that existing plan matters get here. The loader finds this row by its value and
+    # updates the other fields.
+    op.execute(
+        """
+        INSERT INTO codes.digital_origin (value, status, level, name)
+        VALUES (
+            '01',
+            'VALID',
+            1,
+            '{"fin": "Tietomallin mukaan laadittu",
+              "swe": "Utarbetad enligt en datamodell",
+              "eng": "Prepared according to data model"}'::jsonb
+        );
+        """
+    )
+    # Add the column as nullable, set the code for existing plan matters, and only
+    # then require a value.
     op.add_column(
         "plan_matter",
-        sa.Column("digital_origin_id", sa.UUID(as_uuid=False), nullable=False),
+        sa.Column("digital_origin_id", sa.UUID(as_uuid=False), nullable=True),
         schema="hame",
     )
+    op.execute(
+        """
+        UPDATE hame.plan_matter
+        SET digital_origin_id = (
+            SELECT id FROM codes.digital_origin WHERE value = '01'
+        );
+        """
+    )
+    op.alter_column("plan_matter", "digital_origin_id", nullable=False, schema="hame")
     op.create_foreign_key(
         "digital_origin_id_fkey",
         "plan_matter",
