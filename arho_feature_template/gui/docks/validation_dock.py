@@ -51,7 +51,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         logger.debug("Initializing ValidationDock")
 
         self.plan_manager = plan_manager
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self)
         self.lambda_service.validation_received.connect(self.list_validation_errors)
         self.lambda_service.validation_failed.connect(self.handle_validation_call_errors)
         self.validate_button.clicked.connect(self.validate_plan)
@@ -63,6 +63,15 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         if not SettingsManager.get_data_exchange_layer_enabled():
             self.validate_plan_matter_button.hide()
             logger.debug("Data exchange layer disabled, hiding validate plan matter button")
+
+    def unload(self):
+        """Cancels a validation still in flight.
+
+        Qt drops the connections when the dock is destroyed, but the reply would still
+        reach a `LambdaService` that is being torn down with it.
+        """
+        logger.debug("Unloading ValidationDock")
+        self.lambda_service.abort_pending()
 
     def handle_validation_call_errors(self, error: str):
         self.validation_label.setText("Validoinnissa tapahtui virhe.")

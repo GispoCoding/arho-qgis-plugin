@@ -48,13 +48,22 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
 
         self.button_box_accept.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
 
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self)
         self.lambda_service.plan_imported.connect(self.plan_imported)
         self.lambda_service.plan_import_failed.connect(self.handle_import_failed)
 
         self.imported_plan_id: str | None = None
         self.plan_json: str | None = None
         self.extra_data: dict | None = None
+
+    def done(self, result: int) -> None:
+        """Every close path lands here: accept, reject, Esc and the window close button.
+
+        The dialog owns the request, so nothing else would cancel it. Without this the
+        whole tree, network manager included, is torn down with a reply still in flight.
+        """
+        self.lambda_service.abort_pending()
+        super().done(result)
 
     def check_inputs(self):
         """Enables ok/save button only if both file paths are defined."""

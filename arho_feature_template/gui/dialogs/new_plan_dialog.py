@@ -126,7 +126,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.source_plan.currentIndexChanged.connect(self._on_source_plan_changed)
         self.check_box_show_allowed_transitions_only.stateChanged.connect(self._on_show_allowed_transitions_changed)
 
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self)
         self.lambda_service.plan_copied.connect(self._plan_copied)
         self.lambda_service.plan_copy_failed.connect(self._handle_copy_failed)
 
@@ -316,6 +316,15 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
             else:
                 view.setRowHidden(row_num, False)
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEnabled)
+
+    def done(self, result: int) -> None:
+        """Every close path lands here: accept, reject, Esc and the window close button.
+
+        The dialog owns the copy request, so nothing else would cancel it. Without this
+        the whole tree, network manager included, is torn down with a reply in flight.
+        """
+        self.lambda_service.abort_pending()
+        super().done(result)
 
     def _on_source_plan_changed(self, index: int):  # noqa: ARG002
         self._update_allowed_plan_lifecycles()
