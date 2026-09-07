@@ -97,13 +97,15 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.delete_btn.setIcon(QgsApplication.getThemeIcon("mActionDeleteSelected.svg"))
         self.edit_btn.setIcon(QgsApplication.getThemeIcon("mActionEditTable.svg"))
 
-        new_regulation_group_menu = QMenu()
+        # setMenu does not take ownership: without a parent the menu survives only on
+        # the /KeepReference/ the bindings put on the button
+        new_regulation_group_menu = QMenu(self)
         self.new_group_empty_action = new_regulation_group_menu.addAction("Tyhjä")
         self.new_group_from_template_action = new_regulation_group_menu.addAction("Pohjasta")
         new_regulation_group_menu.addActions([self.new_group_empty_action, self.new_group_from_template_action])
         self.new_btn.setMenu(new_regulation_group_menu)
 
-        plan_object_actions_menu = QMenu()
+        plan_object_actions_menu = QMenu(self)
         self.add_selected_action = plan_object_actions_menu.addAction("Lisää valitut ryhmät valituille kohteille")
         self.remove_all_action = plan_object_actions_menu.addAction("Poista kaikki ryhmät valituilta kohteilta")
         self.remove_selected_action = plan_object_actions_menu.addAction("Poista valitut ryhmät valituilta kohteilta")
@@ -363,7 +365,9 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         nr_of_selected_groups = len(self.get_selected_regulation_groups())
         logger.debug("Opening regulation group context menu selected_count=%s", nr_of_selected_groups)
 
-        menu = QMenu()
+        # Built fresh on every right click, so it is parented and deleted again: a menu
+        # with a parent is not collected when the local goes out of scope
+        menu = QMenu(self)
         menu.addAction(
             QgsApplication.getThemeIcon("mActionOpenTable.svg"), "Näytä lomake", lambda: self._open_form(index)
         )
@@ -391,6 +395,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         del_action.setEnabled(not self.plan_locked)
 
         menu.exec(self.table.viewport().mapToGlobal(pos))
+        menu.deleteLater()
 
     def _on_select_plan_objects(self):
         fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()
