@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable
 
 import qgis
 from qgis.core import QgsApplication, QgsExpressionContextUtils, QgsProject
-from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator, QUrl
+from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator, QUrl, pyqtBoundSignal
 from qgis.PyQt.QtGui import QDesktopServices, QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
 
@@ -533,20 +533,24 @@ class Plugin:
             self.on_project_cleared()
             logger.debug("Required layers missing at init; project-dependent actions disabled")
 
-        # Connect signals
-        self.plan_manager.inspect_plan_feature_tool.deactivated.connect(
-            lambda: self.identify_plan_features_action.setChecked(False)
-        )
-        self.plan_manager.plan_set.connect(self.on_active_plan_set)
-        self.plan_manager.plan_matter_set.connect(self.on_active_plan_matter_set)
-        self.plan_manager.plan_unset.connect(self.on_active_plan_unset)
-        self.plan_manager.project_loaded.connect(self.on_project_loaded)
-        self.plan_manager.project_cleared.connect(self.on_project_cleared)
-        self.plan_manager.plan_lock_status_changed.connect(self.on_plan_lock_status_changed)
+        # Connect signals. `Plugin` is not a `QObject`, so Qt drops none of these when the
+        # plugin goes away, and Plugin Reloader re-inits before Python collects the old
+        # `Plugin`. Track what was connected so `unload` can undo exactly that.
+        self.plan_manager_connections: list[tuple[pyqtBoundSignal, Callable]] = [
+            (self.plan_manager.inspect_plan_feature_tool.deactivated, self.on_inspect_tool_deactivated),
+            (self.plan_manager.plan_set, self.on_active_plan_set),
+            (self.plan_manager.plan_matter_set, self.on_active_plan_matter_set),
+            (self.plan_manager.plan_unset, self.on_active_plan_unset),
+            (self.plan_manager.project_loaded, self.on_project_loaded),
+            (self.plan_manager.project_cleared, self.on_project_cleared),
+            (self.plan_manager.plan_lock_status_changed, self.on_plan_lock_status_changed),
+            (self.plan_manager.plan_identifier_set, self.validation_dock.on_permanent_identifier_set),
+        ]
         if SettingsManager.get_data_exchange_layer_enabled():
-            self.plan_manager.plan_identifier_set.connect(self.update_ryhti_buttons)
-        self.plan_manager.plan_identifier_set.connect(self.validation_dock.on_permanent_identifier_set)
-        logger.debug("Plugin signals connected")
+            self.plan_manager_connections.append((self.plan_manager.plan_identifier_set, self.update_ryhti_buttons))
+        for signal, slot in self.plan_manager_connections:
+            signal.connect(slot)
+        logger.debug("Plugin signals connected count=%s", len(self.plan_manager_connections))
 
         # (Re)initialize whenever a project is opened
         iface.projectRead.connect(self.plan_manager.on_project_loaded)
@@ -671,6 +675,9 @@ class Plugin:
         for action in self.plan_matter_depending_actions:
             action.setEnabled(False)
 
+    def on_inspect_tool_deactivated(self):
+        self.identify_plan_features_action.setChecked(False)
+
     def on_plan_lock_status_changed(self, locked: bool):  # noqa: FBT001
         logger.debug("Plan lock status changed locked=%s", locked)
         self.import_features_action.setEnabled(not locked)
@@ -680,6 +687,10 @@ class Plugin:
         logger.debug("Unloading plugin")
         # Handle signals
         iface.projectRead.disconnect(self.plan_manager.on_project_loaded)
+        for signal, slot in self.plan_manager_connections:
+            signal.disconnect(slot)
+        self.plan_manager_connections.clear()
+        logger.debug("Plan manager signals disconnected")
 
         # Handle actions
         for action in self.actions:
