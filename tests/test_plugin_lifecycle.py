@@ -79,6 +79,18 @@ def test_unload_unparents_the_docks(plugin_factory, iface):
     assert [dock for dock in docks if dock in children] == []
 
 
+def test_unload_keeps_other_project_read_receivers(plugin_factory, iface):
+    """A bare projectRead.disconnect() would drop QGIS' and other plugins' handlers too."""
+    calls = []
+    iface.projectRead.connect(lambda: calls.append(1))
+
+    plugin = plugin_factory()
+    plugin.unload()
+
+    iface.projectRead.emit()
+    assert calls == [1]
+
+
 def test_project_read_reinitializes_until_unload(plugin_factory, iface, monkeypatch):
     calls = []
     monkeypatch.setattr(PlanManager, "on_project_loaded", lambda _self: calls.append(1))

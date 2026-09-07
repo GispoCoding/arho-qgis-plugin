@@ -680,7 +680,7 @@ class Plugin:
         logger.debug("Unloading plugin")
         # Handle signals
         disconnect_signal(self.plan_manager.new_feature_dock.visibilityChanged)
-        iface.projectRead.disconnect()
+        iface.projectRead.disconnect(self.plan_manager.on_project_loaded)
 
         # Handle actions
         for action in self.actions:
