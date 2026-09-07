@@ -698,8 +698,12 @@ class Plugin:
         # Handle plan manager
         self.plan_manager.unload()
 
+        # Docks are unparented explicitly, because removeDockWidget only hides them: without this
+        # they stay children of the main window until the deferred deletion is processed, which
+        # makes Plugin Reloader report them as duplicated widgets on reload.
         # Handle validation dock
         iface.removeDockWidget(self.validation_dock)
+        self.validation_dock.setParent(None)
         self.validation_dock.deleteLater()
 
         iface.unregisterOptionsWidgetFactory(self._arho_options_page_factory)
