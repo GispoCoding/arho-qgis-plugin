@@ -2,6 +2,8 @@ from textwrap import dedent
 
 from alembic_utils.pg_function import PGFunction
 
+from database.valid_views import LIFECYCLE_STATUS_VALID, valid_today
+
 regulation_values = PGFunction(
     schema="hame",
     signature="regulation_values(table_name text, id uuid)",
@@ -352,10 +354,199 @@ type_regulations = PGFunction(
     ),
 )
 
+# Kaavan kumoamistieto. The two functions below answer what the rows of
+# hame.plan_cancellation_info and hame.plan_object_cancellation_info of one
+# repealing plan should be. hame.refresh_plan_cancellation_info, generated in
+# database/triggers.py, writes those rows into the tables.
+
+# Maps one kaavalaji code to the level 1 code it descends from. The level 1 code
+# values are 1 maakuntakaava, 2 yleiskaava and 3 asemakaava, while a plan matter
+# usually refers to a lower level code such as 11 Kokonaismaakuntakaava.
+# PLAN_TYPE_ROOT_CTE in database/valid_views.py answers the same question for
+# every plan matter at once, by walking down from the level 1 codes instead.
+plan_type_root_value = PGFunction(
+    schema="hame",
+    signature="plan_type_root_value(plan_type_id uuid)",
+    definition=dedent(
+        """\
+            RETURNS text
+            STABLE
+            PARALLEL SAFE
+            LANGUAGE sql
+        AS $$
+            with recursive ancestor as (
+                select id, parent_id, level, value
+                from codes.plan_type
+                where id = $1
+              union all
+                select parent.id, parent.parent_id, parent.level, parent.value
+                from ancestor a
+                join codes.plan_type parent on parent.id = a.parent_id
+            )
+            select value
+            from ancestor
+            where level = 1
+        $$;
+        """
+    ),
+)
+
+# A repealing plan repeals every plan of hame.plan_valid that it overlaps and
+# that has the same level 1 plan type (Ryhti rule 240). The plan matter of the
+# repealed plan must be another one, so that a plan does not repeal the earlier
+# phases of its own plan matter (rule 239).
+repealed_plans = PGFunction(
+    schema="hame",
+    signature="repealed_plans(repealing_plan_id uuid)",
+    definition=dedent(
+        """\
+            RETURNS TABLE (cancelled_plan_id uuid, cancels_entire_plan boolean)
+            STABLE
+            PARALLEL SAFE
+            LANGUAGE sql
+        AS $$
+            select
+                cancelled.id,
+                st_coveredby(cancelled.geom, repealing.geom)
+            from
+                hame.plan repealing
+                join hame.plan_matter repealing_matter
+                    on repealing_matter.id = repealing.plan_matter_id
+                join hame.plan_valid cancelled
+                    on st_intersects(cancelled.geom, repealing.geom)
+                join hame.plan_matter_valid cancelled_matter
+                    on cancelled_matter.id = cancelled.plan_matter_id
+            where
+                repealing.id = $1
+                and repealing_matter.repealing
+                and cancelled.plan_matter_id <> repealing.plan_matter_id
+                and cancelled_matter.plan_type
+                    = hame.plan_type_root_value(repealing_matter.plan_type_id)
+                -- The interiors must meet, so a plan that only touches the
+                -- border of the repealing plan is not repealed.
+                and st_relate(cancelled.geom, repealing.geom, 'T********')
+        $$;
+        """
+    ),
+)
+
+# The plan object columns of hame.plan_object_cancellation_info, in the order
+# the table declares them. Exactly one of the four names the repealed object and
+# exactly one of the three geometries is set, see CANCELLED_PLAN_OBJECT_CHECK
+# and ck_plan_object_cancellation_info_remaining_valid_geom in database/models.py.
+CANCELLED_PLAN_OBJECT_COLUMNS = (
+    "land_use_area_id",
+    "other_area_id",
+    "line_id",
+    "point_id",
+)
+REMAINING_VALID_GEOM_COLUMNS = (
+    "remaining_valid_geom_polygon",
+    "remaining_valid_geom_line",
+    "remaining_valid_geom_point",
+)
+
+# Each plan object table with the column that names an object of it, the column
+# that holds the geometry that stays valid, and the ST_CollectionExtract type
+# number of its geometry (1 point, 2 line, 3 polygon). ST_Difference may return
+# a collection, so the wanted type is extracted before the geometry is stored.
+PLAN_OBJECT_CANCELLATION = (
+    ("land_use_area", "land_use_area_id", "remaining_valid_geom_polygon", 3),
+    ("other_area", "other_area_id", "remaining_valid_geom_polygon", 3),
+    ("line", "line_id", "remaining_valid_geom_line", 2),
+    ("point", "point_id", "remaining_valid_geom_point", 1),
+)
+
+
+def _repealed_plan_objects_select(
+    table: str, id_column: str, geom_column: str, collection_type: int
+) -> str:
+    """Select the repealed objects of one plan object table.
+
+    Every select returns the columns of hame.plan_object_cancellation_info in
+    the order the table declares them, so that the four selects can be combined
+    with union all. The columns of the other plan object tables and of the other
+    geometry types are null.
+
+    The objects are read from the base table instead of from the *_valid view,
+    because that view selects through the visualization view, which builds the
+    aggregated regulation columns for every row.
+    """
+    ids = ",\n                ".join(
+        "o.id" if column == id_column else "null::uuid"
+        for column in CANCELLED_PLAN_OBJECT_COLUMNS
+    )
+    # The geometry that stays valid and cancels_entire_plan_object both come
+    # from the same difference, so the two can never contradict each other.
+    geoms = ",\n                ".join(
+        "case when st_isempty(remaining.geom) then null else remaining.geom end"
+        if column == geom_column
+        else "null::geometry"
+        for column in REMAINING_VALID_GEOM_COLUMNS
+    )
+    return dedent(
+        f"""\
+            select
+                {ids},
+                st_isempty(remaining.geom),
+                {geoms}
+            from
+                hame.{table} o
+                join codes.lifecycle_status ls on ls.id = o.lifecycle_status_id
+                cross join hame.plan repealing
+                cross join lateral (
+                    select st_multi(st_collectionextract(
+                        st_difference(o.geom, repealing.geom), {collection_type}
+                    )) geom
+                ) remaining
+            where
+                repealing.id = $1
+                and o.plan_id = $2
+                and ls.value = '{LIFECYCLE_STATUS_VALID}'
+                and {valid_today("o")}
+                and st_intersects(o.geom, repealing.geom)
+                and st_relate(o.geom, repealing.geom, 'T********')
+        """
+    )
+
+
+# The plan objects of one repealed plan that the repealing plan overlaps. A plan
+# object that the repealing plan covers is repealed entirely; of the others the
+# part outside the repealing plan stays valid (Ryhti validityGeometry).
+repealed_plan_objects = PGFunction(
+    schema="hame",
+    signature="repealed_plan_objects(repealing_plan_id uuid, cancelled_plan_id uuid)",
+    definition=dedent(
+        """\
+            RETURNS TABLE (
+                land_use_area_id uuid,
+                other_area_id uuid,
+                line_id uuid,
+                point_id uuid,
+                cancels_entire_plan_object boolean,
+                remaining_valid_geom_polygon geometry,
+                remaining_valid_geom_line geometry,
+                remaining_valid_geom_point geometry
+            )
+            STABLE
+            PARALLEL SAFE
+            LANGUAGE sql
+        AS $$
+        """
+    )
+    + "union all\n".join(
+        _repealed_plan_objects_select(*columns) for columns in PLAN_OBJECT_CANCELLATION
+    )
+    + "$$;\n",
+)
+
 functions = [
     regulation_values,
     primary_use_regulations,
     sub_area_regulations,
     type_regulations,
     short_names,
+    plan_type_root_value,
+    repealed_plans,
+    repealed_plan_objects,
 ]

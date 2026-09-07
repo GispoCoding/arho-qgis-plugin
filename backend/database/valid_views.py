@@ -36,7 +36,7 @@ def _all_columns(table: Table, alias: str, exclude: Container[str] = ()) -> str:
     )
 
 
-def _valid_today(alias: str) -> str:
+def valid_today(alias: str) -> str:
     """Predicate that checks that the validity period covers the current date.
 
     A null start date is treated as -infinity and a null end date as +infinity.
@@ -71,7 +71,7 @@ plan_valid = PGView(
         where
             p.final
             and ls.value = '{LIFECYCLE_STATUS_VALID}'
-            and {_valid_today("p")}
+            and {valid_today("p")}
         """
     ),
 )
@@ -102,7 +102,7 @@ def _plan_object_valid_view(name: str, extra_columns: tuple[str, ...]) -> PGView
                 join codes.lifecycle_status ls on ls.id = t.lifecycle_status_id
             where
                 ls.value = '{LIFECYCLE_STATUS_VALID}'
-                and {_valid_today("t")}
+                and {valid_today("t")}
             """
         ),
     )
@@ -152,7 +152,7 @@ def _regulation_valid_view(table: Table) -> PGView:
                 join codes.lifecycle_status ls on ls.id = r.lifecycle_status_id
             where
                 ls.value = '{LIFECYCLE_STATUS_VALID}'
-                and {_valid_today("r")}
+                and {valid_today("r")}
             """
         ),
     )

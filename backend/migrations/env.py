@@ -18,6 +18,7 @@ from database.triggers import (
     generate_instead_of_triggers_for_visualization_views,
     generate_modified_at_triggers,
     generate_new_lifecycle_status_triggers,
+    generate_plan_cancellation_info_triggers,
     generate_created_at_triggers,
     generate_no_created_at_update_triggers
 )
@@ -48,6 +49,11 @@ add_plan_id_fkey_trgs, add_plan_id_fkey_trgfuncs = generate_add_plan_id_fkey_tri
     instead_of_triggers_for_visualization_views,
 ) = generate_instead_of_triggers_for_visualization_views()
 
+(
+    plan_cancellation_info_trgs,
+    plan_cancellation_info_trgfuncs,
+) = generate_plan_cancellation_info_triggers()
+
 
 imported_triggers = (
     modified_at_trgfuncs
@@ -62,6 +68,8 @@ imported_triggers = (
     + created_at_trgfuncs
     + no_created_at_update_trgs
     + no_created_at_update_trgfuncs
+    + plan_cancellation_info_trgfuncs
+    + plan_cancellation_info_trgs
 )
 
 register_entities(imported_triggers)

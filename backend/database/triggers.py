@@ -351,3 +351,177 @@ def generate_instead_of_triggers_for_visualization_views() -> tuple[
         trgs.append(trg)
 
     return trgs, [trgfunc]
+
+
+def generate_plan_cancellation_info_triggers() -> tuple[
+    list[PGTrigger], list[PGFunction]
+]:
+    """Keep the cancellation info of a repealing plan in step with its geometry.
+
+    hame.repealed_plans and hame.repealed_plan_objects in database/functions.py
+    say what the rows should be; the function generated here writes them into
+    hame.plan_cancellation_info and hame.plan_object_cancellation_info.
+    """
+    trgfuncs = []
+
+    # The plan rows are written with an upsert, so a repealed plan that stays
+    # repealed keeps its row id and with it the cancelled group relations that
+    # were added by hand. The plan object rows hold nothing added by hand and
+    # have no natural key, so they are written again from scratch.
+    refresh_signature = "refresh_plan_cancellation_info(repealing_plan_id uuid)"
+    refresh_definition = dedent(
+        """\
+            RETURNS void
+            LANGUAGE plpgsql
+        AS $$
+        DECLARE
+            cancellation record;
+        BEGIN
+            -- hame.repealed_plans returns nothing when the plan matter is not
+            -- repealing, so this also clears the rows when the flag is unset.
+            DELETE FROM hame.plan_cancellation_info i
+            WHERE i.plan_id = $1
+                AND i.cancelled_plan_id NOT IN (
+                    SELECT cancelled_plan_id FROM hame.repealed_plans($1)
+                );
+
+            INSERT INTO hame.plan_cancellation_info (
+                plan_id, cancelled_plan_id, cancels_entire_plan
+            )
+            SELECT $1, r.cancelled_plan_id, r.cancels_entire_plan
+            FROM hame.repealed_plans($1) r
+            ON CONFLICT (plan_id, cancelled_plan_id) DO UPDATE
+                SET cancels_entire_plan = excluded.cancels_entire_plan;
+
+            FOR cancellation IN
+                SELECT id, cancelled_plan_id, cancels_entire_plan
+                FROM hame.plan_cancellation_info
+                WHERE plan_id = $1
+            LOOP
+                DELETE FROM hame.plan_object_cancellation_info
+                WHERE plan_cancellation_info_id = cancellation.id;
+
+                -- Ryhti allows no plan object cancellation infos when the whole
+                -- plan is repealed.
+                CONTINUE WHEN cancellation.cancels_entire_plan;
+
+                -- hame.repealed_plan_objects returns the columns below in this
+                -- order.
+                INSERT INTO hame.plan_object_cancellation_info (
+                    plan_cancellation_info_id,
+                    land_use_area_id,
+                    other_area_id,
+                    line_id,
+                    point_id,
+                    cancels_entire_plan_object,
+                    remaining_valid_geom_polygon,
+                    remaining_valid_geom_line,
+                    remaining_valid_geom_point
+                )
+                SELECT cancellation.id, o.*
+                FROM hame.repealed_plan_objects(
+                    $1, cancellation.cancelled_plan_id
+                ) o;
+            END LOOP;
+        END;
+        $$;
+        """
+    )
+    trgfuncs.append(
+        PGFunction(
+            schema="hame", signature=refresh_signature, definition=refresh_definition
+        )
+    )
+
+    plan_trgfunc_signature = "trgfunc_refresh_plan_cancellation_info()"
+    plan_trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        BEGIN
+            PERFORM hame.refresh_plan_cancellation_info(NEW.id);
+            RETURN NULL;
+        END;
+        $$ language 'plpgsql'
+        """
+    trgfuncs.append(
+        PGFunction(
+            schema="hame",
+            signature=plan_trgfunc_signature,
+            definition=plan_trgfunc_definition,
+        )
+    )
+
+    matter_trgfunc_signature = "trgfunc_refresh_plan_matter_cancellation_info()"
+    matter_trgfunc_definition = """
+        RETURNS TRIGGER AS $$
+        DECLARE
+            repealing_plan_id uuid;
+        BEGIN
+            FOR repealing_plan_id IN
+                SELECT id FROM hame.plan WHERE plan_matter_id = NEW.id
+            LOOP
+                PERFORM hame.refresh_plan_cancellation_info(repealing_plan_id);
+            END LOOP;
+            RETURN NULL;
+        END;
+        $$ language 'plpgsql'
+        """
+    trgfuncs.append(
+        PGFunction(
+            schema="hame",
+            signature=matter_trgfunc_signature,
+            definition=matter_trgfunc_definition,
+        )
+    )
+
+    # The triggers fire after the row is written, because the plan_id foreign
+    # key of hame.plan_cancellation_info is not deferred, so the plan row has to
+    # exist already. The when clauses keep an edit that cannot change the
+    # cancellation info, such as a name change, from recomputing anything.
+    trgs = [
+        PGTrigger(
+            schema="hame",
+            signature="trg_plan_refresh_cancellation_info_insert",
+            on_entity="hame.plan",
+            is_constraint=False,
+            definition=dedent(
+                f"""\
+                AFTER INSERT ON hame.plan
+                FOR EACH ROW
+                EXECUTE FUNCTION hame.{plan_trgfunc_signature}
+                """
+            ),
+        ),
+        PGTrigger(
+            schema="hame",
+            signature="trg_plan_refresh_cancellation_info_update",
+            on_entity="hame.plan",
+            is_constraint=False,
+            definition=dedent(
+                f"""\
+                AFTER UPDATE ON hame.plan
+                FOR EACH ROW
+                WHEN (
+                    NEW.geom IS DISTINCT FROM OLD.geom
+                    OR NEW.plan_matter_id IS DISTINCT FROM OLD.plan_matter_id
+                )
+                EXECUTE FUNCTION hame.{plan_trgfunc_signature}
+                """
+            ),
+        ),
+        PGTrigger(
+            schema="hame",
+            signature="trg_plan_matter_refresh_cancellation_info",
+            on_entity="hame.plan_matter",
+            is_constraint=False,
+            definition=dedent(
+                f"""\
+                AFTER UPDATE ON hame.plan_matter
+                FOR EACH ROW
+                WHEN (NEW.repealing IS DISTINCT FROM OLD.repealing)
+                EXECUTE FUNCTION hame.{matter_trgfunc_signature}
+                """
+            ),
+        ),
+    ]
+
+    return trgs, trgfuncs

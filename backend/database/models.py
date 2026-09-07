@@ -153,6 +153,10 @@ class PlanMatter(VersionedBase):
     producers_plan_identifier: Mapped[str | None]
     case_identifier: Mapped[str | None]  # TODO: change to list
     record_number: Mapped[str | None]  # TODO: change to list
+    # Kumoamiskaava: a plan matter whose plans repeal earlier valid plans. The
+    # cancellation info rows of its plans are filled by trigger, see
+    # generate_plan_cancellation_info_triggers in database/triggers.py.
+    repealing: Mapped[bool] = mapped_column(server_default="0", default=False)
     # TODO: Add mandatory time_of_initiation: Mapped[datetime]
     # TODO: Add related_binding_plot_division_matter_uris
 
