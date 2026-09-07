@@ -17,8 +17,9 @@ jobs:
       image: qgis/qgis:${{ matrix.qgis-image-tags }}
     strategy:
       matrix:
-        # Remove unsupported versions and add more versions. Use LTR version in the cov_tests job
-        qgis-image-tags: [release-3_28, release-3_34, latest]
+        # Docker Hub tags: "<major.minor>" (for example "3.44", "4.2"), ltr, latest.
+        # The old release-3_xx tags stopped being updated in 2024.
+        qgis-image-tags: ["3.44", "4.2", latest]
       fail-fast: false
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -48,6 +49,55 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           .venv/bin/pytest
+
+  # Runs the suite inside the real QGIS application, where qgis.utils.iface is the real
+  # QgisAppInterface instead of the FakeQgisInterface that linux_tests uses. Tests marked
+  # `fake_iface` skip themselves here; tests marked `real_qgis` only run here.
+  #
+  # A separate job pulls the image a second time, which is cheap (under a gigabyte) and
+  # runs in parallel. Sharing the pull is not possible: a `container:` job pulls before
+  # its first step, so there is nowhere to load a cached image.
+  qgis_app_tests:
+    name: In QGIS (${{ matrix.qgis-image-tags }})
+    runs-on: ubuntu-latest
+    container:
+      image: qgis/qgis:${{ matrix.qgis-image-tags }}
+    strategy:
+      matrix:
+        qgis-image-tags: ["3.44", "4.2", latest]
+      fail-fast: false
+
+    steps:
+      # The QGIS images do not ship git, so actions/checkout would fall back to
+      # the REST API download, which cannot fetch submodules.
+      - name: Install git
+        run: |
+          apt update && apt install git -y
+
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      # The qgis/qgis images ship Xvfb but no supervisord, so start the display here.
+      # QT_QPA_PLATFORM must stay unset: the application uses this real X display.
+      - name: Start a virtual display
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 -ac &
+          sleep 3
+
+      # No venv and no `pip install .`: the script installs a pinned pytest and symlinks
+      # the plugin into the QGIS profile, and the plugin has no runtime dependencies.
+      - name: Install pytest, prepare profile and link plugin
+        run: bash ci/qgis_docker_setup.sh arho_feature_template
+
+      # ci/qgis_pytest_runner.py exits with the pytest exit code, so this step fails
+      # the job on its own.
+      - name: Run pytest inside QGIS
+        env:
+          DISPLAY: ":99"
+          QGIS_PLUGIN_IN_CI: 1
+          PGTZ: Europe/Helsinki
+        run: qgis --nologo --noversioncheck --code ci/qgis_pytest_runner.py
 
   windows_tests:
     name: Windows (${{ matrix.qgis-package }})
@@ -92,6 +142,8 @@ jobs:
 
       - name: Run tests
         shell: pwsh
+        env:
+          QGIS_PLUGIN_IN_CI: 1
         run: |
           .venv\Scripts\activate
           pytest -v

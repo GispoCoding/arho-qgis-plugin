@@ -37,6 +37,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+.qgis-settings/
 htmlcov/
 .tox/
 .nox/
@@ -124,6 +125,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv-qt6
 env/
 venv/
 ENV/

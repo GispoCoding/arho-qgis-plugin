@@ -42,13 +42,15 @@ pyyaml==6.0.2
     # via pre-commit
 ruff==0.8.2
     # via -r requirements-dev.in
-tomli==2.0.1 ; python_full_version < '3.11'
+tomli==2.4.1 ; python_full_version < '3.11'
     # via
     #   -c requirements-test.txt
     #   mypy
 types-pyyaml==6.0.12.20240917
     # via -r requirements-dev.in
-typing-extensions==4.12.2
-    # via mypy
+typing-extensions==4.16.0
+    # via
+    #   -c requirements-test.txt
+    #   mypy
 virtualenv==20.26.5
     # via pre-commit

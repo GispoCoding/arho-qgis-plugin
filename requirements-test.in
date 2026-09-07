@@ -2,4 +2,3 @@
 pytest
 pytest-qt
 pytest-cov
-pytest-qgis
