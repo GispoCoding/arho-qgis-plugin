@@ -264,15 +264,45 @@ type_of_verbal_regulation_association_valid = PGView(
     ),
 )
 
+# Maps every kaavalaji code to the level 1 code it descends from. The level 1
+# code values are 1 maakuntakaava, 2 yleiskaava and 3 asemakaava, while a plan
+# matter usually refers to a lower level code such as 11 Kokonaismaakuntakaava.
+# The anchor is the level 1 codes and the recursive step walks down through
+# parent_id, so the level 1 code is one join instead of a walk up the chain for
+# every row. level is imported from the RYTJ hierarchyLevel field, see
+# lambdas/koodistot_loader/koodistot_loader.py.
+PLAN_TYPE_ROOT_CTE = dedent(
+    """\
+    with recursive plan_type_root as (
+        select id, id root_id
+        from codes.plan_type
+        where level = 1
+      union all
+        select child.id, r.root_id
+        from plan_type_root r
+        join codes.plan_type child on child.parent_id = r.id
+    )"""
+)
+
+# plan_type is the last column, so every earlier column keeps its position and a
+# migration can update the view with CREATE OR REPLACE VIEW instead of dropping
+# it. The plan type joins are left joins, so a plan matter stays in the view with
+# a null plan_type even if its code has no level 1 ancestor.
 plan_matter_valid = PGView(
     schema="hame",
     signature="plan_matter_valid",
-    definition=dedent(
-        f"""\
+    # The CTE is concatenated instead of interpolated, so that dedent only ever
+    # sees the uniformly indented part of the statement.
+    definition=PLAN_TYPE_ROOT_CTE
+    + dedent(
+        f"""
         select
-            {_all_columns(_hame_table("plan_matter"), "m")}
+            {_all_columns(_hame_table("plan_matter"), "m")},
+            root.value plan_type
         from
             hame.plan_matter m
+            left join plan_type_root ptr on ptr.id = m.plan_type_id
+            left join codes.plan_type root on root.id = ptr.root_id
         where
             exists (select 1 from hame.plan_valid p
                 where p.plan_matter_id = m.id)
