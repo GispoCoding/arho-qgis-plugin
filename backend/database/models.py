@@ -241,6 +241,9 @@ class Plan(PlanBase, RyhtiLifecycleBase):
     official_use_only: Mapped[bool | None]
     approval_date: Mapped[date | None]
     locked: Mapped[bool] = mapped_column(server_default="0", default=False)
+    # A plan is final when its content is complete and may be published
+    # through the read-only valid views.
+    final: Mapped[bool] = mapped_column(server_default="0", default=False)
 
     geom: Mapped[WKBElement] = mapped_column(
         type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)

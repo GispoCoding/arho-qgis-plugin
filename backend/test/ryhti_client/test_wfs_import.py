@@ -232,6 +232,7 @@ def test_import_plans_for_municipality(
     assert plan.period_of_validity_start == date(1990, 1, 1)
     assert plan.period_of_validity_end is None
     assert plan.locked is True
+    assert plan.final is True
     geom = to_shape(plan.geom)
     assert geom.geom_type == "MultiPolygon"
     assert geom.bounds == (382000.0, 6672000.0, 383000.0, 6673000.0)

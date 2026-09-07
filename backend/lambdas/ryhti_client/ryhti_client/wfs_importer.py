@@ -4,8 +4,9 @@ The Ryhti WFS service publishes valid plans as open data. The importer
 queries the plan layers with the bounding box of a municipality or an
 administrative region geometry and creates a plan matter and a plan for
 each returned feature. Imported plans are locked, since they mirror open
-data owned by another organisation. Plan documents attached to the features
-are not imported.
+data owned by another organisation, and final, since the service only
+publishes complete valid plans. Plan documents attached to the features are
+not imported.
 """
 
 from __future__ import annotations
@@ -378,6 +379,9 @@ class WfsPlanImporter:
             # Imported plans mirror open data published by another
             # organisation, so they must not be edited in this database.
             locked=True,
+            # The service only publishes complete valid plans, so imported
+            # plans may be shown through the valid views right away.
+            final=True,
         )
         if existing_plan_matter is not None:
             # The plan matter survived the overwrite because it still has

@@ -1,15 +1,17 @@
 """Read-only views that contain only currently valid plan data.
 
-A plan is valid when its lifecycle status is VALID and its validity period
-covers the current date. The other views only contain rows that belong to a
-valid plan; rows with their own lifecycle status and validity period must
-also pass those checks themselves. The views get select grants only, unlike
-the writable visualization views in views.py.
+A plan is valid when it is marked final, its lifecycle status is VALID and
+its validity period covers the current date. The other views only contain
+rows that belong to a valid plan; rows with their own lifecycle status and
+validity period must also pass those checks themselves. The views get select
+grants only, unlike the writable visualization views in views.py.
 
-The views only have the columns of their base tables (for the plan object
-views, the columns of the corresponding visualization view).
+The views have the columns of their base tables (for the plan object views,
+the columns of the corresponding visualization view), apart from the final
+column of the plan table.
 """
 
+from collections.abc import Container
 from textwrap import dedent
 
 from alembic_utils.pg_view import PGView
@@ -25,9 +27,13 @@ def _hame_table(name: str) -> Table:
     return Base.metadata.tables[f"hame.{name}"]
 
 
-def _all_columns(table: Table, alias: str) -> str:
+def _all_columns(table: Table, alias: str, exclude: Container[str] = ()) -> str:
     """List all columns of the table for a select, qualified with the alias."""
-    return ",\n            ".join(f"{alias}.{column.name}" for column in table.columns)
+    return ",\n            ".join(
+        f"{alias}.{column.name}"
+        for column in table.columns
+        if column.name not in exclude
+    )
 
 
 def _valid_today(alias: str) -> str:
@@ -48,18 +54,23 @@ def _valid_today(alias: str) -> str:
 # at query time instead of baking a code table UUID into the view.
 LIFECYCLE_STATUS_VALID = "13"
 
+# The final column is left out of the select list on purpose: every row of the
+# view is final, so the column carries no information here. Keeping the column
+# list unchanged also lets a later migration update the view with
+# CREATE OR REPLACE VIEW instead of dropping every dependent view.
 plan_valid = PGView(
     schema="hame",
     signature="plan_valid",
     definition=dedent(
         f"""\
         select
-            {_all_columns(_hame_table("plan"), "p")}
+            {_all_columns(_hame_table("plan"), "p", exclude=("final",))}
         from
             hame.plan p
             join codes.lifecycle_status ls on ls.id = p.lifecycle_status_id
         where
-            ls.value = '{LIFECYCLE_STATUS_VALID}'
+            p.final
+            and ls.value = '{LIFECYCLE_STATUS_VALID}'
             and {_valid_today("p")}
         """
     ),
