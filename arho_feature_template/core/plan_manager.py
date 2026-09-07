@@ -1121,6 +1121,7 @@ class PlanManager(QObject):
         # they stay children of the main window until the deferred deletion is processed, which
         # makes Plugin Reloader report them as duplicated widgets on reload.
         # New feature dock
+        self.new_feature_dock.unload()
         disconnect_signal(self.new_feature_dock.tool_activated)
         iface.removeDockWidget(self.new_feature_dock)
         self.new_feature_dock.setParent(None)

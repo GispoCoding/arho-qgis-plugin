@@ -12,6 +12,7 @@ from qgis.core import QgsProject
 from qgis.PyQt.QtWidgets import QDockWidget
 
 from arho_feature_template.core.plan_manager import PlanManager
+from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.plugin import Plugin
 
 pytestmark = pytest.mark.fake_iface
@@ -90,6 +91,17 @@ def test_unload_keeps_other_project_read_receivers(plugin_factory, iface):
 
     iface.projectRead.emit()
     assert calls == [1]
+
+
+def test_unload_disconnects_template_library_singleton(plugin_factory):
+    """`TemplateManager.signal_manager` is created at import time and outlives the plugin."""
+    plugin = plugin_factory()
+    dock = plugin.plan_manager.new_feature_dock
+
+    plugin.unload()
+
+    with pytest.raises(TypeError):
+        TemplateManager.signal_manager.feature_object_added_to_library.disconnect(dock.update_template_list)
 
 
 def test_unload_disconnects_project_cleared(plugin_factory):
