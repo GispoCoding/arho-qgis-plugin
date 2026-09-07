@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QWidget
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFileWidget
@@ -18,8 +18,8 @@ class SerializePlanMatter(QDialog, FormClass):  # type: ignore
     plan_matter_file: QgsFileWidget
     button_box: QDialogButtonBox
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
         self.setupUi(self)
 
         self.plan_matter_file.fileChanged.connect(self.check_inputs)

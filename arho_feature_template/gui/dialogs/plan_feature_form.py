@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMenu, QMessageBox, QPushButton
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMenu, QMessageBox, QPushButton, QWidget
 
 from arho_feature_template.core.models import PlanObject
 from arho_feature_template.core.template_manager import TemplateManager
@@ -48,8 +48,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         save_disabled_reason: str | None = None,
         template_form: bool = False,  # noqa: FBT001, FBT002
+        parent: QWidget | None = None,
     ):
-        super().__init__()
+        super().__init__(parent)
         self.setupUi(self)
 
         # TYPES

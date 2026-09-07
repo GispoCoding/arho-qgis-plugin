@@ -54,8 +54,9 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         regulation_group: RegulationGroup,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None,
         enable_save: bool = True,  # noqa: FBT001, FBT002
+        parent: QWidget | None = None,
     ):
-        super().__init__()
+        super().__init__(parent)
         self.setupUi(self)
 
         # TYPES

@@ -98,8 +98,8 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
     plan_copied = pyqtSignal(str)
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
         self.setupUi(self)
         self.setModal(True)
         # self.setFixedWidth(550)

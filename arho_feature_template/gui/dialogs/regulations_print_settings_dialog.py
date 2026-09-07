@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QCheckBox, QDialog
+from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QWidget
 
 from arho_feature_template.core.prints.regulation_print_settings import RegulationPrintSettings
 from arho_feature_template.core.settings_manager import SettingsManager
@@ -20,8 +20,8 @@ FormClass, _ = uic.loadUiType(ui_path)
 
 
 class RegulationsPrintSettingsDialog(QDialog, FormClass):  # type: ignore
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
         self.setupUi(self)
 
         # TYPES

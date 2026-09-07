@@ -32,6 +32,7 @@ from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
 from arho_feature_template.qgis_plugin_tools.tools.settings import get_setting
 from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
     from qgis.gui import QgsDockWidget
@@ -604,14 +605,14 @@ class Plugin:
     def open_about(self):
         """Open the plugin about dialog."""
         logger.debug("Opening about dialog")
-        about = PluginAbout()
-        about.exec()
+        with deleted_after_use(PluginAbout(iface.mainWindow())) as about:
+            about.exec()
 
     def open_plan_object_icons_preview(self):
         """Open plan object icons preview dialog."""
         logger.debug("Opening plan object icons preview dialog")
-        preview = PlanObjectIconPreview()
-        preview.exec()
+        with deleted_after_use(PlanObjectIconPreview(iface.mainWindow())) as preview:
+            preview.exec()
 
     def generate_plan_regulations_print(self):
         logger.debug("Generate plan regulations print requested from plugin action")
@@ -626,8 +627,8 @@ class Plugin:
     def post_plan_matter(self):
         """Exports plan matter to Ryhti."""
         logger.debug("Opening post plan matter dialog")
-        dialog = PostPlanDialog()
-        dialog.exec()
+        with deleted_after_use(PostPlanDialog(iface.mainWindow())) as dialog:
+            dialog.exec()
 
     def update_ryhti_buttons(self):
         """Update the UI buttons based on whether the active plan has a permanent identifier."""

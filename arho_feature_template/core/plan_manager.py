@@ -122,6 +122,7 @@ from arho_feature_template.utils.misc_utils import (
     status_message,
     use_wait_cursor,
 )
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
     from arho_feature_template.project.layers import AbstractLayer
@@ -346,26 +347,26 @@ class PlanManager(QObject):
 
     def open_manage_plans(self):
         logger.debug("Opening manage plans dialog")
-        dialog = ManagePlans(self.regulation_group_libraries, self)
-        if dialog.exec():
-            selected_plan = dialog.selected_plan
-            # If the active plan was changed, update state
-            if selected_plan.id_ and selected_plan.id_ != get_active_plan_id():
-                logger.debug("Manage plans selected new active plan id=%s", selected_plan.id_)
-                self.set_active_plan(selected_plan.id_)
+        with deleted_after_use(ManagePlans(self.regulation_group_libraries, self, iface.mainWindow())) as dialog:
+            if dialog.exec():
+                selected_plan = dialog.selected_plan
+                # If the active plan was changed, update state
+                if selected_plan.id_ and selected_plan.id_ != get_active_plan_id():
+                    logger.debug("Manage plans selected new active plan id=%s", selected_plan.id_)
+                    self.set_active_plan(selected_plan.id_)
 
     def open_import_plan_dialog(self):
         logger.debug("Opening import plan dialog")
-        dialog = ImportPlanForm(iface.mainWindow())
-        if dialog.exec() and dialog.imported_plan_id:
-            logger.debug("Imported plan selected id=%s", dialog.imported_plan_id)
-            self.set_active_plan(dialog.imported_plan_id)
+        with deleted_after_use(ImportPlanForm(iface.mainWindow())) as dialog:
+            if dialog.exec() and dialog.imported_plan_id:
+                logger.debug("Imported plan selected id=%s", dialog.imported_plan_id)
+                self.set_active_plan(dialog.imported_plan_id)
 
     def open_import_features_dialog(self):
         logger.debug("Opening import features dialog")
         self.close_import_features_dialog()
         self.import_features_form = ImportFeaturesForm(
-            self.regulation_group_libraries, self.active_plan_regulation_group_library, self
+            self.regulation_group_libraries, self.active_plan_regulation_group_library, self, iface.mainWindow()
         )
         self.import_features_form.show()
 
@@ -408,15 +409,18 @@ class PlanManager(QObject):
     def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
         logger.debug("Creating new regulation group from_template=%s", from_template)
         if from_template:
-            regulation_group_template_selection_form = TemplateSelectionForm[RegulationGroup](
-                libraries=[*self.regulation_group_libraries, self.active_plan_regulation_group_library]
-            )
-            if regulation_group_template_selection_form.exec():
-                model = regulation_group_template_selection_form.selected_template
-                if model:
-                    if SettingsManager.get_add_only_selected_languages():
-                        model.apply_language_selection()
-                    self._open_regulation_group_form(model)  # type: ignore
+            with deleted_after_use(
+                TemplateSelectionForm[RegulationGroup](
+                    libraries=[*self.regulation_group_libraries, self.active_plan_regulation_group_library],
+                    parent=iface.mainWindow(),
+                )
+            ) as template_form:
+                if template_form.exec():
+                    model = template_form.selected_template
+                    if model:
+                        if SettingsManager.get_add_only_selected_languages():
+                            model.apply_language_selection()
+                        self._open_regulation_group_form(model)  # type: ignore
         else:
             self._open_regulation_group_form(RegulationGroup())
 
@@ -424,27 +428,33 @@ class PlanManager(QObject):
         self._open_regulation_group_form(regulation_group)
 
     def manage_libraries(self):
-        manage_libraries_form = ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries)
-        result = manage_libraries_form.exec()
+        with deleted_after_use(
+            ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries, iface.mainWindow())
+        ) as manage_libraries_form:
+            result = manage_libraries_form.exec()
         # Close event return zero
         if result == 0:
             self.initialize_libraries()
 
     def _open_regulation_group_form(self, regulation_group: RegulationGroup):
         logger.debug("Opening regulation group form id=%s", regulation_group.id_)
-        regulation_group_form = PlanRegulationGroupForm(
-            regulation_group, self.active_plan_regulation_group_library, not self.plan_locked
-        )
-
-        if regulation_group_form.exec():
-            model = regulation_group_form.model
-            logger.debug("Regulation group form accepted id=%s", model.id_)
-            if save_regulation_group(model) is None:
-                logger.warning("Saving regulation group failed id=%s", model.id_)
-                return None
-            # NOTE: Should we reinitialize regulation group dock even if saving failed?
-            self.update_active_plan_regulation_group_library()
-            return model
+        with deleted_after_use(
+            PlanRegulationGroupForm(
+                regulation_group,
+                self.active_plan_regulation_group_library,
+                not self.plan_locked,
+                iface.mainWindow(),
+            )
+        ) as regulation_group_form:
+            if regulation_group_form.exec():
+                model = regulation_group_form.model
+                logger.debug("Regulation group form accepted id=%s", model.id_)
+                if save_regulation_group(model) is None:
+                    logger.warning("Saving regulation group failed id=%s", model.id_)
+                    return None
+                # NOTE: Should we reinitialize regulation group dock even if saving failed?
+                self.update_active_plan_regulation_group_library()
+                return model
 
         return None
 
@@ -595,20 +605,22 @@ class PlanManager(QObject):
             return
         plan_model = PlanLayer.model_from_feature(feature)
 
-        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
-        if attribute_form.exec():
-            plan_model = attribute_form.model
-            logger.debug("Plan form accepted id=%s", plan_model.id_)
+        with deleted_after_use(
+            PlanAttributeForm(plan_model, self.regulation_group_libraries, iface.mainWindow())
+        ) as attribute_form:
+            if attribute_form.exec():
+                plan_model = attribute_form.model
+                logger.debug("Plan form accepted id=%s", plan_model.id_)
 
-            with plan_layers_temporarily_unlocked():
-                plan_id = save_plan(plan_model)
-                logger.debug("Plan save returned id=%s", plan_id)
+                with plan_layers_temporarily_unlocked():
+                    plan_id = save_plan(plan_model)
+                    logger.debug("Plan save returned id=%s", plan_id)
 
-                # TODO: Don't update groups always, can be redundant
-                if plan_id is not None:
-                    self.update_active_plan_regulation_group_library()
+                    # TODO: Don't update groups always, can be redundant
+                    if plan_id is not None:
+                        self.update_active_plan_regulation_group_library()
 
-            self.update_lock_status(plan_model)
+                self.update_lock_status(plan_model)
 
     def edit_plan_matter(self):
         logger.debug("Editing active plan matter id=%s", get_active_plan_matter_id())
@@ -622,10 +634,10 @@ class PlanManager(QObject):
             return
         plan_matter_model = PlanMatterLayer.model_from_feature(feature)
 
-        attribute_form = PlanMatterAttributeForm(plan_matter_model)
-        if attribute_form.exec():
-            saved_id = save_plan_matter(attribute_form.model)
-            logger.debug("Plan matter save returned id=%s", saved_id)
+        with deleted_after_use(PlanMatterAttributeForm(plan_matter_model, iface.mainWindow())) as attribute_form:
+            if attribute_form.exec():
+                saved_id = save_plan_matter(attribute_form.model)
+                logger.debug("Plan matter save returned id=%s", saved_id)
 
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
@@ -650,13 +662,12 @@ class PlanManager(QObject):
             plan_matter_layer.startEditing()
 
         plan_matter_model = PlanMatter()
-        attribute_form = PlanMatterAttributeForm(plan_matter_model, parent=iface.mainWindow())
+        with deleted_after_use(PlanMatterAttributeForm(plan_matter_model, iface.mainWindow())) as attribute_form:
+            if attribute_form.exec():
+                saved_id = save_plan_matter(attribute_form.model)
+                logger.debug("New plan matter save returned id=%s", saved_id)
 
-        if attribute_form.exec():
-            saved_id = save_plan_matter(attribute_form.model)
-            logger.debug("New plan matter save returned id=%s", saved_id)
-
-            self.set_active_plan_matter(saved_id)
+                self.set_active_plan_matter(saved_id)
 
     def add_new_plan_feature(self):
         logger.debug("Adding new plan feature by digitizing")
@@ -698,18 +709,20 @@ class PlanManager(QObject):
             geom = QgsGeometry.unaryUnion([feature.geometry() for feature in features if feature.geometry()])
 
         plan_model = Plan(geom=geom)
-        attribute_form = PlanAttributeForm(plan_model, self.regulation_group_libraries)
-        if attribute_form.exec():
-            plan_id = save_plan(attribute_form.model)
-            if plan_id is not None:
-                plan_to_be_activated = plan_id
-                plan_saved = True
+        with deleted_after_use(
+            PlanAttributeForm(plan_model, self.regulation_group_libraries, iface.mainWindow())
+        ) as attribute_form:
+            if attribute_form.exec():
+                plan_id = save_plan(attribute_form.model)
+                if plan_id is not None:
+                    plan_to_be_activated = plan_id
+                    plan_saved = True
+                else:
+                    plan_to_be_activated = self.previous_active_plan_id
+                    plan_saved = False
             else:
                 plan_to_be_activated = self.previous_active_plan_id
                 plan_saved = False
-        else:
-            plan_to_be_activated = self.previous_active_plan_id
-            plan_saved = False
 
         self.set_active_plan(plan_to_be_activated)
 
@@ -743,17 +756,20 @@ class PlanManager(QObject):
             title = self.new_feature_dock.active_feature_type
 
         plan_feature.geom = feature.geometry()
-        attribute_form = PlanObjectForm(
-            plan_feature,
-            title or "",
-            self.regulation_group_libraries,
-            self.plan_feature_libraries,
-            self.active_plan_regulation_group_library,
-            save_disabled_reason=self.save_disabled_reason(),
-        )
-        if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
-            logger.debug("Plan feature saved successfully from digitized geometry")
-            self.update_active_plan_regulation_group_library()
+        with deleted_after_use(
+            PlanObjectForm(
+                plan_feature,
+                title or "",
+                self.regulation_group_libraries,
+                self.plan_feature_libraries,
+                self.active_plan_regulation_group_library,
+                save_disabled_reason=self.save_disabled_reason(),
+                parent=iface.mainWindow(),
+            )
+        ) as attribute_form:
+            if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
+                logger.debug("Plan feature saved successfully from digitized geometry")
+                self.update_active_plan_regulation_group_library()
 
     def save_disabled_reason(self) -> str | None:
         """Why a plan object of the active plan cannot be saved, or None when it can."""
@@ -774,17 +790,20 @@ class PlanManager(QObject):
         plan_feature = layer_class.model_from_feature(feature)
 
         title = get_localized_text(plan_feature.name) or layer_name
-        attribute_form = PlanObjectForm(
-            plan_feature,
-            title,
-            self.regulation_group_libraries,
-            self.plan_feature_libraries,
-            self.active_plan_regulation_group_library,
-            save_disabled_reason=self.save_disabled_reason(),
-        )
-        if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
-            logger.debug("Plan feature saved successfully after edit")
-            self.update_active_plan_regulation_group_library()
+        with deleted_after_use(
+            PlanObjectForm(
+                plan_feature,
+                title,
+                self.regulation_group_libraries,
+                self.plan_feature_libraries,
+                self.active_plan_regulation_group_library,
+                save_disabled_reason=self.save_disabled_reason(),
+                parent=iface.mainWindow(),
+            )
+        ) as attribute_form:
+            if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
+                logger.debug("Plan feature saved successfully after edit")
+                self.update_active_plan_regulation_group_library()
 
     def show_valid_plan_object(self, feature: QgsFeature, layer_class: type[ValidPlanObjectLayer]) -> None:
         """Show a plan object of the valid plans (Ajantasakaava) in the plan object form, read-only.
@@ -795,15 +814,18 @@ class PlanManager(QObject):
         plan_object = self._read_valid_plan_object(feature, layer_class)
 
         title = f"Ajantasakaava: {get_localized_text(plan_object.name) or layer_class.name}"
-        attribute_form = PlanObjectForm(
-            plan_object,
-            title,
-            self.regulation_group_libraries,
-            self.plan_feature_libraries,
-            active_plan_regulation_groups_library=None,
-            save_disabled_reason=VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
-        )
-        attribute_form.exec()
+        with deleted_after_use(
+            PlanObjectForm(
+                plan_object,
+                title,
+                self.regulation_group_libraries,
+                self.plan_feature_libraries,
+                active_plan_regulation_groups_library=None,
+                save_disabled_reason=VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
+                parent=iface.mainWindow(),
+            )
+        ) as attribute_form:
+            attribute_form.exec()
 
     @use_wait_cursor
     @status_message("Haetaan ajantasakaavan kaavakohdetta ...")
@@ -945,12 +967,11 @@ class PlanManager(QObject):
         if not handle_unsaved_changes():
             return
 
-        dialog = LoadPlanMatterDialog(None, connection_names)
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            selected_plan_matter_id = dialog.get_selected_plan_matter_id()
-            logger.debug("Load plan matter selected id=%s", selected_plan_matter_id)
-            self.set_active_plan_matter(selected_plan_matter_id)
+        with deleted_after_use(LoadPlanMatterDialog(iface.mainWindow(), connection_names)) as dialog:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                selected_plan_matter_id = dialog.get_selected_plan_matter_id()
+                logger.debug("Load plan matter selected id=%s", selected_plan_matter_id)
+                self.set_active_plan_matter(selected_plan_matter_id)
 
     def commit_all_editable_layers(self):
         """Commit all changes in any editable layers."""
@@ -971,17 +992,17 @@ class PlanManager(QObject):
             iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
 
-        dialog = SerializePlan()
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.json_plan_path = str(dialog.plan_file.filePath())
-            self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
-            logger.debug(
-                "Export plan target paths plan=%s outline=%s",
-                self.json_plan_path,
-                self.json_plan_outline_path,
-            )
+        with deleted_after_use(SerializePlan(iface.mainWindow())) as dialog:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.json_plan_path = str(dialog.plan_file.filePath())
+                self.json_plan_outline_path = str(dialog.plan_outline_file.filePath())
+                logger.debug(
+                    "Export plan target paths plan=%s outline=%s",
+                    self.json_plan_path,
+                    self.json_plan_outline_path,
+                )
 
-            self.lambda_service.export_plan(plan_id)
+                self.lambda_service.export_plan(plan_id)
 
     def export_plan_matter(self):
         """Starts the plan matter export process
@@ -994,12 +1015,12 @@ class PlanManager(QObject):
             iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
             return
 
-        dialog = SerializePlanMatter()
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            self.json_plan_matter_path = str(dialog.plan_matter_file.filePath())
-            logger.debug("Export plan matter target path=%s", self.json_plan_matter_path)
+        with deleted_after_use(SerializePlanMatter(iface.mainWindow())) as dialog:
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                self.json_plan_matter_path = str(dialog.plan_matter_file.filePath())
+                logger.debug("Export plan matter target path=%s", self.json_plan_matter_path)
 
-            self.lambda_service.export_plan_matter(plan_id)
+                self.lambda_service.export_plan_matter(plan_id)
 
     def get_permanent_plan_identifier(self):
         """Gets the permanent plan identifier for the active plan."""

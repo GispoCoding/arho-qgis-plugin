@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from contextlib import contextmanager
+from typing import TYPE_CHECKING, TypeVar
+
+from qgis.PyQt.QtWidgets import QWidget
 
 if TYPE_CHECKING:
-    from qgis.PyQt.QtWidgets import QWidget
+    from typing import Iterator
+
+T = TypeVar("T", bound=QWidget)
 
 
 def remove_widget(widget: QWidget) -> None:
@@ -19,3 +24,17 @@ def remove_widget(widget: QWidget) -> None:
     """
     widget.setParent(None)
     widget.deleteLater()
+
+
+@contextmanager
+def deleted_after_use(dialog: T) -> Iterator[T]:
+    """Yields `dialog` and schedules it for deletion when the block ends.
+
+    A dialog parented to the QGIS main window is owned by C++, so letting the Python
+    name go out of scope is not enough: without this it stays a child of the window for
+    the rest of the session, one more every time it is opened.
+    """
+    try:
+        yield dialog
+    finally:
+        dialog.deleteLater()

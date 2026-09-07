@@ -35,6 +35,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
 )
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface, symbol_fingerprint
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
     from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
@@ -156,13 +157,13 @@ class RegulationsPrintGenerator:
                 return existing
 
         # Open settings dialog
-        dialog = RegulationsPrintSettingsDialog()
-        if dialog.exec():
-            cls.SETTINGS = dialog.get_settings()
-            LayoutItemFactory.SETTINGS = cls.SETTINGS  # Copy settings to factory class
-        else:
-            # If user clicked Cancel, simply exit
-            return
+        with deleted_after_use(RegulationsPrintSettingsDialog(iface.mainWindow())) as dialog:
+            if dialog.exec():
+                cls.SETTINGS = dialog.get_settings()
+                LayoutItemFactory.SETTINGS = cls.SETTINGS  # Copy settings to factory class
+            else:
+                # If user clicked Cancel, simply exit
+                return
 
         # Remove old layout if exists after user has selected settings
         if existing:

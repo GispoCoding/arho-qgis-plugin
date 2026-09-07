@@ -6,7 +6,7 @@ from pathlib import Path
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidget
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidget, QWidget
 
 from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
 from arho_feature_template.gui.components.library_display_widget import LibaryDisplayWidget
@@ -26,8 +26,9 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
         self,
         regulation_group_libraries: list[RegulationGroupLibrary],
         custom_plan_feature_libraries: list[PlanFeatureLibrary],
+        parent: QWidget | None = None,
     ):
-        super().__init__()
+        super().__init__(parent)
         self.setupUi(self)
         logger.debug("Initializing ManageLibrariesForm")
 

@@ -38,8 +38,8 @@ T = TypeVar("T", bound=RegulationGroup | PlanObject)
 
 
 class TemplateSelectionForm(Generic[T], QDialog, FormClass):  # type: ignore
-    def __init__(self, libraries: list[Library]):
-        super().__init__()
+    def __init__(self, libraries: list[Library], parent: QWidget | None = None):
+        super().__init__(parent)
         self.setupUi(self)
 
         # TYPES

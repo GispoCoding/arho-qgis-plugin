@@ -40,6 +40,7 @@ from arho_feature_template.project.layers.plan_layers import (
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -382,22 +383,25 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             "Opening plan feature form for id=%s layer=%s", plan_feature_model.id_, plan_feature_model.layer_name
         )
 
-        form = PlanObjectForm(
-            plan_feature=plan_feature_model,
-            form_title=get_localized_text(plan_feature_model.name) or plan_feature_model.layer_name or "",
-            plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
-            regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
-            active_plan_regulation_groups_library=self.plan_manager_ref.active_plan_regulation_group_library,
-            save_disabled_reason=self.plan_manager_ref.save_disabled_reason(),
-        )
-        if form.exec():
-            updated_plan_feature_model = form.model
-            if save_plan_object(updated_plan_feature_model) is not None:
-                logger.debug("Plan feature saved from form id=%s", updated_plan_feature_model.id_)
-                # Update table row if saving was succesfull
-                model_index = self.filter_proxy_model.mapToSource(index)
-                row = model_index.row()
-                self._update_row(row, updated_plan_feature_model)
+        with deleted_after_use(
+            PlanObjectForm(
+                plan_feature=plan_feature_model,
+                form_title=get_localized_text(plan_feature_model.name) or plan_feature_model.layer_name or "",
+                plan_feature_libraries=self.plan_manager_ref.plan_feature_libraries,
+                regulation_group_libraries=self.plan_manager_ref.regulation_group_libraries,
+                active_plan_regulation_groups_library=self.plan_manager_ref.active_plan_regulation_group_library,
+                save_disabled_reason=self.plan_manager_ref.save_disabled_reason(),
+                parent=self,
+            )
+        ) as form:
+            if form.exec():
+                updated_plan_feature_model = form.model
+                if save_plan_object(updated_plan_feature_model) is not None:
+                    logger.debug("Plan feature saved from form id=%s", updated_plan_feature_model.id_)
+                    # Update table row if saving was succesfull
+                    model_index = self.filter_proxy_model.mapToSource(index)
+                    row = model_index.row()
+                    self._update_row(row, updated_plan_feature_model)
 
     def _open_context_menu(self, pos: QPoint):
         index = self.table.indexAt(pos)
