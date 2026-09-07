@@ -31,6 +31,7 @@ from arho_feature_template.project.layers.code_layers import (
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
+from arho_feature_template.utils.widget_utils import remove_widget
 
 if TYPE_CHECKING:
     from collections import defaultdict
@@ -188,9 +189,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
     def remove_plan_regulation_group(self, regulation_group_widget: RegulationGroupWidget):
         regulation_group_widget.delete_signal.disconnect(self.remove_plan_regulation_group)
         regulation_group_widget.open_as_form_signal.disconnect(self.open_plan_regulation_group_form)
-        self.plan_regulation_group_scrollarea_contents.layout().removeWidget(regulation_group_widget)
         self.regulation_group_widgets.remove(regulation_group_widget)
-        regulation_group_widget.deleteLater()
+        remove_widget(regulation_group_widget)
 
     def show_regulation_group_library(self, i: int):
         self.regulation_groups_selection_widget.tree.clear()

@@ -12,6 +12,7 @@ from arho_feature_template.core.models import Proposition, Regulation, Regulatio
 from arho_feature_template.gui.components.plan_proposition_widget import PropositionWidget
 from arho_feature_template.gui.components.plan_regulation_widget import RegulationWidget
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, PlanRegulationTypeLayer
+from arho_feature_template.utils.widget_utils import remove_widget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QPushButton
@@ -87,9 +88,8 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         return widget
 
     def delete_regulation_widget(self, regulation_widget: RegulationWidget):
-        self.frame.layout().removeWidget(regulation_widget)
         self.regulation_widgets.remove(regulation_widget)
-        regulation_widget.deleteLater()
+        remove_widget(regulation_widget)
 
     def add_new_proposition(self):
         proposition = Proposition(value="")
@@ -103,9 +103,8 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         return widget
 
     def delete_proposition_widget(self, proposition_widget: RegulationWidget):
-        self.frame.layout().removeWidget(proposition_widget)
         self.proposition_widgets.remove(proposition_widget)
-        proposition_widget.deleteLater()
+        remove_widget(proposition_widget)
 
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(

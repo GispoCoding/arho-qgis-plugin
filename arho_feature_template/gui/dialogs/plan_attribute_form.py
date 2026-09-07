@@ -26,6 +26,7 @@ from arho_feature_template.project.layers.code_layers import (
 )
 from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
 from arho_feature_template.utils.misc_utils import date_as_str, get_active_plan_matter_id
+from arho_feature_template.utils.widget_utils import remove_widget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QLineEdit, QTextEdit, QVBoxLayout
@@ -219,9 +220,8 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
     def remove_plan_regulation_group(self, regulation_group_widget: GeneralRegulationGroupWidget):
         regulation_group_widget.delete_signal.disconnect(self.remove_plan_regulation_group)
-        self.regulations_layout.removeWidget(regulation_group_widget)
         self.regulation_group_widgets.remove(regulation_group_widget)
-        regulation_group_widget.deleteLater()
+        remove_widget(regulation_group_widget)
 
     def add_new_document(self):
         self.add_document(Document())
@@ -237,9 +237,8 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
     def delete_document(self, document_widget: DocumentWidget):
         document_widget.delete_signal.disconnect(self.delete_document)
         document_widget.document_edited.disconnect(self._check_required_fields)
-        self.documents_layout.removeWidget(document_widget)
         self.document_widgets.remove(document_widget)
-        document_widget.deleteLater()
+        remove_widget(document_widget)
         self._check_required_fields()
 
     def into_model(self) -> Plan:
