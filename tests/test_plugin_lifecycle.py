@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 import qgis.utils
+from qgis.core import QgsProject
 from qgis.PyQt.QtWidgets import QDockWidget
 
 from arho_feature_template.core.plan_manager import PlanManager
@@ -89,6 +90,24 @@ def test_unload_keeps_other_project_read_receivers(plugin_factory, iface):
 
     iface.projectRead.emit()
     assert calls == [1]
+
+
+def test_unload_disconnects_project_cleared(plugin_factory):
+    """QgsProject outlives the plugin, so the connection has to be undone at unload.
+
+    Asserted by disconnecting again instead of by emitting: ``QgsProject.instance()`` is
+    shared by the whole test session, and a stray ``cleared`` reaches managers left over
+    from other tests.
+    """
+    plugin = plugin_factory()
+    manager = plugin.plan_manager
+    # What a successfully loaded project does
+    manager.connect_project_cleared_signal()
+
+    plugin.unload()
+
+    with pytest.raises(TypeError):
+        QgsProject.instance().cleared.disconnect(manager.on_project_cleared)
 
 
 def test_project_read_reinitializes_until_unload(plugin_factory, iface, monkeypatch):

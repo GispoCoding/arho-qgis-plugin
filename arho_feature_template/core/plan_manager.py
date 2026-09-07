@@ -176,6 +176,10 @@ class PlanManager(QObject):
 
         self.plan_locked = False  # Change this only through `update_lock_status` method
 
+        # `QgsProject` outlives the plugin, so the connection to `cleared` has to be tracked
+        # and undone. It is made per project load and dropped again when the signal fires.
+        self._project_cleared_connected = False
+
         self.plan_feature_libraries = []
         self.regulation_group_libraries = []
 
@@ -1035,7 +1039,7 @@ class PlanManager(QObject):
 
         if self.check_compatible_project_version() and self.check_required_layers():
             self.connect_layer_error_signals()
-            QgsProject.instance().cleared.connect(self.on_project_cleared)
+            self.connect_project_cleared_signal()
             self.project_loaded.emit()
             logger.debug("Project initialization checks passed")
 
@@ -1071,9 +1075,21 @@ class PlanManager(QObject):
         sender_layer = self.sender()
         logger.error("Layer error: Layer=%s Error=%s", sender_layer.name(), message.rstrip())
 
+    def connect_project_cleared_signal(self):
+        if self._project_cleared_connected:
+            return
+        QgsProject.instance().cleared.connect(self.on_project_cleared)
+        self._project_cleared_connected = True
+
+    def disconnect_project_cleared_signal(self):
+        if not self._project_cleared_connected:
+            return
+        QgsProject.instance().cleared.disconnect(self.on_project_cleared)
+        self._project_cleared_connected = False
+
     def on_project_cleared(self):
         logger.debug("Project cleared signal received")
-        QgsProject.instance().cleared.disconnect(self.on_project_cleared)
+        self.disconnect_project_cleared_signal()
 
         self.project_cleared.emit()
 
@@ -1124,6 +1140,7 @@ class PlanManager(QObject):
 
         disconnect_signal(self.plan_set)
         self.disconnect_layer_error_signals()
+        self.disconnect_project_cleared_signal()
 
 
 @status_message("Haetaan kaavasuunitelman kaavamääräysryhmiä ...")
