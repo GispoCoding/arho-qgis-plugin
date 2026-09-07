@@ -581,6 +581,7 @@ class PlanMatter(PlanBaseModel):
     name: LocalizedText | None = None
     description: LocalizedText | None = None
     plan_type_id: str | None = None
+    digital_origin_id: str | None = None
     record_number: str | None = None
     case_identifier: str | None = None
     permanent_plan_identifier: str | None = None
