@@ -712,7 +712,9 @@ class Plugin:
         self.actions.clear()
         logger.debug("Plugin actions removed and cleared")
 
-        # Handle toolbar
+        # Handle toolbar. `iface.addToolBar` is annotated `/Factory/`, so Python owns the
+        # toolbar: dropping the last reference deletes the C++ object, and with it both
+        # tool buttons and their menus.
         iface.mainWindow().removeToolBar(self.toolbar)
         self.toolbar = None
         logger.debug("Plugin toolbar removed")
