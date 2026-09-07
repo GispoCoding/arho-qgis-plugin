@@ -17,7 +17,7 @@ from arho_feature_template.project.layers.code_layers import PlanRegulationGroup
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.signal_utils import SignalDebouncer
-from arho_feature_template.utils.widget_utils import remove_widget
+from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
@@ -241,9 +241,9 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             self.from_model(group)
         # Multiple choices, make user choose which group to use
         elif len(self.matching_groups_in_db) > 1:
-            dialog = RegulationGroupSelectionView(self.matching_groups_in_db)
-            if dialog.exec():
-                self.from_model(dialog.get_selected_group())
+            with deleted_after_use(RegulationGroupSelectionView(self.matching_groups_in_db, self)) as dialog:
+                if dialog.exec():
+                    self.from_model(dialog.get_selected_group())
 
     def _on_group_details_changed(self):
         # Only ask for update if group is new / not in DB

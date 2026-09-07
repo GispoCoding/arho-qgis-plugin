@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QListWidget
+from qgis.PyQt.QtWidgets import QDialog, QListWidget, QWidget
 
 ui_path = resources.files(__package__) / "regulation_group_selection_view.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 
 
 class RegulationGroupSelectionView(QDialog, FormClass):  # type: ignore
-    def __init__(self, regulation_groups: list[RegulationGroup]):
-        super().__init__()
+    def __init__(self, regulation_groups: list[RegulationGroup], parent: QWidget | None = None):
+        super().__init__(parent)
         self.setupUi(self)
 
         # TYPES

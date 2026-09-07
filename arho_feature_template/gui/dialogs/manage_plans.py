@@ -7,7 +7,14 @@ from qgis.core import QgsApplication
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QPushButton, QTableWidget, QTableWidgetItem
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QWidget,
+)
 
 from arho_feature_template.core.feature_editing import save_plan
 from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
@@ -26,6 +33,7 @@ from arho_feature_template.utils.misc_utils import (
     iface,
     use_wait_cursor,
 )
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
@@ -44,8 +52,13 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
     UNLOCKED_ICON: QIcon = QgsApplication.getThemeIcon("unlocked.svg")
 
     @use_wait_cursor
-    def __init__(self, regulation_group_libraries: list[RegulationGroupLibrary], plan_manager_ref: PlanManager):
-        super().__init__()
+    def __init__(
+        self,
+        regulation_group_libraries: list[RegulationGroupLibrary],
+        plan_manager_ref: PlanManager,
+        parent: QWidget | None = None,
+    ):
+        super().__init__(parent)
         self.setupUi(self)
 
         # TYPES
@@ -148,28 +161,27 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
 
     def _on_row_double_clicked(self, item: QTableWidgetItem):
         plan = self._get_plan_data(item.row())
-        form = PlanAttributeForm(plan, self.regulation_group_libraries)
+        with deleted_after_use(PlanAttributeForm(plan, self.regulation_group_libraries, self)) as form:
+            if form.exec():
+                edited_plan = form.model
+                with (
+                    plan_layers_temporarily_unlocked(),
+                    temporary_subset(self.plan_layer, f"\"plan_matter_id\"='{get_active_plan_matter_id()}'"),
+                ):
+                    save_plan(edited_plan)
 
-        if form.exec():
-            edited_plan = form.model
-            with (
-                plan_layers_temporarily_unlocked(),
-                temporary_subset(self.plan_layer, f"\"plan_matter_id\"='{get_active_plan_matter_id()}'"),
-            ):
-                save_plan(edited_plan)
-
-            self.plan_manager_ref.update_lock_status(edited_plan)
-            self._update_plan_row(item.row(), edited_plan)
+                self.plan_manager_ref.update_lock_status(edited_plan)
+                self._update_plan_row(item.row(), edited_plan)
 
     def _on_new_plan_button_clicked(self):
-        form = NewPlanDialog()
-        form.plan_copied.connect(self._handle_plan_copied)
-        if form.exec() and form.plan:
-            new_plan: Plan = form.plan
-            plan_id = save_plan(new_plan)
-            if plan_id:
-                new_plan.id_ = plan_id
-                self._add_plan_row(new_plan, select=True)
+        with deleted_after_use(NewPlanDialog(self)) as form:
+            form.plan_copied.connect(self._handle_plan_copied)
+            if form.exec() and form.plan:
+                new_plan: Plan = form.plan
+                plan_id = save_plan(new_plan)
+                if plan_id:
+                    new_plan.id_ = plan_id
+                    self._add_plan_row(new_plan, select=True)
 
     def _handle_plan_copied(self, copied_plan_id: str):
         if copied_plan_id:

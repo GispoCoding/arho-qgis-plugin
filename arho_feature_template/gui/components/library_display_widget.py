@@ -35,6 +35,7 @@ from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, LineLayer, OtherAreaLayer, PointLayer
 from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
     from qgis.gui import QgsCollapsibleGroupBox, QgsFileWidget, QgsFilterLineEdit
@@ -411,16 +412,16 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
         logger.debug("Creating new regulation group template")
 
-        form = PlanRegulationGroupForm(RegulationGroup(), None)
-        form.setWindowTitle("Luo kaavamääräysryhmäpohja")
+        with deleted_after_use(PlanRegulationGroupForm(RegulationGroup(), None, parent=self)) as form:
+            form.setWindowTitle("Luo kaavamääräysryhmäpohja")
 
-        # TODO: Let user select a category for their regulation group template?
-        if form.exec():
-            self._add_library_element_to_list(form.model)
-            self._update_active_library_templates_from_view()
-            self.unsaved_libraries.add(self.active_library.name)
-            self.save_library_btn.setEnabled(True)
-            logger.debug("New regulation group template added library=%s", self.active_library.name)
+            # TODO: Let user select a category for their regulation group template?
+            if form.exec():
+                self._add_library_element_to_list(form.model)
+                self._update_active_library_templates_from_view()
+                self.unsaved_libraries.add(self.active_library.name)
+                self.save_library_btn.setEnabled(True)
+                logger.debug("New regulation group template added library=%s", self.active_library.name)
 
     def _on_new_plan_feature_clicked(self, plan_feature_type: str, plan_feature_layer: str):
         if not self.active_library:
@@ -432,19 +433,21 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             plan_feature_layer,
         )
 
-        form = PlanObjectForm(
-            plan_feature=PlanObject(layer_name=plan_feature_layer),
-            form_title=f"Luo kaavakohdepohja ({plan_feature_type})",
-            regulation_group_libraries=self.regulation_group_libraries,
-            template_form=True,
-        )
-
-        if form.exec():
-            self._add_library_element_to_list(form.model)
-            self._update_active_library_templates_from_view()
-            self.unsaved_libraries.add(self.active_library.name)
-            self.save_library_btn.setEnabled(True)
-            logger.debug("New plan feature template added library=%s", self.active_library.name)
+        with deleted_after_use(
+            PlanObjectForm(
+                plan_feature=PlanObject(layer_name=plan_feature_layer),
+                form_title=f"Luo kaavakohdepohja ({plan_feature_type})",
+                regulation_group_libraries=self.regulation_group_libraries,
+                template_form=True,
+                parent=self,
+            )
+        ) as form:
+            if form.exec():
+                self._add_library_element_to_list(form.model)
+                self._update_active_library_templates_from_view()
+                self.unsaved_libraries.add(self.active_library.name)
+                self.save_library_btn.setEnabled(True)
+                logger.debug("New plan feature template added library=%s", self.active_library.name)
 
     def _on_edit_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()
@@ -465,21 +468,24 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 if plan_feature_layer == element.layer_name:
                     title = f"Muokkaa kaavakohdepohjaa ({plan_feature_type})"
                     break
-            form = PlanObjectForm(element, title, self.regulation_group_libraries)
+            form: PlanObjectForm | PlanRegulationGroupForm = PlanObjectForm(
+                element, title, self.regulation_group_libraries, parent=self
+            )
         elif self.library_type_class is RegulationGroupLibrary:
-            form = PlanRegulationGroupForm(element, None)
+            form = PlanRegulationGroupForm(element, None, parent=self)
             form.setWindowTitle("Muokkaa kaavamääräysryhmäpohjaa")
         else:
             return
 
-        if form.exec() and element.data_hash() != form.model.data_hash():
-            selected_item.setData(DATA_ROLE, form.model)
+        with deleted_after_use(form):
+            if form.exec() and element.data_hash() != form.model.data_hash():
+                selected_item.setData(DATA_ROLE, form.model)
 
-            self._update_active_library_templates_from_view()
-            self._update_template_view()
-            self.unsaved_libraries.add(self.active_library.name)
-            self.save_library_btn.setEnabled(True)
-            logger.debug("Library element edited library=%s", self.active_library.name)
+                self._update_active_library_templates_from_view()
+                self._update_template_view()
+                self.unsaved_libraries.add(self.active_library.name)
+                self.save_library_btn.setEnabled(True)
+                logger.debug("Library element edited library=%s", self.active_library.name)
 
     def _on_delete_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()

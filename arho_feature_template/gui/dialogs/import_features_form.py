@@ -16,7 +16,7 @@ from qgis.core import (
 )
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
-from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressBar
+from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressBar, QWidget
 
 from arho_feature_template.core.feature_editing import (
     add_plan_object_to_edit_buffer,
@@ -54,8 +54,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary,
         plan_manager_ref: PlanManager,
+        parent: QWidget | None = None,
     ):
-        super().__init__(parent=iface.mainWindow())
+        super().__init__(parent)
         self.setupUi(self)
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.Window)
 
