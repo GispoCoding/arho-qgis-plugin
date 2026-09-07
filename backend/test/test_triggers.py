@@ -92,6 +92,10 @@ def test_modified_at_triggers(
     source_data_instance: models.SourceData,
     organisation_instance: models.Organisation,
     plan_map_instance: models.Document,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    plan_object_cancellation_info_instance: models.PlanObjectCancellationInfo,
+    cancelled_group_relation_instance: models.CancelledGroupRelation,
+    another_cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
 ) -> None:
     # Save old modified_at timestamps
     plan_old_modified_at = plan_instance.modified_at
@@ -107,6 +111,13 @@ def test_modified_at_triggers(
     source_data_instance_old_modified_at = source_data_instance.modified_at
     organisation_instance_old_modified_at = organisation_instance.modified_at
     plan_map_instance_old_modified_at = plan_map_instance.modified_at
+    plan_cancellation_info_old_modified_at = plan_cancellation_info_instance.modified_at
+    plan_object_cancellation_info_old_modified_at = (
+        plan_object_cancellation_info_instance.modified_at
+    )
+    cancelled_group_relation_old_modified_at = (
+        cancelled_group_relation_instance.modified_at
+    )
 
     # Edit tables to fire the triggers
     plan_instance.exported_at = datetime.now()
@@ -120,6 +131,13 @@ def test_modified_at_triggers(
     source_data_instance.additional_information_uri = "http://test2.fi"
     organisation_instance.business_id = "foo"
     plan_map_instance.name = {"fin": "foo"}
+    plan_cancellation_info_instance.cancels_entire_plan = True
+    plan_object_cancellation_info_instance.cancels_entire_plan_object = True
+    plan_object_cancellation_info_instance.remaining_valid_geom_polygon = None
+    # Every other column of the cancelled group relation is a foreign key.
+    cancelled_group_relation_instance.plan_regulation_group = (
+        another_cancelled_plan_regulation_group_instance
+    )
 
     session.flush()
     session.refresh(plan_instance)
@@ -133,6 +151,9 @@ def test_modified_at_triggers(
     session.refresh(source_data_instance)
     session.refresh(organisation_instance)
     session.refresh(plan_map_instance)
+    session.refresh(plan_cancellation_info_instance)
+    session.refresh(plan_object_cancellation_info_instance)
+    session.refresh(cancelled_group_relation_instance)
 
     assert plan_instance.modified_at != plan_old_modified_at
     assert land_use_area_instance.modified_at != land_use_area_instance_old_modified_at
@@ -151,6 +172,18 @@ def test_modified_at_triggers(
     assert source_data_instance.modified_at != source_data_instance_old_modified_at
     assert organisation_instance.modified_at != organisation_instance_old_modified_at
     assert plan_map_instance != plan_map_instance_old_modified_at
+    assert (
+        plan_cancellation_info_instance.modified_at
+        != plan_cancellation_info_old_modified_at
+    )
+    assert (
+        plan_object_cancellation_info_instance.modified_at
+        != plan_object_cancellation_info_old_modified_at
+    )
+    assert (
+        cancelled_group_relation_instance.modified_at
+        != cancelled_group_relation_old_modified_at
+    )
 
 
 def test_lifecycle_status_is_set_by_trigger_if_null(

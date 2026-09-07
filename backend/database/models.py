@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID  # Sqlalchemy uses this runtime
 
 from geoalchemy2 import Geometry, WKBElement
-from sqlalchemy import Column, ForeignKey, Index, Table, Uuid
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -298,6 +298,23 @@ class Plan(PlanBase, RyhtiLifecycleBase):
         secondary=legal_effects_association,
         lazy="selectin",
         back_populates="plans",
+    )
+
+    # Cancellation infos this plan issues, i.e. the plans this plan repeals.
+    plan_cancellation_infos: Mapped[list[PlanCancellationInfo]] = relationship(
+        back_populates="plan",
+        foreign_keys="PlanCancellationInfo.plan_id",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    # Cancellation infos through which other plans repeal this plan. A plan that
+    # another plan repeals must not be deleted, so the orm never touches these
+    # rows and the foreign key of the database is left to speak.
+    cancelled_by: Mapped[list[PlanCancellationInfo]] = relationship(
+        back_populates="cancelled_plan",
+        foreign_keys="PlanCancellationInfo.cancelled_plan_id",
+        passive_deletes="all",
     )
 
 
@@ -765,3 +782,312 @@ class Document(VersionedBase):
     decision_date: Mapped[datetime | None]
     document_date: Mapped[datetime]
     url: Mapped[str | None]
+
+
+# Kaavan kumoamistieto, i.e. a plan that repeals an earlier plan.
+#
+# The repealed plan, its plan objects and its regulation groups are referred to
+# by foreign key instead of by uri text: hame.plan.id is the Ryhti planKey and
+# hame.<plan object>.id the planObjectKey, so the uris are built from the ids
+# when the plan is serialized. import_wfs_plans brings the valid national plans
+# into hame, so the target of a cancellation is a row of this database.
+#
+# The foreign keys to the cancelled plan and its parts have no ondelete: a plan
+# that another plan repeals must not be deleted. They are deferred, because
+# import_plan and import_wfs_plans delete a plan and insert it again with the
+# same key inside one transaction.
+
+
+# Ryhti cancelledGeneralRegulationGroupUris. The link carries no data of its
+# own, so this is a plain association table like legal_effects_association.
+cancelled_general_regulation_group_association = Table(
+    "cancelled_general_regulation_group_association",
+    Base.metadata,
+    Column[UUID](
+        "plan_cancellation_info_id",
+        ForeignKey(
+            "hame.plan_cancellation_info.id",
+            name="plan_cancellation_info_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+        # indexed by the primary key
+    ),
+    Column[UUID](
+        "plan_regulation_group_id",
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        primary_key=True,
+    ),
+    # Separate index because not the leftmost column of the primary key. The
+    # automatic name would be too long for PostgreSQL, so it is given here.
+    Index(
+        "ix_cancelled_general_regulation_group_plan_regulation_group_id",
+        "plan_regulation_group_id",
+    ),
+    schema="hame",
+)
+
+
+# Exactly one of the plan object columns of CancelledPlanObjectMixin is set.
+CANCELLED_PLAN_OBJECT_CHECK = (
+    "num_nonnulls(land_use_area_id, other_area_id, line_id, point_id) = 1"
+)
+
+
+class CancelledPlanObjectMixin(Base):
+    """Reference to one plan object of the cancelled plan.
+
+    Plan objects live in four tables, so the reference is spread over four
+    columns of which exactly one is set, like in regulation_group_association.
+    """
+
+    __abstract__ = True
+
+    @declared_attr
+    @classmethod
+    def land_use_area_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.land_use_area.id",
+                name="land_use_area_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def other_area_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.other_area.id",
+                name="other_area_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def line_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.line.id",
+                name="line_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def point_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.point.id",
+                name="point_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def land_use_area(cls) -> Mapped[LandUseArea | None]:
+        return relationship("LandUseArea")
+
+    @declared_attr
+    @classmethod
+    def other_area(cls) -> Mapped[OtherArea | None]:
+        return relationship("OtherArea")
+
+    @declared_attr
+    @classmethod
+    def line(cls) -> Mapped[Line | None]:
+        return relationship("Line")
+
+    @declared_attr
+    @classmethod
+    def point(cls) -> Mapped[Point | None]:
+        return relationship("Point")
+
+
+class PlanCancellationInfo(VersionedBase):
+    """Kaavan kumoamistieto"""
+
+    __tablename__ = "plan_cancellation_info"
+    __table_args__ = (
+        # A plan repeals another plan at most once. Several cancelled plan
+        # objects of the same plan belong to one cancellation info.
+        Index(
+            "ix_plan_cancellation_info_plan_id_cancelled_plan_id",
+            "plan_id",
+            "cancelled_plan_id",
+            unique=True,
+        ),
+        CheckConstraint(
+            "cancelled_plan_id <> plan_id",
+            name="ck_plan_cancellation_info_cancelled_plan_id",
+        ),
+        VersionedBase.__table_args__,
+    )
+
+    plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
+        comment="The plan that repeals the cancelled plan",
+        # indexed by ix_plan_cancellation_info_plan_id_cancelled_plan_id
+    )
+    cancelled_plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan.id",
+            name="cancelled_plan_id_fkey",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        index=True,
+        comment="The plan that is repealed",
+    )
+    cancels_entire_plan: Mapped[bool]
+
+    plan: Mapped[Plan] = relationship(
+        back_populates="plan_cancellation_infos",
+        foreign_keys="PlanCancellationInfo.plan_id",
+    )
+    cancelled_plan: Mapped[Plan] = relationship(
+        back_populates="cancelled_by",
+        foreign_keys="PlanCancellationInfo.cancelled_plan_id",
+    )
+
+    plan_object_cancellation_infos: Mapped[list[PlanObjectCancellationInfo]] = (
+        relationship(
+            back_populates="plan_cancellation_info",
+            lazy="selectin",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
+        )
+    )
+    cancelled_group_relations: Mapped[list[CancelledGroupRelation]] = relationship(
+        back_populates="plan_cancellation_info",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    cancelled_general_regulation_groups: Mapped[list[PlanRegulationGroup]] = (
+        relationship(
+            secondary=cancelled_general_regulation_group_association, lazy="selectin"
+        )
+    )
+
+
+class PlanObjectCancellationInfo(VersionedBase, CancelledPlanObjectMixin):
+    """Kaavakohteen kumoamistieto"""
+
+    __tablename__ = "plan_object_cancellation_info"
+    __table_args__ = (
+        # The automatic index name would be at the identifier length limit of
+        # PostgreSQL, so it is given here.
+        Index(
+            "ix_plan_object_cancellation_info_plan_cancellation_info_id",
+            "plan_cancellation_info_id",
+        ),
+        CheckConstraint(
+            CANCELLED_PLAN_OBJECT_CHECK,
+            name="ck_plan_object_cancellation_info_plan_object",
+        ),
+        # The geometry that stays valid is given when a part of the plan object
+        # is cancelled, and carries no meaning when the whole object is.
+        CheckConstraint(
+            "num_nonnulls("
+            "remaining_valid_geom_polygon, "
+            "remaining_valid_geom_line, "
+            "remaining_valid_geom_point"
+            ") = case when cancels_entire_plan_object then 0 else 1 end",
+            name="ck_plan_object_cancellation_info_remaining_valid_geom",
+        ),
+        # The geometry that stays valid has the geometry type of the cancelled
+        # plan object.
+        CheckConstraint(
+            "(remaining_valid_geom_polygon is null"
+            " or land_use_area_id is not null or other_area_id is not null)"
+            " and (remaining_valid_geom_line is null or line_id is not null)"
+            " and (remaining_valid_geom_point is null or point_id is not null)",
+            name="ck_plan_object_cancellation_info_remaining_valid_geom_type",
+        ),
+        VersionedBase.__table_args__,
+    )
+
+    plan_cancellation_info_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_cancellation_info.id",
+            name="plan_cancellation_info_id_fkey",
+            ondelete="CASCADE",
+        )
+        # indexed by ix_plan_object_cancellation_info_plan_cancellation_info_id
+    )
+    cancels_entire_plan_object: Mapped[bool]
+
+    # Ryhti validityGeometry: the part of the cancelled plan object that stays
+    # valid, not the part that is cancelled. There is a column per geometry
+    # type, so that PostgreSQL enforces the type of the geometry itself.
+    remaining_valid_geom_polygon: Mapped[WKBElement | None] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
+    remaining_valid_geom_line: Mapped[WKBElement | None] = mapped_column(
+        type_=Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID)
+    )
+    remaining_valid_geom_point: Mapped[WKBElement | None] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+    )
+
+    plan_cancellation_info: Mapped[PlanCancellationInfo] = relationship(
+        back_populates="plan_object_cancellation_infos"
+    )
+
+
+class CancelledGroupRelation(VersionedBase, CancelledPlanObjectMixin):
+    """Kumottavan ryhmän kohdistus
+
+    The link between a regulation group and a plan object of the cancelled
+    plan. Both ends are given, unlike in
+    cancelled_general_regulation_group_association, which names no plan object.
+    """
+
+    __tablename__ = "cancelled_group_relation"
+    __table_args__ = (
+        CheckConstraint(
+            CANCELLED_PLAN_OBJECT_CHECK, name="ck_cancelled_group_relation_plan_object"
+        ),
+        VersionedBase.__table_args__,
+    )
+
+    plan_cancellation_info_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_cancellation_info.id",
+            name="plan_cancellation_info_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    )
+    plan_regulation_group_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        index=True,
+    )
+
+    plan_cancellation_info: Mapped[PlanCancellationInfo] = relationship(
+        back_populates="cancelled_group_relations"
+    )
+    plan_regulation_group: Mapped[PlanRegulationGroup] = relationship()

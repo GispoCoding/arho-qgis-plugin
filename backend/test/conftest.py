@@ -752,7 +752,8 @@ def plan_instance(
     # down too early and teardown will fail, because plan cannot have empty
     # status or organisation.
     instance = models.Plan(
-        id=uuid.uuid4(),
+        # The id column is a string uuid, so other plans in the same flush sort.
+        id=str(uuid.uuid4()),
         plan_matter=plan_matter_instance,
         name={"fin": "Test Plan 1"},
         geom=from_shape(
@@ -1542,6 +1543,190 @@ def make_additional_information_instance_of_type(
         return instance
 
     return _make_additional_information_instance_of_type
+
+
+# Plan cancellation info fixtures
+
+# The cancelled plan is another plan, because a plan may only repeal another
+# plan matter. Its regulation groups and plan objects are the parts a partial
+# cancellation points at.
+
+
+@pytest.fixture
+def cancelled_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    another_plan_instance: models.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="C",
+        plan=another_plan_instance,
+        ordering=1,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_cancelled_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_cancelled_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    another_plan_instance: models.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="D",
+        plan=another_plan_instance,
+        ordering=2,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_another_cancelled_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def cancelled_general_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    another_plan_instance: models.Plan,
+    type_of_general_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="Y",
+        plan=another_plan_instance,
+        ordering=3,
+        type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
+        name={"fin": "test_cancelled_general_regulation_group"},
+    )
+    instance = temp_session_feature(instance)
+
+    another_plan_instance.general_plan_regulation_groups.append(instance)
+
+    return instance
+
+
+@pytest.fixture
+def cancelled_land_use_area_instance(
+    temp_session_feature: ReturnSame[models.LandUseArea],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    another_plan_instance: models.Plan,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> models.LandUseArea:
+    instance = models.LandUseArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680000.0],
+                                [386378.427863708813675, 6680000.0],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        name={"fin": "test_cancelled_land_use_area"},
+        ordering=1,
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=another_plan_instance,
+        plan_regulation_groups=[cancelled_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def cancelled_point_instance(
+    temp_session_feature: ReturnSame[models.Point],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    another_plan_instance: models.Plan,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> models.Point:
+    instance = models.Point(
+        geom=from_shape(MultiPoint([[382000, 6678000]])),
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=another_plan_instance,
+        plan_regulation_groups=[cancelled_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_cancellation_info_instance(
+    temp_session_feature: ReturnSame[models.PlanCancellationInfo],
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+    cancelled_general_regulation_group_instance: models.PlanRegulationGroup,
+) -> models.PlanCancellationInfo:
+    instance = models.PlanCancellationInfo(
+        plan=plan_instance,
+        cancelled_plan=another_plan_instance,
+        cancels_entire_plan=False,
+        cancelled_general_regulation_groups=[
+            cancelled_general_regulation_group_instance
+        ],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_object_cancellation_info_instance(
+    temp_session_feature: ReturnSame[models.PlanObjectCancellationInfo],
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> models.PlanObjectCancellationInfo:
+    instance = models.PlanObjectCancellationInfo(
+        plan_cancellation_info=plan_cancellation_info_instance,
+        land_use_area=cancelled_land_use_area_instance,
+        cancels_entire_plan_object=False,
+        # The part of the cancelled land use area that stays valid.
+        remaining_valid_geom_polygon=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [382000.0, 6678000.0],
+                                [382000.0, 6679000.0],
+                                [383000.0, 6679000.0],
+                                [383000.0, 6678000.0],
+                                [382000.0, 6678000.0],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def cancelled_group_relation_instance(
+    temp_session_feature: ReturnSame[models.CancelledGroupRelation],
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> models.CancelledGroupRelation:
+    instance = models.CancelledGroupRelation(
+        plan_cancellation_info=plan_cancellation_info_instance,
+        plan_regulation_group=cancelled_plan_regulation_group_instance,
+        land_use_area=cancelled_land_use_area_instance,
+    )
+    return temp_session_feature(instance)
 
 
 # Complete fixtures

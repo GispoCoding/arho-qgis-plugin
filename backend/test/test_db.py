@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import alembic
 import psycopg
 import pytest
+from geoalchemy2 import Geometry
 from psycopg.sql import SQL, Identifier, Literal
 
 from database.db_helper import UserCredentials
@@ -244,7 +245,7 @@ def geom_columns() -> list[tuple[str, str, str]]:
         (table.schema, table.name, column.name)
         for table in Base.metadata.tables.values()
         for column in table.columns
-        if table.schema in {"hame", "codes"} and column.name == "geom"
+        if table.schema in {"hame", "codes"} and isinstance(column.type, Geometry)
     ]
 
 

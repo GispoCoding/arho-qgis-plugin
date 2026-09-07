@@ -1,9 +1,13 @@
 import pytest
+from geoalchemy2.shape import from_shape
 from psycopg import sql
+from shapely.geometry import MultiPoint, shape
 from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import codes, models
+from database.base import PROJECT_SRID
 
 """Tests that check all relationships in sqlalchemy classes are defined correctly.
 This caused a lot of trouble with koodistot loader.
@@ -355,6 +359,24 @@ def test_document(
             "additional_information",
             id="additional_information",
         ),
+        pytest.param(
+            "plan_instance",
+            "plan_cancellation_info_instance",
+            "plan_cancellation_infos",
+            id="plan_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "plan_object_cancellation_info_instance",
+            "plan_object_cancellation_infos",
+            id="plan_object_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "cancelled_group_relation_instance",
+            "cancelled_group_relations",
+            id="cancelled_group_relation",
+        ),
     ],
 )
 def test_cascade_delete_using_orm(
@@ -395,6 +417,21 @@ def test_cascade_delete_using_orm(
             "empty_value_plan_regulation_instance",
             "main_use_additional_information_instance",
             id="additional_information",
+        ),
+        pytest.param(
+            "plan_instance",
+            "plan_cancellation_info_instance",
+            id="plan_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "plan_object_cancellation_info_instance",
+            id="plan_object_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "cancelled_group_relation_instance",
+            id="cancelled_group_relation",
         ),
     ],
 )
@@ -441,3 +478,301 @@ def test_cascade_delete_using_db(
 
     cur.close()
     connection.rollback()
+
+
+# Plan cancellation info tests
+
+# A geometry that stays valid when a part of the cancelled land use area is
+# repealed. It is a MultiPolygon, like the land use area itself.
+REMAINING_VALID_AREA = {
+    "type": "MultiPolygon",
+    "coordinates": [
+        [
+            [
+                [382000.0, 6678000.0],
+                [382000.0, 6679000.0],
+                [383000.0, 6679000.0],
+                [383000.0, 6678000.0],
+                [382000.0, 6678000.0],
+            ]
+        ]
+    ],
+}
+
+
+def remaining_valid_area() -> object:
+    """Returns the geometry that stays valid, in the projection of the project."""
+    return from_shape(shape(REMAINING_VALID_AREA), srid=PROJECT_SRID, extended=True)
+
+
+def assert_flush_violates(
+    session: Session, instance: object, constraint_name: str
+) -> None:
+    """Adds the instance and checks that the named constraint rejects it."""
+    session.add(instance)
+    with pytest.raises(IntegrityError) as excinfo:
+        session.flush()
+    assert constraint_name in str(excinfo.value)
+    session.rollback()
+
+
+def test_plan_cancellation_info(
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    plan_object_cancellation_info_instance: models.PlanObjectCancellationInfo,
+    cancelled_group_relation_instance: models.CancelledGroupRelation,
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+    cancelled_general_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    assert plan_cancellation_info_instance.plan is plan_instance
+    assert plan_instance.plan_cancellation_infos == [plan_cancellation_info_instance]
+
+    assert plan_cancellation_info_instance.cancelled_plan is another_plan_instance
+    assert another_plan_instance.cancelled_by == [plan_cancellation_info_instance]
+
+    assert plan_cancellation_info_instance.plan_object_cancellation_infos == [
+        plan_object_cancellation_info_instance
+    ]
+    assert plan_cancellation_info_instance.cancelled_group_relations == [
+        cancelled_group_relation_instance
+    ]
+    assert plan_cancellation_info_instance.cancelled_general_regulation_groups == [
+        cancelled_general_regulation_group_instance
+    ]
+
+
+def test_plan_object_cancellation_info(
+    plan_object_cancellation_info_instance: models.PlanObjectCancellationInfo,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert (
+        plan_object_cancellation_info_instance.plan_cancellation_info
+        is plan_cancellation_info_instance
+    )
+    assert (
+        plan_object_cancellation_info_instance.land_use_area
+        is cancelled_land_use_area_instance
+    )
+    assert plan_object_cancellation_info_instance.other_area is None
+    assert plan_object_cancellation_info_instance.line is None
+    assert plan_object_cancellation_info_instance.point is None
+    assert (
+        plan_object_cancellation_info_instance.remaining_valid_geom_polygon is not None
+    )
+    assert plan_object_cancellation_info_instance.remaining_valid_geom_line is None
+    assert plan_object_cancellation_info_instance.remaining_valid_geom_point is None
+
+
+def test_cancelled_group_relation(
+    cancelled_group_relation_instance: models.CancelledGroupRelation,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert (
+        cancelled_group_relation_instance.plan_cancellation_info
+        is plan_cancellation_info_instance
+    )
+    assert (
+        cancelled_group_relation_instance.plan_regulation_group
+        is cancelled_plan_regulation_group_instance
+    )
+    assert (
+        cancelled_group_relation_instance.land_use_area
+        is cancelled_land_use_area_instance
+    )
+    assert cancelled_group_relation_instance.other_area is None
+    assert cancelled_group_relation_instance.line is None
+    assert cancelled_group_relation_instance.point is None
+
+
+def test_cancelled_plan_cannot_be_deleted(
+    session: Session, plan_instance: models.Plan, another_plan_instance: models.Plan
+) -> None:
+    """A plan that another plan repeals must not be deleted.
+
+    The foreign key is deferred, so the error comes at commit, not at flush.
+    """
+    session.add(
+        models.PlanCancellationInfo(
+            plan=plan_instance,
+            cancelled_plan=another_plan_instance,
+            cancels_entire_plan=True,
+        )
+    )
+    session.commit()
+
+    session.delete(another_plan_instance)
+    with pytest.raises(IntegrityError) as excinfo:
+        session.commit()
+    assert "cancelled_plan_id_fkey" in str(excinfo.value)
+    session.rollback()
+
+
+def test_cancelled_plan_can_be_replaced_in_one_transaction(
+    session: Session,
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+    another_plan_matter_instance: models.PlanMatter,
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> None:
+    """A cancelled plan may be deleted and inserted again with the same key.
+
+    This is what import_plan and import_wfs_plans do when they read the plan
+    again from Ryhti. The deferred foreign key allows it inside one transaction.
+    """
+    session.add(
+        models.PlanCancellationInfo(
+            plan=plan_instance,
+            cancelled_plan=another_plan_instance,
+            cancels_entire_plan=True,
+        )
+    )
+    session.commit()
+
+    plan_id = another_plan_instance.id
+    geom = another_plan_instance.geom
+
+    session.delete(another_plan_instance)
+    session.flush()
+    session.add(
+        models.Plan(
+            id=plan_id,
+            plan_matter=another_plan_matter_instance,
+            name={"fin": "Test Plan 2, imported again"},
+            geom=geom,
+            lifecycle_status=preparation_status_instance,
+        )
+    )
+    session.commit()
+
+    assert session.get(models.Plan, plan_id) is not None
+
+
+def test_plan_cannot_repeal_itself(
+    session: Session, plan_instance: models.Plan
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanCancellationInfo(
+            plan=plan_instance, cancelled_plan=plan_instance, cancels_entire_plan=True
+        ),
+        "ck_plan_cancellation_info_cancelled_plan_id",
+    )
+
+
+def test_plan_repeals_another_plan_only_once(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanCancellationInfo(
+            plan=plan_instance,
+            cancelled_plan=another_plan_instance,
+            cancels_entire_plan=True,
+        ),
+        "ix_plan_cancellation_info_plan_id_cancelled_plan_id",
+    )
+
+
+def test_plan_object_cancellation_info_needs_a_plan_object(
+    session: Session, plan_cancellation_info_instance: models.PlanCancellationInfo
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            cancels_entire_plan_object=True,
+        ),
+        "ck_plan_object_cancellation_info_plan_object",
+    )
+
+
+def test_plan_object_cancellation_info_needs_only_one_plan_object(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+    cancelled_point_instance: models.Point,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            point=cancelled_point_instance,
+            cancels_entire_plan_object=True,
+        ),
+        "ck_plan_object_cancellation_info_plan_object",
+    )
+
+
+def test_partly_cancelled_plan_object_needs_a_remaining_geometry(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            cancels_entire_plan_object=False,
+        ),
+        "ck_plan_object_cancellation_info_remaining_valid_geom",
+    )
+
+
+def test_fully_cancelled_plan_object_has_no_remaining_geometry(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            cancels_entire_plan_object=True,
+            remaining_valid_geom_polygon=remaining_valid_area(),
+        ),
+        "ck_plan_object_cancellation_info_remaining_valid_geom",
+    )
+
+
+def test_remaining_geometry_must_match_the_plan_object(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    """A land use area cannot keep a point geometry."""
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            cancels_entire_plan_object=False,
+            remaining_valid_geom_point=from_shape(
+                MultiPoint([[382000, 6678000]]), srid=PROJECT_SRID, extended=True
+            ),
+        ),
+        "ck_plan_object_cancellation_info_remaining_valid_geom_type",
+    )
+
+
+def test_cancelled_group_relation_needs_exactly_one_plan_object(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.CancelledGroupRelation(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            plan_regulation_group=cancelled_plan_regulation_group_instance,
+        ),
+        "ck_cancelled_group_relation_plan_object",
+    )
