@@ -24,13 +24,13 @@ class NewFeatureGridWidget(QListWidget):
     def __init__(self):
         super().__init__()
         self.viewport().setBackgroundRole(QPalette.ColorRole.Window)
-        self.setFlow(self.LeftToRight)
+        self.setFlow(QListWidget.Flow.LeftToRight)
         self.setWrapping(True)
-        self.setMovement(self.Static)
-        self.setResizeMode(self.Adjust)
+        self.setMovement(QListWidget.Movement.Static)
+        self.setResizeMode(QListWidget.ResizeMode.Adjust)
         self.setGridSize(QSize(FEATURE_BUTTON_WIDTH + 4, FEATURE_BUTTON_HEIGHT + 4))
-        self.setHorizontalScrollMode(self.ScrollPerPixel)
-        self.setVerticalScrollMode(self.ScrollPerPixel)
+        self.setHorizontalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
+        self.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
 
         self.initialize_buttons()
 
