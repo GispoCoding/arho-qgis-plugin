@@ -122,6 +122,32 @@ def test_unload_disconnects_project_cleared(plugin_factory):
         QgsProject.instance().cleared.disconnect(manager.on_project_cleared)
 
 
+def test_unload_disconnects_the_plan_manager_signals(plugin_factory):
+    """`Plugin` is not a QObject, so Qt drops none of these when the plugin goes away.
+
+    Plugin Reloader re-inits before Python collects the old `Plugin`, so a leftover
+    connection calls into the old plugin while the new one is starting.
+    """
+    plugin = plugin_factory()
+    manager = plugin.plan_manager
+    pairs = [
+        (manager.inspect_plan_feature_tool.deactivated, plugin.on_inspect_tool_deactivated),
+        (manager.plan_set, plugin.on_active_plan_set),
+        (manager.plan_matter_set, plugin.on_active_plan_matter_set),
+        (manager.plan_unset, plugin.on_active_plan_unset),
+        (manager.project_loaded, plugin.on_project_loaded),
+        (manager.project_cleared, plugin.on_project_cleared),
+        (manager.plan_lock_status_changed, plugin.on_plan_lock_status_changed),
+        (manager.plan_identifier_set, plugin.validation_dock.on_permanent_identifier_set),
+    ]
+
+    plugin.unload()
+
+    for signal, slot in pairs:
+        with pytest.raises(TypeError):
+            signal.disconnect(slot)
+
+
 def test_project_read_reinitializes_until_unload(plugin_factory, iface, monkeypatch):
     calls = []
     monkeypatch.setattr(PlanManager, "on_project_loaded", lambda _self: calls.append(1))
