@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 # views that repeat the names used by the editable plan layers. Every lookup therefore
 # has to say which layer tree group the layer is expected to be in.
 PLAN_LAYER_GROUP_NAME = "Kaavasuunnitelma"
+VALID_LAYER_GROUP_NAME = "Ajantasakaava"
 CODE_LAYER_GROUP_NAME = "Koodit"
 
 

@@ -82,6 +82,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_layers,
     plan_matter_layers,
 )
+from arho_feature_template.project.layers.valid_layers import valid_layers
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
@@ -250,7 +251,7 @@ class PlanManager(QObject):
 
     def check_required_layers(self) -> bool:
         missing_layers = []
-        for layer in code_layers + plan_layers:
+        for layer in code_layers + plan_layers + valid_layers:
             if not layer.exists():
                 missing_layers.append(layer.name)  # noqa: PERF401
         if len(missing_layers) > 0:
@@ -755,6 +756,12 @@ class PlanManager(QObject):
             self.plan_matter_unset.emit()
 
             set_active_plan_matter_name("")
+
+        # Ajantasakaava filtering: show only the valid plans of the same plan type
+        plan_type = PlanMatterLayer.get_top_level_plan_type_value(plan_matter_id) if plan_matter_id else None
+        logger.debug("Filtering Ajantasakaava layers by plan type=%s", plan_type)
+        for valid_layer in valid_layers:
+            valid_layer.filter_layer_by_plan_type(plan_type)
 
         self.set_active_plan(None)
 
