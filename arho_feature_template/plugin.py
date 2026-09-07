@@ -235,7 +235,9 @@ class Plugin:
         self.plan_matter_button = QToolButton()
         self.plan_matter_button.setText("Kaava-asia ")
         self.plan_matter_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        plan_matter_menu = QMenu()
+        # setMenu does not take ownership, so without a parent the menu lives only as
+        # long as the /KeepReference/ the bindings put on the button
+        plan_matter_menu = QMenu(self.plan_matter_button)
         self.plan_matter_button.setMenu(plan_matter_menu)
         self.plan_matter_action = self.toolbar.addWidget(self.plan_matter_button)
 
@@ -309,11 +311,12 @@ class Plugin:
         self.plan_button = QToolButton()
         self.plan_button.setText("Kaavasuunnitelma ")
         self.plan_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        plan_menu = QMenu()
+        plan_menu = QMenu(self.plan_button)
         self.plan_button.setMenu(plan_menu)
         self.plan_action = self.toolbar.addWidget(self.plan_button)
 
-        self.new_plan_menu = QMenu("Uusi kaavasuunnitelma")
+        # addMenu(QMenu) only adds the sub menu's action, it does not reparent
+        self.new_plan_menu = QMenu("Uusi kaavasuunnitelma", plan_menu)
         self.new_plan_menu.setIcon(QgsApplication.getThemeIcon("mActionAdd.svg"))
         plan_menu.addMenu(self.new_plan_menu)
 
@@ -386,7 +389,7 @@ class Plugin:
         )
         plan_menu.addAction(self.plan_regulations_print)
 
-        self.save_plan_menu = QMenu("Tallenna kaavasuunnitelma")
+        self.save_plan_menu = QMenu("Tallenna kaavasuunnitelma", plan_menu)
         self.save_plan_menu.setIcon(QgsApplication.getThemeIcon("mActionFileSaveAs.svg"))
         plan_menu.addMenu(self.save_plan_menu)
 

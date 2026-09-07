@@ -160,7 +160,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if self.library_type_class is PlanFeatureLibrary:
             self.library_type = "plan_feature"
             self.library_element_property = "plan_features"
-            select_plan_feature_type_menu = QMenu()
+            select_plan_feature_type_menu = QMenu(self.new_library_element_btn)
             for feature_name, layer_name in FEATURE_TYPE_TO_LAYER_NAME.items():
                 select_plan_feature_type_menu.addAction(feature_name).triggered.connect(
                     lambda _, fn=feature_name, ln=layer_name: self._on_new_plan_feature_clicked(fn, ln)

@@ -52,7 +52,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
         # self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
         # self.edit_btn.clicked.connect(lambda: self.open_as_form_signal.emit(self))
-        add_field_menu = QMenu()
+        add_field_menu = QMenu(self.add_field_btn)
         add_field_menu.addAction("Lisää kaavamääräys").triggered.connect(self.add_new_regulation)
         add_field_menu.addAction("Lisää kaavasuositus").triggered.connect(self.add_new_proposition)
         self.add_field_btn.setMenu(add_field_menu)

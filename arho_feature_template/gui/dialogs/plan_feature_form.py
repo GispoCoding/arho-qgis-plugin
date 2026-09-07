@@ -117,7 +117,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
     def _init_save_to_library_button(self) -> None:
         if self.plan_feature_libraries:
-            self.plan_object_menu = QMenu()
+            self.plan_object_menu = QMenu(self.save_to_library_button)
             plan_object_libraries = self.plan_feature_libraries
             if not plan_object_libraries:
                 self.save_to_library_button.setEnabled(False)

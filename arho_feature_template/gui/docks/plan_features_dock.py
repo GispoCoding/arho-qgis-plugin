@@ -407,7 +407,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
         logger.debug("Opening context menu for plan feature id=%s", plan_feature_model.id_)
 
-        menu = QMenu()
+        # Built fresh on every right click, so it is parented and deleted again: a menu
+        # with a parent is not collected when the local goes out of scope
+        menu = QMenu(self)
         menu.addAction(
             QgsApplication.getThemeIcon("mActionOpenTable.svg"), "Näytä lomake", lambda: self._open_form(index)
         )
@@ -426,7 +428,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             "Väläytä kohdetta",
             lambda: self._on_highlight_feature(plan_feature_model),
         )
-        plan_object_library_menu = QMenu("Tallenna kaavakohdepohjakirjastoon")
+        plan_object_library_menu = QMenu("Tallenna kaavakohdepohjakirjastoon", menu)
         menu.addMenu(plan_object_library_menu)
         plan_object_libraries = self.plan_manager_ref.plan_feature_libraries
         if not plan_object_libraries:
@@ -438,6 +440,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                     lambda library=library: self._on_save_plan_object_to_library(plan_feature_model, library),
                 )
         menu.exec(self.table.viewport().mapToGlobal(pos))
+        menu.deleteLater()
 
     def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
         logger.debug("Zoom to feature requested id=%s", plan_feature_model.id_)
