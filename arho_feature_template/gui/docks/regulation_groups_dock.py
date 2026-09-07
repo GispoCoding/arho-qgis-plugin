@@ -18,7 +18,7 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_feature_layers,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import disconnect_signal, iface
+from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
@@ -151,21 +151,8 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
                 vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
         self._connected_layers.clear()
 
-    def _disconnect_signals(self):
-        logger.debug("Disconnecting RegulationGroupsDock UI signals")
-        disconnect_signal(self.new_group_empty_action.triggered)
-        disconnect_signal(self.new_group_from_template_action.triggered)
-        disconnect_signal(self.edit_btn.clicked)
-        disconnect_signal(self.delete_btn.clicked)
-        disconnect_signal(self.remove_all_action.triggered)
-        disconnect_signal(self.remove_selected_action.triggered)
-        disconnect_signal(self.add_selected_action.triggered)
-        disconnect_signal(self.filter_line.textChanged)
-
     def _connect_signals(self):
         logger.debug("Connecting RegulationGroupsDock UI signals")
-        self._disconnect_signals()
-
         self.new_group_empty_action.triggered.connect(self.request_new_regulation_group_empty.emit)
         self.new_group_from_template_action.triggered.connect(self.request_new_regulation_group_template.emit)
         self.edit_btn.clicked.connect(self.on_edit_btn_clicked)
@@ -456,15 +443,6 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def unload(self):
         logger.debug("Unloading RegulationGroupsDock")
         self.disconnect_layer_signals()
-        self._disconnect_signals()
-
-        disconnect_signal(self.request_new_regulation_group_empty)
-        disconnect_signal(self.request_new_regulation_group_template)
-        disconnect_signal(self.request_edit_regulation_group)
-        disconnect_signal(self.request_delete_regulation_groups)
-        disconnect_signal(self.request_remove_all_regulation_groups)
-        disconnect_signal(self.request_remove_selected_groups)
-        disconnect_signal(self.request_add_groups_to_features)
 
     def _on_feats_removed(self, layer_id: str, feat_ids):
         vector_layer: QgsVectorLayer = QgsProject.instance().mapLayer(layer_id)

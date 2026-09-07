@@ -246,12 +246,6 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def unload(self) -> None:
         logger.debug("Unloading PlanObjectsDock and disconnecting signals")
-        # Disconnect signals
-        self.table.doubleClicked.disconnect(self._open_form)
-        self.selection_model.selectionChanged.disconnect(self._on_table_selection_changed)
-        self.table.customContextMenuRequested.disconnect(self._open_context_menu)
-        self.filter_line.textChanged.disconnect(self._filter_table)
-
         for layer in plan_feature_layers:
             # If we are closing QGIS, layers are gone already at this point. If we are reloading the plugin,
             # the signals need to be disconnected to avoid duplicate connections
