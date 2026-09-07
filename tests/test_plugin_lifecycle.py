@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 import qgis.utils
+from qgis.PyQt.QtWidgets import QDockWidget
 
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.plugin import Plugin
@@ -55,6 +56,27 @@ def test_unload_leaves_iface_clean(plugin_factory, iface):
     assert iface.toolbar_icons() == []
     assert iface.options_factories == []
     assert qgis.utils.showException is show_exception_before
+
+
+def test_unload_unparents_the_docks(plugin_factory, iface):
+    """removeDockWidget only hides a dock, and deleteLater waits for the event loop.
+
+    Plugin Reloader reloads the plugin without returning to the event loop, so a dock
+    that is still a child of the main window collides with its fresh copy by object name.
+    """
+    plugin = plugin_factory()
+    manager = plugin.plan_manager
+    docks = [
+        manager.new_feature_dock,
+        manager.regulation_groups_dock,
+        manager.features_dock,
+        plugin.validation_dock,
+    ]
+
+    plugin.unload()
+
+    children = iface.mainWindow().findChildren(QDockWidget)
+    assert [dock for dock in docks if dock in children] == []
 
 
 def test_project_read_reinitializes_until_unload(plugin_factory, iface, monkeypatch):

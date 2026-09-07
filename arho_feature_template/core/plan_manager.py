@@ -1101,19 +1101,25 @@ class PlanManager(QObject):
         self.inspect_plan_feature_tool.unload()
         self.inspect_plan_feature_tool.deleteLater()
 
+        # Docks are unparented explicitly, because removeDockWidget only hides them: without this
+        # they stay children of the main window until the deferred deletion is processed, which
+        # makes Plugin Reloader report them as duplicated widgets on reload.
         # New feature dock
         disconnect_signal(self.new_feature_dock.tool_activated)
         iface.removeDockWidget(self.new_feature_dock)
+        self.new_feature_dock.setParent(None)
         self.new_feature_dock.deleteLater()
 
         # Regulation group dock
         self.regulation_groups_dock.unload()
         iface.removeDockWidget(self.regulation_groups_dock)
+        self.regulation_groups_dock.setParent(None)
         self.regulation_groups_dock.deleteLater()
 
         # Plan features dock
         self.features_dock.unload()
         iface.removeDockWidget(self.features_dock)
+        self.features_dock.setParent(None)
         self.features_dock.deleteLater()
 
         disconnect_signal(self.plan_set)
