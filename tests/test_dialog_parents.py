@@ -21,6 +21,7 @@ from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
+from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.gui.dialogs.regulation_group_selection_view import RegulationGroupSelectionView
 from arho_feature_template.gui.dialogs.regulations_print_settings_dialog import RegulationsPrintSettingsDialog
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
@@ -56,13 +57,15 @@ def test_every_dialog_takes_a_parent():
         pytest.param(lambda parent: RegulationGroupSelectionView([], parent), id="RegulationGroupSelectionView"),
         pytest.param(lambda parent: LoadPlanMatterDialog(parent, []), id="LoadPlanMatterDialog"),
         pytest.param(lambda parent: ImportPlanForm(parent), id="ImportPlanForm"),
-        # PostPlanDialog is not here: it starts a POST from its constructor, so building
-        # one without running it belongs in tests/test_lambda_service.py
+        pytest.param(lambda parent: PostPlanDialog(parent), id="PostPlanDialog"),
     ],
 )
 def test_dialog_becomes_a_child_of_its_parent(build, iface, flush_deferred_deletes):
     with deleted_after_use(build(iface.mainWindow())) as dialog:
         assert dialog.parent() is iface.mainWindow()
+        # Every call site runs `exec()`, so the dialog is always closed before the block
+        # ends. `reject` stands in for that: `done` is where a dialog stops its own work.
+        dialog.reject()
 
     flush_deferred_deletes()
     assert sip.isdeleted(dialog)

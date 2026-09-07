@@ -50,8 +50,8 @@ class LambdaService(QObject):
     S3_DOWNLOAD_PLAN = LambdaClient.S3_DOWNLOAD_PLAN
     S3_UPLOAD_PLAN = LambdaClient.S3_UPLOAD_PLAN
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent: QObject | None = None):
+        super().__init__(parent)
         self._client = LambdaClient(self)
         self._importer = PlanImporter(self._client, self)
         self._client.response_received.connect(self._on_response)
@@ -61,6 +61,10 @@ class LambdaService(QObject):
         self._importer.plan_imported.connect(self.plan_imported)
         self._importer.plan_import_failed.connect(self.plan_import_failed)
         logger.debug("LambdaService initialized")
+
+    def abort_pending(self) -> int:
+        """Cancels every request still in flight. See `LambdaClient.abort_pending`."""
+        return self._client.abort_pending()
 
     def export_plan(self, plan_id: str):
         logger.debug("Requesting plan export plan_id=%s", plan_id)

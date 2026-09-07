@@ -6,13 +6,17 @@ import gzip
 import json
 
 import pytest
-from qgis.PyQt.QtCore import QByteArray, QUrl
-from qgis.PyQt.QtNetwork import QNetworkReply
+from qgis.PyQt.QtCore import QByteArray, QObject, QUrl
+from qgis.PyQt.QtNetwork import QNetworkReply, QNetworkRequest
 
 import arho_feature_template.core.lambda_service as lambda_service_module
+import arho_feature_template.gui.dialogs.post_plan as post_plan_module
 from arho_feature_template.core.lambda_client import LambdaClient
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.utils.network_utils import prepare_presigned_request
+
+pytestmark = pytest.mark.fake_iface
 
 PLAN_ID = "11111111-1111-1111-1111-111111111111"
 PLAN_JSON = json.dumps({"planKey": PLAN_ID, "name": "Testikaava"})
@@ -535,3 +539,68 @@ def test_direct_invocation_error_passes_string_to_error_handler(service):
     assert len(failed) == 1
     assert isinstance(failed[0][0], str)
     assert "Plan matter actions not supported." in failed[0][0]
+
+
+# ------------------------------------------------------- cancelling in flight requests
+
+# Unroutable address: the reply is created and stays in flight, no socket is established
+UNREACHABLE_URL = "http://10.255.255.1:81/"
+
+
+def _start_request(client: LambdaClient) -> None:
+    client.network_manager.post(QNetworkRequest(QUrl(UNREACHABLE_URL)), QByteArray(b"{}"))
+
+
+def test_lambda_service_takes_a_parent(qgis_app):  # noqa: ARG001
+    owner = QObject()
+    assert LambdaService(owner).parent() is owner
+
+
+def test_abort_pending_with_nothing_in_flight(qgis_app):  # noqa: ARG001
+    assert LambdaClient().abort_pending() == 0
+
+
+def test_abort_pending_does_not_run_the_response_handlers(qgis_app, flush_deferred_deletes):  # noqa: ARG001
+    """`QNetworkReply.abort` emits `finished` synchronously, so the handler is dropped first."""
+    client = LambdaClient()
+    handled = []
+    client.request_failed.connect(lambda *args: handled.append(args))
+    client.response_received.connect(lambda *args: handled.append(args))
+    client.parse_failed.connect(lambda *args: handled.append(args))
+    _start_request(client)
+    assert len(client.network_manager.findChildren(QNetworkReply)) == 1
+
+    assert client.abort_pending() == 1
+
+    assert handled == []
+    flush_deferred_deletes()
+    assert client.network_manager.findChildren(QNetworkReply) == []
+
+
+def test_abort_pending_leaves_the_client_usable(qgis_app):  # noqa: ARG001
+    """The validation dock cancels one request and goes on to make another."""
+    client = LambdaClient()
+    _start_request(client)
+    client.abort_pending()
+
+    # Exactly one connection is left: disconnecting once must leave none behind
+    client.network_manager.finished.disconnect(client._handle_response)
+    with pytest.raises(TypeError):
+        client.network_manager.finished.disconnect(client._handle_response)
+
+
+def test_closing_the_post_plan_dialog_cancels_the_request(iface, monkeypatch, flush_deferred_deletes):
+    """The dialog owns the request and dies when `exec()` returns.
+
+    Without this the whole tree, network manager included, was torn down with a reply
+    still in flight, and the queued `start_post_plan` ran on a destroyed dialog.
+    """
+    monkeypatch.setattr(post_plan_module, "get_active_plan_id", lambda: PLAN_ID)
+    dialog = PostPlanDialog(iface.mainWindow())
+    dialog.start_post_plan()
+    assert len(dialog.lambda_service._client.network_manager.findChildren(QNetworkReply)) == 1
+
+    dialog.reject()  # Cancel, Esc and the window close button all land in `done`
+    flush_deferred_deletes()
+
+    assert dialog.lambda_service._client.network_manager.findChildren(QNetworkReply) == []

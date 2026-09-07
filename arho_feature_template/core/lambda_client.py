@@ -54,6 +54,28 @@ class LambdaClient(QObject):
         self.network_manager.finished.connect(self._handle_response)
         logger.debug("LambdaClient initialized and network response handler connected")
 
+    def abort_pending(self) -> int:
+        """Cancels every reply still in flight without running the response handlers.
+
+        Call this when the owner of the client goes away before the answer arrives.
+        `QNetworkReply.abort` emits `QNetworkAccessManager.finished` synchronously, so the
+        handler is disconnected first and reconnected afterwards: otherwise the cancelled
+        reply would raise an error box on a dialog that is already closing. The client
+        stays usable, so a dock can cancel one request and go on to make another.
+        """
+        replies = self.network_manager.findChildren(QNetworkReply)
+        if not replies:
+            return 0
+        self.network_manager.finished.disconnect(self._handle_response)
+        try:
+            for reply in replies:
+                reply.abort()
+                reply.deleteLater()
+        finally:
+            self.network_manager.finished.connect(self._handle_response)
+        logger.debug("Aborted in-flight replies count=%s", len(replies))
+        return len(replies)
+
     def post_action(self, action: str, plan_id: str | None = None, payload: dict[str, Any] | None = None):
         """Sends a request to the lambda function."""
         lambda_url = SettingsManager.get_lambda_url()

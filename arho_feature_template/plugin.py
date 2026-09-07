@@ -721,6 +721,7 @@ class Plugin:
         # they stay children of the main window until the deferred deletion is processed, which
         # makes Plugin Reloader report them as duplicated widgets on reload.
         # Handle validation dock
+        self.validation_dock.unload()
         iface.removeDockWidget(self.validation_dock)
         self.validation_dock.setParent(None)
         self.validation_dock.deleteLater()

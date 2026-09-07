@@ -238,7 +238,7 @@ class PlanManager(QObject):
         self.inspect_plan_feature_tool.feature_identified.connect(self.on_plan_object_identified)
 
         # Initialize lambda service
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self)
         self.lambda_service.plan_identifier_received.connect(
             lambda value: self.set_permanent_identifier(value["identifier"])
         )
@@ -1163,7 +1163,9 @@ class PlanManager(QObject):
         # Never hold on to a tool we do not own
         self.previous_map_tool = None
 
-        # Lambda service
+        # Lambda service. A request still in flight is cancelled first: the manager is
+        # about to go away, and its reply would otherwise reach a half destroyed tree.
+        self.lambda_service.abort_pending()
         self.lambda_service.deleteLater()
 
         # Feature digitize tool

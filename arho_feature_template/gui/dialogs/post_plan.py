@@ -36,11 +36,26 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         self.dialogButtonBox.rejected.connect(self.reject)
 
-        self.lambda_service = LambdaService()
+        self.lambda_service = LambdaService(self)
         self.lambda_service.plan_matter_received.connect(self.update_message_list)
 
-        # Start the posting process after dialog is fully opened.
-        QTimer.singleShot(0, self.start_post_plan)
+        # Start the posting process after dialog is fully opened. The timer is owned by
+        # the dialog and stopped in `done`, so it cannot fire into a dialog that is
+        # already closing, or into one whose C++ object is gone.
+        self.start_timer = QTimer(self)
+        self.start_timer.setSingleShot(True)
+        self.start_timer.timeout.connect(self.start_post_plan)
+        self.start_timer.start(0)
+
+    def done(self, result: int) -> None:
+        """Every close path lands here: accept, reject, Esc and the window close button.
+
+        The dialog owns the request, so nothing else would cancel it. Without this the
+        whole tree, network manager included, is torn down with a reply still in flight.
+        """
+        self.start_timer.stop()
+        self.lambda_service.abort_pending()
+        super().done(result)
 
     def start_post_plan(self):
         """Posts the plan matter after dialog has been opened."""
