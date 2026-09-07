@@ -12,27 +12,11 @@ from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import OverrideCursor, iface
 
 if TYPE_CHECKING:
-    from qgis.core import QgsMapLayer
     from qgis.gui import QgisInterface
 
     iface: QgisInterface = cast("QgisInterface", iface)  # type: ignore[no-redef]
 
 PLUGIN_PATH = os.path.dirname(os.path.dirname(__file__))
-
-
-# NOTE: Consider creating "layer_utils.py" or similar for layer related utils in the future
-def get_layer_by_name(layer_name: str) -> QgsMapLayer | None:
-    """
-    Retrieve a layer by name from the project.
-
-    If multiple layers with the same name exist, returns the first one. Returns None
-    if layer with a matching name is not found.
-    """
-    layers = QgsProject.instance().mapLayersByName(layer_name)
-    if layers:
-        return layers[0]
-    iface.messageBar().pushWarning("Error", f"Layer '{layer_name}' not found")
-    return None
 
 
 def check_layer_changes() -> bool:

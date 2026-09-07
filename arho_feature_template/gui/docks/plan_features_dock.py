@@ -36,12 +36,12 @@ from arho_feature_template.project.layers.plan_layers import (
     OtherAreaLayer,
     PlanLayer,
     PointLayer,
+    get_plan_feature_layer_class_by_layer_name,
     get_plan_feature_layer_class_by_model,
     plan_feature_layers,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
-from arho_feature_template.utils.project_utils import get_vector_layer_from_project
 
 ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -542,7 +542,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                     continue
                 plan_feature = data[0]
                 feat_id = data[1]
-                layer = get_vector_layer_from_project(cast(str, plan_feature.layer_name))
+                layer = get_plan_feature_layer_class_by_layer_name(
+                    cast(str, plan_feature.layer_name)
+                ).get_from_project()
                 layer.selectByIds([feat_id], Qgis.SelectBehavior.AddToSelection)
                 self.selected_plan_feature_ids[layer.name()].add(feat_id)
 
@@ -553,7 +555,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                     continue
                 plan_feature = data[0]
                 feat_id = data[1]
-                layer = get_vector_layer_from_project(cast(str, plan_feature.layer_name))
+                layer = get_plan_feature_layer_class_by_layer_name(
+                    cast(str, plan_feature.layer_name)
+                ).get_from_project()
                 layer.deselect(feat_id)
                 self.selected_plan_feature_ids[layer.name()].discard(feat_id)
         finally:
