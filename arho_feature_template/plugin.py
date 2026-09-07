@@ -61,6 +61,9 @@ class Plugin:
 
         # initialize locale
         locale, file_path = setup_translation()
+        # Always defined, so `unload` can ask without a hasattr dance: no .qm ships today,
+        # so `setup_translation` returns no file path and the attribute stays None.
+        self.translator: QTranslator | None = None
         if file_path:
             self.translator = QTranslator()
             self.translator.load(file_path)
@@ -720,6 +723,13 @@ class Plugin:
 
         iface.unregisterOptionsWidgetFactory(self._arho_options_page_factory)
         logger.debug("Options widget factory unregistered")
+
+        # QCoreApplication outlives the plugin, so every load would stack another
+        # translator on the application
+        if self.translator is not None:
+            QCoreApplication.removeTranslator(self.translator)
+            self.translator = None
+            logger.debug("Translator removed")
 
         if self.qgis_show_exception:
             qgis.utils.showException = self.qgis_show_exception

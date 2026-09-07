@@ -9,6 +9,7 @@ from __future__ import annotations
 import pytest
 import qgis.utils
 from qgis.core import QgsProject
+from qgis.PyQt.QtCore import QCoreApplication
 from qgis.PyQt.QtWidgets import QDockWidget
 
 from arho_feature_template.core.plan_manager import PlanManager
@@ -120,6 +121,42 @@ def test_unload_disconnects_project_cleared(plugin_factory):
 
     with pytest.raises(TypeError):
         QgsProject.instance().cleared.disconnect(manager.on_project_cleared)
+
+
+def test_no_translation_file_leaves_the_attribute_set(plugin_factory):
+    """No .qm ships, so `translator` must still exist for `unload` to ask about."""
+    plugin = plugin_factory()
+
+    assert plugin.translator is None
+
+    plugin.unload()
+
+
+def test_unload_removes_the_translator(plugin_factory, monkeypatch, tmp_path):
+    """QCoreApplication outlives the plugin, so every load stacked another translator."""
+    import arho_feature_template.plugin as plugin_module
+
+    qm_file = tmp_path / "arho_fi.qm"
+    qm_file.write_bytes(b"")
+    monkeypatch.setattr(plugin_module, "setup_translation", lambda: ("fi", str(qm_file)))
+
+    removed = []
+    real_remove = QCoreApplication.removeTranslator
+
+    def spy(translator):
+        removed.append(translator)
+        return real_remove(translator)
+
+    monkeypatch.setattr(plugin_module.QCoreApplication, "removeTranslator", staticmethod(spy))
+
+    plugin = plugin_factory()
+    translator = plugin.translator
+    assert translator is not None
+
+    plugin.unload()
+
+    assert removed == [translator]
+    assert plugin.translator is None
 
 
 def test_unload_runs_the_plan_manager_before_deleting_the_actions(plugin_factory, monkeypatch):
