@@ -111,35 +111,6 @@ def sent_requests(service, monkeypatch):
     return requests
 
 
-class FakeMessageBar:
-    """Records pushed message bar messages."""
-
-    def __init__(self):
-        self.successes = []
-        self.warnings = []
-
-    def pushSuccess(self, title, message):
-        self.successes.append((title, message))
-
-    def pushWarning(self, title, message):
-        self.warnings.append((title, message))
-
-
-class FakeIface:
-    def __init__(self, message_bar):
-        self._message_bar = message_bar
-
-    def messageBar(self):
-        return self._message_bar
-
-
-@pytest.fixture
-def message_bar(monkeypatch):
-    bar = FakeMessageBar()
-    monkeypatch.setattr(lambda_service_module, "iface", FakeIface(bar))
-    return bar
-
-
 def signal_spy(signal) -> list:
     emitted = []
     signal.connect(lambda *args: emitted.append(args))
@@ -445,7 +416,7 @@ def test_validation_response_missing_ryhti_response_fails_validation(service):
 # Permanent identifier response parsing
 
 
-def test_identifier_response_success_emits_identifier(service, message_bar):
+def test_identifier_response_success_emits_identifier(service, messages):
     emitted = signal_spy(service.plan_identifier_received)
     service._process_identifier_response(
         {
@@ -455,20 +426,20 @@ def test_identifier_response_success_emits_identifier(service, message_bar):
         }
     )
     assert emitted == [({"plan_id": PLAN_ID, "status": "success", "identifier": "MML-123"},)]
-    assert len(message_bar.successes) == 1
+    assert len(messages.successes) == 1
 
 
-def test_identifier_response_existing_identifier_emits_identifier(service, message_bar):
+def test_identifier_response_existing_identifier_emits_identifier(service, messages):
     """ryhti_response is null when the plan matter already had a permanent identifier."""
     emitted = signal_spy(service.plan_identifier_received)
     service._process_identifier_response(
         {"title": "Possible permanent plan identifier set.", "details": "MML-123", "ryhti_response": None}
     )
     assert emitted == [({"plan_id": PLAN_ID, "status": "success", "identifier": "MML-123"},)]
-    assert len(message_bar.successes) == 1
+    assert len(messages.successes) == 1
 
 
-def test_identifier_response_ryhti_error_shows_backend_message(service, message_bar):
+def test_identifier_response_ryhti_error_shows_backend_message(service, messages):
     emitted = signal_spy(service.plan_identifier_received)
     message = "Sinulla ei ole oikeuksia luoda kaavaa tälle alueelle."
     service._process_identifier_response(
@@ -479,17 +450,17 @@ def test_identifier_response_ryhti_error_shows_backend_message(service, message_
         }
     )
     assert not emitted
-    assert message_bar.warnings == [("Virhe", message)]
+    assert messages.warnings == [("Virhe", message)]
 
 
-def test_identifier_response_empty_details_shows_generic_message(service, message_bar):
+def test_identifier_response_empty_details_shows_generic_message(service, messages):
     emitted = signal_spy(service.plan_identifier_received)
     service._process_identifier_response(
         {"title": "Possible permanent plan identifier set.", "details": "", "ryhti_response": {"status": 502}}
     )
     assert not emitted
-    assert len(message_bar.warnings) == 1
-    assert "502" in message_bar.warnings[0][1]
+    assert len(messages.warnings) == 1
+    assert "502" in messages.warnings[0][1]
 
 
 # Lambda error body parsing

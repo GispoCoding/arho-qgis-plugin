@@ -31,6 +31,7 @@ unfixable = [
 # Overrides the whole table from ruff_defaults.toml, so the base entries are repeated here
 [tool.ruff.lint.per-file-ignores]
 "**/scripts/*" = ["INP001", "T201"]
+"ci/*" = ["INP001", "T201"] # standalone scripts run inside a QGIS container
 "**/tests/**/*" = [
     "PLC1901",
     "PLR2004",
@@ -39,6 +40,10 @@ unfixable = [
     "TID252",
     "SLF001", # tests exercise private members
     "N802",   # test fakes mimic Qt's camelCase API
+    "N803",   # ... and Qt's camelCase argument names
+    "ARG002", # fakes accept the Qt signature but ignore some arguments
+    "FBT001", # Qt signatures take positional booleans
+    "FBT002",
 ]
 
 [[tool.mypy.overrides]]
