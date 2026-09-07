@@ -50,7 +50,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.plan_feature_libraries: list[PlanFeatureLibrary] | None = None
         self.library_selection.currentIndexChanged.connect(self.set_active_plan_feature_library)
 
-        self.template_list.setSelectionMode(self.template_list.SingleSelection)
+        self.template_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self.search_box.valueChanged.connect(self.filter_plan_feature_templates)
 
         # NOTE: If user moves selection with arrow keys, this is not registered currently
