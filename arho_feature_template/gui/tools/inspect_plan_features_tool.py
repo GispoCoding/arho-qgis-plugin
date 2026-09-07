@@ -7,7 +7,6 @@ from qgis.gui import QgsMapCanvas, QgsMapMouseEvent, QgsMapToolIdentify
 from qgis.PyQt.QtCore import Qt, pyqtSignal
 
 from arho_feature_template.exceptions import LayerNotFoundError
-from arho_feature_template.utils.misc_utils import disconnect_signal
 
 if TYPE_CHECKING:
     from arho_feature_template.project.layers import AbstractLayer
@@ -85,6 +84,3 @@ class InspectPlanFeatures(QgsMapToolIdentify):
         layer_class = self.layer_class_for(result.mLayer, pairs)
         if layer_class is not None:
             self.feature_identified.emit(result.mFeature, layer_class)
-
-    def unload(self):
-        disconnect_signal(self.feature_identified)

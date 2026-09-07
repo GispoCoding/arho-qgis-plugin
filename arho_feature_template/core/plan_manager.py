@@ -1099,22 +1099,16 @@ class PlanManager(QObject):
         iface.actionPan().trigger()
 
         # Lambda service
-        disconnect_signal(self.lambda_service.plan_data_received)
-        disconnect_signal(self.lambda_service.plan_matter_data_received)
         self.lambda_service.deleteLater()
 
         # Feature digitize tool
         if self.feature_digitize_map_tool:
-            disconnect_signal(self.feature_digitize_map_tool.digitizingCompleted)
-            disconnect_signal(self.feature_digitize_map_tool.digitizingFinished)
             self.feature_digitize_map_tool.deleteLater()
 
         # Plan digitize tool
-        disconnect_signal(self.plan_digitize_map_tool.digitizingCompleted)
         self.plan_digitize_map_tool.deleteLater()
 
         # Inspect plan feature tool
-        self.inspect_plan_feature_tool.unload()
         self.inspect_plan_feature_tool.deleteLater()
 
         # Docks are unparented explicitly, because removeDockWidget only hides them: without this
@@ -1122,7 +1116,6 @@ class PlanManager(QObject):
         # makes Plugin Reloader report them as duplicated widgets on reload.
         # New feature dock
         self.new_feature_dock.unload()
-        disconnect_signal(self.new_feature_dock.tool_activated)
         iface.removeDockWidget(self.new_feature_dock)
         self.new_feature_dock.setParent(None)
         self.new_feature_dock.deleteLater()

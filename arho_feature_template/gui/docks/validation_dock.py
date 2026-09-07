@@ -24,7 +24,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupLayer,
     plan_feature_layers,
 )
-from arho_feature_template.utils.misc_utils import disconnect_signal, get_active_plan_id, iface
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QLabel, QProgressBar, QPushButton
@@ -343,8 +343,3 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         canvas.zoomToFeatureExtent(bounding_box.buffered(1000))
         canvas.flashGeometries(geometries=[geom], crs=QgsCoordinateReferenceSystem("EPSG:3067"))
         canvas.redrawAllLayers()
-
-    def unload(self):
-        logger.debug("Unloading ValidationDock")
-        disconnect_signal(self.validation_result_tree_view.clicked)
-        disconnect_signal(self.validation_result_tree_view.doubleClicked)

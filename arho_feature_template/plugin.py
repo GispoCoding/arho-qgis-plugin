@@ -31,7 +31,7 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
 from arho_feature_template.qgis_plugin_tools.tools.settings import get_setting
-from arho_feature_template.utils.misc_utils import disconnect_signal, iface
+from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
     from qgis.gui import QgsDockWidget
@@ -679,7 +679,6 @@ class Plugin:
         """Removes the plugin menu item and icon from QGIS GUI."""
         logger.debug("Unloading plugin")
         # Handle signals
-        disconnect_signal(self.plan_manager.new_feature_dock.visibilityChanged)
         iface.projectRead.disconnect(self.plan_manager.on_project_loaded)
 
         # Handle actions

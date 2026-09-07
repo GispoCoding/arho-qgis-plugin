@@ -46,7 +46,6 @@ def make_tool(canvas: QgsMapCanvas) -> Iterator:
 
     yield make
     for tool in tools:
-        tool.unload()
         tool.deleteLater()
 
 
