@@ -29,7 +29,9 @@ PYTHONPATH="${TEST_DEPS_DIR}" python3 -c "import pytest; print('pytest', pytest.
 # --- QGIS profile -----------------------------------------------------------------------
 MAJOR=$(python3 -c "from qgis.core import Qgis; print(Qgis.versionInt() // 10000)")
 APP="QGIS${MAJOR}"
-BASE="/root/.local/share/QGIS/${APP}"
+# QGIS looks for its profile under $HOME. A GitHub Actions container job sets
+# HOME=/github/home, not /root, so the path must not be hard coded.
+BASE="${HOME:-/root}/.local/share/QGIS/${APP}"
 PROFILE="${BASE}/profiles/default"
 
 mkdir -p "${PROFILE}/QGIS" "${PROFILE}/python/plugins"
