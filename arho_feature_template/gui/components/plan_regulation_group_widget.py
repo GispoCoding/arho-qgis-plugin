@@ -17,6 +17,7 @@ from arho_feature_template.project.layers.code_layers import PlanRegulationGroup
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.signal_utils import SignalDebouncer
+from arho_feature_template.utils.widget_utils import remove_widget
 
 if TYPE_CHECKING:
     from qgis.PyQt.QtWidgets import QFormLayout, QFrame, QLineEdit, QPushButton
@@ -155,9 +156,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         return widget
 
     def delete_regulation_widget(self, regulation_widget: RegulationWidget):
-        self.frame.layout().removeWidget(regulation_widget)
         self.regulation_widgets.remove(regulation_widget)
-        regulation_widget.deleteLater()
+        remove_widget(regulation_widget)
         self.group_contents_update_debouncer.restart_timer()
 
     def add_proposition_widget(self, proposition: Proposition) -> PropositionWidget:
@@ -169,9 +169,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         return widget
 
     def delete_proposition_widget(self, proposition_widget: RegulationWidget):
-        self.frame.layout().removeWidget(proposition_widget)
         self.proposition_widgets.remove(proposition_widget)
-        proposition_widget.deleteLater()
+        remove_widget(proposition_widget)
         self.group_contents_update_debouncer.restart_timer()
 
     def set_existing_regulation_group_style(self, other_linked_features_count: int):

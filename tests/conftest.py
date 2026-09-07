@@ -19,7 +19,8 @@ Markers pick the tests that fit the current mode:
 
 Do not install pytest-qgis: it starts a second ``QgsApplication``.
 
-Generic fixtures: ``qgis_app``, ``iface``, ``messages``, ``canvas``, ``new_project``.
+Generic fixtures: ``qgis_app``, ``iface``, ``messages``, ``canvas``, ``new_project``,
+``flush_deferred_deletes``.
 Plugin fixtures: ``plugin_factory``, ``plugin``.
 """
 
@@ -148,6 +149,24 @@ def messages(_message_recorder: MessageRecorder) -> Iterator[MessageRecorder]:
 @pytest.fixture
 def canvas(iface: QgisInterface) -> QgsMapCanvas:
     return iface.mapCanvas()
+
+
+@pytest.fixture
+def flush_deferred_deletes() -> Callable[[], None]:
+    """Runs one turn of the event loop, so posted ``DeferredDelete`` events are handled.
+
+    ``deleteLater`` only posts an event; without a turn of the loop the C++ object is
+    still alive and ``sip.isdeleted`` is False.
+    """
+
+    def flush() -> None:
+        from qgis.PyQt.QtCore import QEventLoop, QTimer
+
+        loop = QEventLoop()
+        QTimer.singleShot(0, loop.quit)
+        loop.exec()
+
+    return flush
 
 
 @pytest.fixture

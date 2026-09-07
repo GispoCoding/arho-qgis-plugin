@@ -33,6 +33,7 @@ from arho_feature_template.project.layers.code_layers import PlanRegulationGroup
 from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.qgis_plugin_tools.tools.resources import resources_path
 from arho_feature_template.utils.localization_utils import get_localized_text
+from arho_feature_template.utils.widget_utils import remove_widget
 
 if TYPE_CHECKING:
     from qgis.gui import QgsSpinBox
@@ -200,9 +201,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def delete_regulation(self, regulation_widget: RegulationWidget):
         regulation_widget.delete_signal.disconnect(self.delete_regulation)
-        self.regulations_layout.removeWidget(regulation_widget)
         self.regulation_widgets.remove(regulation_widget)
-        regulation_widget.deleteLater()
+        remove_widget(regulation_widget)
 
     def add_new_proposition(self):
         proposition = Proposition(value="")
@@ -216,9 +216,8 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
 
     def delete_proposition(self, proposition_widget: PropositionWidget):
         proposition_widget.delete_signal.disconnect(self.delete_proposition)
-        self.propositions_layout.removeWidget(proposition_widget)
         self.proposition_widgets.remove(proposition_widget)
-        proposition_widget.deleteLater()
+        remove_widget(proposition_widget)
 
     def into_model(self) -> RegulationGroup:
         model = RegulationGroup(
