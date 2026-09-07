@@ -59,6 +59,12 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
         TemplateManager.signal_manager.feature_object_added_to_library.connect(self.update_template_list)
 
+    def unload(self):
+        logger.debug("Unloading NewFeatureDock")
+        # `signal_manager` is a module level singleton that outlives the dock, so Qt cannot
+        # drop this connection for us
+        TemplateManager.signal_manager.feature_object_added_to_library.disconnect(self.update_template_list)
+
     def update_lock_status(self, locked: bool):  # noqa: FBT001
         logger.debug("Updating new feature dock lock status locked=%s", locked)
         self.new_feature_grid.setEnabled(not locked)
