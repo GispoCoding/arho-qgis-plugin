@@ -15,7 +15,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsWkbTypes,
 )
-from qgis.gui import QgsMapToolDigitizeFeature
+from qgis.gui import QgsMapTool, QgsMapToolDigitizeFeature
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QDialog
@@ -175,6 +175,9 @@ class PlanManager(QObject):
         self.json_plan_matter_path = None
 
         self.plan_locked = False  # Change this only through `update_lock_status` method
+
+        # The tool that was active before one of ours took over. We do not own it.
+        self.previous_map_tool: QgsMapTool | None = None
 
         # `QgsProject` outlives the plugin, so the connection to `cleared` has to be tracked
         # and undone. It is made per project load and dropped again when the signal fires.
@@ -482,13 +485,30 @@ class PlanManager(QObject):
                                 "", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui."
                             )
 
+    def restore_previous_map_tool(self):
+        """Puts back the tool that was active before one of ours took over.
+
+        We do not own that tool. If the plugin that did was unloaded in the meantime, the
+        wrapper is invalidated and `setMapTool` raises `RuntimeError` inside a slot that
+        C++ invoked, which PyQt turns into `abort()`. And `setMapTool(None)` returns
+        immediately in QGIS, so it would silently leave our own tool active. Fall back to
+        pan, the way QGIS itself does; `unsetMapTool` would leave the canvas with no tool.
+        """
+        tool = self.previous_map_tool
+        self.previous_map_tool = None
+        if tool is not None and not sip.isdeleted(tool):
+            iface.mapCanvas().setMapTool(tool)
+        else:
+            logger.debug("Previous map tool is gone, falling back to pan")
+            iface.actionPan().trigger()
+
     def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
         logger.debug("Toggling identify plan features activate=%s", activate)
         if activate:
             self.previous_map_tool = iface.mapCanvas().mapTool()
             iface.mapCanvas().setMapTool(self.inspect_plan_feature_tool)
         else:
-            iface.mapCanvas().setMapTool(self.previous_map_tool)
+            self.restore_previous_map_tool()
 
     # check this
     def digitize_plan_geometry(self):
@@ -677,7 +697,7 @@ class PlanManager(QObject):
         if self.previously_editable:
             plan_layer.startEditing()
 
-        iface.mapCanvas().setMapTool(self.previous_map_tool)
+        self.restore_previous_map_tool()
         logger.debug(
             "Plan geometry flow completed plan_saved=%s activated_plan_id=%s",
             plan_saved,
@@ -1100,6 +1120,8 @@ class PlanManager(QObject):
         logger.debug("Unloading PlanManager resources")
         # Set pan map tool as active (to deactivate our custom tools to avoid errors)
         iface.actionPan().trigger()
+        # Never hold on to a tool we do not own
+        self.previous_map_tool = None
 
         # Lambda service
         self.lambda_service.deleteLater()
