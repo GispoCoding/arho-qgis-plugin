@@ -152,18 +152,27 @@ class PlanTypeLayer(AbstractCodeLayer):
     town_plan_type_first_character = "3"
 
     @classmethod
-    def get_plan_type(cls, _id: str | None) -> PlanType | None:
+    def get_top_level_code_value(cls, _id: str | None) -> str | None:
+        """Level 1 code value ("1", "2" or "3") of the plan type code with the given ID.
+
+        The level 2 code values start with the value of their level 1 parent.
+        """
         if _id is None:
             return None
         attribute_value = cls.get_attribute_value_by_another_attribute_value("value", "id", _id)
         if not attribute_value:
             return None
+        return attribute_value[0]
 
-        if attribute_value[0] == cls.regional_plan_type_first_character:
+    @classmethod
+    def get_plan_type(cls, _id: str | None) -> PlanType | None:
+        top_level_value = cls.get_top_level_code_value(_id)
+
+        if top_level_value == cls.regional_plan_type_first_character:
             return PlanType.REGIONAL
-        if attribute_value[0] == cls.general_plan_type_first_character:
+        if top_level_value == cls.general_plan_type_first_character:
             return PlanType.GENERAL
-        if attribute_value[0] == cls.town_plan_type_first_character:
+        if top_level_value == cls.town_plan_type_first_character:
             return PlanType.TOWN
         return None
 

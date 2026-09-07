@@ -23,7 +23,6 @@ from arho_feature_template.core.models import (
 )
 from arho_feature_template.exceptions import (
     FeatureNotFoundError,
-    LayerEditableError,
     LayerNotFoundError,
     UnsavedChangesError,
 )
@@ -34,7 +33,6 @@ from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
     get_active_plan_id,
     get_active_plan_matter_id,
-    iface,
 )
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 
@@ -44,31 +42,6 @@ logger = logging.getLogger(__name__)
 class AbstractFeatureLayer(AbstractLayer):
     group = PLAN_LAYER_GROUP_NAME
     filter_template: ClassVar[Template | None]
-
-    @classmethod
-    def hide_all_features(cls) -> None:
-        cls.apply_filter("false")
-
-    @classmethod
-    def show_all_features(cls) -> None:
-        cls.apply_filter("")
-
-    @classmethod
-    def apply_filter(cls, filter_expression) -> None:
-        """Apply filter expression"""
-        layer = cls.get_from_project()
-        if layer.isEditable():
-            raise LayerEditableError(cls.name)
-        if not layer:
-            logger.warning("Layer %s not found", cls.name)
-            return None
-        result = layer.setSubsetString(filter_expression)
-        if result is False:
-            iface.messageBar().pushMessage(
-                "Error",
-                f"Failed to filter layer {cls.name} with query {filter_expression}",
-                level=3,
-            )
 
     @classmethod
     @abstractmethod
@@ -181,6 +154,14 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
         if plan_type_id is None:
             return False
         return PlanTypeLayer.is_regional_plan_type(plan_type_id)
+
+    @classmethod
+    def get_top_level_plan_type_value(cls, plan_matter_id: str) -> str | None:
+        """Level 1 kaavalaji code value ("1", "2" or "3") of the plan matter."""
+        plan_type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_matter_id)
+        if plan_type_id is None:
+            return None
+        return PlanTypeLayer.get_top_level_code_value(cast(str, plan_type_id))
 
 
 class PlanLayer(AbstractPlanLayer):
