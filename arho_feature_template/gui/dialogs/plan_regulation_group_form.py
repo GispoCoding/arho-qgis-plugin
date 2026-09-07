@@ -199,7 +199,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.regulation_widgets.append(widget)
 
     def delete_regulation(self, regulation_widget: RegulationWidget):
-        regulation_widget.delete_signal.disconnect()
+        regulation_widget.delete_signal.disconnect(self.delete_regulation)
         self.regulations_layout.removeWidget(regulation_widget)
         self.regulation_widgets.remove(regulation_widget)
         regulation_widget.deleteLater()
@@ -215,7 +215,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
         self.proposition_widgets.append(widget)
 
     def delete_proposition(self, proposition_widget: PropositionWidget):
-        proposition_widget.delete_signal.disconnect()
+        proposition_widget.delete_signal.disconnect(self.delete_proposition)
         self.propositions_layout.removeWidget(proposition_widget)
         self.proposition_widgets.remove(proposition_widget)
         proposition_widget.deleteLater()
