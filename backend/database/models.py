@@ -310,6 +310,8 @@ class Plan(PlanBase, RyhtiLifecycleBase):
     plan_cancellation_infos: Mapped[list[PlanCancellationInfo]] = relationship(
         back_populates="plan",
         foreign_keys="PlanCancellationInfo.plan_id",
+        # A fixed order keeps the serialized plan the same between two runs.
+        order_by="PlanCancellationInfo.cancelled_plan_id",
         lazy="selectin",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -926,6 +928,17 @@ class CancelledPlanObjectMixin(Base):
     def point(cls) -> Mapped[Point | None]:
         return relationship("Point")
 
+    @property
+    def plan_object_id(self) -> UUID:
+        """The id of the plan object the row names, whichever table it lives in."""
+        plan_object_id = (
+            self.land_use_area_id or self.other_area_id or self.line_id or self.point_id
+        )
+        if plan_object_id is None:
+            # Exactly one of the columns is set, see CANCELLED_PLAN_OBJECT_CHECK.
+            raise ValueError("The row names no plan object.")
+        return plan_object_id
+
 
 class PlanCancellationInfo(VersionedBase):
     """Kaavan kumoamistieto"""
@@ -1057,6 +1070,19 @@ class PlanObjectCancellationInfo(VersionedBase, CancelledPlanObjectMixin):
     plan_cancellation_info: Mapped[PlanCancellationInfo] = relationship(
         back_populates="plan_object_cancellation_infos"
     )
+
+    @property
+    def remaining_valid_geom(self) -> WKBElement | None:
+        """The geometry that stays valid, whichever geometry column holds it.
+
+        None when the whole plan object is repealed, see
+        ck_plan_object_cancellation_info_remaining_valid_geom.
+        """
+        return (
+            self.remaining_valid_geom_polygon
+            or self.remaining_valid_geom_line
+            or self.remaining_valid_geom_point
+        )
 
 
 class CancelledGroupRelation(VersionedBase, CancelledPlanObjectMixin):

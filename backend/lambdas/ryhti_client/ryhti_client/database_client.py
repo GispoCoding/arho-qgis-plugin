@@ -108,6 +108,27 @@ CANCELLED_PLAN_OBJECTS = (
 )
 
 
+# The statement that writes the cancellation info of one plan again from its
+# geometry, see generate_plan_cancellation_info_triggers in database/triggers.py.
+REFRESH_PLAN_CANCELLATION_INFO = text(
+    "select hame.refresh_plan_cancellation_info(:plan_id)"
+)
+
+# The triggers that run that function when a plan or its plan matter changes,
+# by table. They stay out of the way while the rows of a file or a copy are
+# written as they are.
+CANCELLATION_INFO_TRIGGERS = (
+    ("hame.plan", "trg_plan_refresh_cancellation_info_insert"),
+    ("hame.plan", "trg_plan_refresh_cancellation_info_update"),
+    ("hame.plan_matter", "trg_plan_matter_refresh_cancellation_info"),
+)
+
+# The foreign keys of the cancellation info tables are deferred, and PostgreSQL
+# refuses to alter a table with a pending check. The checks are run before the
+# triggers are enabled again, so this has to come after the plan is in place.
+CHECK_DEFERRED_CONSTRAINTS = text("SET CONSTRAINTS ALL IMMEDIATE")
+
+
 @dataclass
 class FinalizeResult:
     """Counts of what making a plan final repealed."""
@@ -227,6 +248,24 @@ class DatabaseClient:
         LOGGER.info("Ryhti response: %s", json.dumps(response))
         return detail
 
+    def refresh_plan_cancellation_info(self, plan_id: str) -> None:
+        """Write the cancellation info of the plan again from its geometry.
+
+        The update trigger of hame.plan refreshes the rows only when the
+        geometry or the plan matter of the plan changes, so the rows may be
+        older than the plans they name: a plan that became valid since is
+        missing and a plan that was repealed since is still there. The
+        validate and finalize actions call this before they serialize the
+        plan, so that the JSON names the plans that are valid now. The plan
+        level rows are upserted, so cancelled group relations added by hand
+        survive; the plan object rows are written again from the geometry.
+
+        A plan that does not exist has no rows, so nothing happens.
+        """
+        with self.Session() as session:
+            session.execute(REFRESH_PLAN_CANCELLATION_INFO, {"plan_id": plan_id})
+            session.commit()
+
     def finalize_plan(self, plan_id: str) -> FinalizeResult:
         """Mark the plan final and repeal the plans and plan objects it cancels.
 
@@ -267,13 +306,9 @@ class DatabaseClient:
             if repealed_status_id is None:
                 raise RepealedStatusNotFoundError
 
-            # The update trigger of hame.plan refreshes the cancellation info
-            # only when the geometry or the plan matter changes, so the rows may
-            # be older than the plans they name.
-            session.execute(
-                text("select hame.refresh_plan_cancellation_info(:plan_id)"),
-                {"plan_id": plan_id},
-            )
+            # The rows are refreshed here as well as in the finalize action,
+            # inside the transaction that repeals what they name.
+            session.execute(REFRESH_PLAN_CANCELLATION_INFO, {"plan_id": plan_id})
 
             # A repealed plan ends on the day this plan begins, as Ryhti does.
             # hame.plan_valid treats the end date as inclusive, so both plans
@@ -390,24 +425,50 @@ class DatabaseClient:
             if not plan_matter:
                 raise PlanMatterNotFoundError(extra_data.plan_matter_id)
 
-            existing_plan = session.get(models.Plan, ryhti_plan.plan_key)
-            if existing_plan:
-                if overwrite is True:
-                    session.delete(existing_plan)
-                    session.flush()
-                else:
-                    raise PlanAlreadyExistsError(str(ryhti_plan.plan_key))
+            # The file is the truth about what the plan repeals, so its rows
+            # are written as they are, without the triggers that would write
+            # them again from the geometry. The triggers go before the first
+            # write, because a deleted plan leaves a pending check behind and
+            # a table with one cannot be altered.
+            with self._disable_cancellation_triggers(session):
+                existing_plan = session.get(models.Plan, ryhti_plan.plan_key)
+                if existing_plan:
+                    if overwrite is True:
+                        session.delete(existing_plan)
+                        session.flush()
+                    else:
+                        raise PlanAlreadyExistsError(str(ryhti_plan.plan_key))
 
-            desesrializer = Deserializer(session)
-            plan = desesrializer.deserialise_ryhti_plan(
-                ryhti_plan, plan_matter.plan_type, extra_data.name
-            )
+                desesrializer = Deserializer(session)
+                plan = desesrializer.deserialise_ryhti_plan(
+                    ryhti_plan, plan_matter.plan_type, extra_data.name
+                )
 
-            plan_matter.plans.append(plan)
-            session.add(plan_matter)
+                plan_matter.plans.append(plan)
+                session.add(plan_matter)
+                if plan.plan_cancellation_infos:
+                    # The plan matter has to be repealing, or the next refresh
+                    # deletes the rows the file brought.
+                    plan_matter.repealing = True
+                session.flush()
             session.commit()
 
         return plan.id
+
+    @contextmanager
+    def _disable_cancellation_triggers(self, session: Session) -> Generator[None]:
+        """Temporarily disable the triggers that refresh the cancellation info."""
+
+        def _alter_triggers(state: str) -> None:
+            for table, trigger in CANCELLATION_INFO_TRIGGERS:
+                session.execute(text(f"ALTER TABLE {table} {state} TRIGGER {trigger}"))
+
+        _alter_triggers("DISABLE")
+        try:
+            yield
+            session.execute(CHECK_DEFERRED_CONSTRAINTS)
+        finally:
+            _alter_triggers("ENABLE")
 
     @contextmanager
     def _disable_edit_triggers(self, session: Session) -> Generator[None]:
@@ -432,6 +493,7 @@ class DatabaseClient:
         _alter_triggers("DISABLE")
         try:
             yield
+            session.execute(CHECK_DEFERRED_CONSTRAINTS)
         finally:
             _alter_triggers("ENABLE")
 
@@ -489,7 +551,11 @@ class DatabaseClient:
                 period_of_validity_start=period_of_validity_start,
                 lock=copy_data.lock,
             )
-            with self._disable_edit_triggers(session):
+            with (
+                self._disable_edit_triggers(session),
+                # The copy repeals what the source repeals, in rows of its own.
+                self._disable_cancellation_triggers(session),
+            ):
                 copied_plan = plan_copier.copy_plan()
                 session.add(copied_plan)
                 # do the actual insert while the triggers are still disabled to avoid

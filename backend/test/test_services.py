@@ -11,8 +11,12 @@ from urllib.parse import urlsplit, urlunsplit
 import psycopg
 import pytest
 import requests
+from geoalchemy2.shape import from_shape
+from shapely.geometry import MultiPolygon, box
+from sqlalchemy import delete
 
-from database import codes
+from database import codes, models
+from database.base import PROJECT_SRID
 
 from .conftest import deepcompare
 
@@ -551,6 +555,136 @@ def test_finalize_plan_that_ryhti_rejects(
             final, errors = row
             assert final is False
             assert errors
+    finally:
+        conn.close()
+
+
+@pytest.fixture
+def valid_repealing_complete_test_plan(
+    session: Session,
+    valid_complete_test_plan: Plan,
+    another_plan_matter_instance: PlanMatter,
+) -> Plan:
+    """The valid complete test plan as a repealing plan.
+
+    An earlier valid plan of another plan matter crosses its east border, with
+    one plan object inside, so the trigger fills one cancellation info that
+    repeals the earlier plan in part and the plan object entirely. The earlier
+    plan is not in Ryhti, so Ryhti can only check the shape of the infos.
+    """
+    plan = valid_complete_test_plan
+    earlier_plan = models.Plan(
+        id=str(uuid.uuid4()),
+        plan_matter=another_plan_matter_instance,
+        name={"fin": "Kumottava kaava"},
+        geom=from_shape(
+            MultiPolygon([box(385000.0, 6678000.0, 387000.0, 6679000.0)]),
+            srid=PROJECT_SRID,
+        ),
+        lifecycle_status=plan.lifecycle_status,
+        final=True,
+        approval_date=date(2020, 1, 1),
+        period_of_validity_start=date(2020, 1, 2),
+        land_use_areas=[
+            models.LandUseArea(
+                name={"fin": "Kumottava kaavakohde"},
+                geom=from_shape(
+                    MultiPolygon([box(385100.0, 6678100.0, 385500.0, 6678500.0)]),
+                    srid=PROJECT_SRID,
+                ),
+                lifecycle_status=plan.lifecycle_status,
+                type_of_underground=plan.land_use_areas[0].type_of_underground,
+                period_of_validity_start=date(2020, 1, 2),
+            )
+        ],
+    )
+    session.add(earlier_plan)
+    session.commit()
+    # The flag makes the trigger fill the rows, so the earlier plan goes first.
+    plan.plan_matter.repealing = True
+    session.commit()
+    return plan
+
+
+def test_validate_repealing_plan_sends_the_cancellation_infos(
+    ryhti_client_url: str, valid_repealing_complete_test_plan: Plan
+) -> None:
+    """Ryhti reads the cancellation infos of a valid repealing plan.
+
+    The repealed plan lives only in this database, so the only errors Ryhti
+    may report are that it does not know the plan and its plan object. A
+    repeal of the whole of an unknown plan makes the API answer 500 instead,
+    see docs/known-issues.md.
+    """
+    payload = {
+        "action": "validate_plan",
+        "plan_uuid": valid_repealing_complete_test_plan.id,
+        "save_json": True,
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    body = data["body"]
+    assert body["title"] == "Plan validation run."
+    ryhti_response = body["ryhti_response"]
+    assert ryhti_response["status"] == 422, ryhti_response
+    assert [
+        (error["ruleId"], error["instance"]) for error in ryhti_response["errors"]
+    ] == [
+        (
+            "quality__req_must_be_valid_plan",
+            "plan.planCancellationInfos[0].cancelledPlanUri",
+        ),
+        (
+            "quality__req_uri_resource_not_exists",
+            "plan.planCancellationInfos[0].planObjectCancellationInfos[0]"
+            ".cancelledPlanObjectUri",
+        ),
+    ]
+
+
+def test_validate_plan_refreshes_the_cancellation_infos_first(
+    session: Session,
+    ryhti_client_url: str,
+    valid_repealing_complete_test_plan: Plan,
+    main_db_params: ConnectionParameters,
+) -> None:
+    """The rows of a plan may be older than the plans they name. The validate
+    action writes them again before it serializes, so Ryhti sees the plans
+    that are valid now.
+    """
+    plan = valid_repealing_complete_test_plan
+    # Drop the rows by hand, so that they are older than the earlier plan.
+    session.execute(
+        delete(models.PlanCancellationInfo).where(
+            models.PlanCancellationInfo.plan_id == plan.id
+        )
+    )
+    session.commit()
+
+    payload = {"action": "validate_plan", "plan_uuid": plan.id}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    # Ryhti only complains about the repealed plan when the JSON names it.
+    assert [
+        error["instance"] for error in data["body"]["ryhti_response"]["errors"]
+    ] == [
+        "plan.planCancellationInfos[0].cancelledPlanUri",
+        "plan.planCancellationInfos[0].planObjectCancellationInfos[0]"
+        ".cancelledPlanObjectUri",
+    ]
+
+    conn = psycopg.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM hame.plan_cancellation_info WHERE plan_id = %s",
+                (plan.id,),
+            )
+            assert cur.fetchone() == (1,)
     finally:
         conn.close()
 

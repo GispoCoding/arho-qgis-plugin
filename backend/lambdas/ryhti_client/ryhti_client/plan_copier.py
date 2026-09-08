@@ -202,7 +202,38 @@ class PlanCopier:
         duplicate_points = self.copy_plan_objects(self.plan.points)
         self.duplicate_plan.points = duplicate_points
 
+        # Cancellation infos
+        self.copy_cancellation_infos()
+
         return self.duplicate_plan
+
+    def copy_cancellation_infos(self) -> None:
+        """The copy repeals what the source repeals, in rows of its own.
+
+        The rows point at the same earlier plan, plan objects and regulation
+        groups as the rows of the source, in every copy mode.
+        """
+        self.duplicate_plan.plan_cancellation_infos = [
+            self.copy_cancellation_info(info)
+            for info in self.plan.plan_cancellation_infos
+        ]
+
+    def copy_cancellation_info(
+        self, info: models.PlanCancellationInfo
+    ) -> models.PlanCancellationInfo:
+        duplicate_info = self.clone_model(info, id=uuid4(), plan=self.duplicate_plan)
+        duplicate_info.plan_object_cancellation_infos = [
+            self.clone_model(row, id=uuid4(), plan_cancellation_info=duplicate_info)
+            for row in info.plan_object_cancellation_infos
+        ]
+        duplicate_info.cancelled_group_relations = [
+            self.clone_model(row, id=uuid4(), plan_cancellation_info=duplicate_info)
+            for row in info.cancelled_group_relations
+        ]
+        duplicate_info.cancelled_general_regulation_groups = list(
+            info.cancelled_general_regulation_groups
+        )
+        return duplicate_info
 
     def copy_regulation_groups(self) -> None:
         duplicate_regulation_groups: list[models.PlanRegulationGroup] = []

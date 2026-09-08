@@ -583,6 +583,10 @@ def handler(
         Action.GET_PERMANENT_IDENTIFIER,
         Action.FINALIZE_PLAN,
     ):
+        if event_type in (Action.VALIDATE_PLAN, Action.FINALIZE_PLAN):
+            # The JSON must name the plans that are valid now, so the
+            # cancellation info is written again before the plan is read.
+            database_client.refresh_plan_cancellation_info(cast("str", plan_uuid))
         try:
             with log_duration("fetch_plan"):
                 plan = database_client.get_plan(cast("str", plan_uuid))

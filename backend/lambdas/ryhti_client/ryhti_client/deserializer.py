@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from datetime import date
 from typing import TYPE_CHECKING, Any, cast
@@ -12,12 +13,15 @@ from pydantic import BaseModel, ValidationError
 from ryhti_api_client import (
     AdditionalInformation as RyhtiAdditionalInformation,
     AttributeValue as RyhtiAttributeValue,
+    CancelledGroupRelations as RyhtiCancelledGroupRelations,
     GeneralRegulationGroup as RyhtiGeneralRegulationGroup,
     LanguageString as RyhtiLanguageString,
     Plan as RyhtiPlan,
     PlanAttachmentDocument as RyhtiPlanAttachmentDocument,
+    PlanCancellationInfo as RyhtiPlanCancellationInfo,
     PlanMap as RyhtiPlanMap,
     PlanObject as RyhtiPlanObject,
+    PlanObjectCancellationInfo as RyhtiPlanObjectCancellationInfo,
     PlanRecommendation as RyhtiPlanRecommendation,
     PlanRegulation as RyhtiPlanRegulation,
     PlanRegulationGroup as RyhtiPlanRegulationGroup,
@@ -40,16 +44,21 @@ from database.codes import CodeBase, PlanType, TypeOfDocument, TypeOfPlanRegulat
 from database.enums import AttributeValueDataType
 from database.models import (
     AdditionalInformation,
+    CancelledGroupRelation,
     Document,
     LandUseArea,
     Line,
     OtherArea,
     Plan,
+    PlanCancellationInfo,
+    PlanObjectBase,
+    PlanObjectCancellationInfo,
     PlanProposition,
     PlanRegulation,
     PlanRegulationGroup,
     Point,
 )
+from ryhti_client.ryhti_uris import key_of_ryhti_uri
 
 if TYPE_CHECKING:
     from geoalchemy2.elements import WKBElement
@@ -75,6 +84,19 @@ if TYPE_CHECKING:
     type NumberValue = (
         DecimalValue | NumericValue | PositiveDecimalValue | PositiveNumericValue
     )
+
+LOGGER = logging.getLogger(__name__)
+
+# The plan object tables, with the column of hame.plan_object_cancellation_info
+# that holds the remaining valid geometry of an object of each. The column that
+# names the object is <table name>_id, see CancelledPlanObjectMixin in
+# database/models.py.
+REMAINING_VALID_GEOM_COLUMNS: dict[type[PlanObjectBase], str] = {
+    LandUseArea: "remaining_valid_geom_polygon",
+    OtherArea: "remaining_valid_geom_polygon",
+    Line: "remaining_valid_geom_line",
+    Point: "remaining_valid_geom_point",
+}
 
 
 class ExtraImportData(BaseModel):
@@ -611,6 +633,172 @@ class Deserializer:
             type_of_document_id=self.get_code_id(TypeOfDocument, "03"),  # Kaavakartta
         )
 
+    def _exists(
+        self, model: type[Plan | PlanRegulationGroup | PlanObjectBase], key: UUID
+    ) -> bool:
+        return (
+            self.session.scalar(select(model.id).where(model.id == str(key)))
+            is not None
+        )
+
+    def _find_plan_object_model(
+        self, plan_object_id: UUID | None
+    ) -> type[PlanObjectBase] | None:
+        """The plan object table that holds the id, or None when no table does."""
+        if plan_object_id is None:
+            return None
+        for model in REMAINING_VALID_GEOM_COLUMNS:
+            if self._exists(model, plan_object_id):
+                return model
+        return None
+
+    def deserialize_plan_object_cancellation_info(
+        self, ryhti_row: RyhtiPlanObjectCancellationInfo
+    ) -> PlanObjectCancellationInfo | None:
+        """Deserializes a RyhtiPlanObjectCancellationInfo into a
+        PlanObjectCancellationInfo SQLAlchemy model instance.
+
+        Returns None, with a warning, when the repealed plan object is not in
+        this database.
+
+        "planObjectCancellationInfoKey", ✅
+        "cancelledPlanObjectUri", ✅
+        "cancelsEntirePlanObject", ✅
+        "validityGeometry", ✅
+        """
+        plan_object_id = key_of_ryhti_uri(ryhti_row.cancelled_plan_object_uri)
+        model = self._find_plan_object_model(plan_object_id)
+        if model is None:
+            LOGGER.warning(
+                "Skipping plan object cancellation info %s: plan object %s is not "
+                "in this database.",
+                ryhti_row.plan_object_cancellation_info_key,
+                ryhti_row.cancelled_plan_object_uri,
+            )
+            return None
+        columns: dict[str, Any] = {f"{model.__tablename__}_id": str(plan_object_id)}
+        if ryhti_row.validity_geometry is not None:
+            columns[REMAINING_VALID_GEOM_COLUMNS[model]] = (
+                self.deserialize_ryhti_geometry(ryhti_row.validity_geometry)
+            )
+        return PlanObjectCancellationInfo(
+            id=ryhti_row.plan_object_cancellation_info_key,
+            cancels_entire_plan_object=ryhti_row.cancels_entire_plan_object,
+            **columns,
+        )
+
+    def deserialize_cancelled_group_relation(
+        self, ryhti_relation: RyhtiCancelledGroupRelations
+    ) -> CancelledGroupRelation | None:
+        """Deserializes a RyhtiCancelledGroupRelations into a CancelledGroupRelation
+        SQLAlchemy model instance.
+
+        Returns None, with a warning, when the regulation group or the plan
+        object is not in this database.
+
+        "planRegulationGroupUri", ✅
+        "planObjectUri", ✅
+        """
+        group_id = key_of_ryhti_uri(ryhti_relation.plan_regulation_group_uri)
+        if group_id is None or not self._exists(PlanRegulationGroup, group_id):
+            LOGGER.warning(
+                "Skipping cancelled group relation: regulation group %s is not in "
+                "this database.",
+                ryhti_relation.plan_regulation_group_uri,
+            )
+            return None
+        plan_object_id = key_of_ryhti_uri(ryhti_relation.plan_object_uri)
+        model = self._find_plan_object_model(plan_object_id)
+        if model is None:
+            LOGGER.warning(
+                "Skipping cancelled group relation: plan object %s is not in this "
+                "database.",
+                ryhti_relation.plan_object_uri,
+            )
+            return None
+        return CancelledGroupRelation(
+            plan_regulation_group_id=str(group_id),
+            **{f"{model.__tablename__}_id": str(plan_object_id)},
+        )
+
+    def deserialize_cancelled_general_regulation_groups(
+        self, uris: list[str]
+    ) -> list[PlanRegulationGroup]:
+        """The general regulation groups the uris name. A group that is not in this
+        database is skipped with a warning.
+        """
+        groups = []
+        for uri in uris:
+            group_id = key_of_ryhti_uri(uri)
+            group = (
+                self.session.get(PlanRegulationGroup, str(group_id))
+                if group_id is not None
+                else None
+            )
+            if group is None:
+                LOGGER.warning(
+                    "Skipping cancelled general regulation group: regulation group "
+                    "%s is not in this database.",
+                    uri,
+                )
+                continue
+            groups.append(group)
+        return groups
+
+    def deserialize_plan_cancellation_info(
+        self, ryhti_info: RyhtiPlanCancellationInfo
+    ) -> PlanCancellationInfo | None:
+        """Deserializes a RyhtiPlanCancellationInfo into a PlanCancellationInfo
+        SQLAlchemy model instance.
+
+        The keys become the row ids and the uris the foreign keys. Returns None,
+        with a warning, when the repealed plan is not in this database. A part
+        whose plan object or regulation group is not in this database is left
+        out the same way, so that one bad reference does not stop the import.
+
+        "planCancellationInfoKey", ✅
+        "planCancellationInfoUri",
+        "cancelledPlanUri", ✅
+        "cancelsEntirePlan", ✅
+        "cancelledGroupRelations", ✅
+        "planObjectCancellationInfos", ✅
+        "cancelledGeneralRegulationGroupUris", ✅
+        """
+        cancelled_plan_id = key_of_ryhti_uri(ryhti_info.cancelled_plan_uri)
+        if cancelled_plan_id is None or not self._exists(Plan, cancelled_plan_id):
+            LOGGER.warning(
+                "Skipping cancellation info %s: plan %s is not in this database.",
+                ryhti_info.plan_cancellation_info_key,
+                ryhti_info.cancelled_plan_uri,
+            )
+            return None
+        return PlanCancellationInfo(
+            id=ryhti_info.plan_cancellation_info_key,
+            cancelled_plan_id=str(cancelled_plan_id),
+            cancels_entire_plan=ryhti_info.cancels_entire_plan,
+            plan_object_cancellation_infos=[
+                row
+                for ryhti_row in ryhti_info.plan_object_cancellation_infos or []
+                if (row := self.deserialize_plan_object_cancellation_info(ryhti_row))
+                is not None
+            ],
+            cancelled_group_relations=[
+                relation
+                for ryhti_relation in ryhti_info.cancelled_group_relations or []
+                if (
+                    relation := self.deserialize_cancelled_group_relation(
+                        ryhti_relation
+                    )
+                )
+                is not None
+            ],
+            cancelled_general_regulation_groups=(
+                self.deserialize_cancelled_general_regulation_groups(
+                    ryhti_info.cancelled_general_regulation_group_uris or []
+                )
+            ),
+        )
+
     def deserialise_ryhti_plan(
         self, ryhti_plan: RyhtiPlan, plan_type: PlanType, name: str
     ) -> Plan:
@@ -627,7 +815,7 @@ class Deserializer:
         "planDescription", ✅
         "planAnnexes", ✅
         "otherPlanMaterials",
-        "planCancellationInfos",
+        "planCancellationInfos", ✅
         "planReport", ✅ # TODO: planreportKey not saved
         "generalRegulationGroups", ✅
         "presentationAlignments",
@@ -731,6 +919,12 @@ class Deserializer:
             approval_date=ryhti_plan.approval_date,
             period_of_validity_start=period_of_validity_start,
             period_of_validity_end=period_of_validity_end,
+            plan_cancellation_infos=[
+                info
+                for ryhti_info in ryhti_plan.plan_cancellation_infos or []
+                if (info := self.deserialize_plan_cancellation_info(ryhti_info))
+                is not None
+            ],
         )
 
         plan.name = {"fin": name}

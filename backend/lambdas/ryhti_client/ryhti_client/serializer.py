@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 from geoalchemy2.shape import to_shape
 from ryhti_api_client import (
     AdditionalInformation as RyhtiAdditionalInformation,
+    CancelledGroupRelations as RyhtiCancelledGroupRelations,
     CodeValue as RyhtiCodeValue,
     DecimalRange as RyhtiDecimalRange,
     DecimalValue as RyhtiDecimalValue,
@@ -34,8 +35,10 @@ from ryhti_api_client import (
     OtherPlanMaterial as RyhtiOtherPlanMaterial,
     Plan as RyhtiPlan,
     PlanAttachmentDocument as RyhtiPlanAttachmentDocument,
+    PlanCancellationInfo as RyhtiPlanCancellationInfo,
     PlanMap as RyhtiPlanMap,
     PlanObject as RyhtiPlanObject,
+    PlanObjectCancellationInfo as RyhtiPlanObjectCancellationInfo,
     PlanRecommendation as RyhtiPlanRecommendation,
     PlanRegulation as RyhtiPlanRegulation,
     PlanRegulationGroup as RyhtiPlanRegulationGroup,
@@ -57,7 +60,9 @@ from sqlalchemy.orm import defer, raiseload
 
 from database import base, models
 from database.enums import AttributeValueDataType
+from ryhti_client.lifecycles import LifeCycleStatusValue
 from ryhti_client.profiling import log_duration
+from ryhti_client.ryhti_uris import ryhti_uri
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -89,6 +94,12 @@ GEOJSON_MAX_DECIMALS = 15
 GEOJSON_WITHOUT_CRS = 0
 
 LANGUAGES = ("fin", "swe", "smn", "sms", "sme", "eng")
+
+# Ryhti allows plan cancellation infos only in these lifecycle statuses (rule
+# 218), so a proposal is sent without them.
+CANCELLATION_INFO_STATUSES = frozenset(
+    {LifeCycleStatusValue.VALID, LifeCycleStatusValue.REPEALED}
+)
 
 
 def to_json_dict(model: BaseModel) -> dict[str, Any]:
@@ -706,6 +717,87 @@ class PlanSerializer:
             for regulation_group in loaded.groups_by_object.get(plan_object.id, [])
         ]
 
+    def serialize_plan_object_cancellation_info(
+        self, row: models.PlanObjectCancellationInfo
+    ) -> RyhtiPlanObjectCancellationInfo:
+        """The remaining valid geometry is sent only when a part of the plan object
+        is repealed. It is stored in the geometry column of its own type, so the
+        SRID comes from the cancellation info table.
+        """
+        remaining_valid_geom = row.remaining_valid_geom
+        return RyhtiPlanObjectCancellationInfo(
+            planObjectCancellationInfoKey=UUID(row.id),
+            cancelledPlanObjectUri=ryhti_uri("planobject", row.plan_object_id),
+            cancelsEntirePlanObject=row.cancels_entire_plan_object,
+            validityGeometry=(
+                self.serialize_geometry(
+                    to_geojson(to_shape(remaining_valid_geom)),
+                    cast("Table", row.__table__),
+                )
+                if remaining_valid_geom is not None
+                else None
+            ),
+        )
+
+    def serialize_cancelled_group_relation(
+        self, row: models.CancelledGroupRelation
+    ) -> RyhtiCancelledGroupRelations:
+        return RyhtiCancelledGroupRelations(
+            planRegulationGroupUri=ryhti_uri(
+                "planregulationgroup", row.plan_regulation_group_id
+            ),
+            planObjectUri=ryhti_uri("planobject", row.plan_object_id),
+        )
+
+    def serialize_plan_cancellation_info(
+        self, info: models.PlanCancellationInfo
+    ) -> RyhtiPlanCancellationInfo:
+        """The keys are the row ids and the uris are built from the ids of the
+        repealed plan and its parts, which are the Ryhti keys of an imported plan.
+        """
+        if info.cancels_entire_plan:
+            # Ryhti allows nothing else when the whole plan is repealed (rule 196).
+            return RyhtiPlanCancellationInfo(
+                planCancellationInfoKey=UUID(info.id),
+                cancelledPlanUri=ryhti_uri("plan", info.cancelled_plan_id),
+                cancelsEntirePlan=True,
+            )
+        return RyhtiPlanCancellationInfo(
+            planCancellationInfoKey=UUID(info.id),
+            cancelledPlanUri=ryhti_uri("plan", info.cancelled_plan_id),
+            cancelsEntirePlan=False,
+            planObjectCancellationInfos=[
+                self.serialize_plan_object_cancellation_info(row)
+                for row in info.plan_object_cancellation_infos
+            ]
+            or None,
+            cancelledGroupRelations=[
+                self.serialize_cancelled_group_relation(row)
+                for row in info.cancelled_group_relations
+            ]
+            or None,
+            cancelledGeneralRegulationGroupUris=[
+                ryhti_uri("generalregulationgroup", group.id)
+                for group in info.cancelled_general_regulation_groups
+            ]
+            or None,
+        )
+
+    def serialize_plan_cancellation_infos(
+        self, plan: models.Plan
+    ) -> list[RyhtiPlanCancellationInfo] | None:
+        """Serializes the plans this plan repeals, when Ryhti accepts them.
+
+        Returns None outside the valid and repealed lifecycle statuses and when the
+        plan repeals nothing, so the field is left out of the JSON.
+        """
+        if plan.lifecycle_status.value not in CANCELLATION_INFO_STATUSES:
+            return None
+        return [
+            self.serialize_plan_cancellation_info(info)
+            for info in plan.plan_cancellation_infos
+        ] or None
+
     def serialize_plan(self, plan: models.Plan) -> RyhtiPlan:
         """Serializes a plan in the local database into a Ryhti plan.
 
@@ -762,6 +854,7 @@ class PlanSerializer:
             ),
             approvalDate=plan.approval_date,
             periodOfValidity=period_of_validity,
+            planCancellationInfos=self.serialize_plan_cancellation_infos(plan),
             # Documents are divided into different categories. They may only be added
             # to plan *after* they have been uploaded, see add_document_to_plan.
             planMaps=[],
