@@ -4,7 +4,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit
+from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QLineEdit
 
 from arho_feature_template.core.models import PlanMatter
 from arho_feature_template.project.layers.code_layers import DigitalOriginLayer, OrganisationLayer, PlanTypeLayer
@@ -28,6 +28,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
     organisation_combo_box: CodeComboBox
     plan_type_combo_box: HierarchicalCodeComboBox
     digital_origin_combo_box: HierarchicalCodeComboBox
+    repealing_check_box: QCheckBox
     record_number_edit: QLineEdit
     producers_id_edit: QLineEdit
     case_id_edit: QLineEdit
@@ -72,6 +73,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.organisation_combo_box.set_value(self.plan_matter.organisation_id)
         self.plan_type_combo_box.set_value(self.plan_matter.plan_type_id)
+        self.repealing_check_box.setChecked(self.plan_matter.repealing)
 
         # New plan matters default to the digital origin of plans made with this plugin
         digital_origin_id = self.plan_matter.digital_origin_id or DigitalOriginLayer.get_default_id()
@@ -106,6 +108,7 @@ class PlanMatterAttributeForm(QDialog, FormClass):  # type: ignore
             case_identifier=self.case_id_edit.text() or None,
             record_number=self.record_number_edit.text() or None,
             producers_plan_identifier=self.producers_id_edit.text() or None,
+            repealing=self.repealing_check_box.isChecked(),
             modified=self.plan_matter.modified,
         )
 

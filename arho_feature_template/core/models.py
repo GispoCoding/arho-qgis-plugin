@@ -587,6 +587,9 @@ class PlanMatter(PlanBaseModel):
     permanent_plan_identifier: str | None = None
     producers_plan_identifier: str | None = None
     organisation_id: str | None = None
+    # Kumoava kaava-asia: its plans repeal the valid plans of the same top-level plan
+    # type that they cover. The database writes hame.plan_cancellation_info by trigger.
+    repealing: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 

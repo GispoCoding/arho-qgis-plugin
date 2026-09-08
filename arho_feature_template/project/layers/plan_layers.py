@@ -110,6 +110,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
         feature["plan_type_id"] = model.plan_type_id
         feature["digital_origin_id"] = model.digital_origin_id
         feature["organisation_id"] = model.organisation_id
+        feature["repealing"] = model.repealing
 
         return feature
 
@@ -125,6 +126,7 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
             plan_type_id=feature["plan_type_id"],
             digital_origin_id=feature["digital_origin_id"],
             organisation_id=feature["organisation_id"],
+            repealing=feature["repealing"],
             id_=feature["id"],
             modified=False,
         )
