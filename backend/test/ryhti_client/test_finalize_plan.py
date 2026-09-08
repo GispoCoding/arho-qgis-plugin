@@ -8,7 +8,6 @@ it repeals live in test/conftest.py.
 
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import pytest
@@ -119,7 +118,15 @@ def test_finalize_plan_repeals_a_plan_it_covers_entirely(
     assert result.repealed_plans == 1
     assert result.repealed_plan_objects == 0
     assert status_of(session, cancelled_plan) == "14"
-    assert cancelled_plan.period_of_validity_end == yesterday() - timedelta(days=1)
+    assert cancelled_plan.period_of_validity_end == yesterday()
+    # hame.trg_plan_repealed repeals the plan objects of the repealed plan too.
+    for plan_object in (
+        *cancelled_plan.land_use_areas,
+        *cancelled_plan.lines,
+        *cancelled_plan.points,
+    ):
+        assert status_of(session, plan_object) == "14"
+        assert plan_object.period_of_validity_end == yesterday()
 
 
 def test_finalize_plan_without_cancellation_info(

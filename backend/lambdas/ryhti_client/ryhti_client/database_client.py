@@ -236,6 +236,11 @@ class DatabaseClient:
         cancellations are repealed; a partly cancelled plan or plan object stays
         valid and its remaining valid geometry says what is left of it.
 
+        When a whole plan is repealed, hame.trg_plan_repealed (see
+        generate_plan_repealed_triggers in database/triggers.py) repeals its
+        plan objects, regulations and propositions as well. The plan object
+        updates below are for plan objects repealed one by one.
+
         Raises PlanNotFoundError if the plan does not exist and
         PlanAlreadyFinalError if it is final already.
         """
@@ -270,13 +275,15 @@ class DatabaseClient:
                 {"plan_id": plan_id},
             )
 
-            # A repealed plan stays valid until the day before this plan does.
+            # A repealed plan ends on the day this plan begins, as Ryhti does.
+            # hame.plan_valid treats the end date as inclusive, so both plans
+            # show as valid on that one day; this matches Ryhti.
             start_date = (
                 period_of_validity_start or datetime.datetime.now(tz=LOCAL_TZ).date()
             )
             repealed_values: dict[str, Any] = {
                 "lifecycle_status_id": repealed_status_id,
-                "period_of_validity_end": start_date - datetime.timedelta(days=1),
+                "period_of_validity_end": start_date,
             }
 
             cancelled_plan_ids = select(

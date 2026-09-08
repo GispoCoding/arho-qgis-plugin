@@ -53,6 +53,9 @@ def valid_today(alias: str) -> str:
 # values may change. Therefore the views match the status by its code value
 # at query time instead of baking a code table UUID into the view.
 LIFECYCLE_STATUS_VALID = "13"
+# The REPEALED (Kumoutunut) code value of the same code list, used by
+# generate_plan_repealed_triggers in database/triggers.py.
+LIFECYCLE_STATUS_REPEALED = "14"
 
 # The final column is left out of the select list on purpose: every row of the
 # view is final, so the column carries no information here. Keeping the column

@@ -1,11 +1,12 @@
 import inspect
-from textwrap import dedent
+from textwrap import dedent, indent
 
 from alembic_utils.pg_function import PGFunction
 from alembic_utils.pg_trigger import PGTrigger
 
 from database import models
 from database.base import VersionedBase
+from database.valid_views import LIFECYCLE_STATUS_REPEALED
 
 # If new tables are added a new migration must be created in two steps.
 # First to create the table, second to add triggers to it.
@@ -222,6 +223,102 @@ def generate_new_lifecycle_status_triggers() -> tuple[
         trgs.append(trg)
 
     return trgs, trgfuncs
+
+
+def generate_plan_repealed_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
+    """Repeal the children of a plan when the plan is repealed.
+
+    Ryhti sets the plan objects, regulations and recommendations of a repealed
+    plan to the repealed lifecycle status with the same end date as the plan,
+    without a new version of the plan. The trigger does the same in hame, so it
+    holds whoever repeals the plan: finalize_plan of ryhti_client, or a user who
+    sets the status by hand.
+
+    A child that is already repealed keeps its own status and end date, so an
+    earlier partial repeal is not overwritten. A child whose own end date is
+    earlier keeps that too.
+    """
+    updates = "\n".join(
+        dedent(
+            f"""\
+            UPDATE hame.{object_table}
+            SET
+                lifecycle_status_id = NEW.lifecycle_status_id,
+                period_of_validity_end = least(
+                    period_of_validity_end, NEW.period_of_validity_end
+                )
+            WHERE
+                plan_id = NEW.id
+                AND lifecycle_status_id <> NEW.lifecycle_status_id;
+            """
+        )
+        for object_table in plan_object_tables
+    ) + "\n".join(
+        dedent(
+            f"""\
+            UPDATE hame.{regulation_table} r
+            SET
+                lifecycle_status_id = NEW.lifecycle_status_id,
+                period_of_validity_end = least(
+                    r.period_of_validity_end, NEW.period_of_validity_end
+                )
+            FROM hame.plan_regulation_group prg
+            WHERE
+                prg.id = r.plan_regulation_group_id
+                AND prg.plan_id = NEW.id
+                AND r.lifecycle_status_id <> NEW.lifecycle_status_id;
+            """
+        )
+        for regulation_table in plan_regulation_tables
+    )
+    trgfunc_signature = "trgfunc_plan_repealed()"
+    trgfunc_definition = (
+        dedent(
+            f"""\
+            RETURNS TRIGGER
+            LANGUAGE plpgsql
+            AS $$
+            BEGIN
+                -- A subquery is not allowed in the WHEN clause of the trigger,
+                -- so the code value is checked here.
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM codes.lifecycle_status
+                    WHERE
+                        id = NEW.lifecycle_status_id
+                        AND value = '{LIFECYCLE_STATUS_REPEALED}'
+                ) THEN
+                    RETURN NULL;
+                END IF;
+            """
+        )
+        + indent(updates, "    ")
+        + dedent(
+            """\
+                RETURN NULL;
+            END;
+            $$;
+            """
+        )
+    )
+    trgfunc = PGFunction(
+        schema="hame", signature=trgfunc_signature, definition=trgfunc_definition
+    )
+    trg = PGTrigger(
+        schema="hame",
+        signature="trg_plan_repealed",
+        on_entity="hame.plan",
+        is_constraint=False,
+        definition=dedent(
+            f"""\
+            AFTER UPDATE ON hame.plan
+            FOR EACH ROW
+            WHEN (NEW.lifecycle_status_id IS DISTINCT FROM OLD.lifecycle_status_id)
+            EXECUTE FUNCTION hame.{trgfunc_signature}
+            """
+        ),
+    )
+    return [trg], [trgfunc]
 
 
 def generate_add_plan_id_fkey_triggers() -> tuple[list[PGTrigger], list[PGFunction]]:
