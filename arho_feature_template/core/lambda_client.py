@@ -36,6 +36,7 @@ class LambdaClient(QObject):
     ACTION_GET_PERMANENT_IDENTIFIER = "get_permanent_plan_identifier"
     ACTION_IMPORT_PLAN = "import_plan"
     ACTION_COPY_PLAN = "copy_plan"
+    ACTION_FINALIZE_PLAN = "finalize_plan"
     ACTION_GET_UPLOAD_URL = "get_upload_url"
     # Pseudo-actions tagging presigned S3 requests; never sent to the lambda
     S3_DOWNLOAD_PLAN = "s3_download_plan"
@@ -43,7 +44,9 @@ class LambdaClient(QObject):
     _RAW_S3_ACTIONS = frozenset({S3_DOWNLOAD_PLAN, S3_UPLOAD_PLAN})
 
     response_received = pyqtSignal(str, dict)  # (action, decoded response body)
-    request_failed = pyqtSignal(str, str)  # (action, error) network error or non-OK lambda status
+    # (action, error, body) network error or non-OK lambda status; body is the parsed lambda
+    # error body when there was one, else None
+    request_failed = pyqtSignal(str, str, object)
     parse_failed = pyqtSignal(str, str)  # (action, error) response could not be decoded
     # (tag, reply) — typed as object so test doubles can pass through the signal
     s3_reply_received = pyqtSignal(str, object)
@@ -171,7 +174,7 @@ class LambdaClient(QObject):
             if error_body is not None:
                 error = self._format_error_body(error_body)
             logger.debug("Network error for action=%s error=%s", action, error)
-            self.request_failed.emit(action, error)
+            self.request_failed.emit(action, error, error_body)
             response.deleteLater()
             return
 
@@ -209,7 +212,7 @@ class LambdaClient(QObject):
                     else:
                         error = str(body if body is not None else response_data.get("errorMessage"))
                     logger.debug("Non-OK lambda status for action=%s status=%s", action, status_code)
-                    self.request_failed.emit(action, error)
+                    self.request_failed.emit(action, error, body if isinstance(body, dict) else None)
                     return
                 response_body = response_data["body"]
 

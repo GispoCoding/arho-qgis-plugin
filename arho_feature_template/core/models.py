@@ -572,6 +572,9 @@ class Plan(PlanBaseModel, LifecycleBase):
     plan_matter_id: str | None = None
     approval_date: QDate | None = None
     locked: bool = False
+    # Lopullinen kaava: only the backend makes a plan final, and the plugin never
+    # writes the column. See the finalize_plan action of the ryhti_client lambda.
+    final: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
 

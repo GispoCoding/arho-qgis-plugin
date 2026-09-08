@@ -472,6 +472,18 @@ class Plugin:
             add_to_toolbar=True,
         )
 
+        #####  FINALIZE PLAN  #####
+        self.finalize_plan_action = self.add_action(
+            text="Aseta lopulliseksi",
+            icon=QgsApplication.getThemeIcon("mIconSuccess.svg"),
+            triggered_callback=self.plan_manager.finalize_plan,
+            add_to_menu=False,
+            add_to_toolbar=True,
+            status_tip="Validoi aktiivinen kaavasuunnitelma Ryhtissä ja aseta se lopulliseksi",
+        )
+        # Shown only for a valid plan that is not final yet, see `on_plan_finalizable_changed`
+        self.finalize_plan_action.setVisible(False)
+
         #####  LIBRARIES  #####
         self.manage_libraries_action = self.add_action(
             text="Kirjastot",
@@ -551,6 +563,8 @@ class Plugin:
             (self.plan_manager.project_loaded, self.on_project_loaded),
             (self.plan_manager.project_cleared, self.on_project_cleared),
             (self.plan_manager.plan_lock_status_changed, self.on_plan_lock_status_changed),
+            (self.plan_manager.plan_finalizable_changed, self.on_plan_finalizable_changed),
+            (self.plan_manager.plan_finalize_validation_failed, self.validation_dock.on_finalize_validation_failed),
             (self.plan_manager.plan_identifier_set, self.validation_dock.on_permanent_identifier_set),
         ]
         if SettingsManager.get_data_exchange_layer_enabled():
@@ -667,6 +681,7 @@ class Plugin:
         logger.debug("Active plan unset: disabling dependent actions")
         for action in self.plan_depending_actions:
             action.setEnabled(False)
+        self.finalize_plan_action.setVisible(False)
 
     def on_project_loaded(self):
         logger.debug("Project loaded in plugin: enabling project-dependent actions")
@@ -681,6 +696,7 @@ class Plugin:
             action.setEnabled(False)
         for action in self.plan_matter_depending_actions:
             action.setEnabled(False)
+        self.finalize_plan_action.setVisible(False)
 
     def on_inspect_tool_deactivated(self):
         self.identify_plan_features_action.setChecked(False)
@@ -688,6 +704,10 @@ class Plugin:
     def on_plan_lock_status_changed(self, locked: bool):  # noqa: FBT001
         logger.debug("Plan lock status changed locked=%s", locked)
         self.import_features_action.setEnabled(not locked)
+
+    def on_plan_finalizable_changed(self, finalizable: bool):  # noqa: FBT001
+        logger.debug("Plan finalizable changed finalizable=%s", finalizable)
+        self.finalize_plan_action.setVisible(finalizable)
 
     def unload(self) -> None:
         """Removes the plugin menu item and icon from QGIS GUI."""

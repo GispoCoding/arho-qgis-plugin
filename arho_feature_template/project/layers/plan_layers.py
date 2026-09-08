@@ -46,6 +46,17 @@ from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 logger = logging.getLogger(__name__)
 
 
+def read_flag(feature: QgsFeature, name: str) -> bool:
+    """True only when the field exists and holds true.
+
+    A field the database does not have yet reads as false, so a plugin that is newer
+    than the database keeps working.
+    """
+    if feature.fields().indexOf(name) < 0:
+        return False
+    return feature[name] is True
+
+
 class AbstractFeatureLayer(FamilyLayer):
     group = PLAN_LAYER_GROUP_NAME
     filter_template: ClassVar[Template | None]
@@ -218,6 +229,7 @@ class PlanLayer(AbstractPlanLayer):
             period_of_validity_start=feature["period_of_validity_start"],
             period_of_validity_end=feature["period_of_validity_end"],
             locked=feature["locked"],
+            final=read_flag(feature, "final"),
             modified=False,
         )
 
@@ -280,6 +292,7 @@ class PlanLayer(AbstractPlanLayer):
                 period_of_validity_start=feature["period_of_validity_start"] or None,
                 period_of_validity_end=feature["period_of_validity_end"] or None,
                 locked=feature["locked"],
+                final=read_flag(feature, "final"),
                 modified=False,
             )
             for feature in features

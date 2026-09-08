@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
+from http import HTTPStatus
 
 import pytest
 from qgis.PyQt.QtCore import QByteArray, QObject, QUrl
@@ -604,3 +605,89 @@ def test_closing_the_post_plan_dialog_cancels_the_request(iface, monkeypatch, fl
     flush_deferred_deletes()
 
     assert dialog.lambda_service._client.network_manager.findChildren(QNetworkReply) == []
+
+
+# ------------------------------------------------------------------ finalize plan
+
+
+def _finalize_reply(body: dict, status_code: int, *, direct: bool = False) -> FakeReply:
+    """A finalize_plan reply by direct invocation (envelope), or a 409 through API Gateway (HTTP status)."""
+    if direct:
+        return FakeReply(
+            data=json.dumps({"statusCode": status_code, "body": body}).encode("utf-8"),
+            action=LambdaService.ACTION_FINALIZE_PLAN,
+            url="http://localhost:8000/lambda",
+        )
+    assert status_code == HTTPStatus.CONFLICT
+    return FakeReply(
+        data=gzip.compress(json.dumps(body).encode("utf-8")),
+        error=QNetworkReply.NetworkError.ContentConflictError,
+        error_string="Error transferring - server replied: Conflict",
+        action=LambdaService.ACTION_FINALIZE_PLAN,
+    )
+
+
+VALIDATION_ERRORS = {"status": 400, "errors": [{"ruleId": "plan.1", "message": "Puuttuu"}], "warnings": []}
+
+
+@pytest.fixture
+def critical_boxes(monkeypatch) -> list:
+    boxes = []
+    monkeypatch.setattr(
+        lambda_service_module.QMessageBox, "critical", lambda _parent, title, text: boxes.append((title, text))
+    )
+    return boxes
+
+
+def test_finalize_plan_posts_the_action_for_the_plan(service, monkeypatch):
+    requests = []
+    monkeypatch.setattr(
+        service._client,
+        "post_action",
+        lambda action, plan_id=None, payload=None: requests.append((action, plan_id, payload)),
+    )
+
+    service.finalize_plan(PLAN_ID)
+
+    assert requests == [("finalize_plan", PLAN_ID, None)]
+
+
+def test_a_plan_made_final_emits_the_repeal_counts(service):
+    finalized = signal_spy(service.plan_finalized)
+    body = {
+        "title": "Plan made final.",
+        "details": {"repealed_plans": 1, "repealed_plan_objects": 2},
+        "ryhti_response": {"status": 200, "errors": [], "warnings": []},
+    }
+
+    service._client._handle_response(_finalize_reply(body, HTTPStatus.OK, direct=True))
+
+    assert finalized == [({"repealed_plans": 1, "repealed_plan_objects": 2},)]
+
+
+@pytest.mark.parametrize("direct", [False, True], ids=["api_gateway", "direct"])
+def test_a_plan_that_fails_validation_hands_the_errors_on(service, critical_boxes, direct):
+    validation_failed = signal_spy(service.plan_finalize_validation_failed)
+    body = {"title": "Plan did not pass Ryhti validation.", "details": {}, "ryhti_response": VALIDATION_ERRORS}
+
+    service._client._handle_response(_finalize_reply(body, HTTPStatus.CONFLICT, direct=direct))
+
+    assert validation_failed == [(VALIDATION_ERRORS,)]
+    assert critical_boxes == []
+
+
+def test_a_plan_the_backend_refuses_shows_the_generic_error_box(service, critical_boxes):
+    validation_failed = signal_spy(service.plan_finalize_validation_failed)
+    finalized = signal_spy(service.plan_finalized)
+    body = {
+        "title": "Plan is already final.",
+        "details": {"error": "Plan 'x' is already final."},
+        "ryhti_response": None,
+    }
+
+    service._client._handle_response(_finalize_reply(body, HTTPStatus.CONFLICT))
+
+    assert validation_failed == []
+    assert finalized == []
+    assert len(critical_boxes) == 1
+    assert "Plan is already final." in critical_boxes[0][1]

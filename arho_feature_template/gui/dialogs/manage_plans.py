@@ -50,6 +50,7 @@ DATA_ROLE = Qt.ItemDataRole.UserRole
 class ManagePlans(QDialog, FormClass):  # type: ignore
     LOCK_ICON: QIcon = QgsApplication.getThemeIcon("locked.svg")
     UNLOCKED_ICON: QIcon = QgsApplication.getThemeIcon("unlocked.svg")
+    FINAL_ICON: QIcon = QgsApplication.getThemeIcon("mIconSuccess.svg")
 
     @use_wait_cursor
     def __init__(
@@ -125,11 +126,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self._set_row_attributes(row, plan)
 
     def _set_row_attributes(self, row: int, plan: Plan) -> QTableWidgetItem:
-        if plan.locked:
-            plan_locked_item = QTableWidgetItem(self.LOCK_ICON, "Lukittu")
-        else:
-            plan_locked_item = QTableWidgetItem(self.UNLOCKED_ICON, "")
-        self.plans_table.setItem(row, 0, plan_locked_item)
+        self.plans_table.setItem(row, 0, self._state_item(plan))
 
         plan_name_item = QTableWidgetItem(plan.name or "")
         plan_name_item.setData(DATA_ROLE, plan)
@@ -147,6 +144,18 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         self.plans_table.setItem(row, 3, description_item)
 
         return plan_name_item
+
+    def _state_item(self, plan: Plan) -> QTableWidgetItem:
+        """The final mark wins over the lock in the column; the tooltip names both."""
+        if plan.final:
+            item = QTableWidgetItem(self.FINAL_ICON, "Lopullinen")
+            item.setToolTip("Lopullinen, lukittu" if plan.locked else "Lopullinen")
+        elif plan.locked:
+            item = QTableWidgetItem(self.LOCK_ICON, "Lukittu")
+            item.setToolTip("Lukittu")
+        else:
+            item = QTableWidgetItem(self.UNLOCKED_ICON, "")
+        return item
 
     def _filter_plans(self) -> None:
         text = self.filter_line.text().lower().strip()
@@ -170,7 +179,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
                 ):
                     save_plan(edited_plan)
 
-                self.plan_manager_ref.update_lock_status(edited_plan)
+                self.plan_manager_ref.update_plan_status(edited_plan)
                 self._update_plan_row(item.row(), edited_plan)
 
     def _on_new_plan_button_clicked(self):

@@ -81,6 +81,16 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.enable_validation()
 
+    def on_finalize_validation_failed(self, ryhti_response: dict):
+        """The plan was not made final because it failed the Ryhti validation. Shows the errors."""
+        logger.debug("Listing the validation errors that stopped making the plan final")
+        self._start_listing("Kaavasuunnitelmaa ei asetettu lopulliseksi. Validointivirheet:")
+        self.list_validation_errors(ryhti_response)
+        self.setUserVisible(True)
+        iface.messageBar().pushWarning(
+            "", "Kaavasuunnitelmaa ei asetettu lopulliseksi, koska se ei läpäissyt Ryhti-validointia."
+        )
+
     def on_permanent_identifier_set(self, identifier: str | None):
         """Enable the validate plan matter button when a valid permanent identifier is received."""
         logger.debug("Permanent identifier updated in validation dock is_set=%s", bool(identifier))
@@ -97,11 +107,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         # Get IDs from all layers
         # self.layer_features = self.get_all_features()
 
-        self.validation_label.setText("Kaavasuunnitelman validointivirheet:")
-        self.validation_label.setStyleSheet("")
-
-        # Clear the existing errors from the list view
-        self.validation_result_tree_view.clear_errors()
+        self._start_listing("Kaavasuunnitelman validointivirheet:")
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
@@ -121,11 +127,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         """Handles the button press to trigger the plan matter validation process."""
         logger.debug("Validate plan matter requested")
 
-        self.validation_label.setText("Kaava-asian validointivirheet:")
-        self.validation_label.setStyleSheet("")
-
-        # Clear the existing errors from the list view
-        self.validation_result_tree_view.clear_errors()
+        self._start_listing("Kaava-asian validointivirheet:")
 
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
@@ -140,6 +142,12 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         logger.debug("Plan matter validation started for active_plan_id=%s", active_plan_id)
 
         self.lambda_service.validate_plan_matter(active_plan_id)
+
+    def _start_listing(self, title: str):
+        """Resets the label and the tree for a new list of validation results."""
+        self.validation_label.setText(title)
+        self.validation_label.setStyleSheet("")
+        self.validation_result_tree_view.clear_errors()
 
     def enable_validation(self):
         """Hide progress bar and re-enable the button"""
