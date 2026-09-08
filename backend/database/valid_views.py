@@ -6,19 +6,24 @@ rows that belong to a valid plan; rows with their own lifecycle status and
 validity period must also pass those checks themselves. The views get select
 grants only, unlike the writable visualization views in views.py.
 
+A plan that a repealing plan repeals only in part stays valid, and the plan
+view shows its remaining valid geometry: the plan geometry minus the plans
+that repeal it. The views derive that geometry when they are queried instead
+of storing it, see docs/adr/0002-valid-views-clip-repealed-geometry.md.
+
 The views have the columns of their base tables (for the plan object views,
 the columns of the corresponding visualization view), apart from the final
 column of the plan table.
 """
 
-from collections.abc import Container
-from textwrap import dedent
+from collections.abc import Container, Mapping
+from textwrap import dedent, indent
 
 from alembic_utils.pg_view import PGView
 from sqlalchemy import Table
 
 from database import models
-from database.base import Base
+from database.base import PROJECT_SRID, Base
 from database.views import plan_object_columns
 
 
@@ -27,10 +32,20 @@ def _hame_table(name: str) -> Table:
     return Base.metadata.tables[f"hame.{name}"]
 
 
-def _all_columns(table: Table, alias: str, exclude: Container[str] = ()) -> str:
-    """List all columns of the table for a select, qualified with the alias."""
+def _all_columns(
+    table: Table,
+    alias: str,
+    exclude: Container[str] = (),
+    replace: Mapping[str, str] | None = None,
+) -> str:
+    """List all columns of the table for a select, qualified with the alias.
+
+    replace maps a column name to the expression that is selected in its
+    place, so that the column keeps its position in the select list.
+    """
+    replace = replace or {}
     return ",\n            ".join(
-        f"{alias}.{column.name}"
+        replace.get(column.name, f"{alias}.{column.name}")
         for column in table.columns
         if column.name not in exclude
     )
@@ -57,6 +72,43 @@ LIFECYCLE_STATUS_VALID = "13"
 # generate_plan_repealed_triggers in database/triggers.py.
 LIFECYCLE_STATUS_REPEALED = "14"
 
+
+def _repeal_in_force(alias: str) -> str:
+    """Predicate that checks that the repealing plan has repealed what it names.
+
+    The finalize action of ryhti_client repeals the plans and plan objects the
+    cancellation infos name, so a plan repeals from the day its validity period
+    starts once it is final. A repeal is one way: the lifecycle status of the
+    repealing plan does not matter, so a repealing plan that is later repealed
+    itself keeps the earlier repeal in force. A null start date counts as
+    started.
+    """
+    return (
+        f"{alias}.final and current_date >= "
+        f"coalesce({alias}.period_of_validity_start, '-infinity'::date)"
+    )
+
+
+# The remaining valid geometry of a plan: its geometry minus the union of the
+# geometries of the plans that repeal it. A plan that nothing repeals keeps its
+# geometry, as st_union of no rows is null. The difference can be a polygon or
+# a collection, so the polygons are extracted and cast back to the column type
+# of hame.plan.geom, which lets CREATE OR REPLACE VIEW keep the column.
+PLAN_REMAINING_VALID_GEOM = dedent(
+    f"""\
+    cross join lateral (
+        select st_multi(st_collectionextract(
+            coalesce(st_difference(p.geom, st_union(repealing.geom)), p.geom), 3
+        ))::geometry(MultiPolygon, {PROJECT_SRID}) geom
+        from
+            hame.plan_cancellation_info ci
+            join hame.plan repealing on repealing.id = ci.plan_id
+        where
+            ci.cancelled_plan_id = p.id
+            and {_repeal_in_force("repealing")}
+    ) remaining"""
+)
+
 # The final column is left out of the select list on purpose: every row of the
 # view is final, so the column carries no information here. Keeping the column
 # list unchanged also lets a later migration update the view with
@@ -67,31 +119,99 @@ plan_valid = PGView(
     definition=dedent(
         f"""\
         select
-            {_all_columns(_hame_table("plan"), "p", exclude=("final",))}
+            {
+            _all_columns(
+                _hame_table("plan"),
+                "p",
+                exclude=("final",),
+                replace={"geom": "remaining.geom"},
+            )
+        }
         from
             hame.plan p
             join codes.lifecycle_status ls on ls.id = p.lifecycle_status_id
+            {indent(PLAN_REMAINING_VALID_GEOM, " " * 12).lstrip()}
         where
             p.final
             and ls.value = '{LIFECYCLE_STATUS_VALID}'
             and {valid_today("p")}
+            and not st_isempty(remaining.geom)
         """
     ),
 )
 
 
-def _plan_object_valid_view(name: str, extra_columns: tuple[str, ...]) -> PGView:
+# The geometry column of hame.plan_object_cancellation_info, the
+# ST_CollectionExtract type number and the PostGIS type of the geometry of each
+# plan object geometry type, see REMAINING_VALID_GEOM_COLUMNS in
+# database/functions.py.
+PLAN_OBJECT_GEOMETRY_TYPES = {
+    "polygon": ("remaining_valid_geom_polygon", 3, "MultiPolygon"),
+    "line": ("remaining_valid_geom_line", 2, "MultiLineString"),
+    "point": ("remaining_valid_geom_point", 1, "MultiPoint"),
+}
+
+
+def _plan_object_remaining_valid_geom(name: str, geometry_type: str) -> str:
+    """The lateral subquery that derives the remaining valid geometry of t.
+
+    Every cancellation info in force that names the plan object stores the
+    part of it that stays valid, and the object keeps the part they all share.
+    An object that no cancellation info names keeps its geometry, as
+    array_agg of no rows is null. repealed_entirely tells whether a
+    cancellation info in force repeals the whole object: such an object has no
+    geometry left.
+    The intersection can be a collection, so the wanted type is extracted and
+    cast back to the type of the geometry column of the base table.
+    """
+    geom_column, collection_type, postgis_type = PLAN_OBJECT_GEOMETRY_TYPES[
+        geometry_type
+    ]
+    return dedent(
+        f"""\
+        cross join lateral (
+            select
+                bool_or(oci.cancels_entire_plan_object) repealed_entirely,
+                st_multi(st_collectionextract(
+                    coalesce(
+                        hame.intersection_all(array_agg(oci.{geom_column})),
+                        t.geom
+                    ),
+                    {collection_type}
+                ))::geometry({postgis_type}, {PROJECT_SRID}) geom
+            from
+                hame.plan_object_cancellation_info oci
+                join hame.plan_cancellation_info ci
+                    on ci.id = oci.plan_cancellation_info_id
+                join hame.plan repealing on repealing.id = ci.plan_id
+            where
+                oci.{name}_id = t.id
+                and {_repeal_in_force("repealing")}
+        ) remaining"""
+    )
+
+
+def _plan_object_valid_view(
+    name: str, extra_columns: tuple[str, ...], geometry_type: str
+) -> PGView:
     """View of the plan objects of valid plans that are themselves valid today.
 
     Selects from the corresponding visualization view in views.py, so the
     aggregated regulation columns are included. extra_columns names those
     view-only columns on top of plan_object_columns. Plan objects with a null
     plan_id are left out: an object that is not attached to any plan cannot
-    belong to a valid plan.
+    belong to a valid plan. geometry_type is a key of PLAN_OBJECT_GEOMETRY_TYPES
+    and picks the remaining valid geometry column of the cancellation infos.
+
+    A plan object that a repealing plan repeals only in part is shown with its
+    remaining valid geometry; one that a repealing plan repeals entirely, or
+    that has no geometry left, is left out.
     """
     columns = ",\n                ".join(
-        f"t.{column}" for column in (*plan_object_columns, *extra_columns)
+        "remaining.geom" if column == "geom" else f"t.{column}"
+        for column in (*plan_object_columns, *extra_columns)
     )
+    remaining = _plan_object_remaining_valid_geom(name, geometry_type)
     return PGView(
         schema="hame",
         signature=f"{name}_valid",
@@ -103,25 +223,36 @@ def _plan_object_valid_view(name: str, extra_columns: tuple[str, ...]) -> PGView
                 hame.{name}_v t
                 join hame.plan_valid p on p.id = t.plan_id
                 join codes.lifecycle_status ls on ls.id = t.lifecycle_status_id
+                {indent(remaining, " " * 16).lstrip()}
             where
                 ls.value = '{LIFECYCLE_STATUS_VALID}'
                 and {valid_today("t")}
+                and not coalesce(remaining.repealed_entirely, false)
+                and not st_isempty(remaining.geom)
             """
         ),
     )
 
 
 land_use_area_valid = _plan_object_valid_view(
-    "land_use_area", ("short_names", "primary_use", "regulation_values")
+    "land_use_area",
+    ("short_names", "primary_use", "regulation_values"),
+    geometry_type="polygon",
 )
 other_area_valid = _plan_object_valid_view(
-    "other_area", ("short_names", "sub_area", "regulation_values")
+    "other_area",
+    ("short_names", "sub_area", "regulation_values"),
+    geometry_type="polygon",
 )
 line_valid = _plan_object_valid_view(
-    "line", ("short_names", "type_regulations", "regulation_values")
+    "line",
+    ("short_names", "type_regulations", "regulation_values"),
+    geometry_type="line",
 )
 point_valid = _plan_object_valid_view(
-    "point", ("short_names", "type_regulations", "regulation_values")
+    "point",
+    ("short_names", "type_regulations", "regulation_values"),
+    geometry_type="point",
 )
 
 plan_regulation_group_valid = PGView(

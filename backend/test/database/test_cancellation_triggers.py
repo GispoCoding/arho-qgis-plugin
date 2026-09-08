@@ -16,7 +16,7 @@ import sqlalchemy
 from geoalchemy2.shape import to_shape
 
 from database import codes, models
-from test.conftest import MIDDLE, SIDE, area, line
+from test.conftest import MIDDLE, SIDE, area, line, named, yesterday
 
 if TYPE_CHECKING:
     from shapely.geometry.base import BaseGeometry
@@ -51,16 +51,6 @@ def repealed_objects(
         )
         for row in rows
     }
-
-
-def named(plan: models.Plan, name: str) -> models.PlanObjectBase:
-    """Look up a plan object of the plan by its Finnish name."""
-    objects: list[models.PlanObjectBase] = [
-        *plan.land_use_areas,
-        *plan.lines,
-        *plan.points,
-    ]
-    return next(o for o in objects if o.name is not None and o.name["fin"] == name)
 
 
 def remaining(row: models.PlanObjectCancellationInfo) -> BaseGeometry:
@@ -272,3 +262,26 @@ def test_plan_that_stays_repealed_keeps_its_cancellation_info_id(
     session.commit()
 
     assert cancellation_infos(session, repealing_plan)[0].id == original_id
+
+
+def test_final_repealing_plan_keeps_its_cancellation_info_row(
+    session: Session, repealing_plan: models.Plan, cancelled_plan: models.Plan
+) -> None:
+    """A geometry change of a repealing plan in force keeps the row and its id.
+
+    hame.plan_valid clips the repealed plan by the repealing plan once it is
+    final, so hame.repealed_plans must test the overlap against the stored
+    geometry or the refresh would delete the row and write it again.
+    """
+    repealing_plan.final = True
+    repealing_plan.period_of_validity_start = yesterday()
+    session.commit()
+    info_id = cancellation_infos(session, repealing_plan)[0].id
+
+    repealing_plan.geom = area(0, 0, MIDDLE + 5, SIDE)
+    session.commit()
+
+    infos = cancellation_infos(session, repealing_plan)
+    assert [info.id for info in infos] == [info_id]
+    assert infos[0].cancelled_plan_id == cancelled_plan.id
+    assert infos[0].cancels_entire_plan is False

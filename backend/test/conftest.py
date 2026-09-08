@@ -2731,6 +2731,16 @@ def cancelled_plan(
     return plan
 
 
+def named(plan: models.Plan, name: str) -> models.PlanObjectBase:
+    """Look up a plan object of the plan by its Finnish name."""
+    objects: list[models.PlanObjectBase] = [
+        *plan.land_use_areas,
+        *plan.lines,
+        *plan.points,
+    ]
+    return next(o for o in objects if o.name is not None and o.name["fin"] == name)
+
+
 @pytest.fixture
 def repealing_plan_matter(
     session: Session, another_plan_matter_instance: models.PlanMatter

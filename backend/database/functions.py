@@ -391,10 +391,18 @@ plan_type_root_value = PGFunction(
     ),
 )
 
-# A repealing plan repeals every plan of hame.plan_valid that it overlaps and
-# that has the same level 1 plan type (Ryhti rule 240). The plan matter of the
-# repealed plan must be another one, so that a plan does not repeal the earlier
-# phases of its own plan matter (rule 239).
+# A repealing plan repeals every valid plan that it overlaps and that has the
+# same level 1 plan type (Ryhti rule 240). The plan matter of the repealed plan
+# must be another one, so that a plan does not repeal the earlier phases of its
+# own plan matter (rule 239).
+#
+# hame.plan_valid only says which plans are valid; the overlap and the cover
+# are tested against the stored geometry of hame.plan. The view clips the
+# geometry by the plans that repeal it, this one included once it is final,
+# so a test against the view would make a final repealing plan miss its own
+# target and hame.refresh_plan_cancellation_info would delete the row and
+# write it again with a new id. Ryhti tests the cover against the stored
+# geometry too (rule 245).
 repealed_plans = PGFunction(
     schema="hame",
     signature="repealed_plans(repealing_plan_id uuid)",
@@ -412,8 +420,9 @@ repealed_plans = PGFunction(
                 hame.plan repealing
                 join hame.plan_matter repealing_matter
                     on repealing_matter.id = repealing.plan_matter_id
-                join hame.plan_valid cancelled
+                join hame.plan cancelled
                     on st_intersects(cancelled.geom, repealing.geom)
+                join hame.plan_valid valid on valid.id = cancelled.id
                 join hame.plan_matter_valid cancelled_matter
                     on cancelled_matter.id = cancelled.plan_matter_id
             where
@@ -540,6 +549,44 @@ repealed_plan_objects = PGFunction(
     + "$$;\n",
 )
 
+# The intersection of every geometry of the array, for the valid views in
+# database/valid_views.py: a plan object that several plans repeal in part keeps
+# the part that every remaining valid geometry has. PostGIS has no intersection
+# aggregate, so the views collect the geometries with array_agg and call this.
+# Null elements are skipped, like an aggregate skips null rows, and the result
+# is null when nothing is left to intersect.
+intersection_all = PGFunction(
+    schema="hame",
+    signature="intersection_all(geoms geometry[])",
+    definition=dedent(
+        """\
+            RETURNS geometry
+            IMMUTABLE
+            PARALLEL SAFE
+            STRICT
+            LANGUAGE plpgsql
+        AS $$
+        DECLARE
+            result geometry;
+            geom geometry;
+        BEGIN
+            FOREACH geom IN ARRAY geoms LOOP
+                IF geom IS NULL THEN
+                    CONTINUE;
+                END IF;
+                IF result IS NULL THEN
+                    result := geom;
+                ELSE
+                    result := st_intersection(result, geom);
+                END IF;
+            END LOOP;
+            RETURN result;
+        END;
+        $$;
+        """
+    ),
+)
+
 functions = [
     regulation_values,
     primary_use_regulations,
@@ -549,4 +596,5 @@ functions = [
     plan_type_root_value,
     repealed_plans,
     repealed_plan_objects,
+    intersection_all,
 ]
