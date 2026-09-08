@@ -86,6 +86,8 @@ class AbstractLayer(ABC):
         value: str | list | tuple | set | None,
         no_geometries: bool = True,  # noqa: FBT001, FBT002
     ) -> Generator[QgsFeature]:
+        if cls._is_empty_collection(value):
+            return
         layer = cls.get_from_project()
         request = QgsFeatureRequest().setFilterExpression(cls.create_filter_expression(attribute, value))
         if no_geometries:
@@ -106,6 +108,8 @@ class AbstractLayer(ABC):
     def get_attribute_values_by_another_attribute_value(
         cls, target_attribute: str, filter_attribute: str, filter_value: str | list | tuple | set | None
     ) -> Generator[Any]:
+        if cls._is_empty_collection(filter_value):
+            return
         layer = cls.get_from_project()
         expression = cls.create_filter_expression(filter_attribute, filter_value)
 
@@ -134,6 +138,15 @@ class AbstractLayer(ABC):
     def get_id_by_attribute(cls, attribute: str, attribute_value: str) -> str | None:
         id_ = cls.get_attribute_value_by_another_attribute_value("id", attribute, attribute_value)
         return cast(str, id_) if id_ else id_
+
+    @staticmethod
+    def _is_empty_collection(value: str | list | tuple | set | None) -> bool:
+        """An empty collection matches nothing.
+
+        `"attr" IN ()` is not a valid expression, so the provider would fetch every row and
+        filter them on the client. Callers skip the request instead.
+        """
+        return isinstance(value, (list, tuple, set)) and not value
 
     @classmethod
     def create_filter_expression(cls, attribute: str, value: str | list | tuple | set | None) -> str:

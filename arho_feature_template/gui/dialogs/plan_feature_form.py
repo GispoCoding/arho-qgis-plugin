@@ -29,9 +29,15 @@ if TYPE_CHECKING:
 ui_path = resources.files(__package__) / "plan_feature_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
+PLAN_LOCKED_MESSAGE = "Kaavasuunnitelma on lukittu, kaavakohdetta ei voi muokata."
+VALID_PLAN_OBJECT_READ_ONLY_MESSAGE = "Ajantasakaavan kaavakohdetta ei voi muokata."
+
 
 class PlanObjectForm(QDialog, FormClass):  # type: ignore
-    """Parent class for feature forms for adding and modifying feature attribute data."""
+    """Parent class for feature forms for adding and modifying feature attribute data.
+
+    `save_disabled_reason` disables the OK button and shows the reason as its tooltip.
+    """
 
     def __init__(
         self,
@@ -40,7 +46,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
         plan_feature_libraries: list[PlanFeatureLibrary] | None = None,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
-        enable_save: bool = True,  # noqa: FBT001, FBT002
+        save_disabled_reason: str | None = None,
         template_form: bool = False,  # noqa: FBT001, FBT002
     ):
         super().__init__()
@@ -105,10 +111,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
         self.button_box.accepted.connect(self._on_ok_clicked)
 
-        if not enable_save:
+        if save_disabled_reason is not None:
             self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(False)
-            tooltip = "Kaavasuunnitelma on lukittu, kaavakohdetta ei voi muokata."
-            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setToolTip(tooltip)
+            self.button_box.button(QDialogButtonBox.StandardButton.Ok).setToolTip(save_disabled_reason)
 
     def _init_save_to_library_button(self) -> None:
         if self.plan_feature_libraries:

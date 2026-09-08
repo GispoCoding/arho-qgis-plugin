@@ -175,8 +175,9 @@ class LocalizedTextInputWidget(QWidget):
     TRIM_EMPTY_VALUES: ClassVar[bool] = True
     HIDE_LABEL_WHEN_SHOW_PRIMARY_LANGUAGE_ONLY: ClassVar[bool] = True
 
-    def __init__(self, editable: bool = True):  # noqa: FBT001, FBT002
-        super().__init__()
+    def __init__(self, parent: QWidget | None = None, editable: bool = True):  # noqa: FBT001, FBT002
+        # Used in .ui files: the PyQt6 loader passes the parent as a keyword argument
+        super().__init__(parent)
 
         self.editable = editable
         self.show_primary_language_only = SettingsManager.get_show_only_primary_language()
