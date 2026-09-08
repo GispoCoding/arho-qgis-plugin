@@ -30,9 +30,12 @@ from ryhti_client.database_client import (
     DatabaseClient,
     LifeCycleStatusNotFoundError,
     PlanAlreadyExistsError,
+    PlanAlreadyFinalError,
     PlanMatterNotFoundError,
     PlanNotFoundError,
+    PlanNotValidError,
     StartDateRequiredError,
+    is_valid_plan,
 )
 from ryhti_client.plan_copier import CopyPlanData
 from ryhti_client.profiling import log_duration, profile_python
@@ -46,6 +49,7 @@ from ryhti_client.wfs_importer import (
 )
 
 if TYPE_CHECKING:
+    from database import models
     from ryhti_client.ryhti_client import RyhtiResponse
 
 # All non-request specific initialization should be done *before* the handler
@@ -219,6 +223,7 @@ class Action(enum.Enum):
     IMPORT_PLAN = "import_plan"
     IMPORT_WFS_PLANS = "import_wfs_plans"
     COPY_PLAN = "copy_plan"
+    FINALIZE_PLAN = "finalize_plan"
     GET_UPLOAD_URL = "get_upload_url"
 
 
@@ -229,6 +234,7 @@ PLAN_UUID_REQUIRED_ACTIONS = frozenset(
         Action.VALIDATE_PLAN,
         Action.GET_PERMANENT_IDENTIFIER,
         Action.COPY_PLAN,
+        Action.FINALIZE_PLAN,
     }
 )
 
@@ -346,6 +352,54 @@ def check_action_preconditions(
             )
 
     return None
+
+
+def finalize_plan_action(
+    plan: models.Plan, database_client: DatabaseClient, client: RyhtiClient
+) -> Response:
+    """Make the plan final, so that it is published through the valid views.
+
+    The plan is only made final when it is valid today and passes Ryhti
+    validation, and the validation result is saved to the plan just as the
+    validate_plan action saves it.
+    """
+    if plan.final:
+        return simple_response(
+            409,
+            "Plan is already final.",
+            {"error": str(PlanAlreadyFinalError(plan.id))},
+        )
+    if not is_valid_plan(plan):
+        return simple_response(
+            409, "Plan is not valid.", {"error": str(PlanNotValidError(plan.id))}
+        )
+
+    LOGGER.info("Validating plan before making it final...")
+    ryhti_plan = database_client.serializer.serialize_plan(plan)
+    validation_response = client.validate_plan(plan, ryhti_plan)
+    save_detail = database_client.save_plan_validation_response(
+        plan.id, validation_response
+    )
+    if validation_response.get("status") != 200:
+        return Response(
+            statusCode=409,
+            body=ResponseBody(
+                title="Plan did not pass Ryhti validation.",
+                details=save_detail,
+                ryhti_response=validation_response,
+            ),
+        )
+
+    LOGGER.info("Making plan final...")
+    result = database_client.finalize_plan(plan.id)
+    return Response(
+        statusCode=200,
+        body=ResponseBody(
+            title="Plan made final.",
+            details=result.to_details(),
+            ryhti_response=validation_response,
+        ),
+    )
 
 
 type HandlerType = Callable[
@@ -527,6 +581,7 @@ def handler(
         Action.GET_PLAN,
         Action.VALIDATE_PLAN,
         Action.GET_PERMANENT_IDENTIFIER,
+        Action.FINALIZE_PLAN,
     ):
         try:
             with log_duration("fetch_plan"):
@@ -604,6 +659,9 @@ def handler(
                     ryhti_response=validation_response,
                 ),
             )
+
+        elif event_type is Action.FINALIZE_PLAN:
+            lambda_response = finalize_plan_action(plan, database_client, client)
 
         elif event_type is Action.GET_PERMANENT_IDENTIFIER:
             LOGGER.info("Authenticating to X-road Ryhti API...")

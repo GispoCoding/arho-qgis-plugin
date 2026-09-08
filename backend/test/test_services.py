@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import uuid
+from datetime import date
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit, urlunsplit
@@ -19,9 +20,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pytest_docker.plugin import Services
+    from sqlalchemy.orm import Session
 
     from database.db_helper import ConnectionParameters
-    from database.models import Plan, PlanMatter
+    from database.models import Plan, PlanMatter, RyhtiLifecycleBase
     from lambdas.koodistot_loader import koodistot_loader
 
 
@@ -412,6 +414,143 @@ def test_validate_single_invalid_plan(
             validation_date, errors = row
             assert not validation_date
             assert not errors
+    finally:
+        conn.close()
+
+
+@pytest.fixture
+def valid_complete_test_plan(
+    session: Session,
+    valid_status_instance: codes.LifeCycleStatus,
+    repealed_status_instance: codes.LifeCycleStatus,  # noqa: ARG001  # needed to repeal
+    complete_test_plan: Plan,
+) -> Plan:
+    """The complete test plan, valid today so that it can be made final.
+
+    Ryhti wants the plan objects, regulations and recommendations of a valid
+    plan to be valid too, and a valid row to have a start date, so the whole
+    plan moves to the valid lifecycle status here. The plan itself also needs
+    an approval date.
+    """
+    start_date = date(2026, 1, 2)
+
+    def make_valid(row: RyhtiLifecycleBase) -> None:
+        row.lifecycle_status = valid_status_instance
+        row.period_of_validity_start = start_date
+
+    plan = complete_test_plan
+    make_valid(plan)
+    plan.approval_date = date(2026, 1, 1)
+    for plan_object in (
+        *plan.land_use_areas,
+        *plan.other_areas,
+        *plan.lines,
+        *plan.points,
+    ):
+        make_valid(plan_object)
+    for group in (*plan.regulation_groups, *plan.general_plan_regulation_groups):
+        for regulation in group.plan_regulations:
+            make_valid(regulation)
+        for proposition in group.plan_propositions:
+            make_valid(proposition)
+    session.commit()
+    return plan
+
+
+@pytest.fixture
+def finalize_valid_plan(ryhti_client_url: str, valid_complete_test_plan: Plan) -> None:
+    """Make a valid plan final through the lambda endpoint."""
+    payload = {"action": "finalize_plan", "plan_uuid": valid_complete_test_plan.id}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 200
+    body = data["body"]
+    assert body["title"] == "Plan made final."
+    assert body["details"] == {"repealed_plans": 0, "repealed_plan_objects": 0}
+    assert body["ryhti_response"]["status"] == 200
+
+
+def test_finalize_valid_plan(
+    finalize_valid_plan: None,
+    valid_complete_test_plan: Plan,
+    main_db_params: ConnectionParameters,
+) -> None:
+    """Test the whole lambda endpoint with a plan that may be made final."""
+    conn = psycopg.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT final, validated_at FROM hame.plan WHERE id = %s",
+                (valid_complete_test_plan.id,),
+            )
+            row = cur.fetchone()
+            assert row is not None
+            final, validation_date = row
+            assert final is True
+            assert validation_date
+    finally:
+        conn.close()
+
+
+def test_finalize_plan_that_is_not_valid(
+    ryhti_client_url: str,
+    complete_test_plan: Plan,
+    main_db_params: ConnectionParameters,
+) -> None:
+    """A plan that is not valid today is refused before Ryhti is called."""
+    payload = {"action": "finalize_plan", "plan_uuid": complete_test_plan.id}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 409
+    assert data["body"]["title"] == "Plan is not valid."
+    assert data["body"]["ryhti_response"] is None
+
+    conn = psycopg.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT final, validated_at FROM hame.plan WHERE id = %s",
+                (complete_test_plan.id,),
+            )
+            row = cur.fetchone()
+            assert row == (False, None)
+    finally:
+        conn.close()
+
+
+def test_finalize_plan_that_ryhti_rejects(
+    session: Session,
+    ryhti_client_url: str,
+    valid_status_instance: codes.LifeCycleStatus,
+    another_test_plan: Plan,
+    main_db_params: ConnectionParameters,
+) -> None:
+    """A plan that does not pass Ryhti validation is not made final."""
+    another_test_plan.lifecycle_status = valid_status_instance
+    session.commit()
+
+    payload = {"action": "finalize_plan", "plan_uuid": another_test_plan.id}
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    data = r.json()
+    print(data)
+    assert data["statusCode"] == 409
+    assert data["body"]["title"] == "Plan did not pass Ryhti validation."
+    assert data["body"]["ryhti_response"]["errors"]
+
+    conn = psycopg.connect(**main_db_params)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT final, validation_errors FROM hame.plan WHERE id = %s",
+                (another_test_plan.id,),
+            )
+            row = cur.fetchone()
+            assert row is not None
+            final, errors = row
+            assert final is False
+            assert errors
     finally:
         conn.close()
 

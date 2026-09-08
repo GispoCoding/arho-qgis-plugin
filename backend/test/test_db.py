@@ -92,6 +92,10 @@ def hame_tables() -> set[str]:
     return t
 
 
+def plan_columns() -> set[str]:
+    return {column.name for column in Base.metadata.tables["hame.plan"].columns}
+
+
 def hame_valid_views() -> set[str]:
     return {view.signature for view in valid_views if view.schema == "hame"}
 
@@ -168,12 +172,50 @@ def test_read_write_role_privileges_on_hame_tables(
     privileges = table_privileges(db_connection, "hame", table_name, ROLE_READ_WRITE)
     assert "SELECT" in privileges
     assert "INSERT" in privileges
-    assert "UPDATE" in privileges
+    if table_name == "plan":
+        # The plan columns are granted one by one, so that the final column can
+        # be left out. See test_read_write_role_privileges_on_plan_columns.
+        assert "UPDATE" not in privileges
+    else:
+        assert "UPDATE" in privileges
     if table_name in {"plan", "plan_matter"}:
         # Only Admin can delete plans
         assert "DELETE" not in privileges
     else:
         assert "DELETE" in privileges
+
+
+def column_privileges(
+    db_connection: Connection, schema: str, table: str, column: str, role: str
+) -> set[str]:
+    cur = db_connection.execute(
+        "SELECT privilege_type "
+        "FROM information_schema.role_column_grants "
+        "WHERE "
+        "  table_schema = %s "
+        "  AND table_name = %s "
+        "  AND column_name = %s "
+        "  AND grantee = %s",
+        (schema, table, column, role),
+    )
+    return {row[0] for row in cur}
+
+
+@pytest.mark.parametrize("column_name", plan_columns())
+def test_read_write_role_privileges_on_plan_columns(
+    db_connection: Connection, column_name: str
+) -> None:
+    # Only the finalize_plan action of the ryhti_client lambda may publish a
+    # plan through the valid views, so the final column is the one column of
+    # hame.plan that arho_read_write cannot update.
+    privileges = column_privileges(
+        db_connection, "hame", "plan", column_name, ROLE_READ_WRITE
+    )
+    assert "SELECT" in privileges
+    if column_name == "final":
+        assert "UPDATE" not in privileges
+    else:
+        assert "UPDATE" in privileges
 
 
 @pytest.mark.parametrize("view_name", hame_valid_views())

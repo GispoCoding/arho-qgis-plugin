@@ -3,12 +3,13 @@ from __future__ import annotations
 import datetime
 import logging
 from contextlib import contextmanager
+from dataclasses import asdict, dataclass
 from string import Template
 from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import simplejson as json
-from sqlalchemy import create_engine, text, update
+from sqlalchemy import create_engine, select, text, update
 from sqlalchemy.orm import sessionmaker
 
 from database import base, codes, models
@@ -73,6 +74,69 @@ class StartDateRequiredError(Exception):
             "Period of validity start date must be provided when copying plan "
             "to valid status or later or is set partially valid."
         )
+
+
+class PlanAlreadyFinalError(Exception):
+    def __init__(self, plan_id: str) -> None:
+        super().__init__(f"Plan '{plan_id}' is already final.")
+
+
+class PlanNotValidError(Exception):
+    def __init__(self, plan_id: str) -> None:
+        super().__init__(
+            f"Plan '{plan_id}' must have lifecycle status "
+            f"'{LifeCycleStatusValue.VALID}' and be valid today before it can "
+            f"be made final."
+        )
+
+
+class RepealedStatusNotFoundError(Exception):
+    def __init__(self) -> None:
+        super().__init__(
+            f"Lifecycle status '{LifeCycleStatusValue.REPEALED}' does not exist."
+        )
+
+
+# The plan object tables with the column of hame.plan_object_cancellation_info
+# that names an object of each, see CancelledPlanObjectMixin in
+# database/models.py.
+CANCELLED_PLAN_OBJECTS = (
+    (models.LandUseArea, models.PlanObjectCancellationInfo.land_use_area_id),
+    (models.OtherArea, models.PlanObjectCancellationInfo.other_area_id),
+    (models.Line, models.PlanObjectCancellationInfo.line_id),
+    (models.Point, models.PlanObjectCancellationInfo.point_id),
+)
+
+
+@dataclass
+class FinalizeResult:
+    """Counts of what making a plan final repealed."""
+
+    repealed_plans: int = 0
+    repealed_plan_objects: int = 0
+
+    def to_details(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+def is_valid_plan(plan: models.Plan) -> bool:
+    """Check that the plan is valid today, the way hame.plan_valid does.
+
+    The plan must have the valid lifecycle status and its period of validity
+    must cover the current date. A missing start date counts as -infinity and a
+    missing end date as +infinity, see valid_today in database/valid_views.py.
+    """
+    today = datetime.datetime.now(tz=LOCAL_TZ).date()
+    return (
+        plan.lifecycle_status.value == LifeCycleStatusValue.VALID
+        and (
+            plan.period_of_validity_start is None
+            or plan.period_of_validity_start <= today
+        )
+        and (
+            plan.period_of_validity_end is None or today <= plan.period_of_validity_end
+        )
+    )
 
 
 class DatabaseClient:
@@ -162,6 +226,101 @@ class DatabaseClient:
         LOGGER.info(detail)
         LOGGER.info("Ryhti response: %s", json.dumps(response))
         return detail
+
+    def finalize_plan(self, plan_id: str) -> FinalizeResult:
+        """Mark the plan final and repeal the plans and plan objects it cancels.
+
+        The cancellation info is refreshed first, while the plans it names are
+        still valid: hame.repealed_plans reads hame.plan_valid, which a repealed
+        plan leaves as soon as it gets the repealed lifecycle status. Only whole
+        cancellations are repealed; a partly cancelled plan or plan object stays
+        valid and its remaining valid geometry says what is left of it.
+
+        Raises PlanNotFoundError if the plan does not exist and
+        PlanAlreadyFinalError if it is final already.
+        """
+        with self.Session() as session:
+            # Read and lock only the columns that are needed. session.get would
+            # load the eagerly joined code tables as well, and PostgreSQL cannot
+            # lock the nullable side of an outer join.
+            row = session.execute(
+                select(models.Plan.final, models.Plan.period_of_validity_start)
+                .where(models.Plan.id == plan_id)
+                .with_for_update()
+            ).first()
+            if row is None:
+                raise PlanNotFoundError(UUID(plan_id))
+            already_final, period_of_validity_start = row
+            if already_final:
+                raise PlanAlreadyFinalError(plan_id)
+
+            repealed_status_id = session.scalar(
+                select(codes.LifeCycleStatus.id).where(
+                    codes.LifeCycleStatus.value == LifeCycleStatusValue.REPEALED
+                )
+            )
+            if repealed_status_id is None:
+                raise RepealedStatusNotFoundError
+
+            # The update trigger of hame.plan refreshes the cancellation info
+            # only when the geometry or the plan matter changes, so the rows may
+            # be older than the plans they name.
+            session.execute(
+                text("select hame.refresh_plan_cancellation_info(:plan_id)"),
+                {"plan_id": plan_id},
+            )
+
+            # A repealed plan stays valid until the day before this plan does.
+            start_date = (
+                period_of_validity_start or datetime.datetime.now(tz=LOCAL_TZ).date()
+            )
+            repealed_values: dict[str, Any] = {
+                "lifecycle_status_id": repealed_status_id,
+                "period_of_validity_end": start_date - datetime.timedelta(days=1),
+            }
+
+            cancelled_plan_ids = select(
+                models.PlanCancellationInfo.cancelled_plan_id
+            ).where(
+                models.PlanCancellationInfo.plan_id == plan_id,
+                models.PlanCancellationInfo.cancels_entire_plan,
+            )
+            result = FinalizeResult(
+                repealed_plans=len(
+                    session.execute(
+                        update(models.Plan)
+                        .where(models.Plan.id.in_(cancelled_plan_ids))
+                        .values(**repealed_values)
+                        .returning(models.Plan.id)
+                    ).all()
+                )
+            )
+
+            for plan_object, id_column in CANCELLED_PLAN_OBJECTS:
+                cancelled_object_ids = (
+                    select(id_column)
+                    .join(models.PlanObjectCancellationInfo.plan_cancellation_info)
+                    .where(
+                        models.PlanCancellationInfo.plan_id == plan_id,
+                        models.PlanObjectCancellationInfo.cancels_entire_plan_object,
+                        id_column.is_not(None),
+                    )
+                )
+                result.repealed_plan_objects += len(
+                    session.execute(
+                        update(plan_object)
+                        .where(plan_object.id.in_(cancelled_object_ids))
+                        .values(**repealed_values)
+                        .returning(plan_object.id)
+                    ).all()
+                )
+
+            session.execute(
+                update(models.Plan).where(models.Plan.id == plan_id).values(final=True)
+            )
+            session.commit()
+
+        return result
 
     def set_plan_documents(
         self,

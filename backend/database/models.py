@@ -246,7 +246,9 @@ class Plan(PlanBase, RyhtiLifecycleBase):
     approval_date: Mapped[date | None]
     locked: Mapped[bool] = mapped_column(server_default="0", default=False)
     # A plan is final when its content is complete and may be published
-    # through the read-only valid views.
+    # through the read-only valid views. Only the finalize_plan action of the
+    # ryhti_client lambda sets it; arho_read_write has no update grant on the
+    # column, see the migration that grants the plan columns one by one.
     final: Mapped[bool] = mapped_column(server_default="0", default=False)
 
     geom: Mapped[WKBElement] = mapped_column(

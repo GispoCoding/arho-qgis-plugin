@@ -9,148 +9,18 @@ hame.repealed_plans and hame.repealed_plan_objects in database/functions.py.
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
 import sqlalchemy
-from geoalchemy2.shape import from_shape, to_shape
-from shapely import LineString, MultiLineString, MultiPoint, MultiPolygon, Point, box
+from geoalchemy2.shape import to_shape
 
 from database import codes, models
-from database.base import PROJECT_SRID
+from test.conftest import MIDDLE, SIDE, area, line
 
 if TYPE_CHECKING:
-    from geoalchemy2 import WKBElement
     from shapely.geometry.base import BaseGeometry
     from sqlalchemy.orm import Session
-
-# The test geometries live in one 100 by 100 metre square of EPSG:3067, given
-# in metres from its south west corner. The repealing plan covers the western
-# half of the square, so everything east of MIDDLE stays valid.
-ORIGIN_X = 380000.0
-ORIGIN_Y = 6670000.0
-SIDE = 100.0
-MIDDLE = 50.0
-
-
-def area(x0: float, y0: float, x1: float, y1: float) -> WKBElement:
-    """A rectangle of the test square as a MultiPolygon."""
-    corners = box(ORIGIN_X + x0, ORIGIN_Y + y0, ORIGIN_X + x1, ORIGIN_Y + y1)
-    return from_shape(MultiPolygon([corners]), srid=PROJECT_SRID)
-
-
-def line(x0: float, y0: float, x1: float, y1: float) -> WKBElement:
-    """A line of the test square as a MultiLineString."""
-    ends = [(ORIGIN_X + x0, ORIGIN_Y + y0), (ORIGIN_X + x1, ORIGIN_Y + y1)]
-    return from_shape(MultiLineString([LineString(ends)]), srid=PROJECT_SRID)
-
-
-def point(x: float, y: float) -> WKBElement:
-    """A point of the test square as a MultiPoint."""
-    return from_shape(
-        MultiPoint([Point(ORIGIN_X + x, ORIGIN_Y + y)]), srid=PROJECT_SRID
-    )
-
-
-def yesterday() -> date:
-    """The day before the current date of the database, whatever its time zone."""
-    return datetime.now(UTC).date() - timedelta(days=1)
-
-
-@pytest.fixture
-def cancelled_plan(
-    session: Session,
-    plan_matter_instance: models.PlanMatter,
-    valid_status_instance: codes.LifeCycleStatus,
-    type_of_underground_instance: codes.TypeOfUnderground,
-) -> models.Plan:
-    """A valid plan that covers the test square, with four plan objects.
-
-    The plan objects are placed so that the western half of the square holds
-    one whole area and one whole point, and cuts one area and one line in two.
-    """
-    plan = models.Plan(
-        id=str(uuid.uuid4()),
-        plan_matter=plan_matter_instance,
-        name={"fin": "Kumottava kaava"},
-        geom=area(0, 0, SIDE, SIDE),
-        lifecycle_status=valid_status_instance,
-        final=True,
-        period_of_validity_start=yesterday(),
-    )
-    object_geometries = {
-        "covered_area": area(10, 10, 30, 30),
-        "split_area": area(40, 10, 60, 30),
-    }
-    plan.land_use_areas = [
-        models.LandUseArea(
-            name={"fin": name},
-            geom=geom,
-            lifecycle_status=valid_status_instance,
-            type_of_underground=type_of_underground_instance,
-            period_of_validity_start=yesterday(),
-        )
-        for name, geom in object_geometries.items()
-    ]
-    plan.lines = [
-        models.Line(
-            name={"fin": "split_line"},
-            geom=line(40, 50, 60, 50),
-            lifecycle_status=valid_status_instance,
-            type_of_underground=type_of_underground_instance,
-            period_of_validity_start=yesterday(),
-        )
-    ]
-    plan.points = [
-        models.Point(
-            name={"fin": "covered_point"},
-            geom=point(20, 70),
-            lifecycle_status=valid_status_instance,
-            type_of_underground=type_of_underground_instance,
-            period_of_validity_start=yesterday(),
-        ),
-        models.Point(
-            name={"fin": "outside_point"},
-            geom=point(80, 70),
-            lifecycle_status=valid_status_instance,
-            type_of_underground=type_of_underground_instance,
-            period_of_validity_start=yesterday(),
-        ),
-    ]
-    session.add(plan)
-    session.commit()
-    return plan
-
-
-@pytest.fixture
-def repealing_plan_matter(
-    session: Session, another_plan_matter_instance: models.PlanMatter
-) -> models.PlanMatter:
-    """A plan matter marked as a repealing plan (kumoamiskaava)."""
-    another_plan_matter_instance.repealing = True
-    session.commit()
-    return another_plan_matter_instance
-
-
-@pytest.fixture
-def repealing_plan(
-    session: Session,
-    repealing_plan_matter: models.PlanMatter,
-    cancelled_plan: models.Plan,  # noqa: ARG001  # must exist before the insert
-    preparation_status_instance: codes.LifeCycleStatus,
-) -> models.Plan:
-    """A repealing plan that covers the western half of the test square."""
-    plan = models.Plan(
-        id=str(uuid.uuid4()),
-        plan_matter=repealing_plan_matter,
-        name={"fin": "Kumoava kaava"},
-        geom=area(0, 0, MIDDLE, SIDE),
-        lifecycle_status=preparation_status_instance,
-    )
-    session.add(plan)
-    session.commit()
-    return plan
 
 
 def cancellation_infos(
