@@ -35,6 +35,8 @@ class LambdaService(QObject):
     plan_import_failed = pyqtSignal(str)
     plan_copied = pyqtSignal(str)
     plan_copy_failed = pyqtSignal(str)
+    plan_finalized = pyqtSignal(dict)  # details: counts of what making the plan final repealed
+    plan_finalize_validation_failed = pyqtSignal(dict)  # ryhti_response: the validation errors
 
     # Aliases so existing callers and tests keep working against the facade
     ActionAttribute = LambdaClient.ActionAttribute
@@ -46,6 +48,7 @@ class LambdaService(QObject):
     ACTION_GET_PERMANENT_IDENTIFIER = LambdaClient.ACTION_GET_PERMANENT_IDENTIFIER
     ACTION_IMPORT_PLAN = LambdaClient.ACTION_IMPORT_PLAN
     ACTION_COPY_PLAN = LambdaClient.ACTION_COPY_PLAN
+    ACTION_FINALIZE_PLAN = LambdaClient.ACTION_FINALIZE_PLAN
     ACTION_GET_UPLOAD_URL = LambdaClient.ACTION_GET_UPLOAD_URL
     S3_DOWNLOAD_PLAN = LambdaClient.S3_DOWNLOAD_PLAN
     S3_UPLOAD_PLAN = LambdaClient.S3_UPLOAD_PLAN
@@ -89,6 +92,11 @@ class LambdaService(QObject):
     def get_permanent_identifier(self, plan_id: str):
         logger.debug("Requesting permanent identifier plan_id=%s", plan_id)
         self._client.post_action(action=self.ACTION_GET_PERMANENT_IDENTIFIER, plan_id=plan_id)
+
+    def finalize_plan(self, plan_id: str):
+        """Asks the backend to make the plan final. See `plan_finalized` and `plan_finalize_validation_failed`."""
+        logger.debug("Requesting plan finalize plan_id=%s", plan_id)
+        self._client.post_action(action=self.ACTION_FINALIZE_PLAN, plan_id=plan_id)
 
     def import_plan(self, plan_json: str, extra_data: dict, force: bool = False):  # noqa: FBT001, FBT002
         """Imports a plan by uploading it to S3 with a presigned URL and then calling the import action.
@@ -151,6 +159,7 @@ class LambdaService(QObject):
             self.ACTION_POST_PLAN_MATTERS: self._process_plan_matter_response,
             self.ACTION_GET_PERMANENT_IDENTIFIER: self._process_identifier_response,
             self.ACTION_COPY_PLAN: self._process_copy_plan_response,
+            self.ACTION_FINALIZE_PLAN: self._process_finalize_response,
         }
         return handlers[action]
 
@@ -165,6 +174,7 @@ class LambdaService(QObject):
             self.ACTION_POST_PLAN_MATTERS: lambda x: None,  # noqa: ARG005
             self.ACTION_GET_PERMANENT_IDENTIFIER: lambda x: None,  # noqa: ARG005
             self.ACTION_COPY_PLAN: self._handle_copy_error,
+            self.ACTION_FINALIZE_PLAN: lambda x: None,  # noqa: ARG005
         }
         return handlers[action]
 
@@ -172,7 +182,9 @@ class LambdaService(QObject):
         logger.debug("Dispatching response handler for action=%s", action)
         self._get_response_handler(action)(response_body)
 
-    def _on_request_failed(self, action: str, error: str):
+    def _on_request_failed(self, action: str, error: str, body: dict | None):
+        if action == self.ACTION_FINALIZE_PLAN and self._handle_finalize_validation_failure(body):
+            return
         QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
         self._get_error_handler(action)(error)
 
@@ -235,16 +247,20 @@ class LambdaService(QObject):
             self.validation_failed.emit(f"Arhovirhe - Lambdavastaus ei odotetun muotoinen: {response_body}")
             return
 
-        SERVER_ERROR_MIN_STATUS = 500  # noqa: N806
-        SERVER_ERROR_MAX_STATUS = 599  # noqa: N806
         status = ryhti_response.get("status")
-        if status is not None and SERVER_ERROR_MIN_STATUS <= status <= SERVER_ERROR_MAX_STATUS:
+        if self._is_ryhti_server_error(ryhti_response):
             logger.debug("Validation response indicates server error status=%s", status)
             self.validation_failed.emit(f"Ryhtivirhe: {ryhti_response}")
             return
 
         logger.debug("Validation response accepted status=%s", status)
         self.validation_received.emit(ryhti_response)
+
+    @staticmethod
+    def _is_ryhti_server_error(ryhti_response: dict) -> bool:
+        """Ryhti itself failed (5xx), so the response carries no validation result."""
+        status = ryhti_response.get("status")
+        return isinstance(status, int) and status >= HTTPStatus.INTERNAL_SERVER_ERROR
 
     def _process_export_plan_response(self, response_body: dict):
         """Processes the reply from the lambda and starts the download of the exported plans."""
@@ -337,6 +353,25 @@ class LambdaService(QObject):
             self.plan_copied.emit(plan_id)
         else:
             self._handle_copy_error(str(response_body))
+
+    def _process_finalize_response(self, response_body: dict):
+        details = response_body.get("details")
+        logger.debug("Plan made final details=%s", details)
+        self.plan_finalized.emit(details if isinstance(details, dict) else {})
+
+    def _handle_finalize_validation_failure(self, body: dict | None) -> bool:
+        """Hands the Ryhti validation errors on when that is why the plan was not made final.
+
+        The backend answers 409 with the validation result in `ryhti_response`, the same
+        object the validate_plan action returns. Other refusals (already final, not valid
+        today, an old backend) carry no such object and go to the generic error box.
+        """
+        ryhti_response = body.get("ryhti_response") if isinstance(body, dict) else None
+        if not isinstance(ryhti_response, dict) or self._is_ryhti_server_error(ryhti_response):
+            return False
+        logger.debug("Plan not made final: Ryhti validation failed status=%s", ryhti_response.get("status"))
+        self.plan_finalize_validation_failed.emit(ryhti_response)
+        return True
 
     def _handle_copy_error(self, error: str):
         logger.debug("Plan copy failed error=%s", error)

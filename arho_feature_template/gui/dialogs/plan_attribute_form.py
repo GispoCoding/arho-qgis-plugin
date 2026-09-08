@@ -263,6 +263,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
             period_of_validity_end=self.plan.period_of_validity_end,
             geom=self.plan.geom,
             locked=self.lock_checkbox.isChecked(),
+            final=self.plan.final,
         )
         if not model.modified and model != self.plan:
             model.modified = True

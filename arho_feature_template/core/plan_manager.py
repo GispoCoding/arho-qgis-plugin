@@ -18,7 +18,7 @@ from qgis.core import (
 from qgis.gui import QgsMapTool, QgsMapToolDigitizeFeature
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QObject, pyqtSignal
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 
 from arho_feature_template import SUPPORTED_PROJECT_VERSION
 from arho_feature_template.core.feature_editing import (
@@ -31,6 +31,7 @@ from arho_feature_template.core.feature_editing import (
     save_regulation_group_association,
 )
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.models import (
     Plan,
     PlanFeatureLibrary,
@@ -167,6 +168,8 @@ class PlanManager(QObject):
     project_cleared = pyqtSignal()
     plan_identifier_set = pyqtSignal(str)
     plan_lock_status_changed = pyqtSignal(bool)  # True = now locked, false = now unlocked
+    plan_finalizable_changed = pyqtSignal(bool)  # True = the active plan can be made final now
+    plan_finalize_validation_failed = pyqtSignal(dict)  # ryhti_response: why the plan was not made final
 
     def __init__(self):
         super().__init__()
@@ -244,6 +247,8 @@ class PlanManager(QObject):
         )
         self.lambda_service.plan_data_received.connect(self.save_exported_plan)
         self.lambda_service.plan_matter_data_received.connect(self.save_exported_plan_matter)
+        self.lambda_service.plan_finalized.connect(self.on_plan_finalized)
+        self.lambda_service.plan_finalize_validation_failed.connect(self.plan_finalize_validation_failed)
 
     def initialize_from_project(self):
         logger.debug("Initializing plan manager state from project")
@@ -384,6 +389,24 @@ class PlanManager(QObject):
             form.close()
             form.setParent(None)
             form.deleteLater()
+
+    def update_plan_status(self, plan_model: Plan):
+        """If input plan is the active plan, applies its locked and final state."""
+        self.update_lock_status(plan_model)
+        self.update_finalizable_status(plan_model)
+
+    def update_finalizable_status(self, plan_model: Plan):
+        """If input plan is the active plan, tells whether it can be made final now.
+
+        A plan can be made final when its life-cycle status is VALID and it is not final
+        yet. The backend also checks the validity dates and runs the Ryhti validation.
+        """
+        if plan_model.id_ != get_active_plan_id():
+            return
+        lifecycle_status = LifeCycleStatusLayer.get_lifecycle_status_by_id(plan_model.lifecycle_status_id)
+        finalizable = not plan_model.final and lifecycle_status == LifeCycleStatusValue.VALID
+        logger.debug("Active plan id=%s finalizable=%s", plan_model.id_, finalizable)
+        self.plan_finalizable_changed.emit(finalizable)
 
     def update_lock_status(self, plan_model: Plan):
         """If input plan is the active plan, applies locked/unlocked state from the given model."""
@@ -620,7 +643,7 @@ class PlanManager(QObject):
                     if plan_id is not None:
                         self.update_active_plan_regulation_group_library()
 
-                self.update_lock_status(plan_model)
+                self.update_plan_status(plan_model)
 
     def edit_plan_matter(self):
         logger.debug("Editing active plan matter id=%s", get_active_plan_matter_id())
@@ -915,7 +938,7 @@ class PlanManager(QObject):
                     layer.show_all_features()
 
             plan_model = PlanLayer.model_from_feature(PlanLayer.get_feature_by_id(plan_id))
-            self.update_lock_status(plan_model)
+            self.update_plan_status(plan_model)
             logger.debug("Active plan set id=%s locked=%s", plan_id, plan_model.locked)
         else:
             self.plan_unset.emit()
@@ -1037,6 +1060,52 @@ class PlanManager(QObject):
             return
 
         self.lambda_service.get_permanent_identifier(get_active_plan_id())
+
+    def finalize_plan(self):
+        """Asks the backend to make the active plan final, after the user confirms.
+
+        The backend validates the plan in Ryhti first. Making a plan final cannot be
+        undone, and it repeals the plans and plan objects the plan cancels in whole.
+        """
+        plan_id = get_active_plan_id()
+        if not plan_id:
+            iface.messageBar().pushWarning("", "Mikään kaavasuunnitelma ei ole avattuna.")
+            return
+        if check_layer_changes():
+            iface.messageBar().pushWarning(
+                "", "Tallenna tai peru muutokset ennen kaavasuunnitelman asettamista lopulliseksi."
+            )
+            return
+
+        answer = QMessageBox.question(
+            iface.mainWindow(),
+            "Aseta lopulliseksi",
+            "Kaavasuunnitelma validoidaan Ryhtissä ja asetetaan lopulliseksi. Sen kokonaan kumoamat kaavat ja "
+            "kaavakohteet merkitään kumoutuneiksi. Tätä ei voi perua.\n\nAsetetaanko kaavasuunnitelma lopulliseksi?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            logger.debug("Finalize plan cancelled by user plan_id=%s", plan_id)
+            return
+
+        logger.debug("Finalize plan confirmed plan_id=%s", plan_id)
+        self.lambda_service.finalize_plan(plan_id)
+
+    def on_plan_finalized(self, details: dict):
+        """The backend made the active plan final and repealed what it cancels."""
+        logger.debug("Plan made final details=%s", details)
+        # The repealed plans and plan objects live in other plans, so reload everything
+        iface.mapCanvas().refreshAllLayers()
+        plan_model = PlanLayer.get_active_plan()
+        if plan_model:
+            self.update_finalizable_status(plan_model)
+        iface.messageBar().pushSuccess(
+            "",
+            "Kaavasuunnitelma asetettiin lopulliseksi. "
+            f"Kumoutuneita kaavoja: {details.get('repealed_plans', 0)}, "
+            f"kaavakohteita: {details.get('repealed_plan_objects', 0)}.",
+        )
 
     def set_permanent_identifier(self, identifier):
         logger.debug("Setting project permanent identifier=%s", identifier)
