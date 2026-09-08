@@ -4,7 +4,7 @@ import contextlib
 import json
 import logging
 import os
-from typing import Generator, Iterable, cast
+from typing import TYPE_CHECKING, Generator, Iterable, cast
 
 from qgis.core import (
     QgsExpressionContextUtils,
@@ -48,7 +48,11 @@ from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMa
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
 from arho_feature_template.gui.dialogs.manage_plans import ManagePlans
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
-from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
+from arho_feature_template.gui.dialogs.plan_feature_form import (
+    PLAN_LOCKED_MESSAGE,
+    VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
+    PlanObjectForm,
+)
 from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMatterAttributeForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
@@ -74,6 +78,7 @@ from arho_feature_template.project.layers.plan_layers import (
     OtherAreaLayer,
     PlanLayer,
     PlanMatterLayer,
+    PlanObjectLayer,
     PlanTypeLayer,
     PointLayer,
     RegulationGroupAssociationLayer,
@@ -82,7 +87,11 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_layers,
     plan_matter_layers,
 )
-from arho_feature_template.project.layers.valid_layers import valid_layers
+from arho_feature_template.project.layers.valid_layers import (
+    ValidPlanObjectLayer,
+    valid_layers,
+    valid_plan_object_layers,
+)
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
 from arho_feature_template.resources.libraries.feature_templates import (
     get_user_plan_feature_library_config_files,
@@ -113,6 +122,9 @@ from arho_feature_template.utils.misc_utils import (
     status_message,
     use_wait_cursor,
 )
+
+if TYPE_CHECKING:
+    from arho_feature_template.project.layers import AbstractLayer
 
 logger = logging.getLogger(__name__)
 
@@ -206,11 +218,11 @@ class PlanManager(QObject):
         self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
         self.feature_digitize_map_tool.digitizingFinished.connect(self.new_feature_dock.deactivate_and_clear_selections)
 
-        # Initialize plan feature inspect tool
+        # Initialize plan feature inspect tool for the editable and the valid plan objects
         self.inspect_plan_feature_tool = InspectPlanFeatures(
-            iface.mapCanvas(), list(FEATURE_LAYER_NAME_TO_CLASS_MAP.values())
+            iface.mapCanvas(), [*plan_feature_layers, *valid_plan_object_layers]
         )
-        self.inspect_plan_feature_tool.edit_feature_requested.connect(self.edit_plan_feature)
+        self.inspect_plan_feature_tool.feature_identified.connect(self.on_plan_object_identified)
 
         # Initialize lambda service
         self.lambda_service = LambdaService()
@@ -692,11 +704,24 @@ class PlanManager(QObject):
             self.regulation_group_libraries,
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
-            not self.plan_locked,
+            save_disabled_reason=self.save_disabled_reason(),
         )
         if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
             logger.debug("Plan feature saved successfully from digitized geometry")
             self.update_active_plan_regulation_group_library()
+
+    def save_disabled_reason(self) -> str | None:
+        """Why a plan object of the active plan cannot be saved, or None when it can."""
+        return PLAN_LOCKED_MESSAGE if self.plan_locked else None
+
+    def on_plan_object_identified(self, feature: QgsFeature, layer_class: type[AbstractLayer]) -> None:
+        """Open the clicked plan object: for editing, or read-only for a valid (Ajantasakaava) object."""
+        if issubclass(layer_class, PlanObjectLayer):
+            self.edit_plan_feature(feature, layer_class.name)
+        elif issubclass(layer_class, ValidPlanObjectLayer):
+            self.show_valid_plan_object(feature, layer_class)
+        else:
+            logger.warning("Identified a feature on an unexpected layer class %s", layer_class.__name__)
 
     def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
         logger.debug("Editing plan feature layer=%s feature_id=%s", layer_name, feature.id())
@@ -710,11 +735,35 @@ class PlanManager(QObject):
             self.regulation_group_libraries,
             self.plan_feature_libraries,
             self.active_plan_regulation_group_library,
-            not self.plan_locked,
+            save_disabled_reason=self.save_disabled_reason(),
         )
         if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
             logger.debug("Plan feature saved successfully after edit")
             self.update_active_plan_regulation_group_library()
+
+    def show_valid_plan_object(self, feature: QgsFeature, layer_class: type[ValidPlanObjectLayer]) -> None:
+        """Show a plan object of the valid plans (Ajantasakaava) in the plan object form, read-only.
+
+        The valid views can be large, so only the data of the clicked object is read, on click.
+        """
+        logger.debug("Showing valid plan object layer=%s feature_id=%s", layer_class.name, feature.id())
+        plan_object = self._read_valid_plan_object(feature, layer_class)
+
+        title = f"Ajantasakaava: {get_localized_text(plan_object.name) or layer_class.name}"
+        attribute_form = PlanObjectForm(
+            plan_object,
+            title,
+            self.regulation_group_libraries,
+            self.plan_feature_libraries,
+            active_plan_regulation_groups_library=None,
+            save_disabled_reason=VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
+        )
+        attribute_form.exec()
+
+    @use_wait_cursor
+    @status_message("Haetaan ajantasakaavan kaavakohdetta ...")
+    def _read_valid_plan_object(self, feature: QgsFeature, layer_class: type[ValidPlanObjectLayer]) -> PlanObject:
+        return layer_class.model_from_feature(feature)
 
     @use_wait_cursor
     @status_message("Avataan kaava-asia ...")

@@ -508,13 +508,14 @@ class Plugin:
             self.edit_plan_matter_action,
             self.serialize_plan_matter_action,
             self.plan_button,
+            # The valid plan objects (Ajantasakaava) can be inspected without an open plan
+            self.identify_plan_features_action,
         ]
         self.plan_depending_actions = [
             self.edit_plan_action,
             self.new_feature_dock_action,
             # self.new_plan_action,
             self.plan_features_dock_action,
-            self.identify_plan_features_action,
             self.regulation_groups_dock_action,
             self.manage_libraries_action,
             self.validation_dock_action,
