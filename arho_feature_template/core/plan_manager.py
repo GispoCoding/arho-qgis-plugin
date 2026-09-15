@@ -24,6 +24,7 @@ from arho_feature_template import SUPPORTED_PROJECT_VERSION
 from arho_feature_template.core.feature_editing import (
     delete_feature,
     delete_regulation_group,
+    discard_after_commit_callbacks,
     save_plan,
     save_plan_matter,
     save_plan_object,
@@ -908,6 +909,7 @@ class PlanManager(QObject):
         previously_in_edit_mode = plan_matter_layer.isEditable()
         logger.debug("Plan matter layer previously_in_edit_mode=%s", previously_in_edit_mode)
         if previously_in_edit_mode:
+            discard_after_commit_callbacks()
             plan_matter_layer.rollBack()
 
         plan_matter_feature: QgsFeature | None = None
@@ -982,6 +984,7 @@ class PlanManager(QObject):
         previously_in_edit_mode = plan_layer.isEditable()
         logger.debug("Plan layer previously_in_edit_mode=%s", previously_in_edit_mode)
         if previously_in_edit_mode:
+            discard_after_commit_callbacks()
             plan_layer.rollBack()
 
         set_active_plan_id(plan_id)
