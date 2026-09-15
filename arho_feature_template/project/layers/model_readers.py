@@ -84,6 +84,11 @@ class PlanObjectReader(FamilyLayer):
     def models_from_features(
         cls, features: list[QgsFeature], regulation_groups: list[RegulationGroup] | None = None
     ) -> list[PlanObject]:
+        """Build the plan object models of the features.
+
+        `regulation_groups` seeds the group models: a group given here is reused as is, and only
+        the groups the features reference beyond it are read from the layers.
+        """
         plan_object_ids = {feat["id"] for feat in features}
 
         association_features = cls.family.regulation_group_association.get_features_by_attribute_value(
@@ -98,15 +103,18 @@ class PlanObjectReader(FamilyLayer):
             plan_object_ids_by_group_id[group_id].append(plan_object_id)
             group_ids_by_plan_object_id[plan_object_id].add(group_id)
 
-        # Read the regulation group models only if they are not given as a parameter
-        if not regulation_groups:
+        groups_by_id: dict[str, RegulationGroup] = {group.id_: group for group in regulation_groups or [] if group.id_}
+        missing_group_ids = set(plan_object_ids_by_group_id) - set(groups_by_id)
+        if missing_group_ids:
             regulation_group_features = list(
-                cls.family.regulation_group.get_features_by_attribute_value("id", set(plan_object_ids_by_group_id))
+                cls.family.regulation_group.get_features_by_attribute_value("id", missing_group_ids)
             )
-            regulation_groups = cls.family.regulation_group.models_from_features(regulation_group_features)
+            for group in cls.family.regulation_group.models_from_features(regulation_group_features):
+                if group.id_:
+                    groups_by_id[group.id_] = group
 
         groups_by_plan_object_id: dict[str, list[RegulationGroup]] = defaultdict(list)
-        for group in regulation_groups:
+        for group in groups_by_id.values():
             group_id = group.id_
             if group_id:
                 for plan_object_id in plan_object_ids_by_group_id.get(group_id, []):

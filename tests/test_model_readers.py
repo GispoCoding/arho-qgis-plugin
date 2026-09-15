@@ -226,15 +226,37 @@ def test_an_object_without_associations_has_no_regulation_groups(
     assert model.regulation_groups == []
 
 
-def test_given_regulation_groups_are_used_instead_of_the_layer(new_project: QgsProject):
+def test_given_regulation_groups_are_used_instead_of_the_layer(new_project: QgsProject, monkeypatch):
     layers = _build_family(new_project, VALID_LAYER_GROUP_NAME, "Aluevaraukset")
     linked, _ = _fill_family(layers)
     given = RegulationGroup(id_="group-1", heading={"fin": "Annettu"})
+    group_reads: list[set[str]] = []
+
+    def record_read(_attribute, value, *_args):
+        group_reads.append(set(value))
+        return []
+
+    monkeypatch.setattr(ValidRegulationGroupLayer, "get_features_by_attribute_value", record_read)
 
     (model,) = ValidLandUseAreaLayer.models_from_features([linked], regulation_groups=[given])
 
     assert model.regulation_groups == [given]
     assert model.regulation_groups[0].heading == {"fin": "Annettu"}
+    assert group_reads == []
+
+
+def test_only_the_groups_missing_from_the_given_ones_are_read(new_project: QgsProject):
+    layers = _build_family(new_project, VALID_LAYER_GROUP_NAME, "Aluevaraukset")
+    linked, _ = _fill_family(layers)
+    _add_feature(layers["associations"], id="assoc-2", plan_regulation_group_id="group-2", land_use_area_id="area-1")
+    _add_feature(layers["groups"], id="group-2", short_name="B", name={"fin": "Yleismääräys"}, plan_id="plan-1")
+    given = RegulationGroup(id_="group-1", heading={"fin": "Annettu"})
+
+    (model,) = ValidLandUseAreaLayer.models_from_features([linked], regulation_groups=[given])
+
+    assert [group.id_ for group in model.regulation_groups] == ["group-1", "group-2"]
+    assert model.regulation_groups[0] is given
+    assert model.regulation_groups[1].letter_code == "B"
 
 
 def test_each_family_reads_its_own_sibling_layers():
