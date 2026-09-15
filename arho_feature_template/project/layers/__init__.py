@@ -1,17 +1,26 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Generator, cast
 
-from qgis.core import QgsFeatureRequest
+from qgis.core import (
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsUnsetAttributeValue,
+    QgsVariantUtils,
+)
 
 from arho_feature_template.exceptions import LayerEditableError, LayerNotFoundError
 from arho_feature_template.utils.misc_utils import iface
 from arho_feature_template.utils.project_utils import find_vector_layers, get_vector_layer_from_project
+from arho_feature_template.utils.timing import timed
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature, QgsVectorLayer
+    from qgis.core import QgsVectorLayer
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +68,39 @@ class AbstractLayer(ABC):
             )
 
     @classmethod
+    def create_feature(cls) -> QgsFeature:
+        """Create a new feature with the layer's default values, without touching the database.
+
+        Does the same as `QgsVectorLayerUtils.createFeature`, minus the unique-value check.
+        That check clones the layer and runs `SELECT DISTINCT id` on every call when the
+        layer has a subset filter, which costs ~800 ms per feature on a remote database.
+        """
+        layer = cls.get_from_project()
+        fields = layer.fields()
+        feature = QgsFeature(fields)
+        feature.initAttributes(fields.count())
+        context = QgsExpressionContext(QgsExpressionContextUtils.globalProjectLayerScopes(layer))
+        provider = layer.dataProvider()
+
+        for idx in range(fields.count()):
+            if layer.defaultValueDefinition(idx).isValid():
+                feature[idx] = layer.defaultValue(idx, feature, context)
+            if QgsVariantUtils.isNull(feature[idx]):
+                # Let the database fill the column from its DEFAULT clause
+                clause = provider.defaultValueClause(idx) if provider else ""
+                if clause:
+                    feature[idx] = QgsUnsetAttributeValue(clause)
+
+        # The id is read back from the feature before commit, so it must be a real value
+        id_idx = fields.indexOf("id")
+        if id_idx >= 0 and (
+            QgsVariantUtils.isNull(feature[id_idx]) or isinstance(feature[id_idx], QgsUnsetAttributeValue)
+        ):
+            feature[id_idx] = str(uuid.uuid4())
+
+        return feature
+
+    @classmethod
     def get_features(cls):
         return cls.get_from_project().getFeatures()
 
@@ -89,10 +131,12 @@ class AbstractLayer(ABC):
         if cls._is_empty_collection(value):
             return
         layer = cls.get_from_project()
-        request = QgsFeatureRequest().setFilterExpression(cls.create_filter_expression(attribute, value))
+        expression = cls.create_filter_expression(attribute, value)
+        request = QgsFeatureRequest().setFilterExpression(expression)
         if no_geometries:
             request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
-        yield from layer.getFeatures(request)
+        with timed(f"query[{cls.name}]", filter=expression):
+            yield from layer.getFeatures(request)
 
     @classmethod
     def get_feature_by_attribute_value(
@@ -116,8 +160,9 @@ class AbstractLayer(ABC):
         request = QgsFeatureRequest().setFilterExpression(expression)
         request.setSubsetOfAttributes([target_attribute], layer.fields())
         request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
-        for feature in layer.getFeatures(request):
-            yield feature[target_attribute]
+        with timed(f"query[{cls.name}]", filter=expression):
+            for feature in layer.getFeatures(request):
+                yield feature[target_attribute]
 
     @classmethod
     def get_attribute_value_by_another_attribute_value(

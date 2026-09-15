@@ -7,7 +7,7 @@ from string import Template
 from textwrap import dedent
 from typing import Any, ClassVar, Generator, cast
 
-from qgis.core import NULL, QgsFeature, QgsVectorLayerUtils
+from qgis.core import NULL, QgsFeature
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -42,6 +42,7 @@ from arho_feature_template.utils.misc_utils import (
     get_active_plan_matter_id,
 )
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
+from arho_feature_template.utils.timing import timed
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +70,13 @@ class AbstractFeatureLayer(FamilyLayer):
     @classmethod
     def initialize_feature_from_model(cls, model: Any) -> QgsFeature:
         if model.id_ is not None:  # Expects all plan layer models to have 'id_' attribute
-            feature = cls.get_feature_by_id(model.id_, no_geometries=False)
+            with timed(f"initialize_feature[{cls.name}]", mode="fetch-existing", id=model.id_):
+                feature = cls.get_feature_by_id(model.id_, no_geometries=False)
             if not feature:
                 raise FeatureNotFoundError(model.id_, cls.name)
         else:
-            feature = QgsVectorLayerUtils.createFeature(cls.get_from_project())
+            with timed(f"initialize_feature[{cls.name}]", mode="create_feature"):
+                feature = cls.create_feature()
         return feature
 
 
@@ -427,10 +430,10 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from(cls, regulation_group_id: str, layer_name: str, feature_id: str) -> QgsFeature | None:
-        layer = cls.get_from_project()
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
 
-        feature = QgsVectorLayerUtils.createFeature(layer)
+        with timed(f"create_feature[{cls.name}]"):
+            feature = cls.create_feature()
         feature["plan_regulation_group_id"] = regulation_group_id
 
         if not attribute:
@@ -587,9 +590,8 @@ class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from(cls, regulation_id: str, type_of_verbal_regulation_id: str) -> QgsFeature | None:
-        layer = cls.get_from_project()
-
-        feature = QgsVectorLayerUtils.createFeature(layer)
+        with timed(f"create_feature[{cls.name}]"):
+            feature = cls.create_feature()
         feature["plan_regulation_id"] = regulation_id
         feature["type_of_verbal_plan_regulation_id"] = type_of_verbal_regulation_id
         return feature
@@ -617,9 +619,8 @@ class LegalEffectAssociationLayer(AbstractPlanLayer):
 
     @classmethod
     def feature_from(cls, plan_id: str, legal_effect_id: str) -> QgsFeature | None:
-        layer = cls.get_from_project()
-
-        feature = QgsVectorLayerUtils.createFeature(layer)
+        with timed(f"create_feature[{cls.name}]"):
+            feature = cls.create_feature()
         feature["plan_id"] = plan_id
         feature["legal_effects_of_master_plan_id"] = legal_effect_id
         return feature
@@ -719,9 +720,8 @@ class PlanThemeAssociationLayer(AbstractPlanLayer):
     def feature_from(
         cls, plan_theme_id: str, plan_regulation_id: str | None = None, plan_proposition_id: str | None = None
     ) -> QgsFeature | None:
-        layer = cls.get_from_project()
-
-        feature = QgsVectorLayerUtils.createFeature(layer)
+        with timed(f"create_feature[{cls.name}]"):
+            feature = cls.create_feature()
         feature["plan_regulation_id"] = plan_regulation_id
         feature["plan_proposition_id"] = plan_proposition_id
         feature["plan_theme_id"] = plan_theme_id
