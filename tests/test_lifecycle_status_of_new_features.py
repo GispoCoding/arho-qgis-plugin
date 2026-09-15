@@ -1,17 +1,19 @@
 """New plan objects, regulations and propositions get the plan's lifecycle status from the plugin.
 
-The database trigger would fill the status in on insert, but then a template group (status None)
-never hashes like its saved twin, so the form cannot offer to link them and a duplicate group is
-saved. Template libraries never carry the status.
+The database no longer moves the rows along with the plan, so the plugin sets the status of a new
+row. Matching is about content: a template group finds its saved twin whatever status or validity
+period the saved rows carry. Template libraries never carry the status.
 """
 
 from __future__ import annotations
 
+import copy
 import dataclasses
 from typing import TYPE_CHECKING, Iterator
 
 import pytest
 from qgis.core import Qgis, QgsDefaultValue, QgsExpressionContextUtils, QgsProject
+from qgis.PyQt.QtCore import QDate
 
 from arho_feature_template.core import feature_editing
 from arho_feature_template.core.models import (
@@ -75,6 +77,18 @@ def test_without_a_plan_status_nothing_changes():
     assert group.regulations[0].lifecycle_status_id is None
 
 
+def test_digitising_does_not_stamp_the_library_template():
+    template = PlanObject(layer_name="Aluevaraus", regulation_groups=[_new_group()])
+
+    # As the plan manager builds the new object from the feature template
+    new = PlanObject(layer_name="Aluevaraus", regulation_groups=copy.deepcopy(template.regulation_groups))
+    new.set_lifecycle_status_of_new(STATUS)
+
+    assert new.regulation_groups[0].regulations[0].lifecycle_status_id == STATUS
+    assert template.regulation_groups[0].regulations[0].lifecycle_status_id is None
+    assert template.lacks_lifecycle_status()
+
+
 def test_a_plan_object_reaches_its_groups():
     plan_object = PlanObject(layer_name="Aluevaraus", regulation_groups=[_new_group()])
     assert plan_object.lacks_lifecycle_status()
@@ -128,6 +142,36 @@ def test_an_empty_letter_code_is_no_letter_code():
     assert empty.letter_code is None
 
 
+def test_a_text_of_empty_strings_is_no_text():
+    """The database default of a multilanguage column is empty strings in every language."""
+    from arho_feature_template.core.models import AdditionalInformation, AttributeValue
+
+    empty = AttributeValue(text_value={"eng": "", "fin": "", "swe": ""})
+    assert empty.text_value is None
+    assert empty == AttributeValue()
+    assert AdditionalInformation(additional_information_type_id="info-1", value=empty).value is None
+
+    assert Proposition(value={"fin": "", "swe": ""}) == Proposition(value=None)
+    assert Proposition(value={"fin": "Suositus", "swe": ""}).value == {"fin": "Suositus"}
+
+
+def test_no_subject_identifiers_is_an_empty_list():
+    none = Regulation(regulation_type_id="type-1", subject_identifiers=None)  # type: ignore[arg-type]
+    empty = Regulation(regulation_type_id="type-1")
+
+    assert none.subject_identifiers == []
+    assert none == empty
+    assert none.data_hash() == empty.data_hash()
+
+
+def test_a_status_change_is_still_a_modification():
+    one = Regulation(regulation_type_id="type-1", lifecycle_status_id="a")
+    other = Regulation(regulation_type_id="type-1", lifecycle_status_id="b", period_of_validity_end=QDate(2026, 1, 1))
+
+    assert one != other  # the widget saves the change
+    assert one.data_hash() == other.data_hash()  # the form still finds the twin
+
+
 @pytest.fixture
 def layers(new_project: QgsProject) -> Iterator[dict[str, QgsVectorLayer]]:
     """Plan 1 in status 1, area 1 with group 1 whose regulation and proposition carry the status."""
@@ -177,17 +221,29 @@ def _as_template(group: RegulationGroup) -> RegulationGroup:
     )
 
 
-def test_a_template_group_finds_its_saved_twin_once_it_has_the_plan_status(layers: dict[str, QgsVectorLayer]):
+def test_a_template_group_finds_its_saved_twin_whatever_the_status(layers: dict[str, QgsVectorLayer]):
     saved = _read_group(layers)
     assert saved.regulations[0].lifecycle_status_id == STATUS
+    # The plan moved on since the group was saved, and a proposition was given an end date
+    saved.regulations[0].lifecycle_status_id = "status-0"
+    saved.propositions[0].period_of_validity_end = QDate(2026, 1, 1)
     hash_map = RegulationGroupLibrary(name="Kaava", regulation_groups=[saved]).into_hash_map()
     template = _as_template(saved)
 
-    assert hash_map.get(template.data_hash()) is None  # what the form saw before: no twin
+    assert hash_map.get(template.matching_hash()) == [saved]  # before the form stamps the status
 
     template.set_lifecycle_status_of_new(STATUS)
 
-    assert hash_map.get(template.data_hash()) == [saved]
+    assert hash_map.get(template.matching_hash()) == [saved]
+
+
+def test_a_coloured_template_finds_its_uncoloured_twin(layers: dict[str, QgsVectorLayer]):
+    saved = _read_group(layers)
+    hash_map = RegulationGroupLibrary(name="Kaava", regulation_groups=[saved]).into_hash_map()
+    template = dataclasses.replace(_as_template(saved), color_code="#ff0000")
+
+    assert hash_map.get(template.matching_hash()) == [saved]
+    assert template.data_hash() != saved.data_hash()  # the library manager still sees a colour edit
 
 
 def test_a_template_group_with_more_content_finds_nothing(layers: dict[str, QgsVectorLayer]):
@@ -198,7 +254,7 @@ def test_a_template_group_with_more_content_finds_nothing(layers: dict[str, QgsV
 
     template.set_lifecycle_status_of_new(STATUS)
 
-    assert hash_map.get(template.data_hash()) is None
+    assert hash_map.get(template.matching_hash()) is None
 
 
 # ------------------------------------------------------------------ plan layer and saving
