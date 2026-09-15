@@ -21,6 +21,7 @@ from qgis.PyQt.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QProgressB
 from arho_feature_template.core.feature_editing import (
     add_plan_object_to_edit_buffer,
     add_regulation_group_to_edit_buffer,
+    commit_edit_buffer,
 )
 from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
 from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
@@ -245,7 +246,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             else:
                 failed_count += 1
 
-        result, _ = QgsProject.instance().commitChanges(stopEditing=False)
+        result = commit_edit_buffer(stop_editing=False)
         if not result:
             iface.messageBar().pushSuccess("", "Kaavakohteiden tuominen epäonnistui.")
             return

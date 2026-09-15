@@ -110,6 +110,13 @@ def _sync_after_commit(model: Plan | PlanObject | RegulationGroup | Regulation |
     _after_commit.append(apply)
 
 
+def discard_after_commit_callbacks() -> None:
+    """Drop the queued callbacks. Call before a rollback: the rows they wait for are never written."""
+    if _after_commit:
+        logger.debug("Discarding %s pending after commit callbacks", len(_after_commit))
+    _after_commit.clear()
+
+
 def _stored(
     model: Plan | PlanObject | RegulationGroup | Regulation | Proposition,
 ) -> StoredPlan | StoredPlanObject | StoredRegulationGroup | StoredRegulation | StoredProposition:

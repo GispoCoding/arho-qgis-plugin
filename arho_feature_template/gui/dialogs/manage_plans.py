@@ -16,7 +16,7 @@ from qgis.PyQt.QtWidgets import (
     QWidget,
 )
 
-from arho_feature_template.core.feature_editing import save_plan
+from arho_feature_template.core.feature_editing import discard_after_commit_callbacks, save_plan
 from arho_feature_template.gui.dialogs.new_plan_dialog import NewPlanDialog
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
@@ -208,6 +208,7 @@ class ManagePlans(QDialog, FormClass):  # type: ignore
         if self.previously_in_edit_mode and not is_now_in_edit_mode:
             self.plan_layer.startEditing()
         elif not self.previously_in_edit_mode and is_now_in_edit_mode:
+            discard_after_commit_callbacks()
             self.plan_layer.rollBack()
 
     def _on_ok_clicked(self):

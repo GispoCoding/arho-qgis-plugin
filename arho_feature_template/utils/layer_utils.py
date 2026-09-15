@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 from qgis.core import QgsVectorLayer
 
+from arho_feature_template.core.feature_editing import discard_after_commit_callbacks
 from arho_feature_template.project.layers.plan_layers import PlanLayer, plan_layers
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ def lock_plan_layers():
 
         if vlayer.isEditable():
             logger.debug("Rolling back editable layer before locking layer=%s", vlayer.name())
+            discard_after_commit_callbacks()
             vlayer.rollBack()
 
         vlayer.setReadOnly(True)
@@ -71,12 +73,14 @@ def temporary_subset(layer: QgsVectorLayer, subset: str):
     try:
         if layer.isEditable():
             logger.debug("Rolling back layer before applying subset layer=%s", layer.name())
+            discard_after_commit_callbacks()
             layer.rollBack()
         layer.setSubsetString(subset)
         yield
     finally:
         if layer.isEditable():
             logger.debug("Rolling back layer before restoring subset layer=%s", layer.name())
+            discard_after_commit_callbacks()
             layer.rollBack()
         layer.setSubsetString(original)
         logger.debug("Restored original subset layer=%s", layer.name())
