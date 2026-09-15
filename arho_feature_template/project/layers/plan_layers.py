@@ -186,6 +186,17 @@ class PlanLayer(AbstractPlanLayer):
     filter_template = Template("id = '$plan_id'")
 
     @classmethod
+    def get_lifecycle_status_id(cls, plan_id: str | None = None) -> str | None:
+        """The current lifecycle status of the plan (the active plan by default), or None without a plan.
+
+        New plan objects, regulations and propositions get this status from the plugin.
+        """
+        plan_id = plan_id or get_active_plan_id()
+        if not plan_id:
+            return None
+        return cast("str | None", cls.get_attribute_by_id("lifecycle_status_id", plan_id))
+
+    @classmethod
     def feature_from_model(cls, model: Plan) -> QgsFeature:
         if not model.geom:
             message = "Plan must have a geometry to be added to the layer"

@@ -812,6 +812,8 @@ class PlanManager(QObject):
             title = self.new_feature_dock.active_feature_type
 
         plan_feature.geom = feature.geometry()
+        # A new object and its template regulations get the plan's current lifecycle status
+        plan_feature.set_lifecycle_status_of_new(PlanLayer.get_lifecycle_status_id())
         with deleted_after_use(
             PlanObjectForm(
                 plan_feature,

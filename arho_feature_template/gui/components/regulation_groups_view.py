@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from importlib import resources
 from typing import TYPE_CHECKING, cast
 
@@ -28,7 +29,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanType,
     PlanTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
+from arho_feature_template.project.layers.plan_layers import PlanLayer, RegulationGroupAssociationLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_plan_type_id
 from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
@@ -79,11 +80,15 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
         self.regulation_groups_hash_map: defaultdict[int, list] | None = None
         self.active_plan_regulation_groups_library: RegulationGroupLibrary | None = None
+        # New regulations and propositions get this status, like the saved ones have, so a
+        # template group hashes like its saved twin and can be linked to it
+        self.lifecycle_status_id: str | None = None
         if active_plan_regulation_groups_library:
             self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
             self.active_plan_regulation_groups_library = active_plan_regulation_groups_library
             self.regulation_group_libraries.append(active_plan_regulation_groups_library)
             self.regulation_groups_hash_map = self.active_plan_regulation_groups_library.into_hash_map()
+            self.lifecycle_status_id = PlanLayer.get_lifecycle_status_id()
         else:
             self.existing_group_letter_codes = set()
 
@@ -156,6 +161,10 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         regulation_group: RegulationGroup = item.data(column, Qt.ItemDataRole.UserRole)
         if SettingsManager.get_add_only_selected_languages():
             regulation_group.apply_language_selection()
+        if regulation_group.id_ is None and self.lifecycle_status_id:
+            # The tree holds the library's own template; a copy gets this plan's status
+            regulation_group = copy.deepcopy(regulation_group)
+            regulation_group.set_lifecycle_status_of_new(self.lifecycle_status_id)
         self.add_plan_regulation_group(regulation_group)
 
     def add_stored_plan_regulation_groups(self, regulation_groups: list[RegulationGroup]):

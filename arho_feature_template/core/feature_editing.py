@@ -417,6 +417,9 @@ def add_plan_object_to_edit_buffer(
 
     object_id = plan_object.id_
     editing = object_id is not None
+    if plan_object.lacks_lifecycle_status():
+        # New rows get the plan's current status from the plugin, not from the database trigger
+        plan_object.set_lifecycle_status_of_new(PlanLayer.get_lifecycle_status_id(plan_id))
     if object_id is None or plan_object.modified:
         feature = layer_class.feature_from_model(plan_object, plan_id)
         layer = layer_class.get_from_project()
@@ -524,6 +527,10 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
             "Kaavasuosituksen poisto",
             "Kaavasuosituksen poistaminen epäonnistui.",
         )
+
+    if regulation_group.lacks_lifecycle_status():
+        # New rows get the plan's current status from the plugin, not from the database trigger
+        regulation_group.set_lifecycle_status_of_new(PlanLayer.get_lifecycle_status_id(plan_id))
 
     # Save regulations
     for regulation in regulation_group.regulations:
