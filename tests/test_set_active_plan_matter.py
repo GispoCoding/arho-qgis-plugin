@@ -102,6 +102,19 @@ def test_unsetting_the_plan_matter_clears_its_values(manager: PlanManager, plan_
     assert manager.active_plan_matter_plan_type_id is None
 
 
+def test_a_plan_matter_is_found_while_the_layer_is_hidden(
+    manager: PlanManager, plan_activations, plan_matter_layer: QgsVectorLayer
+):
+    manager.set_active_plan_matter(None)
+    assert plan_matter_layer.subsetString() == "false"
+
+    manager.set_active_plan_matter("matter-1", "plan-1")
+
+    assert get_active_plan_matter_id() == "matter-1"
+    assert plan_activations == [None, "plan-1"]
+    assert plan_matter_layer.subsetString() == "id = 'matter-1'"
+
+
 def test_no_plan_is_activated_by_default(manager: PlanManager, plan_activations):
     manager.set_active_plan_matter("matter-1")
 

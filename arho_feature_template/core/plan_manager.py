@@ -901,19 +901,21 @@ class PlanManager(QObject):
         if previously_in_edit_mode:
             plan_matter_layer.rollBack()
 
-        plan_matter_feature = PlanMatterLayer.get_feature_by_id(plan_matter_id) if plan_matter_id else None
-        if plan_matter_id and plan_matter_feature is None:
-            logger.warning("Active plan matter id not found: %s", plan_matter_id)
-            plan_matter_id = None
-            plan_id = None
+        plan_matter_feature: QgsFeature | None = None
+        if plan_matter_id:
+            # Filter before reading: with no plan matter active the layer is hidden (`false`)
+            for layer in plan_matter_layers:
+                layer.filter_layer_by_plan_matter_id(plan_matter_id)
+            plan_matter_feature = PlanMatterLayer.get_feature_by_id(plan_matter_id)
+            if plan_matter_feature is None:
+                logger.warning("Active plan matter id not found: %s", plan_matter_id)
+                plan_matter_id = None
+                plan_id = None
 
         set_active_plan_matter_id(plan_matter_id)
 
-        # Plan matter filtering
-        if plan_matter_id and plan_matter_feature is not None:
+        if plan_matter_feature is not None:
             self.plan_matter_set.emit()
-            for layer in plan_matter_layers:
-                layer.filter_layer_by_plan_matter_id(plan_matter_id)
 
             # Name is set as localized text in primary language
             plan_matter_name = get_localized_text(plan_matter_feature["name"])
