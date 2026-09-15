@@ -974,15 +974,25 @@ class PlanManager(QObject):
 
         set_active_plan_id(plan_id)
         locked = False
+        plan_feature: QgsFeature | None = None
+        plan_model: Plan | None = None
         if plan_id:
-            self.plan_set.emit()
             for layer in plan_layers:
                 if layer.filter_template:
                     layer.filter_layer_by_plan_id(plan_id)
                 else:
                     layer.show_all_features()
 
-            plan_model = PlanLayer.model_from_feature(PlanLayer.get_feature_by_id(plan_id))
+            # The one read of the plan row: the model, name, lifecycle status and extent come from it
+            plan_feature = PlanLayer.get_feature_by_id(plan_id, no_geometries=False)
+            if plan_feature is None:
+                logger.warning("Active plan id not found: %s", plan_id)
+                plan_id = None
+                set_active_plan_id(None)
+
+        if plan_feature is not None:
+            self.plan_set.emit()
+            plan_model = PlanLayer.model_from_feature(plan_feature)
             self.update_plan_status(plan_model)
             logger.debug("Active plan set id=%s locked=%s", plan_id, plan_model.locked)
         else:
@@ -1000,20 +1010,21 @@ class PlanManager(QObject):
         plan_features_by_layer = _read_plan_features_by_layer() if plan_id else {}
         self.update_active_plan_regulation_group_library(plan_features_by_layer)
         self.features_dock.create_plan_feature_view(
-            self.active_plan_regulation_group_library.regulation_groups, plan_features_by_layer
+            self.active_plan_regulation_group_library.regulation_groups,
+            plan_features_by_layer,
+            plan_model.lifecycle_status_id if plan_model else None,
         )
 
-        if plan_id:
+        if plan_feature is not None:
             plan_type = self._active_plan_type()
             if plan_type:
                 for feature_layer in plan_feature_layers:
                     layer = feature_layer.get_from_project()
                     _apply_style(layer, plan_type)
-            self.zoom_to_active_plan()
+            self.zoom_to_active_plan(plan_feature)
 
-            plan_name = PlanLayer.get_plan_name(plan_id)
-            # Don't save Nimetön as plan name in project variables
-            set_active_plan_name(plan_name if plan_name != "Nimetön" else "")
+            plan_name = get_localized_text(plan_feature["name"])
+            set_active_plan_name(plan_name or "")
             logger.debug("Updated active plan name=%s", plan_name)
         else:
             set_active_plan_name("")
@@ -1030,9 +1041,10 @@ class PlanManager(QObject):
             return None
         return plan_type
 
-    def zoom_to_active_plan(self):
-        """Zoom to the active plan layer."""
-        active_plan_feature = next(PlanLayer.get_features(), None)
+    def zoom_to_active_plan(self, active_plan_feature: QgsFeature | None = None):
+        """Zoom to the active plan, or to the given plan feature when the caller has read it."""
+        if active_plan_feature is None:
+            active_plan_feature = next(PlanLayer.get_features(), None)
         if active_plan_feature:
             logger.debug("Zooming to active plan feature_id=%s", active_plan_feature.id())
             bounding_box = active_plan_feature.geometry().boundingBox()
