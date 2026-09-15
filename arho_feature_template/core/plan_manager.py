@@ -979,7 +979,7 @@ class PlanManager(QObject):
             plan_layer.startEditing()
 
         self.update_active_plan_regulation_group_library()
-        self.features_dock.create_plan_feature_view()
+        self.features_dock.create_plan_feature_view(self.active_plan_regulation_group_library.regulation_groups)
 
         if plan_id:
             plan_type = _active_plan_type()

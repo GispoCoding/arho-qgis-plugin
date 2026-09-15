@@ -46,7 +46,7 @@ ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
+    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject, RegulationGroup
     from arho_feature_template.core.plan_manager import PlanManager
     from arho_feature_template.gui.components.push_button_edit_lifecycle import PushButtonEditLifecycle
 
@@ -266,7 +266,13 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         logger.debug("Unloading PlanObjectsDock and disconnecting signals")
         self.disconnect_layer_signals()
 
-    def create_plan_feature_view(self):
+    def create_plan_feature_view(self, regulation_groups: list[RegulationGroup] | None = None):
+        """Rebuild the table from the plan feature layers.
+
+        `regulation_groups` seeds the group models of the features (see
+        `PlanObjectReader.models_from_features`); the groups of the active plan are already read
+        for the regulation group library, so the caller can pass them here.
+        """
         logger.debug("Creating plan feature table view")
         # Clear table
         self.model.setRowCount(0)
@@ -276,7 +282,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         for layer in plan_feature_layers:
             features = list(layer.get_features())
             logger.debug("Adding features from layer=%s count=%s", layer.name, len(features))
-            for plan_feature_model, feature in zip(layer.models_from_features(features), features):
+            for plan_feature_model, feature in zip(layer.models_from_features(features, regulation_groups), features):
                 self._add_plan_feature_to_view(plan_feature_model, feature.id())
 
         self._update_edit_lifecycle_visibility()
