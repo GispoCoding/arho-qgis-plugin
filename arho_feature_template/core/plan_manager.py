@@ -874,8 +874,12 @@ class PlanManager(QObject):
 
     @use_wait_cursor
     @status_message("Avataan kaava-asia ...")
-    def set_active_plan_matter(self, plan_matter_id: str | None) -> None:
-        logger.debug("Setting active plan matter id=%s", plan_matter_id)
+    def set_active_plan_matter(self, plan_matter_id: str | None, plan_id: str | None = None) -> None:
+        """Activate a plan matter and then the given plan of it (or no plan).
+
+        A plan matter id that is not found in the database unsets the active plan matter.
+        """
+        logger.debug("Setting active plan matter id=%s plan_id=%s", plan_matter_id, plan_id)
         if check_layer_changes():
             raise UnsavedChangesError
 
@@ -884,6 +888,12 @@ class PlanManager(QObject):
         logger.debug("Plan matter layer previously_in_edit_mode=%s", previously_in_edit_mode)
         if previously_in_edit_mode:
             plan_matter_layer.rollBack()
+
+        plan_matter_feature = PlanMatterLayer.get_feature_by_id(plan_matter_id) if plan_matter_id else None
+        if plan_matter_id and plan_matter_feature is None:
+            logger.warning("Active plan matter id not found: %s", plan_matter_id)
+            plan_matter_id = None
+            plan_id = None
 
         set_active_plan_matter_id(plan_matter_id)
 
@@ -919,7 +929,7 @@ class PlanManager(QObject):
         for valid_layer in valid_layers:
             valid_layer.filter_layer_by_plan_type(plan_type)
 
-        self.set_active_plan(None)
+        self.set_active_plan(plan_id)
 
         if previously_in_edit_mode:
             plan_matter_layer.startEditing()
@@ -1193,18 +1203,11 @@ class PlanManager(QObject):
             self.project_loaded.emit()
             logger.debug("Project initialization checks passed")
 
-            active_plan_matter_id = get_active_plan_matter_id()
-            # Need to access active plan ID here since `set_active_plan_matter` (temporarily) sets it to None
-            active_plan_id = get_active_plan_id()
-            if active_plan_matter_id not in [feat["id"] for feat in PlanMatterLayer.get_features()]:
-                logger.warning("Stored active plan matter id not found: %s", active_plan_matter_id)
-                self.set_active_plan_matter(None)
-                return
-            self.set_active_plan_matter(active_plan_matter_id)
-
-            if active_plan_id:
-                logger.debug("Restoring active plan id=%s", active_plan_id)
-                self.set_active_plan(active_plan_id)
+            # Read the stored plan id before `set_active_plan_matter`, which rewrites it
+            active_plan_matter_id = get_active_plan_matter_id() or None
+            active_plan_id = get_active_plan_id() or None
+            logger.debug("Restoring active plan matter id=%s plan id=%s", active_plan_matter_id, active_plan_id)
+            self.set_active_plan_matter(active_plan_matter_id, active_plan_id)
 
     def connect_layer_error_signals(self):
         logger.debug("Connecting layer error signals")
