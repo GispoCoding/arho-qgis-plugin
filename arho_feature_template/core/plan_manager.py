@@ -114,11 +114,13 @@ from arho_feature_template.utils.misc_utils import (
     check_layer_changes,
     get_active_plan_id,
     get_active_plan_matter_id,
+    get_active_plan_matter_plan_type_id,
     handle_unsaved_changes,
     iface,
     set_active_plan_id,
     set_active_plan_matter_id,
     set_active_plan_matter_name,
+    set_active_plan_matter_plan_type_id,
     set_active_plan_name,
     set_imported_layer_invisible,
     status_message,
@@ -182,8 +184,6 @@ class PlanManager(QObject):
         self.json_plan_matter_path = None
 
         self.plan_locked = False  # Change this only through `update_lock_status` method
-        # Plan type id of the active plan matter, read once in `set_active_plan_matter`
-        self.active_plan_matter_plan_type_id: str | None = None
 
         # The tool that was active before one of ours took over. We do not own it.
         self.previous_map_tool: QgsMapTool | None = None
@@ -928,12 +928,13 @@ class PlanManager(QObject):
             self.set_permanent_identifier(permanent_plan_identifier)
 
             plan_type_id = plan_matter_feature["plan_type_id"]
-            self.active_plan_matter_plan_type_id = None if QgsVariantUtils.isNull(plan_type_id) else plan_type_id
+            plan_type_id = None if QgsVariantUtils.isNull(plan_type_id) else plan_type_id
+            set_active_plan_matter_plan_type_id(plan_type_id)
             logger.debug(
                 "Active plan matter set id=%s permanent_identifier=%s plan_type_id=%s",
                 plan_matter_id,
                 permanent_plan_identifier,
-                self.active_plan_matter_plan_type_id,
+                plan_type_id,
             )
         else:
             for layer in plan_matter_layers:
@@ -941,10 +942,10 @@ class PlanManager(QObject):
             self.plan_matter_unset.emit()
 
             set_active_plan_matter_name("")
-            self.active_plan_matter_plan_type_id = None
+            set_active_plan_matter_plan_type_id(None)
 
         # Ajantasakaava filtering: show only the valid plans of the same plan type
-        plan_type = PlanTypeLayer.get_top_level_code_value(self.active_plan_matter_plan_type_id)
+        plan_type = PlanTypeLayer.get_top_level_code_value(get_active_plan_matter_plan_type_id())
         logger.debug("Filtering Ajantasakaava layers by plan type=%s", plan_type)
         for valid_layer in valid_layers:
             valid_layer.filter_layer_by_plan_type(plan_type)
@@ -1036,11 +1037,12 @@ class PlanManager(QObject):
 
     def _active_plan_type(self) -> PlanType | None:
         """Plan type of the active plan matter, from the plan type id read in `set_active_plan_matter`."""
-        if self.active_plan_matter_plan_type_id is None:
+        plan_type_id = get_active_plan_matter_plan_type_id()
+        if plan_type_id is None:
             logger.debug("No active plan matter plan type, skipping style application")
             return None
 
-        plan_type = PlanTypeLayer.get_plan_type(self.active_plan_matter_plan_type_id)
+        plan_type = PlanTypeLayer.get_plan_type(plan_type_id)
         if not plan_type:
             logger.warning("No plan type resolved for active plan matter, skipping style application")
             return None

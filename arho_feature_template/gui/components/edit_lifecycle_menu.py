@@ -5,12 +5,9 @@ from qgis.PyQt.QtGui import QAction, QIcon
 from qgis.PyQt.QtWidgets import QDateEdit, QDialog, QDialogButtonBox, QLabel, QMenu, QVBoxLayout, QWidget
 
 from arho_feature_template.core.lifecycles import LIFECYCLE_PIXMAPS, LifeCycleStatusValue
-from arho_feature_template.project.layers.code_layers import (
-    LifeCycleStatusLayer,
-)
-from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
+from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, PlanTypeLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
+from arho_feature_template.utils.misc_utils import get_active_plan_matter_plan_type_id
 
 
 class EditLifecycleMenu(QMenu):
@@ -28,8 +25,8 @@ class EditLifecycleMenu(QMenu):
             LifeCycleStatusValue.UNDER_RECTIFICATION_REMINDER_AND_UNDER_APPEAL,
             LifeCycleStatusValue.REPEALED,
         ]
-        active_plan_matter_id = get_active_plan_matter_id()
-        if active_plan_matter_id and PlanMatterLayer.is_regional_plan(get_active_plan_matter_id()):
+        # The plan type comes from the cached code layer: no plan matter read per menu
+        if PlanTypeLayer.is_regional_plan_type(get_active_plan_matter_plan_type_id()):
             lifecycle_values.insert(2, LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY)
 
         for lifecycle_value in lifecycle_values:

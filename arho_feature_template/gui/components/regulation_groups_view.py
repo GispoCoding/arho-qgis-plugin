@@ -28,9 +28,8 @@ from arho_feature_template.project.layers.code_layers import (
     PlanType,
     PlanTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
-from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
+from arho_feature_template.utils.misc_utils import get_active_plan_matter_plan_type_id
 from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
 
 if TYPE_CHECKING:
@@ -103,11 +102,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.show_regulation_group_library(self.plan_regulation_group_libraries_combobox.currentIndex())
 
     def select_library_by_active_plan_type(self):
-        feature = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
-        if feature is not None:
-            model = PlanMatterLayer.model_from_feature(feature)
-            plan_type = PlanTypeLayer.get_plan_type(model.plan_type_id)
-
+        plan_type = PlanTypeLayer.get_plan_type(get_active_plan_matter_plan_type_id())
+        if plan_type is not None:
             library_name = ""
             if plan_type == PlanType.REGIONAL:
                 library_name = "Maakuntakaavan kaavamääräysryhmät (Katja)"
