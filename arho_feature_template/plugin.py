@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import traceback
@@ -24,13 +25,11 @@ from arho_feature_template.gui.docks.validation_dock import ValidationDock
 from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
     LogTarget,
     get_log_folder,
-    get_log_level_key,
     setup_logger,
     teardown_logger,
 )
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
-from arho_feature_template.qgis_plugin_tools.tools.settings import get_setting
 from arho_feature_template.utils.misc_utils import iface
 from arho_feature_template.utils.widget_utils import deleted_after_use
 
@@ -47,8 +46,12 @@ class Plugin:
     name = plugin_name()
 
     def __init__(self) -> None:
+        SettingsManager.migrate_log_level_keys()
         self.set_file_log_level_if_not_set()
         setup_logger(arho_feature_template.__name__)
+        # Rebuild the handlers when the settings page is applied, so a new level takes
+        # effect without a restart
+        SettingsManager.notifier.settings_saved.connect(self._reload_logger)
         logger.debug("\n\n*** Initializing plugin instance ***")
 
         # Extend the default QGIS exception handling by logging the unhandled exceptions
@@ -81,10 +84,13 @@ class Plugin:
         # self.toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 
     def set_file_log_level_if_not_set(self):
-        file_log_level = get_setting(get_log_level_key(LogTarget.FILE))
-        if file_log_level is None:
+        if not SettingsManager.log_level_is_set(LogTarget.FILE):
             # Set default file log level to DEBUG if not set, to ensure that debug logs are captured in the log file
             SettingsManager.set_log_level(LogTarget.FILE, "DEBUG")
+
+    def _reload_logger(self) -> None:
+        teardown_logger(arho_feature_template.__name__)
+        setup_logger(arho_feature_template.__name__)
 
     def show_exception(self, *args, **kwargs):
         """Extend the default QGIS exception handling by logging the exception if it originates from our code.
@@ -762,4 +768,6 @@ class Plugin:
             qgis.utils.showException = self.qgis_show_exception
 
         # Handle logger
+        with contextlib.suppress(TypeError):
+            SettingsManager.notifier.settings_saved.disconnect(self._reload_logger)
         teardown_logger(arho_feature_template.__name__)
