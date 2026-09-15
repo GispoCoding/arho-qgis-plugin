@@ -188,7 +188,16 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         self.filter_proxy_model.invalidateFilter()
         logger.debug("Applied regulation group filter text=%s", search_text)
 
-    def update_regulation_groups(self, regulation_group_library: RegulationGroupLibrary):
+    def update_regulation_groups(
+        self,
+        regulation_group_library: RegulationGroupLibrary,
+        plan_features_by_layer: dict[str, list[QgsFeature]] | None = None,
+    ):
+        """Rebuild the table from the library.
+
+        `plan_features_by_layer` are the features of the plan feature layers (with geometries),
+        keyed by layer name, if the caller has already read them; otherwise they are read here.
+        """
         logger.debug(
             "Updating regulation groups table groups=%s",
             len(regulation_group_library.regulation_groups),
@@ -207,17 +216,26 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         )
 
         # Get plan objects for each layer only once
+        plan_objects_by_layer = (
+            plan_features_by_layer
+            if plan_features_by_layer is not None
+            else self._read_plan_object_ids_and_geometries()
+        )
+
+        for group in regulation_group_library.regulation_groups:
+            plan_object_ids_map = plan_object_ids_by_group_id.get(group.id_)  # type: ignore
+            self.model.appendRow(self._regulation_group_into_items(group, plan_object_ids_map, plan_objects_by_layer))
+        logger.debug("Regulation groups table updated row_count=%s", self.model.rowCount())
+
+    @staticmethod
+    def _read_plan_object_ids_and_geometries() -> dict[str, list[QgsFeature]]:
         plan_objects_by_layer: dict[str, list[QgsFeature]] = {}
         for plan_object_layer in plan_feature_layers:
             layer = plan_object_layer.get_from_project()
             request = QgsFeatureRequest()
             request.setSubsetOfAttributes(["id"], layer.fields())
             plan_objects_by_layer[plan_object_layer.name] = list(layer.getFeatures(request))
-
-        for group in regulation_group_library.regulation_groups:
-            plan_object_ids_map = plan_object_ids_by_group_id.get(group.id_)  # type: ignore
-            self.model.appendRow(self._regulation_group_into_items(group, plan_object_ids_map, plan_objects_by_layer))
-        logger.debug("Regulation groups table updated row_count=%s", self.model.rowCount())
+        return plan_objects_by_layer
 
     def _regulation_group_into_items(
         self,
@@ -246,7 +264,9 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         if plan_object_ids_map:
             for layer_name, ids in plan_object_ids_map.items():
                 fids_to_geoms: dict[int, QgsGeometry] = {
-                    feat.id(): feat.geometry() for feat in plan_objects_by_layer[layer_name] if feat["id"] in ids
+                    feat.id(): feat.geometry()
+                    for feat in plan_objects_by_layer.get(layer_name, [])
+                    if feat["id"] in ids
                 }
                 associated_plan_object_fids_and_geoms[layer_name] = fids_to_geoms
 

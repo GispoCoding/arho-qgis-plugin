@@ -266,12 +266,18 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         logger.debug("Unloading PlanObjectsDock and disconnecting signals")
         self.disconnect_layer_signals()
 
-    def create_plan_feature_view(self, regulation_groups: list[RegulationGroup] | None = None):
+    def create_plan_feature_view(
+        self,
+        regulation_groups: list[RegulationGroup] | None = None,
+        plan_features_by_layer: dict[str, list[QgsFeature]] | None = None,
+    ):
         """Rebuild the table from the plan feature layers.
 
         `regulation_groups` seeds the group models of the features (see
         `PlanObjectReader.models_from_features`); the groups of the active plan are already read
-        for the regulation group library, so the caller can pass them here.
+        for the regulation group library, so the caller can pass them here. `plan_features_by_layer`
+        are the features of the plan feature layers keyed by layer name, if the caller has already
+        read them; a layer missing from it is read here.
         """
         logger.debug("Creating plan feature table view")
         # Clear table
@@ -280,7 +286,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         # Add all plan features to table view
         # Idea: add `get_models` method for all layer classes
         for layer in plan_feature_layers:
-            features = list(layer.get_features())
+            features = (plan_features_by_layer or {}).get(layer.name)
+            if features is None:
+                features = list(layer.get_features())
             logger.debug("Adding features from layer=%s count=%s", layer.name, len(features))
             for plan_feature_model, feature in zip(layer.models_from_features(features, regulation_groups), features):
                 self._add_plan_feature_to_view(plan_feature_model, feature.id())

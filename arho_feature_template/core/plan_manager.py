@@ -124,6 +124,7 @@ from arho_feature_template.utils.misc_utils import (
     status_message,
     use_wait_cursor,
 )
+from arho_feature_template.utils.timing import timed
 from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
@@ -432,10 +433,19 @@ class PlanManager(QObject):
             self.new_feature_dock.update_lock_status(plan_model.locked)
 
     @use_wait_cursor
-    def update_active_plan_regulation_group_library(self):
+    def update_active_plan_regulation_group_library(
+        self, plan_features_by_layer: dict[str, list[QgsFeature]] | None = None
+    ):
+        """Re-read the regulation groups of the active plan and show them in the dock.
+
+        `plan_features_by_layer` are the features of the plan feature layers, if the caller has
+        already read them; otherwise the dock reads what it needs.
+        """
         logger.debug("Refreshing active plan regulation group library")
         self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
-        self.regulation_groups_dock.update_regulation_groups(self.active_plan_regulation_group_library)
+        self.regulation_groups_dock.update_regulation_groups(
+            self.active_plan_regulation_group_library, plan_features_by_layer
+        )
 
     def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
         logger.debug("Creating new regulation group from_template=%s", from_template)
@@ -986,8 +996,12 @@ class PlanManager(QObject):
         if previously_in_edit_mode and not locked:
             plan_layer.startEditing()
 
-        self.update_active_plan_regulation_group_library()
-        self.features_dock.create_plan_feature_view(self.active_plan_regulation_group_library.regulation_groups)
+        # Both docks list the plan features, so read the (now filtered) layers once for both
+        plan_features_by_layer = _read_plan_features_by_layer() if plan_id else {}
+        self.update_active_plan_regulation_group_library(plan_features_by_layer)
+        self.features_dock.create_plan_feature_view(
+            self.active_plan_regulation_group_library.regulation_groups, plan_features_by_layer
+        )
 
         if plan_id:
             plan_type = self._active_plan_type()
@@ -1343,6 +1357,12 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
         library_type=RegulationGroupLibrary.LibraryType.ACTIVE_PLAN,
         regulation_groups=regulation_groups,
     )
+
+
+def _read_plan_features_by_layer() -> dict[str, list[QgsFeature]]:
+    """All features of every plan feature layer, keyed by layer name."""
+    with timed("read plan features"):
+        return {layer.name: list(layer.get_features()) for layer in plan_feature_layers}
 
 
 def _apply_style(layer: QgsVectorLayer, plan_type: PlanType) -> None:
