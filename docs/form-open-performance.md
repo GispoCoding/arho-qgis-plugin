@@ -40,8 +40,7 @@ area with 2 groups and 3 regulations): 13 reads, ~1.9 s from the click to the fo
 
 One more read appeared once per session: the full `codes.type_of_verbal_plan_regulation`
 table, the lazy cache build of `VerbalRegulationType` on its first use in the form.
-Adding it to the cache builds in `PlanManager.on_project_loaded` would move that
-~130 ms to the project load.
+Moved to `PlanManager.cache_code_layers`, so it is part of the project load now.
 
 ## Parked
 
