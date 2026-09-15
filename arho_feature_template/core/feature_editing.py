@@ -209,14 +209,17 @@ def save_plan(plan: Plan) -> str | None:
     # Save general regulations
     if plan.general_regulations:
         for regulation_group in plan.general_regulations:
+            group_is_new = regulation_group.id_ is None
             group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
             if group_id is None:
                 continue  # Skip association saving if saving regulation group failed
-            add_regulation_group_association_to_edit_buffer(group_id, PlanLayer.name, plan_id)
+            add_regulation_group_association_to_edit_buffer(
+                group_id, PlanLayer.name, plan_id, may_exist=editing and not group_is_new
+            )
 
     # Save legal effect associations
     for legal_effect_id in plan.legal_effect_ids:
-        add_legal_effect_association_to_edit_buffer(plan_id, legal_effect_id)
+        add_legal_effect_association_to_edit_buffer(plan_id, legal_effect_id, may_exist=editing)
 
     # Save documents
     for document in plan.documents:
@@ -308,13 +311,16 @@ def add_plan_object_to_edit_buffer(
 
     # Save regulation groups
     for group in plan_object.regulation_groups:
+        group_is_new = group.id_ is None
         if enable_editing:
             group_id = add_regulation_group_to_edit_buffer(group)
             if group_id is None:
                 continue  # Skip association saving if saving regulation group failed
         else:
             group_id = group.id_
-        add_regulation_group_association_to_edit_buffer(group_id, layer_name, object_id)
+        add_regulation_group_association_to_edit_buffer(
+            group_id, layer_name, object_id, may_exist=editing and not group_is_new
+        )
 
     created_object_models[feature["id"]] = plan_object
     logger.debug("Stored created_object_models entry id=%s", feature["id"])
@@ -420,8 +426,19 @@ def save_regulation_group_association(regulation_group_id: str, layer_name: str,
 
 
 @timed_function("add_regulation_group_association_to_edit_buffer")
-def add_regulation_group_association_to_edit_buffer(regulation_group_id: str, layer_name: str, feature_id: str) -> bool:
-    if RegulationGroupAssociationLayer.association_exists(regulation_group_id, layer_name, feature_id):
+def add_regulation_group_association_to_edit_buffer(
+    regulation_group_id: str,
+    layer_name: str,
+    feature_id: str,
+    may_exist: bool = True,  # noqa: FBT001, FBT002
+) -> bool:
+    """Add the association unless it is already in the database.
+
+    `may_exist=False` skips the existence query. Use it when either side of the association
+    is a new feature: nothing can refer to an id that does not exist yet, and every query
+    costs several round trips on a remote database.
+    """
+    if may_exist and RegulationGroupAssociationLayer.association_exists(regulation_group_id, layer_name, feature_id):
         return True
     feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
     layer = RegulationGroupAssociationLayer.get_from_project()
@@ -489,25 +506,42 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
         add_additional_information_to_edit_buffer(additional_information)
 
     for verbal_regulation_type_id in regulation.verbal_regulation_type_ids:
-        add_type_of_verbal_regulation_association_to_edit_buffer(reg_id, verbal_regulation_type_id)
+        add_type_of_verbal_regulation_association_to_edit_buffer(reg_id, verbal_regulation_type_id, may_exist=editing)
 
     for plan_theme_id in regulation.theme_ids:
-        add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, regulation_id=reg_id)
+        add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, regulation_id=reg_id, may_exist=editing)
 
     return reg_id
 
 
 @timed_function("add_plan_theme_association_to_edit_buffer")
 def add_plan_theme_association_to_edit_buffer(
-    plan_theme_id: str, regulation_id: str | None = None, proposition_id: str | None = None
+    plan_theme_id: str,
+    regulation_id: str | None = None,
+    proposition_id: str | None = None,
+    may_exist: bool = True,  # noqa: FBT001, FBT002
 ) -> bool:
-    if regulation_id is not None and PlanThemeAssociationLayer.regulation_association_exists(
-        plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id
+    """Add the association unless it is already in the database.
+
+    `may_exist=False` skips the existence query. Use it when either side of the association
+    is a new feature: nothing can refer to an id that does not exist yet, and every query
+    costs several round trips on a remote database.
+    """
+    if (
+        may_exist
+        and regulation_id is not None
+        and PlanThemeAssociationLayer.regulation_association_exists(
+            plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id
+        )
     ):
         return True
 
-    if proposition_id is not None and PlanThemeAssociationLayer.proposition_association_exists(
-        plan_theme_id=plan_theme_id, plan_proposition_id=proposition_id
+    if (
+        may_exist
+        and proposition_id is not None
+        and PlanThemeAssociationLayer.proposition_association_exists(
+            plan_theme_id=plan_theme_id, plan_proposition_id=proposition_id
+        )
     ):
         return True
     feature = PlanThemeAssociationLayer.feature_from(
@@ -526,9 +560,19 @@ def add_plan_theme_association_to_edit_buffer(
 
 @timed_function("add_type_of_verbal_regulation_association_to_edit_buffer")
 def add_type_of_verbal_regulation_association_to_edit_buffer(
-    regulation_id: str, verbal_regulation_type_id: str
+    regulation_id: str,
+    verbal_regulation_type_id: str,
+    may_exist: bool = True,  # noqa: FBT001, FBT002
 ) -> bool:
-    if TypeOfVerbalRegulationAssociationLayer.association_exists(regulation_id, verbal_regulation_type_id):
+    """Add the association unless it is already in the database.
+
+    `may_exist=False` skips the existence query. Use it when either side of the association
+    is a new feature: nothing can refer to an id that does not exist yet, and every query
+    costs several round trips on a remote database.
+    """
+    if may_exist and TypeOfVerbalRegulationAssociationLayer.association_exists(
+        regulation_id, verbal_regulation_type_id
+    ):
         return True
     feature = TypeOfVerbalRegulationAssociationLayer.feature_from(regulation_id, verbal_regulation_type_id)
     layer = TypeOfVerbalRegulationAssociationLayer.get_from_project()
@@ -544,8 +588,18 @@ def add_type_of_verbal_regulation_association_to_edit_buffer(
     return True
 
 
-def add_legal_effect_association_to_edit_buffer(plan_id: str, legal_effect_id: str) -> bool:
-    if LegalEffectAssociationLayer.association_exists(plan_id, legal_effect_id):
+def add_legal_effect_association_to_edit_buffer(
+    plan_id: str,
+    legal_effect_id: str,
+    may_exist: bool = True,  # noqa: FBT001, FBT002
+) -> bool:
+    """Add the association unless it is already in the database.
+
+    `may_exist=False` skips the existence query. Use it when either side of the association
+    is a new feature: nothing can refer to an id that does not exist yet, and every query
+    costs several round trips on a remote database.
+    """
+    if may_exist and LegalEffectAssociationLayer.association_exists(plan_id, legal_effect_id):
         return True
     feature = LegalEffectAssociationLayer.feature_from(plan_id, legal_effect_id)
     layer = LegalEffectAssociationLayer.get_from_project()
@@ -642,7 +696,9 @@ def add_proposition_to_edit_buffer(proposition: Proposition) -> str | None:
                 MsgBar.error("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
 
     for plan_theme_id in proposition.theme_ids:
-        add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, proposition_id=prop_id)
+        add_plan_theme_association_to_edit_buffer(
+            plan_theme_id=plan_theme_id, proposition_id=prop_id, may_exist=editing
+        )
 
     return feature["id"]
 
