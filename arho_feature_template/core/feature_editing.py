@@ -25,6 +25,7 @@ from arho_feature_template.utils.misc_utils import (
     status_message,
     use_wait_cursor,
 )
+from arho_feature_template.utils.timing import timed_function
 
 if TYPE_CHECKING:
     from qgis.core import QgsFeature, QgsVectorLayer
@@ -53,6 +54,7 @@ def feature_id(feature: QgsFeature) -> str:
         return str(feature.id())
 
 
+@timed_function("add_to_edit_buffer")
 def add_to_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, id_: str | None, edit_text: str = "") -> bool:
     action = "add" if id_ is None else "update"
     logger.debug(
@@ -71,6 +73,7 @@ def add_to_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, id_: str | No
     return result
 
 
+@timed_function("delete_in_edit_buffer")
 def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
     logger.debug(
         "Edit buffer action=delete layer=%s feature_id=%s command=%s",
@@ -87,6 +90,7 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
     return result
 
 
+@timed_function("commit_edit_buffer")
 def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
     project = QgsProject.instance()
     result, commit_errors = project.commitChanges(stopEditing=stop_editing)
@@ -100,6 +104,7 @@ def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
     return result
 
 
+@timed_function("delete_feature")
 def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
     logger.debug("Deleting feature from layer=%s feature_id=%s", layer.name(), feature_id(feature))
     delete_in_edit_buffer(feature, layer, delete_text)
@@ -110,6 +115,7 @@ def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str 
 
 @use_wait_cursor
 @status_message("Tallennetaan kaava-asiaa ...")
+@timed_function("save_plan_matter")
 def save_plan_matter(plan_matter: PlanMatter) -> str | None:
     plan_matter_id = plan_matter.id_
     editing = plan_matter_id is not None
@@ -142,6 +148,7 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
 
 @use_wait_cursor
 @status_message("Tallennetaan kaavasuunnitelmaa ...")
+@timed_function("save_plan")
 def save_plan(plan: Plan) -> str | None:
     plan_id = plan.id_
     if not plan.plan_matter_id:
@@ -225,6 +232,7 @@ def save_plan(plan: Plan) -> str | None:
 
 @use_wait_cursor
 @status_message("Tallennetaan kaavakohdetta ...")
+@timed_function("save_plan_object")
 def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str | None:
     logger.info("Saving plan object %s:%s", plan_object.layer_name, plan_object.id_)
     object_id = add_plan_object_to_edit_buffer(plan_object, enable_editing=True, plan_id=plan_id)
@@ -240,6 +248,7 @@ def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str
 
 
 @use_wait_cursor
+@timed_function("add_plan_object_to_edit_buffer")
 def add_plan_object_to_edit_buffer(
     plan_object: PlanObject,
     enable_editing: bool = True,  # noqa: FBT001, FBT002
@@ -314,6 +323,7 @@ def add_plan_object_to_edit_buffer(
 
 
 @use_wait_cursor
+@timed_function("save_regulation_group")
 def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
     logger.info("Saving regulation group id=%s modified=%s", regulation_group.id_, regulation_group.modified)
     group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
@@ -325,6 +335,7 @@ def save_regulation_group(regulation_group: RegulationGroup, plan_id: str | None
 
 
 @use_wait_cursor
+@timed_function("add_regulation_group_to_edit_buffer")
 def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_id: str | None = None) -> str | None:
     group_id = regulation_group.id_
     editing = group_id is not None
@@ -401,12 +412,14 @@ def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | No
     return True
 
 
+@timed_function("save_regulation_group_association")
 def save_regulation_group_association(regulation_group_id: str, layer_name: str, feature_id: str) -> bool:
     add_regulation_group_association_to_edit_buffer(regulation_group_id, layer_name, feature_id)
     result = commit_edit_buffer(stop_editing=False)
     return result
 
 
+@timed_function("add_regulation_group_association_to_edit_buffer")
 def add_regulation_group_association_to_edit_buffer(regulation_group_id: str, layer_name: str, feature_id: str) -> bool:
     if RegulationGroupAssociationLayer.association_exists(regulation_group_id, layer_name, feature_id):
         return True
@@ -424,6 +437,7 @@ def add_regulation_group_association_to_edit_buffer(regulation_group_id: str, la
     return True
 
 
+@timed_function("add_regulation_to_edit_buffer")
 def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
     reg_id = regulation.id_
     editing = reg_id is not None
@@ -483,6 +497,7 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
     return reg_id
 
 
+@timed_function("add_plan_theme_association_to_edit_buffer")
 def add_plan_theme_association_to_edit_buffer(
     plan_theme_id: str, regulation_id: str | None = None, proposition_id: str | None = None
 ) -> bool:
@@ -509,6 +524,7 @@ def add_plan_theme_association_to_edit_buffer(
     return True
 
 
+@timed_function("add_type_of_verbal_regulation_association_to_edit_buffer")
 def add_type_of_verbal_regulation_association_to_edit_buffer(
     regulation_id: str, verbal_regulation_type_id: str
 ) -> bool:
@@ -545,6 +561,7 @@ def add_legal_effect_association_to_edit_buffer(plan_id: str, legal_effect_id: s
     return True
 
 
+@timed_function("add_additional_information_to_edit_buffer")
 def add_additional_information_to_edit_buffer(additional_information: AdditionalInformation) -> str | None:
     if additional_information.id_ is not None and not additional_information.modified:
         return additional_information.id_
@@ -592,6 +609,7 @@ def delete_regulation(regulation: Regulation) -> bool:
     return True
 
 
+@timed_function("add_proposition_to_edit_buffer")
 def add_proposition_to_edit_buffer(proposition: Proposition) -> str | None:
     prop_id = proposition.id_
     editing = prop_id is not None
