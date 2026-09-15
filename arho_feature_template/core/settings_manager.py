@@ -6,12 +6,8 @@ from typing import TYPE_CHECKING, Any
 from qgis.core import QgsSettings
 from qgis.PyQt.QtCore import QObject, QSettings, QTimer, pyqtSignal
 
-from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
-    LogTarget,
-    get_log_level_key,
-    get_log_level_name,
-)
-from arho_feature_template.qgis_plugin_tools.tools.settings import set_setting
+from arho_feature_template.qgis_plugin_tools.tools.custom_logging import LogTarget
+from arho_feature_template.qgis_plugin_tools.tools.settings import get_setting, set_setting, setting_key
 
 if TYPE_CHECKING:
     from arho_feature_template.project.layers.code_layers import PlanType
@@ -150,14 +146,35 @@ class SettingsManager:
         return cls._get("code_value_language", default)
 
     @classmethod
+    def _log_level_key(cls, log_target: LogTarget) -> str:
+        # Short key. `set_setting` and `get_setting` prepend the plugin name, which gives the
+        # same key as `custom_logging.get_log_level_key`, so the logger of plugin tools picks
+        # the value up. These keys live outside the `plugins/arho` group of `_set` and `_get`.
+        return f"log_level/{log_target.id}"
+
+    @classmethod
     def set_log_level(cls, log_target: LogTarget, value: str) -> None:
-        # Set using plugin tools so that the setting is saved so that the logger of plugin tools can pick it up
-        set_setting(get_log_level_key(log_target), value)
+        set_setting(cls._log_level_key(log_target), value)
 
     @classmethod
     def get_log_level(cls, log_target: LogTarget) -> str:
-        # Get using plugin tools because it is saved using plugin tools
-        return get_log_level_name(log_target)
+        return get_setting(cls._log_level_key(log_target), log_target.default_level, str)
+
+    @classmethod
+    def log_level_is_set(cls, log_target: LogTarget) -> bool:
+        return get_setting(cls._log_level_key(log_target)) is not None
+
+    @classmethod
+    def migrate_log_level_keys(cls):
+        """Move log levels away from the doubled key an earlier version wrote them to."""
+        settings = QgsSettings()
+        for log_target in LogTarget:
+            old_key = setting_key(setting_key("log_level", log_target.id))
+            value = settings.value(old_key, None)
+            if value is not None:
+                if not cls.log_level_is_set(log_target):
+                    cls.set_log_level(log_target, str(value))
+                settings.remove(old_key)
 
     @classmethod
     def _migrate_keys(cls):
