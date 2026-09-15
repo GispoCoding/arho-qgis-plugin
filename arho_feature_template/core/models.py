@@ -428,6 +428,15 @@ class Regulation(PlanBaseModel, LifecycleBase):
         """Take the snapshot from the current children, once they are all in the database."""
         self.stored = StoredRegulation.of(self)
 
+    def lacks_lifecycle_status(self) -> bool:
+        """A new row that would get its status from the database instead of the plugin."""
+        return self.id_ is None and self.lifecycle_status_id is None
+
+    def set_lifecycle_status_of_new(self, status_id: str | None) -> None:
+        """A new regulation gets the plan's current status. A saved one, or one with a status, keeps it."""
+        if status_id and self.lacks_lifecycle_status():
+            self.lifecycle_status_id = status_id
+
     @classmethod
     def from_template_dict(cls, data: dict) -> Regulation:
         regulation_type_id = PlanRegulationTypeLayer.get_id_by_type(data["regulation_code"])
@@ -496,6 +505,15 @@ class Proposition(PlanBaseModel, LifecycleBase):
         """Take the snapshot from the current children, once they are all in the database."""
         self.stored = StoredProposition.of(self)
 
+    def lacks_lifecycle_status(self) -> bool:
+        """A new row that would get its status from the database instead of the plugin."""
+        return self.id_ is None and self.lifecycle_status_id is None
+
+    def set_lifecycle_status_of_new(self, status_id: str | None) -> None:
+        """A new proposition gets the plan's current status. A saved one, or one with a status, keeps it."""
+        if status_id and self.lacks_lifecycle_status():
+            self.lifecycle_status_id = status_id
+
     def into_template_dict(self) -> dict:
         return {
             "value": self.value,
@@ -525,6 +543,7 @@ class RegulationGroup(PlanBaseModel):
         # this, a group read from the database and the same group read back from its form widget
         # compare unequal, and an untouched group gets saved (and the group library refreshed) again.
         self.letter_code = self.letter_code or None
+        self.color_code = self.color_code or None
         self.heading = {language: text for language, text in self.heading.items() if text} if self.heading else None
         if not self.heading:
             self.heading = None
@@ -532,6 +551,19 @@ class RegulationGroup(PlanBaseModel):
     def refresh_stored(self) -> None:
         """Take the snapshot from the current children, once they are all in the database."""
         self.stored = StoredRegulationGroup.of(self)
+
+    def lacks_lifecycle_status(self) -> bool:
+        """Some new regulation or proposition would get its status from the database instead of the plugin."""
+        return any(regulation.lacks_lifecycle_status() for regulation in self.regulations) or any(
+            proposition.lacks_lifecycle_status() for proposition in self.propositions
+        )
+
+    def set_lifecycle_status_of_new(self, status_id: str | None) -> None:
+        """The new regulations and propositions get the plan's current status."""
+        for regulation in self.regulations:
+            regulation.set_lifecycle_status_of_new(status_id)
+        for proposition in self.propositions:
+            proposition.set_lifecycle_status_of_new(status_id)
 
     def apply_language_selection(self) -> None:
         languages = SettingsManager.get_languages()
@@ -627,6 +659,19 @@ class PlanObject(PlanBaseModel, LifecycleBase):
     def refresh_stored(self) -> None:
         """Take the snapshot from the current children, once they are all in the database."""
         self.stored = StoredPlanObject.of(self)
+
+    def lacks_lifecycle_status(self) -> bool:
+        """The object, or something in its groups, is new and would get its status from the database."""
+        return (self.id_ is None and self.lifecycle_status_id is None) or any(
+            group.lacks_lifecycle_status() for group in self.regulation_groups
+        )
+
+    def set_lifecycle_status_of_new(self, status_id: str | None) -> None:
+        """A new object and the new rows in its groups get the plan's current status. Saved rows keep theirs."""
+        if status_id and self.id_ is None and self.lifecycle_status_id is None:
+            self.lifecycle_status_id = status_id
+        for group in self.regulation_groups:
+            group.set_lifecycle_status_of_new(status_id)
 
     @classmethod
     def from_template_dict(cls, data: dict) -> PlanObject:

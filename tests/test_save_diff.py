@@ -15,9 +15,9 @@ from qgis.core import Qgis, QgsGeometry
 
 from arho_feature_template.core import feature_editing
 from arho_feature_template.core.models import PlanObject, StoredPlanObject, StoredRegulation, StoredRegulationGroup
-from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, RegulationGroupLayer
+from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, PlanLayer, RegulationGroupLayer
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
-from tests.test_model_readers import _add_feature, _build_family, _fill_family
+from tests.test_model_readers import _add_feature, _add_layer, _build_family, _fill_family
 
 if TYPE_CHECKING:
     from qgis.core import QgsProject, QgsVectorLayer
@@ -32,6 +32,11 @@ def layers(new_project: QgsProject) -> Iterator[dict[str, QgsVectorLayer]]:
     new_project.setTransactionMode(Qgis.TransactionMode.BufferedGroups)
     layers = _build_family(new_project, PLAN_LAYER_GROUP_NAME, "Aluevaraus")
     _fill_family(layers)
+    # New rows get the plan's lifecycle status from the plan row
+    layers["plans"] = _add_layer(
+        new_project, PLAN_LAYER_GROUP_NAME, PlanLayer.name, "None?field=id:string&field=lifecycle_status_id:string"
+    )
+    _add_feature(layers["plans"], id="plan-1", lifecycle_status_id="status-1")
     _add_feature(
         layers["groups"],
         id="group-2",
