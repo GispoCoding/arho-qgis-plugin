@@ -1008,8 +1008,11 @@ class PlanManager(QObject):
         if previously_in_edit_mode and not locked:
             plan_layer.startEditing()
 
-        # Both docks list the plan features, so read the (now filtered) layers once for both
-        plan_features_by_layer = _read_plan_features_by_layer() if plan_id else {}
+        # Both docks list the plan features, so read the (now filtered) layers once for both.
+        # Without a plan the layers are hidden, so there is nothing to read.
+        plan_features_by_layer = (
+            _read_plan_features_by_layer() if plan_id else {layer.name: [] for layer in plan_feature_layers}
+        )
         self.update_active_plan_regulation_group_library(plan_features_by_layer)
         self.features_dock.create_plan_feature_view(
             self.active_plan_regulation_group_library.regulation_groups,
