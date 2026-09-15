@@ -359,9 +359,12 @@ def finalize_plan_action(
 ) -> Response:
     """Make the plan final, so that it is published through the valid views.
 
-    The plan is only made final when it is valid today and passes Ryhti
-    validation, and the validation result is saved to the plan just as the
-    validate_plan action saves it.
+    The plan is only made final when it is valid today.
+
+    TEMPORARY: Ryhti validation is skipped. Normally the plan must also pass
+    Ryhti validation, and the validation result is saved to the plan just as
+    the validate_plan action saves it. Restore the validation block below when
+    the Ryhti API can validate the plans again.
     """
     if plan.final:
         return simple_response(
@@ -374,30 +377,32 @@ def finalize_plan_action(
             409, "Plan is not valid.", {"error": str(PlanNotValidError(plan.id))}
         )
 
-    LOGGER.info("Validating plan before making it final...")
-    ryhti_plan = database_client.serializer.serialize_plan(plan)
-    validation_response = client.validate_plan(plan, ryhti_plan)
-    save_detail = database_client.save_plan_validation_response(
-        plan.id, validation_response
-    )
-    if validation_response.get("status") != 200:
-        return Response(
-            statusCode=409,
-            body=ResponseBody(
-                title="Plan did not pass Ryhti validation.",
-                details=save_detail,
-                ryhti_response=validation_response,
-            ),
-        )
+    # TEMPORARY: Ryhti validation skipped. Restore this block to enable it:
+    #
+    # LOGGER.info("Validating plan before making it final...")
+    # ryhti_plan = database_client.serializer.serialize_plan(plan)
+    # validation_response = client.validate_plan(plan, ryhti_plan)
+    # save_detail = database_client.save_plan_validation_response(
+    #     plan.id, validation_response
+    # )
+    # if validation_response.get("status") != 200:
+    #     return Response(
+    #         statusCode=409,
+    #         body=ResponseBody(
+    #             title="Plan did not pass Ryhti validation.",
+    #             details=save_detail,
+    #             ryhti_response=validation_response,
+    #         ),
+    #     )
+    del client
+    LOGGER.warning("Skipping Ryhti validation before making plan final (temporary).")
 
     LOGGER.info("Making plan final...")
     result = database_client.finalize_plan(plan.id)
     return Response(
         statusCode=200,
         body=ResponseBody(
-            title="Plan made final.",
-            details=result.to_details(),
-            ryhti_response=validation_response,
+            title="Plan made final.", details=result.to_details(), ryhti_response=None
         ),
     )
 

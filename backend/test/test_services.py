@@ -472,7 +472,8 @@ def finalize_valid_plan(ryhti_client_url: str, valid_complete_test_plan: Plan) -
     body = data["body"]
     assert body["title"] == "Plan made final."
     assert body["details"] == {"repealed_plans": 0, "repealed_plan_objects": 0}
-    assert body["ryhti_response"]["status"] == 200
+    # TEMPORARY: Ryhti validation is skipped when finalizing.
+    assert body["ryhti_response"] is None
 
 
 def test_finalize_valid_plan(
@@ -492,7 +493,8 @@ def test_finalize_valid_plan(
             assert row is not None
             final, validation_date = row
             assert final is True
-            assert validation_date
+            # TEMPORARY: Ryhti validation is skipped when finalizing.
+            assert validation_date is None
     finally:
         conn.close()
 
@@ -524,6 +526,7 @@ def test_finalize_plan_that_is_not_valid(
         conn.close()
 
 
+@pytest.mark.skip(reason="TEMPORARY: Ryhti validation is skipped when finalizing.")
 def test_finalize_plan_that_ryhti_rejects(
     session: Session,
     ryhti_client_url: str,
