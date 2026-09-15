@@ -101,8 +101,9 @@ class AbstractLayer(ABC):
         return feature
 
     @classmethod
-    def get_features(cls):
-        return cls.get_from_project().getFeatures()
+    def get_features(cls) -> Generator[QgsFeature]:
+        with timed(f"query[{cls.name}]", filter="<all>"):
+            yield from cls.get_from_project().getFeatures()
 
     @classmethod
     def get_selected_features(cls, no_geometries: bool = True) -> Generator[QgsFeature]:  # noqa: FBT001, FBT002
