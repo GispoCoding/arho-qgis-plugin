@@ -239,9 +239,10 @@ class PlanManager(QObject):
         self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
         self.feature_digitize_map_tool.digitizingFinished.connect(self.new_feature_dock.deactivate_and_clear_selections)
 
-        # Initialize plan feature inspect tool for the editable and the valid plan objects
+        # Initialize plan feature inspect tool for the editable and the valid plan objects.
+        # The valid (Ajantasakaava) layers are searched only when no editable object is hit.
         self.inspect_plan_feature_tool = InspectPlanFeatures(
-            iface.mapCanvas(), [*plan_feature_layers, *valid_plan_object_layers]
+            iface.mapCanvas(), plan_feature_layers, fallback_layer_classes=valid_plan_object_layers
         )
         self.inspect_plan_feature_tool.feature_identified.connect(self.on_plan_object_identified)
 

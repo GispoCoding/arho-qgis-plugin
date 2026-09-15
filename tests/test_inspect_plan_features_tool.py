@@ -1,4 +1,8 @@
-"""The inspect tool reports the clicked feature with its layer class, not its layer name."""
+"""The inspect tool reports the clicked feature with its layer class, not its layer name.
+
+Every identified layer is one spatial read, so the fallback layers (the valid plan objects)
+are only searched when the primary layers (the editable plan objects) give nothing.
+"""
 
 from __future__ import annotations
 
@@ -39,14 +43,76 @@ def point_layers(new_project: QgsProject) -> tuple[QgsVectorLayer, QgsVectorLaye
 def make_tool(canvas: QgsMapCanvas) -> Iterator:
     tools: list[InspectPlanFeatures] = []
 
-    def make(layer_classes, visible_only: bool) -> InspectPlanFeatures:
-        tool = InspectPlanFeatures(canvas, layer_classes, visible_only=visible_only)
+    def make(layer_classes, visible_only: bool, fallback_layer_classes=()) -> InspectPlanFeatures:
+        tool = InspectPlanFeatures(
+            canvas, layer_classes, fallback_layer_classes=fallback_layer_classes, visible_only=visible_only
+        )
         tools.append(tool)
         return tool
 
     yield make
     for tool in tools:
         tool.deleteLater()
+
+
+def _fake_identify(tool: InspectPlanFeatures, hits: dict[str, QgsFeature], monkeypatch) -> list[list[str]]:
+    """Replace the spatial identify with a lookup by layer id; returns the layer id lists it was asked for."""
+    asked: list[list[str]] = []
+
+    def identify(x, y, layerList, mode):  # noqa: ARG001
+        asked.append([layer.id() for layer in layerList])
+        return [
+            QgsMapToolIdentify.IdentifyResult(layer, hits[layer.id()], {}) for layer in layerList if layer.id() in hits
+        ]
+
+    monkeypatch.setattr(tool, "identify", identify)
+    return asked
+
+
+def _feature(layer: QgsVectorLayer, id_: str) -> QgsFeature:
+    feature = QgsFeature(layer.fields())
+    feature.setAttribute("id", id_)
+    return feature
+
+
+def test_a_hit_on_a_primary_layer_does_not_search_the_fallback_layers(point_layers, make_tool, monkeypatch):
+    plan_points, valid_points = point_layers
+    tool = make_tool([PointLayer], visible_only=False, fallback_layer_classes=[ValidPointLayer])
+    asked = _fake_identify(tool, {plan_points.id(): _feature(plan_points, "plan-1")}, monkeypatch)
+    received = []
+    tool.feature_identified.connect(lambda feature, layer_class: received.append((feature["id"], layer_class)))
+
+    tool.identify_at(0, 0)
+
+    assert asked == [[plan_points.id()]]
+    assert received == [("plan-1", PointLayer)]
+    assert valid_points.id() not in asked[0]
+
+
+def test_a_miss_on_the_primary_layers_falls_through_to_the_fallback_layers(point_layers, make_tool, monkeypatch):
+    plan_points, valid_points = point_layers
+    tool = make_tool([PointLayer], visible_only=False, fallback_layer_classes=[ValidPointLayer])
+    asked = _fake_identify(tool, {valid_points.id(): _feature(valid_points, "valid-1")}, monkeypatch)
+    received = []
+    tool.feature_identified.connect(lambda feature, layer_class: received.append((feature["id"], layer_class)))
+
+    tool.identify_at(0, 0)
+
+    assert asked == [[plan_points.id()], [valid_points.id()]]
+    assert received == [("valid-1", ValidPointLayer)]
+
+
+def test_a_miss_everywhere_reports_nothing(point_layers, make_tool, monkeypatch):
+    plan_points, valid_points = point_layers
+    tool = make_tool([PointLayer], visible_only=False, fallback_layer_classes=[ValidPointLayer])
+    asked = _fake_identify(tool, {}, monkeypatch)
+    received = []
+    tool.feature_identified.connect(lambda _feature, layer_class: received.append(layer_class))
+
+    tool.identify_at(0, 0)
+
+    assert asked == [[plan_points.id()], [valid_points.id()]]
+    assert received == []
 
 
 def test_layers_are_resolved_by_group_in_the_given_order(point_layers, make_tool):
