@@ -126,6 +126,7 @@ from arho_feature_template.utils.misc_utils import (
 from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
+    from arho_feature_template.core.feature_editing import PlanObjectSaveResult
     from arho_feature_template.project.layers import AbstractLayer
 
 logger = logging.getLogger(__name__)
@@ -795,9 +796,15 @@ class PlanManager(QObject):
                 parent=iface.mainWindow(),
             )
         ) as attribute_form:
-            if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
+            if attribute_form.exec() and (saved := save_plan_object(attribute_form.model)) is not None:
                 logger.debug("Plan feature saved successfully from digitized geometry")
-                self.update_active_plan_regulation_group_library()
+                self._refresh_regulation_group_library_if_changed(saved)
+
+    def _refresh_regulation_group_library_if_changed(self, saved: PlanObjectSaveResult) -> None:
+        if saved.regulation_groups_changed:
+            self.update_active_plan_regulation_group_library()
+        else:
+            logger.debug("Regulation groups unchanged by the save, library refresh skipped")
 
     def save_disabled_reason(self) -> str | None:
         """Why a plan object of the active plan cannot be saved, or None when it can."""
@@ -829,9 +836,9 @@ class PlanManager(QObject):
                 parent=iface.mainWindow(),
             )
         ) as attribute_form:
-            if attribute_form.exec() and save_plan_object(attribute_form.model) is not None:
+            if attribute_form.exec() and (saved := save_plan_object(attribute_form.model)) is not None:
                 logger.debug("Plan feature saved successfully after edit")
-                self.update_active_plan_regulation_group_library()
+                self._refresh_regulation_group_library_if_changed(saved)
 
     def show_valid_plan_object(self, feature: QgsFeature, layer_class: type[ValidPlanObjectLayer]) -> None:
         """Show a plan object of the valid plans (Ajantasakaava) in the plan object form, read-only.

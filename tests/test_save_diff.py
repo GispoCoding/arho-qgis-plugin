@@ -11,7 +11,7 @@ import logging
 from typing import TYPE_CHECKING, Iterator
 
 import pytest
-from qgis.core import Qgis
+from qgis.core import Qgis, QgsGeometry
 
 from arho_feature_template.core import feature_editing
 from arho_feature_template.core.models import PlanObject, StoredPlanObject, StoredRegulation, StoredRegulationGroup
@@ -213,3 +213,61 @@ def test_a_failed_commit_leaves_the_model_as_it_was(layers: dict[str, QgsVectorL
 
     assert area.stored == StoredPlanObject(regulation_group_ids=frozenset({"group-1"}))
     assert feature_editing._after_commit == []
+
+
+def _save_result(plan_object: PlanObject) -> feature_editing.PlanObjectSaveResult:
+    result = feature_editing.save_plan_object(plan_object, plan_id="plan-1")
+    assert result is not None
+    return result
+
+
+def test_saving_an_unchanged_object_reports_no_group_change(layers: dict[str, QgsVectorLayer]):
+    area = _read_area(layers)
+
+    assert _save_result(area) == feature_editing.PlanObjectSaveResult("area-1", regulation_groups_changed=False)
+
+
+def test_changing_only_the_object_reports_no_group_change(layers: dict[str, QgsVectorLayer]):
+    area = _read_area(layers)
+    area.name = {"fin": "Uusi nimi"}
+    area.modified = True
+
+    assert _save_result(area).regulation_groups_changed is False
+    assert next(layers["objects"].getFeatures("\"id\" = 'area-1'"))["name"] == {"fin": "Uusi nimi"}
+
+
+def test_a_new_object_without_groups_reports_no_group_change(layers: dict[str, QgsVectorLayer]):
+    area = PlanObject(
+        geom=QgsGeometry.fromWkt("POLYGON((20 20, 30 20, 30 30, 20 30, 20 20))"),
+        layer_name="Aluevaraus",
+        name={"fin": "Uusi"},
+    )
+
+    result = _save_result(area)
+
+    assert result.regulation_groups_changed is False
+    assert result.id_ == area.id_
+    assert _attribute_values(layers["associations"], "plan_regulation_group_id") == ["group-1"]
+
+
+def test_an_added_group_reports_a_group_change(layers: dict[str, QgsVectorLayer]):
+    area = _read_area(layers)
+    area.regulation_groups.append(_read_group(layers, "group-2"))
+
+    assert _save_result(area).regulation_groups_changed is True
+
+
+def test_a_removed_group_reports_a_group_change(layers: dict[str, QgsVectorLayer]):
+    area = _read_area(layers)
+    area.regulation_groups = []
+
+    assert _save_result(area).regulation_groups_changed is True
+
+
+def test_a_changed_regulation_link_reports_a_group_change(layers: dict[str, QgsVectorLayer]):
+    area = _read_area(layers)
+    (group,) = area.regulation_groups
+    (regulation,) = group.regulations
+    regulation.theme_ids.append("theme-3")
+
+    assert _save_result(area).regulation_groups_changed is True
