@@ -181,6 +181,8 @@ class PlanManager(QObject):
         self.json_plan_matter_path = None
 
         self.plan_locked = False  # Change this only through `update_lock_status` method
+        # Plan type id of the active plan matter, read once in `set_active_plan_matter`
+        self.active_plan_matter_plan_type_id: str | None = None
 
         # The tool that was active before one of ours took over. We do not own it.
         self.previous_map_tool: QgsMapTool | None = None
@@ -898,23 +900,28 @@ class PlanManager(QObject):
         set_active_plan_matter_id(plan_matter_id)
 
         # Plan matter filtering
-        if plan_matter_id:
+        if plan_matter_id and plan_matter_feature is not None:
             self.plan_matter_set.emit()
             for layer in plan_matter_layers:
                 layer.filter_layer_by_plan_matter_id(plan_matter_id)
 
             # Name is set as localized text in primary language
-            plan_matter_name = PlanMatterLayer.get_plan_matter_name(plan_matter_id)
-            # Don't save Nimetön as plan name in project variables
-            set_active_plan_matter_name(plan_matter_name if plan_matter_name != "Nimetön" else "")
+            plan_matter_name = get_localized_text(plan_matter_feature["name"])
+            set_active_plan_matter_name(plan_matter_name or "")
 
-            permanent_plan_identifier = PlanMatterLayer.get_attribute_by_id("permanent_plan_identifier", plan_matter_id)
+            permanent_plan_identifier = plan_matter_feature["permanent_plan_identifier"]
             if QgsVariantUtils.isNull(permanent_plan_identifier):
                 permanent_plan_identifier = None
 
             self.set_permanent_identifier(permanent_plan_identifier)
+
+            plan_type_id = plan_matter_feature["plan_type_id"]
+            self.active_plan_matter_plan_type_id = None if QgsVariantUtils.isNull(plan_type_id) else plan_type_id
             logger.debug(
-                "Active plan matter set id=%s permanent_identifier=%s", plan_matter_id, permanent_plan_identifier
+                "Active plan matter set id=%s permanent_identifier=%s plan_type_id=%s",
+                plan_matter_id,
+                permanent_plan_identifier,
+                self.active_plan_matter_plan_type_id,
             )
         else:
             for layer in plan_matter_layers:
@@ -922,9 +929,10 @@ class PlanManager(QObject):
             self.plan_matter_unset.emit()
 
             set_active_plan_matter_name("")
+            self.active_plan_matter_plan_type_id = None
 
         # Ajantasakaava filtering: show only the valid plans of the same plan type
-        plan_type = PlanMatterLayer.get_top_level_plan_type_value(plan_matter_id) if plan_matter_id else None
+        plan_type = PlanTypeLayer.get_top_level_code_value(self.active_plan_matter_plan_type_id)
         logger.debug("Filtering Ajantasakaava layers by plan type=%s", plan_type)
         for valid_layer in valid_layers:
             valid_layer.filter_layer_by_plan_type(plan_type)
@@ -982,7 +990,7 @@ class PlanManager(QObject):
         self.features_dock.create_plan_feature_view(self.active_plan_regulation_group_library.regulation_groups)
 
         if plan_id:
-            plan_type = _active_plan_type()
+            plan_type = self._active_plan_type()
             if plan_type:
                 for feature_layer in plan_feature_layers:
                     layer = feature_layer.get_from_project()
@@ -995,6 +1003,18 @@ class PlanManager(QObject):
             logger.debug("Updated active plan name=%s", plan_name)
         else:
             set_active_plan_name("")
+
+    def _active_plan_type(self) -> PlanType | None:
+        """Plan type of the active plan matter, from the plan type id read in `set_active_plan_matter`."""
+        if self.active_plan_matter_plan_type_id is None:
+            logger.debug("No active plan matter plan type, skipping style application")
+            return None
+
+        plan_type = PlanTypeLayer.get_plan_type(self.active_plan_matter_plan_type_id)
+        if not plan_type:
+            logger.warning("No plan type resolved for active plan matter, skipping style application")
+            return None
+        return plan_type
 
     def zoom_to_active_plan(self):
         """Zoom to the active plan layer."""
@@ -1323,20 +1343,6 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
         library_type=RegulationGroupLibrary.LibraryType.ACTIVE_PLAN,
         regulation_groups=regulation_groups,
     )
-
-
-def _active_plan_type() -> PlanType | None:
-    """Plan type of the active plan matter, resolved once so every styled layer does not query it again."""
-    active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id())
-    if not active_plan_matter:
-        logger.debug("No active plan matter found, skipping style application")
-        return None
-
-    plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
-    if not plan_type:
-        logger.warning("No plan type resolved for active plan matter, skipping style application")
-        return None
-    return plan_type
 
 
 def _apply_style(layer: QgsVectorLayer, plan_type: PlanType) -> None:
