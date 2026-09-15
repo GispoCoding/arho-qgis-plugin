@@ -189,6 +189,14 @@ class PlanBaseModel:
             value = getattr(self, _field.name)
             setattr(self, _field.name, null_to_none(value))
 
+    def changed_fields(self, other: PlanBaseModel) -> list[str]:
+        """Names of the compared fields whose values differ. For logging why a model counts as modified."""
+        return [
+            _field.name
+            for _field in fields(self)
+            if _field.compare and getattr(self, _field.name) != getattr(other, _field.name)
+        ]
+
     def data_hash(self) -> int:
         hash_components = []
         for _field in fields(self):
@@ -509,6 +517,17 @@ class RegulationGroup(PlanBaseModel):
     category: str | None = field(compare=False, default=None)
     id_: str | None = field(compare=False, default=None)
     stored: StoredRegulationGroup | None = field(compare=False, default=None, repr=False)
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        # An empty text field in the form and an empty database value are the same thing. Without
+        # this, a group read from the database and the same group read back from its form widget
+        # compare unequal, and an untouched group gets saved (and the group library refreshed) again.
+        self.letter_code = self.letter_code or None
+        self.heading = {language: text for language, text in self.heading.items() if text} if self.heading else None
+        if not self.heading:
+            self.heading = None
 
     def refresh_stored(self) -> None:
         """Take the snapshot from the current children, once they are all in the database."""

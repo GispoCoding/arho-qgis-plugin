@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from importlib import resources
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,8 @@ if TYPE_CHECKING:
 
     from arho_feature_template.gui.components.value_input_widgets import LocalizedSinglelineTextInputWidget
 
+
+logger = logging.getLogger(__name__)
 
 ui_path = resources.files(__package__) / "plan_regulation_group_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -264,6 +267,11 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             stored=self.regulation_group.stored if not force_new else None,
         )
         if not model.modified and model != self.regulation_group:
+            logger.debug(
+                "Regulation group %s marked modified, changed fields: %s",
+                model.id_,
+                model.changed_fields(self.regulation_group),
+            )
             model.modified = True
 
         return model

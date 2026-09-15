@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, cast
 
 from qgis.core import QgsProject
@@ -54,6 +55,34 @@ created_object_models: dict[str, PlanObject] = {}
 # Runs when the edit buffer is committed, so that the saved models mirror the database.
 # A failed commit drops the callbacks: nothing was written, so the models stay as they were.
 _after_commit: list[Callable[[], None]] = []
+
+# The layers whose rows the active plan regulation group library and the regulation groups
+# dock show. A save that leaves them all untouched does not need a library refresh.
+regulation_group_layers = (
+    RegulationGroupLayer,
+    RegulationGroupAssociationLayer,
+    PlanRegulationLayer,
+    PlanPropositionLayer,
+    AdditionalInformationLayer,
+    PlanThemeAssociationLayer,
+    TypeOfVerbalRegulationAssociationLayer,
+)
+
+
+def regulation_group_layers_modified() -> bool:
+    """Whether the pending edit buffer changes any regulation group data. Ask before the commit."""
+    modified = [
+        layer_class.name for layer_class in regulation_group_layers if layer_class.get_from_project().isModified()
+    ]
+    logger.debug("Regulation group layers with pending changes: %s", modified)
+    return bool(modified)
+
+
+@dataclass(frozen=True)
+class PlanObjectSaveResult:
+    id_: str
+    regulation_groups_changed: bool
+    """The commit wrote regulation group data, so the active plan group library is stale."""
 
 
 def _set_id_after_commit(model: AdditionalInformation | Document, id_: str) -> None:
@@ -341,18 +370,19 @@ def save_plan(plan: Plan) -> str | None:
 @use_wait_cursor
 @status_message("Tallennetaan kaavakohdetta ...")
 @timed_function("save_plan_object")
-def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> str | None:
+def save_plan_object(plan_object: PlanObject, plan_id: str | None = None) -> PlanObjectSaveResult | None:
     logger.info("Saving plan object %s:%s", plan_object.layer_name, plan_object.id_)
     object_id = add_plan_object_to_edit_buffer(plan_object, enable_editing=True, plan_id=plan_id)
     if object_id is None:
         logger.warning("Plan object edit-buffer save failed for layer=%s", plan_object.layer_name)
         return None
 
+    regulation_groups_changed = regulation_group_layers_modified()
     result = commit_edit_buffer(stop_editing=False)
     if result is not True:
         return None
 
-    return object_id
+    return PlanObjectSaveResult(object_id, regulation_groups_changed)
 
 
 @use_wait_cursor

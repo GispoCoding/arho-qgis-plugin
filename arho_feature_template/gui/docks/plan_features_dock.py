@@ -396,12 +396,15 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         ) as form:
             if form.exec():
                 updated_plan_feature_model = form.model
-                if save_plan_object(updated_plan_feature_model) is not None:
+                saved = save_plan_object(updated_plan_feature_model)
+                if saved is not None:
                     logger.debug("Plan feature saved from form id=%s", updated_plan_feature_model.id_)
                     # Update table row if saving was succesfull
                     model_index = self.filter_proxy_model.mapToSource(index)
                     row = model_index.row()
                     self._update_row(row, updated_plan_feature_model)
+                    if saved.regulation_groups_changed:
+                        self.plan_manager_ref.update_active_plan_regulation_group_library()
 
     def _open_context_menu(self, pos: QPoint):
         index = self.table.indexAt(pos)
