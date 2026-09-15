@@ -5,7 +5,7 @@ Every block logs one line to the `arho_feature_template.timing` logger:
     TIMING  |   +-- add_to_edit_buffer[Kaavamaarays] 412.3 ms
 
 Indentation shows nesting, so a slow parent and its slow child are easy to pair.
-Set the logger to INFO to see the lines, or to WARNING to silence them.
+The lines are logged at DEBUG level.
 """
 
 from __future__ import annotations
@@ -43,10 +43,10 @@ def timed(label: str, **context: Any) -> Generator[None]:
     finally:
         elapsed_ms = (perf_counter() - start) * 1000
         _set_depth(depth)
-        if logger.isEnabledFor(logging.INFO):
+        if logger.isEnabledFor(logging.DEBUG):
             indent = "|   " * depth
             extra = " ".join(f"{key}={value}" for key, value in context.items())
-            logger.info("TIMING %s+-- %s %.1f ms %s", indent, label, elapsed_ms, extra)
+            logger.debug("TIMING %s+-- %s %.1f ms %s", indent, label, elapsed_ms, extra)
 
 
 def timed_function(label: str | None = None) -> Callable[[F], F]:
