@@ -34,7 +34,14 @@ and getting its form took ~3.7 s: 27 layer reads.
    editable one is no longer offered in the pick menu. Tests:
    `tests/test_inspect_plan_features_tool.py`.
 
-Expected after the three: ~13 reads, ~1.9 s. Re-measure with the same click.
+Measured after the three (2026-09-15 20:43, `logs/*-form-open-after.*`, a land use
+area with 2 groups and 3 regulations): 13 reads, ~1.9 s from the click to the form.
+4 spatial reads, 8 model-build reads, 1 association read, no plan matter read.
+
+One more read appeared once per session: the full `codes.type_of_verbal_plan_regulation`
+table, the lazy cache build of `VerbalRegulationType` on its first use in the form.
+Adding it to the cache builds in `PlanManager.on_project_loaded` would move that
+~130 ms to the project load.
 
 ## Parked
 
