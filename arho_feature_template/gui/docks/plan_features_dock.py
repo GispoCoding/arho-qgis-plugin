@@ -192,12 +192,18 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
         self.push_button_edit_lifecycle.lifecycle_change_requested.connect(self._on_lifecycle_change_requested)
 
-    def _update_edit_lifecycle_visibility(self):
+    def _update_edit_lifecycle_visibility(self, active_lifecycle_id: str | None = None):
+        """Show the lifecycle button only for a plan that is far enough in its lifecycle.
+
+        `active_lifecycle_id` is the lifecycle status id of the active plan, if the caller has
+        read it; otherwise it is read from the plan layer.
+        """
         active_plan_id = get_active_plan_id()
         if not active_plan_id:
             visible = False
         else:
-            active_lifecycle_id = PlanLayer.get_attribute_by_id("lifecycle_status_id", get_active_plan_id())
+            if active_lifecycle_id is None:
+                active_lifecycle_id = PlanLayer.get_attribute_by_id("lifecycle_status_id", active_plan_id)
             active_lifecycle_value = LifeCycleStatusLayer.get_lifecycle_status_by_id(active_lifecycle_id)
 
             visible = active_lifecycle_value is not None and int(active_lifecycle_value.value) >= int(
@@ -270,6 +276,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self,
         regulation_groups: list[RegulationGroup] | None = None,
         plan_features_by_layer: dict[str, list[QgsFeature]] | None = None,
+        active_plan_lifecycle_status_id: str | None = None,
     ):
         """Rebuild the table from the plan feature layers.
 
@@ -277,7 +284,8 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         `PlanObjectReader.models_from_features`); the groups of the active plan are already read
         for the regulation group library, so the caller can pass them here. `plan_features_by_layer`
         are the features of the plan feature layers keyed by layer name, if the caller has already
-        read them; a layer missing from it is read here.
+        read them; a layer missing from it is read here. `active_plan_lifecycle_status_id` is the
+        lifecycle status id of the active plan, if the caller has read it.
         """
         logger.debug("Creating plan feature table view")
         # Clear table
@@ -293,7 +301,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             for plan_feature_model, feature in zip(layer.models_from_features(features, regulation_groups), features):
                 self._add_plan_feature_to_view(plan_feature_model, feature.id())
 
-        self._update_edit_lifecycle_visibility()
+        self._update_edit_lifecycle_visibility(active_plan_lifecycle_status_id)
 
     def update_selected_rows(self):
         logger.debug("Updating selected rows based on map selections")

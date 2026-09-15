@@ -15,10 +15,13 @@ Done so far: code caches for `PlanTypeLayer`, `UndergroundTypeLayer`,
 `PlanRegulationGroupTypeLayer`; plan type resolved once for the four style
 applications; `get_features()` now shows up in the TIMING log.
 
-The ideas below are not done. They change control flow or data flow, so each
-needs a proper test pass. Line numbers are from the 2026-09-15 code.
+Ideas 1-5 are done (2026-09-15, one commit each on `fast-create-feature`,
+with tests in `tests/test_set_active_plan_matter.py`, `tests/test_set_active_plan.py`,
+`tests/test_docks_shared_plan_features.py` and `tests/test_model_readers.py`).
+Ideas 6 and 7 are not done. Line numbers are from the 2026-09-15 code before
+the changes.
 
-## 1. Do not set the plan to None and then restore it (~1.5 s)
+## 1. Do not set the plan to None and then restore it (~1.5 s) - done
 
 `PlanManager.set_active_plan_matter` ends with `self.set_active_plan(None)`
 (`core/plan_manager.py:917`), and `on_project_loaded` then calls
@@ -30,7 +33,7 @@ Idea: `set_active_plan_matter(plan_matter_id, plan_id: str | None = None)` that
 ends with `self.set_active_plan(plan_id)`; `on_project_loaded` passes the
 stored plan id. Other callers keep the default.
 
-## 2. Read the plan matter once in `set_active_plan_matter` (~0.7 s)
+## 2. Read the plan matter once in `set_active_plan_matter` (~0.7 s) - done
 
 The same plan matter row is read for the name (`:892`), the permanent
 identifier (`:896`) and the plan type (`:912`), plus a full scan of the plan
@@ -41,7 +44,7 @@ Idea: `PlanMatterLayer.get_feature_by_id(...)` once, take `name`,
 `permanent_plan_identifier` and `plan_type_id` from the feature. The membership
 test can use the same read (missing feature -> warn path).
 
-## 3. Reuse the active-plan regulation group library in the features dock (~0.8 s)
+## 3. Reuse the active-plan regulation group library in the features dock (~0.8 s) - done
 
 `PlanObjectsDock.create_plan_feature_view` (`gui/docks/plan_features_dock.py:279`)
 calls `layer.models_from_features(features)` without `regulation_groups`, so
@@ -56,7 +59,7 @@ make the parameter a *seed*: fetch only the group ids that are not in it. The
 library leaves out `generalRegulations` groups on purpose, so a plan object
 that referenced one would otherwise lose it.
 
-## 4. Scan the four plan feature layers once for both docks (~0.5 s)
+## 4. Scan the four plan feature layers once for both docks (~0.5 s) - done
 
 `RegulationGroupsDock.update_regulation_groups` (`gui/docks/regulation_groups_dock.py:209-215`)
 reads the four plan feature layers (id + geometry, used to flash/select the
@@ -66,13 +69,19 @@ objects of a group) and `create_plan_feature_view`
 Idea: read once in `set_active_plan` and pass the features to both; keep the
 self-fetching behaviour when the argument is `None` for the other callers.
 
-## 5. Read the plan row once in `set_active_plan` (~0.4 s)
+## 5. Read the plan row once in `set_active_plan` (~0.4 s) - done
 
 `:952` model, `:984` zoom (`zoom_to_active_plan` scans the layer), `:975` name,
 and `plan_features_dock.py:200` lifecycle status: four reads of one row.
 
 Idea: `PlanLayer.get_feature_by_id(plan_id, no_geometries=False)` once; build
 the model, the name and the bounding box from it.
+
+Done as: a plan id that is not found now logs a warning and unsets the plan
+(it used to crash on `model_from_feature(None)`). The lifecycle status id is
+passed to the features dock. The plan matter's plan type id is kept on the
+manager (`active_plan_matter_plan_type_id`) for the layer styles; the one
+remaining plan matter read is in `EditLifecycleMenu.__init__`.
 
 ## 6. Subset-string validations (~1.5 s, ~0.7 s after idea 1)
 
