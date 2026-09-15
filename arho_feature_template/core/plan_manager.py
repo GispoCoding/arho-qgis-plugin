@@ -71,6 +71,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanRegulationGroupTypeLayer,
     PlanRegulationTypeLayer,
     PlanType,
+    UndergroundTypeLayer,
     code_layers,
 )
 from arho_feature_template.project.layers.plan_layers import (
@@ -305,6 +306,10 @@ class PlanManager(QObject):
             AdditionalInformationTypeLayer.build_cache()
             LifeCycleStatusLayer.build_cache()
             LegalEffectsLayer.build_cache()
+            # Looked up on every project load and plan switch; caching saves one DB round trip per lookup
+            PlanTypeLayer.build_cache()
+            UndergroundTypeLayer.build_cache()
+            PlanRegulationGroupTypeLayer.build_cache()
 
         _cache_code_layers()
 
@@ -967,9 +972,11 @@ class PlanManager(QObject):
         self.features_dock.create_plan_feature_view()
 
         if plan_id:
-            for feature_layer in plan_feature_layers:
-                layer = feature_layer.get_from_project()
-                _apply_style(layer)
+            plan_type = _active_plan_type()
+            if plan_type:
+                for feature_layer in plan_feature_layers:
+                    layer = feature_layer.get_from_project()
+                    _apply_style(layer, plan_type)
             self.zoom_to_active_plan()
 
             plan_name = PlanLayer.get_plan_name(plan_id)
@@ -1315,18 +1322,22 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     )
 
 
-def _apply_style(layer: QgsVectorLayer) -> None:
-    logger.debug("Applying style for layer=%s", layer.name())
-    active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id(), no_geometries=False)
+def _active_plan_type() -> PlanType | None:
+    """Plan type of the active plan matter, resolved once so every styled layer does not query it again."""
+    active_plan_matter = PlanMatterLayer.get_feature_by_id(get_active_plan_matter_id())
     if not active_plan_matter:
         logger.debug("No active plan matter found, skipping style application")
-        return
+        return None
 
     plan_type = PlanTypeLayer.get_plan_type(active_plan_matter["plan_type_id"])
     if not plan_type:
         logger.warning("No plan type resolved for active plan matter, skipping style application")
-        return
+        return None
+    return plan_type
 
+
+def _apply_style(layer: QgsVectorLayer, plan_type: PlanType) -> None:
+    logger.debug("Applying style for layer=%s", layer.name())
     if plan_type == PlanType.REGIONAL:
         folder = REGIONAL_PLAN_PATH
     elif plan_type == PlanType.GENERAL:
