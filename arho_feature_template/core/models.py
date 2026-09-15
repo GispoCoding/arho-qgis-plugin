@@ -292,6 +292,84 @@ class AttributeValue(PlanBaseModel):
         }
 
 
+@dataclass(frozen=True)
+class StoredRegulation:
+    """Children and links of a regulation row as the database has them.
+
+    The readers set these snapshots when a model is read, and the save path refreshes them
+    when the edit buffer is committed. Saving compares the edited model against its snapshot
+    instead of asking the database what the row had before.
+    """
+
+    additional_information_ids: frozenset[str]
+    theme_ids: frozenset[str]
+    verbal_regulation_type_ids: frozenset[str]
+
+    @classmethod
+    def of(cls, regulation: Regulation) -> StoredRegulation:
+        return cls(
+            additional_information_ids=_ids_of(regulation.additional_information),
+            theme_ids=frozenset(regulation.theme_ids),
+            verbal_regulation_type_ids=frozenset(regulation.verbal_regulation_type_ids),
+        )
+
+
+@dataclass(frozen=True)
+class StoredProposition:
+    """Links of a proposition row as the database has them. See `StoredRegulation`."""
+
+    theme_ids: frozenset[str]
+
+    @classmethod
+    def of(cls, proposition: Proposition) -> StoredProposition:
+        return cls(theme_ids=frozenset(proposition.theme_ids))
+
+
+@dataclass(frozen=True)
+class StoredRegulationGroup:
+    """Children of a regulation group row as the database has them. See `StoredRegulation`."""
+
+    regulation_ids: frozenset[str]
+    proposition_ids: frozenset[str]
+
+    @classmethod
+    def of(cls, group: RegulationGroup) -> StoredRegulationGroup:
+        return cls(regulation_ids=_ids_of(group.regulations), proposition_ids=_ids_of(group.propositions))
+
+
+@dataclass(frozen=True)
+class StoredPlanObject:
+    """Links of a plan object row as the database has them. See `StoredRegulation`."""
+
+    regulation_group_ids: frozenset[str]
+
+    @classmethod
+    def of(cls, plan_object: PlanObject) -> StoredPlanObject:
+        return cls(regulation_group_ids=_ids_of(plan_object.regulation_groups))
+
+
+@dataclass(frozen=True)
+class StoredPlan:
+    """Children and links of a plan row as the database has them. See `StoredRegulation`."""
+
+    general_regulation_group_ids: frozenset[str]
+    legal_effect_ids: frozenset[str]
+    document_ids: frozenset[str]
+
+    @classmethod
+    def of(cls, plan: Plan) -> StoredPlan:
+        return cls(
+            general_regulation_group_ids=_ids_of(plan.general_regulations),
+            legal_effect_ids=frozenset(plan.legal_effect_ids),
+            document_ids=_ids_of(plan.documents),
+        )
+
+
+def _ids_of(models: list) -> frozenset[str]:
+    """Ids of the saved models in the list. A model without an id is not in the database."""
+    return frozenset(model.id_ for model in models if model.id_ is not None)
+
+
 @dataclass
 class AdditionalInformation(PlanBaseModel):
     additional_information_type_id: str
@@ -336,6 +414,11 @@ class Regulation(PlanBaseModel, LifecycleBase):
     regulation_group_id: str | None = field(compare=False, default=None)  # Should be ok that this field is not compared
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
+    stored: StoredRegulation | None = field(compare=False, default=None, repr=False)
+
+    def refresh_stored(self) -> None:
+        """Take the snapshot from the current children, once they are all in the database."""
+        self.stored = StoredRegulation.of(self)
 
     @classmethod
     def from_template_dict(cls, data: dict) -> Regulation:
@@ -399,6 +482,11 @@ class Proposition(PlanBaseModel, LifecycleBase):
     regulation_group_id: str | None = field(compare=False, default=None)
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
+    stored: StoredProposition | None = field(compare=False, default=None, repr=False)
+
+    def refresh_stored(self) -> None:
+        """Take the snapshot from the current children, once they are all in the database."""
+        self.stored = StoredProposition.of(self)
 
     def into_template_dict(self) -> dict:
         return {
@@ -420,6 +508,11 @@ class RegulationGroup(PlanBaseModel):
     modified: bool = field(compare=False, default=True)
     category: str | None = field(compare=False, default=None)
     id_: str | None = field(compare=False, default=None)
+    stored: StoredRegulationGroup | None = field(compare=False, default=None, repr=False)
+
+    def refresh_stored(self) -> None:
+        """Take the snapshot from the current children, once they are all in the database."""
+        self.stored = StoredRegulationGroup.of(self)
 
     def apply_language_selection(self) -> None:
         languages = SettingsManager.get_languages()
@@ -510,6 +603,11 @@ class PlanObject(PlanBaseModel, LifecycleBase):
     plan_id: int | None = None
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
+    stored: StoredPlanObject | None = field(compare=False, default=None, repr=False)
+
+    def refresh_stored(self) -> None:
+        """Take the snapshot from the current children, once they are all in the database."""
+        self.stored = StoredPlanObject.of(self)
 
     @classmethod
     def from_template_dict(cls, data: dict) -> PlanObject:
@@ -577,6 +675,11 @@ class Plan(PlanBaseModel, LifecycleBase):
     final: bool = False
     modified: bool = field(compare=False, default=True)
     id_: str | None = field(compare=False, default=None)
+    stored: StoredPlan | None = field(compare=False, default=None, repr=False)
+
+    def refresh_stored(self) -> None:
+        """Take the snapshot from the current children, once they are all in the database."""
+        self.stored = StoredPlan.of(self)
 
 
 @dataclass

@@ -22,6 +22,10 @@ from arho_feature_template.core.models import (
     Proposition,
     Regulation,
     RegulationGroup,
+    StoredPlanObject,
+    StoredProposition,
+    StoredRegulation,
+    StoredRegulationGroup,
 )
 from arho_feature_template.project.layers import AbstractLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
@@ -87,10 +91,12 @@ class PlanObjectReader(FamilyLayer):
         )
 
         plan_object_ids_by_group_id: dict[str, list[str]] = defaultdict(list)
+        group_ids_by_plan_object_id: dict[str, set[str]] = defaultdict(set)
         for association in association_features:
-            plan_object_ids_by_group_id[association["plan_regulation_group_id"]].append(
-                association[cls.association_attribute]
-            )
+            group_id = association["plan_regulation_group_id"]
+            plan_object_id = association[cls.association_attribute]
+            plan_object_ids_by_group_id[group_id].append(plan_object_id)
+            group_ids_by_plan_object_id[plan_object_id].add(group_id)
 
         # Read the regulation group models only if they are not given as a parameter
         if not regulation_groups:
@@ -120,6 +126,7 @@ class PlanObjectReader(FamilyLayer):
                 period_of_validity_end=feature["period_of_validity_end"] or None,
                 modified=False,
                 id_=feature["id"],
+                stored=StoredPlanObject(regulation_group_ids=frozenset(group_ids_by_plan_object_id[feature["id"]])),
             )
             for feature in features
         ]
@@ -167,6 +174,10 @@ class RegulationGroupReader(FamilyLayer):
                 propositions=propositions_by_group_id[feature["id"]],
                 modified=False,
                 id_=feature["id"],
+                stored=StoredRegulationGroup(
+                    regulation_ids=frozenset(reg.id_ for reg in regulations_by_group_id[feature["id"]] if reg.id_),
+                    proposition_ids=frozenset(prop.id_ for prop in propositions_by_group_id[feature["id"]] if prop.id_),
+                ),
             )
             for feature in features
         ]
@@ -225,6 +236,13 @@ class RegulationReader(FamilyLayer):
                 period_of_validity_end=feature["period_of_validity_end"] or None,
                 modified=False,
                 id_=feature["id"],
+                stored=StoredRegulation(
+                    additional_information_ids=frozenset(
+                        info.id_ for info in infos_by_regulation_id[feature["id"]] if info.id_
+                    ),
+                    theme_ids=frozenset(plan_theme_ids_by_regulation_id[feature["id"]]),
+                    verbal_regulation_type_ids=frozenset(verbal_regulation_types_by_regulation_id[feature["id"]]),
+                ),
             )
             for feature in features
         ]
@@ -259,6 +277,7 @@ class PropositionReader(FamilyLayer):
                 period_of_validity_end=feature["period_of_validity_end"] or None,
                 modified=False,
                 id_=feature["id"],
+                stored=StoredProposition(theme_ids=frozenset(plan_theme_ids_by_proposition_id[feature["id"]])),
             )
             for feature in features
         ]

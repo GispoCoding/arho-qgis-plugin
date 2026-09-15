@@ -249,6 +249,7 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         model = Plan(
             id_=self.plan.id_,
+            stored=self.plan.stored,
             name=self.name_edit.text(),
             description=self.description_text_edit.toPlainText() or None,
             scale=self.scale_spin_box.value() or None,

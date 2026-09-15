@@ -231,6 +231,7 @@ class PlanRegulationGroupForm(QDialog, FormClass):  # type: ignore
             propositions=[widget.into_model() for widget in self.proposition_widgets],
             modified=self.regulation_group.modified,
             id_=self.regulation_group.id_,
+            stored=self.regulation_group.stored,
         )
         if not model.modified and model != self.regulation_group:
             model.modified = True

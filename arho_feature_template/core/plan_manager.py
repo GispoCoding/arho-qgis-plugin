@@ -513,8 +513,13 @@ class PlanManager(QObject):
         logger.debug("Adding regulation groups to selected features groups=%s", len(groups))
         for feat_layer_name, feat_ids in features:
             for feat_id in feat_ids:
+                # One query per feature, so that a group the feature already has is not linked twice
+                linked_group_ids = set(
+                    RegulationGroupAssociationLayer.get_group_ids_for_feature(feat_id, feat_layer_name)
+                )
                 for group in groups:
-                    save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
+                    if group.id_ not in linked_group_ids:
+                        save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
         self.features_dock.create_plan_feature_view()
 
     def remove_selected_regulation_groups_from_features(

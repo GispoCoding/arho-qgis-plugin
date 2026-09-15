@@ -67,9 +67,10 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.heading.set_value(regulation_group.heading)
 
         # Remove existing child widgets if reinitializing
-        for widget in self.regulation_widgets:
+        # create copies of widget lists to avoid mutations while iterating
+        for widget in list(self.regulation_widgets):
             self.delete_regulation_widget(widget)
-        for widget in self.proposition_widgets:
+        for widget in list(self.proposition_widgets):
             self.delete_proposition_widget(widget)
         for regulation in regulation_group.regulations:
             self.add_regulation_widget(regulation)
@@ -116,6 +117,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
             propositions=[widget.into_model() for widget in self.proposition_widgets],
             modified=self.regulation_group.modified,
             id_=self.regulation_group.id_,
+            stored=self.regulation_group.stored,
         )
         if not model.modified and model != self.regulation_group:
             model.modified = True

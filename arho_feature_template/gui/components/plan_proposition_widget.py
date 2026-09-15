@@ -159,6 +159,7 @@ class PropositionWidget(QWidget, FormClass):  # type: ignore
             period_of_validity_end=self.proposition.period_of_validity_end,
             modified=self.proposition.modified,
             id_=self.proposition.id_ if not force_new else None,
+            stored=self.proposition.stored if not force_new else None,
         )
         if not model.modified and model != self.proposition:
             model.modified = True
