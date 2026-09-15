@@ -173,13 +173,6 @@ class PlanMatterLayer(AbstractPlanMatterLayer):
         return cast(str, producers_id)
 
     @classmethod
-    def is_regional_plan(cls, plan_matter_id: str) -> bool:
-        plan_type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_matter_id)
-        if plan_type_id is None:
-            return False
-        return PlanTypeLayer.is_regional_plan_type(plan_type_id)
-
-    @classmethod
     def get_top_level_plan_type_value(cls, plan_matter_id: str) -> str | None:
         """Level 1 kaavalaji code value ("1", "2" or "3") of the plan matter."""
         plan_type_id = cls.get_attribute_value_by_another_attribute_value("plan_type_id", "id", plan_matter_id)

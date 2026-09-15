@@ -117,6 +117,23 @@ def get_active_plan_matter_name():
     return QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_matter_name")
 
 
+def set_active_plan_matter_plan_type_id(plan_type_id: str | None):
+    """Store the plan type id of the active plan matter as a project variable.
+
+    Read once when the plan matter is activated, so that the widgets can resolve the plan
+    type from the cached plan type code layer instead of reading the plan matter row.
+    """
+    QgsExpressionContextUtils.setProjectVariable(
+        QgsProject.instance(), "active_plan_matter_plan_type_id", plan_type_id if plan_type_id is not None else ""
+    )
+
+
+def get_active_plan_matter_plan_type_id() -> str | None:
+    """Plan type id of the active plan matter, or None when no plan matter is active."""
+    value = QgsExpressionContextUtils.projectScope(QgsProject.instance()).variable("active_plan_matter_plan_type_id")
+    return value or None
+
+
 def use_wait_cursor(func):
     """Decorator for showing wait cursor during function execution."""
 

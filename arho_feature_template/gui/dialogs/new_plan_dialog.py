@@ -22,12 +22,14 @@ from arho_feature_template.core.models import Plan
 from arho_feature_template.gui.components.code_combobox import ValueDataRole
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
+    PlanTypeLayer,
 )
-from arho_feature_template.project.layers.plan_layers import PlanLayer, PlanMatterLayer
+from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import (
     get_active_plan_id,
     get_active_plan_matter_id,
+    get_active_plan_matter_plan_type_id,
     iface,
 )
 
@@ -161,7 +163,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         description_template = UNDER_APPEAL_SCOPE_DESCRIPTIONS.get(scope)
         if description_template:
             if scope == UnderAppealScopeOption.PARTIALLY_VALID:
-                if PlanMatterLayer.is_regional_plan(get_active_plan_matter_id()):
+                if PlanTypeLayer.is_regional_plan_type(get_active_plan_matter_plan_type_id()):
                     lifecycle_value = LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY
                 else:
                     lifecycle_value = LifeCycleStatusValue.VALID

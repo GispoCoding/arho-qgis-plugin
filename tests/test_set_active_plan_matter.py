@@ -15,7 +15,11 @@ import arho_feature_template.core.plan_manager as plan_manager_module
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.project.layers.code_layers import PlanTypeLayer
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
-from arho_feature_template.utils.misc_utils import get_active_plan_matter_id, get_active_plan_matter_name
+from arho_feature_template.utils.misc_utils import (
+    get_active_plan_matter_id,
+    get_active_plan_matter_name,
+    get_active_plan_matter_plan_type_id,
+)
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 
 pytestmark = pytest.mark.fake_iface
@@ -90,7 +94,7 @@ def test_the_plan_matter_values_come_from_the_one_read(manager: PlanManager, pla
     assert attribute_reads == []
     assert get_active_plan_matter_name() == "Kaava-asia"
     assert identifiers == ["MK-2026-1"]
-    assert manager.active_plan_matter_plan_type_id == "type-1"
+    assert get_active_plan_matter_plan_type_id() == "type-1"
 
 
 def test_unsetting_the_plan_matter_clears_its_values(manager: PlanManager, plan_activations):  # noqa: ARG001
@@ -99,7 +103,7 @@ def test_unsetting_the_plan_matter_clears_its_values(manager: PlanManager, plan_
     manager.set_active_plan_matter(None)
 
     assert get_active_plan_matter_name() == ""
-    assert manager.active_plan_matter_plan_type_id is None
+    assert get_active_plan_matter_plan_type_id() is None
 
 
 def test_a_plan_matter_is_found_while_the_layer_is_hidden(
