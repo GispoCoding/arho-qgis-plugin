@@ -107,6 +107,22 @@ def test_a_missing_plan_unsets_the_plan(manager: PlanManager, view_calls, caplog
     assert call[2] is None
 
 
+def test_without_a_plan_the_feature_layers_are_not_read(manager: PlanManager, view_calls, monkeypatch):
+    class HiddenLayerClass:
+        name = "Aluevaraus"
+
+        @staticmethod
+        def get_features():
+            pytest.fail("plan feature layer read")
+
+    monkeypatch.setattr(plan_manager_module, "plan_feature_layers", [HiddenLayerClass])
+
+    manager.set_active_plan(None)
+
+    (call,) = view_calls
+    assert call[1] == {"Aluevaraus": []}
+
+
 def test_the_lifecycle_button_uses_the_given_status(plugin, monkeypatch):
     dock = plugin.plan_manager.features_dock
     set_active_plan_id("plan-1")
