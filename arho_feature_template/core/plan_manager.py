@@ -689,6 +689,11 @@ class PlanManager(QObject):
                 saved_id = save_plan_matter(attribute_form.model)
                 logger.debug("Plan matter save returned id=%s", saved_id)
 
+                if saved_id is not None:
+                    # The name and the plan type of the active plan matter live in project
+                    # variables. Reopen the plan matter so that an edited value takes effect.
+                    self.set_active_plan_matter(saved_id, get_active_plan_id())
+
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
         logger.debug("Creating new plan matter")
