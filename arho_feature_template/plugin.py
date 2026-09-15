@@ -4,6 +4,7 @@ import contextlib
 import logging
 import os
 import traceback
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
@@ -48,7 +49,7 @@ class Plugin:
     def __init__(self) -> None:
         SettingsManager.migrate_log_level_keys()
         self.set_file_log_level_if_not_set()
-        setup_logger(arho_feature_template.__name__)
+        self._setup_logger()
         # Rebuild the handlers when the settings page is applied, so a new level takes
         # effect without a restart
         SettingsManager.notifier.settings_saved.connect(self._reload_logger)
@@ -90,7 +91,20 @@ class Plugin:
 
     def _reload_logger(self) -> None:
         teardown_logger(arho_feature_template.__name__)
-        setup_logger(arho_feature_template.__name__)
+        self._setup_logger()
+
+    @staticmethod
+    def _setup_logger() -> None:
+        plugin_logger = setup_logger(arho_feature_template.__name__)
+        # The submodule formats the file log with whole seconds only; add milliseconds
+        # so the step timers are readable
+        file_formatter = logging.Formatter(
+            "%(asctime)s.%(msecs)03d - [%(levelname)-7s] - %(filename)s:%(lineno)d : %(message)s",
+            "%d.%m.%Y %H:%M:%S",
+        )
+        for handler in plugin_logger.handlers:
+            if isinstance(handler, RotatingFileHandler):
+                handler.setFormatter(file_formatter)
 
     def show_exception(self, *args, **kwargs):
         """Extend the default QGIS exception handling by logging the exception if it originates from our code.
