@@ -13,8 +13,9 @@ from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 
 import arho_feature_template.core.plan_manager as plan_manager_module
 from arho_feature_template.core.plan_manager import PlanManager
+from arho_feature_template.project.layers.code_layers import PlanTypeLayer
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
-from arho_feature_template.utils.misc_utils import get_active_plan_matter_id
+from arho_feature_template.utils.misc_utils import get_active_plan_matter_id, get_active_plan_matter_name
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 
 pytestmark = pytest.mark.fake_iface
@@ -35,6 +36,8 @@ def plan_matter_layer(new_project: QgsProject) -> QgsVectorLayer:
     feature = QgsFeature(layer.fields())
     feature.setAttribute("id", "matter-1")
     feature.setAttribute("name", {"fin": "Kaava-asia"})
+    feature.setAttribute("permanent_plan_identifier", "MK-2026-1")
+    feature.setAttribute("plan_type_id", "type-1")
     assert layer.dataProvider().addFeature(feature)
     new_project.addMapLayer(layer, addToLegend=False)
     group.addLayer(layer)
@@ -46,6 +49,7 @@ def manager(plugin, plan_matter_layer: QgsVectorLayer, monkeypatch: pytest.Monke
     """The plugin's manager with only the plan matter layer in the project."""
     monkeypatch.setattr(plan_manager_module, "plan_matter_layers", [PlanMatterLayer])
     monkeypatch.setattr(plan_manager_module, "valid_layers", [])
+    monkeypatch.setattr(PlanTypeLayer, "get_top_level_code_value", lambda _id: "1" if _id == "type-1" else None)
     return plugin.plan_manager
 
 
@@ -71,6 +75,31 @@ def test_the_given_plan_is_activated_with_its_plan_matter(manager: PlanManager, 
     assert get_active_plan_matter_id() == "matter-1"
     assert plan_activations == ["plan-1"]
     assert reads == ["matter-1"]
+
+
+def test_the_plan_matter_values_come_from_the_one_read(manager: PlanManager, plan_activations, monkeypatch):  # noqa: ARG001
+    attribute_reads: list[tuple] = []
+    monkeypatch.setattr(
+        PlanMatterLayer, "get_attribute_value_by_another_attribute_value", lambda *args: attribute_reads.append(args)
+    )
+    identifiers: list[str | None] = []
+    manager.plan_identifier_set.connect(identifiers.append)
+
+    manager.set_active_plan_matter("matter-1")
+
+    assert attribute_reads == []
+    assert get_active_plan_matter_name() == "Kaava-asia"
+    assert identifiers == ["MK-2026-1"]
+    assert manager.active_plan_matter_plan_type_id == "type-1"
+
+
+def test_unsetting_the_plan_matter_clears_its_values(manager: PlanManager, plan_activations):  # noqa: ARG001
+    manager.set_active_plan_matter("matter-1")
+
+    manager.set_active_plan_matter(None)
+
+    assert get_active_plan_matter_name() == ""
+    assert manager.active_plan_matter_plan_type_id is None
 
 
 def test_no_plan_is_activated_by_default(manager: PlanManager, plan_activations):
