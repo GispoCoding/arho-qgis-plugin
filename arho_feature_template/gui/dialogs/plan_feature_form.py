@@ -152,6 +152,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
             regulation_groups=self.regulation_groups_view.into_model(),
             plan_id=self.plan_feature.plan_id,
             id_=self.plan_feature.id_,
+            stored=self.plan_feature.stored,
             modified=self.plan_feature.modified,
         )
         if not model.modified and model != self.plan_feature:

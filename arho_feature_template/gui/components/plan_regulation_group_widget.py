@@ -261,6 +261,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             propositions=[widget.into_model(force_new) for widget in self.proposition_widgets],
             modified=self.regulation_group.modified,
             id_=self.regulation_group.id_ if not force_new else None,
+            stored=self.regulation_group.stored if not force_new else None,
         )
         if not model.modified and model != self.regulation_group:
             model.modified = True

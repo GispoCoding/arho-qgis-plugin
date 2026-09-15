@@ -28,9 +28,12 @@ OUTLINE = QgsGeometry.fromWkt("MULTIPOLYGON (((0 0, 10 0, 10 10, 0 10, 0 0)))")
 @pytest.fixture
 def _no_sibling_layers(monkeypatch: pytest.MonkeyPatch) -> None:
     """The regulation group, legal effect and document layers are not part of this seam."""
-    monkeypatch.setattr(plan_layers_module.RegulationGroupLayer, "get_general_regulation_groups", lambda _id: [])
-    monkeypatch.setattr(plan_layers_module.LegalEffectAssociationLayer, "get_legal_effect_ids_for_plan", lambda _id: [])
-    monkeypatch.setattr(plan_layers_module.DocumentLayer, "get_features_by_attribute_value", lambda *_args: [])
+    for layer_class in (
+        plan_layers_module.RegulationGroupAssociationLayer,
+        plan_layers_module.LegalEffectAssociationLayer,
+        plan_layers_module.DocumentLayer,
+    ):
+        monkeypatch.setattr(layer_class, "get_features_by_attribute_value", lambda *_args, **_kwargs: [])
 
 
 def _add_plan_layer(project: QgsProject, uri: str) -> QgsVectorLayer:

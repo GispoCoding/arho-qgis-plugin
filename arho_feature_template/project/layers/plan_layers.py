@@ -19,6 +19,7 @@ from arho_feature_template.core.models import (
     Proposition,
     Regulation,
     RegulationGroup,
+    StoredPlan,
 )
 from arho_feature_template.exceptions import (
     FeatureNotFoundError,
@@ -214,27 +215,7 @@ class PlanLayer(AbstractPlanLayer):
 
     @classmethod
     def model_from_feature(cls, feature: QgsFeature) -> Plan:
-        return Plan(
-            geom=feature.geometry(),
-            name=get_localized_text(feature["name"]),
-            description=get_localized_text(feature["description"]),
-            scale=feature["scale"],
-            lifecycle_status_id=feature["lifecycle_status_id"],
-            general_regulations=RegulationGroupLayer.get_general_regulation_groups(feature["id"]),
-            legal_effect_ids=list(LegalEffectAssociationLayer.get_legal_effect_ids_for_plan(feature["id"])),
-            documents=[
-                DocumentLayer.model_from_feature(feat)
-                for feat in DocumentLayer.get_features_by_attribute_value("plan_id", feature["id"])
-            ],
-            id_=feature["id"],
-            plan_matter_id=feature["plan_matter_id"],
-            approval_date=feature["approval_date"],
-            period_of_validity_start=feature["period_of_validity_start"],
-            period_of_validity_end=feature["period_of_validity_end"],
-            locked=feature["locked"],
-            final=read_flag(feature, "final"),
-            modified=False,
-        )
+        return cls.models_from_features([feature])[0]
 
     @classmethod
     def models_from_features(cls, features: list[QgsFeature]) -> list[Plan]:
@@ -250,10 +231,12 @@ class PlanLayer(AbstractPlanLayer):
         )
 
         plan_object_ids_by_group_id: dict[str, list[str]] = defaultdict(list)
+        group_ids_by_plan_id: dict[str, set[str]] = defaultdict(set)
         for association in association_features:
-            plan_object_ids_by_group_id[association["plan_regulation_group_id"]].append(
-                association[plan_object_field_name]
-            )
+            group_id = association["plan_regulation_group_id"]
+            plan_id = association[plan_object_field_name]
+            plan_object_ids_by_group_id[group_id].append(plan_id)
+            group_ids_by_plan_id[plan_id].add(group_id)
 
         regulation_group_ids = set(plan_object_ids_by_group_id)
         regulation_group_features = list(
@@ -297,6 +280,13 @@ class PlanLayer(AbstractPlanLayer):
                 locked=feature["locked"],
                 final=read_flag(feature, "final"),
                 modified=False,
+                stored=StoredPlan(
+                    general_regulation_group_ids=frozenset(group_ids_by_plan_id[feature["id"]]),
+                    legal_effect_ids=frozenset(legal_effects_by_plan_id[feature["id"]]),
+                    document_ids=frozenset(
+                        doc.id_ for doc in documents_by_plan_id[feature["id"]] if doc.id_ is not None
+                    ),
+                ),
             )
             for feature in features
         ]
@@ -444,14 +434,6 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
         return feature
 
     @classmethod
-    def association_exists(cls, regulation_group_id: str, layer_name: str, feature_id: str):
-        attribute = cls.layer_name_to_attribute_map.get(layer_name)
-        for feature in cls.get_features_by_attribute_value("plan_regulation_group_id", regulation_group_id):
-            if feature[attribute] == feature_id:
-                return True
-        return False
-
-    @classmethod
     def get_associations_for_feature(cls, feature_id: str, layer_name: str) -> Generator[QgsFeature]:
         attribute = cls.layer_name_to_attribute_map.get(layer_name)
         if not attribute:
@@ -501,14 +483,6 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
             raise LayerNotFoundError(layer_name)
         return cls.get_attribute_values_by_another_attribute_value("plan_regulation_group_id", attribute, feature_id)
 
-    @classmethod
-    def get_dangling_associations(  # by_feature
-        cls, groups: list[RegulationGroup], feature_id: str, layer_name: str
-    ) -> list[QgsFeature]:
-        associations = RegulationGroupAssociationLayer.get_associations_for_feature(feature_id, layer_name)
-        updated_group_ids = [group.id_ for group in groups]
-        return [assoc for assoc in associations if assoc["plan_regulation_group_id"] not in updated_group_ids]
-
 
 def update_feature_from_attribute_value_model(value: AttributeValue | None, feature: QgsFeature):
     if value is None:
@@ -556,19 +530,6 @@ class PlanRegulationLayer(RegulationReader, AbstractPlanLayer):
 
         return feature
 
-    @classmethod
-    def regulations_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
-        return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
-
-    @classmethod
-    def get_regulations_to_delete(cls, regulations: list[Regulation], group_id: str) -> list[QgsFeature]:
-        updated_regulation_ids = [regulation.id_ for regulation in regulations]
-        return [
-            reg
-            for reg in cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
-            if reg["id"] not in updated_regulation_ids
-        ]
-
 
 class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
     name = "Sanallisten kaavamääräyksien lajien assosiaatiot"
@@ -596,22 +557,6 @@ class TypeOfVerbalRegulationAssociationLayer(AbstractPlanLayer):
         feature["type_of_verbal_plan_regulation_id"] = type_of_verbal_regulation_id
         return feature
 
-    @classmethod
-    def association_exists(cls, regulation_id: str, type_of_verbal_regulation_id: str) -> bool:
-        for feature in cls.get_features_by_attribute_value("plan_regulation_id", regulation_id):
-            if feature["type_of_verbal_plan_regulation_id"] == type_of_verbal_regulation_id:
-                return True
-        return False
-
-    @classmethod
-    def get_associations_for_regulation(cls, regulation_id: str) -> Generator[QgsFeature]:
-        return cls.get_features_by_attribute_value("plan_regulation_id", regulation_id)
-
-    @classmethod
-    def get_dangling_associations(cls, regulation_id: str, updated_type_ids: list[str]) -> list[QgsFeature]:
-        associations = cls.get_associations_for_regulation(regulation_id)
-        return [assoc for assoc in associations if assoc["type_of_verbal_plan_regulation_id"] not in updated_type_ids]
-
 
 class LegalEffectAssociationLayer(AbstractPlanLayer):
     name = "Yleiskaavan oikeusvaikutusten assosiaatiot"
@@ -624,30 +569,6 @@ class LegalEffectAssociationLayer(AbstractPlanLayer):
         feature["plan_id"] = plan_id
         feature["legal_effects_of_master_plan_id"] = legal_effect_id
         return feature
-
-    @classmethod
-    def association_exists(cls, plan_id: str, legal_effect_id: str) -> bool:
-        for feature in cls.get_features_by_attribute_value("plan_id", plan_id):
-            if feature["legal_effects_of_master_plan_id"] == legal_effect_id:
-                return True
-        return False
-
-    @classmethod
-    def get_associations_for_plan(cls, plan_id: str) -> Generator[QgsFeature]:
-        return cls.get_features_by_attribute_value("plan_id", plan_id)
-
-    @classmethod
-    def get_legal_effect_ids_for_plan(cls, plan_id: str) -> Generator[QgsFeature]:
-        return cls.get_attribute_values_by_another_attribute_value(
-            "legal_effects_of_master_plan_id", "plan_id", plan_id
-        )
-
-    @classmethod
-    def get_dangling_associations(cls, plan_id: str, updated_legal_effect_ids: list[str]) -> list[QgsFeature]:
-        associations = cls.get_associations_for_plan(plan_id)
-        return [
-            assoc for assoc in associations if assoc["legal_effects_of_master_plan_id"] not in updated_legal_effect_ids
-        ]
 
 
 class PlanPropositionLayer(PropositionReader, AbstractPlanLayer):
@@ -678,19 +599,6 @@ class PlanPropositionLayer(PropositionReader, AbstractPlanLayer):
         feature["id"] = model.id_ if model.id_ else feature["id"]
 
         return feature
-
-    @classmethod
-    def propositions_with_group_id(cls, group_id: str) -> Generator[QgsFeature]:
-        return cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
-
-    @classmethod
-    def get_propositions_to_delete(cls, propositions: list[Proposition], group_id: str) -> list[QgsFeature]:
-        updated_proposition_ids = [proposition.id_ for proposition in propositions]
-        return [
-            prop
-            for prop in cls.get_features_by_attribute_value("plan_regulation_group_id", group_id)
-            if prop["id"] not in updated_proposition_ids
-        ]
 
 
 class PlanThemeAssociationLayer(AbstractPlanLayer):
@@ -726,44 +634,6 @@ class PlanThemeAssociationLayer(AbstractPlanLayer):
         feature["plan_proposition_id"] = plan_proposition_id
         feature["plan_theme_id"] = plan_theme_id
         return feature
-
-    @classmethod
-    def regulation_association_exists(cls, plan_theme_id: str, plan_regulation_id: str | None = None) -> bool:
-        if plan_regulation_id:
-            for feature in cls.get_features_by_attribute_value("plan_regulation_id", plan_regulation_id):
-                if feature["plan_theme_id"] == plan_theme_id:
-                    return True
-        return False
-
-    @classmethod
-    def proposition_association_exists(cls, plan_theme_id: str, plan_proposition_id: str | None = None) -> bool:
-        if plan_proposition_id:
-            for feature in cls.get_features_by_attribute_value("plan_proposition_id", plan_proposition_id):
-                if feature["plan_theme_id"] == plan_theme_id:
-                    return True
-        return False
-
-    @classmethod
-    def get_associations_for_plan_regulation(cls, plan_regulation_id: str) -> Generator[QgsFeature]:
-        return cls.get_features_by_attribute_value("plan_regulation_id", plan_regulation_id)
-
-    @classmethod
-    def get_associations_for_plan_proposition(cls, plan_proposition_id: str) -> Generator[QgsFeature]:
-        return cls.get_features_by_attribute_value("plan_proposition_id", plan_proposition_id)
-
-    @classmethod
-    def get_dangling_regulation_associations(
-        cls, plan_regulation_id: str, updated_plan_theme_ids: list[str]
-    ) -> list[QgsFeature]:
-        associations = cls.get_associations_for_plan_regulation(plan_regulation_id)
-        return [assoc for assoc in associations if assoc["plan_theme_id"] not in updated_plan_theme_ids]
-
-    @classmethod
-    def get_dangling_proposition_associations(
-        cls, plan_proposition_id: str, updated_plan_theme_ids: list[str]
-    ) -> list[QgsFeature]:
-        associations = cls.get_associations_for_plan_proposition(plan_proposition_id)
-        return [assoc for assoc in associations if assoc["plan_theme_id"] not in updated_plan_theme_ids]
 
 
 class DocumentLayer(AbstractPlanLayer):
@@ -834,15 +704,6 @@ class DocumentLayer(AbstractPlanLayer):
             for feature in features
         ]
 
-    @classmethod
-    def get_documents_to_delete(cls, documents: list[Document], plan_id: str) -> list[QgsFeature]:
-        updated_document_ids = [doc.id_ for doc in documents]
-        return [
-            doc
-            for doc in cls.get_features_by_attribute_value("plan_id", plan_id)
-            if doc["id"] not in updated_document_ids
-        ]
-
 
 class SourceDataLayer(AbstractPlanMatterLayer):
     name = "Lähtötietoaineistot"
@@ -877,17 +738,6 @@ class AdditionalInformationLayer(AdditionalInformationReader, AbstractPlanLayer)
         update_feature_from_attribute_value_model(model.value, feature)
 
         return feature
-
-    @classmethod
-    def get_additional_information_to_delete(
-        cls, additional_infos: list[AdditionalInformation], regulation_id: str
-    ) -> list[QgsFeature]:
-        updated_info_ids = [info.id_ for info in additional_infos]
-        return [
-            info
-            for info in cls.get_features_by_attribute_value("plan_regulation_id", regulation_id)
-            if info["id"] not in updated_info_ids
-        ]
 
 
 def get_plan_feature_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:

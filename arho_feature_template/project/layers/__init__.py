@@ -125,7 +125,7 @@ class AbstractLayer(ABC):
     def get_features_by_attribute_value(
         cls,
         attribute: str,
-        value: str | list | tuple | set | None,
+        value: str | list | tuple | set | frozenset | None,
         no_geometries: bool = True,  # noqa: FBT001, FBT002
     ) -> Generator[QgsFeature]:
         if cls._is_empty_collection(value):
@@ -135,6 +135,22 @@ class AbstractLayer(ABC):
         request = QgsFeatureRequest().setFilterExpression(expression)
         if no_geometries:
             request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
+        with timed(f"query[{cls.name}]", filter=expression):
+            yield from layer.getFeatures(request)
+
+    @classmethod
+    def get_features_by_attribute_values(
+        cls, filters: dict[str, str | list | tuple | set | frozenset | None]
+    ) -> Generator[QgsFeature]:
+        """Features that match every attribute filter (`attribute = value` or `attribute IN (...)`), no geometries."""
+        if any(cls._is_empty_collection(value) for value in filters.values()):
+            return
+        layer = cls.get_from_project()
+        expression = " AND ".join(
+            f"({cls.create_filter_expression(attribute, value)})" for attribute, value in filters.items()
+        )
+        request = QgsFeatureRequest().setFilterExpression(expression)
+        request.setFlags(QgsFeatureRequest.Flag.NoGeometry)
         with timed(f"query[{cls.name}]", filter=expression):
             yield from layer.getFeatures(request)
 
@@ -150,7 +166,7 @@ class AbstractLayer(ABC):
 
     @classmethod
     def get_attribute_values_by_another_attribute_value(
-        cls, target_attribute: str, filter_attribute: str, filter_value: str | list | tuple | set | None
+        cls, target_attribute: str, filter_attribute: str, filter_value: str | list | tuple | set | frozenset | None
     ) -> Generator[Any]:
         if cls._is_empty_collection(filter_value):
             return
@@ -185,21 +201,21 @@ class AbstractLayer(ABC):
         return cast(str, id_) if id_ else id_
 
     @staticmethod
-    def _is_empty_collection(value: str | list | tuple | set | None) -> bool:
+    def _is_empty_collection(value: str | list | tuple | set | frozenset | None) -> bool:
         """An empty collection matches nothing.
 
         `"attr" IN ()` is not a valid expression, so the provider would fetch every row and
         filter them on the client. Callers skip the request instead.
         """
-        return isinstance(value, (list, tuple, set)) and not value
+        return isinstance(value, (list, tuple, set, frozenset)) and not value
 
     @classmethod
-    def create_filter_expression(cls, attribute: str, value: str | list | tuple | set | None) -> str:
+    def create_filter_expression(cls, attribute: str, value: str | list | tuple | set | frozenset | None) -> str:
         if value is None:
             expression = f'"{attribute}" IS NULL'
         elif isinstance(value, str):
             expression = f"\"{attribute}\"='{value}'"
-        elif isinstance(value, (list, tuple, set)):
+        elif isinstance(value, (list, tuple, set, frozenset)):
             quoted_values = [f"'{val}'" for val in value]
             expression = f'"{attribute}" IN ({", ".join(map(str, quoted_values))})'
 

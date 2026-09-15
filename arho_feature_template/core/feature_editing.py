@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Callable, cast
 
 from qgis.core import QgsProject
 
@@ -39,11 +39,112 @@ if TYPE_CHECKING:
         Proposition,
         Regulation,
         RegulationGroup,
+        StoredPlan,
+        StoredPlanObject,
+        StoredProposition,
+        StoredRegulation,
+        StoredRegulationGroup,
     )
+    from arho_feature_template.project.layers import AbstractLayer
 
 logger = logging.getLogger(__name__)
 
 created_object_models: dict[str, PlanObject] = {}
+
+# Runs when the edit buffer is committed, so that the saved models mirror the database.
+# A failed commit drops the callbacks: nothing was written, so the models stay as they were.
+_after_commit: list[Callable[[], None]] = []
+
+
+def _set_id_after_commit(model: AdditionalInformation | Document, id_: str) -> None:
+    """A new leaf model gets the id of its row once the row exists."""
+
+    def apply() -> None:
+        if model.id_ is None:
+            model.id_ = id_
+
+    _after_commit.append(apply)
+
+
+def _sync_after_commit(model: Plan | PlanObject | RegulationGroup | Regulation | Proposition, id_: str) -> None:
+    """Once committed, the model has the id of its row and its children are the stored ones.
+
+    Children register before their parent (they are saved first), so the parent's snapshot
+    sees the ids the new children got.
+    """
+
+    def apply() -> None:
+        if model.id_ is None:
+            model.id_ = id_
+        model.refresh_stored()
+
+    _after_commit.append(apply)
+
+
+def _stored(
+    model: Plan | PlanObject | RegulationGroup | Regulation | Proposition,
+) -> StoredPlan | StoredPlanObject | StoredRegulationGroup | StoredRegulation | StoredProposition:
+    """The database snapshot of a model that has a row.
+
+    Only the readers (and a commit) set the snapshot. A model with an id but no snapshot was
+    built some other way, and saving it could leave orphan rows or insert duplicate links.
+    """
+    if model.stored is None:
+        msg = f"{type(model).__name__} {model.id_} has an id but no stored snapshot"
+        raise ValueError(msg)
+    return model.stored
+
+
+def _ids(
+    models: list[RegulationGroup] | list[Regulation] | list[Proposition] | list[AdditionalInformation] | list[Document],
+) -> frozenset[str]:
+    return frozenset(model.id_ for model in models if model.id_ is not None)
+
+
+def _delete_removed_rows(
+    layer_class: type[AbstractLayer], removed_ids: frozenset[str], delete_text: str, error_text: str
+) -> None:
+    """Delete the child rows the edited model no longer has. One query, only when something was removed."""
+    if not removed_ids:
+        return
+    layer = layer_class.get_from_project()
+    if not layer.isEditable():
+        QgsProject.instance().startEditing(layer)
+    for feature in layer_class.get_features_by_attribute_value("id", removed_ids):
+        if not delete_in_edit_buffer(feature, layer, delete_text):
+            MsgBar.error("", error_text)
+
+
+def _delete_removed_associations(
+    layer_class: type[AbstractLayer],
+    parent: dict[str, str],
+    child_attribute: str,
+    removed_ids: frozenset[str],
+    delete_text: str,
+    error_text: str,
+) -> None:
+    """Delete the link rows of `parent` whose child the edited model no longer has. One query, only when needed."""
+    if not removed_ids:
+        return
+    layer = layer_class.get_from_project()
+    if not layer.isEditable():
+        QgsProject.instance().startEditing(layer)
+    for feature in layer_class.get_features_by_attribute_values({**parent, child_attribute: removed_ids}):
+        if not delete_in_edit_buffer(feature, layer, delete_text):
+            MsgBar.error("", error_text)
+
+
+def _delete_removed_regulation_group_associations(
+    feature_id: str, layer_name: str, removed_group_ids: frozenset[str]
+) -> None:
+    _delete_removed_associations(
+        RegulationGroupAssociationLayer,
+        {RegulationGroupAssociationLayer.layer_name_to_attribute_map[layer_name]: feature_id},
+        "plan_regulation_group_id",
+        removed_group_ids,
+        "Kaavamääräysryhmän assosiaation poisto",
+        "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.",
+    )
 
 
 def feature_id(feature: QgsFeature) -> str:
@@ -94,10 +195,15 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
 def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
     project = QgsProject.instance()
     result, commit_errors = project.commitChanges(stopEditing=stop_editing)
-    if result:
-        logger.debug("Committed succesfully. Details=%s", commit_errors)
-    else:
-        logger.error("Failed to commit transaction. Details=%s", commit_errors)
+    try:
+        if result:
+            logger.debug("Committed succesfully. Details=%s", commit_errors)
+            for apply in _after_commit:
+                apply()
+        else:
+            logger.error("Failed to commit transaction. Details=%s", commit_errors)
+    finally:
+        _after_commit.clear()
     if any("VIRHE" in error for error in commit_errors):
         logger.error("Commit errors: %s", commit_errors)
 
@@ -181,51 +287,50 @@ def save_plan(plan: Plan) -> str | None:
     else:
         logger.debug("Skipping plan feature update, no direct plan changes for id=%s", plan_id)
 
+    stored_group_ids: frozenset[str] = frozenset()
+    stored_legal_effect_ids: frozenset[str] = frozenset()
     if editing:
-        # Check for deleted general regulations
-        for association in RegulationGroupAssociationLayer.get_dangling_associations(
-            plan.general_regulations, plan_id, PlanLayer.name
-        ):
-            if not delete_in_edit_buffer(
-                association,
-                RegulationGroupAssociationLayer.get_from_project(),
-                "Kaavamääräysryhmän assosiaation poisto",
-            ):
-                MsgBar.error("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+        stored = cast("StoredPlan", _stored(plan))
+        stored_group_ids = stored.general_regulation_group_ids
+        stored_legal_effect_ids = stored.legal_effect_ids
 
-        # Check for deleted legal effects
-        for association in LegalEffectAssociationLayer.get_dangling_associations(plan_id, plan.legal_effect_ids):
-            if not delete_in_edit_buffer(
-                association, LegalEffectAssociationLayer.get_from_project(), "Oikeusvaikutuksen assosiaation poisto"
-            ):
-                MsgBar.error("", "Oikeusvaikutuksen assosiaation poistaminen epäonnistui.")
-
-        # Check for documents to be deleted
-        doc_layer = DocumentLayer.get_from_project()
-        for doc_feature in DocumentLayer.get_documents_to_delete(plan.documents, plan_id):
-            if not delete_in_edit_buffer(doc_feature, doc_layer, "Asiakirjan poisto"):
-                MsgBar.error("", "Asiakirjan poistaminen epäonnistui.")
+        _delete_removed_regulation_group_associations(
+            plan_id, PlanLayer.name, stored_group_ids - _ids(plan.general_regulations)
+        )
+        _delete_removed_associations(
+            LegalEffectAssociationLayer,
+            {"plan_id": plan_id},
+            "legal_effects_of_master_plan_id",
+            stored_legal_effect_ids - frozenset(plan.legal_effect_ids),
+            "Oikeusvaikutuksen assosiaation poisto",
+            "Oikeusvaikutuksen assosiaation poistaminen epäonnistui.",
+        )
+        _delete_removed_rows(
+            DocumentLayer,
+            stored.document_ids - _ids(plan.documents),
+            "Asiakirjan poisto",
+            "Asiakirjan poistaminen epäonnistui.",
+        )
 
     # Save general regulations
-    if plan.general_regulations:
-        for regulation_group in plan.general_regulations:
-            group_is_new = regulation_group.id_ is None
-            group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
-            if group_id is None:
-                continue  # Skip association saving if saving regulation group failed
-            add_regulation_group_association_to_edit_buffer(
-                group_id, PlanLayer.name, plan_id, may_exist=editing and not group_is_new
-            )
+    for regulation_group in plan.general_regulations:
+        group_id = add_regulation_group_to_edit_buffer(regulation_group, plan_id)
+        if group_id is None:
+            continue  # Skip association saving if saving regulation group failed
+        if group_id not in stored_group_ids:
+            add_regulation_group_association_to_edit_buffer(group_id, PlanLayer.name, plan_id)
 
     # Save legal effect associations
     for legal_effect_id in plan.legal_effect_ids:
-        add_legal_effect_association_to_edit_buffer(plan_id, legal_effect_id, may_exist=editing)
+        if legal_effect_id not in stored_legal_effect_ids:
+            add_legal_effect_association_to_edit_buffer(plan_id, legal_effect_id)
 
     # Save documents
     for document in plan.documents:
         document.plan_id = plan_id
         add_document_to_edit_buffer(document)
 
+    _sync_after_commit(plan, plan_id)
     result = commit_edit_buffer(stop_editing=False)
     if not result:
         return None
@@ -275,8 +380,8 @@ def add_plan_object_to_edit_buffer(
 
     object_id = plan_object.id_
     editing = object_id is not None
-    feature = layer_class.feature_from_model(plan_object, plan_id)
     if object_id is None or plan_object.modified:
+        feature = layer_class.feature_from_model(plan_object, plan_id)
         layer = layer_class.get_from_project()
         if not layer.isEditable():
             logger.debug("Layer %s not editable, starting edit session", layer.name())
@@ -297,33 +402,28 @@ def add_plan_object_to_edit_buffer(
     else:
         logger.debug("Skipping plan object feature update, no direct changes for id=%s", object_id)
 
+    stored_group_ids: frozenset[str] = frozenset()
+    if editing:
+        stored_group_ids = cast("StoredPlanObject", _stored(plan_object)).regulation_group_ids
     if enable_editing and editing:
-        # Check for deleted regulation groups
-        for association in RegulationGroupAssociationLayer.get_dangling_associations(
-            plan_object.regulation_groups, object_id, layer_name
-        ):
-            if not delete_in_edit_buffer(
-                association,
-                RegulationGroupAssociationLayer.get_from_project(),
-                "Kaavamääräysryhmän assosiaation poisto",
-            ):
-                MsgBar.error("", "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.")
+        _delete_removed_regulation_group_associations(
+            object_id, layer_name, stored_group_ids - _ids(plan_object.regulation_groups)
+        )
 
     # Save regulation groups
     for group in plan_object.regulation_groups:
-        group_is_new = group.id_ is None
         if enable_editing:
             group_id = add_regulation_group_to_edit_buffer(group)
             if group_id is None:
                 continue  # Skip association saving if saving regulation group failed
         else:
             group_id = group.id_
-        add_regulation_group_association_to_edit_buffer(
-            group_id, layer_name, object_id, may_exist=editing and not group_is_new
-        )
+        if group_id not in stored_group_ids:
+            add_regulation_group_association_to_edit_buffer(group_id, layer_name, object_id)
 
-    created_object_models[feature["id"]] = plan_object
-    logger.debug("Stored created_object_models entry id=%s", feature["id"])
+    _sync_after_commit(plan_object, object_id)
+    created_object_models[object_id] = plan_object
+    logger.debug("Stored created_object_models entry id=%s", object_id)
 
     return object_id
 
@@ -374,30 +474,31 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
         logger.debug("Skipping regulation group feature update, no direct changes for id=%s", group_id)
 
     if editing:
-        # Check for regulations to be deleted
-        regulation_layer = PlanRegulationLayer.get_from_project()
-        for reg_feature in PlanRegulationLayer.get_regulations_to_delete(regulation_group.regulations, group_id):
-            if not delete_in_edit_buffer(reg_feature, regulation_layer, "Kaavamääräyksen poisto"):
-                MsgBar.error("", "Kaavamääräyksen poistaminen epäonnistui.")
-
-        # Check for propositions to be deleted
-        proposition_layer = PlanPropositionLayer.get_from_project()
-        for prop_feature in PlanPropositionLayer.get_propositions_to_delete(regulation_group.propositions, group_id):
-            if not delete_in_edit_buffer(prop_feature, proposition_layer, "Kaavasuosituksen poisto"):
-                MsgBar.error("", "Kaavasuosituksen poistaminen epäonnistui.")
+        stored = cast("StoredRegulationGroup", _stored(regulation_group))
+        _delete_removed_rows(
+            PlanRegulationLayer,
+            stored.regulation_ids - _ids(regulation_group.regulations),
+            "Kaavamääräyksen poisto",
+            "Kaavamääräyksen poistaminen epäonnistui.",
+        )
+        _delete_removed_rows(
+            PlanPropositionLayer,
+            stored.proposition_ids - _ids(regulation_group.propositions),
+            "Kaavasuosituksen poisto",
+            "Kaavasuosituksen poistaminen epäonnistui.",
+        )
 
     # Save regulations
-    if regulation_group.regulations:
-        for regulation in regulation_group.regulations:
-            regulation.regulation_group_id = group_id  # Updating regulation group ID
-            add_regulation_to_edit_buffer(regulation)
+    for regulation in regulation_group.regulations:
+        regulation.regulation_group_id = group_id  # Updating regulation group ID
+        add_regulation_to_edit_buffer(regulation)
 
     # Save propositions
-    if regulation_group.propositions:
-        for proposition in regulation_group.propositions:
-            proposition.regulation_group_id = group_id  # Updating regulation group ID
-            add_proposition_to_edit_buffer(proposition)
+    for proposition in regulation_group.propositions:
+        proposition.regulation_group_id = group_id  # Updating regulation group ID
+        add_proposition_to_edit_buffer(proposition)
 
+    _sync_after_commit(regulation_group, group_id)
     return group_id
 
 
@@ -426,20 +527,8 @@ def save_regulation_group_association(regulation_group_id: str, layer_name: str,
 
 
 @timed_function("add_regulation_group_association_to_edit_buffer")
-def add_regulation_group_association_to_edit_buffer(
-    regulation_group_id: str,
-    layer_name: str,
-    feature_id: str,
-    may_exist: bool = True,  # noqa: FBT001, FBT002
-) -> bool:
-    """Add the association unless it is already in the database.
-
-    `may_exist=False` skips the existence query. Use it when either side of the association
-    is a new feature: nothing can refer to an id that does not exist yet, and every query
-    costs several round trips on a remote database.
-    """
-    if may_exist and RegulationGroupAssociationLayer.association_exists(regulation_group_id, layer_name, feature_id):
-        return True
+def add_regulation_group_association_to_edit_buffer(regulation_group_id: str, layer_name: str, feature_id: str) -> bool:
+    """Add the association. The caller knows from the parent's `stored` snapshot that it is not in the database yet."""
     feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
     layer = RegulationGroupAssociationLayer.get_from_project()
     if not layer.isEditable():
@@ -474,43 +563,49 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
             return None
         reg_id = cast(str, regulation_feature["id"])
 
+    stored_type_ids: frozenset[str] = frozenset()
+    stored_theme_ids: frozenset[str] = frozenset()
     if editing:
-        # Check for additional information to be deleted
-        info_layer = AdditionalInformationLayer.get_from_project()
-        for info_feature in AdditionalInformationLayer.get_additional_information_to_delete(
-            regulation.additional_information, reg_id
-        ):
-            if not delete_in_edit_buffer(info_feature, info_layer, "Lisätiedon poisto"):
-                MsgBar.error("", "Liätiedon poistaminen epäonnistui.")
+        stored = cast("StoredRegulation", _stored(regulation))
+        stored_type_ids = stored.verbal_regulation_type_ids
+        stored_theme_ids = stored.theme_ids
 
-        # Check for verbal regulation types to be deleted
-        for association in TypeOfVerbalRegulationAssociationLayer.get_dangling_associations(
-            reg_id, regulation.verbal_regulation_type_ids
-        ):
-            if not delete_in_edit_buffer(
-                association,
-                TypeOfVerbalRegulationAssociationLayer.get_from_project(),
-                "Sanallisen kaavamääräyksen lajin assosiaation poisto",
-            ):
-                MsgBar.error("", "Sanallisen kaavamääräyksen lajin assosiaation poistaminen epäonnistui.")
-
-        # Check for plan theme to be deleted
-        for association in PlanThemeAssociationLayer.get_dangling_regulation_associations(reg_id, regulation.theme_ids):
-            if not delete_in_edit_buffer(
-                association, PlanThemeAssociationLayer.get_from_project(), "Kaavoitusteeman assosiaation poisto"
-            ):
-                MsgBar.error("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
+        _delete_removed_rows(
+            AdditionalInformationLayer,
+            stored.additional_information_ids - _ids(regulation.additional_information),
+            "Lisätiedon poisto",
+            "Lisätiedon poistaminen epäonnistui.",
+        )
+        _delete_removed_associations(
+            TypeOfVerbalRegulationAssociationLayer,
+            {"plan_regulation_id": reg_id},
+            "type_of_verbal_plan_regulation_id",
+            stored_type_ids - frozenset(regulation.verbal_regulation_type_ids),
+            "Sanallisen kaavamääräyksen lajin assosiaation poisto",
+            "Sanallisen kaavamääräyksen lajin assosiaation poistaminen epäonnistui.",
+        )
+        _delete_removed_associations(
+            PlanThemeAssociationLayer,
+            {"plan_regulation_id": reg_id},
+            "plan_theme_id",
+            stored_theme_ids - frozenset(regulation.theme_ids),
+            "Kaavoitusteeman assosiaation poisto",
+            "Kaavoitusteeman assosiaation poistaminen epäonnistui.",
+        )
 
     for additional_information in regulation.additional_information:
         additional_information.plan_regulation_id = reg_id
         add_additional_information_to_edit_buffer(additional_information)
 
     for verbal_regulation_type_id in regulation.verbal_regulation_type_ids:
-        add_type_of_verbal_regulation_association_to_edit_buffer(reg_id, verbal_regulation_type_id, may_exist=editing)
+        if verbal_regulation_type_id not in stored_type_ids:
+            add_type_of_verbal_regulation_association_to_edit_buffer(reg_id, verbal_regulation_type_id)
 
     for plan_theme_id in regulation.theme_ids:
-        add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, regulation_id=reg_id, may_exist=editing)
+        if plan_theme_id not in stored_theme_ids:
+            add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, regulation_id=reg_id)
 
+    _sync_after_commit(regulation, reg_id)
     return reg_id
 
 
@@ -519,31 +614,8 @@ def add_plan_theme_association_to_edit_buffer(
     plan_theme_id: str,
     regulation_id: str | None = None,
     proposition_id: str | None = None,
-    may_exist: bool = True,  # noqa: FBT001, FBT002
 ) -> bool:
-    """Add the association unless it is already in the database.
-
-    `may_exist=False` skips the existence query. Use it when either side of the association
-    is a new feature: nothing can refer to an id that does not exist yet, and every query
-    costs several round trips on a remote database.
-    """
-    if (
-        may_exist
-        and regulation_id is not None
-        and PlanThemeAssociationLayer.regulation_association_exists(
-            plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id
-        )
-    ):
-        return True
-
-    if (
-        may_exist
-        and proposition_id is not None
-        and PlanThemeAssociationLayer.proposition_association_exists(
-            plan_theme_id=plan_theme_id, plan_proposition_id=proposition_id
-        )
-    ):
-        return True
+    """Add the association. The caller knows from the parent's `stored` snapshot that it is not in the database yet."""
     feature = PlanThemeAssociationLayer.feature_from(
         plan_theme_id=plan_theme_id, plan_regulation_id=regulation_id, plan_proposition_id=proposition_id
     )
@@ -560,20 +632,9 @@ def add_plan_theme_association_to_edit_buffer(
 
 @timed_function("add_type_of_verbal_regulation_association_to_edit_buffer")
 def add_type_of_verbal_regulation_association_to_edit_buffer(
-    regulation_id: str,
-    verbal_regulation_type_id: str,
-    may_exist: bool = True,  # noqa: FBT001, FBT002
+    regulation_id: str, verbal_regulation_type_id: str
 ) -> bool:
-    """Add the association unless it is already in the database.
-
-    `may_exist=False` skips the existence query. Use it when either side of the association
-    is a new feature: nothing can refer to an id that does not exist yet, and every query
-    costs several round trips on a remote database.
-    """
-    if may_exist and TypeOfVerbalRegulationAssociationLayer.association_exists(
-        regulation_id, verbal_regulation_type_id
-    ):
-        return True
+    """Add the association. The caller knows from the parent's `stored` snapshot that it is not in the database yet."""
     feature = TypeOfVerbalRegulationAssociationLayer.feature_from(regulation_id, verbal_regulation_type_id)
     layer = TypeOfVerbalRegulationAssociationLayer.get_from_project()
     if not layer.isEditable():
@@ -588,19 +649,8 @@ def add_type_of_verbal_regulation_association_to_edit_buffer(
     return True
 
 
-def add_legal_effect_association_to_edit_buffer(
-    plan_id: str,
-    legal_effect_id: str,
-    may_exist: bool = True,  # noqa: FBT001, FBT002
-) -> bool:
-    """Add the association unless it is already in the database.
-
-    `may_exist=False` skips the existence query. Use it when either side of the association
-    is a new feature: nothing can refer to an id that does not exist yet, and every query
-    costs several round trips on a remote database.
-    """
-    if may_exist and LegalEffectAssociationLayer.association_exists(plan_id, legal_effect_id):
-        return True
+def add_legal_effect_association_to_edit_buffer(plan_id: str, legal_effect_id: str) -> bool:
+    """Add the association. The caller knows from the parent's `stored` snapshot that it is not in the database yet."""
     feature = LegalEffectAssociationLayer.feature_from(plan_id, legal_effect_id)
     layer = LegalEffectAssociationLayer.get_from_project()
     if not layer.isEditable():
@@ -634,6 +684,7 @@ def add_additional_information_to_edit_buffer(additional_information: Additional
         MsgBar.error("", "Lisätiedon tallentaminen epäonnistui.")
         return None
 
+    _set_id_after_commit(additional_information, feature["id"])
     return feature["id"]
 
 
@@ -667,40 +718,40 @@ def delete_regulation(regulation: Regulation) -> bool:
 def add_proposition_to_edit_buffer(proposition: Proposition) -> str | None:
     prop_id = proposition.id_
     editing = prop_id is not None
-    if proposition.id_ is not None and not proposition.modified:
-        return proposition.id_
+    if prop_id is None or proposition.modified:
+        feature = PlanPropositionLayer.feature_from_model(proposition)
+        layer = PlanPropositionLayer.get_from_project()
+        if not layer.isEditable():
+            QgsProject.instance().startEditing(layer)
 
-    feature = PlanPropositionLayer.feature_from_model(proposition)
-    layer = PlanPropositionLayer.get_from_project()
-    if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
-
-    if not add_to_edit_buffer(
-        feature=feature,
-        layer=layer,
-        id_=prop_id,
-        edit_text="Kaavasuosituksen lisäys" if prop_id is None else "Kaavasuosituksen muokkaus",
-    ):
-        MsgBar.error("", "Kaavasuosituksen tallentaminen epäonnistui.")
-        return None
-    prop_id = cast(str, feature["id"])
-
-    if editing:
-        # Check for plan theme to be deleted
-        for association in PlanThemeAssociationLayer.get_dangling_proposition_associations(
-            prop_id, proposition.theme_ids
+        if not add_to_edit_buffer(
+            feature=feature,
+            layer=layer,
+            id_=prop_id,
+            edit_text="Kaavasuosituksen muokkaus" if editing else "Kaavasuosituksen lisäys",
         ):
-            if not delete_in_edit_buffer(
-                association, PlanThemeAssociationLayer.get_from_project(), "Kaavoitusteeman assosiaation poisto"
-            ):
-                MsgBar.error("", "Kaavoitusteeman assosiaation poistaminen epäonnistui.")
+            MsgBar.error("", "Kaavasuosituksen tallentaminen epäonnistui.")
+            return None
+        prop_id = cast(str, feature["id"])
 
-    for plan_theme_id in proposition.theme_ids:
-        add_plan_theme_association_to_edit_buffer(
-            plan_theme_id=plan_theme_id, proposition_id=prop_id, may_exist=editing
+    stored_theme_ids: frozenset[str] = frozenset()
+    if editing:
+        stored_theme_ids = cast("StoredProposition", _stored(proposition)).theme_ids
+        _delete_removed_associations(
+            PlanThemeAssociationLayer,
+            {"plan_proposition_id": prop_id},
+            "plan_theme_id",
+            stored_theme_ids - frozenset(proposition.theme_ids),
+            "Kaavoitusteeman assosiaation poisto",
+            "Kaavoitusteeman assosiaation poistaminen epäonnistui.",
         )
 
-    return feature["id"]
+    for plan_theme_id in proposition.theme_ids:
+        if plan_theme_id not in stored_theme_ids:
+            add_plan_theme_association_to_edit_buffer(plan_theme_id=plan_theme_id, proposition_id=prop_id)
+
+    _sync_after_commit(proposition, prop_id)
+    return prop_id
 
 
 def delete_proposition(proposition: Proposition) -> bool:
@@ -734,4 +785,5 @@ def add_document_to_edit_buffer(document: Document) -> str | None:
         MsgBar.error("", "Asiakirjan tallentaminen epäonnistui.")
         return None
 
+    _set_id_after_commit(document, feature["id"])
     return feature["id"]

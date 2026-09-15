@@ -282,6 +282,7 @@ class RegulationWidget(QWidget, FormClass):  # type: ignore
             period_of_validity_end=self.regulation.period_of_validity_end,
             modified=self.regulation.modified,
             id_=self.regulation.id_ if not force_new else None,
+            stored=self.regulation.stored if not force_new else None,
         )
         if not model.modified and model != self.regulation:
             model.modified = True
