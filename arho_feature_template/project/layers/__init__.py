@@ -10,6 +10,7 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsFeature,
     QgsFeatureRequest,
+    QgsFields,
     QgsUnsetAttributeValue,
     QgsVariantUtils,
 )
@@ -85,9 +86,9 @@ class AbstractLayer(ABC):
         for idx in range(fields.count()):
             if layer.defaultValueDefinition(idx).isValid():
                 feature[idx] = layer.defaultValue(idx, feature, context)
-            if QgsVariantUtils.isNull(feature[idx]):
+            if QgsVariantUtils.isNull(feature[idx]) and fields.fieldOrigin(idx) == QgsFields.FieldOrigin.OriginProvider:
                 # Let the database fill the column from its DEFAULT clause
-                clause = provider.defaultValueClause(idx) if provider else ""
+                clause = provider.defaultValueClause(fields.fieldOriginIndex(idx)) if provider else ""
                 if clause:
                     feature[idx] = QgsUnsetAttributeValue(clause)
 
@@ -98,6 +99,7 @@ class AbstractLayer(ABC):
         ):
             feature[id_idx] = str(uuid.uuid4())
 
+        feature.setValid(True)
         return feature
 
     @classmethod
