@@ -80,8 +80,8 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
         self.regulation_groups_hash_map: defaultdict[int, list] | None = None
         self.active_plan_regulation_groups_library: RegulationGroupLibrary | None = None
-        # New regulations and propositions get this status, like the saved ones have, so a
-        # template group hashes like its saved twin and can be linked to it
+        # New regulations and propositions get this status in the form, as they would on save,
+        # so the form shows the status the rows will get
         self.lifecycle_status_id: str | None = None
         if active_plan_regulation_groups_library:
             self.existing_group_letter_codes = active_plan_regulation_groups_library.get_letter_codes()
@@ -162,7 +162,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         if SettingsManager.get_add_only_selected_languages():
             regulation_group.apply_language_selection()
         if regulation_group.id_ is None and self.lifecycle_status_id:
-            # The tree holds the library's own template; a copy gets this plan's status
+            # The tree holds the library's own template; stamp a copy, not the library
             regulation_group = copy.deepcopy(regulation_group)
             regulation_group.set_lifecycle_status_of_new(self.lifecycle_status_id)
         self.add_plan_regulation_group(regulation_group)
@@ -247,7 +247,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
     def find_matching_groups(self, regulation_group: RegulationGroup) -> list[RegulationGroup]:
         if self.regulation_groups_hash_map:
-            return self.regulation_groups_hash_map.get(regulation_group.data_hash(), [])
+            return self.regulation_groups_hash_map.get(regulation_group.matching_hash(), [])
         return []
 
     def into_model(self) -> list[RegulationGroup]:

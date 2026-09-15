@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import logging
 import os
@@ -804,7 +805,8 @@ class PlanManager(QObject):
                 layer_name=plan_feat_template.layer_name,
                 name=plan_feat_template.name,
                 description=plan_feat_template.description,
-                regulation_groups=plan_feat_template.regulation_groups,  # Check if ok
+                # A copy: the form and the status stamp must not touch the library's own template
+                regulation_groups=copy.deepcopy(plan_feat_template.regulation_groups),
             )
             title = get_localized_text(plan_feature.name)
         else:

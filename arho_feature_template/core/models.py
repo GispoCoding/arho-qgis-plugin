@@ -6,7 +6,7 @@ import logging
 import textwrap
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from hashlib import sha256
 from typing import TYPE_CHECKING, TypeAlias, cast
 
@@ -34,6 +34,16 @@ LocalizedText: TypeAlias = dict[str, str]
 
 
 logger = logging.getLogger(__name__)
+
+
+def localized_text_or_none(value: LocalizedText | None) -> LocalizedText | None:
+    """Drop the empty languages; a text with no words is no text.
+
+    A form field, a template and the database default all express an empty text differently.
+    """
+    if isinstance(value, dict):
+        value = {language: text for language, text in value.items() if text}
+    return value or None
 
 
 class AttributeValueDataType(str, enum.Enum):
@@ -173,7 +183,7 @@ class RegulationGroupLibrary(Library):
     def into_hash_map(self) -> defaultdict[int, list]:
         regulation_group_hash_map: defaultdict[int, list] = defaultdict(list)
         for group in self.regulation_groups:
-            regulation_group_hash_map[group.data_hash()].append(group)
+            regulation_group_hash_map[group.matching_hash()].append(group)
         return regulation_group_hash_map
 
     def get_letter_codes(self) -> set[str]:
@@ -200,8 +210,8 @@ class PlanBaseModel:
     def data_hash(self) -> int:
         hash_components = []
         for _field in fields(self):
-            # Hash fields unless they are marked with compare=False and don't have hash=True in metadata
-            if not _field.compare and not _field.metadata.get("hash", False):
+            # A field is hashed when it is compared, unless its metadata "hash" says otherwise
+            if not _field.metadata.get("hash", _field.compare):
                 continue
 
             value = getattr(self, _field.name)
@@ -228,9 +238,11 @@ class PlanBaseModel:
 
 @dataclass(kw_only=True)
 class LifecycleBase:
-    lifecycle_status_id: str | None = None
-    period_of_validity_start: QDate | None = None
-    period_of_validity_end: QDate | None = None
+    # Compared, so a status change counts as a modification to save, but not hashed: a template
+    # group must find its saved twin whatever status or validity period the saved rows carry
+    lifecycle_status_id: str | None = field(default=None, metadata={"hash": False})
+    period_of_validity_start: QDate | None = field(default=None, metadata={"hash": False})
+    period_of_validity_end: QDate | None = field(default=None, metadata={"hash": False})
 
 
 @dataclass
@@ -260,6 +272,7 @@ class AttributeValue(PlanBaseModel):
             # Convert empty strings and such to None, otherwise hash comparisons fail
             if not value:
                 setattr(self, _field.name, None)
+        self.text_value = localized_text_or_none(self.text_value)
 
     @staticmethod
     def from_template_dict(data: dict, default_value: AttributeValue | None = None) -> AttributeValue:
@@ -424,6 +437,12 @@ class Regulation(PlanBaseModel, LifecycleBase):
     id_: str | None = field(compare=False, default=None)
     stored: StoredRegulation | None = field(compare=False, default=None, repr=False)
 
+    def __post_init__(self):
+        super().__post_init__()
+
+        # A NULL column and no identifiers are the same thing; the widget always yields a list
+        self.subject_identifiers = list(self.subject_identifiers or [])
+
     def refresh_stored(self) -> None:
         """Take the snapshot from the current children, once they are all in the database."""
         self.stored = StoredRegulation.of(self)
@@ -501,6 +520,10 @@ class Proposition(PlanBaseModel, LifecycleBase):
     id_: str | None = field(compare=False, default=None)
     stored: StoredProposition | None = field(compare=False, default=None, repr=False)
 
+    def __post_init__(self):
+        super().__post_init__()
+        self.value = localized_text_or_none(self.value)
+
     def refresh_stored(self) -> None:
         """Take the snapshot from the current children, once they are all in the database."""
         self.stored = StoredProposition.of(self)
@@ -544,9 +567,7 @@ class RegulationGroup(PlanBaseModel):
         # compare unequal, and an untouched group gets saved (and the group library refreshed) again.
         self.letter_code = self.letter_code or None
         self.color_code = self.color_code or None
-        self.heading = {language: text for language, text in self.heading.items() if text} if self.heading else None
-        if not self.heading:
-            self.heading = None
+        self.heading = localized_text_or_none(self.heading)
 
     def refresh_stored(self) -> None:
         """Take the snapshot from the current children, once they are all in the database."""
@@ -564,6 +585,13 @@ class RegulationGroup(PlanBaseModel):
             regulation.set_lifecycle_status_of_new(status_id)
         for proposition in self.propositions:
             proposition.set_lifecycle_status_of_new(status_id)
+
+    def matching_hash(self) -> int:
+        """Hash for finding this group's twin among the saved groups of the plan.
+
+        The colour is never stored, so it cannot tell a template from its twin.
+        """
+        return replace(self, color_code=None).data_hash()
 
     def apply_language_selection(self) -> None:
         languages = SettingsManager.get_languages()
