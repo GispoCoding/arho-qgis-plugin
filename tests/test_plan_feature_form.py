@@ -1,4 +1,8 @@
-"""The plan object form disables saving when it is given a reason, and shows the reason."""
+"""The plan object form disables saving when it is given a reason, and shows the reason.
+
+Opening the form for a stored object counts the other users of its regulation groups in one
+read of the association layer, and never reads the plan matter row.
+"""
 
 from __future__ import annotations
 
@@ -8,15 +12,24 @@ import pytest
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.PyQt.QtWidgets import QDialogButtonBox
 
-from arho_feature_template.core.models import PlanObject, RegulationGroupLibrary
+from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.dialogs.plan_feature_form import (
     PLAN_LOCKED_MESSAGE,
     VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
     PlanObjectForm,
 )
-from arho_feature_template.project.layers.code_layers import UndergroundTypeLayer
-from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, PlanMatterLayer
+from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, UndergroundTypeLayer
+from arho_feature_template.project.layers.plan_layers import (
+    LandUseAreaLayer,
+    PlanMatterLayer,
+    RegulationGroupAssociationLayer,
+)
 from arho_feature_template.utils.project_utils import CODE_LAYER_GROUP_NAME, PLAN_LAYER_GROUP_NAME
+
+ASSOCIATION_URI = (
+    "None?field=id:string&field=plan_regulation_group_id:string&field=plan_id:string"
+    "&field=land_use_area_id:string&field=other_area_id:string&field=line_id:string&field=point_id:string"
+)
 
 
 def _add_layer(project: QgsProject, group_name: str, layer_name: str, uri: str) -> QgsVectorLayer:
@@ -29,6 +42,14 @@ def _add_layer(project: QgsProject, group_name: str, layer_name: str, uri: str) 
     return layer
 
 
+def _add_rows(layer: QgsVectorLayer, rows: list[dict]) -> None:
+    for row in rows:
+        feature = QgsFeature(layer.fields())
+        for key, value in row.items():
+            feature.setAttribute(key, value)
+        assert layer.dataProvider().addFeatures([feature])[0]
+
+
 @pytest.fixture
 def form_project(new_project: QgsProject) -> Iterator[QgsProject]:
     """The layers the form reads while it opens: the underground codes and the plan matter."""
@@ -38,12 +59,13 @@ def form_project(new_project: QgsProject) -> Iterator[QgsProject]:
         UndergroundTypeLayer.name,
         "None?field=id:string&field=value:string&field=name:map",
     )
-    for id_, value, name in (("ug-1", "01", "Maanpäällinen"), ("ug-2", "02", "Maanalainen")):
-        feature = QgsFeature(codes.fields())
-        feature.setAttribute("id", id_)
-        feature.setAttribute("value", value)
-        feature.setAttribute("name", {"fin": name})
-        assert codes.dataProvider().addFeatures([feature])[0]
+    _add_rows(
+        codes,
+        [
+            {"id": "ug-1", "value": "01", "name": {"fin": "Maanpäällinen"}},
+            {"id": "ug-2", "value": "02", "name": {"fin": "Maanalainen"}},
+        ],
+    )
     _add_layer(
         new_project, PLAN_LAYER_GROUP_NAME, PlanMatterLayer.name, "None?field=id:string&field=plan_type_id:string"
     )
@@ -54,14 +76,42 @@ def form_project(new_project: QgsProject) -> Iterator[QgsProject]:
 
 
 @pytest.fixture
+def stored_groups_project(form_project: QgsProject) -> Iterator[QgsProject]:
+    """Two stored groups of object `obj-1`: `group-shared` is also used by two other objects."""
+    group_types = _add_layer(
+        form_project,
+        CODE_LAYER_GROUP_NAME,
+        PlanRegulationGroupTypeLayer.name,
+        "None?field=id:string&field=value:string",
+    )
+    _add_rows(group_types, [{"id": "gt-land-use", "value": "landUseRegulations"}])
+    associations = _add_layer(
+        form_project, PLAN_LAYER_GROUP_NAME, RegulationGroupAssociationLayer.name, ASSOCIATION_URI
+    )
+    _add_rows(
+        associations,
+        [
+            {"id": "a-1", "plan_regulation_group_id": "group-shared", "land_use_area_id": "obj-1"},
+            {"id": "a-2", "plan_regulation_group_id": "group-shared", "land_use_area_id": "obj-2"},
+            {"id": "a-3", "plan_regulation_group_id": "group-shared", "point_id": "point-9"},
+            {"id": "a-4", "plan_regulation_group_id": "group-own", "land_use_area_id": "obj-1"},
+        ],
+    )
+    yield form_project
+    PlanRegulationGroupTypeLayer._cache.clear()
+    PlanRegulationGroupTypeLayer._field_names.clear()
+
+
+@pytest.fixture
 def make_form() -> Iterator:
     forms: list[PlanObjectForm] = []
 
-    def make(save_disabled_reason: str | None) -> PlanObjectForm:
+    def make(save_disabled_reason: str | None, plan_object: PlanObject | None = None) -> PlanObjectForm:
         form = PlanObjectForm(
-            PlanObject(layer_name=LandUseAreaLayer.name),
+            plan_object or PlanObject(layer_name=LandUseAreaLayer.name),
             "Testi",
             [RegulationGroupLibrary(name="Testikirjasto")],
+            active_plan_regulation_groups_library=RegulationGroupLibrary(name="Kaavan ryhmät"),
             save_disabled_reason=save_disabled_reason,
         )
         forms.append(form)
@@ -70,6 +120,55 @@ def make_form() -> Iterator:
     yield make
     for form in forms:
         form.deleteLater()
+
+
+@pytest.fixture
+def stored_plan_object() -> PlanObject:
+    return PlanObject(
+        layer_name=LandUseAreaLayer.name,
+        id_="obj-1",
+        regulation_groups=[
+            RegulationGroup(id_="group-shared", letter_code="A", modified=False),
+            RegulationGroup(id_="group-own", letter_code="B", modified=False),
+        ],
+    )
+
+
+def test_opening_a_stored_object_reads_the_associations_once_and_the_plan_matter_never(
+    stored_groups_project,  # noqa: ARG001
+    make_form,
+    stored_plan_object,
+    monkeypatch,
+):
+    association_reads: list[tuple] = []
+    original = RegulationGroupAssociationLayer.get_features_by_attribute_value
+
+    def counting(attribute, value, no_geometries=True):
+        association_reads.append((attribute, value))
+        return original(attribute, value, no_geometries)
+
+    monkeypatch.setattr(RegulationGroupAssociationLayer, "get_features_by_attribute_value", counting)
+    plan_matter_reads: list[tuple] = []
+    monkeypatch.setattr(
+        PlanMatterLayer, "get_features_by_attribute_value", lambda *args: plan_matter_reads.append(args)
+    )
+
+    make_form(None, stored_plan_object)
+
+    assert plan_matter_reads == []
+    assert association_reads == [("plan_regulation_group_id", {"group-shared", "group-own"})]
+
+
+def test_the_link_count_leaves_out_the_object_itself(stored_groups_project, make_form, stored_plan_object):  # noqa: ARG001
+    form = make_form(None, stored_plan_object)
+
+    shared, own = form.regulation_groups_view.regulation_group_widgets
+    assert shared.regulation_group.id_ == "group-shared"
+    assert shared.link_label_text is not None
+    assert "2 toisella kaavakohteella" in shared.link_label_text.text()
+    assert own.regulation_group.id_ == "group-own"
+    assert own.link_label_text is None
+    assert not own.link_btn.isEnabled()
 
 
 @pytest.mark.parametrize("reason", [VALID_PLAN_OBJECT_READ_ONLY_MESSAGE, PLAN_LOCKED_MESSAGE])

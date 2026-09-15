@@ -39,7 +39,14 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     delete_signal = pyqtSignal(QWidget)
     update_matching_groups = pyqtSignal(QWidget)
 
-    def __init__(self, regulation_group: RegulationGroup, plan_feature: PlanObject | None = None):
+    def __init__(
+        self,
+        regulation_group: RegulationGroup,
+        plan_feature: PlanObject | None = None,
+        other_linked_features_count: int | None = None,
+    ):
+        """`other_linked_features_count`: how many other plan objects use the stored group, if the
+        caller has already counted them; otherwise the widget reads the associations itself."""
         super().__init__()
         self.setupUi(self)
 
@@ -65,7 +72,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
 
         self.matching_groups_in_db: list[RegulationGroup] = []
-        self.from_model(regulation_group)
+        self.from_model(regulation_group, other_linked_features_count)
 
         self.link_btn.clicked.connect(self._on_link_btn_clicked)
         self.edit_btn.setIcon(QIcon(resources_path("icons", "settings.svg")))
@@ -114,7 +121,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
             else:
                 self.link_btn.setMaximumWidth(60)
 
-    def from_model(self, regulation_group: RegulationGroup):
+    def from_model(self, regulation_group: RegulationGroup, other_linked_features_count: int | None = None):
         self.regulation_group = regulation_group
 
         self.heading.set_value(regulation_group.heading)
@@ -135,7 +142,9 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.unset_existing_regulation_group_style()
 
         if regulation_group.id_ and self.plan_feature:
-            if self.plan_feature.id_ is None:
+            if other_linked_features_count is not None:
+                pass  # Counted by the caller, in one read for all the groups of the form
+            elif self.plan_feature.id_ is None:
                 other_linked_features_count = len(
                     list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(regulation_group.id_))
                 )

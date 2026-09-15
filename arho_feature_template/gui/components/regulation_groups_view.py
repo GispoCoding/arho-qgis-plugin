@@ -28,6 +28,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanType,
     PlanTypeLayer,
 )
+from arho_feature_template.project.layers.plan_layers import RegulationGroupAssociationLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_plan_type_id
 from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
@@ -157,8 +158,23 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
             regulation_group.apply_language_selection()
         self.add_plan_regulation_group(regulation_group)
 
-    def add_plan_regulation_group(self, regulation_group: RegulationGroup):
-        regulation_group_widget = RegulationGroupWidget(regulation_group, self.plan_object)
+    def add_stored_plan_regulation_groups(self, regulation_groups: list[RegulationGroup]):
+        """Add the groups of a plan object read from the layers, counting their other links in one read."""
+        counts: dict[str, int] = {}
+        if self.plan_object is not None:
+            stored_group_ids = [group.id_ for group in regulation_groups if group.id_]
+            if stored_group_ids:
+                counts = RegulationGroupAssociationLayer.count_other_linked_objects(
+                    stored_group_ids, self.plan_object.id_, self.plan_object.layer_name
+                )
+        for regulation_group in regulation_groups:
+            count = counts.get(regulation_group.id_, 0) if regulation_group.id_ else None
+            self.add_plan_regulation_group(regulation_group, count)
+
+    def add_plan_regulation_group(
+        self, regulation_group: RegulationGroup, other_linked_features_count: int | None = None
+    ):
+        regulation_group_widget = RegulationGroupWidget(regulation_group, self.plan_object, other_linked_features_count)
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         regulation_group_widget.update_matching_groups.connect(self.update_matching_groups)

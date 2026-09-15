@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from string import Template
 from textwrap import dedent
-from typing import Any, ClassVar, Generator, cast
+from typing import Any, ClassVar, Generator, Iterable, cast
 
 from qgis.core import NULL, QgsFeature
 
@@ -468,6 +468,23 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
             for association in cls.get_associations_for_regulation_group(group_id)
             if association[attribute] != excluded_feature_id
         ]
+
+    @classmethod
+    def count_other_linked_objects(
+        cls, group_ids: Iterable[str], excluded_object_id: str | None, excluded_object_layer_name: str | None
+    ) -> dict[str, int]:
+        """How many associations each group has beyond the one to the given plan object.
+
+        One read for all the groups. A group with no associations is not in the result.
+        With no object id (a new object) every association counts.
+        """
+        attribute = cls.layer_name_to_attribute_map.get(excluded_object_layer_name or "")
+        counts: dict[str, int] = defaultdict(int)
+        for association in cls.get_features_by_attribute_value("plan_regulation_group_id", set(group_ids)):
+            if excluded_object_id is not None and attribute and association[attribute] == excluded_object_id:
+                continue
+            counts[association["plan_regulation_group_id"]] += 1
+        return dict(counts)
 
     @classmethod
     def get_group_ids_for_feature(cls, feature_id: str, layer_name: str) -> Generator[str]:

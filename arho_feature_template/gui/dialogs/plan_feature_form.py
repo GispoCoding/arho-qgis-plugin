@@ -92,8 +92,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
         self.feature_name.set_value(plan_feature.name)
         self.feature_description.set_value(plan_feature.description)
-        for regulation_group in plan_feature.regulation_groups:
-            self.regulation_groups_view.add_plan_regulation_group(regulation_group)
+        self.regulation_groups_view.add_stored_plan_regulation_groups(plan_feature.regulation_groups)
 
         # Validity start
         if plan_feature.period_of_validity_start:
