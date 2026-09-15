@@ -72,6 +72,7 @@ from arho_feature_template.project.layers.code_layers import (
     PlanRegulationTypeLayer,
     PlanType,
     UndergroundTypeLayer,
+    VerbalRegulationType,
     code_layers,
 )
 from arho_feature_template.project.layers.plan_layers import (
@@ -314,6 +315,8 @@ class PlanManager(QObject):
             PlanTypeLayer.build_cache()
             UndergroundTypeLayer.build_cache()
             PlanRegulationGroupTypeLayer.build_cache()
+            # Read on the first plan object form open otherwise
+            VerbalRegulationType.build_cache()
 
         _cache_code_layers()
 
