@@ -44,9 +44,13 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         regulation_group: RegulationGroup,
         plan_feature: PlanObject | None = None,
         other_linked_features_count: int | None = None,
+        layer_name: str | None = None,
     ):
         """`other_linked_features_count`: how many other plan objects use the stored group, if the
-        caller has already counted them; otherwise the widget reads the associations itself."""
+        caller has already counted them; otherwise the widget reads the associations itself.
+
+        `layer_name`: the plan object layer the group is for, when there is no plan object yet
+        (the import form); otherwise it is the layer of `plan_feature`."""
         super().__init__()
         self.setupUi(self)
 
@@ -67,8 +71,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.link_label_text: QLabel | None = None
 
         self.plan_feature = plan_feature
-        if self.plan_feature and self.plan_feature.layer_name:
-            self.layer_name = self.plan_feature.layer_name
+        self.layer_name: str | None = layer_name or (plan_feature.layer_name if plan_feature else None)
+        if self.layer_name:
             regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
 
         self.matching_groups_in_db: list[RegulationGroup] = []
@@ -87,6 +91,14 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
 
     def disable_linking(self):
         self.link_btn.hide()
+
+    def set_layer_name(self, layer_name: str):
+        """The group is now for another plan object layer: it gets that layer's group type, and a
+        new group looks for its twin again, since the type is part of the match."""
+        self.layer_name = layer_name
+        self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
+        if self.regulation_group.id_ is None:
+            self.update_matching_groups.emit(self)
 
     def setup_linking_to_matching_groups(self, matching_groups: list[RegulationGroup]):
         # This function should only be called if the regulation group is not in DB yet
@@ -141,10 +153,11 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         # Remove existing indicators if reinitializing
         self.unset_existing_regulation_group_style()
 
-        if regulation_group.id_ and self.plan_feature:
+        # A stored group gets the stored style also without a plan object (the import form)
+        if regulation_group.id_:
             if other_linked_features_count is not None:
                 pass  # Counted by the caller, in one read for all the groups of the form
-            elif self.plan_feature.id_ is None:
+            elif self.plan_feature is None or self.plan_feature.id_ is None or self.layer_name is None:
                 other_linked_features_count = len(
                     list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(regulation_group.id_))
                 )
