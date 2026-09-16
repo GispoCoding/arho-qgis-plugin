@@ -537,7 +537,10 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         features = [vector_layer.getFeature(feat_id) for feat_id in changed_attribute_values_map]
         for feature in features:
             feat_id = feature["id"]
-            plan_object_model = feature_editing.created_object_models.pop(feat_id)
+            # A second commit (deferred json values) changes rows whose model was already shown
+            plan_object_model = feature_editing.created_object_models.pop(feat_id, None)
+            if plan_object_model is None:
+                continue
             row = self._find_row_by_plan_feature_id(cast(str, feat_id))
             if row is not None:
                 self._update_row(row, plan_object_model)

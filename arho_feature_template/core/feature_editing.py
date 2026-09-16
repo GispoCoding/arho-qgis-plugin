@@ -1,10 +1,20 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable, cast
 
-from qgis.core import QgsProject
+from qgis.core import (
+    Qgis,
+    QgsExpression,
+    QgsFeatureRequest,
+    QgsFields,
+    QgsProject,
+    QgsUnsetAttributeValue,
+    QgsVariantUtils,
+    QgsVectorLayer,
+)
 
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
@@ -29,7 +39,7 @@ from arho_feature_template.utils.misc_utils import (
 from arho_feature_template.utils.timing import timed_function
 
 if TYPE_CHECKING:
-    from qgis.core import QgsFeature, QgsVectorLayer
+    from qgis.core import QgsFeature
 
     from arho_feature_template.core.models import (
         AdditionalInformation,
@@ -55,6 +65,26 @@ created_object_models: dict[str, PlanObject] = {}
 # Runs when the edit buffer is committed, so that the saved models mirror the database.
 # A failed commit drops the callbacks: nothing was written, so the models stay as they were.
 _after_commit: list[Callable[[], None]] = []
+
+# The PostgreSQL provider of QGIS older than 4.2 loses json and jsonb values when one insert
+# batch holds two or more features whose values differ: it binds a map as an empty string and
+# the column ends up NULL (qgis/QGIS#65323, fixed on master by qgis/QGIS#66478, backport to the
+# 3.44 LTR failed). A single feature, or equal values, go into the SQL as a literal and work.
+JSON_BATCH_INSERT_FIXED_IN = 40200
+JSON_BATCH_INSERT_BROKEN = Qgis.QGIS_VERSION_INT < JSON_BATCH_INSERT_FIXED_IN
+JSON_FIELD_TYPE_NAMES = ("json", "jsonb")
+
+
+@dataclass(frozen=True)
+class DeferredJsonValue:
+    """A json value taken out of a new feature before the insert, written back after it."""
+
+    layer: QgsVectorLayer
+    id_: str
+    """Value of the `id` column of the new feature, the key after the commit gives it a new fid."""
+    field_index: int
+    value: Any
+
 
 # The layers whose rows the active plan regulation group library and the regulation groups
 # dock show. A save that leaves them all untouched does not need a library refresh.
@@ -227,10 +257,102 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
     return result
 
 
+def _is_unset(value: Any) -> bool:
+    return QgsVariantUtils.isNull(value) or isinstance(value, QgsUnsetAttributeValue)
+
+
+def _json_field_indexes(fields: QgsFields) -> list[int]:
+    return [
+        idx
+        for idx in range(fields.count())
+        if fields.fieldOrigin(idx) == QgsFields.FieldOrigin.OriginProvider
+        and fields[idx].typeName().lower() in JSON_FIELD_TYPE_NAMES
+    ]
+
+
+def defer_differing_json_values() -> list[DeferredJsonValue]:
+    """Work around the json batch insert loss: strip the differing json values of the new features.
+
+    Mirrors the provider's check: a column whose values are equal across the batch is safe. Where
+    they differ (two maps, or a map next to a NULL), every set value is replaced by the column
+    default, so the batch takes the safe literal path, and the values are returned for
+    `apply_deferred_json_values` to write back once the rows exist.
+    """
+    deferred: list[DeferredJsonValue] = []
+    for layer in QgsProject.instance().mapLayers().values():
+        if not isinstance(layer, QgsVectorLayer) or not layer.isEditable():
+            continue
+        edit_buffer = layer.editBuffer()
+        added = edit_buffer.addedFeatures() if edit_buffer else {}
+        if len(added) < 2:  # noqa: PLR2004
+            continue
+        fields = layer.fields()
+        if fields.indexOf("id") < 0:
+            continue
+        provider = layer.dataProvider()
+        for idx in _json_field_indexes(fields):
+            values = {fid: feature[idx] for fid, feature in added.items()}
+            present = {fid: value for fid, value in values.items() if not _is_unset(value)}
+            if not present:
+                continue
+            first = next(iter(present.values()))
+            if len(present) == len(values) and all(value == first for value in present.values()):
+                continue
+            clause = provider.defaultValueClause(fields.fieldOriginIndex(idx)) if provider else ""
+            placeholder = QgsUnsetAttributeValue(clause) if clause else None
+            layer.beginEditCommand("Json-arvojen siirto")
+            for fid, value in present.items():
+                layer.changeAttributeValue(fid, idx, placeholder)
+                deferred.append(DeferredJsonValue(layer, cast(str, added[fid]["id"]), idx, value))
+            layer.endEditCommand()
+            logger.debug(
+                "Deferred json values layer=%s field=%s count=%s", layer.name(), fields[idx].name(), len(present)
+            )
+    return deferred
+
+
+def apply_deferred_json_values(deferred: list[DeferredJsonValue]) -> bool:
+    """Put the deferred json values back on the committed rows. Needs a second commit."""
+    by_layer: dict[str, dict[str, dict[int, Any]]] = defaultdict(lambda: defaultdict(dict))
+    layers: dict[str, QgsVectorLayer] = {}
+    for item in deferred:
+        layers[item.layer.id()] = item.layer
+        by_layer[item.layer.id()][item.id_][item.field_index] = item.value
+
+    result = True
+    for layer_id, values_by_id in by_layer.items():
+        layer = layers[layer_id]
+        ids = ", ".join(QgsExpression.quotedValue(id_) for id_ in values_by_id)
+        request = QgsFeatureRequest().setFilterExpression(f'"id" IN ({ids})')
+        request.setFlags(Qgis.FeatureRequestFlag.NoGeometry)
+        found: set[str] = set()
+        layer.beginEditCommand("Json-arvojen palautus")
+        for feature in layer.getFeatures(request):
+            id_ = cast(str, feature["id"])
+            found.add(id_)
+            for idx, value in values_by_id[id_].items():
+                if not layer.changeAttributeValue(feature.id(), idx, value):
+                    result = False
+        layer.endEditCommand()
+        missing = set(values_by_id) - found
+        if missing:
+            logger.error("Deferred json values lost, rows not found layer=%s ids=%s", layer.name(), sorted(missing))
+            result = False
+        logger.debug("Restored deferred json values layer=%s rows=%s", layer.name(), len(found))
+    return result
+
+
 @timed_function("commit_edit_buffer")
 def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
     project = QgsProject.instance()
-    result, commit_errors = project.commitChanges(stopEditing=stop_editing)
+    deferred = defer_differing_json_values() if JSON_BATCH_INSERT_BROKEN else []
+    result, commit_errors = project.commitChanges(stopEditing=stop_editing and not deferred)
+    if result and deferred:
+        # The rows exist now; a second commit writes the json values with the safe update path
+        restored = apply_deferred_json_values(deferred)
+        result, second_errors = project.commitChanges(stopEditing=stop_editing)
+        commit_errors = [*commit_errors, *second_errors]
+        result = result and restored
     try:
         if result:
             logger.debug("Committed succesfully. Details=%s", commit_errors)
