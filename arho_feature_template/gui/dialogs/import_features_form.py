@@ -132,8 +132,11 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground_selection.remove_item_by_text("NULL")
         self.feature_type_of_underground_selection.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
+        target_layer = self.target_layer_selection.currentLayer()
         self.regulation_groups_view = RegulationGroupsView(
-            regulation_group_libraries, active_plan_regulation_groups_library
+            regulation_group_libraries,
+            active_plan_regulation_groups_library,
+            layer_name=target_layer.name() if target_layer else None,
         )
         self.regulation_groups_view.regulation_groups_label.setText("Kaavakohteiden kaavamääräysryhmät")
         self.layout().insertWidget(3, self.regulation_groups_view)
@@ -143,6 +146,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
     def _on_layer_selections_changed(self, _: QgsVectorLayer):
         self.source_layer: QgsVectorLayer = self.source_layer_selection.currentLayer()
         self.target_layer: QgsVectorLayer = self.target_layer_selection.currentLayer()
+        if self.target_layer:
+            # The groups match the saved ones of the target layer's type
+            self.regulation_groups_view.set_layer_name(self.target_layer.name())
         if not self.source_layer:
             return
         self.source_layer_name: str = self.source_layer.name()

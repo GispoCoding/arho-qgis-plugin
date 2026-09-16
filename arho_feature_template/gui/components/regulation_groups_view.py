@@ -51,7 +51,10 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         regulation_group_libraries: list[RegulationGroupLibrary],
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         plan_object: PlanObject | None = None,
+        layer_name: str | None = None,
     ):
+        """`layer_name`: the plan object layer the groups are for, when there is no plan object
+        (the import form); otherwise it is the layer of `plan_object`."""
         super().__init__()
         self.setupUi(self)
 
@@ -74,6 +77,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
         self.layout().addWidget(splitter)
 
         self.plan_object = plan_object
+        self.layer_name: str | None = layer_name or (plan_object.layer_name if plan_object else None)
         self.template_categories: dict[str, QTreeWidgetItem] = {}
 
         self.regulation_group_libraries = [*(library for library in regulation_group_libraries if library.status)]
@@ -183,7 +187,9 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
     def add_plan_regulation_group(
         self, regulation_group: RegulationGroup, other_linked_features_count: int | None = None
     ):
-        regulation_group_widget = RegulationGroupWidget(regulation_group, self.plan_object, other_linked_features_count)
+        regulation_group_widget = RegulationGroupWidget(
+            regulation_group, self.plan_object, other_linked_features_count, layer_name=self.layer_name
+        )
         regulation_group_widget.delete_signal.connect(self.remove_plan_regulation_group)
         regulation_group_widget.open_as_form_signal.connect(self.open_plan_regulation_group_form)
         regulation_group_widget.update_matching_groups.connect(self.update_matching_groups)
@@ -199,6 +205,14 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
             regulation_group_widget.disable_linking()
         elif regulation_group.id_ is None:
             self.update_matching_groups(regulation_group_widget)
+
+    def set_layer_name(self, layer_name: str):
+        """The groups are now for another plan object layer (the import form's target changed)."""
+        if layer_name == self.layer_name:
+            return
+        self.layer_name = layer_name
+        for regulation_group_widget in self.regulation_group_widgets:
+            regulation_group_widget.set_layer_name(layer_name)
 
     def open_plan_regulation_group_form(self, regulation_group_widget: RegulationGroupWidget):
         with deleted_after_use(

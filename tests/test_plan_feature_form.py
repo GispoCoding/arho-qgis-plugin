@@ -2,6 +2,9 @@
 
 Opening the form for a stored object counts the other users of its regulation groups in one
 read of the association layer, and never reads the plan matter row.
+
+The regulation groups view, shared with the import form, matches a new group against the saved
+groups of the target layer's type, also when there is no plan object yet.
 """
 
 from __future__ import annotations
@@ -13,6 +16,7 @@ from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.PyQt.QtWidgets import QDialogButtonBox
 
 from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
 from arho_feature_template.gui.dialogs.plan_feature_form import (
     PLAN_LOCKED_MESSAGE,
     VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
@@ -21,6 +25,7 @@ from arho_feature_template.gui.dialogs.plan_feature_form import (
 from arho_feature_template.project.layers.code_layers import PlanRegulationGroupTypeLayer, UndergroundTypeLayer
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
+    OtherAreaLayer,
     PlanMatterLayer,
     RegulationGroupAssociationLayer,
 )
@@ -84,7 +89,13 @@ def stored_groups_project(form_project: QgsProject) -> Iterator[QgsProject]:
         PlanRegulationGroupTypeLayer.name,
         "None?field=id:string&field=value:string",
     )
-    _add_rows(group_types, [{"id": "gt-land-use", "value": "landUseRegulations"}])
+    _add_rows(
+        group_types,
+        [
+            {"id": "gt-land-use", "value": "landUseRegulations"},
+            {"id": "gt-other-area", "value": "otherAreaRegulations"},
+        ],
+    )
     associations = _add_layer(
         form_project, PLAN_LAYER_GROUP_NAME, RegulationGroupAssociationLayer.name, ASSOCIATION_URI
     )
@@ -95,6 +106,7 @@ def stored_groups_project(form_project: QgsProject) -> Iterator[QgsProject]:
             {"id": "a-2", "plan_regulation_group_id": "group-shared", "land_use_area_id": "obj-2"},
             {"id": "a-3", "plan_regulation_group_id": "group-shared", "point_id": "point-9"},
             {"id": "a-4", "plan_regulation_group_id": "group-own", "land_use_area_id": "obj-1"},
+            {"id": "a-5", "plan_regulation_group_id": "group-a", "land_use_area_id": "obj-3"},
         ],
     )
     yield form_project
@@ -187,3 +199,84 @@ def test_without_a_reason_saving_is_enabled(form_project, make_form):  # noqa: A
     ok_button = form.button_box.button(QDialogButtonBox.StandardButton.Ok)
     assert ok_button.isEnabled()
     assert ok_button.toolTip() == ""
+
+
+# ------------------------------------------------------------------ matching without a plan object
+
+
+@pytest.fixture
+def make_view() -> Iterator:
+    """A view over one saved land use group `A`, as the import form has it: no plan object."""
+    views: list[RegulationGroupsView] = []
+    saved = RegulationGroup(id_="group-a", type_code_id="gt-land-use", letter_code="A", modified=False)
+
+    def make(layer_name: str | None) -> tuple[RegulationGroupsView, RegulationGroup]:
+        view = RegulationGroupsView(
+            [RegulationGroupLibrary(name="Testikirjasto")],
+            RegulationGroupLibrary(name="Kaavan ryhmät", regulation_groups=[saved]),
+            layer_name=layer_name,
+        )
+        views.append(view)
+        return view, saved
+
+    yield make
+    for view in views:
+        view.deleteLater()
+
+
+def test_a_new_group_finds_its_twin_of_the_target_layer_type_without_a_plan_object(
+    stored_groups_project,  # noqa: ARG001
+    make_view,
+):
+    view, saved = make_view(LandUseAreaLayer.name)
+
+    view.add_plan_regulation_group(RegulationGroup(letter_code="A"))
+
+    (widget,) = view.regulation_group_widgets
+    assert widget.regulation_group.type_code_id == "gt-land-use"
+    assert widget.matching_groups_in_db == [saved]
+    assert widget.link_btn.isEnabled()
+
+
+def test_changing_the_target_layer_matches_the_groups_again(stored_groups_project, make_view):  # noqa: ARG001
+    view, saved = make_view(OtherAreaLayer.name)
+    view.add_plan_regulation_group(RegulationGroup(letter_code="A"))
+    (widget,) = view.regulation_group_widgets
+    assert widget.matching_groups_in_db == []
+    assert not widget.link_btn.isEnabled()
+
+    view.set_layer_name(LandUseAreaLayer.name)
+
+    assert widget.regulation_group.type_code_id == "gt-land-use"
+    assert widget.matching_groups_in_db == [saved]
+    assert widget.link_btn.isEnabled()
+
+    view.set_layer_name(OtherAreaLayer.name)
+
+    assert widget.regulation_group.type_code_id == "gt-other-area"
+    assert widget.matching_groups_in_db == []
+
+
+def test_linking_and_unlinking_a_group_without_a_plan_object_changes_the_widget(
+    stored_groups_project,  # noqa: ARG001
+    make_view,
+):
+    view, saved = make_view(LandUseAreaLayer.name)
+    view.add_plan_regulation_group(RegulationGroup(letter_code="A"))
+    (widget,) = view.regulation_group_widgets
+
+    widget.link_btn.click()
+
+    assert widget.regulation_group.id_ == "group-a"
+    assert "border" in widget.styleSheet()
+    assert widget.link_btn.isEnabled()
+    assert widget.link_label_text is not None
+    assert "1 toisella kaavakohteella" in widget.link_label_text.text()
+
+    widget.link_btn.click()
+
+    assert widget.regulation_group.id_ is None
+    assert widget.styleSheet() == ""
+    assert widget.link_label_text is None
+    assert widget.matching_groups_in_db == [saved]
+    assert widget.link_btn.isEnabled()
