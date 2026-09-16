@@ -209,6 +209,10 @@ def test_a_failed_commit_leaves_the_model_as_it_was(layers: dict[str, QgsVectorL
 
     class FailingProject:
         @staticmethod
+        def mapLayers() -> dict[str, QgsVectorLayer]:
+            return {}
+
+        @staticmethod
         def commitChanges(stopEditing: bool) -> tuple[bool, list[str]]:  # noqa: ARG004
             return False, ["VIRHE"]
 
