@@ -245,7 +245,7 @@ data "aws_iam_policy_document" "bastion_ssm_read" {
     actions = ["ssm:GetParameter"]
 
     resources = [
-      "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/infra/${var.prefix}-bastion/host_key_rsa"
+      "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/infra/${var.prefix}-bastion/host_key_ed25519"
     ]
   }
 }
