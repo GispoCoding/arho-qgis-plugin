@@ -167,7 +167,10 @@ resource "aws_lambda_function" "mml_loader" {
   function_name = "${var.prefix}-mml_loader"
   image_uri     = "${aws_ecr_repository.mml_loader.repository_url}:latest"
   package_type  = "Image"
-  timeout       = 120
+  # The loader downloads the whole-Finland boundary GML and parses it in memory.
+  # The 128 MB default is not enough for that. 1769 MB also gives one full vCPU.
+  memory_size = 1769
+  timeout     = 120
 
   role = aws_iam_role.lambda_exec.arn
   vpc_config {
