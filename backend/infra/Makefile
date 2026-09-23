@@ -99,16 +99,28 @@ log-ryhti-client: check-deployment-vars
 
 ## Commands to invoke lambda functions
 create-db: check-deployment-vars
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "create_db"}' ../logs/response_create_db.json
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "create_db"}' ../logs/response_create_db.json
 
 migrate-db: check-deployment-vars
-	aws lambda invoke --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "migrate_db"}' ../logs/response_migrate_db.json
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "migrate_db"}' ../logs/response_migrate_db.json
 
 load-koodistot: check-deployment-vars
 	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-koodistot_loader --payload '{}' ../logs/response_load_koodistot.json
 
 load-mml: check-deployment-vars
 	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-mml_loader --payload '{}' ../logs/response_load_mml.json
+
+# The import runs on the live alias, the same version the API gateway calls. A cli read
+# timeout of 0 waits for the whole 120 second function timeout instead of the default 60.
+ryhti-import-wfs: check-deployment-vars
+	@echo "Importing WFS plans for municipality $(mun)..."
+	aws lambda invoke --region $(AWS_REGION) --cli-read-timeout 0 --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --qualifier live --payload '{"action": "import_wfs_plans", "data": {"municipality_code": "$(mun)"}}' ../logs/response_import_wfs.json
+	@cat ../logs/response_import_wfs.json
+
+ryhti-import-wfs-region: check-deployment-vars
+	@echo "Importing WFS plans for region $(region)..."
+	aws lambda invoke --region $(AWS_REGION) --cli-read-timeout 0 --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --qualifier live --payload '{"action": "import_wfs_plans", "data": {"region_code": "$(region)"}}' ../logs/response_import_wfs.json
+	@cat ../logs/response_import_wfs.json
 
 
 decrypt-workspace-secrets:
