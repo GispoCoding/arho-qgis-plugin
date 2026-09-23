@@ -81,10 +81,10 @@ resource "aws_ecr_repository" "koodistot_loader" {
 }
 
 resource "aws_lambda_permission" "cloudwatch_call_koodistot_loader" {
-    action = "lambda:InvokeFunction"
-    function_name = aws_lambda_function.koodistot_loader.function_name
-    principal = "events.amazonaws.com"
-    source_arn = aws_cloudwatch_event_rule.lambda_koodistot.arn
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.koodistot_loader.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.lambda_koodistot.arn
 }
 
 
@@ -209,24 +209,24 @@ resource "aws_ecr_repository" "mml_loader" {
 
 locals {
   ryhti_client_base_environment = {
-      AWS_REGION_NAME     = var.AWS_REGION_NAME
-      DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
-      DB_INSTANCE_PORT    = 5432
-      DB_MAIN_NAME        = var.hame_db_name
-      READ_FROM_AWS       = 1
-      SYKE_APIKEY         = var.syke_apikey
-      DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
-      PROJECT_SRID        = var.project_srid
-      RYHTI_FILES_BUCKET  = aws_s3_bucket.ryhti_files.id
+    AWS_REGION_NAME     = var.AWS_REGION_NAME
+    DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
+    DB_INSTANCE_PORT    = 5432
+    DB_MAIN_NAME        = var.hame_db_name
+    READ_FROM_AWS       = 1
+    SYKE_APIKEY         = var.syke_apikey
+    DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
+    PROJECT_SRID        = var.project_srid
+    RYHTI_FILES_BUCKET  = aws_s3_bucket.ryhti_files.id
   }
   ryhti_client_x-road_environment = var.enable_x_road ? {
-      XROAD_SERVER_ADDRESS = module.x-road["this"].dns_record
-      XROAD_INSTANCE = module.x-road["this"].instance
-      XROAD_MEMBER_CLASS = module.x-road["this"].member_class
-      XROAD_MEMBER_CODE   = module.x-road["this"].member_code
-      XROAD_MEMBER_CLIENT_NAME = module.x-road["this"].subdomain
-      XROAD_SYKE_CLIENT_ID = module.x-road["this"].client_id
-      XROAD_SYKE_CLIENT_SECRET_ARN = module.x-road["this"].client_secret_arn
+    XROAD_SERVER_ADDRESS         = module.x-road["this"].dns_record
+    XROAD_INSTANCE               = module.x-road["this"].instance
+    XROAD_MEMBER_CLASS           = module.x-road["this"].member_class
+    XROAD_MEMBER_CODE            = module.x-road["this"].member_code
+    XROAD_MEMBER_CLIENT_NAME     = module.x-road["this"].subdomain
+    XROAD_SYKE_CLIENT_ID         = module.x-road["this"].client_id
+    XROAD_SYKE_CLIENT_SECRET_ARN = module.x-road["this"].client_secret_arn
   } : {}
   ryhti_client_env = merge(
     local.ryhti_client_base_environment,
