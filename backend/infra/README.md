@@ -6,6 +6,7 @@
    - [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
 - [Managing existing instances](#managing-existing-instances)
    - [Adding ssh tunneling users](#adding-ssh-tunneling-users)
+- [Setting up another AWS account](#setting-up-another-aws-account)
 - [Configuring new instances](#configuring-new-instances)
 - [Deploying instances](#deploying-instances)
    - [Configuring X-Road (Suomi.fi Palvelyväylä) access](#configuring-x-road-suomifi-palveluväylä-access)
@@ -31,9 +32,19 @@ Use the [get-mfa-vars.sh](get-mfa-vars.sh) script to obtain temporary MFA sessio
 
 You may set your MFA device ARN in the `AWS_MFA_IDENTIFIER` environment variable. If not set, the script prompts for it. For more details, run `./get-mfa-vars.sh --help`. By default, the MFA session token is valid for 12 hours.
 
-### Terraform workspaces
+### Terraform backends and workspaces
 
-Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. To list existing workspaces in S3, run `terraform workspace list`. To create a new workspace, run `terraform workspace new your-deployment`. To switch to a workspace, run `terraform workspace select your-deployment`.
+Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. Each AWS account has its own state bucket, so [state.tf](state.tf) holds no backend settings. They live in the arho-deploy repository, one file per AWS account in `backends/<name>.hcl`. Its README says which workspace uses which file.
+
+Run `make tf-init` instead of a bare `terraform init`. It initialises the backend and selects the workspace, and creates the workspace if it does not exist yet:
+
+```shell
+make tf-init ws=<workspace> backend=<name>
+```
+
+Run it again every time you change to another instance. To list the workspaces in the current backend, run `terraform workspace list`.
+
+If `make tf-plan` wants to create every resource of an existing instance, terraform found no state: the backend, the workspace name or the AWS session is wrong. Stop and check them before you apply anything.
 
 ## Instance configuration repository
 
@@ -48,12 +59,11 @@ The make targets in this directory find the configuration through the `ARHO_DEPL
 
 ## Managing existing instances
 
-To manage existing instances, activate the corresponding terraform workspace e.g. `terraform workspace select <workspace>` and decrypt the encrypted variable file by running `make decrypt-workspace-secrets`.
+To manage existing instances, select the instance with `make tf-init ws=<workspace> backend=<name>` and decrypt the encrypted variable file by running `make decrypt-workspace-secrets`.
 
 To make changes to instances, first check that your variables and current infra is up to date with terraform state:
 
 ```shell
-terraform init
 make tf-plan
 ```
 
@@ -92,6 +102,26 @@ make update-ssh-keys ssh_private_key=~/.ssh/my_private_key
 6. Encrypt the public key file again using `make encrypt-workspace-secrets`
 7. Commit the changes to the arho-deploy repository.
 
+## Setting up another AWS account
+
+An instance can run in any AWS account. These steps are needed once per account, before the first instance in it.
+
+1. Get an IAM user in that account with administrator rights and an MFA device. Store its access key as a profile `<profile>` in your AWS credentials file.
+2. Start a session in that account and check that it is the right one:
+```shell
+AWS_PROFILE=<profile> . ./get-mfa-vars.sh <mfa-device-arn>
+aws sts get-caller-identity
+```
+3. Create the state bucket and its KMS key. The script shows the account first and asks before it creates anything:
+```shell
+./bootstrap-state-bucket.sh <region>
+```
+4. Save the lines that the script prints as `backends/<name>.hcl` in the arho-deploy repository and commit the file. It holds no secrets.
+5. Make sure a Route53 public hosted zone for the `AWS_HOSTED_DOMAIN` of the instance exists in that account.
+6. Make sure the account allows an IAM user with access keys. Terraform creates `AWS_LAMBDA_USER` for the deploy workflow.
+
+sops encrypts the variable files with the KMS key named in `.sops.yaml` of the arho-deploy repository. If that key is in another AWS account, run `make decrypt-workspace-secrets` and `make encrypt-workspace-secrets` with a session in that account, then change back to the session of the instance account for terraform.
+
 ## Configuring new instances
 
 1. To create a new instance of ARHO Backend, copy [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) to a new file called `var-files/your-deployment.tfvars.json` in the arho-deploy repository.
@@ -106,7 +136,7 @@ be created before its container image exists in ECR, and terraform does not buil
 images. The first run creates the four ECR repositories only, then you push the images,
 then the second run creates everything else. No step is expected to fail.
 
-Change to the `infra` directory and set your AWS MFA session variables:
+Change to the `infra` directory and set your AWS MFA session variables for the AWS account of the instance (see [Setting up another AWS account](#setting-up-another-aws-account)):
 
 ```shell
 cd infra
@@ -123,8 +153,7 @@ or `AWS_ACCOUNT_ID` in the environment or on the command line, and that value wi
 
 ```shell
 # 1. Create the workspace and the variable file
-terraform init
-terraform workspace new <instance-name>
+make tf-init ws=<instance-name> backend=<name>
 cp var-files/arho.tfvars.sample.json ../../arho-deploy/var-files/<instance-name>.tfvars.json
 # Edit ../../arho-deploy/var-files/<instance-name>.tfvars.json
 
@@ -136,7 +165,7 @@ aws ssm put-parameter \
     --name "/infra/<instance-name>-bastion/host_key_ed25519" \
     --value "$(cat bastion_key)" \
     --type "SecureString" \
-    --region eu-central-1
+    --region <region>
 rm bastion_key
 
 # 3. Check what the plan would do
