@@ -34,9 +34,9 @@ You may set your MFA device ARN in the `AWS_MFA_IDENTIFIER` environment variable
 
 ### Terraform backends and workspaces
 
-Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. Each AWS account has its own state bucket, so [state.tf](state.tf) holds no backend settings. They live in the arho-deploy repository, one file per AWS account in `backends/<name>.hcl`. Its README says which workspace uses which file.
+Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. Each AWS account has its own state bucket, so [state.tf](state.tf) holds no backend settings. They live in the arho-deploy repository, one folder per AWS account in `backends/<name>/`. Its README says which workspace uses which backend.
 
-Run `make tf-init` instead of a bare `terraform init`. It initialises the backend and selects the workspace, and creates the workspace if it does not exist yet:
+Run `make tf-init` instead of a bare `terraform init`. It initialises the backend from `backends/<name>/backend.hcl` and selects the workspace, and creates the workspace if it does not exist yet. It also records the backend name in `.terraform/backend-name`, so the other make targets find the config of the instance in `backends/<name>/`:
 
 ```shell
 make tf-init ws=<workspace> backend=<name>
@@ -48,7 +48,7 @@ If `make tf-plan` wants to create every resource of an existing instance, terraf
 
 ## Instance configuration repository
 
-The instance specific configuration (encrypted terraform variable files and encrypted ssh public key lists) lives in the private [GispoCoding/arho-deploy](https://github.com/GispoCoding/arho-deploy) repository, together with the deploy workflows. Clone it as a sibling of this repository:
+The instance specific configuration (backend settings, encrypted terraform variable files and encrypted ssh public key lists) lives in the private [GispoCoding/arho-deploy](https://github.com/GispoCoding/arho-deploy) repository, together with the deploy workflows. Clone it as a sibling of this repository:
 
 ```
 ~/projects/arho-backend
@@ -83,12 +83,12 @@ Remember to commit any changes you made to the terraform configuration. If you c
 
 The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. This is done using the Ansible playbook in `infra/ansible/playbook.yml`. The playbook will add the public keys to the authorized keys of the ssh-tunnel user on the bastion host.
 
-Public ssh keys are stored in the `public_keys` directory of the arho-deploy repository, and the playbook will read the public key file corresponding to the current terraform workspace. The public key files should be named according to the terraform workspace, e.g. `public_keys/<workspace>`. The public key files are encrypted for security, so you should use `sops` to encrypt the public key files before committing them to the repository.
+Public ssh keys are stored in the `backends/<name>/public_keys` directory of the arho-deploy repository, and the playbook will read the public key file corresponding to the current terraform workspace. The public key files should be named according to the terraform workspace, e.g. `backends/<name>/public_keys/<workspace>`. The public key files are encrypted for security, so you should use `sops` to encrypt the public key files before committing them to the repository.
 
 To add a new ssh key:
 1. Fetch the latest ssh key files by running `git pull` in the arho-deploy repository
 2. Decrypt the public key file using `make decrypt-workspace-secrets`
-3. Add the public key to the `public_keys/<workspace name>` file in arho-deploy, or create a new file if it does not exist.
+3. Add the public key to the `backends/<name>/public_keys/<workspace name>` file in arho-deploy, or create a new file if it does not exist.
 4. If you have not connected to this bastion host before, add its host key to your known hosts. Ansible refuses to connect to an unknown host, so `make update-ssh-keys` fails without this. The key is read from AWS SSM Parameter Store, where the deployment stored it, so you do not have to accept a fingerprint blindly. Run it once per bastion host. It also removes the fingerprint prompt from your own ssh tunnel sessions to the same host:
 ```bash
 make bastion-known-host >> ~/.ssh/known_hosts
@@ -116,7 +116,7 @@ aws sts get-caller-identity
 ```shell
 ./bootstrap-state-bucket.sh <region>
 ```
-4. Save the lines that the script prints as `backends/<name>.hcl` in the arho-deploy repository and commit the file. It holds no secrets.
+4. Save the lines that the script prints as `backends/<name>/backend.hcl` in the arho-deploy repository and commit the file. It holds no secrets.
 5. Make sure a Route53 public hosted zone for the `AWS_HOSTED_DOMAIN` of the instance exists in that account.
 6. Make sure the account allows an IAM user with access keys. Terraform creates `AWS_LAMBDA_USER` for the deploy workflow.
 
@@ -124,7 +124,7 @@ sops encrypts the variable files with the KMS key named in `.sops.yaml` of the a
 
 ## Configuring new instances
 
-1. To create a new instance of ARHO Backend, copy [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) to a new file called `var-files/your-deployment.tfvars.json` in the arho-deploy repository.
+1. To create a new instance of ARHO Backend, copy [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) to a new file called `backends/<name>/var-files/your-deployment.tfvars.json` in the arho-deploy repository.
 2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in the Github environment secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY` of the arho-deploy repository.
 3. Change the values in `your-deployment.tfvars.json` as required
 4. Remember to encrypt your variables with `sops` to create `your-deployment.tfvars.enc.json` and commit the encrypted file. The encryption key to allow decrypting the file is safely stored in AWS.
@@ -154,8 +154,8 @@ or `AWS_ACCOUNT_ID` in the environment or on the command line, and that value wi
 ```shell
 # 1. Create the workspace and the variable file
 make tf-init ws=<instance-name> backend=<name>
-cp var-files/arho.tfvars.sample.json ../../arho-deploy/var-files/<instance-name>.tfvars.json
-# Edit ../../arho-deploy/var-files/<instance-name>.tfvars.json
+cp var-files/arho.tfvars.sample.json ../../arho-deploy/backends/<name>/var-files/<instance-name>.tfvars.json
+# Edit ../../arho-deploy/backends/<name>/var-files/<instance-name>.tfvars.json
 
 # 2. Generate the host key of the bastion host and store it in AWS SSM Parameter Store.
 #    The bastion host reads its host key from there, so that the key survives a reboot
