@@ -1,10 +1,15 @@
 # Path to the private GispoCoding/arho-deploy checkout that holds the instance
-# specific configuration (var-files/, public_keys/, .sops.yaml).
+# specific configuration (backends/<name>/ and .sops.yaml).
 # Defaults to a sibling checkout of this repository.
 ARHO_DEPLOY_DIR ?= ../../arho-deploy
 WORKSPACE = $(shell terraform workspace show)
-TFVARS := $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.json
-TFVARS_ENC := $(ARHO_DEPLOY_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
+# make tf-init records the backend it used. The config of each instance lives in the
+# folder of its backend, so two backends can have a workspace with the same name.
+BACKEND := $(shell cat .terraform/backend-name 2>/dev/null)
+BACKEND_DIR := $(ARHO_DEPLOY_DIR)/backends/$(BACKEND)
+TFVARS := $(BACKEND_DIR)/var-files/$(WORKSPACE).tfvars.json
+TFVARS_ENC := $(BACKEND_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
+PUBLIC_KEYS := $(BACKEND_DIR)/public_keys/$(WORKSPACE)
 
 # The deployment values come from the decrypted variable file of the current
 # terraform workspace and from the AWS credentials in use, so that a make target
@@ -38,7 +43,7 @@ build:
 # an expired MFA session, so say that instead of letting aws fail on a malformed
 # resource name.
 check-deployment-vars:
-	@$(if $(and $(prefix),$(AWS_REGION),$(AWS_ACCOUNT_ID)),,$(error prefix, AWS_REGION and AWS_ACCOUNT_ID are not all set. Run `make decrypt-workspace-secrets` for workspace "$(WORKSPACE)" and check that your AWS session is valid, or pass the values on the command line))
+	@$(if $(and $(prefix),$(AWS_REGION),$(AWS_ACCOUNT_ID)),,$(error prefix, AWS_REGION and AWS_ACCOUNT_ID are not all set. Run `make tf-init ws=<workspace> backend=<name>` and `make decrypt-workspace-secrets` for workspace "$(WORKSPACE)" and check that your AWS session is valid, or pass the values on the command line))
 
 push-lambdas: build push-db-manager push-koodistot-loader push-ryhti-client push-mml-loader
 	echo "All pushed"
@@ -123,49 +128,54 @@ ryhti-import-wfs-region: check-deployment-vars
 	@cat ../logs/response_import_wfs.json
 
 
-decrypt-workspace-secrets:
-	sops -d $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE)
+check-backend:
+	@$(if $(BACKEND),,$(error the backend is not known. Run make tf-init ws=<workspace> backend=<name>))
+
+decrypt-workspace-secrets: check-backend
+	sops -d $(PUBLIC_KEYS).enc > $(PUBLIC_KEYS)
 	sops -d $(TFVARS_ENC) > $(TFVARS)
 
 # sops discovers .sops.yaml from the working directory, so the config of the
 # arho-deploy repository must be passed explicitly when encrypting from here.
-encrypt-workspace-secrets:
-	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE) > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc
+encrypt-workspace-secrets: check-backend
+	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(PUBLIC_KEYS) > $(PUBLIC_KEYS).enc
 	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(TFVARS) > $(TFVARS_ENC)
 
-# The backend settings differ per AWS account, so they live in arho-deploy under
-# backends/. Its README says which workspace uses which file. The selected workspace of
-# the previous backend may not exist in this one, so it is forgotten first.
+# The backend settings differ per AWS account, so they live in arho-deploy in
+# backends/<name>/backend.hcl. Its README says which workspace uses which backend. The
+# selected workspace of the previous backend may not exist in this one, so it is
+# forgotten first. The backend name is recorded for the targets that read the config.
 tf-init:
 	@$(if $(ws),,$(error set ws=<workspace>, e.g. make tf-init ws=<workspace> backend=<name>))
 	@$(if $(backend),,$(error set backend=<name>, see $(ARHO_DEPLOY_DIR)/backends/))
-	rm -f .terraform/environment
-	terraform init -reconfigure -backend-config=$(ARHO_DEPLOY_DIR)/backends/$(backend).hcl
+	rm -f .terraform/environment .terraform/backend-name
+	terraform init -reconfigure -backend-config=$(ARHO_DEPLOY_DIR)/backends/$(backend)/backend.hcl
+	echo $(backend) > .terraform/backend-name
 	terraform workspace select -or-create $(ws)
 
 # A lambda function cannot be created before its container image exists in ECR, and
 # terraform does not build or push images. So the first deployment creates the four
 # repositories on their own, pushes the images with push-lambdas, and only then runs
 # tf-apply for the rest of the infrastructure.
-tf-bootstrap-ecr:
+tf-bootstrap-ecr: check-backend
 	terraform apply -var-file=$(TFVARS) \
 		-target=aws_ecr_repository.db_manager \
 		-target=aws_ecr_repository.koodistot_loader \
 		-target=aws_ecr_repository.ryhti_client \
 		-target=aws_ecr_repository.mml_loader
 
-tf-plan:
+tf-plan: check-backend
 	terraform plan -var-file=$(TFVARS)
 
-tf-apply:
+tf-apply: check-backend
 	terraform apply -var-file=$(TFVARS)
 
-update-ssh-keys:
+update-ssh-keys: check-backend
 	ansible-playbook ansible/playbook.yml \
 	-i ansible/inventory/hosts.yml \
 	--extra-vars " \
 		bastion_host=$(shell terraform output -raw bastion_address) \
-		ssh_key_file=$(abspath $(ARHO_DEPLOY_DIR))/public_keys/$(WORKSPACE) \
+		ssh_key_file=$(abspath $(PUBLIC_KEYS)) \
 	" \
 	$(if $(ssh_private_key),--private-key $(ssh_private_key))
 

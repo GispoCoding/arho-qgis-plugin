@@ -83,7 +83,7 @@ aws s3api put-public-access-block --region "$region" --bucket "$bucket" \
 
 cat <<EOF
 
-Done. Save these lines as backends/<name>.hcl in arho-deploy:
+Done. Save these lines as backends/<name>/backend.hcl in arho-deploy:
 
 bucket               = "$bucket"
 key                  = "arho.tfstate"
