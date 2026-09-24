@@ -133,6 +133,16 @@ encrypt-workspace-secrets:
 	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE) > $(ARHO_DEPLOY_DIR)/public_keys/$(WORKSPACE).enc
 	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(TFVARS) > $(TFVARS_ENC)
 
+# The backend settings differ per AWS account, so they live in arho-deploy under
+# backends/. Its README says which workspace uses which file. The selected workspace of
+# the previous backend may not exist in this one, so it is forgotten first.
+tf-init:
+	@$(if $(ws),,$(error set ws=<workspace>, e.g. make tf-init ws=<workspace> backend=<name>))
+	@$(if $(backend),,$(error set backend=<name>, see $(ARHO_DEPLOY_DIR)/backends/))
+	rm -f .terraform/environment
+	terraform init -reconfigure -backend-config=$(ARHO_DEPLOY_DIR)/backends/$(backend).hcl
+	terraform workspace select -or-create $(ws)
+
 # A lambda function cannot be created before its container image exists in ECR, and
 # terraform does not build or push images. So the first deployment creates the four
 # repositories on their own, pushes the images with push-lambdas, and only then runs
