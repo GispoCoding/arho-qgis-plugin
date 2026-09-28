@@ -3,7 +3,7 @@
 ![diagram of AWS resources and their connections to software and APIs](architecture.svg)
 
 - [Setup](#setup)
-   - [Multi-factor authentication (MFA)](#multi-factor-authentication-mfa)
+   - [AWS login on your computer](#aws-login-on-your-computer)
 - [Managing existing instances](#managing-existing-instances)
    - [Adding ssh tunneling users](#adding-ssh-tunneling-users)
 - [Setting up another AWS account](#setting-up-another-aws-account)
@@ -17,20 +17,119 @@
 
 Run these steps the first time.
 
-1. Install [Terraform](https://terraform.io) and `aws cli`
-2. Create an AWS access key and store it locally in a credentials file (
-   see [AWS Configuration basics](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config)
-   and [Where are the configuration settings stored](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-   for more info)
+1. Install [Terraform](https://terraform.io), [AWS CLI version 2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and `jq`. Make sure all three are in your `PATH`.
+2. Set up your AWS login, see [AWS login on your computer](#aws-login-on-your-computer).
 3. To manage existing instances, install [sops](https://github.com/getsops/sops) to decrypt encrypted variable files in the repository.
 
-### Multi-factor authentication (MFA)
+### AWS login on your computer
 
-For most AWS accounts, multi-factor authentication (MFA) is required. If you run Terraform with only your access key, you may receive 400 or 403 errors. To set up MFA, install both AWS CLI and `jq`, and ensure both are available in your system path.
+You log in to AWS with an IAM user, an access key and multi-factor authentication (MFA):
 
-Use the [get-mfa-vars.sh](get-mfa-vars.sh) script to obtain temporary MFA session token environment variables. You can either run `source get-mfa-vars.sh` to update your current shell's environment variables directly, or execute `./get-mfa-vars.sh` to generate a file `/tmp/aws-mfa-token` containing the variables, then run `. /tmp/aws-mfa-token` to set them in your shell.
+- The access key of your IAM user is stored in an AWS profile on your computer. Alone, it can do almost nothing, because the AWS accounts require MFA.
+- [get-mfa-vars.sh](get-mfa-vars.sh) uses the access key and a code from your MFA device to get a temporary session. The session is valid for 12 hours.
+- The session is stored in environment variables of your shell. Terraform, `make` and the aws cli then use it.
 
-You may set your MFA device ARN in the `AWS_MFA_IDENTIFIER` environment variable. If not set, the script prompts for it. For more details, run `./get-mfa-vars.sh --help`. By default, the MFA session token is valid for 12 hours.
+If you work in more than one AWS account, you have one IAM user, one access key and one profile per account.
+
+#### 1. Get an access key and the ARN of your MFA device
+
+Do this once per AWS account.
+
+1. Log in to the AWS console of the account with your IAM user.
+2. Open **IAM → Users → your user → Security credentials**.
+3. If **Multi-factor authentication (MFA)** shows no device, click **Assign MFA device** and follow the steps. An authenticator app on your phone is fine.
+4. Copy the **Identifier** of the MFA device. It is an ARN like `arn:aws:iam::123456789012:mfa/my-phone`.
+5. Under **Access keys**, click **Create access key**. Pick the use case **Command Line Interface (CLI)**.
+6. Copy the **Access key ID** and the **Secret access key**. AWS shows the secret only once.
+
+#### 2. Store the access key in a profile
+
+Pick a short profile name for the account, for example `arho-test`. Then run:
+
+```shell
+aws configure --profile <profile>
+# AWS Access Key ID: the access key ID from step 1
+# AWS Secret Access Key: the secret access key from step 1
+# Default region name: the region of the account, for example eu-north-1
+# Default output format: json
+aws configure set mfa_serial <mfa-device-arn> --profile <profile>
+```
+
+The aws cli writes the key to `~/.aws/credentials` and the other settings to `~/.aws/config`. With two accounts, the files look like this:
+
+```ini
+# ~/.aws/credentials
+[arho-test]
+aws_access_key_id = AKIA...
+aws_secret_access_key = ...
+
+[arho-prod]
+aws_access_key_id = AKIA...
+aws_secret_access_key = ...
+```
+
+```ini
+# ~/.aws/config
+[profile arho-test]
+region = eu-north-1
+output = json
+mfa_serial = arn:aws:iam::111111111111:mfa/my-phone
+
+[profile arho-prod]
+region = eu-north-1
+output = json
+mfa_serial = arn:aws:iam::222222222222:mfa/my-phone
+```
+
+These files hold secrets. Never commit them and never copy them into a repository. Run `aws configure list-profiles` to see your profiles.
+
+#### 3. Start a session
+
+```shell
+cd infra
+. ./get-mfa-vars.sh <profile>
+aws sts get-caller-identity
+```
+
+The script asks for the code from your MFA device. It takes the MFA device ARN from `mfa_serial` of the profile. Check that the `Account` in the output of `aws sts get-caller-identity` is the account you want.
+
+If you leave out `<profile>`, the script uses `AWS_PROFILE` if it is set. If it is not set, the script shows a numbered list of your profiles, and you type the number of the one you want. If you have only one profile, the script uses it without asking.
+
+The script does not set `AWS_PROFILE` in your shell. After the script, your shell uses only the session variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN`. Do not also `export AWS_PROFILE`.
+
+The session exists only in that shell. A new terminal needs a new session. If you want to use the session in more than one terminal, run the script without `.` in front:
+
+```shell
+./get-mfa-vars.sh <profile>
+. /tmp/aws-mfa-token     # run this in each terminal
+rm /tmp/aws-mfa-token    # when you are done
+```
+
+The file `/tmp/aws-mfa-token` holds your session. Remove it when you do not need it anymore.
+
+For all options, run `./get-mfa-vars.sh --help`.
+
+#### 4. Change to another AWS account
+
+Run the same command with the profile of the other account. The script ignores the old session in your shell and replaces it only when the new session works:
+
+```shell
+. ./get-mfa-vars.sh <other-profile>
+aws sts get-caller-identity
+```
+
+Then select an instance in that account with `make tf-init ws=<workspace> backend=<name>`.
+
+#### 5. When the session expires
+
+After 12 hours, AWS refuses the session. You see errors like `ExpiredToken` or 403. Start a new session with the same command as in step 3.
+
+#### Troubleshooting
+
+- Terraform or the aws cli gives 400 or 403 errors: you have no valid session. Start one as in step 3.
+- `Failed to fetch session token`: the MFA code was wrong or too old, or the `mfa_serial` of the profile is wrong. Wait for a new code and try again, then check `aws configure get mfa_serial --profile <profile>`.
+- You are in the wrong account: `aws sts get-caller-identity` shows the account of your session. Start a session with the right profile.
+- `make tf-plan` wants to create every resource of an existing instance: see [Terraform backends and workspaces](#terraform-backends-and-workspaces).
 
 ### Terraform backends and workspaces
 
@@ -106,10 +205,10 @@ make update-ssh-keys ssh_private_key=~/.ssh/my_private_key
 
 An instance can run in any AWS account. These steps are needed once per account, before the first instance in it.
 
-1. Get an IAM user in that account with administrator rights and an MFA device. Store its access key as a profile `<profile>` in your AWS credentials file.
+1. Get an IAM user in that account with administrator rights and an MFA device. Store its access key and MFA device ARN in a profile `<profile>`, see [AWS login on your computer](#aws-login-on-your-computer).
 2. Start a session in that account and check that it is the right one:
 ```shell
-AWS_PROFILE=<profile> . ./get-mfa-vars.sh <mfa-device-arn>
+. ./get-mfa-vars.sh <profile>
 aws sts get-caller-identity
 ```
 3. Create the state bucket and its KMS key. The script shows the account first and asks before it creates anything:
@@ -120,7 +219,7 @@ aws sts get-caller-identity
 5. Make sure a Route53 public hosted zone for the `AWS_HOSTED_DOMAIN` of the instance exists in that account.
 6. Make sure the account allows an IAM user with access keys. Terraform creates `AWS_LAMBDA_USER` for the deploy workflow.
 
-sops encrypts the variable files with the KMS key named in `.sops.yaml` of the arho-deploy repository. If that key is in another AWS account, run `make decrypt-workspace-secrets` and `make encrypt-workspace-secrets` with a session in that account, then change back to the session of the instance account for terraform.
+sops encrypts the variable files with the KMS key named in `.sops.yaml` of the arho-deploy repository. If that key is in another AWS account, run `make decrypt-workspace-secrets` and `make encrypt-workspace-secrets` with a session in that account, then change back to the session of the instance account for terraform (see [Change to another AWS account](#4-change-to-another-aws-account)).
 
 ## Configuring new instances
 
@@ -136,12 +235,12 @@ be created before its container image exists in ECR, and terraform does not buil
 images. The first run creates the four ECR repositories only, then you push the images,
 then the second run creates everything else. No step is expected to fail.
 
-Change to the `infra` directory and set your AWS MFA session variables for the AWS account of the instance (see [Setting up another AWS account](#setting-up-another-aws-account)):
+Change to the `infra` directory and start an AWS session in the account of the instance (see [AWS login on your computer](#aws-login-on-your-computer)):
 
 ```shell
 cd infra
-# Set AWS MFA session variables
-. get-mfa-vars.sh
+. ./get-mfa-vars.sh <profile>
+aws sts get-caller-identity
 ```
 
 Then follow these steps. The `make` targets read the variable file of the current
