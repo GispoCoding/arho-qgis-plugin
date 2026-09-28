@@ -216,10 +216,33 @@ aws sts get-caller-identity
 ./bootstrap-state-bucket.sh <region>
 ```
 4. Save the lines that the script prints as `backends/<name>/backend.hcl` in the arho-deploy repository and commit the file. It holds no secrets.
-5. Make sure a Route53 public hosted zone for the `AWS_HOSTED_DOMAIN` of the instance exists in that account.
+5. Make sure a Route53 public hosted zone for the `AWS_HOSTED_DOMAIN` of the instance exists in that account. If you have no domain yet, see [An instance without a domain](#an-instance-without-a-domain).
 6. Make sure the account allows an IAM user with access keys. Terraform creates `AWS_LAMBDA_USER` for the deploy workflow.
 
 sops encrypts the variable files with the KMS key named in `.sops.yaml` of the arho-deploy repository. If that key is in another AWS account, run `make decrypt-workspace-secrets` and `make encrypt-workspace-secrets` with a session in that account, then change back to the session of the instance account for terraform (see [Change to another AWS account](#4-change-to-another-aws-account)).
+
+### An instance without a domain
+
+An instance can run without a domain. Set `"enable_route53_record": false` and `"enable_x_road": false` in its variable file. `AWS_HOSTED_DOMAIN` can then be `null`. Terraform does not look up a hosted zone, and the `bastion_address` output is the public IP of the bastion.
+
+The bastion gets a new IP when terraform replaces it. This occurs when AWS publishes a new Amazon Linux image, or when the bastion user data changes. After such an apply, run `make bastion-known-host >> ~/.ssh/known_hosts` again and give the new IP to the users. The host key does not change.
+
+To add a domain later, you need no code change:
+
+1. Create a public hosted zone in the account of the instance:
+```shell
+aws route53 create-hosted-zone --name <subdomain>.<parent-domain> --caller-reference "arho-$(date +%s)"
+```
+2. Get the four name servers of the zone:
+```shell
+aws route53 get-hosted-zone --id <zone-id> --query DelegationSet.NameServers
+```
+3. Ask the owner of `<parent-domain>` to add an `NS` record for `<subdomain>` with these name servers. Then check it:
+```shell
+dig +short NS <subdomain>.<parent-domain>
+```
+4. In the variable file, set `"AWS_HOSTED_DOMAIN": "<subdomain>.<parent-domain>"` and `"enable_route53_record": true`. Encrypt the file, commit it and run `make tf-apply`.
+5. Run `make bastion-known-host >> ~/.ssh/known_hosts` again. Tell the users to use the new DNS name in place of the IP.
 
 ## Configuring new instances
 

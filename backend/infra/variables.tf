@@ -9,8 +9,9 @@ variable "AWS_LAMBDA_USER" {
 }
 
 variable "AWS_HOSTED_DOMAIN" {
-  description = "Domain for create route53 record."
+  description = "Domain for create route53 record. Needed only when enable_route53_record or enable_x_road is true."
   type        = string
+  default     = null
 }
 
 variable enable_x_road {
@@ -198,8 +199,7 @@ variable "extra_tags" {
 }
 
 locals {
-  bastion_dns_alias    = "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}"
-  apigateway_dns_record = "${var.prefix}.${var.apigateway_subdomain}.${var.AWS_HOSTED_DOMAIN}"
+  bastion_dns_alias    = var.enable_route53_record ? "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}" : null
 
   default_tags         = merge(var.extra_tags, {
     "Prefix"    = var.prefix

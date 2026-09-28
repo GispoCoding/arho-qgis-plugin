@@ -24,8 +24,8 @@ output "lambda_update_user" {
 }
 
 output "bastion_address" {
-  description = "SSH tunneling server public address"
-  value       = aws_route53_record.bastion[0].name
+  description = "SSH tunneling server public address (DNS name, or IP when enable_route53_record is false)"
+  value       = var.enable_route53_record ? aws_route53_record.bastion[0].name : aws_instance.bastion-ec2-instance.public_ip
 }
 
 output "database_endpoint" {

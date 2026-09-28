@@ -1,6 +1,6 @@
 # Public domain already exists
 data "aws_route53_zone" "public_zone" {
-  count = 1
+  count = var.enable_route53_record ? 1 : 0
   name  = var.AWS_HOSTED_DOMAIN
 }
 
