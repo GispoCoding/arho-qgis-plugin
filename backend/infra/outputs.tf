@@ -18,6 +18,11 @@ output "lambda_ryhti_client" {
   value       = aws_lambda_function.ryhti_client.function_name
 }
 
+output "ryhti_client_url" {
+  description = "Address of the ryhti_client lambda API. The API is private: call it from inside the VPC only."
+  value       = "${aws_api_gateway_stage.api_stage.invoke_url}${aws_api_gateway_resource.ryhti_client.path}"
+}
+
 output "lambda_update_user" {
   description = "Name of the lambda function update user."
   value       = aws_iam_user.lambda_update_user.name
