@@ -96,6 +96,14 @@ def crash(request: dict[str, Any]) -> dict[str, Any]:
     raise RuntimeError("Lost the database connection.")
 
 
+def make_older(session: Session, job_id: str, age: timedelta) -> None:
+    """Move the creation of the job age into the past."""
+    session.execute(
+        update(Job).where(Job.id == job_id).values(created_at=func.now() - age)
+    )
+    session.commit()
+
+
 def test_lambda_starter_invokes_this_function_with_the_job_id(store: JobStore) -> None:
     """The job starts in an Event invocation of the same function version."""
     client = FakeLambdaClient()
@@ -149,6 +157,24 @@ def test_job_that_is_not_queued_is_not_run(store: JobStore) -> None:
     )
 
 
+def test_job_past_the_time_limit_is_not_run(store: JobStore, session: Session) -> None:
+    """A late worker event cannot run a job that get_job already shows as failed."""
+    job_id = store.submit(REQUEST, leave_queued)
+    make_older(session, job_id, TIME_LIMIT + timedelta(minutes=1))
+    late_run: list[dict[str, Any]] = []
+
+    def record(request: dict[str, Any]) -> dict[str, Any]:
+        late_run.append(request)
+        return ANSWER
+
+    store.run(job_id, record)
+
+    assert late_run == []
+    assert store.get(job_id) == JobState(
+        job_id=job_id, status=JobStatus.FAILED, result=None, error=JOB_FAILED_ERROR
+    )
+
+
 def test_job_whose_action_raises_fails(store: JobStore) -> None:
     """A crash is stored as failed with the generic error, not the exception."""
     job_id = store.submit(REQUEST, leave_queued)
@@ -178,12 +204,7 @@ def test_job_run_logs_its_wait_and_run_time(
     """Every job run, done or failed, logs one timing line with its job_id."""
     job_id = store.submit(REQUEST, leave_queued)
     # The job has waited three seconds for its worker.
-    session.execute(
-        update(Job)
-        .where(Job.id == job_id)
-        .values(created_at=func.now() - timedelta(seconds=3))
-    )
-    session.commit()
+    make_older(session, job_id, timedelta(seconds=3))
 
     with caplog.at_level(logging.INFO):
         store.run(job_id, run_action)

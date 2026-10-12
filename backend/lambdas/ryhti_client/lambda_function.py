@@ -952,7 +952,8 @@ def run_job_event(job_id: str) -> Response:
         return request_error
     action = job_store().run(job_id, run_stored_request)
     if action is None:
-        return simple_response(409, "Job is not queued.", {"job_id": job_id})
+        # Not queued (a second delivery of the event), or past the time limit.
+        return simple_response(409, "Job not run.", {"job_id": job_id})
     log_invocation_duration(f"job:{action}", start)
     return simple_response(200, "Job run.", {"job_id": job_id})
 

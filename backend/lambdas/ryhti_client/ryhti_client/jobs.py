@@ -16,12 +16,12 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Protocol
 
 import simplejson as json
 from botocore.exceptions import BotoCoreError, ClientError
-from sqlalchemy import create_engine, delete, func, update
+from sqlalchemy import and_, create_engine, delete, func, not_, or_, select, update
 from sqlalchemy.orm import sessionmaker
 
 from database.enums import JobStatus
@@ -29,6 +29,8 @@ from database.models import Job
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+
+    from sqlalchemy import ColumnElement
 
 LOGGER = logging.getLogger(__name__)
 
@@ -110,17 +112,19 @@ def plan_id_of(request: Mapping[str, Any]) -> str | None:
     return None
 
 
-def is_past_time_limit(job: Job, time_limit: timedelta) -> bool:
-    """Return True if the job is still queued long after it was created, or
-    still running long after it started.
+def past_time_limit(time_limit: timedelta) -> ColumnElement[bool]:
+    """Return the condition that a job is still queued time_limit after it was
+    created, or still running time_limit after it started.
+
+    The database evaluates it with its own clock, which also sets created_at
+    and started_at. JobStore.get and the claim use the same condition, so a job
+    that get reports as failed is never claimed later.
     """
-    now = datetime.now(tz=UTC)
-    if job.status == JobStatus.QUEUED:
-        return now - job.created_at > time_limit
-    if job.status == JobStatus.RUNNING and job.started_at is not None:
-        return now - job.started_at > time_limit
-    # Only a queued or running job can be past the time limit.
-    return False
+    cutoff = func.now() - time_limit
+    return or_(
+        and_(Job.status == JobStatus.QUEUED, Job.created_at < cutoff),
+        and_(Job.status == JobStatus.RUNNING, Job.started_at < cutoff),
+    )
 
 
 class JobStore:
@@ -164,12 +168,15 @@ class JobStore:
         """Run a queued job, store how it ended and return its action.
 
         The job is claimed from queued to running in one statement, so a job
-        that is started twice runs only once. A job that is not queued is left
-        as it is, and None is returned.
+        that is started twice runs only once. A job that is not queued, or is
+        past the time limit, is left as it is, and None is returned.
         """
         job = self._claim(job_id)
         if job is None:
-            LOGGER.warning("Job %s is not queued, so it is not run.", job_id)
+            LOGGER.warning(
+                "Job %s is not queued or is past the time limit, so it is not run.",
+                job_id,
+            )
             return None
         start = time.perf_counter()
         try:
@@ -201,10 +208,13 @@ class JobStore:
         its own failure, so a job past the time limit is reported as failed.
         """
         with self.Session() as session:
-            job = session.get(Job, job_id)
-            if job is None:
+            row = session.execute(
+                select(Job, past_time_limit(self.time_limit)).where(Job.id == job_id)
+            ).one_or_none()
+            if row is None:
                 return None
-            if is_past_time_limit(job, self.time_limit):
+            job, is_past_time_limit = row
+            if is_past_time_limit:
                 return JobState(
                     job_id=job.id,
                     status=JobStatus.FAILED,
@@ -218,12 +228,18 @@ class JobStore:
     def _claim(self, job_id: str) -> ClaimedJob | None:
         """Move a queued job to running and return what the run needs.
 
-        Returns None when the job is not queued.
+        Returns None when the job is not queued, or when it is past the time
+        limit: get already reports such a job as failed, so a late worker event
+        must not run it.
         """
         with self.Session() as session:
             row = session.execute(
                 update(Job)
-                .where(Job.id == job_id, Job.status == JobStatus.QUEUED)
+                .where(
+                    Job.id == job_id,
+                    Job.status == JobStatus.QUEUED,
+                    not_(past_time_limit(self.time_limit)),
+                )
                 .values(status=JobStatus.RUNNING, started_at=func.now())
                 .returning(Job.action, Job.request, Job.started_at - Job.created_at)
             ).one_or_none()
