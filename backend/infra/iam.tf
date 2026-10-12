@@ -41,11 +41,10 @@ resource "aws_iam_policy" "secrets-policy" {
           "secretsmanager:ListSecretVersionIds"
         ],
         Effect   = "Allow",
-        Resource = compact([
+        Resource = [
           aws_secretsmanager_secret.hame-db-su.arn,
-          aws_secretsmanager_secret.hame-db-dba.arn,
-          var.enable_x_road ? module.x-road["this"].client_secret_arn : null
-        ])
+          aws_secretsmanager_secret.hame-db-dba.arn
+        ]
       }
     ]
   })
@@ -85,11 +84,6 @@ resource "aws_iam_policy" "s3-transfer-policy" {
     ]
   })
   tags   = merge(local.default_tags, { Name = "${var.prefix}-lambda-s3-transfer-policy" })
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_s3_transfer_attachment" {
-  role       = aws_iam_role.lambda_exec.name
-  policy_arn = aws_iam_policy.s3-transfer-policy.arn
 }
 
 # ryhti_client role. ryhti_client uses the transfer bucket and the X-Road client
