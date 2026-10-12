@@ -1140,7 +1140,7 @@ class Job(Base):
     """A ryhti_client action run in the background.
 
     The ryhti_client lambda stores the request, runs it later and stores the
-    answer, so that the caller can poll for it. The table is no plan data: it
+    response of the action as the result, so that the caller can poll for it. The table is no plan data: it
     has no version columns or triggers, and the QGIS roles have no grants on it.
     """
 
@@ -1165,7 +1165,7 @@ class Job(Base):
             inherit_schema=True,
         )
     )
-    # The answer of the action, {statusCode, body}, when the job is done.
+    # The response of the action, {statusCode, body}, when the job is done.
     result: Mapped[dict[str, Any] | None] = mapped_column(type_=postgresql.JSONB)
     # A generic message when the job failed. The details go to the log only.
     error: Mapped[str | None]

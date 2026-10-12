@@ -995,10 +995,10 @@ def post_event(
     request_shape: str = "direct",
     headers: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """POST an event in the given request shape and return the lambda answer.
+    """POST an event in the given request shape and return the lambda response.
 
-    The body of an uncompressed API gateway answer is parsed, so both shapes
-    give the same answer.
+    The body of an uncompressed API gateway response is parsed, so both shapes
+    give the same response.
     """
     payload: dict[str, Any]
     if request_shape == "direct":
@@ -1056,7 +1056,7 @@ def test_get_plan_as_job(
     complete_test_plan: Plan,
     desired_plan_dict: dict,
 ) -> None:
-    """A finished get_plan job holds the answer of get_plan."""
+    """A finished get_plan job holds the response of get_plan."""
     event = {"action": "get_plan", "plan_uuid": complete_test_plan.id}
     job = run_as_job(ryhti_client_url, event)
 
@@ -1079,7 +1079,7 @@ def test_get_plan_as_job(
 
 
 def test_validate_plan_as_job(ryhti_client_url: str, complete_test_plan: Plan) -> None:
-    """A finished validate_plan job holds the answer of validate_plan."""
+    """A finished validate_plan job holds the response of validate_plan."""
     event = {"action": "validate_plan", "plan_uuid": complete_test_plan.id}
     job = run_as_job(ryhti_client_url, event)
 
@@ -1098,7 +1098,7 @@ def test_copy_plan_as_job(
     complete_test_plan: Plan,
     main_db_params: ConnectionParameters,
 ) -> None:
-    """A finished copy_plan job holds the answer of copy_plan."""
+    """A finished copy_plan job holds the response of copy_plan."""
     event = {
         "action": "copy_plan",
         "plan_uuid": complete_test_plan.id,
@@ -1154,7 +1154,7 @@ def test_import_plan_as_job(
     upload_plan_file: Callable[[str], str],
     simple_plan_json: str,
 ) -> None:
-    """A finished import_plan job holds the answer of import_plan."""
+    """A finished import_plan job holds the response of import_plan."""
     import_payload["data"]["s3_key"] = upload_plan_file(simple_plan_json)
     job = run_as_job(ryhti_client_url, import_payload)
 

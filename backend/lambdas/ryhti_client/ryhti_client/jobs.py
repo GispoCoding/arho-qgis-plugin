@@ -1,9 +1,9 @@
 """Run ryhti_client actions as background jobs.
 
 The API gateway cuts every request at 29 seconds, so a caller may submit a
-request as a job and poll for its answer instead. A job row in jobs.job holds
-the request, the state of the job and, when the job is done, the answer that a
-synchronous call would have got.
+request as a job and poll for its result instead. A job row in jobs.job holds
+the request, the state of the job and, when the job is done, its result: the
+response that a synchronous call would have got.
 
 How a job starts differs between environments, so the caller passes a starter
 to submit, chosen by JOB_RUNNER in lambda_function.py. The starter for AWS,
@@ -41,7 +41,7 @@ JOB_FAILED_ERROR = "The job failed. Please contact Arho support team."
 # without limit.
 JOB_RETENTION = timedelta(days=7)
 
-# Runs the action of a stored request and returns the answer, {statusCode,
+# Runs the action of a stored request and returns its response, {statusCode,
 # body}, exactly as a synchronous call would get it. The request is the JSON
 # that submit stored. Its type belongs to the runner, so it is Any here.
 type ActionRunner = Callable[[Any], Mapping[str, Any]]
@@ -139,7 +139,8 @@ class JobStore:
             time_limit: A job still queued or running this long after it was
                 created or started has crashed. It equals the lambda timeout.
         """
-        # The answers are written with simplejson, as the handler writes them.
+        # The results are written with simplejson, as the handler writes its
+        # responses.
         engine = create_engine(connection_string, json_serializer=json.dumps)
         self.Session = sessionmaker(bind=engine)
         self.time_limit = time_limit
@@ -181,12 +182,12 @@ class JobStore:
             return None
         start = time.perf_counter()
         try:
-            answer = run_action(job.request)
+            response = run_action(job.request)
         except Exception:
             LOGGER.exception("Job %s crashed.", job_id)
             self.fail(job_id)
         else:
-            self._finish(job_id, status=JobStatus.DONE, result=dict(answer))
+            self._finish(job_id, status=JobStatus.DONE, result=dict(response))
         # Not "arho_timing action=", so that the per-invocation duration query
         # does not count job runs twice.
         LOGGER.info(

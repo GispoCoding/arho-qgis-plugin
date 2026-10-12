@@ -43,8 +43,8 @@ FUNCTION_ARN = "arn:aws:lambda:eu-north-1:123456789012:function:arho-ryhti_clien
 
 REQUEST = {"action": "get_plan", "plan_uuid": "0b3c1e58-5d3e-4f4a-9b0e-6f7d2a1c9e11"}
 
-# What the action runner answers for REQUEST.
-ANSWER = {
+# What the action runner returns for REQUEST.
+RESPONSE = {
     "statusCode": 404,
     "body": {"title": "Plan not found.", "details": None, "ryhti_response": None},
 }
@@ -86,9 +86,9 @@ def leave_queued(job_id: str) -> None:
     """A starter that does not start the job, so that the test can run it."""
 
 
-def answer(request: dict[str, Any]) -> dict[str, Any]:
-    """An action runner that answers like the action would."""
-    return ANSWER
+def respond(request: dict[str, Any]) -> dict[str, Any]:
+    """An action runner that responds like the action would."""
+    return RESPONSE
 
 
 def crash(request: dict[str, Any]) -> dict[str, Any]:
@@ -142,7 +142,7 @@ def test_failed_invocation_fails_the_job(store: JobStore) -> None:
 def test_job_that_is_not_queued_is_not_run(store: JobStore) -> None:
     """A second delivery of the same worker event leaves the job as it is."""
     job_id = store.submit(REQUEST, leave_queued)
-    store.run(job_id, answer)
+    store.run(job_id, respond)
     second_run: list[dict[str, Any]] = []
 
     def record(request: dict[str, Any]) -> dict[str, Any]:
@@ -153,7 +153,7 @@ def test_job_that_is_not_queued_is_not_run(store: JobStore) -> None:
 
     assert second_run == []
     assert store.get(job_id) == JobState(
-        job_id=job_id, status=JobStatus.DONE, result=ANSWER, error=None
+        job_id=job_id, status=JobStatus.DONE, result=RESPONSE, error=None
     )
 
 
@@ -165,7 +165,7 @@ def test_job_past_the_time_limit_is_not_run(store: JobStore, session: Session) -
 
     def record(request: dict[str, Any]) -> dict[str, Any]:
         late_run.append(request)
-        return ANSWER
+        return RESPONSE
 
     store.run(job_id, record)
 
@@ -194,7 +194,7 @@ JOB_TIMING_LINE = re.compile(
 )
 
 
-@pytest.mark.parametrize("run_action", [answer, crash])
+@pytest.mark.parametrize("run_action", [respond, crash])
 def test_job_run_logs_its_wait_and_run_time(
     store: JobStore,
     session: Session,
@@ -269,9 +269,9 @@ def test_submit_answers_502_when_the_job_cannot_be_started(
         lambda_function, "lambda_client", FakeLambdaClient(error=refused)
     )
 
-    answer = lambda_function.handler({**REQUEST, "run_as_job": True}, FakeContext())
+    response = lambda_function.handler({**REQUEST, "run_as_job": True}, FakeContext())
 
-    assert answer == {
+    assert response == {
         "statusCode": 502,
         "body": {
             "title": "Job could not be started.",

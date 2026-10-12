@@ -216,8 +216,9 @@ class ArhoPayload(TypedDict):
     # True if we want to force the action, if needed
     force: NotRequired[bool | None]
 
-    # True to run the action as a background job. The answer is then 202 with
-    # the job_id, and get_job returns the answer of the action when it is done.
+    # True to run the action as a background job. The response is then 202 with
+    # the job_id, and get_job returns the response of the action as the result
+    # of the job when it is done.
     run_as_job: NotRequired[bool | None]
 
     # The job to read, for get_job.
@@ -963,8 +964,8 @@ def run_job_event(job_id: str) -> Response:
 
     The duration line names the action job:<action>, so that job runs and
     synchronous calls are separate rows in the per-action duration query.
-    Nobody reads the answer of an Event invocation, so an unexpected error is
-    raised, not answered: AWS then counts the invocation as failed.
+    Nobody reads the response to an Event invocation, so an unexpected error
+    is raised, not returned: AWS then counts the invocation as failed.
     """
     start = time.perf_counter()
     request_error = check_job_id(job_id)
@@ -979,10 +980,10 @@ def run_job_event(job_id: str) -> Response:
 
 
 def get_job(job_id: str) -> Response:
-    """Answer with the state of the job, and its answer when it is done.
+    """Respond with the state of the job, and its result when it is done.
 
-    The answer is 200 whenever the job is found, so that an error status always
-    means that the poll failed, never that the job failed.
+    The response is 200 whenever the job is found, so that an error status
+    always means that the poll failed, never that the job failed.
     """
     job = job_store().get(job_id)
     if job is None:
