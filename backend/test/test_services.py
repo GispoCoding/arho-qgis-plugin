@@ -1281,3 +1281,59 @@ def test_get_job_gzip_response(
             },
         },
     }
+
+
+@pytest.fixture
+def queued_job(session: Session) -> models.Job:
+    """A job that waits for its worker, as a submit with JOB_RUNNER=lambda leaves it.
+
+    The dev compose setup runs jobs inline, so the job row is written here.
+    """
+    plan_uuid = str(uuid.uuid4())
+    job = models.Job(
+        action="get_plan",
+        plan_id=plan_uuid,
+        request={"action": "get_plan", "plan_uuid": plan_uuid},
+        status="queued",
+    )
+    session.add(job)
+    session.commit()
+    return job
+
+
+def test_worker_event_runs_a_queued_job(
+    ryhti_client_url: str, queued_job: models.Job
+) -> None:
+    """The event that a JOB_RUNNER=lambda submit sends runs the job."""
+    r = requests.post(ryhti_client_url, data=json.dumps({"job_id": queued_job.id}))
+    assert r.status_code == HTTPStatus.OK
+
+    polled = post_event(
+        ryhti_client_url, {"action": "get_job", "job_id": queued_job.id}
+    )
+    assert polled["body"]["details"] == {
+        "job_id": queued_job.id,
+        "status": "done",
+        "result": {
+            "statusCode": HTTPStatus.NOT_FOUND,
+            "body": {
+                "title": "Plan not found.",
+                "details": {"error": f"Plan '{queued_job.plan_id}' does not exist."},
+                "ryhti_response": None,
+            },
+        },
+    }
+
+
+def test_api_gateway_request_cannot_run_a_job(
+    ryhti_client_url: str, queued_job: models.Job
+) -> None:
+    """Only a direct invocation runs a job, never a request through the API."""
+    data = post_event(ryhti_client_url, {"job_id": queued_job.id}, "api_gateway")
+
+    assert data["statusCode"] == HTTPStatus.BAD_REQUEST
+    assert data["body"]["title"] == "Missing action."
+    polled = post_event(
+        ryhti_client_url, {"action": "get_job", "job_id": queued_job.id}
+    )
+    assert polled["body"]["details"]["status"] == "queued"

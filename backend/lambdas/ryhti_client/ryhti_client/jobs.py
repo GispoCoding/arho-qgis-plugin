@@ -6,17 +6,20 @@ the request, the state of the job and, when the job is done, the answer that a
 synchronous call would have got.
 
 How a job starts differs between environments, so the caller passes a starter
-to submit. The starters live in lambda_function.py, chosen by JOB_RUNNER.
+to submit, chosen by JOB_RUNNER in lambda_function.py. The starter for AWS,
+lambda_job_starter, lives here, so that it can be tested without AWS.
 """
 
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 import simplejson as json
+from botocore.exceptions import BotoCoreError, ClientError
 from sqlalchemy import create_engine, func, update
 from sqlalchemy.orm import sessionmaker
 
@@ -25,6 +28,7 @@ from database.models import Job
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+    from datetime import timedelta
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +43,26 @@ type ActionRunner = Callable[[dict[str, Any]], Mapping[str, Any]]
 type JobStarter = Callable[[str], None]
 
 
+class LambdaClient(Protocol):
+    """The part of the boto3 Lambda client that starts a job."""
+
+    def invoke(
+        self,
+        *,
+        FunctionName: str,  # noqa: N803  # the boto3 argument names
+        InvocationType: str,  # noqa: N803
+        Payload: str,  # noqa: N803
+    ) -> Mapping[str, Any]: ...
+
+
+class JobNotStartedError(Exception):
+    """The job could not be started, so it is stored as failed."""
+
+    def __init__(self, job_id: str) -> None:
+        super().__init__(f"Job {job_id} could not be started.")
+        self.job_id = job_id
+
+
 @dataclass(frozen=True)
 class JobState:
     """What a caller may see of a job."""
@@ -47,6 +71,16 @@ class JobState:
     status: JobStatus
     result: dict[str, Any] | None
     error: str | None
+
+
+@dataclass(frozen=True)
+class ClaimedJob:
+    """A job that a run has moved from queued to running."""
+
+    action: str
+    request: dict[str, Any]
+    # From the creation of the job to its start.
+    waited: timedelta
 
 
 def is_uuid(value: object) -> bool:
@@ -95,24 +129,39 @@ class JobStore:
         start(job_id)
         return job_id
 
-    def run(self, job_id: str, run_action: ActionRunner) -> None:
-        """Run a queued job and store how it ended.
+    def run(self, job_id: str, run_action: ActionRunner) -> str | None:
+        """Run a queued job, store how it ended and return its action.
 
         The job is claimed from queued to running in one statement, so a job
         that is started twice runs only once. A job that is not queued is left
-        as it is.
+        as it is, and None is returned.
         """
-        request = self._claim(job_id)
-        if request is None:
+        job = self._claim(job_id)
+        if job is None:
             LOGGER.warning("Job %s is not queued, so it is not run.", job_id)
-            return
+            return None
+        start = time.perf_counter()
         try:
-            answer = run_action(request)
+            answer = run_action(job.request)
         except Exception:
             LOGGER.exception("Job %s crashed.", job_id)
-            self._finish(job_id, status=JobStatus.FAILED, error=JOB_FAILED_ERROR)
+            self.fail(job_id)
         else:
             self._finish(job_id, status=JobStatus.DONE, result=dict(answer))
+        # Not "arho_timing action=", so that the per-invocation duration query
+        # does not count job runs twice.
+        LOGGER.info(
+            "arho_timing job_id=%s action=%s wait_ms=%d duration_ms=%d",
+            job_id,
+            job.action,
+            round(job.waited.total_seconds() * 1000),
+            round((time.perf_counter() - start) * 1000),
+        )
+        return job.action
+
+    def fail(self, job_id: str) -> None:
+        """Store the job as failed, with the generic error."""
+        self._finish(job_id, status=JobStatus.FAILED, error=JOB_FAILED_ERROR)
 
     def get(self, job_id: str) -> JobState | None:
         """Return the state of the job, or None if there is no such job."""
@@ -124,23 +173,26 @@ class JobStore:
                 job_id=job.id, status=job.status, result=job.result, error=job.error
             )
 
-    def _claim(self, job_id: str) -> dict[str, Any] | None:
-        """Move a queued job to running and return its request.
+    def _claim(self, job_id: str) -> ClaimedJob | None:
+        """Move a queued job to running and return what the run needs.
 
         Returns None when the job is not queued.
         """
         with self.Session() as session:
-            request = session.execute(
+            row = session.execute(
                 update(Job)
                 .where(Job.id == job_id, Job.status == JobStatus.QUEUED)
                 .values(status=JobStatus.RUNNING, started_at=func.now())
-                .returning(Job.request)
-            ).scalar_one_or_none()
+                .returning(Job.action, Job.request, Job.started_at - Job.created_at)
+            ).one_or_none()
             session.commit()
-        return request
+        if row is None:
+            return None
+        action, request, waited = row
+        return ClaimedJob(action=action, request=request, waited=waited)
 
     def _finish(self, job_id: str, **values: Any) -> None:  # noqa: ANN401
-        """Store the end state of a running job."""
+        """Store the end state of a job."""
         with self.Session() as session:
             session.execute(
                 update(Job)
@@ -148,3 +200,45 @@ class JobStore:
                 .values(finished_at=func.now(), **values)
             )
             session.commit()
+
+
+def worker_event(job_id: str) -> dict[str, str]:
+    """Return the event that runs the job in a new invocation: its id only."""
+    return {"job_id": job_id}
+
+
+def is_worker_event(event: object) -> bool:
+    """Return True if the event is a worker event, as worker_event builds it.
+
+    Only a direct invocation can be one: an API gateway request has more keys
+    than the job id, so a caller of the API cannot run a job.
+    """
+    return isinstance(event, dict) and event.keys() == {"job_id"}
+
+
+def lambda_job_starter(
+    store: JobStore, client: LambdaClient, function_arn: str
+) -> JobStarter:
+    """Return a starter that runs each job in a new invocation of this function.
+
+    The Event invocation answers at once, and the job runs in the background.
+    function_arn is the qualified ARN the current invocation was called with,
+    so the job runs on the same code as its submit call.
+
+    If the invocation fails, the job is stored as failed and the starter raises
+    JobNotStartedError.
+    """
+
+    def invoke(job_id: str) -> None:
+        try:
+            client.invoke(
+                FunctionName=function_arn,
+                InvocationType="Event",
+                Payload=json.dumps(worker_event(job_id)),
+            )
+        except (BotoCoreError, ClientError) as error:
+            LOGGER.exception("Job %s could not be started.", job_id)
+            store.fail(job_id)
+            raise JobNotStartedError(job_id) from error
+
+    return invoke

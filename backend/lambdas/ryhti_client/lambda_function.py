@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Callable
 from copy import deepcopy
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, Protocol, TypedDict, cast
 
 import boto3
 import requests
@@ -38,7 +38,13 @@ from ryhti_client.database_client import (
     StartDateRequiredError,
     is_valid_plan,
 )
-from ryhti_client.jobs import JobStore, is_uuid
+from ryhti_client.jobs import (
+    JobNotStartedError,
+    JobStore,
+    is_uuid,
+    is_worker_event,
+    lambda_job_starter,
+)
 from ryhti_client.plan_copier import CopyPlanData
 from ryhti_client.profiling import log_duration, profile_python
 from ryhti_client.ryhti_client import RyhtiClient
@@ -108,6 +114,15 @@ presigned_url_expiry_seconds = int(os.environ.get("PRESIGNED_URL_EXPIRY_SECONDS"
 
 # How a submitted job starts, see choose_job_starter.
 job_runner = os.environ.get("JOB_RUNNER", "")
+if job_runner not in {"inline", "lambda"}:
+    raise ValueError(
+        "Please set JOB_RUNNER environment variable to 'inline' or 'lambda' to run "
+        f"Ryhti client. It is {job_runner!r}."
+    )
+# With JOB_RUNNER=lambda, a job runs in a new invocation of this function.
+lambda_client = boto3.client(
+    "lambda", region_name=os.environ.get("AWS_REGION_NAME", "") or None
+)
 
 # WFS service that publishes valid plans as open data, for import_wfs_plans.
 ryhti_wfs_url = os.environ.get(
@@ -128,6 +143,13 @@ s3_client = boto3.client(
     endpoint_url=s3_endpoint_url,
     config=Config(signature_version="s3v4"),
 )
+
+
+class LambdaContext(Protocol):
+    """The part of the AWS Lambda context object that the handler reads."""
+
+    # The ARN this invocation was called with, with the alias or version.
+    invoked_function_arn: str
 
 
 class ResponseBody(TypedDict):
@@ -473,7 +495,7 @@ def finalize_plan_action(
 
 
 type HandlerType = Callable[
-    [ArhoPayload | AWSAPIGatewayPayload, dict[str, Any]],
+    [ArhoPayload | AWSAPIGatewayPayload, LambdaContext],
     Response | CompressedResponse | AWSAPIGatewayResponse,
 ]
 
@@ -483,7 +505,7 @@ def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType
 
     @wraps(func)
     def wrapper(
-        payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+        payload: ArhoPayload | AWSAPIGatewayPayload, context: LambdaContext
     ) -> Response | CompressedResponse | AWSAPIGatewayResponse:
         try:
             return func(payload, context)
@@ -509,14 +531,23 @@ def return_500_on_unhandled_exceptions[**P, R](func: HandlerType) -> HandlerType
     return wrapper
 
 
-def log_action_duration(func: HandlerType) -> HandlerType:
-    """Decorator to log a parseable line with the action name and handler
-    wall time, for CloudWatch Logs Insights duration queries per action.
+def log_invocation_duration(action: str, start: float) -> None:
+    """Log a parseable line with the action name and the handler wall time
+    since start, for CloudWatch Logs Insights duration queries per action.
     """
+    LOGGER.info(
+        "arho_timing action=%s duration_ms=%d",
+        action,
+        round((time.perf_counter() - start) * 1000),
+    )
+
+
+def log_action_duration(func: HandlerType) -> HandlerType:
+    """Decorator to log the duration line of a request, see log_invocation_duration."""
 
     @wraps(func)
     def wrapper(
-        payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+        payload: ArhoPayload | AWSAPIGatewayPayload, context: LambdaContext
     ) -> Response | CompressedResponse | AWSAPIGatewayResponse:
         start = time.perf_counter()
         try:
@@ -528,11 +559,7 @@ def log_action_duration(func: HandlerType) -> HandlerType:
             except Exception:  # noqa: BLE001
                 # Timing is best effort; never mask the response.
                 LOGGER.warning("Could not resolve action name for timing log.")
-            LOGGER.info(
-                "arho_timing action=%s duration_ms=%d",
-                action,
-                round((time.perf_counter() - start) * 1000),
-            )
+            log_invocation_duration(action, start)
 
     return wrapper
 
@@ -866,7 +893,7 @@ def job_store() -> JobStore:
     )
 
 
-def choose_job_starter(store: JobStore) -> JobStarter:
+def choose_job_starter(store: JobStore, context: LambdaContext) -> JobStarter:
     """Return the job starter that JOB_RUNNER names.
 
     The starter is the only part of job mode that differs between environments.
@@ -878,16 +905,45 @@ def choose_job_starter(store: JobStore) -> JobStarter:
             store.run(job_id, run_stored_request)
 
         return run_at_once
-    raise ValueError(f"JOB_RUNNER must be 'inline', not {job_runner!r}.")
+    if job_runner == "lambda":
+        # The worker event of the job comes back to handler, see run_job_event.
+        return lambda_job_starter(store, lambda_client, context.invoked_function_arn)
+    raise ValueError(f"JOB_RUNNER must be 'inline' or 'lambda', not {job_runner!r}.")
 
 
-def submit_job(event: ArhoPayload) -> Response:
+def submit_job(event: ArhoPayload, context: LambdaContext) -> Response:
     """Store the request as a job, start the job and answer with its id."""
     store = job_store()
-    start = choose_job_starter(store)
+    start = choose_job_starter(store, context)
     request = {key: value for key, value in event.items() if key != "run_as_job"}
-    job_id = store.submit(request, start)
+    try:
+        job_id = store.submit(request, start)
+    except JobNotStartedError:
+        return simple_response(
+            502,
+            "Job could not be started.",
+            {"error": "The job could not be started. Please try again later."},
+        )
     return simple_response(202, "Job submitted.", {"job_id": job_id})
+
+
+def run_job_event(job_id: str) -> Response:
+    """Run the job of a worker event, which a JOB_RUNNER=lambda submit sends.
+
+    The duration line names the action job:<action>, so that job runs and
+    synchronous calls are separate rows in the per-action duration query.
+    Nobody reads the answer of an Event invocation, so an unexpected error is
+    raised, not answered: AWS then counts the invocation as failed.
+    """
+    start = time.perf_counter()
+    request_error = check_job_id(job_id)
+    if request_error is not None:
+        return request_error
+    action = job_store().run(job_id, run_stored_request)
+    if action is None:
+        return simple_response(409, "Job is not queued.", {"job_id": job_id})
+    log_invocation_duration(f"job:{action}", start)
+    return simple_response(200, "Job run.", {"job_id": job_id})
 
 
 def get_job(job_id: str) -> Response:
@@ -914,12 +970,25 @@ def get_job(job_id: str) -> Response:
     )
 
 
+def handler(
+    payload: ArhoPayload | AWSAPIGatewayPayload | dict[str, str], context: LambdaContext
+) -> Response | CompressedResponse | AWSAPIGatewayResponse:
+    """Handler which is called when the function is invoked.
+
+    A worker event runs a job in the background. Every other event is a
+    request, see handle_request.
+    """
+    if is_worker_event(payload):
+        return run_job_event(cast("dict[str, str]", payload)["job_id"])
+    return handle_request(cast("ArhoPayload | AWSAPIGatewayPayload", payload), context)
+
+
 @return_500_on_unhandled_exceptions
 @log_action_duration
-def handler(
-    payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+def handle_request(
+    payload: ArhoPayload | AWSAPIGatewayPayload, context: LambdaContext
 ) -> Response | CompressedResponse | AWSAPIGatewayResponse:
-    """Handler which is called when accessing the endpoint. We must handle both API
+    """Answer a request to the endpoint. We must handle both API
     gateway HTTP requests and regular lambda requests. API gateway requires
     the response body to be stringified.
 
@@ -947,7 +1016,7 @@ def handler(
     elif Action(event["action"]) is Action.GET_JOB:
         response = get_job(cast("str", event.get("job_id")))
     elif event.get("run_as_job") is True:
-        response = submit_job(event)
+        response = submit_job(event, context)
     else:
         response = run_action(event)
     return format_response(response, using_api_gateway, compress_response)
