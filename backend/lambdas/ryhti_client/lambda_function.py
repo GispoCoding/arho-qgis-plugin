@@ -354,6 +354,39 @@ def check_action_preconditions(
     return None
 
 
+def check_request(event: ArhoPayload) -> Response | None:
+    """Check that the request names an action that can be run with the event.
+
+    The checks need no database, so they can run before any work starts.
+    Returns an error response if the request cannot be run, otherwise None.
+    """
+    action_name = event.get("action")
+    if action_name is None:
+        return simple_response(400, "Missing action.", {"error": "action is required."})
+    try:
+        event_type = Action(action_name)
+    except ValueError:
+        return simple_response(
+            400, "Unknown action.", {"error": f"Unknown action: {action_name}"}
+        )
+    return check_action_preconditions(event_type, action_name, event.get("plan_uuid"))
+
+
+def create_upload_url() -> Response:
+    """Return a presigned URL that the client can PUT the plan file to before
+    calling import_plan. No database access is needed.
+    """
+    key = f"import/{uuid.uuid4()}.json"
+    upload_url = s3_client.generate_presigned_url(
+        "put_object",
+        Params={"Bucket": ryhti_files_bucket, "Key": key},
+        ExpiresIn=presigned_url_expiry_seconds,
+    )
+    return simple_response(
+        200, "Upload URL created.", {"upload_url": upload_url, "key": key}
+    )
+
+
 def finalize_plan_action(
     plan: models.Plan, database_client: DatabaseClient, client: RyhtiClient
 ) -> Response:
@@ -502,70 +535,16 @@ def normalize_payload(event: ArhoPayload | AWSAPIGatewayPayload) -> NormalizedEv
     return {"raw_event": raw_event, "headers": headers, "body": body}
 
 
-@return_500_on_unhandled_exceptions
-@log_action_duration
-def handler(
-    payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
-) -> Response | CompressedResponse | AWSAPIGatewayResponse:
-    """Handler which is called when accessing the endpoint. We must handle both API
-    gateway HTTP requests and regular lambda requests. API gateway requires
-    the response body to be stringified.
+def run_action(event: ArhoPayload) -> Response:
+    """Run the action of a request that has passed check_request.
 
-    If lambda runs successfully, we always return 200 OK. In case a python
-    exception occurs, AWS lambda will return the exception.
-
-    We want to return general result message of the lambda run, as well as the
-    Ryhti API response for actions that call the Ryhti API.
+    Every action except get_upload_url runs here, so every caller gets the same
+    response to the same request. The event is the normalized request body,
+    without headers.
     """
-    LOGGER.info(f"Received payload {payload}...")
-
-    using_api_gateway = is_api_gateway_event(payload)
-    normalized_payload = normalize_payload(payload)
-    event = normalized_payload["body"]
-    compress_response = (
-        "gzip"
-        in normalized_payload.get("headers", {}).get("Accept-Encoding", "").lower()
-    )
-    action_name = event.get("action")
-    if action_name is None:
-        return format_response(
-            simple_response(400, "Missing action.", {"error": "action is required."}),
-            using_api_gateway,
-            compress_response,
-        )
-    try:
-        event_type = Action(action_name)
-    except ValueError:
-        return format_response(
-            simple_response(
-                400, "Unknown action.", {"error": f"Unknown action: {action_name}"}
-            ),
-            using_api_gateway,
-            compress_response,
-        )
+    event_type = Action(event["action"])
     debug_json = event.get("save_json", False)
     plan_uuid = event.get("plan_uuid", None)
-
-    if event_type is Action.GET_UPLOAD_URL:
-        # No database access needed; just return a presigned upload URL that the
-        # client can PUT the plan file to before calling import_plan.
-        key = f"import/{uuid.uuid4()}.json"
-        upload_url = s3_client.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": ryhti_files_bucket, "Key": key},
-            ExpiresIn=presigned_url_expiry_seconds,
-        )
-        return format_response(
-            simple_response(
-                200, "Upload URL created.", {"upload_url": upload_url, "key": key}
-            ),
-            using_api_gateway,
-            compress_response,
-        )
-
-    precondition_error = check_action_preconditions(event_type, action_name, plan_uuid)
-    if precondition_error:
-        return format_response(precondition_error, using_api_gateway, compress_response)
 
     connection_params = get_connection_parameters(user_credentials)
     database_client = DatabaseClient(get_connection_string(**connection_params))
@@ -596,11 +575,7 @@ def handler(
             with log_duration("fetch_plan"):
                 plan = database_client.get_plan(cast("str", plan_uuid))
         except PlanNotFoundError as e:
-            return format_response(
-                simple_response(404, "Plan not found.", {"error": str(e)}),
-                using_api_gateway,
-                compress_response,
-            )
+            return simple_response(404, "Plan not found.", {"error": str(e)})
 
         if event_type is Action.GET_PLAN:
             # Upload the JSON to S3 and return a presigned download URL. The
@@ -845,4 +820,39 @@ def handler(
     else:
         lambda_response = simple_response(400, "No action taken.")
 
-    return format_response(lambda_response, using_api_gateway, compress_response)
+    return lambda_response
+
+
+@return_500_on_unhandled_exceptions
+@log_action_duration
+def handler(
+    payload: ArhoPayload | AWSAPIGatewayPayload, context: dict[str, Any]
+) -> Response | CompressedResponse | AWSAPIGatewayResponse:
+    """Handler which is called when accessing the endpoint. We must handle both API
+    gateway HTTP requests and regular lambda requests. API gateway requires
+    the response body to be stringified.
+
+    If lambda runs successfully, we always return 200 OK. In case a python
+    exception occurs, AWS lambda will return the exception.
+
+    We want to return general result message of the lambda run, as well as the
+    Ryhti API response for actions that call the Ryhti API.
+    """
+    LOGGER.info(f"Received payload {payload}...")
+
+    using_api_gateway = is_api_gateway_event(payload)
+    normalized_payload = normalize_payload(payload)
+    event = normalized_payload["body"]
+    compress_response = (
+        "gzip"
+        in normalized_payload.get("headers", {}).get("Accept-Encoding", "").lower()
+    )
+
+    request_error = check_request(event)
+    if request_error is not None:
+        response = request_error
+    elif Action(event["action"]) is Action.GET_UPLOAD_URL:
+        response = create_upload_url()
+    else:
+        response = run_action(event)
+    return format_response(response, using_api_gateway, compress_response)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import gzip
 import inspect
 import json
 import uuid
@@ -873,3 +875,100 @@ def test_get_unknown_plan(ryhti_client_url: str, complete_test_plan: Plan) -> No
     data = r.json()
     assert data["statusCode"] == HTTPStatus.NOT_FOUND
     assert data["body"]["title"] == "Plan not found."
+
+
+@pytest.mark.parametrize(
+    ("event", "status_code", "title", "details"),
+    [
+        (
+            {"action": "no_such_action"},
+            HTTPStatus.BAD_REQUEST,
+            "Unknown action.",
+            {"error": "Unknown action: no_such_action"},
+        ),
+        (
+            {"action": "get_plan", "plan_uuid": "not-a-uuid"},
+            HTTPStatus.BAD_REQUEST,
+            "Invalid plan_uuid.",
+            {"error": "plan_uuid must be a valid UUID."},
+        ),
+        (
+            {"action": "post_plan_matters"},
+            HTTPStatus.METHOD_NOT_ALLOWED,
+            "Plan matter actions not supported.",
+            {"error": "Plan matter support has been removed from Arho."},
+        ),
+    ],
+)
+def test_request_that_cannot_run(
+    ryhti_client_url: str,
+    event: dict[str, Any],
+    status_code: HTTPStatus,
+    title: str,
+    details: dict[str, str],
+) -> None:
+    """A request that names no runnable action is refused with a client error."""
+    r = requests.post(ryhti_client_url, data=json.dumps(event))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["statusCode"] == status_code
+    assert data["body"] == {"title": title, "details": details, "ryhti_response": None}
+
+
+def test_copy_unknown_plan(ryhti_client_url: str, complete_test_plan: Plan) -> None:
+    """Copying a plan that does not exist should return 404."""
+    plan_uuid = str(uuid.uuid4())
+    payload = {
+        "action": "copy_plan",
+        "plan_uuid": plan_uuid,
+        "data": {"plan_name": {"fin": "Kopio"}, "deep_copy": True},
+    }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["statusCode"] == HTTPStatus.NOT_FOUND
+    assert data["body"] == {
+        "title": "Error copying plan.",
+        "details": {"error": f"Plan '{plan_uuid}' does not exist."},
+        "ryhti_response": None,
+    }
+
+
+@pytest.mark.parametrize("request_shape", ["direct", "api_gateway"])
+def test_gzip_response(
+    ryhti_client_url: str, complete_test_plan: Plan, request_shape: str
+) -> None:
+    """A caller that accepts gzip gets the same body gzipped and base64 encoded."""
+    plan_uuid = str(uuid.uuid4())
+    event = {"action": "get_plan", "plan_uuid": plan_uuid}
+    headers = {"Accept-Encoding": "gzip, deflate"}
+    payload: dict[str, Any]
+    if request_shape == "direct":
+        payload = {**event, "headers": headers}
+    elif request_shape == "api_gateway":
+        payload = {
+            "version": "2.0",
+            "headers": headers,
+            "queryStringParameters": {},
+            "requestContext": {},
+            "body": json.dumps(event),
+            "isBase64Encoded": False,
+        }
+    r = requests.post(ryhti_client_url, data=json.dumps(payload))
+    assert r.status_code == HTTPStatus.OK
+
+    data = r.json()
+    assert data["statusCode"] == HTTPStatus.NOT_FOUND
+    if request_shape == "direct":
+        assert data["encoding"] == "gzip+base64"
+    elif request_shape == "api_gateway":
+        assert data["headers"] == {"Content-Encoding": "gzip"}
+        assert data["isBase64Encoded"] is True
+    body = json.loads(gzip.decompress(base64.b64decode(data["body"])))
+    assert body == {
+        "title": "Plan not found.",
+        "details": {"error": f"Plan '{plan_uuid}' does not exist."},
+        "ryhti_response": None,
+    }
