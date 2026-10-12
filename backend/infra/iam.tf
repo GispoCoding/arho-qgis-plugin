@@ -92,6 +92,89 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_transfer_attachment" {
   policy_arn = aws_iam_policy.s3-transfer-policy.arn
 }
 
+# ryhti_client role. ryhti_client uses the transfer bucket and the X-Road client
+# secret and invokes itself to run jobs, so it does not share a role with the
+# other lambdas.
+resource "aws_iam_role" "ryhti_client_exec" {
+  name = "${var.prefix}_ryhti_client_lambda"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Principal = { Service = "lambda.amazonaws.com" }
+      }
+    ]
+  })
+  tags = merge(local.default_tags, { Name = "${var.prefix}_ryhti_client_lambda" })
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_vpc_access" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_policy" "ryhti_client_secrets" {
+  name        = "${var.prefix}-ryhti-client-secrets-policy"
+  path        = "/"
+  description = "ryhti_client lambda secrets policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        # The cold start only reads the secret values.
+        Action = ["secretsmanager:GetSecretValue"]
+        Effect = "Allow"
+        Resource = compact([
+          aws_secretsmanager_secret.hame-db-dba.arn,
+          var.enable_x_road ? module.x-road["this"].client_secret_arn : null
+        ])
+      }
+    ]
+  })
+  tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti-client-secrets-policy" })
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_secrets" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = aws_iam_policy.ryhti_client_secrets.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_s3_transfer" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = aws_iam_policy.s3-transfer-policy.arn
+}
+
+# A job starts with an asynchronous invocation of the same function, on the
+# qualifier of the submit call (the live alias or the unpublished version).
+resource "aws_iam_policy" "ryhti_client_invoke_self" {
+  name        = "${var.prefix}-ryhti-client-invoke-self-policy"
+  path        = "/"
+  description = "ryhti_client lambda may invoke itself to run jobs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = ["lambda:InvokeFunction"]
+        Effect = "Allow"
+        Resource = [
+          aws_lambda_function.ryhti_client.arn,
+          "${aws_lambda_function.ryhti_client.arn}:*"
+        ]
+      }
+    ]
+  })
+  tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti-client-invoke-self-policy" })
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_invoke_self" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = aws_iam_policy.ryhti_client_invoke_self.arn
+}
+
 
 # Lambda update user
 resource "aws_iam_user" "lambda_update_user" {

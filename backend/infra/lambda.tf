@@ -95,12 +95,12 @@ resource "aws_lambda_function" "ryhti_client" {
   # 1769 MB is the point where lambda gives a full vCPU. Serializing a large plan is
   # single threaded CPU work, so more memory than this would not help.
   memory_size = 1769
-  timeout     = 120
+  timeout     = local.ryhti_client_timeout_seconds
   # Provisioned concurrency cannot be attached to $LATEST, so every apply must
   # publish a numbered version for the live alias to point at.
   publish = true
 
-  role = aws_iam_role.lambda_exec.arn
+  role = aws_iam_role.ryhti_client_exec.arn
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
     security_group_ids = [aws_security_group.lambda.id]
@@ -114,6 +114,15 @@ resource "aws_lambda_function" "ryhti_client" {
     variables = local.ryhti_client_env
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti_client" })
+
+  # Lambda checks the VPC access of the role when it creates or updates the
+  # function, and the cold start reads the secrets. The attachments are not
+  # referenced above, so name them here. The self-invoke policy cannot be
+  # listed: it refers to this function.
+  depends_on = [
+    aws_iam_role_policy_attachment.ryhti_client_vpc_access,
+    aws_iam_role_policy_attachment.ryhti_client_secrets,
+  ]
 }
 
 resource "aws_ecr_repository" "ryhti_client" {
@@ -163,6 +172,26 @@ resource "aws_lambda_permission" "api_gateway_call_ryhti_client" {
   source_arn = "${aws_api_gateway_rest_api.lambda_api.execution_arn}/*"
 }
 
+# A job runs on the qualifier its submit call was invoked with: the live alias
+# through the API gateway, the unpublished version for a direct invoke. AWS must
+# not retry a failed job, so that a half-done import never runs a second time.
+# AWS still retries a throttled event for up to 6 hours by default, so the event
+# is dropped at the job time limit instead: get_job already reports the job as
+# failed by then, and the job is never started later.
+resource "aws_lambda_function_event_invoke_config" "ryhti_client_live" {
+  function_name                = aws_lambda_function.ryhti_client.function_name
+  qualifier                    = aws_lambda_alias.ryhti_client_live.name
+  maximum_retry_attempts       = 0
+  maximum_event_age_in_seconds = local.ryhti_client_timeout_seconds
+}
+
+resource "aws_lambda_function_event_invoke_config" "ryhti_client_latest" {
+  function_name                = aws_lambda_function.ryhti_client.function_name
+  qualifier                    = "$LATEST"
+  maximum_retry_attempts       = 0
+  maximum_event_age_in_seconds = local.ryhti_client_timeout_seconds
+}
+
 resource "aws_lambda_function" "mml_loader" {
   function_name = "${var.prefix}-mml_loader"
   image_uri     = "${aws_ecr_repository.mml_loader.repository_url}:latest"
@@ -208,6 +237,14 @@ resource "aws_ecr_repository" "mml_loader" {
 }
 
 locals {
+  # Long actions run as background jobs, so allow the Lambda maximum. A job that
+  # is still queued or running after this long has crashed, so the same value
+  # is the job time limit.
+  ryhti_client_timeout_seconds = 900
+  ryhti_client_job_environment = {
+    JOB_RUNNER             = "lambda"
+    JOB_TIME_LIMIT_SECONDS = local.ryhti_client_timeout_seconds
+  }
   ryhti_client_base_environment = {
     AWS_REGION_NAME     = var.AWS_REGION_NAME
     DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
@@ -230,6 +267,7 @@ locals {
   } : {}
   ryhti_client_env = merge(
     local.ryhti_client_base_environment,
+    local.ryhti_client_job_environment,
     local.ryhti_client_x-road_environment
   )
 }
