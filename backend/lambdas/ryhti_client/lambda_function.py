@@ -256,7 +256,7 @@ class AWSAPIGatewayResponse(TypedDict):
     isBase64Encoded: NotRequired[bool]
 
 
-class Action(enum.Enum):
+class Action(enum.StrEnum):
     GET_PLAN = "get_plan"
     VALIDATE_PLAN = "validate_plan"
     GET_PERMANENT_IDENTIFIER = "get_permanent_plan_identifier"
@@ -552,6 +552,31 @@ def log_invocation_duration(action: str, start: float) -> None:
     )
 
 
+def is_job_submit(event: ArhoPayload) -> bool:
+    """Return True if the request asks to run its action as a job.
+
+    Only the JSON value true turns job mode on. get_upload_url and get_job
+    ignore the flag, so that a client may send it on every request.
+    """
+    return event.get("run_as_job") is True and event.get("action") not in {
+        Action.GET_UPLOAD_URL,
+        Action.GET_JOB,
+    }
+
+
+def timing_action(event: ArhoPayload) -> str:
+    """Return the action name for the duration line of a request.
+
+    A job submit is named submit:<action>, so that submits, job runs
+    (job:<action>, see run_job_event) and calls without the job flag are
+    separate rows in the per-action duration query.
+    """
+    action = str(event.get("action"))
+    if is_job_submit(event):
+        return f"submit:{action}"
+    return action
+
+
 def log_action_duration(func: HandlerType) -> HandlerType:
     """Decorator to log the duration line of a request, see log_invocation_duration."""
 
@@ -565,7 +590,7 @@ def log_action_duration(func: HandlerType) -> HandlerType:
         finally:
             action = "unknown"
             try:
-                action = str(normalize_payload(payload)["body"].get("action"))
+                action = timing_action(normalize_payload(payload)["body"])
             except Exception:  # noqa: BLE001
                 # Timing is best effort; never mask the response.
                 LOGGER.warning("Could not resolve action name for timing log.")
@@ -1023,12 +1048,12 @@ def handle_request(
     request_error = check_request(event)
     if request_error is not None:
         response = request_error
-    elif Action(event["action"]) is Action.GET_UPLOAD_URL:
-        response = create_upload_url()
-    elif Action(event["action"]) is Action.GET_JOB:
-        response = get_job(cast("str", event.get("job_id")))
-    elif event.get("run_as_job") is True:
+    elif is_job_submit(event):
         response = submit_job(event, context)
+    elif event["action"] == Action.GET_UPLOAD_URL:
+        response = create_upload_url()
+    elif event["action"] == Action.GET_JOB:
+        response = get_job(cast("str", event.get("job_id")))
     else:
         response = run_action(event)
     return format_response(response, using_api_gateway, compress_response)

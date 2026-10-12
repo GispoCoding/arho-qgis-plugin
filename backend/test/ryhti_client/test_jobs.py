@@ -281,3 +281,54 @@ def test_submit_answers_502_when_the_job_cannot_be_started(
             "ryhti_response": None,
         },
     }
+
+
+# The per-invocation line that the per-action duration query reads.
+INVOCATION_TIMING_LINE = re.compile(
+    r"arho_timing action=(?P<action>\S+) duration_ms=(?P<duration_ms>\d+)"
+)
+
+
+def logged_actions(caplog: pytest.LogCaptureFixture) -> list[str]:
+    """Return the action names of the per-invocation timing lines, in order."""
+    return [
+        line["action"]
+        for record in caplog.records
+        if (line := INVOCATION_TIMING_LINE.fullmatch(record.getMessage()))
+    ]
+
+
+def test_submit_job_run_and_call_without_the_flag_log_separate_actions(
+    lambda_function: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The per-action duration query shows submits, job runs and calls without
+    the job flag as separate rows.
+    """
+    client = FakeLambdaClient()
+    monkeypatch.setattr(lambda_function, "lambda_client", client)
+
+    with caplog.at_level(logging.INFO):
+        lambda_function.handler({**REQUEST, "run_as_job": True}, FakeContext())
+        worker_event = client.invocations[0]["Payload"]
+        lambda_function.handler(worker_event, FakeContext())
+        lambda_function.handler(REQUEST, FakeContext())
+
+    assert logged_actions(caplog) == ["submit:get_plan", "job:get_plan", "get_plan"]
+
+
+def test_get_job_ignores_the_job_flag_in_its_timing_line(
+    lambda_function: ModuleType, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A poll is no submit, even when the client sends the flag on every request."""
+    poll = {
+        "action": "get_job",
+        "job_id": "8d0bd5a4-6a4f-4f0e-9a5e-0d1c7b0c5b9e",
+        "run_as_job": True,
+    }
+
+    with caplog.at_level(logging.INFO):
+        lambda_function.handler(poll, FakeContext())
+
+    assert logged_actions(caplog) == ["get_job"]

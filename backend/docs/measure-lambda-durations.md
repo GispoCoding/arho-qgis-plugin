@@ -59,11 +59,14 @@ filter message like 'arho_timing action='
 | sort p95_ms desc
 ```
 
-Jobs add rows of their own. The invocation that runs a job logs its line as
-`action=job:<action>`, for example `job:get_plan`, so job runs and calls without
-the job flag are separate rows. The plain `<action>` row counts both the calls
-without the flag and the submit calls of jobs. In AWS a submit only stores and
-starts the job, so it is short. The polls are the `get_job` row.
+Jobs add rows of their own, so that each row holds one kind of call:
+
+- `<action>`, for example `get_plan`: the calls without the job flag.
+- `submit:<action>`, for example `submit:get_plan`: the submit calls of jobs.
+  In AWS a submit only stores and starts the job, so it is short.
+- `job:<action>`, for example `job:get_plan`: the invocations that run a job.
+- `get_job`: the polls. `get_job` and `get_upload_url` ignore the job flag, so
+  they have no `submit:` row.
 
 ## Duration per job
 
@@ -99,7 +102,7 @@ filter message like 'arho_timing job_id='
 A job that the lambda timeout or a lack of memory stops logs neither line;
 `get_job` reports it as `failed` once it is past the time limit. Locally, with
 `JOB_RUNNER=inline`, the job runs inside the submit call: there is no
-`job:<action>` line, and the `<action>` line of the submit holds the whole run.
+`job:<action>` line, and the `submit:<action>` line holds the whole run.
 
 ## Duration per step of an export
 
@@ -148,5 +151,5 @@ it.
 - `arho_timing` measures handler wall time only. The platform report
   `durationMs` is the billed view and `initDurationMs` shows cold starts.
 - Compare p95 and max against 29000 ms. An action that passes that limit
-  should run as a job in the client. Compare the job rows against the 900000 ms
-  lambda timeout.
+  should run as a job in the client. Compare the `job:<action>` rows against the
+  900000 ms lambda timeout.
