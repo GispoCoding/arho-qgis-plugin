@@ -917,11 +917,6 @@ def run_action(event: ArhoPayload) -> Response:
     return lambda_response
 
 
-def run_stored_request(request: dict[str, Any]) -> Response:
-    """Run the action of a job, from the request stored with the job."""
-    return run_action(cast("ArhoPayload", request))
-
-
 def job_store() -> JobStore:
     return JobStore(
         get_connection_string(**get_connection_parameters(user_credentials)),
@@ -938,7 +933,7 @@ def choose_job_starter(store: JobStore, context: LambdaContext) -> JobStarter:
         # The local Lambda emulator cannot invoke itself, so the job runs at
         # once, inside the submit call.
         def run_at_once(job_id: str) -> None:
-            store.run(job_id, run_stored_request)
+            store.run(job_id, run_action)
 
         return run_at_once
     if job_runner == "lambda":
@@ -975,7 +970,7 @@ def run_job_event(job_id: str) -> Response:
     request_error = check_job_id(job_id)
     if request_error is not None:
         return request_error
-    action = job_store().run(job_id, run_stored_request)
+    action = job_store().run(job_id, run_action)
     if action is None:
         # Not queued (a second delivery of the event), or past the time limit.
         return simple_response(409, "Job not run.", {"job_id": job_id})

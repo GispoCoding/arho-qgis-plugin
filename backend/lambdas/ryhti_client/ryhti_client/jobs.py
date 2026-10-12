@@ -42,8 +42,9 @@ JOB_FAILED_ERROR = "The job failed. Please contact Arho support team."
 JOB_RETENTION = timedelta(days=7)
 
 # Runs the action of a stored request and returns the answer, {statusCode,
-# body}, exactly as a synchronous call would get it.
-type ActionRunner = Callable[[dict[str, Any]], Mapping[str, Any]]
+# body}, exactly as a synchronous call would get it. The request is the JSON
+# that submit stored. Its type belongs to the runner, so it is Any here.
+type ActionRunner = Callable[[Any], Mapping[str, Any]]
 
 # Starts the job with the given id.
 type JobStarter = Callable[[str], None]
