@@ -1,11 +1,12 @@
 # Measuring ryhti_client lambda durations
 
 The API gateway cuts requests at 29 seconds (`infra/api.tf`). The lambda itself
-may run 120 seconds. To find out whether real imports and exports come close to
-the 29 second limit, query the CloudWatch logs.
+may run 900 seconds, and a long action can run as a background job (see
+[ryhti-client-jobs.md](ryhti-client-jobs.md)). To find out whether real imports
+and exports come close to the 29 second limit, query the CloudWatch logs.
 
-Log groups: `/aws/lambda/<prefix>-ryhti_client` where `<prefix>` is
-`hame-dev`, `tykki-test` or `arho-test`. The environments may live behind
+Log groups: `/aws/lambda/<prefix>-ryhti_client` where `<prefix>` is the
+`prefix` in the variable file of the instance. The instances may live behind
 different AWS profiles. Remember the MFA session: `. infra/get-mfa-vars.sh`.
 
 ## Overall duration statistics (works on existing logs)
@@ -58,6 +59,48 @@ filter message like 'arho_timing action='
 | sort p95_ms desc
 ```
 
+Jobs add rows of their own. The invocation that runs a job logs its line as
+`action=job:<action>`, for example `job:get_plan`, so job runs and calls without
+the job flag are separate rows. The plain `<action>` row counts both the calls
+without the flag and the submit calls of jobs. In AWS a submit only stores and
+starts the job, so it is short. The polls are the `get_job` row.
+
+## Duration per job
+
+Each job run, `done` or `failed`, logs one more line with the job id:
+`arho_timing job_id=<uuid> action=<action> wait_ms=... duration_ms=...`.
+`wait_ms` is the time from the submit to the start of the job, and `duration_ms`
+the run time of the action. The line does not match the `arho_timing action=`
+and `arho_timing step=` filters, so no job is counted twice. Query:
+
+```
+filter message like 'arho_timing job_id='
+| parse message 'job_id=* action=* wait_ms=* duration_ms=*' as job_id, action, wait_ms, duration_ms
+| stats count() as jobs,
+        pct(wait_ms, 95) as p95_wait_ms,
+        max(wait_ms) as max_wait_ms,
+        pct(duration_ms, 50) as p50_ms,
+        pct(duration_ms, 95) as p95_ms,
+        max(duration_ms) as max_ms
+  by action
+| sort p95_ms desc
+```
+
+To find the slow jobs by id, for example those that ran longer than a minute:
+
+```
+filter message like 'arho_timing job_id='
+| parse message 'job_id=* action=* wait_ms=* duration_ms=*' as job_id, action, wait_ms, duration_ms
+| filter duration_ms > 60000
+| sort @timestamp desc
+| display @timestamp, job_id, action, wait_ms, duration_ms
+```
+
+A job that the lambda timeout or a lack of memory stops logs neither line;
+`get_job` reports it as `failed` once it is past the time limit. Locally, with
+`JOB_RUNNER=inline`, the job runs inside the submit call: there is no
+`job:<action>` line, and the `<action>` line of the submit holds the whole run.
+
 ## Duration per step of an export
 
 `get_plan` logs one `arho_timing step=...` line per phase, so the export can be
@@ -104,5 +147,6 @@ it.
 
 - `arho_timing` measures handler wall time only. The platform report
   `durationMs` is the billed view and `initDurationMs` shows cold starts.
-- Compare p95 and max against 29000 ms. If real plans still pass that limit
-  after these speedups, the next step is an asynchronous import/export design.
+- Compare p95 and max against 29000 ms. An action that passes that limit
+  should run as a job in the client. Compare the job rows against the 900000 ms
+  lambda timeout.

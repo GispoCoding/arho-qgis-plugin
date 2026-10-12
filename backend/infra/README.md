@@ -6,6 +6,7 @@
    - [AWS login on your computer](#aws-login-on-your-computer)
 - [Managing existing instances](#managing-existing-instances)
    - [Adding ssh tunneling users](#adding-ssh-tunneling-users)
+   - [Rolling out ryhti_client jobs](#rolling-out-ryhti_client-jobs)
 - [Setting up another AWS account](#setting-up-another-aws-account)
 - [Configuring new instances](#configuring-new-instances)
 - [Deploying instances](#deploying-instances)
@@ -200,6 +201,45 @@ make update-ssh-keys ssh_private_key=~/.ssh/my_private_key
 ```
 6. Encrypt the public key file again using `make encrypt-workspace-secrets`
 7. Commit the changes to the arho-deploy repository.
+
+### Rolling out ryhti_client jobs
+
+The release that adds background jobs to `ryhti_client` (see
+[Running actions as background jobs](../README.md#running-actions-as-background-jobs))
+changes both terraform and the lambda code. It gives `ryhti_client` its own IAM role
+with the transfer bucket, the X-Road client secret and the right to invoke itself, and
+removes the bucket and the secret from the shared lambda role. It also raises the
+timeout to 900 seconds and sets `JOB_RUNNER` and `JOB_TIME_LIMIT_SECONDS`.
+
+Old plugin versions do not use job mode, so they keep working once the rollout is done.
+Release a plugin version that uses job mode only after the last step.
+
+The new code stops at cold start without `JOB_RUNNER` and `JOB_TIME_LIMIT_SECONDS`, so
+never run `make update-lambdas` before `make tf-apply`. The jobs table comes with the
+new `db_manager` image, so run `make migrate-db` after `make update-lambdas`.
+
+The order:
+
+```shell
+make tf-apply
+make push-lambdas
+make update-lambdas
+make migrate-db
+```
+
+This leaves a short gap between `make tf-apply` and `make update-lambdas`. A published
+lambda version keeps the role it was published with, and the `live` alias moves only
+with `make update-lambdas`. So in the gap the API gateway path still runs the old
+version on the shared role, which no longer has the transfer bucket or the X-Road
+client secret:
+
+- S3 transfers fail: presigned uploads and downloads, `import_plan` from S3 and the
+  `get_plan` export.
+- With X-Road on, a new lambda instance cannot start, because it cannot read the X-Road
+  client secret.
+
+So run `make push-lambdas` and `make update-lambdas` right after `make tf-apply`, at a
+quiet time.
 
 ## Setting up another AWS account
 
