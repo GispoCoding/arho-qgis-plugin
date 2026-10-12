@@ -1229,6 +1229,121 @@ def test_get_job_that_cannot_be_read(
     assert data["body"] == {"title": title, "details": details, "ryhti_response": None}
 
 
+# The dev compose setup sets JOB_TIME_LIMIT_SECONDS to 900. A day is past it.
+PAST_THE_TIME_LIMIT = "1 day"
+
+
+def insert_job(
+    db_params: ConnectionParameters,
+    status: str,
+    created_ago: str,
+    started_ago: str | None = None,
+) -> str:
+    """Write a job row straight into the database and return its id.
+
+    The times are Postgres intervals before now, for example "1 day".
+    """
+    with psycopg.connect(**db_params) as conn:
+        row = conn.execute(
+            "INSERT INTO jobs.job (action, request, status, created_at, started_at) "
+            "VALUES ('get_plan', '{\"action\": \"get_plan\"}', %s, "
+            "now() - %s::interval, now() - %s::interval) RETURNING id",
+            (status, created_ago, started_ago),
+        ).fetchone()
+    assert row is not None
+    return str(row[0])
+
+
+@pytest.mark.parametrize(
+    ("status", "created_ago", "started_ago"),
+    [
+        # Crashed while running, for example at the lambda timeout.
+        ("running", PAST_THE_TIME_LIMIT, PAST_THE_TIME_LIMIT),
+        # Never started, for example a self-invocation that was lost.
+        ("queued", PAST_THE_TIME_LIMIT, None),
+    ],
+)
+def test_job_past_the_time_limit_has_failed(
+    ryhti_client_url: str,
+    main_db_params: ConnectionParameters,
+    status: str,
+    created_ago: str,
+    started_ago: str | None,
+) -> None:
+    """A job that crashed hard cannot store its failure, so get_job reports it."""
+    job_id = insert_job(main_db_params, status, created_ago, started_ago)
+
+    data = post_event(ryhti_client_url, {"action": "get_job", "job_id": job_id})
+
+    assert data["statusCode"] == HTTPStatus.OK
+    assert data["body"]["details"] == {
+        "job_id": job_id,
+        "status": "failed",
+        "result": None,
+        "error": "The job failed. Please contact Arho support team.",
+    }
+
+
+@pytest.mark.parametrize(
+    ("status", "created_ago", "started_ago"),
+    [
+        ("queued", "1 minute", None),
+        # The time limit of a running job counts from its start, not from
+        # how long it waited in the queue.
+        ("running", PAST_THE_TIME_LIMIT, "1 minute"),
+    ],
+)
+def test_job_within_the_time_limit_keeps_its_status(
+    ryhti_client_url: str,
+    main_db_params: ConnectionParameters,
+    status: str,
+    created_ago: str,
+    started_ago: str | None,
+) -> None:
+    """A job that may still be working is not reported as failed."""
+    job_id = insert_job(main_db_params, status, created_ago, started_ago)
+
+    data = post_event(ryhti_client_url, {"action": "get_job", "job_id": job_id})
+
+    assert data["statusCode"] == HTTPStatus.OK
+    assert data["body"]["details"] == {
+        "job_id": job_id,
+        "status": status,
+        "result": None,
+    }
+
+
+def submit_some_job(url: str) -> None:
+    """Submit a job that runs quickly, for its side effects on old jobs."""
+    event = {"action": "get_plan", "plan_uuid": str(uuid.uuid4()), "run_as_job": True}
+    assert post_event(url, event)["statusCode"] == HTTPStatus.ACCEPTED
+
+
+def test_submit_deletes_jobs_older_than_a_week(
+    ryhti_client_url: str, main_db_params: ConnectionParameters
+) -> None:
+    """Old jobs are deleted when a job is submitted, so the table stays small."""
+    old_job_id = insert_job(main_db_params, "done", "8 days", "8 days")
+
+    submit_some_job(ryhti_client_url)
+
+    data = post_event(ryhti_client_url, {"action": "get_job", "job_id": old_job_id})
+    assert data["statusCode"] == HTTPStatus.NOT_FOUND
+
+
+def test_submit_keeps_jobs_from_the_last_week(
+    ryhti_client_url: str, main_db_params: ConnectionParameters
+) -> None:
+    """A caller may still poll a job that is less than a week old."""
+    job_id = insert_job(main_db_params, "done", "6 days", "6 days")
+
+    submit_some_job(ryhti_client_url)
+
+    data = post_event(ryhti_client_url, {"action": "get_job", "job_id": job_id})
+    assert data["statusCode"] == HTTPStatus.OK
+    assert data["body"]["details"]["status"] == "done"
+
+
 def test_get_upload_url_ignores_the_job_flag(
     ryhti_client_url: str, main_db_params: ConnectionParameters
 ) -> None:

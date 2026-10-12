@@ -80,6 +80,9 @@ services:
       # The local Lambda emulator cannot invoke itself, so jobs run at once
       # inside the submit call.
       - JOB_RUNNER=inline
+      # A job still queued or running after this long has crashed. The same
+      # value as Terraform sets in AWS.
+      - JOB_TIME_LIMIT_SECONDS=900
       # Without this the runtime drops our INFO logs, arho_timing lines included.
       - AWS_LAMBDA_LOG_LEVEL=${AWS_LAMBDA_LOG_LEVEL:-INFO}
     ports:

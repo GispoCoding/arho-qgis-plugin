@@ -16,11 +16,12 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Protocol
 
 import simplejson as json
 from botocore.exceptions import BotoCoreError, ClientError
-from sqlalchemy import create_engine, func, update
+from sqlalchemy import create_engine, delete, func, update
 from sqlalchemy.orm import sessionmaker
 
 from database.enums import JobStatus
@@ -28,12 +29,15 @@ from database.models import Job
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
-    from datetime import timedelta
 
 LOGGER = logging.getLogger(__name__)
 
 # Stored for a job that crashed. The exception itself goes to the log only.
 JOB_FAILED_ERROR = "The job failed. Please contact Arho support team."
+
+# A job is deleted this long after it was created, so the table does not grow
+# without limit.
+JOB_RETENTION = timedelta(days=7)
 
 # Runs the action of a stored request and returns the answer, {statusCode,
 # body}, exactly as a synchronous call would get it.
@@ -106,16 +110,40 @@ def plan_id_of(request: Mapping[str, Any]) -> str | None:
     return None
 
 
+def is_past_time_limit(job: Job, time_limit: timedelta) -> bool:
+    """Return True if the job is still queued long after it was created, or
+    still running long after it started.
+    """
+    now = datetime.now(tz=UTC)
+    if job.status == JobStatus.QUEUED:
+        return now - job.created_at > time_limit
+    if job.status == JobStatus.RUNNING and job.started_at is not None:
+        return now - job.started_at > time_limit
+    # Only a queued or running job can be past the time limit.
+    return False
+
+
 class JobStore:
     """Submit, run and read the jobs in jobs.job."""
 
-    def __init__(self, connection_string: str) -> None:
+    def __init__(self, connection_string: str, time_limit: timedelta) -> None:
+        """Connect to the database.
+
+        Args:
+            connection_string: The database to keep the jobs in.
+            time_limit: A job still queued or running this long after it was
+                created or started has crashed. It equals the lambda timeout.
+        """
         # The answers are written with simplejson, as the handler writes them.
         engine = create_engine(connection_string, json_serializer=json.dumps)
         self.Session = sessionmaker(bind=engine)
+        self.time_limit = time_limit
 
     def submit(self, request: dict[str, Any], start: JobStarter) -> str:
-        """Store the request as a queued job, start the job and return its id."""
+        """Store the request as a queued job, start the job and return its id.
+
+        Jobs older than JOB_RETENTION are deleted at the same time.
+        """
         job = Job(
             action=request["action"],
             plan_id=plan_id_of(request),
@@ -124,6 +152,9 @@ class JobStore:
         )
         with self.Session() as session:
             session.add(job)
+            session.execute(
+                delete(Job).where(Job.created_at < func.now() - JOB_RETENTION)
+            )
             session.commit()
             job_id = job.id
         start(job_id)
@@ -164,11 +195,22 @@ class JobStore:
         self._finish(job_id, status=JobStatus.FAILED, error=JOB_FAILED_ERROR)
 
     def get(self, job_id: str) -> JobState | None:
-        """Return the state of the job, or None if there is no such job."""
+        """Return the state of the job, or None if there is no such job.
+
+        A job that crashed hard (a lambda timeout, out of memory) cannot store
+        its own failure, so a job past the time limit is reported as failed.
+        """
         with self.Session() as session:
             job = session.get(Job, job_id)
             if job is None:
                 return None
+            if is_past_time_limit(job, self.time_limit):
+                return JobState(
+                    job_id=job.id,
+                    status=JobStatus.FAILED,
+                    result=None,
+                    error=JOB_FAILED_ERROR,
+                )
             return JobState(
                 job_id=job.id, status=job.status, result=job.result, error=job.error
             )

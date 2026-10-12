@@ -9,6 +9,7 @@ import time
 import uuid
 from collections.abc import Callable
 from copy import deepcopy
+from datetime import timedelta
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, Protocol, TypedDict, cast
 
@@ -111,6 +112,15 @@ if not ryhti_files_bucket:
         "Please set RYHTI_FILES_BUCKET environment variable to run Ryhti client."
     )
 presigned_url_expiry_seconds = int(os.environ.get("PRESIGNED_URL_EXPIRY_SECONDS", 3600))
+
+# A job still queued or running this long after it was created or started has
+# crashed, see JobStore.get. Terraform sets it to the lambda timeout.
+job_time_limit_seconds = os.environ.get("JOB_TIME_LIMIT_SECONDS", "")
+if not job_time_limit_seconds:
+    raise ValueError(
+        "Please set JOB_TIME_LIMIT_SECONDS environment variable to run Ryhti client."
+    )
+job_time_limit = timedelta(seconds=int(job_time_limit_seconds))
 
 # How a submitted job starts, see choose_job_starter.
 job_runner = os.environ.get("JOB_RUNNER", "")
@@ -889,7 +899,8 @@ def run_stored_request(request: dict[str, Any]) -> Response:
 
 def job_store() -> JobStore:
     return JobStore(
-        get_connection_string(**get_connection_parameters(user_credentials))
+        get_connection_string(**get_connection_parameters(user_credentials)),
+        job_time_limit,
     )
 
 
