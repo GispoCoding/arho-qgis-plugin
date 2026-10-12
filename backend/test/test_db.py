@@ -83,6 +83,51 @@ def test_schema_privileges(db_connection: Connection, user: str, schema: str) ->
         assert cur.fetchone() == (True,)
 
 
+def jobs_tables() -> set[str]:
+    return {
+        table.name for table in Base.metadata.tables.values() if table.schema == "jobs"
+    }
+
+
+@pytest.mark.parametrize("table_name", jobs_tables())
+def test_jobs_tables_exist(db_connection: Connection, table_name: str) -> None:
+    with db_connection.cursor() as cur:
+        cur.execute(
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema='jobs' AND table_name=%s",
+            (table_name,),
+        )
+        assert cur.fetchone() == (table_name,)
+
+
+@pytest.mark.parametrize("user", [ROLE_READ_ONLY, ROLE_READ_WRITE])
+@pytest.mark.parametrize("privilege", ["USAGE", "CREATE"])
+def test_no_privileges_on_jobs_schema(
+    db_connection: Connection, user: str, privilege: str
+) -> None:
+    # Only the ryhti_client lambda reads and writes the jobs.
+    cur = db_connection.execute(
+        "SELECT has_schema_privilege(%s, 'jobs', %s)", (user, privilege)
+    )
+    assert cur.fetchone() == (False,)
+
+
+@pytest.mark.parametrize("user", [ROLE_READ_ONLY, ROLE_READ_WRITE])
+@pytest.mark.parametrize(
+    "privilege",
+    ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"],
+)
+@pytest.mark.parametrize("table_name", jobs_tables())
+def test_no_privileges_on_jobs_tables(
+    db_connection: Connection, user: str, privilege: str, table_name: str
+) -> None:
+    cur = db_connection.execute(
+        "SELECT has_table_privilege(%s, %s, %s)",
+        (user, f"jobs.{table_name}", privilege),
+    )
+    assert cur.fetchone() == (False,)
+
+
 def hame_tables() -> set[str]:
     t = {
         table.name for table in Base.metadata.tables.values() if table.schema == "hame"

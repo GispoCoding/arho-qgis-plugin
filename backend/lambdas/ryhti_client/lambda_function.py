@@ -25,6 +25,7 @@ from database.db_helper import (
     get_connection_string,
     get_user_credentials,
 )
+from database.enums import JobStatus
 from ryhti_client.database_client import (
     ApprovalDateRequiredError,
     DatabaseClient,
@@ -37,6 +38,7 @@ from ryhti_client.database_client import (
     StartDateRequiredError,
     is_valid_plan,
 )
+from ryhti_client.jobs import JobStore, is_uuid
 from ryhti_client.plan_copier import CopyPlanData
 from ryhti_client.profiling import log_duration, profile_python
 from ryhti_client.ryhti_client import RyhtiClient
@@ -50,6 +52,7 @@ from ryhti_client.wfs_importer import (
 
 if TYPE_CHECKING:
     from database import models
+    from ryhti_client.jobs import JobStarter
     from ryhti_client.ryhti_client import RyhtiResponse
 
 # All non-request specific initialization should be done *before* the handler
@@ -102,6 +105,9 @@ if not ryhti_files_bucket:
         "Please set RYHTI_FILES_BUCKET environment variable to run Ryhti client."
     )
 presigned_url_expiry_seconds = int(os.environ.get("PRESIGNED_URL_EXPIRY_SECONDS", 3600))
+
+# How a submitted job starts, see choose_job_starter.
+job_runner = os.environ.get("JOB_RUNNER", "")
 
 # WFS service that publishes valid plans as open data, for import_wfs_plans.
 ryhti_wfs_url = os.environ.get(
@@ -178,6 +184,13 @@ class ArhoPayload(TypedDict):
     # True if we want to force the action, if needed
     force: NotRequired[bool | None]
 
+    # True to run the action as a background job. The answer is then 202 with
+    # the job_id, and get_job returns the answer of the action when it is done.
+    run_as_job: NotRequired[bool | None]
+
+    # The job to read, for get_job.
+    job_id: NotRequired[str | None]
+
     # HTTP headers, if lambda function called directly
     headers: NotRequired[dict[str, str]]
 
@@ -225,6 +238,7 @@ class Action(enum.Enum):
     COPY_PLAN = "copy_plan"
     FINALIZE_PLAN = "finalize_plan"
     GET_UPLOAD_URL = "get_upload_url"
+    GET_JOB = "get_job"
 
 
 # Actions that operate on a single plan and require a plan_uuid in the event.
@@ -369,7 +383,25 @@ def check_request(event: ArhoPayload) -> Response | None:
         return simple_response(
             400, "Unknown action.", {"error": f"Unknown action: {action_name}"}
         )
+    if event_type is Action.GET_JOB:
+        return check_job_id(event.get("job_id"))
     return check_action_preconditions(event_type, action_name, event.get("plan_uuid"))
+
+
+def check_job_id(job_id: str | None) -> Response | None:
+    """Check that get_job names a job by a valid UUID.
+
+    Returns an error response if it does not, otherwise None.
+    """
+    if not job_id:
+        return simple_response(
+            400, "Missing job_id.", {"error": "job_id is required for action get_job."}
+        )
+    if not is_uuid(job_id):
+        return simple_response(
+            400, "Invalid job_id.", {"error": "job_id must be a valid UUID."}
+        )
+    return None
 
 
 def create_upload_url() -> Response:
@@ -823,6 +855,65 @@ def run_action(event: ArhoPayload) -> Response:
     return lambda_response
 
 
+def run_stored_request(request: dict[str, Any]) -> Response:
+    """Run the action of a job, from the request stored with the job."""
+    return run_action(cast("ArhoPayload", request))
+
+
+def job_store() -> JobStore:
+    return JobStore(
+        get_connection_string(**get_connection_parameters(user_credentials))
+    )
+
+
+def choose_job_starter(store: JobStore) -> JobStarter:
+    """Return the job starter that JOB_RUNNER names.
+
+    The starter is the only part of job mode that differs between environments.
+    """
+    if job_runner == "inline":
+        # The local Lambda emulator cannot invoke itself, so the job runs at
+        # once, inside the submit call.
+        def run_at_once(job_id: str) -> None:
+            store.run(job_id, run_stored_request)
+
+        return run_at_once
+    raise ValueError(f"JOB_RUNNER must be 'inline', not {job_runner!r}.")
+
+
+def submit_job(event: ArhoPayload) -> Response:
+    """Store the request as a job, start the job and answer with its id."""
+    store = job_store()
+    start = choose_job_starter(store)
+    request = {key: value for key, value in event.items() if key != "run_as_job"}
+    job_id = store.submit(request, start)
+    return simple_response(202, "Job submitted.", {"job_id": job_id})
+
+
+def get_job(job_id: str) -> Response:
+    """Answer with the state of the job, and its answer when it is done.
+
+    The answer is 200 whenever the job is found, so that an error status always
+    means that the poll failed, never that the job failed.
+    """
+    job = job_store().get(job_id)
+    if job is None:
+        return simple_response(
+            404, "Job not found.", {"error": f"Job '{job_id}' does not exist."}
+        )
+    details: dict[str, Any] = {
+        "job_id": job.job_id,
+        "status": job.status,
+        "result": job.result,
+    }
+    if job.status is JobStatus.FAILED:
+        details["error"] = job.error
+    return Response(
+        statusCode=200,
+        body=ResponseBody(title="Job found.", details=details, ryhti_response=None),
+    )
+
+
 @return_500_on_unhandled_exceptions
 @log_action_duration
 def handler(
@@ -853,6 +944,10 @@ def handler(
         response = request_error
     elif Action(event["action"]) is Action.GET_UPLOAD_URL:
         response = create_upload_url()
+    elif Action(event["action"]) is Action.GET_JOB:
+        response = get_job(cast("str", event.get("job_id")))
+    elif event.get("run_as_job") is True:
+        response = submit_job(event)
     else:
         response = run_action(event)
     return format_response(response, using_api_gateway, compress_response)

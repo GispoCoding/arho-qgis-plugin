@@ -77,6 +77,9 @@ services:
       - AWS_ACCESS_KEY_ID=s3dev
       - AWS_SECRET_ACCESS_KEY=s3devsecret
       - AWS_REGION_NAME=us-east-1
+      # The local Lambda emulator cannot invoke itself, so jobs run at once
+      # inside the submit call.
+      - JOB_RUNNER=inline
       # Without this the runtime drops our INFO logs, arho_timing lines included.
       - AWS_LAMBDA_LOG_LEVEL=${AWS_LAMBDA_LOG_LEVEL:-INFO}
     ports:

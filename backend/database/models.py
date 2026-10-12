@@ -5,7 +5,16 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID  # Sqlalchemy uses this runtime
 
 from geoalchemy2 import Geometry, WKBElement
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Index, Table, Uuid
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Enum as SQLAlchemyEnum,
+    ForeignKey,
+    Index,
+    Table,
+    Uuid,
+)
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -13,9 +22,11 @@ from database.base import (
     PROJECT_SRID,
     AttributeValueMixin,
     Base,
+    DbId,
     VersionedBase,
     language_str,
 )
+from database.enums import JobStatus
 
 if TYPE_CHECKING:
     from database.codes import (
@@ -1123,3 +1134,41 @@ class CancelledGroupRelation(VersionedBase, CancelledPlanObjectMixin):
         back_populates="cancelled_group_relations"
     )
     plan_regulation_group: Mapped[PlanRegulationGroup] = relationship()
+
+
+class Job(Base):
+    """A ryhti_client action run in the background.
+
+    The ryhti_client lambda stores the request, runs it later and stores the
+    answer, so that the caller can poll for it. The table is no plan data: it
+    has no version columns or triggers, and the QGIS roles have no grants on it.
+    """
+
+    __tablename__ = "job"
+    __table_args__ = {"schema": "jobs"}
+
+    id: Mapped[DbId] = mapped_column(
+        type_=postgresql.UUID(as_uuid=False),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
+    )
+    action: Mapped[str]
+    # No foreign key: an import has no plan yet, and a plan may be deleted.
+    plan_id: Mapped[DbId | None] = mapped_column(type_=postgresql.UUID(as_uuid=False))
+    # The normalized request without the job flag, as run_action reads it.
+    request: Mapped[dict[str, Any]] = mapped_column(type_=postgresql.JSONB)
+    # The enum type lives in the jobs schema, next to the table.
+    status: Mapped[JobStatus] = mapped_column(
+        SQLAlchemyEnum(
+            JobStatus,
+            values_callable=lambda e: [x.value for x in e],
+            inherit_schema=True,
+        )
+    )
+    # The answer of the action, {statusCode, body}, when the job is done.
+    result: Mapped[dict[str, Any] | None] = mapped_column(type_=postgresql.JSONB)
+    # A generic message when the job failed. The details go to the log only.
+    error: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    started_at: Mapped[datetime | None]
+    finished_at: Mapped[datetime | None]

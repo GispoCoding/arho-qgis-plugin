@@ -877,28 +877,39 @@ def test_get_unknown_plan(ryhti_client_url: str, complete_test_plan: Plan) -> No
     assert data["body"]["title"] == "Plan not found."
 
 
+# Requests that the request checks refuse, with the status code, title and
+# details of the response. A request with the job flag gets the same response.
+REQUESTS_THAT_CANNOT_RUN = [
+    ({}, HTTPStatus.BAD_REQUEST, "Missing action.", {"error": "action is required."}),
+    (
+        {"action": "no_such_action"},
+        HTTPStatus.BAD_REQUEST,
+        "Unknown action.",
+        {"error": "Unknown action: no_such_action"},
+    ),
+    (
+        {"action": "post_plan_matters"},
+        HTTPStatus.METHOD_NOT_ALLOWED,
+        "Plan matter actions not supported.",
+        {"error": "Plan matter support has been removed from Arho."},
+    ),
+    (
+        {"action": "validate_plan"},
+        HTTPStatus.BAD_REQUEST,
+        "Missing plan_uuid.",
+        {"error": "plan_uuid is required for action validate_plan."},
+    ),
+    (
+        {"action": "get_plan", "plan_uuid": "not-a-uuid"},
+        HTTPStatus.BAD_REQUEST,
+        "Invalid plan_uuid.",
+        {"error": "plan_uuid must be a valid UUID."},
+    ),
+]
+
+
 @pytest.mark.parametrize(
-    ("event", "status_code", "title", "details"),
-    [
-        (
-            {"action": "no_such_action"},
-            HTTPStatus.BAD_REQUEST,
-            "Unknown action.",
-            {"error": "Unknown action: no_such_action"},
-        ),
-        (
-            {"action": "get_plan", "plan_uuid": "not-a-uuid"},
-            HTTPStatus.BAD_REQUEST,
-            "Invalid plan_uuid.",
-            {"error": "plan_uuid must be a valid UUID."},
-        ),
-        (
-            {"action": "post_plan_matters"},
-            HTTPStatus.METHOD_NOT_ALLOWED,
-            "Plan matter actions not supported.",
-            {"error": "Plan matter support has been removed from Arho."},
-        ),
-    ],
+    ("event", "status_code", "title", "details"), REQUESTS_THAT_CANNOT_RUN
 )
 def test_request_that_cannot_run(
     ryhti_client_url: str,
@@ -971,4 +982,302 @@ def test_gzip_response(
         "title": "Plan not found.",
         "details": {"error": f"Plan '{plan_uuid}' does not exist."},
         "ryhti_response": None,
+    }
+
+
+# Job mode: the dev compose setup runs jobs inline (JOB_RUNNER=inline), so a
+# submitted job has run by the time the submit call answers.
+
+
+def post_event(
+    url: str,
+    event: dict[str, Any],
+    request_shape: str = "direct",
+    headers: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """POST an event in the given request shape and return the lambda answer.
+
+    The body of an uncompressed API gateway answer is parsed, so both shapes
+    give the same answer.
+    """
+    payload: dict[str, Any]
+    if request_shape == "direct":
+        payload = {**event, "headers": headers or {}}
+    elif request_shape == "api_gateway":
+        payload = {
+            "version": "2.0",
+            "headers": headers or {},
+            "queryStringParameters": {},
+            "requestContext": {},
+            "body": json.dumps(event),
+            "isBase64Encoded": False,
+        }
+    r = requests.post(url, data=json.dumps(payload))
+    assert r.status_code == HTTPStatus.OK
+    data = r.json()
+    if request_shape == "api_gateway" and not data.get("isBase64Encoded"):
+        data["body"] = json.loads(data["body"])
+    return data
+
+
+@pytest.mark.parametrize("request_shape", ["direct", "api_gateway"])
+def test_submit_job(
+    ryhti_client_url: str, complete_test_plan: Plan, request_shape: str
+) -> None:
+    """A request with the job flag is answered 202 with the id of its job."""
+    event = {
+        "action": "get_plan",
+        "plan_uuid": complete_test_plan.id,
+        "run_as_job": True,
+    }
+    data = post_event(ryhti_client_url, event, request_shape)
+
+    assert data["statusCode"] == HTTPStatus.ACCEPTED
+    assert data["body"]["title"] == "Job submitted."
+    assert uuid.UUID(data["body"]["details"]["job_id"])
+
+
+def run_as_job(url: str, event: dict[str, Any]) -> dict[str, Any]:
+    """Submit the event as a job and return the details of the finished job."""
+    submitted = post_event(url, {**event, "run_as_job": True})
+    assert submitted["statusCode"] == HTTPStatus.ACCEPTED, submitted
+    job_id = submitted["body"]["details"]["job_id"]
+
+    polled = post_event(url, {"action": "get_job", "job_id": job_id})
+    assert polled["statusCode"] == HTTPStatus.OK, polled
+    details = polled["body"]["details"]
+    assert details["job_id"] == job_id
+    return details
+
+
+def test_get_plan_as_job(
+    ryhti_client_url: str,
+    fetch_presigned: Callable[..., requests.Response],
+    complete_test_plan: Plan,
+    desired_plan_dict: dict,
+) -> None:
+    """A finished get_plan job holds the answer of get_plan."""
+    event = {"action": "get_plan", "plan_uuid": complete_test_plan.id}
+    job = run_as_job(ryhti_client_url, event)
+
+    assert job["status"] == "done"
+    result = job["result"]
+    assert result["statusCode"] == HTTPStatus.OK
+    assert result["body"]["title"] == "Returning serialized plan from database."
+    assert result["body"]["ryhti_response"] is None
+    download_response = fetch_presigned(result["body"]["details"]["download_url"])
+    assert download_response.status_code == HTTPStatus.OK
+    deepcompare(
+        download_response.json(),
+        desired_plan_dict,
+        ignore_order_for_keys=[
+            "planRegulationGroups",
+            "planRegulationGroupRelations",
+            "additionalInformations",
+        ],
+    )
+
+
+def test_validate_plan_as_job(ryhti_client_url: str, complete_test_plan: Plan) -> None:
+    """A finished validate_plan job holds the answer of validate_plan."""
+    event = {"action": "validate_plan", "plan_uuid": complete_test_plan.id}
+    job = run_as_job(ryhti_client_url, event)
+
+    assert job["status"] == "done"
+    result = job["result"]
+    assert result["statusCode"] == HTTPStatus.OK
+    body = result["body"]
+    assert body["title"] == "Plan validation run."
+    assert body["details"] == f"Plan validation successful for {complete_test_plan.id}!"
+    assert body["ryhti_response"]["status"] == HTTPStatus.OK
+    assert not body["ryhti_response"]["errors"]
+
+
+def test_copy_plan_as_job(
+    ryhti_client_url: str,
+    complete_test_plan: Plan,
+    main_db_params: ConnectionParameters,
+) -> None:
+    """A finished copy_plan job holds the answer of copy_plan."""
+    event = {
+        "action": "copy_plan",
+        "plan_uuid": complete_test_plan.id,
+        "data": {"plan_name": {"fin": "Kopio"}, "deep_copy": True},
+    }
+    job = run_as_job(ryhti_client_url, event)
+
+    assert job["status"] == "done"
+    result = job["result"]
+    copied_plan_id = result["body"]["details"]["copied_plan_id"]
+    assert result == {
+        "statusCode": HTTPStatus.OK,
+        "body": {
+            "title": "Plan copied.",
+            "details": {"copied_plan_id": copied_plan_id},
+            "ryhti_response": None,
+        },
+    }
+    with psycopg.connect(**main_db_params) as conn:
+        row = conn.execute(
+            "SELECT name FROM hame.plan WHERE id = %s", (copied_plan_id,)
+        ).fetchone()
+    assert row == ({"fin": "Kopio"},)
+
+
+def test_copy_unknown_plan_as_job(
+    ryhti_client_url: str, complete_test_plan: Plan
+) -> None:
+    """An action that answers with an error still makes a done job."""
+    plan_uuid = str(uuid.uuid4())
+    event = {
+        "action": "copy_plan",
+        "plan_uuid": plan_uuid,
+        "data": {"plan_name": {"fin": "Kopio"}, "deep_copy": True},
+    }
+    job = run_as_job(ryhti_client_url, event)
+
+    assert job["status"] == "done"
+    assert job["result"] == {
+        "statusCode": HTTPStatus.NOT_FOUND,
+        "body": {
+            "title": "Error copying plan.",
+            "details": {"error": f"Plan '{plan_uuid}' does not exist."},
+            "ryhti_response": None,
+        },
+    }
+
+
+def test_import_plan_as_job(
+    codes_loaded: None,
+    import_payload: dict[str, Any],
+    ryhti_client_url: str,
+    upload_plan_file: Callable[[str], str],
+    simple_plan_json: str,
+) -> None:
+    """A finished import_plan job holds the answer of import_plan."""
+    import_payload["data"]["s3_key"] = upload_plan_file(simple_plan_json)
+    job = run_as_job(ryhti_client_url, import_payload)
+
+    assert job["status"] == "done"
+    assert job["result"] == {
+        "statusCode": HTTPStatus.OK,
+        "body": {
+            "title": "Plan imported.",
+            "details": {"plan_id": "7f522b2f-8b45-4a17-b433-5f47271b579e"},
+            "ryhti_response": None,
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("event", "status_code", "title", "details"), REQUESTS_THAT_CANNOT_RUN
+)
+def test_request_that_cannot_run_is_not_submitted(
+    ryhti_client_url: str,
+    main_db_params: ConnectionParameters,
+    event: dict[str, Any],
+    status_code: HTTPStatus,
+    title: str,
+    details: dict[str, str],
+) -> None:
+    """A request that cannot run is refused at once, without a job."""
+    data = post_event(ryhti_client_url, {**event, "run_as_job": True})
+
+    assert data["statusCode"] == status_code
+    assert data["body"] == {"title": title, "details": details, "ryhti_response": None}
+    with psycopg.connect(**main_db_params) as conn:
+        assert conn.execute("SELECT count(*) FROM jobs.job").fetchone() == (0,)
+
+
+UNKNOWN_JOB_ID = "8d0bd5a4-6a4f-4f0e-9a5e-0d1c7b0c5b9e"
+
+
+@pytest.mark.parametrize(
+    ("event", "status_code", "title", "details"),
+    [
+        (
+            {"action": "get_job"},
+            HTTPStatus.BAD_REQUEST,
+            "Missing job_id.",
+            {"error": "job_id is required for action get_job."},
+        ),
+        (
+            {"action": "get_job", "job_id": "not-a-uuid"},
+            HTTPStatus.BAD_REQUEST,
+            "Invalid job_id.",
+            {"error": "job_id must be a valid UUID."},
+        ),
+        (
+            {"action": "get_job", "job_id": UNKNOWN_JOB_ID},
+            HTTPStatus.NOT_FOUND,
+            "Job not found.",
+            {"error": f"Job '{UNKNOWN_JOB_ID}' does not exist."},
+        ),
+    ],
+)
+def test_get_job_that_cannot_be_read(
+    ryhti_client_url: str,
+    event: dict[str, Any],
+    status_code: HTTPStatus,
+    title: str,
+    details: dict[str, str],
+) -> None:
+    """A poll without a job to read fails with a client error."""
+    data = post_event(ryhti_client_url, event)
+
+    assert data["statusCode"] == status_code
+    assert data["body"] == {"title": title, "details": details, "ryhti_response": None}
+
+
+def test_get_upload_url_ignores_the_job_flag(
+    ryhti_client_url: str, main_db_params: ConnectionParameters
+) -> None:
+    """get_upload_url answers at once, as without the flag."""
+    data = post_event(
+        ryhti_client_url, {"action": "get_upload_url", "run_as_job": True}
+    )
+
+    assert data["statusCode"] == HTTPStatus.OK
+    assert data["body"]["title"] == "Upload URL created."
+    assert data["body"]["details"]["key"].startswith("import/")
+    with psycopg.connect(**main_db_params) as conn:
+        assert conn.execute("SELECT count(*) FROM jobs.job").fetchone() == (0,)
+
+
+@pytest.mark.parametrize("request_shape", ["direct", "api_gateway"])
+def test_get_job_gzip_response(
+    ryhti_client_url: str, complete_test_plan: Plan, request_shape: str
+) -> None:
+    """A poll that accepts gzip gets the job gzipped and base64 encoded."""
+    plan_uuid = str(uuid.uuid4())
+    submitted = post_event(
+        ryhti_client_url,
+        {"action": "get_plan", "plan_uuid": plan_uuid, "run_as_job": True},
+    )
+    job_id = submitted["body"]["details"]["job_id"]
+
+    data = post_event(
+        ryhti_client_url,
+        {"action": "get_job", "job_id": job_id},
+        request_shape,
+        headers={"Accept-Encoding": "gzip"},
+    )
+
+    assert data["statusCode"] == HTTPStatus.OK
+    if request_shape == "direct":
+        assert data["encoding"] == "gzip+base64"
+    elif request_shape == "api_gateway":
+        assert data["headers"] == {"Content-Encoding": "gzip"}
+    body = json.loads(gzip.decompress(base64.b64decode(data["body"])))
+    assert body["details"] == {
+        "job_id": job_id,
+        "status": "done",
+        "result": {
+            "statusCode": HTTPStatus.NOT_FOUND,
+            "body": {
+                "title": "Plan not found.",
+                "details": {"error": f"Plan '{plan_uuid}' does not exist."},
+                "ryhti_response": None,
+            },
+        },
     }
