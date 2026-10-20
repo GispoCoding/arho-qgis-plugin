@@ -9,6 +9,13 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: check-qgz-version
+        name: check qgisprojekti.qgz is saved with QGIS 3.40
+        language: python
+        entry: python scripts/check_qgz_version.py
+        files: ^qgisprojekti\.qgz$
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2
     hooks:
