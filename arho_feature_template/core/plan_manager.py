@@ -1027,6 +1027,11 @@ class PlanManager(QObject):
         for cancellation_layer in plan_cancellation_layers:
             if not cancellation_layer.exists():
                 continue
+            # A transaction group can leave these in edit mode: they are not in `plan_layers`
+            vlayer = cancellation_layer.get_from_project()
+            if vlayer.isEditable():
+                discard_after_commit_callbacks()
+                vlayer.rollBack()
             if plan_id:
                 cancellation_layer.filter_layer_by_plan_id(plan_id)
             else:

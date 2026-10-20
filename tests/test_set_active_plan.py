@@ -153,6 +153,20 @@ def test_the_cancellation_layers_follow_the_plan(
     assert plan_layer.subsetString() == ""
 
 
+@pytest.mark.usefixtures("view_calls")
+def test_an_editable_cancellation_layer_is_rolled_back(manager: PlanManager, new_project: QgsProject, monkeypatch):
+    layer = QgsVectorLayer("None?field=id:string&field=plan_id:string", PlanCancellationInfoLayer.name, "memory")
+    new_project.addMapLayer(layer, addToLegend=False)
+    new_project.layerTreeRoot().findGroup(PLAN_LAYER_GROUP_NAME).addLayer(layer)
+    monkeypatch.setattr(plan_manager_module, "plan_cancellation_layers", [PlanCancellationInfoLayer])
+    layer.startEditing()
+
+    manager.set_active_plan("plan-1")
+
+    assert not layer.isEditable()
+    assert layer.subsetString() == "plan_id = 'plan-1'"
+
+
 def test_the_cancellation_layers_are_not_required():
     assert len(plan_cancellation_layers) == 6
     assert not set(plan_cancellation_layers) & set(plan_layers)
