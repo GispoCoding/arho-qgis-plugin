@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Callable, cast
 
 from qgis.core import QgsProject
 
+from arho_feature_template.core import json_insert_workaround
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
     DocumentLayer,
@@ -230,7 +231,7 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
 @timed_function("commit_edit_buffer")
 def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
     project = QgsProject.instance()
-    result, commit_errors = project.commitChanges(stopEditing=stop_editing)
+    result, commit_errors = json_insert_workaround.commit_changes(project, stop_editing)
     try:
         if result:
             logger.debug("Committed succesfully. Details=%s", commit_errors)
