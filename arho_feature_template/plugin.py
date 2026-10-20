@@ -9,15 +9,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 import qgis
-from qgis.core import QgsApplication, QgsExpressionContextUtils, QgsProject
+from qgis.core import Qgis, QgsApplication, QgsExpressionContextUtils, QgsProject
+from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator, QUrl, pyqtBoundSignal
 from qgis.PyQt.QtGui import QDesktopServices, QIcon
-from qgis.PyQt.QtWidgets import QAction, QMenu, QToolButton, QWidget
+from qgis.PyQt.QtWidgets import QAction, QMenu, QProgressBar, QToolButton, QWidget
 
 import arho_feature_template
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
+from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.gui.components.lambda_job_status import job_status_text
 from arho_feature_template.gui.dialogs.plan_object_icon_preview import PlanObjectIconPreview
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
 from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
@@ -31,11 +34,11 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
 )
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
-from arho_feature_template.utils.misc_utils import iface
+from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 from arho_feature_template.utils.widget_utils import deleted_after_use
 
 if TYPE_CHECKING:
-    from qgis.gui import QgsDockWidget
+    from qgis.gui import QgsDockWidget, QgsMessageBarItem
 
 
 logger = logging.getLogger(__name__)
@@ -564,6 +567,18 @@ class Plugin:
         if SettingsManager.get_data_exchange_layer_enabled():
             self.plan_depending_actions += [self.get_permanent_identifier_action, self.post_plan_matter_action]
 
+        # Toolbar actions that start a lambda job; each is disabled while its job runs
+        self.lambda_job_actions: dict[str, tuple[QAction, str]] = {
+            LambdaService.ACTION_GET_PLAN: (self.serialize_plan_action, "Kaavasuunnitelman tallennus"),
+            LambdaService.ACTION_FINALIZE_PLAN: (self.finalize_plan_action, "Kaavasuunnitelman asetus lopulliseksi"),
+        }
+        if SettingsManager.get_data_exchange_layer_enabled():
+            self.lambda_job_actions[LambdaService.ACTION_GET_PERMANENT_IDENTIFIER] = (
+                self.get_permanent_identifier_action,
+                "Pysyvän kaavatunnuksen haku",
+            )
+        self.lambda_job_messages: dict[str, QgsMessageBarItem] = {}
+
         # Initially actions are disabled because no plan is selected
         self.on_active_plan_matter_unset()
         self.on_active_plan_unset()
@@ -586,6 +601,8 @@ class Plugin:
             (self.plan_manager.plan_finalizable_changed, self.on_plan_finalizable_changed),
             (self.plan_manager.plan_finalize_validation_failed, self.validation_dock.on_finalize_validation_failed),
             (self.plan_manager.plan_identifier_set, self.validation_dock.on_permanent_identifier_set),
+            (self.plan_manager.lambda_service.busy_changed, self.on_lambda_busy_changed),
+            (self.plan_manager.lambda_service.job_status_changed, self.on_lambda_job_status_changed),
         ]
         if SettingsManager.get_data_exchange_layer_enabled():
             self.plan_manager_connections.append((self.plan_manager.plan_identifier_set, self.update_ryhti_buttons))
@@ -681,6 +698,51 @@ class Plugin:
             # self.post_plan_matter_action.setToolTip("Hae kaavalle ensin pysyvä kaavatunnus")
             self.get_permanent_identifier_action.setEnabled(True)
             self.get_permanent_identifier_action.setToolTip("Hae pysyvä kaavatunnus")
+        self._disable_busy_lambda_actions()
+
+    def on_lambda_busy_changed(self, action: str, busy: bool):  # noqa: FBT001
+        """Disables the toolbar action of a lambda job and shows the job in the message bar while it runs."""
+        if action not in self.lambda_job_actions:
+            return
+        qaction, title = self.lambda_job_actions[action]
+        logger.debug("Lambda action busy changed action=%s busy=%s", action, busy)
+        if busy:
+            qaction.setEnabled(False)
+            self._show_lambda_job_message(action, title)
+            return
+        self._hide_lambda_job_message(action)
+        if action == LambdaService.ACTION_GET_PERMANENT_IDENTIFIER:
+            if get_active_plan_id():
+                self.update_ryhti_buttons()
+        else:
+            # Shown only through its menu or when the plan can be made final
+            qaction.setEnabled(True)
+
+    def on_lambda_job_status_changed(self, action: str, status: str):
+        item = self.lambda_job_messages.get(action)
+        if item is not None and not sip.isdeleted(item):
+            item.setText(job_status_text(status))
+
+    def _disable_busy_lambda_actions(self):
+        """Keeps the actions of running lambda jobs disabled after the plan state enabled them."""
+        for action, (qaction, _title) in self.lambda_job_actions.items():
+            if self.plan_manager.lambda_service.is_busy(action):
+                qaction.setEnabled(False)
+
+    def _show_lambda_job_message(self, action: str, title: str):
+        self._hide_lambda_job_message(action)
+        item = iface.messageBar().createMessage(title, "Lähetetään…")
+        progress_bar = QProgressBar()
+        progress_bar.setMaximum(0)  # busy indicator
+        item.layout().addWidget(progress_bar)
+        iface.messageBar().pushWidget(item, Qgis.MessageLevel.Info)
+        self.lambda_job_messages[action] = item
+
+    def _hide_lambda_job_message(self, action: str):
+        item = self.lambda_job_messages.pop(action, None)
+        # The user may have closed the message already
+        if item is not None and not sip.isdeleted(item):
+            iface.messageBar().popWidget(item)
 
     def on_active_plan_matter_set(self):
         logger.debug("Active plan matter set: enabling dependent actions")
@@ -696,6 +758,7 @@ class Plugin:
         logger.debug("Active plan set: enabling dependent actions")
         for action in self.plan_depending_actions:
             action.setEnabled(True)
+        self._disable_busy_lambda_actions()
 
     def on_active_plan_unset(self):
         logger.debug("Active plan unset: disabling dependent actions")
@@ -738,6 +801,8 @@ class Plugin:
             signal.disconnect(slot)
         self.plan_manager_connections.clear()
         logger.debug("Plan manager signals disconnected")
+        for job_action in list(self.lambda_job_messages):
+            self._hide_lambda_job_message(job_action)
 
         # Handle plan manager. This runs before the actions are deleted, because
         # `PlanManager.unload` starts with `iface.actionPan().trigger()`, which used to
