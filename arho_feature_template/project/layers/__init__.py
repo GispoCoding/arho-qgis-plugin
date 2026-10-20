@@ -11,7 +11,6 @@ from qgis.core import (
     QgsFeature,
     QgsFeatureRequest,
     QgsFields,
-    QgsUnsetAttributeValue,
     QgsVariantUtils,
 )
 
@@ -83,20 +82,24 @@ class AbstractLayer(ABC):
         context = QgsExpressionContext(QgsExpressionContextUtils.globalProjectLayerScopes(layer))
         provider = layer.dataProvider()
 
+        id_idx = fields.indexOf("id")
+
         for idx in range(fields.count()):
             if layer.defaultValueDefinition(idx).isValid():
                 feature[idx] = layer.defaultValue(idx, feature, context)
-            if QgsVariantUtils.isNull(feature[idx]) and fields.fieldOrigin(idx) == QgsFields.FieldOrigin.OriginProvider:
-                # Let the database fill the column from its DEFAULT clause
+            if (
+                idx != id_idx
+                and QgsVariantUtils.isNull(feature[idx])
+                and fields.fieldOrigin(idx) == QgsFields.FieldOrigin.OriginProvider
+            ):
+                # Let the database fill the column from its DEFAULT clause. The plain clause string
+                # works on every QGIS version; QgsUnsetAttributeValue is ignored before QGIS 3.44.
                 clause = provider.defaultValueClause(fields.fieldOriginIndex(idx)) if provider else ""
                 if clause:
-                    feature[idx] = QgsUnsetAttributeValue(clause)
+                    feature[idx] = clause
 
         # The id is read back from the feature before commit, so it must be a real value
-        id_idx = fields.indexOf("id")
-        if id_idx >= 0 and (
-            QgsVariantUtils.isNull(feature[id_idx]) or isinstance(feature[id_idx], QgsUnsetAttributeValue)
-        ):
+        if id_idx >= 0 and QgsVariantUtils.isNull(feature[id_idx]):
             feature[id_idx] = str(uuid.uuid4())
 
         feature.setValid(True)

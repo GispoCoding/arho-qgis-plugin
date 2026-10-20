@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from qgis.core import QgsDefaultValue, QgsProject, QgsVariantUtils, QgsVectorLayer
+from qgis.core import QgsDefaultValue, QgsFields, QgsProject, QgsVariantUtils, QgsVectorLayer
 
 from arho_feature_template.core.models import PlanMatter
 from arho_feature_template.project.layers.plan_layers import PlanMatterLayer
@@ -56,4 +56,23 @@ def test_feature_from_model_uses_the_helper(layer: QgsVectorLayer, monkeypatch: 
     feature = PlanMatterLayer.feature_from_model(PlanMatter(name={"fin": "Asia"}))
 
     assert calls == [PlanMatterLayer.name]
+    assert uuid.UUID(feature["id"]).version == 4
+
+
+def test_database_default_clause_is_a_plain_string(layer: QgsVectorLayer, monkeypatch: pytest.MonkeyPatch):
+    """QGIS before 3.44 ignores `QgsUnsetAttributeValue` and sends '' to the database."""
+    provider = layer.dataProvider()
+    clauses = {"record_number": "false", "id": "gen_random_uuid()"}
+    monkeypatch.setattr(
+        type(provider),
+        "defaultValueClause",
+        lambda _self, idx: clauses.get(layer.fields().at(idx).name(), ""),
+        raising=False,
+    )
+    fields = layer.fields()
+    monkeypatch.setattr(fields, "fieldOrigin", lambda _idx: QgsFields.FieldOrigin.OriginProvider, raising=False)
+
+    feature = PlanMatterLayer.create_feature()
+
+    assert feature["record_number"] == "false"
     assert uuid.UUID(feature["id"]).version == 4
