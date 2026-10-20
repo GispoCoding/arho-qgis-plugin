@@ -89,6 +89,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PointLayer,
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
+    plan_cancellation_layers,
     plan_feature_layers,
     plan_layers,
     plan_matter_layers,
@@ -1021,6 +1022,15 @@ class PlanManager(QObject):
                     layer.show_all_features()
                 else:
                     layer.hide_all_features()
+
+        # Older 0.7 project files do not have the cancellation layers
+        for cancellation_layer in plan_cancellation_layers:
+            if not cancellation_layer.exists():
+                continue
+            if plan_id:
+                cancellation_layer.filter_layer_by_plan_id(plan_id)
+            else:
+                cancellation_layer.hide_all_features()
 
         if previously_in_edit_mode and not locked:
             plan_layer.startEditing()

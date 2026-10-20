@@ -761,6 +761,63 @@ class AdditionalInformationLayer(AdditionalInformationReader, AbstractPlanLayer)
         return feature
 
 
+def _by_plan_cancellation_info(table: str) -> Template:
+    """Filter for a table that points at hame.plan_cancellation_info."""
+    return Template(
+        dedent(
+            f"""\
+            EXISTS (
+                SELECT 1
+                FROM hame.plan_cancellation_info pci
+                WHERE
+                    hame.{table}.plan_cancellation_info_id = pci.id
+                    AND pci.plan_id = '$plan_id'
+            )"""  # noqa: S608
+        )
+    )
+
+
+class AbstractPlanCancellationLayer(AbstractPlanLayer):
+    """A layer of the Kumoamistiedot group. The database writes these rows by trigger.
+
+    Older 0.7 project files do not have these layers, so they are not in `plan_layers`
+    and a missing one is skipped.
+    """
+
+
+class PlanCancellationInfoLayer(AbstractPlanCancellationLayer):
+    name = "Kaavan kumoamistieto"
+    filter_template = Template("plan_id = '$plan_id'")
+
+
+PLAN_OBJECT_CANCELLATION_FILTER = _by_plan_cancellation_info("plan_object_cancellation_info")
+
+
+class PlanObjectCancellationAreaLayer(AbstractPlanCancellationLayer):
+    name = "Kaavakohteen kumoamistieto - alue"
+    filter_template = PLAN_OBJECT_CANCELLATION_FILTER
+
+
+class PlanObjectCancellationPointLayer(AbstractPlanCancellationLayer):
+    name = "Kaavakohteen kumoamistieto - piste"
+    filter_template = PLAN_OBJECT_CANCELLATION_FILTER
+
+
+class PlanObjectCancellationLineLayer(AbstractPlanCancellationLayer):
+    name = "Kaavakohteen kumoamistieto - viiva"
+    filter_template = PLAN_OBJECT_CANCELLATION_FILTER
+
+
+class CancelledGroupRelationLayer(AbstractPlanCancellationLayer):
+    name = "Kaavamääräysryhmien kumoamistiedot"
+    filter_template = _by_plan_cancellation_info("cancelled_group_relation")
+
+
+class CancelledGeneralRegulationGroupAssociationLayer(AbstractPlanCancellationLayer):
+    name = "Yleismääräysten kumoamistiedot"
+    filter_template = _by_plan_cancellation_info("cancelled_general_regulation_group_association")
+
+
 def get_plan_feature_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:
     layer_name = plan_feature.layer_name
     if not layer_name:
@@ -794,9 +851,12 @@ plan_matter_layers = AbstractPlanMatterLayer.__subclasses__()
 
 plan_layers = AbstractPlanLayer.__subclasses__()
 plan_layers.remove(PlanObjectLayer)
+plan_layers.remove(AbstractPlanCancellationLayer)
 
 plan_feature_layers = PlanObjectLayer.__subclasses__()
 plan_layers.extend(plan_feature_layers)
+
+plan_cancellation_layers = AbstractPlanCancellationLayer.__subclasses__()
 
 # Bound here because the members reference each other. Never import valid_layers from this module.
 AbstractFeatureLayer.family = LayerFamily(

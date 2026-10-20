@@ -16,7 +16,13 @@ from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.project.layers import plan_layers as plan_layers_module
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
-from arho_feature_template.project.layers.plan_layers import PlanLayer
+from arho_feature_template.project.layers.plan_layers import (
+    PlanCancellationInfoLayer,
+    PlanLayer,
+    PlanObjectCancellationAreaLayer,
+    plan_cancellation_layers,
+    plan_layers,
+)
 from arho_feature_template.utils.misc_utils import get_active_plan_id, get_active_plan_name, set_active_plan_id
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 
@@ -54,6 +60,7 @@ def manager(plugin, plan_layer: QgsVectorLayer, monkeypatch: pytest.MonkeyPatch)
     """The plugin's manager with only the plan layer in the project."""
     monkeypatch.setattr(plan_manager_module, "plan_layers", [PlanLayer])
     monkeypatch.setattr(plan_manager_module, "plan_feature_layers", [])
+    monkeypatch.setattr(plan_manager_module, "plan_cancellation_layers", [])
     for layer_class in (
         plan_layers_module.RegulationGroupAssociationLayer,
         plan_layers_module.LegalEffectAssociationLayer,
@@ -121,6 +128,34 @@ def test_without_a_plan_the_feature_layers_are_not_read(manager: PlanManager, vi
 
     (call,) = view_calls
     assert call[1] == {"Aluevaraus": []}
+
+
+@pytest.mark.usefixtures("view_calls")
+def test_the_cancellation_layers_follow_the_plan(
+    manager: PlanManager, plan_layer: QgsVectorLayer, new_project: QgsProject, monkeypatch
+):
+    layer = QgsVectorLayer("None?field=id:string&field=plan_id:string", PlanCancellationInfoLayer.name, "memory")
+    assert layer.isValid()
+    new_project.addMapLayer(layer, addToLegend=False)
+    new_project.layerTreeRoot().findGroup(PLAN_LAYER_GROUP_NAME).addLayer(layer)
+    # The area layer is not in the project, like in an older project file
+    monkeypatch.setattr(
+        plan_manager_module,
+        "plan_cancellation_layers",
+        [PlanCancellationInfoLayer, PlanObjectCancellationAreaLayer],
+    )
+
+    manager.set_active_plan("plan-1")
+    assert layer.subsetString() == "plan_id = 'plan-1'"
+
+    manager.set_active_plan(None)
+    assert layer.subsetString() == "false"
+    assert plan_layer.subsetString() == ""
+
+
+def test_the_cancellation_layers_are_not_required():
+    assert len(plan_cancellation_layers) == 6
+    assert not set(plan_cancellation_layers) & set(plan_layers)
 
 
 def test_the_lifecycle_button_uses_the_given_status(plugin, monkeypatch):
