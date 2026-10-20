@@ -16,6 +16,7 @@ from qgis.PyQt import uic
 
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.settings_manager import SettingsManager
+from arho_feature_template.gui.components.lambda_job_status import job_status_text
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
     PlanLayer,
@@ -54,6 +55,9 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.lambda_service = LambdaService(self)
         self.lambda_service.validation_received.connect(self.list_validation_errors)
         self.lambda_service.validation_failed.connect(self.handle_validation_call_errors)
+        self.lambda_service.job_status_changed.connect(self.on_job_status_changed)
+        self.lambda_service.busy_changed.connect(self.on_busy_changed)
+        self._listing_title = ""
         self.validate_button.clicked.connect(self.validate_plan)
         self.validate_plan_matter_button.clicked.connect(self.validate_plan_matter)
 
@@ -143,8 +147,17 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
 
         self.lambda_service.validate_plan_matter(active_plan_id)
 
+    def on_job_status_changed(self, _action: str, status: str):
+        """Shows after the title whether the validation job is queued or running."""
+        self.validation_label.setText(f"{self._listing_title} {job_status_text(status)}")
+
+    def on_busy_changed(self, _action: str, busy: bool):  # noqa: FBT001
+        if not busy:
+            self.validation_label.setText(self._listing_title)
+
     def _start_listing(self, title: str):
         """Resets the label and the tree for a new list of validation results."""
+        self._listing_title = title
         self.validation_label.setText(title)
         self.validation_label.setStyleSheet("")
         self.validation_result_tree_view.clear_errors()

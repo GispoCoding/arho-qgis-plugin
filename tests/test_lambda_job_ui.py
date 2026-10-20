@@ -127,6 +127,19 @@ def test_closed_job_message_is_not_touched_again(plugin: Plugin, iface: QgisInte
     assert plugin.finalize_plan_action.isEnabled()
 
 
+def test_validation_dock_shows_the_job_status(plugin: Plugin):
+    dock = plugin.validation_dock
+    service = dock.lambda_service
+    dock._start_listing("Kaavasuunnitelman validointivirheet:")
+
+    _set_busy(service, LambdaService.ACTION_VALIDATE_PLAN, True)
+    service.job_status_changed.emit(LambdaService.ACTION_VALIDATE_PLAN, JobStatus.RUNNING)
+    assert dock.validation_label.text() == "Kaavasuunnitelman validointivirheet: Käynnissä…"
+
+    _set_busy(service, LambdaService.ACTION_VALIDATE_PLAN, False)
+    assert dock.validation_label.text() == "Kaavasuunnitelman validointivirheet:"
+
+
 def test_import_dialog_does_not_block_qgis(plugin: Plugin, monkeypatch: pytest.MonkeyPatch):
     manager = plugin.plan_manager
     activated: list[str | None] = []
