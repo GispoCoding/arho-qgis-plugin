@@ -44,6 +44,10 @@ def test_message_bar_records_every_push_overload(iface, messages):
     assert len(messages) == 4
 
 
+@pytest.mark.skipif(
+    not hasattr(QgisInterface, "__abstract_methods__"),
+    reason="SIP of QGIS 3.40 / Qt 5 does not list abstract methods, so no loud stubs are installed",
+)
 def test_unimplemented_method_raises_with_a_hint(iface):
     with pytest.raises(NotImplementedError, match="zoomFull.*fake_iface.py"):
         iface.zoomFull()
