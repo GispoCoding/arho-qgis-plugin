@@ -9,6 +9,8 @@
 
 This is a QGIS plugin for producing land use plans and is compatible with [Ryhti](https://ryhti.syke.fi/en/), the Finnish national built environment information system.
 
+The plugin supports QGIS 3.40 (LTR) and newer, including QGIS 4.
+
 The plugin is expected to be used with the [arho-ryhti](https://github.com/GispoCoding/arho-ryhti) backend system, which provides the necessary database and backend services.
 
 ## Development
