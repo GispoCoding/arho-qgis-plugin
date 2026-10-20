@@ -19,7 +19,7 @@ jobs:
       matrix:
         # Docker Hub tags: "<major.minor>" (for example "3.44", "4.2"), ltr, latest.
         # The old release-3_xx tags stopped being updated in 2024.
-        qgis-image-tags: ["3.44", "4.2", latest]
+        qgis-image-tags: ["3.40", "3.44", "4.2", latest]
       fail-fast: false
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -64,7 +64,7 @@ jobs:
       image: qgis/qgis:${{ matrix.qgis-image-tags }}
     strategy:
       matrix:
-        qgis-image-tags: ["3.44", "4.2", latest]
+        qgis-image-tags: ["3.40", "3.44", "4.2", latest]
       fail-fast: false
 
     steps:
@@ -100,7 +100,7 @@ jobs:
         run: qgis --nologo --noversioncheck --code ci/qgis_pytest_runner.py
 
   windows_tests:
-    name: Windows (${{ matrix.qgis-package }})
+    name: Windows (${{ matrix.qgis-version }})
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -108,6 +108,8 @@ jobs:
         # Bumping a version both installs the new QGIS version and
         # invalidates the cache for that matrix leg.
         include:
+          - qgis-package: qgis-ltr
+            qgis-version: "3.40.15"
           - qgis-package: qgis-ltr
             qgis-version: "3.44.13"
           - qgis-package: qgis
