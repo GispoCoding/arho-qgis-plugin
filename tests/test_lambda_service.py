@@ -9,6 +9,7 @@ from http import HTTPStatus
 import pytest
 from qgis.PyQt.QtCore import QByteArray, QObject, QUrl
 from qgis.PyQt.QtNetwork import QNetworkReply, QNetworkRequest
+from qgis.PyQt.QtWidgets import QDialog
 
 import arho_feature_template.core.lambda_service as lambda_service_module
 import arho_feature_template.gui.dialogs.post_plan as post_plan_module
@@ -535,7 +536,8 @@ def test_closing_the_post_plan_dialog_cancels_the_request(iface, monkeypatch, fl
     dialog.start_post_plan()
     assert len(dialog.lambda_service._client.network_manager.findChildren(QNetworkReply)) == 1
 
-    dialog.reject()  # Cancel, Esc and the window close button all land in `done`
+    # Cancel, Esc and the window close button wait for the job; accept and teardown land in `done`
+    dialog.done(QDialog.DialogCode.Rejected)
     flush_deferred_deletes()
 
     assert dialog.lambda_service._client.network_manager.findChildren(QNetworkReply) == []

@@ -132,7 +132,7 @@ from arho_feature_template.utils.misc_utils import (
     use_wait_cursor,
 )
 from arho_feature_template.utils.timing import timed
-from arho_feature_template.utils.widget_utils import deleted_after_use
+from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
 
 if TYPE_CHECKING:
     from arho_feature_template.core.feature_editing import PlanObjectSaveResult
@@ -195,6 +195,8 @@ class PlanManager(QObject):
 
         # Shown non-modally, so it outlives the call that opened it
         self.import_features_form: ImportFeaturesForm | None = None
+        # Shown non-modally too: the import job can run for minutes, and it cannot be cancelled
+        self.import_plan_form: ImportPlanForm | None = None
 
         # `QgsProject` outlives the plugin, so the connection to `cleared` has to be tracked
         # and undone. It is made per project load and dropped again when the signal fires.
@@ -378,11 +380,37 @@ class PlanManager(QObject):
                     self.set_active_plan(selected_plan.id_)
 
     def open_import_plan_dialog(self):
+        """Shows the import plan dialog, or brings the open one to the front: one import at a time."""
+        form = self.import_plan_form
+        if form is not None and not sip.isdeleted(form):
+            form.raise_()
+            form.activateWindow()
+            return
         logger.debug("Opening import plan dialog")
-        with deleted_after_use(ImportPlanForm(iface.mainWindow())) as dialog:
-            if dialog.exec() and dialog.imported_plan_id:
-                logger.debug("Imported plan selected id=%s", dialog.imported_plan_id)
-                self.set_active_plan(dialog.imported_plan_id)
+        self.import_plan_form = ImportPlanForm(iface.mainWindow())
+        self.import_plan_form.finished.connect(self._on_import_plan_dialog_finished)
+        self.import_plan_form.show()
+
+    def _on_import_plan_dialog_finished(self, result: int):
+        form = self.import_plan_form
+        self.import_plan_form = None
+        if form is None:
+            return
+        if result == QDialog.DialogCode.Accepted and form.imported_plan_id:
+            logger.debug("Imported plan selected id=%s", form.imported_plan_id)
+            self.set_active_plan(form.imported_plan_id)
+        remove_widget(form)
+
+    def close_import_plan_dialog(self):
+        """Closes the import plan dialog if one is open, also while its job runs.
+
+        `done` skips the `reject` that keeps the dialog open during the job, and stops
+        polling. The job itself runs to its end in the backend.
+        """
+        form = self.import_plan_form
+        if form is not None and not sip.isdeleted(form):
+            logger.debug("Closing import plan dialog")
+            form.done(QDialog.DialogCode.Rejected)
 
     def open_import_features_dialog(self):
         logger.debug("Opening import features dialog")
@@ -1411,6 +1439,7 @@ class PlanManager(QObject):
         self.features_dock.deleteLater()
 
         self.close_import_features_dialog()
+        self.close_import_plan_dialog()
 
         self.disconnect_layer_error_signals()
         self.disconnect_project_cleared_signal()

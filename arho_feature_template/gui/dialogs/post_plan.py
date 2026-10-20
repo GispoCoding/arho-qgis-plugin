@@ -9,6 +9,7 @@ from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QFrame, QLabel, QMessageBox, QProgressBar
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.gui.components.lambda_job_status import LambdaJobStatus
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
     validation_label: QLabel
     validation_result_tree_view: ValidationTreeView
     progress_bar: QProgressBar
+    label_job_status: QLabel
     dialogButtonBox: QDialogButtonBox  # noqa: N815
 
     def __init__(self, parent=None) -> None:
@@ -38,6 +40,8 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
 
         self.lambda_service = LambdaService(self)
         self.lambda_service.plan_matter_received.connect(self.update_message_list)
+        self.lambda_service.busy_changed.connect(self._on_busy_changed)
+        self.job_status = LambdaJobStatus(self.lambda_service, self.label_job_status)
 
         # Start the posting process after dialog is fully opened. The timer is owned by
         # the dialog and stopped in `done`, so it cannot fire into a dialog that is
@@ -56,6 +60,16 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
         self.start_timer.stop()
         self.lambda_service.abort_pending()
         super().done(result)
+
+    def reject(self) -> None:
+        """Cancel, Esc and the window close button do nothing while the post job runs."""
+        if not self.job_status.refuse_close():
+            super().reject()
+
+    def _on_busy_changed(self, _action: str, busy: bool):  # noqa: FBT001
+        # A failed post has no handler of its own; stop the busy indicator so the user can close
+        if not busy:
+            self.progress_bar.hide()
 
     def start_post_plan(self):
         """Posts the plan matter after dialog has been opened."""
