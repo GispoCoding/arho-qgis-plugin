@@ -8,7 +8,7 @@ import logging
 import time
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from qgis.PyQt.QtCore import QByteArray, QObject, QTimer, QUrl, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkReply, QNetworkRequest
@@ -40,6 +40,7 @@ JOB_FAILED_MESSAGE = "Taustapalvelun ajo epäonnistui. Yritä uudelleen."
 JOB_NOT_STARTED_MESSAGE = "Taustapalvelun ajoa ei voitu käynnistää. Yritä myöhemmin uudelleen."
 JOB_DEADLINE_MESSAGE = "Taustapalvelu ei vastannut 16 minuutissa. Toiminto voi silti valmistua taustapalvelussa."
 JOB_POLL_FAILED_MESSAGE = "Ajon tilaa ei voitu hakea:"
+ACTION_RUNNING_MESSAGE = "Toiminto on jo käynnissä. Odota, että se valmistuu."
 _JOB_NOT_STARTED_TITLE = "Job could not be started."
 
 
@@ -107,14 +108,26 @@ class LambdaClient(QObject):
     # (tag, reply) — typed as object so test doubles can pass through the signal
     s3_reply_received = pyqtSignal(str, object)
     job_status_changed = pyqtSignal(str, str)  # (action, JobStatus.QUEUED or JobStatus.RUNNING)
+    # (action, busy) True when the action is sent, False just before its answer is emitted
+    busy_changed = pyqtSignal(str, bool)
+    request_refused = pyqtSignal(str)  # (action) not sent: the action already runs, see `post_action`
+
+    # The actions that wait for their answer in any client. Each dialog and dock has its
+    # own client, so a second dialog must see the actions of the first.
+    _running_actions: ClassVar[set[str]] = set()
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self.network_manager = QNetworkAccessManager(self)
         self.network_manager.finished.connect(self._handle_response)
         self._jobs: dict[str, _Job] = {}
+        self._busy: set[str] = set()
         self._now = time.monotonic  # clock for the job deadline; tests replace it
         logger.debug("LambdaClient initialized and network response handler connected")
+
+    def is_busy(self, action: str | None = None) -> bool:
+        """True while the action (or any action) waits for its answer, its job included."""
+        return action in self._busy if action is not None else bool(self._busy)
 
     def abort_pending(self) -> int:
         """Cancels every reply still in flight and stops polling every job, without running the handlers.
@@ -128,6 +141,9 @@ class LambdaClient(QObject):
 
         Returns the number of cancelled replies and jobs.
         """
+        # The owner is going away, so busy_changed is not emitted
+        LambdaClient._running_actions -= self._busy
+        self._busy.clear()
         jobs = list(self._jobs.values())
         for job in jobs:
             self._end_job(job)
@@ -143,9 +159,21 @@ class LambdaClient(QObject):
         logger.debug("Aborted in-flight replies count=%s jobs=%s", len(replies), len(jobs))
         return len(replies) + len(jobs)
 
-    def post_action(self, action: str, plan_id: str | None = None, payload: dict[str, Any] | None = None):
-        """Sends a request to the lambda function in job mode."""
+    def post_action(self, action: str, plan_id: str | None = None, payload: dict[str, Any] | None = None) -> bool:
+        """Sends a request to the lambda function in job mode.
+
+        The backend does not stop two jobs on the same plan, so an action that still waits
+        for its answer, in this client or another, is not sent again. Emits `request_refused`
+        and returns False then.
+        """
+        if action in LambdaClient._running_actions:
+            logger.warning("Lambda action already running, request refused action=%s", action)
+            self.request_refused.emit(action)
+            return False
         logger.debug("Preparing lambda request action=%s plan_id=%s", action, plan_id)
+        self._busy.add(action)
+        LambdaClient._running_actions.add(action)
+        self.busy_changed.emit(action, True)
         if payload is None:
             payload = {}
         if plan_id:
@@ -155,6 +183,7 @@ class LambdaClient(QObject):
         # A backend without job mode ignores the flag, and so do get_upload_url and get_job
         payload["run_as_job"] = True
         self._post(action, payload)
+        return True
 
     def get(self, request: QNetworkRequest):
         self.network_manager.get(request)
@@ -289,7 +318,7 @@ class LambdaClient(QObject):
             answer = self._decode_reply(response)
         except (ValueError, KeyError, OSError) as e:
             logger.debug("Failed to parse lambda response action=%s error=%s", action, e)
-            self.parse_failed.emit(action, str(e))
+            self._emit_parse_failed(action, str(e))
             return
         finally:
             response.deleteLater()
@@ -303,9 +332,9 @@ class LambdaClient(QObject):
             return
         if answer.ok:
             if not isinstance(body, dict):
-                self.parse_failed.emit(action, f"Odottamaton vastaus: {body!r}")
+                self._emit_parse_failed(action, f"Odottamaton vastaus: {body!r}")
                 return
-            self.response_received.emit(action, body)
+            self._emit_received(action, body)
             return
 
         if isinstance(body, dict):
@@ -316,7 +345,27 @@ class LambdaClient(QObject):
             # Error handlers emit str-typed signals, so format the body into a string
             error = answer.error or str(body)
         logger.debug("Lambda action failed action=%s status=%s error=%s", action, answer.status, error)
-        self.request_failed.emit(action, error, body if isinstance(body, dict) else None)
+        self._emit_failed(action, error, body if isinstance(body, dict) else None)
+
+    # The answer of an action: the action is no longer busy when its handlers run
+
+    def _set_idle(self, action: str):
+        if action in self._busy:
+            self._busy.discard(action)
+            LambdaClient._running_actions.discard(action)
+            self.busy_changed.emit(action, False)
+
+    def _emit_received(self, action: str, body: dict):
+        self._set_idle(action)
+        self.response_received.emit(action, body)
+
+    def _emit_failed(self, action: str, error: str, body: dict | None):
+        self._set_idle(action)
+        self.request_failed.emit(action, error, body)
+
+    def _emit_parse_failed(self, action: str, error: str):
+        self._set_idle(action)
+        self.parse_failed.emit(action, error)
 
     @staticmethod
     def _job_id(body: Any) -> str:
@@ -350,7 +399,7 @@ class LambdaClient(QObject):
         if self._now() >= job.deadline:
             logger.debug("Job deadline passed action=%s job_id=%s", job.action, job.job_id)
             self._end_job(job)
-            self.request_failed.emit(job.action, JOB_DEADLINE_MESSAGE, None)
+            self._emit_failed(job.action, JOB_DEADLINE_MESSAGE, None)
             return
         job.timer.start()
 
@@ -383,7 +432,7 @@ class LambdaClient(QObject):
                 # An unknown or expired job, a bad poll or a refused API key: polling again does not help
                 self._end_job(job)
                 error = self._format_error_body(body) if body else answer.error
-                self.request_failed.emit(job.action, f"{JOB_POLL_FAILED_MESSAGE} {error}", body or None)
+                self._emit_failed(job.action, f"{JOB_POLL_FAILED_MESSAGE} {error}", body or None)
                 return
             # A server, gateway, throttling or network error says nothing about the job
             logger.debug("Job poll failed job_id=%s status=%s error=%s", job.job_id, answer.status, answer.error)
@@ -399,7 +448,7 @@ class LambdaClient(QObject):
             self._end_job(job)
             result = details.get("result")
             if not isinstance(result, dict):
-                self.request_failed.emit(job.action, JOB_FAILED_MESSAGE, body)
+                self._emit_failed(job.action, JOB_FAILED_MESSAGE, body)
                 return
             result_status = result.get("statusCode")
             result_status = int(result_status) if result_status is not None else None
@@ -409,7 +458,7 @@ class LambdaClient(QObject):
             self._end_job(job)
             job_error = details.get("error")
             message = f"{JOB_FAILED_MESSAGE} ({job_error})" if job_error else JOB_FAILED_MESSAGE
-            self.request_failed.emit(job.action, message, body)
+            self._emit_failed(job.action, message, body)
         else:
             if status in (JobStatus.QUEUED, JobStatus.RUNNING) and status != job.status:
                 job.status = JobStatus(status)
