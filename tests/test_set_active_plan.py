@@ -12,6 +12,7 @@ import pytest
 from qgis.core import QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
 
 import arho_feature_template.core.plan_manager as plan_manager_module
+import arho_feature_template.utils.layer_utils as layer_utils_module
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.project.layers import plan_layers as plan_layers_module
@@ -183,3 +184,22 @@ def test_the_lifecycle_button_uses_the_given_status(plugin, monkeypatch):
 
     dock._update_edit_lifecycle_visibility(LifeCycleStatusValue.PREPARATION)
     assert dock.push_button_edit_lifecycle.isHidden()
+
+
+@pytest.mark.usefixtures("view_calls")
+def test_closing_a_locked_plan_makes_the_layers_writable_again(
+    manager: PlanManager, plan_layer: QgsVectorLayer, monkeypatch
+):
+    # A read-only layer stops every layer of a transaction group from entering edit mode,
+    # also the ones that are not plan layers, such as the plan matter layer
+    monkeypatch.setattr(layer_utils_module, "plan_layers", [PlanLayer])
+    plan_layer.setReadOnly(True)
+    manager.plan_locked = True
+    lock_changes: list[bool] = []
+    manager.plan_lock_status_changed.connect(lock_changes.append)
+
+    manager.set_active_plan(None)
+
+    assert not plan_layer.readOnly()
+    assert not manager.plan_locked
+    assert lock_changes == [False]

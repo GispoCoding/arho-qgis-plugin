@@ -434,10 +434,25 @@ class PlanManager(QObject):
             else:
                 unlock_plan_layers()
                 self.plan_locked = False
-            self.plan_lock_status_changed.emit(plan_model.locked)
+            self._announce_lock_status(plan_model.locked)
 
-            self.regulation_groups_dock.update_lock_status(plan_model.locked)
-            self.new_feature_dock.update_lock_status(plan_model.locked)
+    def _release_plan_lock(self):
+        """Make the plan layers writable when no plan is active.
+
+        A read-only layer stops all layers of its transaction group, such as the plan matter layer,
+        from entering edit mode. The lock of a closed plan must not outlive the plan.
+        """
+        if not self.plan_locked:
+            return
+        logger.debug("Releasing the lock of the closed plan")
+        unlock_plan_layers(start_editing_plan_layer=False)
+        self.plan_locked = False
+        self._announce_lock_status(locked=False)
+
+    def _announce_lock_status(self, locked: bool):  # noqa: FBT001
+        self.plan_lock_status_changed.emit(locked)
+        self.regulation_groups_dock.update_lock_status(locked)
+        self.new_feature_dock.update_lock_status(locked)
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(
@@ -1016,6 +1031,7 @@ class PlanManager(QObject):
             self.update_plan_status(plan_model)
             logger.debug("Active plan set id=%s locked=%s", plan_id, plan_model.locked)
         else:
+            self._release_plan_lock()
             self.plan_unset.emit()
             for layer in plan_layers:
                 if layer is PlanLayer:
