@@ -4,6 +4,7 @@ import copy
 import json
 import logging
 import os
+from contextlib import nullcontext
 from typing import TYPE_CHECKING, Generator, Iterable, cast
 
 from qgis.core import (
@@ -702,15 +703,27 @@ class PlanManager(QObject):
             return
         plan_matter_model = PlanMatterLayer.model_from_feature(feature)
 
-        with deleted_after_use(PlanMatterAttributeForm(plan_matter_model, iface.mainWindow())) as attribute_form:
+        saved_id = None
+        with (
+            deleted_after_use(PlanMatterAttributeForm(plan_matter_model, iface.mainWindow())) as attribute_form,
+            self._plan_layers_writable_for_plan_matter(),
+        ):
             if attribute_form.exec():
                 saved_id = save_plan_matter(attribute_form.model)
                 logger.debug("Plan matter save returned id=%s", saved_id)
 
-                if saved_id is not None:
-                    # The name and the plan type of the active plan matter live in project
-                    # variables. Reopen the plan matter so that an edited value takes effect.
-                    self.set_active_plan_matter(saved_id, get_active_plan_id())
+        if saved_id is not None:
+            # The name and the plan type of the active plan matter live in project
+            # variables. Reopen the plan matter so that an edited value takes effect.
+            self.set_active_plan_matter(saved_id, get_active_plan_id())
+
+    def _plan_layers_writable_for_plan_matter(self):
+        """Make the plan layers writable while a plan matter is edited, if the open plan is locked.
+
+        The plan matter layer shares its transaction group with the plan layers. A read-only layer
+        stops all of them from entering edit mode. The plan stays open, so it is locked again after.
+        """
+        return plan_layers_temporarily_unlocked() if self.plan_locked else nullcontext()
 
     def new_plan_matter(self):
         """Creates and saves a new geometryless Plan Matter feature."""
@@ -731,16 +744,23 @@ class PlanManager(QObject):
 
         iface.setActiveLayer(plan_matter_layer)
 
-        if not plan_matter_layer.isEditable():
-            plan_matter_layer.startEditing()
-
         plan_matter_model = PlanMatter()
-        with deleted_after_use(PlanMatterAttributeForm(plan_matter_model, iface.mainWindow())) as attribute_form:
-            if attribute_form.exec():
+        accepted = False
+        saved_id = None
+        with (
+            deleted_after_use(PlanMatterAttributeForm(plan_matter_model, iface.mainWindow())) as attribute_form,
+            self._plan_layers_writable_for_plan_matter(),
+        ):
+            if not plan_matter_layer.isEditable():
+                plan_matter_layer.startEditing()
+
+            accepted = attribute_form.exec()
+            if accepted:
                 saved_id = save_plan_matter(attribute_form.model)
                 logger.debug("New plan matter save returned id=%s", saved_id)
 
-                self.set_active_plan_matter(saved_id)
+        if accepted:
+            self.set_active_plan_matter(saved_id)
 
     def add_new_plan_feature(self):
         logger.debug("Adding new plan feature by digitizing")
