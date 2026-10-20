@@ -20,6 +20,7 @@ from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue, get_allowed_plan_lifecycle_transitions
 from arho_feature_template.core.models import Plan
 from arho_feature_template.gui.components.code_combobox import ValueDataRole
+from arho_feature_template.gui.components.lambda_job_status import LambdaJobStatus
 from arho_feature_template.project.layers.code_layers import (
     LifeCycleStatusLayer,
     PlanTypeLayer,
@@ -94,6 +95,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
     check_box_lock: QCheckBox
     button_box: QDialogButtonBox
     widget_progress: QWidget
+    label_job_status: QLabel
 
     widget_under_appeal_scope: QWidget
     widget_target_lifecycle: QWidget
@@ -131,6 +133,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.lambda_service = LambdaService(self)
         self.lambda_service.plan_copied.connect(self._plan_copied)
         self.lambda_service.plan_copy_failed.connect(self._handle_copy_failed)
+        self.job_status = LambdaJobStatus(self.lambda_service, self.label_job_status)
 
         # Start date widget initially invisible
         self.label_validity_start_date.setVisible(False)
@@ -328,6 +331,11 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         self.lambda_service.abort_pending()
         super().done(result)
 
+    def reject(self) -> None:
+        """Cancel, Esc and the window close button do nothing while the copy job runs."""
+        if not self.job_status.refuse_close():
+            super().reject()
+
     def _on_source_plan_changed(self, index: int):  # noqa: ARG002
         self._update_allowed_plan_lifecycles()
         self._set_keep_under_appeal_lifecycle_visibility()
@@ -382,3 +390,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
 
     def _handle_copy_failed(self, error_message: str):
         iface.messageBar().pushCritical("", f"Kaavasuunnitelman kopiointi epäonnistui: {error_message}")
+        # Back to the inputs, so the user can try again or cancel
+        self.widget_progress.hide()
+        self.widget_input.show()
+        self.adjustSize()

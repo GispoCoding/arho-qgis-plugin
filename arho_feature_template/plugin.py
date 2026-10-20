@@ -13,14 +13,14 @@ from qgis.core import Qgis, QgsApplication, QgsExpressionContextUtils, QgsProjec
 from qgis.PyQt import sip
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QTranslator, QUrl, pyqtBoundSignal
 from qgis.PyQt.QtGui import QDesktopServices, QIcon
-from qgis.PyQt.QtWidgets import QAction, QMenu, QProgressBar, QToolButton, QWidget
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMenu, QProgressBar, QToolButton, QWidget
 
 import arho_feature_template
 from arho_feature_template.core.geotiff_creator import GeoTiffCreator
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.core.settings_manager import SettingsManager
-from arho_feature_template.gui.components.lambda_job_status import job_status_text
+from arho_feature_template.gui.components.lambda_job_status import LambdaJobStatus, job_status_text
 from arho_feature_template.gui.dialogs.plan_object_icon_preview import PlanObjectIconPreview
 from arho_feature_template.gui.dialogs.plugin_about import PluginAbout
 from arho_feature_template.gui.dialogs.plugin_settings import ArhoOptionsPageFactory
@@ -35,7 +35,7 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
-from arho_feature_template.utils.widget_utils import deleted_after_use
+from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
 
 if TYPE_CHECKING:
     from qgis.gui import QgsDockWidget, QgsMessageBarItem
@@ -578,6 +578,8 @@ class Plugin:
                 "Pysyvän kaavatunnuksen haku",
             )
         self.lambda_job_messages: dict[str, QgsMessageBarItem] = {}
+        # Shown non-modally: the post job can run for minutes, and it cannot be cancelled
+        self.post_plan_dialog: PostPlanDialog | None = None
 
         # Initially actions are disabled because no plan is selected
         self.on_active_plan_matter_unset()
@@ -676,10 +678,29 @@ class Plugin:
         geotiff_creator.select_output_file()
 
     def post_plan_matter(self):
-        """Exports plan matter to Ryhti."""
+        """Exports plan matter to Ryhti, or brings the open post dialog to the front: one post at a time."""
+        dialog = self.post_plan_dialog
+        if dialog is not None and not sip.isdeleted(dialog):
+            dialog.raise_()
+            dialog.activateWindow()
+            return
         logger.debug("Opening post plan matter dialog")
-        with deleted_after_use(PostPlanDialog(iface.mainWindow())) as dialog:
-            dialog.exec()
+        self.post_plan_dialog = PostPlanDialog(iface.mainWindow())
+        self.post_plan_dialog.finished.connect(self._on_post_plan_dialog_finished)
+        self.post_plan_dialog.show()
+
+    def _on_post_plan_dialog_finished(self, _result: int):
+        dialog = self.post_plan_dialog
+        self.post_plan_dialog = None
+        if dialog is not None:
+            remove_widget(dialog)
+
+    def _close_post_plan_dialog(self):
+        """Closes the post dialog, also while its job runs. See `PlanManager.close_import_plan_dialog`."""
+        dialog = self.post_plan_dialog
+        if dialog is not None and not sip.isdeleted(dialog):
+            logger.debug("Closing post plan matter dialog")
+            dialog.done(QDialog.DialogCode.Rejected)
 
     def update_ryhti_buttons(self):
         """Update the UI buttons based on whether the active plan has a permanent identifier."""
@@ -731,7 +752,7 @@ class Plugin:
 
     def _show_lambda_job_message(self, action: str, title: str):
         self._hide_lambda_job_message(action)
-        item = iface.messageBar().createMessage(title, "Lähetetään…")
+        item = iface.messageBar().createMessage(title, LambdaJobStatus.SENDING_TEXT)
         progress_bar = QProgressBar()
         progress_bar.setMaximum(0)  # busy indicator
         item.layout().addWidget(progress_bar)
@@ -803,6 +824,7 @@ class Plugin:
         logger.debug("Plan manager signals disconnected")
         for job_action in list(self.lambda_job_messages):
             self._hide_lambda_job_message(job_action)
+        self._close_post_plan_dialog()
 
         # Handle plan manager. This runs before the actions are deleted, because
         # `PlanManager.unload` starts with `iface.actionPan().trigger()`, which used to

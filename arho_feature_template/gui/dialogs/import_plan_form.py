@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLineEdit, QWidget
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QLabel, QLineEdit, QWidget
 
 from arho_feature_template.core.lambda_service import LambdaService
+from arho_feature_template.gui.components.lambda_job_status import LambdaJobStatus
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_id, iface
 
 if TYPE_CHECKING:
@@ -26,12 +27,12 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
     widget_input: QWidget
     widget_replace: QWidget
     widget_progress: QWidget
+    label_job_status: QLabel
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
 
         self.setupUi(self)
-        self.setModal(True)
         self.setFixedWidth(550)
 
         self.widget_replace.hide()
@@ -51,6 +52,7 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
         self.lambda_service = LambdaService(self)
         self.lambda_service.plan_imported.connect(self.plan_imported)
         self.lambda_service.plan_import_failed.connect(self.handle_import_failed)
+        self.job_status = LambdaJobStatus(self.lambda_service, self.label_job_status)
 
         self.imported_plan_id: str | None = None
         self.plan_json: str | None = None
@@ -64,6 +66,11 @@ class ImportPlanForm(QDialog, FormClass):  # type: ignore
         """
         self.lambda_service.abort_pending()
         super().done(result)
+
+    def reject(self) -> None:
+        """Cancel, Esc and the window close button do nothing while the import job runs."""
+        if not self.job_status.refuse_close():
+            super().reject()
 
     def check_inputs(self):
         """Enables ok/save button only if both file paths are defined."""

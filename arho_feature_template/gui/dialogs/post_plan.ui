@@ -40,6 +40,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="label_job_status">
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QFrame" name="validation_error_frame">
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>

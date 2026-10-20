@@ -345,6 +345,13 @@ kaavakohteiden ja -määräysten elinkaaren tila ennallaan</string>
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="label_job_status">
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="verticalSpacer_2">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
