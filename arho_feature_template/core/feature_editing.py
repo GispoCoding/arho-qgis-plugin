@@ -145,7 +145,7 @@ def _delete_removed_rows(
         return
     layer = layer_class.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
     for feature in layer_class.get_features_by_attribute_value("id", removed_ids):
         if not delete_in_edit_buffer(feature, layer, delete_text):
             MsgBar.error("", error_text)
@@ -164,7 +164,7 @@ def _delete_removed_associations(
         return
     layer = layer_class.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
     for feature in layer_class.get_features_by_attribute_values({**parent, child_attribute: removed_ids}):
         if not delete_in_edit_buffer(feature, layer, delete_text):
             MsgBar.error("", error_text)
@@ -181,6 +181,22 @@ def _delete_removed_regulation_group_associations(
         "Kaavamääräysryhmän assosiaation poisto",
         "Kaavamääräysryhmän assosiaation poistaminen epäonnistui.",
     )
+
+
+def start_editing(layer: QgsVectorLayer) -> bool:
+    """Start the edit session of the layer through the project, so its transaction group is used.
+
+    QGIS gives no reason when this fails, so log the likely ones.
+    """
+    started = QgsProject.instance().startEditing(layer)
+    if not started:
+        logger.warning(
+            "Could not start editing layer=%s read_only=%s valid=%s",
+            layer.name(),
+            layer.readOnly(),
+            layer.isValid(),
+        )
+    return started
 
 
 def feature_id(feature: QgsFeature) -> str:
@@ -267,7 +283,7 @@ def save_plan_matter(plan_matter: PlanMatter) -> str | None:
         feature = PlanMatterLayer.feature_from_model(plan_matter)
         if not layer.isEditable():
             logger.debug("Layer %s not editable, starting edit session", layer.name())
-            QgsProject.instance().startEditing(layer)
+            start_editing(layer)
 
         if not add_to_edit_buffer(
             feature=feature,
@@ -309,7 +325,7 @@ def save_plan(plan: Plan) -> str | None:
         feature = PlanLayer.feature_from_model(plan)
         if not layer.isEditable():
             logger.debug("Layer %s not editable, starting edit session", layer.name())
-            QgsProject.instance().startEditing(layer)
+            start_editing(layer)
 
         if not add_to_edit_buffer(
             feature=feature,
@@ -425,7 +441,7 @@ def add_plan_object_to_edit_buffer(
         layer = layer_class.get_from_project()
         if not layer.isEditable():
             logger.debug("Layer %s not editable, starting edit session", layer.name())
-            QgsProject.instance().startEditing(layer)
+            start_editing(layer)
 
         if not add_to_edit_buffer(
             feature=feature,
@@ -498,7 +514,7 @@ def add_regulation_group_to_edit_buffer(regulation_group: RegulationGroup, plan_
         feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
         if not layer.isEditable():
             logger.debug("Layer %s not editable, starting edit session", layer.name())
-            QgsProject.instance().startEditing(layer)
+            start_editing(layer)
 
         if not add_to_edit_buffer(
             feature=feature,
@@ -554,7 +570,7 @@ def delete_regulation_group(regulation_group: RegulationGroup, plan_id: str | No
     feature = RegulationGroupLayer.feature_from_model(regulation_group, plan_id)
     layer = RegulationGroupLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Kaavamääräysryhmän poisto"):
         MsgBar.error("", "Kaavamääräysryhmän poistaminen epäonnistui.")
@@ -576,7 +592,7 @@ def add_regulation_group_association_to_edit_buffer(regulation_group_id: str, la
     feature = RegulationGroupAssociationLayer.feature_from(regulation_group_id, layer_name, feature_id)
     layer = RegulationGroupAssociationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not add_to_edit_buffer(
         feature=feature, layer=layer, id_=None, edit_text="Kaavamääräysryhmän assosiaation lisäys"
@@ -595,7 +611,7 @@ def add_regulation_to_edit_buffer(regulation: Regulation) -> str | None:
         layer = PlanRegulationLayer.get_from_project()
         regulation_feature = PlanRegulationLayer.feature_from_model(regulation)
         if not layer.isEditable():
-            QgsProject.instance().startEditing(layer)
+            start_editing(layer)
 
         if not add_to_edit_buffer(
             feature=regulation_feature,
@@ -665,7 +681,7 @@ def add_plan_theme_association_to_edit_buffer(
     )
     layer = PlanThemeAssociationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not add_to_edit_buffer(feature=feature, layer=layer, id_=None, edit_text="Kaavoitusteeman assosiaation lisäys"):
         MsgBar.error("", "Kaavoitusteeman assosiaation tallentaminen epäonnistui.")
@@ -682,7 +698,7 @@ def add_type_of_verbal_regulation_association_to_edit_buffer(
     feature = TypeOfVerbalRegulationAssociationLayer.feature_from(regulation_id, verbal_regulation_type_id)
     layer = TypeOfVerbalRegulationAssociationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not add_to_edit_buffer(
         feature=feature, layer=layer, id_=None, edit_text="Sanallisen kaavamääräyksen lajin assosiaation lisäys"
@@ -698,7 +714,7 @@ def add_legal_effect_association_to_edit_buffer(plan_id: str, legal_effect_id: s
     feature = LegalEffectAssociationLayer.feature_from(plan_id, legal_effect_id)
     layer = LegalEffectAssociationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not add_to_edit_buffer(
         feature=feature, layer=layer, id_=None, edit_text="Oikeusvaikutuksen assosiaation lisäys"
@@ -717,7 +733,7 @@ def add_additional_information_to_edit_buffer(additional_information: Additional
     feature = AdditionalInformationLayer.feature_from_model(additional_information)
     layer = AdditionalInformationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not add_to_edit_buffer(
         feature=feature,
@@ -736,7 +752,7 @@ def delete_additional_information(additional_information: AdditionalInformation)
     feature = AdditionalInformationLayer.feature_from_model(additional_information)
     layer = AdditionalInformationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Lisätiedon poisto"):
         MsgBar.error("", "Lisätiedon poistaminen epäonnistui.")
@@ -749,7 +765,7 @@ def delete_regulation(regulation: Regulation) -> bool:
     feature = PlanRegulationLayer.feature_from_model(regulation)
     layer = PlanRegulationLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Kaavamääräyksen poisto"):
         MsgBar.error("", "Lisätiedon poistaminen epäonnistui.")
@@ -766,7 +782,7 @@ def add_proposition_to_edit_buffer(proposition: Proposition) -> str | None:
         feature = PlanPropositionLayer.feature_from_model(proposition)
         layer = PlanPropositionLayer.get_from_project()
         if not layer.isEditable():
-            QgsProject.instance().startEditing(layer)
+            start_editing(layer)
 
         if not add_to_edit_buffer(
             feature=feature,
@@ -802,7 +818,7 @@ def delete_proposition(proposition: Proposition) -> bool:
     feature = PlanPropositionLayer.feature_from_model(proposition)
     layer = PlanPropositionLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not delete_in_edit_buffer(feature, layer, "Kaavasuosituksen poisto"):
         MsgBar.error("", "Kaavasuosituksen poistaminen epäonnistui.")
@@ -818,7 +834,7 @@ def add_document_to_edit_buffer(document: Document) -> str | None:
     feature = DocumentLayer.feature_from_model(document)
     layer = DocumentLayer.get_from_project()
     if not layer.isEditable():
-        QgsProject.instance().startEditing(layer)
+        start_editing(layer)
 
     if not add_to_edit_buffer(
         feature=feature,
