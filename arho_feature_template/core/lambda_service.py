@@ -10,7 +10,7 @@ from qgis.PyQt.QtCore import QDate, QObject, pyqtSignal
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.utils import iface
 
-from arho_feature_template.core.lambda_client import LambdaClient
+from arho_feature_template.core.lambda_client import ACTION_RUNNING_MESSAGE, LambdaClient
 from arho_feature_template.core.plan_importer import PlanImporter
 from arho_feature_template.utils.misc_utils import get_active_plan_id
 from arho_feature_template.utils.network_utils import prepare_presigned_request, presigned_reply_error
@@ -37,6 +37,8 @@ class LambdaService(QObject):
     plan_copy_failed = pyqtSignal(str)
     plan_finalized = pyqtSignal(dict)  # details: counts of what making the plan final repealed
     plan_finalize_validation_failed = pyqtSignal(dict)  # ryhti_response: the validation errors
+    busy_changed = pyqtSignal(str, bool)  # (action, busy) see `LambdaClient.busy_changed`
+    job_status_changed = pyqtSignal(str, str)  # (action, status) the job is queued or running
 
     # Aliases so existing callers and tests keep working against the facade
     ActionAttribute = LambdaClient.ActionAttribute
@@ -61,6 +63,9 @@ class LambdaService(QObject):
         self._client.request_failed.connect(self._on_request_failed)
         self._client.parse_failed.connect(self._on_parse_failed)
         self._client.s3_reply_received.connect(self._on_s3_reply)
+        self._client.request_refused.connect(self._on_request_refused)
+        self._client.busy_changed.connect(self.busy_changed)
+        self._client.job_status_changed.connect(self.job_status_changed)
         self._importer.plan_imported.connect(self.plan_imported)
         self._importer.plan_import_failed.connect(self.plan_import_failed)
         logger.debug("LambdaService initialized")
@@ -68,6 +73,10 @@ class LambdaService(QObject):
     def abort_pending(self) -> int:
         """Cancels every request still in flight. See `LambdaClient.abort_pending`."""
         return self._client.abort_pending()
+
+    def is_busy(self, action: str | None = None) -> bool:
+        """True while the action (or any action) waits for its answer. See `LambdaClient.is_busy`."""
+        return self._client.is_busy(action)
 
     def export_plan(self, plan_id: str):
         logger.debug("Requesting plan export plan_id=%s", plan_id)
@@ -187,6 +196,14 @@ class LambdaService(QObject):
             return
         QMessageBox.critical(None, "API Virhe", f"Lambda kutsu epäonnistui: {error}")
         self._get_error_handler(action)(error)
+
+    def _on_request_refused(self, action: str):
+        iface.messageBar().pushWarning("", ACTION_RUNNING_MESSAGE)
+        # The import chain starts with get_upload_url; its own error handler blames the backend version
+        if action == self.ACTION_GET_UPLOAD_URL:
+            self._importer.handle_import_error(ACTION_RUNNING_MESSAGE)
+            return
+        self._get_error_handler(action)(ACTION_RUNNING_MESSAGE)
 
     def _on_parse_failed(self, action: str, error: str):
         QMessageBox.critical(None, "JSON Virhe", f"Vastauksen JSON-tiedoston jäsennys epäonnistui: {error}")

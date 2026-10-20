@@ -231,3 +231,12 @@ def plugin_factory(
 @pytest.fixture
 def plugin(plugin_factory: Callable[[], Plugin]) -> Plugin:
     return plugin_factory()
+
+
+@pytest.fixture(autouse=True)
+def _no_running_lambda_actions() -> Iterator[None]:
+    """A lambda action runs in one client for all clients; a test leaves none running for the next."""
+    yield
+    from arho_feature_template.core.lambda_client import LambdaClient
+
+    LambdaClient._running_actions.clear()

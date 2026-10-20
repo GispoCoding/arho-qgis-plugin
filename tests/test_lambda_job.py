@@ -11,6 +11,7 @@ from qgis.PyQt.QtNetwork import QNetworkReply
 import arho_feature_template.core.lambda_client as lambda_client_module
 import arho_feature_template.core.lambda_service as lambda_service_module
 from arho_feature_template.core.lambda_client import (
+    ACTION_RUNNING_MESSAGE,
     JOB_DEADLINE_MESSAGE,
     JOB_DEADLINE_S,
     JOB_FAILED_MESSAGE,
@@ -33,9 +34,14 @@ NOT_FOUND = {"title": "Plan not found.", "details": {"error": "No plan with that
 # Qt reports an HTTP error status as a network error; any error value will do for the client
 HTTP_ERRORS = {
     400: QNetworkReply.NetworkError.ProtocolInvalidOperationError,
+    401: QNetworkReply.NetworkError.AuthenticationRequiredError,
+    403: QNetworkReply.NetworkError.ContentAccessDenied,
     404: QNetworkReply.NetworkError.ContentNotFoundError,
+    429: QNetworkReply.NetworkError.UnknownServerError,
     500: QNetworkReply.NetworkError.InternalServerError,
     502: QNetworkReply.NetworkError.UnknownServerError,
+    503: QNetworkReply.NetworkError.ServiceUnavailableError,
+    504: QNetworkReply.NetworkError.UnknownServerError,
 }
 
 
@@ -226,7 +232,11 @@ def test_job_that_could_not_be_started(client, backend, spies):
     assert client._jobs == {}
 
 
-@pytest.mark.parametrize("poll_error", [500, None], ids=["server_error", "network_error"])
+@pytest.mark.parametrize(
+    "poll_error",
+    [500, 502, 503, 504, 429, None],
+    ids=["server_error", "bad_gateway", "unavailable", "gateway_timeout", "throttled", "network_error"],
+)
 def test_failed_poll_is_retried(client, backend, spies, poll_error):
     client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
     backend.answer(202, SUBMITTED)
@@ -251,6 +261,21 @@ def test_unknown_job_stops_polling(client, backend, spies, poll_status):
     assert action == "get_plan"
     assert error == f"{JOB_POLL_FAILED_MESSAGE} Job not found. No such job."
     assert client._jobs == {}
+
+
+@pytest.mark.parametrize("poll_status", [401, 403])
+def test_refused_poll_stops_polling(client, backend, spies, poll_status):
+    """A bad API key does not get better by polling again until the deadline."""
+    client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(202, SUBMITTED)
+    backend.poll()
+    backend.answer(poll_status, {"message": "Forbidden"})
+
+    [(action, error, _body)] = spies["failed"]
+    assert action == "get_plan"
+    assert error.startswith(JOB_POLL_FAILED_MESSAGE)
+    assert client._jobs == {}
+    assert not client.is_busy()
 
 
 def test_deadline_stops_polling(client, backend, spies):
@@ -299,6 +324,115 @@ def test_abort_pending_stops_polling(client, backend, spies):
     backend.answer(200, job("done", {"statusCode": 200, "body": EXPORTED}))
     assert spies["received"] == []
     assert spies["failed"] == []
+
+
+def test_action_is_busy_until_its_job_ends(client, backend):
+    busy = signal_spy(client.busy_changed)
+    client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(202, SUBMITTED)
+    backend.poll()
+    backend.answer(200, job("running"))
+    assert client.is_busy(LambdaClient.ACTION_GET_PLAN)
+    assert not client.is_busy(LambdaClient.ACTION_FINALIZE_PLAN)
+    assert busy == [("get_plan", True)]
+
+    backend.poll()
+    backend.answer(200, job("failed"))
+
+    assert not client.is_busy()
+    assert busy == [("get_plan", True), ("get_plan", False)]
+
+
+def test_busy_action_is_not_sent_twice(client, backend):
+    refused = signal_spy(client.request_refused)
+    assert client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(202, SUBMITTED)
+
+    assert not client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    assert len(backend.network.post_requests) == 1
+    assert refused == [("get_plan",)]
+    # Another action is sent
+    assert client.post_action(LambdaClient.ACTION_FINALIZE_PLAN, plan_id=PLAN_ID)
+
+
+def test_action_is_idle_when_its_handler_runs(client, backend):
+    """A handler that starts the next step of a chain may send the same action again."""
+    seen = []
+    client.response_received.connect(lambda action, _body: seen.append(client.is_busy(action)))
+    client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(200, EXPORTED)
+    assert seen == [False]
+
+
+def test_abort_pending_clears_busy(client, backend):
+    client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(202, SUBMITTED)
+    client.abort_pending()
+    assert not client.is_busy()
+
+
+@pytest.fixture
+def other_client(qgis_app, lambda_url):  # noqa: ARG001
+    """A second client, as in a second dialog."""
+    other = LambdaClient()
+    Backend(other, lambda_url)
+    yield other
+    other.abort_pending()
+
+
+def test_action_running_in_another_client_is_refused(client, backend, other_client):
+    refused = signal_spy(other_client.request_refused)
+    client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(202, SUBMITTED)
+
+    assert not other_client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    assert refused == [("get_plan",)]
+    # The busy state of a client is its own: a dialog waits only for its own job
+    assert not other_client.is_busy()
+
+    backend.poll()
+    backend.answer(200, job("done", {"statusCode": 200, "body": EXPORTED}))
+    assert other_client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+
+
+def test_abort_pending_frees_the_action_for_other_clients(client, backend, other_client):
+    client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+    backend.answer(202, SUBMITTED)
+    client.abort_pending()
+
+    assert other_client.post_action(LambdaClient.ACTION_GET_PLAN, plan_id=PLAN_ID)
+
+
+@pytest.mark.usefixtures("lambda_url")
+def test_refused_action_tells_the_user(qgis_app, messages, monkeypatch):  # noqa: ARG001
+    monkeypatch.setattr(lambda_service_module, "get_active_plan_id", lambda: PLAN_ID)
+    first, second = LambdaService(), LambdaService()
+    for service in (first, second):
+        service._client.network_manager = FakeNetworkManager()
+    failures = signal_spy(second.validation_failed)
+
+    first.validate_plan(PLAN_ID)
+    second.validate_plan(PLAN_ID)
+
+    assert messages.warnings == [("", ACTION_RUNNING_MESSAGE)]
+    # The error handler of the action runs, so the dock leaves its waiting state
+    assert failures == [(ACTION_RUNNING_MESSAGE,)]
+    first.abort_pending()
+
+
+@pytest.mark.usefixtures("lambda_url")
+def test_refused_import_does_not_blame_the_backend_version(qgis_app, messages):  # noqa: ARG001
+    first, second = LambdaService(), LambdaService()
+    for service in (first, second):
+        service._client.network_manager = FakeNetworkManager()
+    failures = signal_spy(second.plan_import_failed)
+
+    first.import_plan("{}", {})
+    second.import_plan("{}", {})
+
+    assert messages.warnings == [("", ACTION_RUNNING_MESSAGE)]
+    assert failures == [(f"error: {ACTION_RUNNING_MESSAGE}",)]
+    first.abort_pending()
 
 
 def test_job_result_reaches_the_existing_action_handler(qgis_app, lambda_url, monkeypatch):  # noqa: ARG001
