@@ -16,79 +16,13 @@ from arho_feature_template.core.lambda_client import LambdaClient
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.gui.dialogs.post_plan import PostPlanDialog
 from arho_feature_template.utils.network_utils import prepare_presigned_request
+from tests.lambda_fakes import FakeNetworkManager, FakeReply
 
 pytestmark = pytest.mark.fake_iface
 
 PLAN_ID = "11111111-1111-1111-1111-111111111111"
 PLAN_JSON = json.dumps({"planKey": PLAN_ID, "name": "Testikaava"})
 EXTRA_DATA = {"name": "Testikaava", "plan_matter_id": "22222222-2222-2222-2222-222222222222"}
-
-
-class FakeRequest:
-    """Stands in for QNetworkRequest carrying the action attribute and the request URL."""
-
-    def __init__(self, action, url=""):
-        self._action = action
-        self._url = url
-
-    def attribute(self, _attribute):
-        return self._action
-
-    def url(self):
-        return QUrl(self._url)
-
-
-class FakeReply:
-    """Stands in for QNetworkReply in response handlers."""
-
-    def __init__(
-        self,
-        data: bytes = b"",
-        error=QNetworkReply.NetworkError.NoError,
-        error_string: str = "",
-        status_code=200,
-        action=None,
-        url: str = "",
-    ):
-        self._data = data
-        self._error = error
-        self._error_string = error_string
-        self._status_code = status_code
-        self._action = action
-        self._url = url
-        self.deleted = False
-
-    def error(self):
-        return self._error
-
-    def errorString(self):
-        return self._error_string
-
-    def attribute(self, _attribute):
-        return self._status_code
-
-    def request(self):
-        return FakeRequest(self._action, self._url)
-
-    def readAll(self):
-        return QByteArray(self._data)
-
-    def deleteLater(self):
-        self.deleted = True
-
-
-class FakeNetworkManager:
-    """Records get/put calls made by the service."""
-
-    def __init__(self):
-        self.get_requests = []
-        self.put_requests = []
-
-    def get(self, request):
-        self.get_requests.append(request)
-
-    def put(self, request, data):
-        self.put_requests.append((request, data))
 
 
 @pytest.fixture
