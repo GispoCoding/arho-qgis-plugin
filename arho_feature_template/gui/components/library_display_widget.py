@@ -25,8 +25,8 @@ from qgis.PyQt.QtWidgets import (
 
 from arho_feature_template.core.models import (
     Library,
-    PlanFeatureLibrary,
     PlanObject,
+    PlanObjectLibrary,
     RegulationGroup,
     RegulationGroupLibrary,
 )
@@ -63,8 +63,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
     def __init__(
         self,
-        libraries: list[PlanFeatureLibrary | RegulationGroupLibrary],
-        library_type_class: type[PlanFeatureLibrary | RegulationGroupLibrary],
+        libraries: list[PlanObjectLibrary | RegulationGroupLibrary],
+        library_type_class: type[PlanObjectLibrary | RegulationGroupLibrary],
         # regulation_group_libraries is needed to open PlanFeatureForm
         # would be a lot easier and cleaner if this could be accessed globally
         regulation_group_libraries: list[RegulationGroupLibrary],
@@ -155,12 +155,12 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         # Call to handle the case where no libraries are present
         self._on_library_selection_changed(None)
 
-    def initialize_by_library_type(self, library_type_class: type[PlanFeatureLibrary | RegulationGroupLibrary]):
+    def initialize_by_library_type(self, library_type_class: type[PlanObjectLibrary | RegulationGroupLibrary]):
         self.library_type_class = library_type_class
 
-        if self.library_type_class is PlanFeatureLibrary:
-            self.library_type = "plan_feature"
-            self.library_element_property = "plan_features"
+        if self.library_type_class is PlanObjectLibrary:
+            self.library_type = "plan_object"
+            self.library_element_property = "plan_objects"
             select_plan_feature_type_menu = QMenu(self.new_library_element_btn)
             for feature_name, layer_name in FEATURE_TYPE_TO_LAYER_NAME.items():
                 select_plan_feature_type_menu.addAction(feature_name).triggered.connect(
@@ -461,7 +461,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         selected_item = selected_items[0]
         element = selected_item.data(DATA_ROLE)
 
-        if self.library_type_class is PlanFeatureLibrary:
+        if self.library_type_class is PlanObjectLibrary:
             title = "Muokkaa kaavakohdepohjaa"
             # Find correct plan feature type for the plan feature template to be edited
             for plan_feature_type, plan_feature_layer in FEATURE_TYPE_TO_LAYER_NAME.items():
@@ -493,7 +493,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if len(selected_items) == 0:
             return
 
-        if self.library_type_class is PlanFeatureLibrary:
+        if self.library_type_class is PlanObjectLibrary:
             if len(selected_items) == 1:
                 title = "Kaavakohdepohjan poisto"
                 text = "Haluatko varmasti poistaa kaavakohdepohjan?"
@@ -567,7 +567,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
     def _on_save_library_clicked(self):
         logger.debug("Save library requested")
         if self._check_form():
-            current_library: PlanFeatureLibrary | RegulationGroupLibrary = self.library_selection.currentData(DATA_ROLE)
+            current_library: PlanObjectLibrary | RegulationGroupLibrary = self.library_selection.currentData(DATA_ROLE)
             current_library_old_name = current_library.name
             current_library.name = self.library_name.text()
             current_library.file_path = self.library_file_path.filePath()
@@ -577,8 +577,8 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 TemplateManager.write_regulation_group_template_file(
                     current_library.into_template_dict(), Path(current_library.file_path)
                 )
-            elif isinstance(current_library, PlanFeatureLibrary):
-                TemplateManager.write_plan_feature_template_file(
+            elif isinstance(current_library, PlanObjectLibrary):
+                TemplateManager.write_plan_object_template_file(
                     current_library.into_template_dict(), Path(current_library.file_path)
                 )
             logger.debug("Library saved name=%s file_path=%s", current_library.name, current_library.file_path)
