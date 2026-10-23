@@ -11,7 +11,7 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from qgis.core import QgsGeometry
+from qgis.core import NULL, QgsGeometry
 
 from arho_feature_template.gui.components.validation_tree_view import ValidationModel
 from arho_feature_template.project.layers import AbstractLayer
@@ -176,6 +176,16 @@ def test_a_class_key_that_is_not_a_feature_id_lists_the_index(plugin: Plugin, da
     plan_object = _child(_child(plan, "Kaavakohteet"), "[0]")
     assert plan_object.feature_id is None
     _child(_child(plan, "Kaavamääräysryhmät"), "[1]")
+
+
+def test_a_plan_object_without_a_name_lists_its_id(plugin: Plugin, database: _Database):
+    """A NULL name is a QVariant on Qt 5, not None."""
+    id_ = database.add(OtherAreaLayer, name=NULL)
+    errors = [_error("plan.planObjects[0].geometry", id_)]
+
+    plugin.validation_dock.list_validation_errors({"status": 400, "errors": errors, "warnings": []})
+
+    _child(_child(_child(_errors(plugin), "Kaavasuunnitelma"), "Kaavakohteet"), id_[:6])
 
 
 def test_an_error_without_a_feature_is_listed(plugin: Plugin):
