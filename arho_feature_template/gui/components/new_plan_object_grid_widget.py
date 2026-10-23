@@ -6,8 +6,8 @@ from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem, QPushButton
 
 from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, LineLayer, OtherAreaLayer, PointLayer
 
-FEATURE_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Piste"]
-FEATURE_TYPE_TO_LAYER_NAME = {
+PLAN_OBJECT_TYPES = ["Aluevaraus", "Osa-alue", "Viiva", "Piste"]
+PLAN_OBJECT_TYPE_TO_LAYER_NAME = {
     "Viiva": LineLayer.name,
     "Osa-alue": OtherAreaLayer.name,
     "Aluevaraus": LandUseAreaLayer.name,
@@ -19,7 +19,7 @@ FEATURE_BUTTON_HEIGHT = 90
 
 
 class NewPlanObjectGridWidget(QListWidget):
-    active_feature_type_changed = pyqtSignal(str, str)
+    active_plan_object_type_changed = pyqtSignal(str, str)
 
     def __init__(self):
         super().__init__()
@@ -35,12 +35,14 @@ class NewPlanObjectGridWidget(QListWidget):
         self.initialize_buttons()
 
     def initialize_buttons(self):
-        self.buttons = {feature_type: FeatureButton(feature_type) for feature_type in FEATURE_TYPES}
+        self.buttons = {
+            plan_object_type: PlanObjectTypeButton(plan_object_type) for plan_object_type in PLAN_OBJECT_TYPES
+        }
         for btn in self.buttons.values():
             self.add_button(btn)
             btn.clicked.connect(lambda _, button=btn: self.handle_button_click(button))
 
-    def add_button(self, button: FeatureButton):
+    def add_button(self, button: PlanObjectTypeButton):
         item = QListWidgetItem()
         item.setFlags(item.flags() & ~(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled))
         self.addItem(item)
@@ -64,21 +66,21 @@ class NewPlanObjectGridWidget(QListWidget):
 
         self.setFixedHeight(new_height)
 
-    def handle_button_click(self, btn: FeatureButton):
+    def handle_button_click(self, btn: PlanObjectTypeButton):
         self.clear_selections(exclude=btn)
 
         # Map button texts to layer names
         btn.setChecked(True)
-        self.active_feature_type_changed.emit(btn.text(), FEATURE_TYPE_TO_LAYER_NAME[btn.text()])
+        self.active_plan_object_type_changed.emit(btn.text(), PLAN_OBJECT_TYPE_TO_LAYER_NAME[btn.text()])
 
-    def clear_selections(self, exclude: FeatureButton | None = None):
+    def clear_selections(self, exclude: PlanObjectTypeButton | None = None):
         for btn in self.buttons.values():
             if exclude and btn == exclude:
                 continue
             btn.setChecked(False)
 
 
-class FeatureButton(QPushButton):
+class PlanObjectTypeButton(QPushButton):
     def __init__(self, text: str):
         super().__init__()
         self.setText(text.replace(" ", "\n"))

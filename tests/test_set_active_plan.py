@@ -115,7 +115,7 @@ def test_a_missing_plan_unsets_the_plan(manager: PlanManager, view_calls, caplog
     assert call[2] is None
 
 
-def test_without_a_plan_the_feature_layers_are_not_read(manager: PlanManager, view_calls, monkeypatch):
+def test_without_a_plan_the_plan_object_layers_are_not_read(manager: PlanManager, view_calls, monkeypatch):
     class HiddenLayerClass:
         name = "Aluevaraus"
 

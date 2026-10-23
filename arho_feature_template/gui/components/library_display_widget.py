@@ -46,7 +46,7 @@ ui_path = resources.files(__package__) / "library_display_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 # TODO: Now almost duplicate version exists in NewPlanObjectGridWidget, both should be moved to a generic place
-FEATURE_TYPE_TO_LAYER_NAME = {
+PLAN_OBJECT_TYPE_TO_LAYER_NAME = {
     "Viiva": LineLayer.name,
     "Osa-alue": OtherAreaLayer.name,
     "Aluevaraus": LandUseAreaLayer.name,
@@ -162,9 +162,9 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             self.library_type = "plan_object"
             self.library_element_property = "plan_objects"
             select_plan_object_type_menu = QMenu(self.new_library_element_btn)
-            for feature_name, layer_name in FEATURE_TYPE_TO_LAYER_NAME.items():
-                select_plan_object_type_menu.addAction(feature_name).triggered.connect(
-                    lambda _, fn=feature_name, ln=layer_name: self._on_new_plan_object_clicked(fn, ln)
+            for plan_object_type, layer_name in PLAN_OBJECT_TYPE_TO_LAYER_NAME.items():
+                select_plan_object_type_menu.addAction(plan_object_type).triggered.connect(
+                    lambda _, ot=plan_object_type, ln=layer_name: self._on_new_plan_object_clicked(ot, ln)
                 )
             self.new_library_element_btn.setMenu(select_plan_object_type_menu)
         elif self.library_type_class is RegulationGroupLibrary:
@@ -428,7 +428,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
             return
 
         logger.debug(
-            "Creating new plan object template feature_type=%s layer=%s",
+            "Creating new plan object template plan_object_type=%s layer=%s",
             plan_object_type,
             plan_object_layer,
         )
@@ -464,7 +464,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if self.library_type_class is PlanObjectLibrary:
             title = "Muokkaa kaavakohdepohjaa"
             # Find correct plan object type for the plan object template to be edited
-            for plan_object_type, plan_object_layer in FEATURE_TYPE_TO_LAYER_NAME.items():
+            for plan_object_type, plan_object_layer in PLAN_OBJECT_TYPE_TO_LAYER_NAME.items():
                 if plan_object_layer == element.layer_name:
                     title = f"Muokkaa kaavakohdepohjaa ({plan_object_type})"
                     break

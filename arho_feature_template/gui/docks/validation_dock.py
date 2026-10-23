@@ -314,11 +314,11 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         regulation_group_id = None
 
         if object_with_id == "planobjects":
-            for feature_layer in plan_object_layers:
-                feature = feature_layer.get_feature_by_id(id_=key, no_geometries=False)
+            for plan_object_layer in plan_object_layers:
+                feature = plan_object_layer.get_feature_by_id(id_=key, no_geometries=False)
                 if feature:
                     break
-            self.layer_features[key] = (feature, feature_layer)
+            self.layer_features[key] = (feature, plan_object_layer)
 
         elif object_with_id == "additionalinformations":
             feature = AdditionalInformationLayer.get_feature_by_id(key)

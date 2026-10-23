@@ -673,7 +673,7 @@ class RegulationGroup(PlanBaseModel):
 
 @dataclass
 class PlanObject(PlanBaseModel, LifecycleBase):
-    geom: QgsGeometry | None = None  # Need to allow None for feature templates
+    geom: QgsGeometry | None = None  # Need to allow None for plan object templates
     type_of_underground_id: str | None = None
     layer_name: str | None = None
     name: LocalizedText | None = None

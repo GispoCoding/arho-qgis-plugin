@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 DATA_COLUMN = 1
 PLAN_OBJECT_TYPE_COLUMN = 2
 DATA_ROLE = Qt.ItemDataRole.UserRole
-LAYER_NAME_TO_FEATURE_TYPE = {
+LAYER_NAME_TO_PLAN_OBJECT_TYPE = {
     LineLayer.name: "Viiva",
     OtherAreaLayer.name: "Osa-alue",
     LandUseAreaLayer.name: "Aluevaraus",
@@ -95,8 +95,8 @@ class PlanObjectsDockFilterProxyModel(QSortFilterProxyModel):
             type_match = True
         else:
             type_index = model.index(source_row, PLAN_OBJECT_TYPE_COLUMN, source_parent)
-            feature_type = model.data(type_index)
-            type_match = feature_type in self.allowed_types
+            plan_object_type = model.data(type_index)
+            type_match = plan_object_type in self.allowed_types
 
         return text_match and type_match
 
@@ -248,7 +248,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         self.disconnect_layer_signals()
         for layer in plan_object_layers:
             vector_layer = layer.get_from_project()
-            logger.debug("Connecting feature layer signals layer=%s", vector_layer.name())
+            logger.debug("Connecting plan object layer signals layer=%s", vector_layer.name())
             vector_layer.selectionChanged.connect(self._on_feature_selection_changed)
             vector_layer.committedFeaturesAdded.connect(self._on_feat_added)
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
@@ -261,7 +261,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         for vector_layer in self._connected_layers:
             # If we are closing QGIS, the layers are gone already at this point
             if not sip.isdeleted(vector_layer):
-                logger.debug("Disconnecting feature layer signals layer=%s", vector_layer.name())
+                logger.debug("Disconnecting plan object layer signals layer=%s", vector_layer.name())
                 vector_layer.selectionChanged.disconnect(self._on_feature_selection_changed)
                 vector_layer.committedFeaturesAdded.disconnect(self._on_feat_added)
                 vector_layer.committedFeaturesRemoved.disconnect(self._on_feats_removed)
@@ -359,7 +359,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         items = [
             validity_item_from_model(plan_object),
             QStandardItem(get_localized_text(plan_object.name) or ""),
-            QStandardItem(LAYER_NAME_TO_FEATURE_TYPE.get(plan_object.layer_name or "", "")),
+            QStandardItem(LAYER_NAME_TO_PLAN_OBJECT_TYPE.get(plan_object.layer_name or "", "")),
             QStandardItem(get_localized_text(plan_object.description) or ""),
         ]
 

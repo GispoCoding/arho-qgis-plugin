@@ -45,7 +45,7 @@ class GeneralRegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.regulation_widgets: list[RegulationWidget] = []
         self.proposition_widgets: list[PropositionWidget] = []
 
-        regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
+        regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_plan_object_layer_name(layer_name)
         self.from_model(regulation_group)
 
         self.verbal_regulation_type_id = PlanRegulationTypeLayer.get_id_by_type("sanallinenMaarays")

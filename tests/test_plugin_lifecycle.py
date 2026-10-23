@@ -102,7 +102,7 @@ def test_unload_disconnects_template_library_singleton(plugin_factory):
     plugin.unload()
 
     with pytest.raises(TypeError):
-        TemplateManager.signal_manager.feature_object_added_to_library.disconnect(dock.update_template_list)
+        TemplateManager.signal_manager.plan_object_added_to_library.disconnect(dock.update_template_list)
 
 
 def test_unload_disconnects_project_cleared(plugin_factory):
