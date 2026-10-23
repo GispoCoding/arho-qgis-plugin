@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import pytest
 from qgis.core import QgsRectangle
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtTest import QTest
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 
 from arho_feature_template.core.plan_scale import PIXEL_SIZES
@@ -149,3 +151,27 @@ def test_ok_does_not_ask_for_a_new_file(dialog, tmp_path, monkeypatch):
     dialog.button_box.button(QDialogButtonBox.StandardButton.Ok).click()
 
     assert dialog.result() == QDialog.DialogCode.Accepted
+
+
+@pytest.mark.parametrize(
+    ("spin_box_name", "text", "expected_scale"),
+    [
+        ("scale_spin_box", "2000", 2000),
+        ("dpi_spin_box", "300", 738),
+    ],
+)
+def test_enter_in_scale_or_dpi_applies_the_value_but_keeps_the_dialog_open(
+    dialog, tmp_path, spin_box_name, text, expected_scale
+):
+    dialog.file_widget.setFilePath(str(tmp_path / "plan.tif"))
+    dialog.show()
+    spin_box = getattr(dialog, spin_box_name)
+    spin_box.setFocus()
+    spin_box.lineEdit().selectAll()
+
+    QTest.keyClicks(spin_box.lineEdit(), text)
+    QTest.keyClick(spin_box.lineEdit(), Qt.Key.Key_Return)
+
+    assert dialog.scale() == expected_scale
+    assert dialog.isVisible()
+    assert dialog.result() == QDialog.DialogCode.Rejected
