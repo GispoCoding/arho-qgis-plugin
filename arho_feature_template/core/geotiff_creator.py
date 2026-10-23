@@ -7,7 +7,7 @@ from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsLayerTree,
     QgsMapLayer,
-    QgsMapRendererParallelJob,
+    QgsMapRendererSequentialJob,
     QgsMapSettings,
     QgsMapSettingsUtils,
     QgsProject,
@@ -96,11 +96,14 @@ class GeoTiffCreator:
         settings.setOutputSize(QSize(*image_size(extent, pixel_size)))
         settings.setOutputDpi(dpi)
 
-        render = QgsMapRendererParallelJob(settings)
+        render = QgsMapRendererSequentialJob(settings)
 
         def finished():
             try:
                 img = render.renderedImage()
+                if img.isNull():
+                    iface.messageBar().pushCritical("", "GeoTIFF-kuvaa ei voitu piirtää. Muisti ei riittänyt.")
+                    return
 
                 # Save the image as PNG temporarily
                 image_path = geotiff_path.replace(".tif", ".png")
