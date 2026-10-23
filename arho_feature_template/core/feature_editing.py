@@ -276,7 +276,10 @@ def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
 @timed_function("delete_feature")
 def delete_feature(feature: QgsFeature, layer: QgsVectorLayer, delete_text: str = "") -> bool:
     logger.debug("Deleting feature from layer=%s feature_id=%s", layer.name(), feature_id(feature))
-    delete_in_edit_buffer(feature, layer, delete_text)
+    if not layer.isEditable():
+        start_editing(layer)
+    if not delete_in_edit_buffer(feature, layer, delete_text):
+        return False
     result = commit_edit_buffer(stop_editing=False)
 
     return result

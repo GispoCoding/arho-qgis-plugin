@@ -100,3 +100,25 @@ def test_a_lifecycle_change_with_no_layer_in_edit_mode_is_saved(
     assert saved["lifecycle_status_id"] == "status-8"
     assert saved["period_of_validity_start"] == QDate(2026, 10, 1)
     _assert_editing_can_start(buffered_project, objects)
+
+
+def test_deleting_a_feature_with_no_layer_in_edit_mode_deletes_it(
+    family: dict[str, QgsVectorLayer], buffered_project: QgsProject
+):
+    associations = family["associations"]
+    (association,) = associations.getFeatures("\"id\" = 'assoc-1'")
+
+    assert feature_editing.delete_feature(association, associations, "Kaavamääräysryhmän assosiaation poisto")
+
+    assert list(associations.dataProvider().getFeatures()) == []
+    _assert_editing_can_start(buffered_project, associations)
+
+
+def test_a_failed_delete_is_reported(family: dict[str, QgsVectorLayer]):
+    associations = family["associations"]
+    (association,) = associations.getFeatures("\"id\" = 'assoc-1'")
+    associations.setReadOnly(True)  # A locked plan
+
+    assert not feature_editing.delete_feature(association, associations)
+
+    assert associations.dataProvider().featureCount() == 1
