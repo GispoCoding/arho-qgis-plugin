@@ -99,6 +99,16 @@ class SettingsManager:
     def set_layer_style_path(cls, plan_type: PlanType, layer: type[PlanObjectLayer], value: str):
         cls._set(f"{plan_type.value}_{LAYER_NAME_TRANSLATION_MAP[layer.name]}_style_path", value)
 
+    # GEOTIFF
+    @classmethod
+    def get_geotiff_directory(cls, default: str = "") -> str:
+        """Folder of the last saved plan map GeoTIFF."""
+        return cls._get("geotiff_directory", default)
+
+    @classmethod
+    def set_geotiff_directory(cls, value: str):
+        cls._set("geotiff_directory", value)
+
     # LANGUAGES
     @classmethod
     def get_primary_language(cls, default: str = "fin") -> str:

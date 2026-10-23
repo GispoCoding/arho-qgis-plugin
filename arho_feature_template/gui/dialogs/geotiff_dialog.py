@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+import os
 from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QLocale
-from qgis.PyQt.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QLabel, QSpinBox, QWidget
+from qgis.PyQt.QtWidgets import (
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QLabel,
+    QMessageBox,
+    QSpinBox,
+    QWidget,
+)
 
 from arho_feature_template.core.plan_scale import (
     PIXEL_SIZES,
@@ -47,12 +57,15 @@ class GeoTiffDialog(QDialog, FormClass):  # type: ignore
     warning_label: QLabel
     button_box: QDialogButtonBox
 
-    def __init__(self, plan_extent: QgsRectangle, scale: int | None, parent: QWidget | None = None):
+    def __init__(
+        self, plan_extent: QgsRectangle, scale: int | None, file_path: str = "", parent: QWidget | None = None
+    ):
         super().__init__(parent)
         self.setupUi(self)
 
         self.plan_extent = plan_extent
         self.image_too_large = False
+        self.file_widget.setFilePath(file_path)
 
         for pixel_size in PIXEL_SIZES:
             self.pixel_size_combo_box.addItem(QLocale().toString(pixel_size, "g", 10), pixel_size)
@@ -68,9 +81,13 @@ class GeoTiffDialog(QDialog, FormClass):  # type: ignore
         self.scale_spin_box.valueChanged.connect(self._on_scale_changed)
         self.pixel_size_combo_box.currentIndexChanged.connect(self._on_pixel_size_changed)
         self.dpi_spin_box.editingFinished.connect(self._on_dpi_edited)
+        self.button_box.accepted.connect(self._on_ok_clicked)
 
     def file_path(self) -> str:
-        return self.file_widget.filePath()
+        file_path = self.file_widget.filePath()
+        if file_path and not file_path.lower().endswith((".tif", ".tiff")):
+            file_path += ".tif"
+        return file_path
 
     def scale(self) -> int:
         return self.scale_spin_box.value()
@@ -123,6 +140,20 @@ class GeoTiffDialog(QDialog, FormClass):  # type: ignore
         self.warning_label.setText(warning)
         self.warning_label.setVisible(bool(warning))
         self._check_inputs()
+
+    def _on_ok_clicked(self):
+        if (
+            os.path.exists(self.file_path())
+            and QMessageBox.question(
+                self,
+                "Tiedosto on jo olemassa",
+                f"Tiedosto {self.file_path()} on jo olemassa. Korvataanko?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
+            return
+        self.accept()
 
     def _check_inputs(self):
         self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(
