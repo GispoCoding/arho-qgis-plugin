@@ -17,6 +17,7 @@ from qgis.PyQt.QtWidgets import (
 )
 
 from arho_feature_template.core.models import Document, Plan, RegulationGroup, RegulationGroupLibrary
+from arho_feature_template.core.plan_scale import default_scale_of_active_plan_matter
 from arho_feature_template.gui.components.general_regulation_group_widget import GeneralRegulationGroupWidget
 from arho_feature_template.gui.components.plan_document_widget import DocumentWidget
 from arho_feature_template.gui.components.value_input_widgets import LegalEffectWidget
@@ -66,7 +67,10 @@ class PlanAttributeForm(QDialog, FormClass):  # type: ignore
 
         self.lifecycle_status_combo_box.populate_from_code_layer(LifeCycleStatusLayer)
         self.lifecycle_status_combo_box.set_value(plan.lifecycle_status_id)
-        self.scale_spin_box.setValue(plan.scale if plan.scale else 0)
+        scale = plan.scale
+        if plan.id_ is None and not scale:
+            scale = default_scale_of_active_plan_matter()
+        self.scale_spin_box.setValue(scale or 0)
         self.name_edit.setText(plan.name or "")
         self.description_text_edit.setText(plan.description if plan.description else "")
 

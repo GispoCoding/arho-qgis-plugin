@@ -19,6 +19,7 @@ from qgis.PyQt.QtWidgets import (
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue, get_allowed_plan_lifecycle_transitions
 from arho_feature_template.core.models import Plan
+from arho_feature_template.core.plan_scale import default_scale_of_active_plan_matter
 from arho_feature_template.gui.components.code_combobox import ValueDataRole
 from arho_feature_template.gui.components.lambda_job_status import LambdaJobStatus
 from arho_feature_template.project.layers.code_layers import (
@@ -374,6 +375,7 @@ class NewPlanDialog(QDialog, FormClass):  # type: ignore
         else:
             self.plan = Plan(
                 name=self.plan_name.text(),
+                scale=default_scale_of_active_plan_matter(),
                 lifecycle_status_id=self.plan_target_lifecycle.value(),
                 plan_matter_id=get_active_plan_matter_id(),
                 period_of_validity_start=period_of_validity_start,
