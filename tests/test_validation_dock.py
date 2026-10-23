@@ -198,6 +198,20 @@ def test_an_error_without_a_feature_is_listed(plugin: Plugin):
     assert phases.child(0, 0).text() == "[0]"
 
 
+def test_no_errors_clears_the_tree_and_shows_it_in_the_label(plugin: Plugin, database: _Database, messages):
+    id_ = database.add(OtherAreaLayer, name={"fin": "Alue"})
+    dock = plugin.validation_dock
+    dock.list_validation_errors({"status": 400, "errors": [_error("plan.planObjects[0].geometry", id_)]})
+
+    dock._start_listing("Kaavasuunnitelman validointivirheet:")
+    dock.list_validation_errors({"status": 200, "errors": [], "warnings": []})
+
+    assert dock.validation_result_tree_view.model.rowCount() == 0
+    assert dock.validation_label.text() == "Ei validointivirheitä tai -varoituksia."
+    assert "green" in dock.validation_label.styleSheet()
+    assert messages.all == []
+
+
 def test_a_large_result_is_listed(plugin: Plugin, database: _Database):
     ids = [database.add(OtherAreaLayer, name={"fin": f"Alue {i}"}) for i in range(2000)]
     errors = [_error(f"plan.planObjects[{i}].geometry", id_) for i, id_ in enumerate(ids)]

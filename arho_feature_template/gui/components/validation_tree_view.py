@@ -92,12 +92,13 @@ class ValidationModel(QStandardItemModel):
         self.setHorizontalHeaderLabels(["", "Viesti"])
 
         self.root = self.invisibleRootItem()
+
+    def _add_category_rows(self) -> None:
         self.root.appendRow([ValidationItem("Virheet"), ValidationItem("")])
         self.root.appendRow([ValidationItem("Varoitukset"), ValidationItem("")])
 
     def clear(self):
-        self.item(self.ERROR_INDEX, 0).removeRows(0, self.item(self.ERROR_INDEX, 0).rowCount())
-        self.item(self.WARNING_INDEX, 0).removeRows(0, self.item(self.WARNING_INDEX, 0).rowCount())
+        self.removeRows(0, self.rowCount())
         self._parent_items = {}
         self._languages = languages_in_order()
 
@@ -199,6 +200,8 @@ class ValidationModel(QStandardItemModel):
     def add_results(self, errors: list[dict], warnings: list[dict], features: ValidationFeatures | None = None) -> None:
         """Adds the errors and warnings of a Ryhti response: dicts with ruleId, instance, message and classKey."""
         features = features or ValidationFeatures()
+        if self.rowCount() == 0:
+            self._add_category_rows()
         for root_index, entries in ((self.ERROR_INDEX, errors), (self.WARNING_INDEX, warnings)):
             for entry in entries:
                 self._add_item(
