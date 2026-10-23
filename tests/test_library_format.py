@@ -19,6 +19,11 @@ def _write(path: Path, data: dict) -> Path:
     return path
 
 
+def _library_errors(messages: MessageRecorder) -> list[tuple[str, str]]:
+    """The library errors on the message bar. Inside QGIS the bar also shows unrelated Qt messages."""
+    return [message for message in messages.criticals if message[1].startswith("Kirjasto")]
+
+
 def test_a_format_1_plan_object_library_is_upgraded(tmp_path: Path, messages: MessageRecorder):
     path = _write(
         tmp_path / "old.yaml",
@@ -31,7 +36,7 @@ def test_a_format_1_plan_object_library_is_upgraded(tmp_path: Path, messages: Me
     assert data["plan_objects"] == [{"layer_name": "Aluevaraus"}]
     assert "plan_features" not in data
     assert data["format_version"] == LIBRARY_FORMAT_VERSION
-    assert messages.criticals == []
+    assert _library_errors(messages) == []
 
 
 def test_a_format_2_plan_object_library_is_read_as_is(tmp_path: Path, messages: MessageRecorder):
@@ -44,7 +49,7 @@ def test_a_format_2_plan_object_library_is_read_as_is(tmp_path: Path, messages: 
     path = _write(tmp_path / "new.yaml", content)
 
     assert TemplateManager.read_library_config_file(path, "plan_object") == content
-    assert messages.criticals == []
+    assert _library_errors(messages) == []
 
 
 def test_a_regulation_group_library_without_a_format_version_is_read(tmp_path: Path, messages: MessageRecorder):
@@ -53,7 +58,7 @@ def test_a_regulation_group_library_without_a_format_version_is_read(tmp_path: P
     data = TemplateManager.read_library_config_file(path, "regulation_group")
 
     assert data["library_type"] == "regulation_group"
-    assert messages.criticals == []
+    assert _library_errors(messages) == []
 
 
 def test_a_newer_format_is_refused(tmp_path: Path, messages: MessageRecorder):
@@ -63,7 +68,7 @@ def test_a_newer_format_is_refused(tmp_path: Path, messages: MessageRecorder):
     )
 
     assert TemplateManager.read_library_config_file(path, "plan_object") == {}
-    assert len(messages.criticals) == 1
+    assert len(_library_errors(messages)) == 1
 
 
 def test_a_written_plan_object_library_has_the_current_format(tmp_path: Path):
