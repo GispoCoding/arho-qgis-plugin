@@ -46,7 +46,7 @@ Moved to `PlanManager.cache_code_layers`, so it is part of the project load now.
 
 ### Seed the model build from the active plan library (~0.75 s)
 
-`PlanManager.edit_plan_feature` calls `model_from_feature(feature)` without the
+`PlanManager.edit_plan_object` calls `model_from_feature(feature)` without the
 `regulation_groups` seed that `PlanObjectReader.models_from_features` supports and
 the features dock already uses. Seeding with
 `active_plan_regulation_group_library.regulation_groups` would skip 6 of the 8

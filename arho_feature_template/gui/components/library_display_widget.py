@@ -65,7 +65,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self,
         libraries: list[PlanObjectLibrary | RegulationGroupLibrary],
         library_type_class: type[PlanObjectLibrary | RegulationGroupLibrary],
-        # regulation_group_libraries is needed to open PlanFeatureForm
+        # regulation_group_libraries is needed to open PlanObjectForm
         # would be a lot easier and cleaner if this could be accessed globally
         regulation_group_libraries: list[RegulationGroupLibrary],
     ):
@@ -102,7 +102,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         self.active_library: Library | None = None
         self.new_libraries: list[Library] = []
 
-        # Needed if library display widget is for plan features
+        # Needed if library display widget is for plan objects
         self.regulation_group_libraries = regulation_group_libraries
 
         # Reference to the original library list
@@ -161,12 +161,12 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
         if self.library_type_class is PlanObjectLibrary:
             self.library_type = "plan_object"
             self.library_element_property = "plan_objects"
-            select_plan_feature_type_menu = QMenu(self.new_library_element_btn)
+            select_plan_object_type_menu = QMenu(self.new_library_element_btn)
             for feature_name, layer_name in FEATURE_TYPE_TO_LAYER_NAME.items():
-                select_plan_feature_type_menu.addAction(feature_name).triggered.connect(
-                    lambda _, fn=feature_name, ln=layer_name: self._on_new_plan_feature_clicked(fn, ln)
+                select_plan_object_type_menu.addAction(feature_name).triggered.connect(
+                    lambda _, fn=feature_name, ln=layer_name: self._on_new_plan_object_clicked(fn, ln)
                 )
-            self.new_library_element_btn.setMenu(select_plan_feature_type_menu)
+            self.new_library_element_btn.setMenu(select_plan_object_type_menu)
         elif self.library_type_class is RegulationGroupLibrary:
             self.library_type = "regulation_group"
             self.library_element_property = "regulation_groups"
@@ -423,20 +423,20 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 self.save_library_btn.setEnabled(True)
                 logger.debug("New regulation group template added library=%s", self.active_library.name)
 
-    def _on_new_plan_feature_clicked(self, plan_feature_type: str, plan_feature_layer: str):
+    def _on_new_plan_object_clicked(self, plan_object_type: str, plan_object_layer: str):
         if not self.active_library:
             return
 
         logger.debug(
-            "Creating new plan feature template feature_type=%s layer=%s",
-            plan_feature_type,
-            plan_feature_layer,
+            "Creating new plan object template feature_type=%s layer=%s",
+            plan_object_type,
+            plan_object_layer,
         )
 
         with deleted_after_use(
             PlanObjectForm(
-                plan_feature=PlanObject(layer_name=plan_feature_layer),
-                form_title=f"Luo kaavakohdepohja ({plan_feature_type})",
+                plan_object=PlanObject(layer_name=plan_object_layer),
+                form_title=f"Luo kaavakohdepohja ({plan_object_type})",
                 regulation_group_libraries=self.regulation_group_libraries,
                 template_form=True,
                 parent=self,
@@ -447,7 +447,7 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
                 self._update_active_library_templates_from_view()
                 self.unsaved_libraries.add(self.active_library.name)
                 self.save_library_btn.setEnabled(True)
-                logger.debug("New plan feature template added library=%s", self.active_library.name)
+                logger.debug("New plan object template added library=%s", self.active_library.name)
 
     def _on_edit_element_clicked(self):
         selected_items = self.library_element_list.selectedItems()
@@ -463,10 +463,10 @@ class LibaryDisplayWidget(QWidget, FormClass):  # type: ignore
 
         if self.library_type_class is PlanObjectLibrary:
             title = "Muokkaa kaavakohdepohjaa"
-            # Find correct plan feature type for the plan feature template to be edited
-            for plan_feature_type, plan_feature_layer in FEATURE_TYPE_TO_LAYER_NAME.items():
-                if plan_feature_layer == element.layer_name:
-                    title = f"Muokkaa kaavakohdepohjaa ({plan_feature_type})"
+            # Find correct plan object type for the plan object template to be edited
+            for plan_object_type, plan_object_layer in FEATURE_TYPE_TO_LAYER_NAME.items():
+                if plan_object_layer == element.layer_name:
+                    title = f"Muokkaa kaavakohdepohjaa ({plan_object_type})"
                     break
             form: PlanObjectForm | PlanRegulationGroupForm = PlanObjectForm(
                 element, title, self.regulation_group_libraries, parent=self

@@ -25,10 +25,10 @@ def test_identify_restores_the_previous_tool(plugin, iface):
     tool = QgsMapToolPan(canvas)
     canvas.setMapTool(tool)
 
-    plugin.identify_plan_features_action.setChecked(True)
-    assert canvas.mapTool() is plugin.plan_manager.inspect_plan_feature_tool
+    plugin.identify_plan_objects_action.setChecked(True)
+    assert canvas.mapTool() is plugin.plan_manager.inspect_plan_object_tool
 
-    plugin.identify_plan_features_action.setChecked(False)
+    plugin.identify_plan_objects_action.setChecked(False)
 
     assert canvas.mapTool() is tool
 
@@ -41,13 +41,13 @@ def test_identify_does_not_restore_a_deleted_tool(plugin, iface):
     tool.setParent(owner)
     canvas.setMapTool(tool)
 
-    plugin.identify_plan_features_action.setChecked(True)
+    plugin.identify_plan_objects_action.setChecked(True)
     sip.delete(owner)
     assert sip.isdeleted(tool)
 
-    plugin.identify_plan_features_action.setChecked(False)  # used to raise RuntimeError
+    plugin.identify_plan_objects_action.setChecked(False)  # used to raise RuntimeError
 
-    assert canvas.mapTool() is not plugin.plan_manager.inspect_plan_feature_tool
+    assert canvas.mapTool() is not plugin.plan_manager.inspect_plan_object_tool
     assert plugin.plan_manager.previous_map_tool is None
 
 
@@ -55,18 +55,18 @@ def test_restore_without_a_previous_tool_falls_back_to_pan(plugin, iface):
     """`setMapTool(None)` returns immediately in QGIS, leaving our tool active."""
     canvas = iface.mapCanvas()
     plugin.plan_manager.previous_map_tool = None
-    canvas.setMapTool(plugin.plan_manager.inspect_plan_feature_tool)
+    canvas.setMapTool(plugin.plan_manager.inspect_plan_object_tool)
 
     plugin.plan_manager.restore_previous_map_tool()
 
-    assert canvas.mapTool() is not plugin.plan_manager.inspect_plan_feature_tool
+    assert canvas.mapTool() is not plugin.plan_manager.inspect_plan_object_tool
 
 
 def test_unload_drops_the_previous_map_tool(plugin, iface):
     canvas = iface.mapCanvas()
     tool = QgsMapToolPan(canvas)  # kept on a name: the canvas does not own its map tool
     canvas.setMapTool(tool)
-    plugin.identify_plan_features_action.setChecked(True)
+    plugin.identify_plan_objects_action.setChecked(True)
     assert plugin.plan_manager.previous_map_tool is not None
 
     plugin.unload()

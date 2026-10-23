@@ -200,7 +200,7 @@ class RegulationGroupsView(QGroupBox, FormClass):  # type: ignore
 
         # If active plan regulation groups library is not given, disable linking functionality in
         # plan regulation group widget. This should be the case only when the view is accessed
-        # through plan feature template library manager
+        # through plan object template library manager
         if not self.active_plan_regulation_groups_library:
             regulation_group_widget.disable_linking()
         elif regulation_group.id_ is None:

@@ -325,7 +325,7 @@ class PlanObjectLayer(PlanObjectReader, AbstractPlanLayer):
     @classmethod
     def feature_from_model(cls, model: PlanObject, plan_id: str | None = None) -> QgsFeature:
         if not model.geom:
-            message = "Plan feature must have a geometry to be added to the layer"
+            message = "Plan object must have a geometry to be added to the layer"
             raise ValueError(message)
 
         feature = cls.initialize_feature_from_model(model)
@@ -818,14 +818,14 @@ class CancelledGeneralRegulationGroupAssociationLayer(AbstractPlanCancellationLa
     filter_template = _by_plan_cancellation_info("cancelled_general_regulation_group_association")
 
 
-def get_plan_object_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:
-    layer_name = plan_feature.layer_name
+def get_plan_object_layer_class_by_model(plan_object: PlanObject) -> type[PlanObjectLayer]:
+    layer_name = plan_object.layer_name
     if not layer_name:
-        msg = "Cannot save plan feature without a target layer"
+        msg = "Cannot save plan object without a target layer"
         raise ValueError(msg)
     layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
     if not layer_class:
-        msg = f"Could not find plan feature layer class for layer name {layer_name}"
+        msg = f"Could not find plan object layer class for layer name {layer_name}"
         raise ValueError(msg)
 
     return layer_class
@@ -834,7 +834,7 @@ def get_plan_object_layer_class_by_model(plan_feature: PlanObject) -> type[PlanO
 def get_plan_object_layer_class_by_layer_name(layer_name: str) -> type[PlanObjectLayer]:
     layer = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
     if not layer:
-        msg = f"Could not find plan feature layer class for layer name {layer_name}"
+        msg = f"Could not find plan object layer class for layer name {layer_name}"
         raise ValueError(msg)
     return layer
 

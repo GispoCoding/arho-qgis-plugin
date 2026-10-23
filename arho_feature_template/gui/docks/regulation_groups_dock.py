@@ -191,11 +191,11 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def update_regulation_groups(
         self,
         regulation_group_library: RegulationGroupLibrary,
-        plan_features_by_layer: dict[str, list[QgsFeature]] | None = None,
+        plan_object_features_by_layer: dict[str, list[QgsFeature]] | None = None,
     ):
         """Rebuild the table from the library.
 
-        `plan_features_by_layer` are the features of the plan feature layers (with geometries),
+        `plan_object_features_by_layer` are the features of the plan object layers (with geometries),
         keyed by layer name, if the caller has already read them; otherwise they are read here.
         """
         logger.debug(
@@ -217,8 +217,8 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
         # Get plan objects for each layer only once
         plan_objects_by_layer = (
-            plan_features_by_layer
-            if plan_features_by_layer is not None
+            plan_object_features_by_layer
+            if plan_object_features_by_layer is not None
             else self._read_plan_object_ids_and_geometries()
         )
 
@@ -276,7 +276,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
 
     def get_selected_plan_object_ids(self) -> list[tuple[str, Generator[str]]]:
         """Returns selected plan object IDs for each plan object layer (name)."""
-        logger.debug("Collecting selected plan object IDs from all plan feature layers")
+        logger.debug("Collecting selected plan object IDs from all plan object layers")
         return [(layer_class.name, layer_class.get_selected_feature_ids()) for layer_class in plan_object_layers]
 
     def get_selected_regulation_groups(self) -> list[RegulationGroup]:

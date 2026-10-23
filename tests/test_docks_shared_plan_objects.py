@@ -1,4 +1,4 @@
-"""Both docks list the plan features; a caller that has read them once can hand them to each dock.
+"""Both docks list the plan objects; a caller that has read them once can hand them to each dock.
 
 Uses the fake interface. The layer classes are stand-ins that fail on any read, so a dock
 that got the features must not touch the layers.
@@ -46,7 +46,7 @@ class NoReadLayerClass:
         ]
 
 
-def _plan_feature(fid: int, id_: str) -> QgsFeature:
+def _plan_object_feature(fid: int, id_: str) -> QgsFeature:
     fields = QgsFields()
     fields.append(QgsField("id", QMetaType.Type.QString))
     feature = QgsFeature(fields, fid)
@@ -55,7 +55,7 @@ def _plan_feature(fid: int, id_: str) -> QgsFeature:
     return feature
 
 
-def test_regulation_groups_dock_uses_the_given_plan_features(monkeypatch):
+def test_regulation_groups_dock_uses_the_given_plan_object_features(monkeypatch):
     dock = RegulationGroupsDock()
     monkeypatch.setattr(regulation_groups_dock_module, "plan_object_layers", [NoReadLayerClass()])
     monkeypatch.setattr(RegulationGroupAssociationLayer, "get_features", list)
@@ -65,7 +65,7 @@ def test_regulation_groups_dock_uses_the_given_plan_features(monkeypatch):
         lambda associations: {"group-1": {LAYER_NAME: ["area-1"]}},  # noqa: ARG005
     )
     library = RegulationGroupLibrary(regulation_groups=[RegulationGroup(id_="group-1", heading={"fin": "Ryhmä"})])
-    linked, other = _plan_feature(1, "area-1"), _plan_feature(2, "area-2")
+    linked, other = _plan_object_feature(1, "area-1"), _plan_object_feature(2, "area-2")
 
     dock.update_regulation_groups(library, {LAYER_NAME: [linked, other]})
 
@@ -76,14 +76,14 @@ def test_regulation_groups_dock_uses_the_given_plan_features(monkeypatch):
     assert fids_and_geoms[LAYER_NAME][1].asPoint() == QgsPointXY(1, 1)
 
 
-def test_plan_objects_dock_uses_the_given_plan_features_and_groups(plugin, monkeypatch):
+def test_plan_objects_dock_uses_the_given_plan_object_features_and_groups(plugin, monkeypatch):
     dock = plugin.plan_manager.plan_objects_dock
     layer_class = NoReadLayerClass()
     monkeypatch.setattr(plan_objects_dock_module, "plan_object_layers", [layer_class])
     groups = [RegulationGroup(id_="group-1")]
-    features = [_plan_feature(1, "area-1"), _plan_feature(2, "area-2")]
+    features = [_plan_object_feature(1, "area-1"), _plan_object_feature(2, "area-2")]
 
-    dock.create_plan_feature_view(groups, {LAYER_NAME: features})
+    dock.create_plan_object_view(groups, {LAYER_NAME: features})
 
     assert layer_class.reader_calls == [(features, groups)]
     assert dock.model.rowCount() == 2
@@ -94,9 +94,9 @@ def test_plan_objects_dock_uses_the_given_plan_features_and_groups(plugin, monke
 def test_plan_objects_dock_reads_a_layer_missing_from_the_given_features(plugin, monkeypatch):
     dock = plugin.plan_manager.plan_objects_dock
     layer_class = NoReadLayerClass()
-    layer_class.get_features = lambda: [_plan_feature(3, "area-3")]  # type: ignore[method-assign]
+    layer_class.get_features = lambda: [_plan_object_feature(3, "area-3")]  # type: ignore[method-assign]
     monkeypatch.setattr(plan_objects_dock_module, "plan_object_layers", [layer_class])
 
-    dock.create_plan_feature_view(None, {"Piste": []})
+    dock.create_plan_object_view(None, {"Piste": []})
 
     assert dock.model.rowCount() == 1

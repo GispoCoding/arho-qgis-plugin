@@ -17,7 +17,7 @@ applications; `get_features()` now shows up in the TIMING log.
 
 Ideas 1-5 are done (2026-09-15, one commit each on `fast-create-feature`,
 with tests in `tests/test_set_active_plan_matter.py`, `tests/test_set_active_plan.py`,
-`tests/test_docks_shared_plan_features.py` and `tests/test_model_readers.py`).
+`tests/test_docks_shared_plan_objects.py` and `tests/test_model_readers.py`).
 Ideas 6 and 7 are not done. Line numbers are from the 2026-09-15 code before
 the changes.
 
@@ -46,7 +46,7 @@ test can use the same read (missing feature -> warn path).
 
 ## 3. Reuse the active-plan regulation group library in the features dock (~0.8 s) - done
 
-`PlanObjectsDock.create_plan_feature_view` (`gui/docks/plan_objects_dock.py:279`)
+`PlanObjectsDock.create_plan_object_view` (`gui/docks/plan_objects_dock.py:279`)
 calls `layer.models_from_features(features)` without `regulation_groups`, so
 `PlanObjectReader.models_from_features` (`project/layers/model_readers.py:102-106`)
 re-reads the groups and their regulations, additional information, theme and
@@ -59,11 +59,11 @@ make the parameter a *seed*: fetch only the group ids that are not in it. The
 library leaves out `generalRegulations` groups on purpose, so a plan object
 that referenced one would otherwise lose it.
 
-## 4. Scan the four plan feature layers once for both docks (~0.5 s) - done
+## 4. Scan the four plan object layers once for both docks (~0.5 s) - done
 
 `RegulationGroupsDock.update_regulation_groups` (`gui/docks/regulation_groups_dock.py:209-215`)
-reads the four plan feature layers (id + geometry, used to flash/select the
-objects of a group) and `create_plan_feature_view`
+reads the four plan object layers (id + geometry, used to flash/select the
+objects of a group) and `create_plan_object_view`
 (`plan_objects_dock.py:276-277`) reads them again in full, right after.
 
 Idea: read once in `set_active_plan` and pass the features to both; keep the

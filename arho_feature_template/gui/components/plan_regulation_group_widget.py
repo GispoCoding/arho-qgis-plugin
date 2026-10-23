@@ -42,7 +42,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
     def __init__(
         self,
         regulation_group: RegulationGroup,
-        plan_feature: PlanObject | None = None,
+        plan_object: PlanObject | None = None,
         other_linked_features_count: int | None = None,
         layer_name: str | None = None,
     ):
@@ -50,7 +50,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         caller has already counted them; otherwise the widget reads the associations itself.
 
         `layer_name`: the plan object layer the group is for, when there is no plan object yet
-        (the import form); otherwise it is the layer of `plan_feature`."""
+        (the import form); otherwise it is the layer of `plan_object`."""
         super().__init__()
         self.setupUi(self)
 
@@ -70,8 +70,8 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.link_label_icon: QLabel | None = None
         self.link_label_text: QLabel | None = None
 
-        self.plan_feature = plan_feature
-        self.layer_name: str | None = layer_name or (plan_feature.layer_name if plan_feature else None)
+        self.plan_object = plan_object
+        self.layer_name: str | None = layer_name or (plan_object.layer_name if plan_object else None)
         if self.layer_name:
             regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
 
@@ -157,14 +157,14 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         if regulation_group.id_:
             if other_linked_features_count is not None:
                 pass  # Counted by the caller, in one read for all the groups of the form
-            elif self.plan_feature is None or self.plan_feature.id_ is None or self.layer_name is None:
+            elif self.plan_object is None or self.plan_object.id_ is None or self.layer_name is None:
                 other_linked_features_count = len(
                     list(RegulationGroupAssociationLayer.get_associations_for_regulation_group(regulation_group.id_))
                 )
             else:
                 other_linked_features_count = len(
                     RegulationGroupAssociationLayer.get_associations_for_regulation_group_exclude_feature(
-                        regulation_group.id_, self.plan_feature.id_, self.layer_name
+                        regulation_group.id_, self.plan_object.id_, self.layer_name
                     )
                 )
             self.set_existing_regulation_group_style(other_linked_features_count)

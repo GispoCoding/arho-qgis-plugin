@@ -41,10 +41,10 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
     def __init__(
         self,
-        plan_feature: PlanObject,
+        plan_object: PlanObject,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
-        plan_feature_libraries: list[PlanObjectLibrary] | None = None,
+        plan_object_libraries: list[PlanObjectLibrary] | None = None,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         save_disabled_reason: str | None = None,
         template_form: bool = False,  # noqa: FBT001, FBT002
@@ -67,7 +67,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
         # INIT
         self.regulation_groups_view = RegulationGroupsView(
-            regulation_group_libraries, active_plan_regulation_groups_library, plan_feature
+            regulation_group_libraries, active_plan_regulation_groups_library, plan_object
         )
         self.layout().insertWidget(1, self.regulation_groups_view)
 
@@ -78,7 +78,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.feature_type_of_underground.remove_item_by_text("NULL")
 
         # If editing, show previously saved value, otherwise show 'Maanpäällinen'
-        type_of_underground_id = plan_feature.type_of_underground_id
+        type_of_underground_id = plan_object.type_of_underground_id
         if type_of_underground_id:
             type_of_underground = get_localized_text(
                 UndergroundTypeLayer.get_attribute_by_id("name", type_of_underground_id)
@@ -88,25 +88,25 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
             self.feature_type_of_underground.setCurrentIndex(1)  # Maanpäällinen
 
         # Initialize attributes from template
-        self.plan_feature = plan_feature
+        self.plan_object = plan_object
 
-        self.feature_name.set_value(plan_feature.name)
-        self.feature_description.set_value(plan_feature.description)
-        self.regulation_groups_view.add_stored_plan_regulation_groups(plan_feature.regulation_groups)
+        self.feature_name.set_value(plan_object.name)
+        self.feature_description.set_value(plan_object.description)
+        self.regulation_groups_view.add_stored_plan_regulation_groups(plan_object.regulation_groups)
 
         # Validity start
-        if plan_feature.period_of_validity_start:
-            self.validity_start_date.setText(date_as_str(plan_feature.period_of_validity_start))
+        if plan_object.period_of_validity_start:
+            self.validity_start_date.setText(date_as_str(plan_object.period_of_validity_start))
         else:
             self.plan_object_groupbox.layout().removeRow(self.validity_start_label)
 
         # Validity end
-        if plan_feature.period_of_validity_end:
-            self.validity_end_date.setText(date_as_str(plan_feature.period_of_validity_end))
+        if plan_object.period_of_validity_end:
+            self.validity_end_date.setText(date_as_str(plan_object.period_of_validity_end))
         else:
             self.plan_object_groupbox.layout().removeRow(self.validity_end_label)
 
-        self.plan_feature_libraries = plan_feature_libraries
+        self.plan_object_libraries = plan_object_libraries
         self._init_save_to_library_button()
 
         self.button_box.accepted.connect(self._on_ok_clicked)
@@ -116,9 +116,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
             self.button_box.button(QDialogButtonBox.StandardButton.Ok).setToolTip(save_disabled_reason)
 
     def _init_save_to_library_button(self) -> None:
-        if self.plan_feature_libraries:
+        if self.plan_object_libraries:
             self.plan_object_menu = QMenu(self.save_to_library_button)
-            plan_object_libraries = self.plan_feature_libraries
+            plan_object_libraries = self.plan_object_libraries
             if not plan_object_libraries:
                 self.save_to_library_button.setEnabled(False)
             else:
@@ -130,8 +130,8 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
                 self.save_to_library_button.setMenu(self.plan_object_menu)
 
     def _check_feature_name(self) -> bool:
-        """Feature must have a name if we are saving a plan feature template."""
-        # TODO: Find a better way to detect if we are saving a plan feature template
+        """Feature must have a name if we are saving a plan object template."""
+        # TODO: Find a better way to detect if we are saving a plan object template
         if self.template_form and not self.feature_name.get_value():
             msg = "Kaavakohdepohjalla täytyy olla nimi."
             QMessageBox.critical(self, "Virhe", msg)
@@ -143,18 +143,18 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
             name=self.feature_name.get_value(),
             type_of_underground_id=self.feature_type_of_underground.value(),
             description=self.feature_description.get_value(),
-            lifecycle_status_id=self.plan_feature.lifecycle_status_id,
-            period_of_validity_start=self.plan_feature.period_of_validity_start,
-            period_of_validity_end=self.plan_feature.period_of_validity_end,
-            geom=self.plan_feature.geom,
-            layer_name=self.plan_feature.layer_name,
+            lifecycle_status_id=self.plan_object.lifecycle_status_id,
+            period_of_validity_start=self.plan_object.period_of_validity_start,
+            period_of_validity_end=self.plan_object.period_of_validity_end,
+            geom=self.plan_object.geom,
+            layer_name=self.plan_object.layer_name,
             regulation_groups=self.regulation_groups_view.into_model(),
-            plan_id=self.plan_feature.plan_id,
-            id_=self.plan_feature.id_,
-            stored=self.plan_feature.stored,
-            modified=self.plan_feature.modified,
+            plan_id=self.plan_object.plan_id,
+            id_=self.plan_object.id_,
+            stored=self.plan_object.stored,
+            modified=self.plan_object.modified,
         )
-        if not model.modified and model != self.plan_feature:
+        if not model.modified and model != self.plan_object:
             model.modified = True
 
         return model

@@ -270,8 +270,8 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     logger.debug("Opening plan form from validation item feature_id=%s", feature_id)
                     self.plan_manager.edit_plan()
                 else:
-                    logger.debug("Opening plan feature form from validation item feature_id=%s", feature_id)
-                    self.plan_manager.edit_plan_feature(feature=feature_found, layer_name=layer.name)
+                    logger.debug("Opening plan object form from validation item feature_id=%s", feature_id)
+                    self.plan_manager.edit_plan_object(feature=feature_found, layer_name=layer.name)
             else:
                 if layer.name in ("Kaavamääräys", "Kaavasuositus"):
                     regulation_group_id = feature_found["plan_regulation_group_id"]

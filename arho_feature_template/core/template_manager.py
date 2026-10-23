@@ -176,4 +176,4 @@ class TemplateManager:
         library_file_paths_as_str = [str(path) for path in library_file_paths]
         set_user_plan_object_library_config_files(library_file_paths_as_str)
         TemplateManager.signal_manager.feature_object_added_to_library.emit()
-        logger.debug("Updated user plan feature library config paths and emitted update signal")
+        logger.debug("Updated user plan object library config paths and emitted update signal")
