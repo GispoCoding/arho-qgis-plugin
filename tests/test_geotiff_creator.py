@@ -5,8 +5,6 @@ The default file is "<plan matter name> - <plan name>.tif" in the folder of the 
 
 from __future__ import annotations
 
-import os
-
 import pytest
 from osgeo import gdal
 from qgis.core import QgsFeature, QgsGeometry, QgsGroupLayer, QgsProject, QgsRectangle, QgsVectorLayer
@@ -95,13 +93,14 @@ def test_geotiff_file_name(plan_matter_name, plan_name, file_name):
     assert geotiff_file_name(plan_matter_name, plan_name) == file_name
 
 
-def test_default_path_is_in_the_last_folder(tmp_path, monkeypatch):
+def test_default_path_is_in_the_last_folder_with_qt_separators(tmp_path, monkeypatch):
+    # On Windows str(tmp_path) has backslashes
     monkeypatch.setattr(SettingsManager, "get_geotiff_directory", lambda: str(tmp_path))
 
-    assert default_geotiff_path("Keskusta", "Ehdotus") == os.path.join(str(tmp_path), "Keskusta - Ehdotus.tif")
+    assert default_geotiff_path("Keskusta", "Ehdotus") == f"{tmp_path.as_posix()}/Keskusta - Ehdotus.tif"
 
 
 def test_default_path_is_in_the_home_folder_when_the_last_folder_is_gone(tmp_path, monkeypatch):
     monkeypatch.setattr(SettingsManager, "get_geotiff_directory", lambda: str(tmp_path / "removed"))
 
-    assert default_geotiff_path("Keskusta", "Ehdotus") == os.path.join(QDir.homePath(), "Keskusta - Ehdotus.tif")
+    assert default_geotiff_path("Keskusta", "Ehdotus") == f"{QDir.homePath()}/Keskusta - Ehdotus.tif"
