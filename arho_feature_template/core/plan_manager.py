@@ -1075,6 +1075,22 @@ class PlanManager(QObject):
                 plan_id = None
                 set_active_plan_id(None)
 
+        # Older 0.7 project files do not have the cancellation layers. Filter them before
+        # `update_plan_status` starts the edit session: in a transaction group or a buffered
+        # edit group, rolling back one layer rolls back all of them.
+        for cancellation_layer in plan_cancellation_layers:
+            if not cancellation_layer.exists():
+                continue
+            # A transaction group can leave these in edit mode: they are not in `plan_layers`
+            vlayer = cancellation_layer.get_from_project()
+            if vlayer.isEditable():
+                discard_after_commit_callbacks()
+                vlayer.rollBack()
+            if plan_id:
+                cancellation_layer.filter_layer_by_plan_id(plan_id)
+            else:
+                cancellation_layer.hide_all_features()
+
         if plan_feature is not None:
             self.plan_set.emit()
             plan_model = PlanLayer.model_from_feature(plan_feature)
@@ -1088,20 +1104,6 @@ class PlanManager(QObject):
                     layer.show_all_features()
                 else:
                     layer.hide_all_features()
-
-        # Older 0.7 project files do not have the cancellation layers
-        for cancellation_layer in plan_cancellation_layers:
-            if not cancellation_layer.exists():
-                continue
-            # A transaction group can leave these in edit mode: they are not in `plan_layers`
-            vlayer = cancellation_layer.get_from_project()
-            if vlayer.isEditable():
-                discard_after_commit_callbacks()
-                vlayer.rollBack()
-            if plan_id:
-                cancellation_layer.filter_layer_by_plan_id(plan_id)
-            else:
-                cancellation_layer.hide_all_features()
 
         if previously_in_edit_mode and not locked:
             plan_layer.startEditing()
