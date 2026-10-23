@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 
 import pytest
-from qgis.core import QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
+from qgis.core import Qgis, QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
 
 import arho_feature_template.core.plan_manager as plan_manager_module
 import arho_feature_template.utils.layer_utils as layer_utils_module
@@ -36,6 +36,8 @@ PLAN_URI = (
     "&field=final:boolean"
 )
 OUTLINE = QgsGeometry.fromWkt("MULTIPOLYGON (((100 100, 200 100, 200 200, 100 200, 100 100)))")
+# The real one, before the `manager` fixture stands in for it
+update_plan_status = PlanManager.update_plan_status
 
 
 @pytest.fixture
@@ -203,3 +205,28 @@ def test_closing_a_locked_plan_makes_the_layers_writable_again(
     assert not plan_layer.readOnly()
     assert not manager.plan_locked
     assert lock_changes == [False]
+
+
+@pytest.mark.usefixtures("view_calls")
+def test_opening_a_plan_with_buffered_groups_leaves_the_plan_layers_in_edit_mode(
+    manager: PlanManager, plan_layer: QgsVectorLayer, new_project: QgsProject, monkeypatch
+):
+    # One edit buffer group for the whole project: rolling back any layer rolls back all
+    new_project.setTransactionMode(Qgis.TransactionMode.BufferedGroups)
+    layer = QgsVectorLayer("None?field=id:string&field=plan_id:string", PlanCancellationInfoLayer.name, "memory")
+    new_project.addMapLayer(layer, addToLegend=False)
+    new_project.layerTreeRoot().findGroup(PLAN_LAYER_GROUP_NAME).addLayer(layer)
+    monkeypatch.setattr(plan_manager_module, "plan_cancellation_layers", [PlanCancellationInfoLayer])
+    monkeypatch.setattr(layer_utils_module, "plan_layers", [PlanLayer])
+    # The real one: an unlocked plan starts the edit session of the plan layers
+    monkeypatch.setattr(PlanManager, "update_plan_status", update_plan_status)
+
+    try:
+        manager.set_active_plan("plan-1")
+
+        assert layer.subsetString() == "plan_id = 'plan-1'"
+        assert plan_layer.isEditable()
+        assert new_project.editBufferGroup().isEditing()
+    finally:
+        # The edit buffer group is a singleton that `clear()` leaves in editing state
+        new_project.rollBack(stopEditing=True)
