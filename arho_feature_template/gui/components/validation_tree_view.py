@@ -196,39 +196,19 @@ class ValidationModel(QStandardItemModel):
         message_item.setToolTip(message_tooltip)
         current_parent.appendRow([ValidationItem(""), message_item])
 
-    def add_error(
-        self,
-        error: str,
-        object_path: str,
-        message: str,
-        feature_id: str | None = None,
-        features: ValidationFeatures | None = None,
-    ) -> None:
-        self._add_item(
-            self.ERROR_INDEX,
-            error,
-            object_path,
-            message,
-            feature_id,
-            features or ValidationFeatures(),
-        )
-
-    def add_warning(
-        self,
-        error: str,
-        object_path: str,
-        message: str,
-        feature_id: str | None = None,
-        features: ValidationFeatures | None = None,
-    ) -> None:
-        self._add_item(
-            self.WARNING_INDEX,
-            error,
-            object_path,
-            message,
-            feature_id,
-            features or ValidationFeatures(),
-        )
+    def add_results(self, errors: list[dict], warnings: list[dict], features: ValidationFeatures | None = None) -> None:
+        """Adds the errors and warnings of a Ryhti response: dicts with ruleId, instance, message and classKey."""
+        features = features or ValidationFeatures()
+        for root_index, entries in ((self.ERROR_INDEX, errors), (self.WARNING_INDEX, warnings)):
+            for entry in entries:
+                self._add_item(
+                    root_index,
+                    entry.get("ruleId", ""),
+                    entry.get("instance", ""),
+                    entry.get("message", ""),
+                    entry.get("classKey", ""),
+                    features,
+                )
 
 
 class ValidationTreeView(QTreeView):
@@ -240,23 +220,3 @@ class ValidationTreeView(QTreeView):
 
     def clear_errors(self) -> None:
         self.model.clear()
-
-    def add_error(
-        self,
-        error: str,
-        object_path: str,
-        message: str,
-        feature_id: str | None = None,
-        features: ValidationFeatures | None = None,
-    ) -> None:
-        self.model.add_error(error, object_path, message, feature_id, features)
-
-    def add_warning(
-        self,
-        error: str,
-        object_path: str,
-        message: str,
-        feature_id: str | None = None,
-        features: ValidationFeatures | None = None,
-    ) -> None:
-        self.model.add_warning(error, object_path, message, feature_id, features)

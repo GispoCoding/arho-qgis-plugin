@@ -190,9 +190,9 @@ def test_a_plan_object_without_a_name_lists_its_id(plugin: Plugin, database: _Da
 
 def test_an_error_without_a_feature_is_listed(plugin: Plugin):
     """The post plan matter dialog gives only the rule, the path and the message."""
-    tree_view = plugin.validation_dock.validation_result_tree_view
+    model = plugin.validation_dock.validation_result_tree_view.model
 
-    tree_view.add_error("rule__x", "planMatter.planMatterPhases[0]", "Virhe")
+    model.add_results([{"ruleId": "rule__x", "instance": "planMatter.planMatterPhases[0]", "message": "Virhe"}], [])
 
     phases = _child(_child(_errors(plugin), "Kaava-asia"), "Kaava-asian vaiheet")
     assert phases.child(0, 0).text() == "[0]"
