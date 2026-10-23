@@ -41,6 +41,9 @@ if TYPE_CHECKING:
 # The qualified ARN the current invocation was called with, here the live alias.
 FUNCTION_ARN = "arn:aws:lambda:eu-north-1:123456789012:function:arho-ryhti_client:live"
 
+# The job time limit, the same as Terraform sets in AWS.
+TIME_LIMIT = timedelta(seconds=900)
+
 REQUEST = {"action": "get_plan", "plan_uuid": "0b3c1e58-5d3e-4f4a-9b0e-6f7d2a1c9e11"}
 
 # What the action runner returns for REQUEST.
@@ -79,7 +82,7 @@ class FakeLambdaClient:
 
 @pytest.fixture
 def store(dba_connection_string: str) -> JobStore:
-    return JobStore(dba_connection_string)
+    return JobStore(dba_connection_string, TIME_LIMIT)
 
 
 def leave_queued(job_id: str) -> None:
