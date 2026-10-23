@@ -1,12 +1,25 @@
-"""The GeoTIFF export draws the visible layers in the order of the layer tree, on the pixel grid."""
+"""The GeoTIFF export draws the visible layers in the order of the layer tree, on the pixel grid.
+
+The default file is "<plan matter name> - <plan name>.tif" in the folder of the last GeoTIFF.
+"""
 
 from __future__ import annotations
 
+import os
+
+import pytest
 from osgeo import gdal
 from qgis.core import QgsFeature, QgsGeometry, QgsGroupLayer, QgsProject, QgsRectangle, QgsVectorLayer
+from qgis.PyQt.QtCore import QDir
 
-from arho_feature_template.core.geotiff_creator import GeoTiffCreator, visible_layers_in_render_order
+from arho_feature_template.core.geotiff_creator import (
+    GeoTiffCreator,
+    default_geotiff_path,
+    geotiff_file_name,
+    visible_layers_in_render_order,
+)
 from arho_feature_template.core.plan_scale import dpi_for
+from arho_feature_template.core.settings_manager import SettingsManager
 
 
 def _add_layer(project: QgsProject, name: str) -> QgsVectorLayer:
@@ -68,3 +81,27 @@ def test_geotiff_has_the_pixel_size_and_covers_the_plan(new_project, tmp_path, q
     assert x_min <= 385000 - 10
     assert y_max >= 6672050 + 10
     assert x_min + dataset.RasterXSize * pixel_width >= 385100 + 10
+
+
+@pytest.mark.parametrize(
+    ("plan_matter_name", "plan_name", "file_name"),
+    [
+        ("Keskusta", "Ehdotus", "Keskusta - Ehdotus.tif"),
+        ("Asema/tori", 'Luonnos: "A"?', "Asema_tori - Luonnos_ _A__.tif"),
+        ("Keskusta", "Ehdotus.", "Keskusta - Ehdotus.tif"),
+    ],
+)
+def test_geotiff_file_name(plan_matter_name, plan_name, file_name):
+    assert geotiff_file_name(plan_matter_name, plan_name) == file_name
+
+
+def test_default_path_is_in_the_last_folder(tmp_path, monkeypatch):
+    monkeypatch.setattr(SettingsManager, "get_geotiff_directory", lambda: str(tmp_path))
+
+    assert default_geotiff_path("Keskusta", "Ehdotus") == os.path.join(str(tmp_path), "Keskusta - Ehdotus.tif")
+
+
+def test_default_path_is_in_the_home_folder_when_the_last_folder_is_gone(tmp_path, monkeypatch):
+    monkeypatch.setattr(SettingsManager, "get_geotiff_directory", lambda: str(tmp_path / "removed"))
+
+    assert default_geotiff_path("Keskusta", "Ehdotus") == os.path.join(QDir.homePath(), "Keskusta - Ehdotus.tif")

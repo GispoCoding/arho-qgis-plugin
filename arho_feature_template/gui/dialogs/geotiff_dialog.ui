@@ -157,12 +157,6 @@
  <connections>
   <connection>
    <sender>button_box</sender>
-   <signal>accepted()</signal>
-   <receiver>GeoTiffDialog</receiver>
-   <slot>accept()</slot>
-  </connection>
-  <connection>
-   <sender>button_box</sender>
    <signal>rejected()</signal>
    <receiver>GeoTiffDialog</receiver>
    <slot>reject()</slot>

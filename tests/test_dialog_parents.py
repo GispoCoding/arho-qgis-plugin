@@ -60,7 +60,9 @@ def test_every_dialog_takes_a_parent():
         pytest.param(lambda parent: LoadPlanMatterDialog(parent, []), id="LoadPlanMatterDialog"),
         pytest.param(lambda parent: ImportPlanForm(parent), id="ImportPlanForm"),
         pytest.param(lambda parent: PostPlanDialog(parent), id="PostPlanDialog"),
-        pytest.param(lambda parent: GeoTiffDialog(QgsRectangle(0, 0, 100, 100), 1000, parent), id="GeoTiffDialog"),
+        pytest.param(
+            lambda parent: GeoTiffDialog(QgsRectangle(0, 0, 100, 100), 1000, parent=parent), id="GeoTiffDialog"
+        ),
     ],
 )
 def test_dialog_becomes_a_child_of_its_parent(build, iface, flush_deferred_deletes):

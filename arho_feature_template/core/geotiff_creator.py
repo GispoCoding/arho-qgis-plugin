@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 from osgeo import gdal
 from qgis.core import (
@@ -13,16 +14,18 @@ from qgis.core import (
     QgsProject,
     QgsVariantUtils,
 )
-from qgis.PyQt.QtCore import QSize, Qt
+from qgis.PyQt.QtCore import QDir, QSize, Qt
 from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtWidgets import QApplication
 
 from arho_feature_template.core.plan_scale import default_scale_of_active_plan_matter, image_size, plan_map_extent
+from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.dialogs.geotiff_dialog import MAX_FILE_BYTES, GeoTiffDialog
 from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
 )
-from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+from arho_feature_template.utils.localization_utils import get_localized_text
+from arho_feature_template.utils.misc_utils import get_active_plan_id, get_active_plan_matter_name, iface
 from arho_feature_template.utils.widget_utils import deleted_after_use
 
 
@@ -39,6 +42,20 @@ def visible_layers_in_render_order(root: QgsLayerTree) -> list[QgsMapLayer]:
         if node is not None and node.isVisible():
             layers.append(layer)
     return layers
+
+
+def geotiff_file_name(plan_matter_name: str, plan_name: str) -> str:
+    """`<plan matter name> - <plan name>.tif`, without characters Windows does not allow in a file name."""
+    stem = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "_", f"{plan_matter_name} - {plan_name}")
+    return f"{stem.rstrip('. ')}.tif"
+
+
+def default_geotiff_path(plan_matter_name: str, plan_name: str) -> str:
+    """The file name in the folder of the last saved GeoTIFF, or in the home folder."""
+    directory = SettingsManager.get_geotiff_directory()
+    if not directory or not os.path.isdir(directory):
+        directory = QDir.homePath()
+    return os.path.join(directory, geotiff_file_name(plan_matter_name, plan_name))
 
 
 class GeoTiffCreator:
@@ -65,11 +82,16 @@ class GeoTiffCreator:
         if QgsVariantUtils.isNull(scale) or not scale:
             scale = default_scale_of_active_plan_matter()
 
+        file_path = default_geotiff_path(
+            get_active_plan_matter_name() or "Nimetön", get_localized_text(self.feature["name"]) or "Nimetön"
+        )
+
         with deleted_after_use(
-            GeoTiffDialog(self.feature.geometry().boundingBox(), scale, iface.mainWindow())
+            GeoTiffDialog(self.feature.geometry().boundingBox(), scale, file_path, iface.mainWindow())
         ) as dialog:
             if not dialog.exec():
                 return
+            SettingsManager.set_geotiff_directory(os.path.dirname(dialog.file_path()))
             self.create_geotiff(dialog.file_path(), dialog.pixel_size(), dialog.dpi())
 
     def create_geotiff(self, geotiff_path: str, pixel_size: float, dpi: float):
