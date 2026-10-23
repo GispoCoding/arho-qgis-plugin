@@ -1,15 +1,22 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import cast
+from typing import TYPE_CHECKING, Any, cast
 
+from qgis.core import QgsVariantUtils
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QTreeView
 
 from arho_feature_template.project.layers.plan_layers import RegulationGroupLayer
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
 from arho_feature_template.utils.localization_utils import get_localized_text, languages_in_order
+
+if TYPE_CHECKING:
+    from qgis.core import QgsFeature
+
+    from arho_feature_template.project.layers import AbstractLayer
 
 category_map = {
     "plan": "Kaavasuunnitelma",
@@ -28,14 +35,38 @@ category_map = {
 }
 
 
-def _feature_name(
-    layer_features: dict, feature_id: str | None, languages: list[str], layer: type | None = None
-) -> str | None:
-    """Name of the feature with the id in `layer_features`. With `layer`, only a feature of that layer counts."""
-    feature, feature_layer = layer_features.get(feature_id, (None, None))
-    if feature is None or (layer is not None and feature_layer is not layer):
-        return None
-    return get_localized_text(feature["name"], languages=languages)
+@dataclass
+class ValidationFeatures:
+    """The features the validation entries point to, fetched once per listing."""
+
+    by_id: dict[str, tuple[QgsFeature, type[AbstractLayer]]] = field(default_factory=dict)
+    # Id of a regulation, a proposition or an additional information -> id of its regulation group
+    regulation_group_ids: dict[str, str] = field(default_factory=dict)
+
+    def __contains__(self, id_: str | None) -> bool:
+        return id_ in self.by_id
+
+    def get(self, id_: str | None) -> tuple[QgsFeature | None, type[AbstractLayer] | None]:
+        return self.by_id.get(id_, (None, None)) if id_ else (None, None)
+
+    def add(self, id_: str, feature: QgsFeature, layer: type[AbstractLayer]) -> None:
+        self.by_id[id_] = (feature, layer)
+
+    def set_regulation_group_id(self, id_: str, regulation_group_id: Any) -> None:
+        if not QgsVariantUtils.isNull(regulation_group_id):
+            self.regulation_group_ids[id_] = regulation_group_id
+
+    def regulation_group(self, id_: str | None) -> QgsFeature | None:
+        """The regulation group of a regulation, a proposition, an additional information or of a group itself."""
+        if not id_:
+            return None
+        # A regulation group is not in regulation_group_ids, its own id is the group id
+        feature, layer = self.get(self.regulation_group_ids.get(id_, id_))
+        return feature if layer is RegulationGroupLayer else None
+
+
+def _feature_name(feature: QgsFeature | None, languages: list[str]) -> str | None:
+    return None if feature is None else get_localized_text(feature["name"], languages=languages)
 
 
 class ValidationItem(QStandardItem):
@@ -77,12 +108,11 @@ class ValidationModel(QStandardItemModel):
         object_path: str,
         message: str,
         feature_id: str | None,
-        layer_features: dict,
-        regulation_group_ids: dict[str, str],
+        features: ValidationFeatures,
     ) -> None:
         current_parent = cast(ValidationItem, self.item(root_index, 0))
         # classKey is not always a feature id, e.g. lifecycle errors give the lifecycle status code URI
-        if feature_id not in layer_features:
+        if feature_id not in features:
             feature_id = None
         # Remove square brackets so the string is splittable by '.'
         object_path = re.sub(r"\[(\d+)\]", r".\1", object_path).lower()
@@ -96,18 +126,14 @@ class ValidationModel(QStandardItemModel):
                     continue
 
                 if part == "planobjects":
-                    feature_name = _feature_name(layer_features, feature_id, self._languages)
+                    feature_name = _feature_name(features.get(feature_id)[0], self._languages)
 
                 elif part == "planregulationgroups":
-                    # A regulation group is not in regulation_group_ids, its own id is the group id
-                    regulation_group_id = regulation_group_ids.get(feature_id, feature_id) if feature_id else None
-                    feature_name = _feature_name(
-                        layer_features, regulation_group_id, self._languages, RegulationGroupLayer
-                    )
+                    feature_name = _feature_name(features.regulation_group(feature_id), self._languages)
 
                 elif part == "planregulations":
                     if "additionalinformations" in parts:
-                        feature_name = _feature_name(layer_features, feature_id, self._languages)
+                        feature_name = _feature_name(features.get(feature_id)[0], self._languages)
                     else:
                         feature_name = None
 
@@ -176,8 +202,7 @@ class ValidationModel(QStandardItemModel):
         object_path: str,
         message: str,
         feature_id: str | None = None,
-        layer_features: dict | None = None,
-        regulation_group_ids: dict[str, str] | None = None,
+        features: ValidationFeatures | None = None,
     ) -> None:
         self._add_item(
             self.ERROR_INDEX,
@@ -185,8 +210,7 @@ class ValidationModel(QStandardItemModel):
             object_path,
             message,
             feature_id,
-            layer_features or {},
-            regulation_group_ids or {},
+            features or ValidationFeatures(),
         )
 
     def add_warning(
@@ -195,8 +219,7 @@ class ValidationModel(QStandardItemModel):
         object_path: str,
         message: str,
         feature_id: str | None = None,
-        layer_features: dict | None = None,
-        regulation_group_ids: dict[str, str] | None = None,
+        features: ValidationFeatures | None = None,
     ) -> None:
         self._add_item(
             self.WARNING_INDEX,
@@ -204,8 +227,7 @@ class ValidationModel(QStandardItemModel):
             object_path,
             message,
             feature_id,
-            layer_features or {},
-            regulation_group_ids or {},
+            features or ValidationFeatures(),
         )
 
 
@@ -225,10 +247,9 @@ class ValidationTreeView(QTreeView):
         object_path: str,
         message: str,
         feature_id: str | None = None,
-        layer_features: dict | None = None,
-        regulation_group_ids: dict[str, str] | None = None,
+        features: ValidationFeatures | None = None,
     ) -> None:
-        self.model.add_error(error, object_path, message, feature_id, layer_features, regulation_group_ids)
+        self.model.add_error(error, object_path, message, feature_id, features)
 
     def add_warning(
         self,
@@ -236,7 +257,6 @@ class ValidationTreeView(QTreeView):
         object_path: str,
         message: str,
         feature_id: str | None = None,
-        layer_features: dict | None = None,
-        regulation_group_ids: dict[str, str] | None = None,
+        features: ValidationFeatures | None = None,
     ) -> None:
-        self.model.add_warning(error, object_path, message, feature_id, layer_features, regulation_group_ids)
+        self.model.add_warning(error, object_path, message, feature_id, features)

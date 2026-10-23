@@ -127,15 +127,15 @@ def test_regulation_groups_are_found_through_regulations_propositions_and_additi
         ]
     )
 
-    assert dock.regulation_group_ids == {
+    assert dock.validation_features.regulation_group_ids == {
         regulation_id: group_ids[0],
         proposition_id: group_ids[1],
         information_id: group_ids[2],
     }
-    assert set(dock.layer_features) == {regulation_id, proposition_id, information_id, *group_ids}
-    assert dock.layer_features[group_ids[2]][1] is RegulationGroupLayer
+    assert set(dock.validation_features.by_id) == {regulation_id, proposition_id, information_id, *group_ids}
+    assert dock.validation_features.get(group_ids[2])[1] is RegulationGroupLayer
     # The regulation of the additional information is only a step to its group
-    assert information_regulation_id not in dock.layer_features
+    assert information_regulation_id not in dock.validation_features
     assert database.queries.count(PlanRegulationLayer) == 1
     assert database.queries.count(RegulationGroupLayer) == 1
 
