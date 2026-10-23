@@ -102,6 +102,32 @@ def test_a_lifecycle_change_with_no_layer_in_edit_mode_is_saved(
     _assert_editing_can_start(buffered_project, objects)
 
 
+@pytest.mark.fake_iface
+def test_a_lifecycle_change_that_fails_for_one_object_saves_none(
+    plugin, family: dict[str, QgsVectorLayer], messages, monkeypatch
+):
+    monkeypatch.setattr(plan_objects_dock_module, "plan_object_layers", [LandUseAreaLayer])
+    monkeypatch.setattr(LifeCycleStatusLayer, "get_id_from_lifecycle_status_value", lambda _value: "status-8")
+    real_add_to_edit_buffer = feature_editing.add_to_edit_buffer
+    calls: list[str] = []
+
+    def add_second_fails(feature, layer, id_, edit_text=""):
+        calls.append(id_)
+        return len(calls) == 1 and real_add_to_edit_buffer(feature, layer, id_, edit_text)
+
+    monkeypatch.setattr(feature_editing, "add_to_edit_buffer", add_second_fails)
+    objects = family["objects"]
+    objects.selectByIds([feature.id() for feature in objects.getFeatures()])
+
+    plugin.plan_manager.plan_objects_dock._on_lifecycle_change_requested(
+        LifeCycleStatusValue.UNDER_APPEAL, QDate(2026, 10, 1)
+    )
+
+    assert len(calls) == 2
+    assert "status-8" not in [feature["lifecycle_status_id"] for feature in objects.dataProvider().getFeatures()]
+    assert len(messages.criticals) == 1
+
+
 def test_deleting_a_feature_with_no_layer_in_edit_mode_deletes_it(
     family: dict[str, QgsVectorLayer], buffered_project: QgsProject
 ):

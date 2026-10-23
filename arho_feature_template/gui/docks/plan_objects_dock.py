@@ -227,8 +227,9 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                 if not feature_editing.add_to_edit_buffer(
                     feature=feature, layer=layer, id_=feature["id"], edit_text="Kaavakohteen elinkaaren muutos"
                 ):
+                    # Like the other saves: one failed object leaves the whole change uncommitted
                     iface.messageBar().pushCritical("", "Kaavakohteen elinkaaren muuttaminen epäonnistui.")
-                    continue
+                    return
                 feature_editing.created_object_models[feature["id"]] = model
 
         feature_editing.commit_edit_buffer(stop_editing=False)
