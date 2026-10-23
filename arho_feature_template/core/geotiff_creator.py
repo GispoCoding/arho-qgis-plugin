@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import os
 
 from osgeo import gdal
 from qgis.core import (
     QgsCoordinateReferenceSystem,
+    QgsLayerTree,
+    QgsMapLayer,
     QgsMapRendererParallelJob,
     QgsMapSettings,
     QgsMapSettingsUtils,
@@ -16,6 +20,21 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
 )
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+
+
+def visible_layers_in_render_order(root: QgsLayerTree) -> list[QgsMapLayer]:
+    """Return the visible layers of the layer tree in render order.
+
+    A group rendered as a group layer is in the render order as its QgsGroupLayer,
+    which has no layer node, so its visibility is read from the group node.
+    """
+    group_nodes = {group.groupLayer().id(): group for group in root.findGroups(recursive=True) if group.groupLayer()}
+    layers = []
+    for layer in root.layerOrder():
+        node = root.findLayer(layer) or group_nodes.get(layer.id())
+        if node is not None and node.isVisible():
+            layers.append(layer)
+    return layers
 
 
 class GeoTiffCreator:
@@ -63,10 +82,7 @@ class GeoTiffCreator:
         settings = QgsMapSettings()
         layer_tree = QgsProject.instance().layerTreeRoot()
 
-        # Filter only visible layers
-        layers = [layer for layer in layer_tree.layerOrder() if layer_tree.findLayer(layer).isVisible()]
-
-        settings.setLayers(layers)
+        settings.setLayers(visible_layers_in_render_order(layer_tree))
         settings.setDestinationCrs(QgsCoordinateReferenceSystem("EPSG:3067"))
         settings.setBackgroundColor(QColor(255, 255, 255))
         width = int(buffered_bbox.width() / self.desired_pixel_size) * self.desired_pixel_size
