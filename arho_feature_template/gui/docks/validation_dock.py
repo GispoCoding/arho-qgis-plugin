@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import re
+import uuid
+from collections import defaultdict
 from importlib import resources
 from typing import TYPE_CHECKING
 
@@ -10,6 +12,7 @@ from qgis.core import (
     QgsExpressionContextUtils,
     QgsGeometry,
     QgsProject,
+    QgsVariantUtils,
 )
 from qgis.gui import QgsDockWidget
 from qgis.PyQt import uic
@@ -26,14 +29,26 @@ from arho_feature_template.project.layers.plan_layers import (
     plan_object_layers,
 )
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+from arho_feature_template.utils.timing import timed
 
 if TYPE_CHECKING:
+    from qgis.core import QgsFeature
     from qgis.PyQt.QtWidgets import QLabel, QProgressBar, QPushButton
 
     from arho_feature_template.core.plan_manager import PlanManager
     from arho_feature_template.gui.components.validation_tree_view import ValidationTreeView
+    from arho_feature_template.project.layers import AbstractLayer
 
 logger = logging.getLogger(__name__)
+
+
+def _is_uuid(value: str) -> bool:
+    try:
+        uuid.UUID(value)
+    except (TypeError, ValueError, AttributeError):
+        return False
+    return True
+
 
 ui_path = resources.files(__package__) / "validation_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
@@ -58,6 +73,8 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.lambda_service.job_status_changed.connect(self.on_job_status_changed)
         self.lambda_service.busy_changed.connect(self.on_busy_changed)
         self._listing_title = ""
+        self.layer_features: dict[str, tuple[QgsFeature, type[AbstractLayer]]] = {}
+        self.regulation_group_ids: dict[str, str] = {}
         self.validate_button.clicked.connect(self.validate_plan)
         self.validate_plan_matter_button.clicked.connect(self.validate_plan_matter)
 
@@ -206,31 +223,30 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             iface.messageBar().pushMessage("Virhe", "Ei virheitä havaittu.", level=1)
             self.enable_validation()
             return
-        self.layer_features = {}
+        with timed("list_validation_errors", errors=len(errors), warnings=len(warnings)):
+            self.load_features(errors + warnings)
 
-        # Sort so that errors with classKey are first
-        errors = sorted(errors, key=lambda x: "classKey" not in x)
-        for error in errors:
-            self.get_feature_from_validation_error(error)
-            self.validation_result_tree_view.add_error(
-                error.get("ruleId", ""),
-                error.get("instance", ""),
-                error.get("message", ""),
-                error.get("classKey", ""),
-                self.layer_features,
-            )
+            # Sort so that errors with classKey are first
+            errors = sorted(errors, key=lambda x: "classKey" not in x)
+            for error in errors:
+                self.validation_result_tree_view.add_error(
+                    error.get("ruleId", ""),
+                    error.get("instance", ""),
+                    error.get("message", ""),
+                    error.get("classKey", ""),
+                    self.layer_features,
+                )
 
-        # Sort so that warnings with classKey are first
-        warnings = sorted(warnings, key=lambda x: "classKey" not in x)
-        for warning in warnings:
-            self.get_feature_from_validation_error(warning)
-            self.validation_result_tree_view.add_warning(
-                warning.get("ruleId", ""),
-                warning.get("instance", ""),
-                warning.get("message", ""),
-                warning.get("classKey", ""),
-                self.layer_features,
-            )
+            # Sort so that warnings with classKey are first
+            warnings = sorted(warnings, key=lambda x: "classKey" not in x)
+            for warning in warnings:
+                self.validation_result_tree_view.add_warning(
+                    warning.get("ruleId", ""),
+                    warning.get("instance", ""),
+                    warning.get("message", ""),
+                    warning.get("classKey", ""),
+                    self.layer_features,
+                )
 
         # Always enable validation at the end
         logger.debug("Validation results populated feature_refs=%s", len(self.layer_features))
@@ -273,13 +289,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     logger.debug("Opening plan object form from validation item feature_id=%s", feature_id)
                     self.plan_manager.edit_plan_object(feature=feature_found, layer_name=layer.name)
             else:
-                if layer.name in ("Kaavamääräys", "Kaavasuositus"):
-                    regulation_group_id = feature_found["plan_regulation_group_id"]
-                elif layer.name == "Kaavamääräysryhmät":
-                    regulation_group_id = feature_found["id"]
-
-                regulation_group_feature, _ = self.layer_features[regulation_group_id]
-                if regulation_group_feature:
+                # A regulation group is not in regulation_group_ids, its own id is the group id
+                regulation_group_id = self.regulation_group_ids.get(feature_id, feature_id)
+                regulation_group_feature, group_layer = self.layer_features.get(regulation_group_id, (None, None))
+                if regulation_group_feature and group_layer is RegulationGroupLayer:
                     logger.debug(
                         "Opening regulation group form from validation item regulation_group_id=%s",
                         regulation_group_id,
@@ -289,82 +302,97 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         else:
             iface.messageBar().pushWarning("", "Ei avattavaa lomaketta.")
 
-    def get_feature_from_validation_error(self, validation_json: dict):
-        key = validation_json.get("classKey", "")
-        object_path = validation_json.get("instance", "")
-        if not key or not object_path:
-            logger.debug("Skipping validation error without classKey/instance")
-            return
+    def load_features(self, entries: list[dict]):
+        """Fetches the features the validation entries point to, with one query per layer.
 
-        object_path = object_path.lower()
-        parts = object_path.split(".")
+        Fills `layer_features` (id -> (feature, layer)) and `regulation_group_ids` (id of a
+        regulation, a proposition or an additional information -> id of its regulation group).
+        A query per entry took minutes for a large result on a remote database.
+        """
+        self.layer_features = {}
+        self.regulation_group_ids = {}
+
+        ids_by_object_type: dict[str, set[str]] = defaultdict(set)
+        for entry in entries:
+            key = entry.get("classKey", "")
+            object_type = self._object_type(entry.get("instance", ""))
+            # classKey is not always a feature id, e.g. lifecycle errors give the lifecycle status code URI
+            if object_type and _is_uuid(key):
+                ids_by_object_type[object_type].add(key)
+        logger.debug("Loading validation features ids=%s", {k: len(v) for k, v in ids_by_object_type.items()})
+
+        self._add_features(PlanLayer, ids_by_object_type["plan"], no_geometries=False)
+
+        missing_ids = set(ids_by_object_type["planobjects"])
+        for plan_object_layer in plan_object_layers:
+            missing_ids -= self._add_features(plan_object_layer, missing_ids, no_geometries=False).keys()
+
+        propositions = self._add_features(PlanPropositionLayer, ids_by_object_type["planrecommendations"])
+        additional_informations = self._add_features(
+            AdditionalInformationLayer, ids_by_object_type["additionalinformations"]
+        )
+        # The regulations of the additional informations are needed only for their regulation group
+        regulation_ids_of_informations = {
+            feature["plan_regulation_id"]
+            for feature in additional_informations.values()
+            if not QgsVariantUtils.isNull(feature["plan_regulation_id"])
+        }
+        regulation_ids = ids_by_object_type["planregulations"]
+        regulations = {
+            feature["id"]: feature
+            for feature in PlanRegulationLayer.get_features_by_attribute_value(
+                "id", regulation_ids | regulation_ids_of_informations
+            )
+        }
+        for id_, feature in regulations.items():
+            if id_ in regulation_ids:
+                self.layer_features[id_] = (feature, PlanRegulationLayer)
+                self._set_regulation_group_id(id_, feature["plan_regulation_group_id"])
+        for id_, feature in propositions.items():
+            self._set_regulation_group_id(id_, feature["plan_regulation_group_id"])
+        for id_, feature in additional_informations.items():
+            regulation = regulations.get(feature["plan_regulation_id"])
+            if regulation:
+                self._set_regulation_group_id(id_, regulation["plan_regulation_group_id"])
+
+        self._add_features(
+            RegulationGroupLayer,
+            ids_by_object_type["planregulationgroups"] | set(self.regulation_group_ids.values()),
+        )
+
+    @staticmethod
+    def _object_type(object_path: str) -> str | None:
+        """The type of the object the classKey of a validation entry belongs to.
+
+        classKey is for the last object with square brackets, i.e. planRegulations[1] in
+        plan.planRegulationGroups[0].planRegulations[1]. With no square brackets in a path
+        that has "plan", the key is of the plan.
+        """
+        parts = object_path.lower().split(".")
         match = [item for item in parts if re.search(r"\[\d+\]$", item)]
-        # classKey is for the last object with square brackets, i.e. planRegulations[1] in plan.planRegulationGroups[0].planRegulations[1]
-        object_with_id = match[-1] if match else None
-        if object_with_id:
+        if match:
             # Remove square brackets and the number within
-            object_with_id = re.sub(r"\[(\d+)\]", "", object_with_id)
-        logger.debug("Resolving validation error object key=%s object_type=%s", key, object_with_id)
+            return re.sub(r"\[(\d+)\]", "", match[-1])
+        return "plan" if "plan" in parts else None
 
-        # If "plan" is in object path parts while there is no object with square brackets, it is likely we need plan feature for signal connections.
-        if not object_with_id and "plan" in parts:
-            feature = PlanLayer.get_feature_by_id(id_=key, no_geometries=False)
-            self.layer_features[key] = (feature, PlanLayer)
+    def _add_features(
+        self,
+        layer: type[AbstractLayer],
+        ids: set[str],
+        no_geometries: bool = True,  # noqa: FBT001, FBT002
+    ) -> dict[str, QgsFeature]:
+        """Adds the features of the layer with the ids to `layer_features` and returns them by id."""
+        features = {
+            feature["id"]: feature
+            for feature in layer.get_features_by_attribute_value("id", ids, no_geometries=no_geometries)
+        }
+        for id_, feature in features.items():
+            self.layer_features[id_] = (feature, layer)
+        return features
 
-        regulation_group_id = None
-
-        if object_with_id == "planobjects":
-            for plan_object_layer in plan_object_layers:
-                feature = plan_object_layer.get_feature_by_id(id_=key, no_geometries=False)
-                if feature:
-                    break
-            self.layer_features[key] = (feature, plan_object_layer)
-
-        elif object_with_id == "additionalinformations":
-            feature = AdditionalInformationLayer.get_feature_by_id(key)
-            if feature:
-                self.layer_features[key] = (feature, AdditionalInformationLayer)
-                plan_regulation_id = AdditionalInformationLayer.get_attribute_by_id(
-                    target_attribute="plan_regulation_id", id_=key
-                )
-                if plan_regulation_id:
-                    regulation_group_id = PlanRegulationLayer.get_attribute_by_id(
-                        "plan_regulation_group_id", id_=plan_regulation_id
-                    )
-                    if regulation_group_id:
-                        feature = RegulationGroupLayer.get_feature_by_id(regulation_group_id)
-                        if feature and regulation_group_id not in self.layer_features:
-                            self.layer_features[regulation_group_id] = (feature, RegulationGroupLayer)
-
-        elif object_with_id == "planregulations":
-            feature = PlanRegulationLayer.get_feature_by_id(key)
-            if feature:
-                self.layer_features[key] = (feature, PlanRegulationLayer)
-                plan_regulation_id = key
-                if plan_regulation_id:
-                    regulation_group_id = PlanRegulationLayer.get_attribute_by_id(
-                        "plan_regulation_group_id", id_=plan_regulation_id
-                    )
-                    if regulation_group_id:
-                        feature = RegulationGroupLayer.get_feature_by_id(regulation_group_id)
-                        if feature and regulation_group_id not in self.layer_features:
-                            self.layer_features[regulation_group_id] = (feature, RegulationGroupLayer)
-
-        elif object_with_id == "planrecommendations":
-            feature = PlanPropositionLayer.get_feature_by_id(key)
-            if feature:
-                self.layer_features[key] = (feature, PlanPropositionLayer)
-                regulation_group_id = PlanPropositionLayer.get_attribute_by_id(
-                    target_attribute="plan_regulation_group_id", id_=key
-                )
-                if regulation_group_id:
-                    feature = RegulationGroupLayer.get_feature_by_id(regulation_group_id)
-                    if feature and regulation_group_id not in self.layer_features:
-                        self.layer_features[regulation_group_id] = (feature, RegulationGroupLayer)
-
-        elif object_with_id == "planregulationgroups":
-            feature = RegulationGroupLayer.get_feature_by_id(key)
-            self.layer_features[key] = (feature, RegulationGroupLayer)
+    def _set_regulation_group_id(self, id_: str, regulation_group_id) -> None:
+        if not QgsVariantUtils.isNull(regulation_group_id):
+            self.regulation_group_ids[id_] = regulation_group_id
 
     def _zoom_to_feature(self, geom: QgsGeometry):
         logger.debug("Zooming and flashing geometry from validation result")

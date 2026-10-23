@@ -48,7 +48,7 @@ class ValidationModel(QStandardItemModel):
     def __init__(self) -> None:
         super().__init__()
 
-        self.parent_items: dict[str, ValidationItem] = {}
+        self._parent_items: dict[str, ValidationItem] = {}
 
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["", "Viesti"])
