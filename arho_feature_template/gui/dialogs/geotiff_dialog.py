@@ -5,7 +5,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QLocale, QSignalBlocker
+from qgis.PyQt.QtCore import QLocale, QSignalBlocker, Qt
 from qgis.PyQt.QtWidgets import (
     QComboBox,
     QDialog,
@@ -31,6 +31,7 @@ from arho_feature_template.core.plan_scale import (
 if TYPE_CHECKING:
     from qgis.core import QgsRectangle
     from qgis.gui import QgsFileWidget
+    from qgis.PyQt.QtGui import QKeyEvent
 
 ui_path = resources.files(__package__) / "geotiff_dialog.ui"
 FormClass, _ = uic.loadUiType(ui_path)
@@ -154,6 +155,17 @@ class GeoTiffDialog(QDialog, FormClass):  # type: ignore
         self.warning_label.setText(warning)
         self.warning_label.setVisible(bool(warning))
         self._check_inputs()
+
+    def keyPressEvent(self, event: QKeyEvent):  # noqa: N802
+        # A spin box applies its value on Enter and passes the key on, and the dialog
+        # would then click OK. In the scale and dpi fields Enter only applies the value.
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and self.focusWidget() in (
+            self.scale_spin_box,
+            self.dpi_spin_box,
+        ):
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def _on_ok_clicked(self):
         if (
