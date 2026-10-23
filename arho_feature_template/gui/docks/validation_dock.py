@@ -20,6 +20,7 @@ from qgis.PyQt import uic
 from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.settings_manager import SettingsManager
 from arho_feature_template.gui.components.lambda_job_status import job_status_text
+from arho_feature_template.gui.components.validation_tree_view import ValidationFeatures
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
     PlanLayer,
@@ -73,8 +74,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         self.lambda_service.job_status_changed.connect(self.on_job_status_changed)
         self.lambda_service.busy_changed.connect(self.on_busy_changed)
         self._listing_title = ""
-        self.layer_features: dict[str, tuple[QgsFeature, type[AbstractLayer]]] = {}
-        self.regulation_group_ids: dict[str, str] = {}
+        self.validation_features = ValidationFeatures()
         self.validate_button.clicked.connect(self.validate_plan)
         self.validate_plan_matter_button.clicked.connect(self.validate_plan_matter)
 
@@ -234,8 +234,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     error.get("instance", ""),
                     error.get("message", ""),
                     error.get("classKey", ""),
-                    self.layer_features,
-                    self.regulation_group_ids,
+                    self.validation_features,
                 )
 
             # Sort so that warnings with classKey are first
@@ -246,12 +245,11 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     warning.get("instance", ""),
                     warning.get("message", ""),
                     warning.get("classKey", ""),
-                    self.layer_features,
-                    self.regulation_group_ids,
+                    self.validation_features,
                 )
 
         # Always enable validation at the end
-        logger.debug("Validation results populated feature_refs=%s", len(self.layer_features))
+        logger.debug("Validation results populated feature_refs=%s", len(self.validation_features.by_id))
         self.enable_validation()
 
     def on_item_clicked(self, index):
@@ -263,7 +261,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         if not feature_id:
             return
 
-        feature_found, _ = self.layer_features.get(feature_id, (None, None))
+        feature_found, _ = self.validation_features.get(feature_id)
         if feature_found and feature_found.geometry():
             logger.debug("Zooming to feature from validation click feature_id=%s", feature_id)
             self._zoom_to_feature(feature_found.geometry())
@@ -280,7 +278,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
             )
             return
 
-        feature_found, layer = self.layer_features.get(feature_id, (None, None))
+        feature_found, layer = self.validation_features.get(feature_id)
 
         if feature_found:
             if feature_found.geometry():
@@ -291,13 +289,11 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     logger.debug("Opening plan object form from validation item feature_id=%s", feature_id)
                     self.plan_manager.edit_plan_object(feature=feature_found, layer_name=layer.name)
             else:
-                # A regulation group is not in regulation_group_ids, its own id is the group id
-                regulation_group_id = self.regulation_group_ids.get(feature_id, feature_id)
-                regulation_group_feature, group_layer = self.layer_features.get(regulation_group_id, (None, None))
-                if regulation_group_feature and group_layer is RegulationGroupLayer:
+                regulation_group_feature = self.validation_features.regulation_group(feature_id)
+                if regulation_group_feature:
                     logger.debug(
                         "Opening regulation group form from validation item regulation_group_id=%s",
-                        regulation_group_id,
+                        regulation_group_feature["id"],
                     )
                     regulation_group = RegulationGroupLayer.model_from_feature(regulation_group_feature)
                     self.plan_manager.edit_regulation_group(regulation_group)
@@ -307,12 +303,10 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
     def load_features(self, entries: list[dict]):
         """Fetches the features the validation entries point to, with one query per layer.
 
-        Fills `layer_features` (id -> (feature, layer)) and `regulation_group_ids` (id of a
-        regulation, a proposition or an additional information -> id of its regulation group).
+        Fills `validation_features`.
         A query per entry took minutes for a large result on a remote database.
         """
-        self.layer_features = {}
-        self.regulation_group_ids = {}
+        self.validation_features = ValidationFeatures()
 
         ids_by_object_type: dict[str, set[str]] = defaultdict(set)
         for entry in entries:
@@ -348,18 +342,18 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         }
         for id_, feature in regulations.items():
             if id_ in regulation_ids:
-                self.layer_features[id_] = (feature, PlanRegulationLayer)
-                self._set_regulation_group_id(id_, feature["plan_regulation_group_id"])
+                self.validation_features.add(id_, feature, PlanRegulationLayer)
+                self.validation_features.set_regulation_group_id(id_, feature["plan_regulation_group_id"])
         for id_, feature in propositions.items():
-            self._set_regulation_group_id(id_, feature["plan_regulation_group_id"])
+            self.validation_features.set_regulation_group_id(id_, feature["plan_regulation_group_id"])
         for id_, feature in additional_informations.items():
             regulation = regulations.get(feature["plan_regulation_id"])
             if regulation:
-                self._set_regulation_group_id(id_, regulation["plan_regulation_group_id"])
+                self.validation_features.set_regulation_group_id(id_, regulation["plan_regulation_group_id"])
 
         self._add_features(
             RegulationGroupLayer,
-            ids_by_object_type["planregulationgroups"] | set(self.regulation_group_ids.values()),
+            ids_by_object_type["planregulationgroups"] | set(self.validation_features.regulation_group_ids.values()),
         )
 
     @staticmethod
@@ -383,18 +377,14 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         ids: set[str],
         no_geometries: bool = True,  # noqa: FBT001, FBT002
     ) -> dict[str, QgsFeature]:
-        """Adds the features of the layer with the ids to `layer_features` and returns them by id."""
+        """Adds the features of the layer with the ids to `validation_features` and returns them by id."""
         features = {
             feature["id"]: feature
             for feature in layer.get_features_by_attribute_value("id", ids, no_geometries=no_geometries)
         }
         for id_, feature in features.items():
-            self.layer_features[id_] = (feature, layer)
+            self.validation_features.add(id_, feature, layer)
         return features
-
-    def _set_regulation_group_id(self, id_: str, regulation_group_id) -> None:
-        if not QgsVariantUtils.isNull(regulation_group_id):
-            self.regulation_group_ids[id_] = regulation_group_id
 
     def _zoom_to_feature(self, geom: QgsGeometry):
         logger.debug("Zooming and flashing geometry from validation result")
