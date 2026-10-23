@@ -18,10 +18,19 @@ LANGUAGES = {
 }
 
 
-def get_localized_text(localized_text: LocalizedText | None, language_code: str | None = None) -> str | None:
+def languages_in_order() -> list[str]:
+    """Language codes in order of importance: the languages in the settings first."""
+    return SettingsManager.get_languages() + list(LANGUAGES.keys())
+
+
+def get_localized_text(
+    localized_text: LocalizedText | None, language_code: str | None = None, languages: list[str] | None = None
+) -> str | None:
     """Returns text for one language from input LocalizedText (dict).
 
     If the `language_code` is not defined the first language found in order of importance is used.
+    Pass `languages` from `languages_in_order()` when calling this for many texts: reading
+    the settings for each text is slow.
     """
     if localized_text is None:
         return None
@@ -29,7 +38,7 @@ def get_localized_text(localized_text: LocalizedText | None, language_code: str 
     if language_code:
         return localized_text.get(language_code)
 
-    for language in SettingsManager.get_languages() + list(LANGUAGES.keys()):
+    for language in languages or languages_in_order():
         text = localized_text.get(language)
         if text:
             return text

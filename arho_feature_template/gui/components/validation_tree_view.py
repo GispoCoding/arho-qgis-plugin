@@ -9,7 +9,7 @@ from qgis.PyQt.QtWidgets import QTreeView
 
 from arho_feature_template.project.layers.plan_layers import RegulationGroupLayer
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
-from arho_feature_template.utils.localization_utils import get_localized_text
+from arho_feature_template.utils.localization_utils import get_localized_text, languages_in_order
 
 category_map = {
     "plan": "Kaavasuunnitelma",
@@ -28,12 +28,14 @@ category_map = {
 }
 
 
-def _feature_name(layer_features: dict, feature_id: str | None, layer: type | None = None) -> str | None:
+def _feature_name(
+    layer_features: dict, feature_id: str | None, languages: list[str], layer: type | None = None
+) -> str | None:
     """Name of the feature with the id in `layer_features`. With `layer`, only a feature of that layer counts."""
     feature, feature_layer = layer_features.get(feature_id, (None, None))
     if feature is None or (layer is not None and feature_layer is not layer):
         return None
-    return get_localized_text(feature["name"])
+    return get_localized_text(feature["name"], languages=languages)
 
 
 class ValidationItem(QStandardItem):
@@ -52,6 +54,8 @@ class ValidationModel(QStandardItemModel):
         super().__init__()
 
         self._parent_items: dict[str, ValidationItem] = {}
+        # Read once per listing, reading the settings for each name is slow
+        self._languages = languages_in_order()
 
         self.setColumnCount(2)
         self.setHorizontalHeaderLabels(["", "Viesti"])
@@ -64,6 +68,7 @@ class ValidationModel(QStandardItemModel):
         self.item(self.ERROR_INDEX, 0).removeRows(0, self.item(self.ERROR_INDEX, 0).rowCount())
         self.item(self.WARNING_INDEX, 0).removeRows(0, self.item(self.WARNING_INDEX, 0).rowCount())
         self._parent_items = {}
+        self._languages = languages_in_order()
 
     def _add_item(
         self,
@@ -91,16 +96,18 @@ class ValidationModel(QStandardItemModel):
                     continue
 
                 if part == "planobjects":
-                    feature_name = _feature_name(layer_features, feature_id)
+                    feature_name = _feature_name(layer_features, feature_id, self._languages)
 
                 elif part == "planregulationgroups":
                     # A regulation group is not in regulation_group_ids, its own id is the group id
                     regulation_group_id = regulation_group_ids.get(feature_id, feature_id) if feature_id else None
-                    feature_name = _feature_name(layer_features, regulation_group_id, RegulationGroupLayer)
+                    feature_name = _feature_name(
+                        layer_features, regulation_group_id, self._languages, RegulationGroupLayer
+                    )
 
                 elif part == "planregulations":
                     if "additionalinformations" in parts:
-                        feature_name = _feature_name(layer_features, feature_id)
+                        feature_name = _feature_name(layer_features, feature_id, self._languages)
                     else:
                         feature_name = None
 
