@@ -79,7 +79,7 @@ from arho_feature_template.project.layers.code_layers import (
     code_layers,
 )
 from arho_feature_template.project.layers.plan_layers import (
-    FEATURE_LAYER_NAME_TO_CLASS_MAP,
+    PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP,
     LandUseAreaLayer,
     LineLayer,
     OtherAreaLayer,
@@ -207,7 +207,7 @@ class PlanManager(QObject):
         self.plan_object_libraries = []
         self.regulation_group_libraries = []
 
-        # Initialize new feature dock
+        # Initialize new plan object dock
         self.new_plan_object_dock = NewPlanObjectDock(iface.mainWindow())
         self.new_plan_object_dock.tool_activated.connect(self.add_new_plan_object)
         self.new_plan_object_dock.hide()
@@ -242,9 +242,9 @@ class PlanManager(QObject):
         self.plan_digitize_map_tool = PlanLayerDigitizeMapTool()
         self.plan_digitize_map_tool.digitizingCompleted.connect(self._plan_geom_ready)
 
-        self.feature_digitize_map_tool = PlanLayerDigitizeMapTool()
-        self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_object_geom_digitized)
-        self.feature_digitize_map_tool.digitizingFinished.connect(
+        self.plan_object_digitize_map_tool = PlanLayerDigitizeMapTool()
+        self.plan_object_digitize_map_tool.digitizingCompleted.connect(self._plan_object_geom_digitized)
+        self.plan_object_digitize_map_tool.digitizingFinished.connect(
             self.new_plan_object_dock.deactivate_and_clear_selections
         )
 
@@ -797,13 +797,13 @@ class PlanManager(QObject):
         if not handle_unsaved_changes():
             return
 
-        layer_name = self.new_plan_object_dock.active_feature_layer
+        layer_name = self.new_plan_object_dock.active_plan_object_layer
         if layer_name is None:
             msg = "No plan object type selected"
             iface.messageBar().pushWarning("", msg)
             return
 
-        layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
+        layer_class = PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
         if not layer_class:
             msg = f"Could not find plan object layer class for layer name {layer_name}"
             logger.error(msg)
@@ -811,12 +811,12 @@ class PlanManager(QObject):
         layer = layer_class.get_from_project()
 
         layer.startEditing()
-        self.feature_digitize_map_tool.clean()
+        self.plan_object_digitize_map_tool.clean()
         iface.setActiveLayer(layer)
-        self.feature_digitize_map_tool.setLayer(
+        self.plan_object_digitize_map_tool.setLayer(
             layer
         )  # Locks the digitizing target layer even when activating different layer
-        iface.mapCanvas().setMapTool(self.feature_digitize_map_tool)
+        iface.mapCanvas().setMapTool(self.plan_object_digitize_map_tool)
 
     def _plan_geom_ready(self, features: QgsFeature | list[QgsFeature]) -> bool:
         """Callback for when new feature(s) is added to the plan layer."""
@@ -876,8 +876,8 @@ class PlanManager(QObject):
             )
             title = get_localized_text(plan_object.name)
         else:
-            plan_object = PlanObject(layer_name=self.new_plan_object_dock.active_feature_layer)
-            title = self.new_plan_object_dock.active_feature_type
+            plan_object = PlanObject(layer_name=self.new_plan_object_dock.active_plan_object_layer)
+            title = self.new_plan_object_dock.active_plan_object_type
 
         plan_object.geom = feature.geometry()
         # A new object and its template regulations get the plan's current lifecycle status
@@ -918,7 +918,7 @@ class PlanManager(QObject):
 
     def edit_plan_object(self, feature: QgsFeature, layer_name: str):
         logger.debug("Editing plan object layer=%s feature_id=%s", layer_name, feature.id())
-        layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP[layer_name]
+        layer_class = PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP[layer_name]
         plan_object = layer_class.model_from_feature(feature)
 
         title = get_localized_text(plan_object.name) or layer_name
@@ -1121,8 +1121,8 @@ class PlanManager(QObject):
         if plan_feature is not None:
             plan_type = self._active_plan_type()
             if plan_type:
-                for feature_layer in plan_object_layers:
-                    layer = feature_layer.get_from_project()
+                for plan_object_layer in plan_object_layers:
+                    layer = plan_object_layer.get_from_project()
                     _apply_style(layer, plan_type)
             self.zoom_to_active_plan(plan_feature)
 
@@ -1410,8 +1410,8 @@ class PlanManager(QObject):
         self.lambda_service.deleteLater()
 
         # Feature digitize tool
-        if self.feature_digitize_map_tool:
-            self.feature_digitize_map_tool.deleteLater()
+        if self.plan_object_digitize_map_tool:
+            self.plan_object_digitize_map_tool.deleteLater()
 
         # Plan digitize tool
         self.plan_digitize_map_tool.deleteLater()
@@ -1422,7 +1422,7 @@ class PlanManager(QObject):
         # Docks are unparented explicitly, because removeDockWidget only hides them: without this
         # they stay children of the main window until the deferred deletion is processed, which
         # makes Plugin Reloader report them as duplicated widgets on reload.
-        # New feature dock
+        # New plan object dock
         self.new_plan_object_dock.unload()
         iface.removeDockWidget(self.new_plan_object_dock)
         self.new_plan_object_dock.setParent(None)
@@ -1501,7 +1501,7 @@ def _apply_style(layer: QgsVectorLayer, plan_type: PlanType) -> None:
     crs = layer.crs().authid()
     temp_layer = QgsVectorLayer(f"{geom_type}?crs={crs}", "temp_layer", "memory")
     msg, result = temp_layer.loadNamedStyle(
-        SettingsManager.get_layer_style_path(plan_type, FEATURE_LAYER_NAME_TO_CLASS_MAP[layer.name()], default)
+        SettingsManager.get_layer_style_path(plan_type, PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP[layer.name()], default)
     )
     if not result:
         logger.warning("Failed to load named style for layer=%s message=%s", layer.name(), msg)

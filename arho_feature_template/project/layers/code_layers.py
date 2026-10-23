@@ -342,7 +342,7 @@ class PlanRegulationGroupTypeLayer(AbstractCodeLayer):
     }
 
     @classmethod
-    def get_id_by_feature_layer_name(cls, layer_name: str) -> str | None:
+    def get_id_by_plan_object_layer_name(cls, layer_name: str) -> str | None:
         regulation_group_type = cls.LAYER_NAME_TO_REGULATION_GROUP_TYPE_MAP.get(layer_name)
         if not regulation_group_type:
             raise LayerNameNotFoundError(layer_name)

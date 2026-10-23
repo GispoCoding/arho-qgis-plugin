@@ -30,20 +30,20 @@
      </property>
      <layout class="QFormLayout" name="formLayout">
       <item row="0" column="1">
-       <widget class="LocalizedSinglelineTextInputWidget" name="feature_name" native="true"/>
+       <widget class="LocalizedSinglelineTextInputWidget" name="plan_object_name" native="true"/>
       </item>
       <item row="1" column="1">
-       <widget class="LocalizedMultilineTextInputWidget" name="feature_description" native="true"/>
+       <widget class="LocalizedMultilineTextInputWidget" name="plan_object_description" native="true"/>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="feature_underground_label">
+       <widget class="QLabel" name="type_of_underground_label">
         <property name="text">
          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt; Maanalaisuus:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="CodeComboBox" name="feature_type_of_underground"/>
+       <widget class="CodeComboBox" name="type_of_underground_selection"/>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="validity_start_label">

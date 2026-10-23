@@ -80,7 +80,7 @@ def test_without_a_plan_status_nothing_changes():
 def test_digitising_does_not_stamp_the_library_template():
     template = PlanObject(layer_name="Aluevaraus", regulation_groups=[_new_group()])
 
-    # As the plan manager builds the new object from the feature template
+    # As the plan manager builds the new object from the plan object template
     new = PlanObject(layer_name="Aluevaraus", regulation_groups=copy.deepcopy(template.regulation_groups))
     new.set_lifecycle_status_of_new(STATUS)
 

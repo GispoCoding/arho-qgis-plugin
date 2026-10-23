@@ -55,9 +55,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
         # TYPES
         self.plan_object_groupbox: QgsCollapsibleGroupBox
-        self.feature_name: LocalizedSinglelineTextInputWidget
-        self.feature_description: LocalizedMultilineTextInputWidget
-        self.feature_type_of_underground: CodeComboBox
+        self.plan_object_name: LocalizedSinglelineTextInputWidget
+        self.plan_object_description: LocalizedMultilineTextInputWidget
+        self.type_of_underground_selection: CodeComboBox
         self.validity_start_label: QLabel
         self.validity_start_date: QLineEdit
         self.validity_end_label: QLabel
@@ -74,8 +74,8 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.template_form = template_form
         self.setWindowTitle(form_title)
 
-        self.feature_type_of_underground.populate_from_code_layer(UndergroundTypeLayer)
-        self.feature_type_of_underground.remove_item_by_text("NULL")
+        self.type_of_underground_selection.populate_from_code_layer(UndergroundTypeLayer)
+        self.type_of_underground_selection.remove_item_by_text("NULL")
 
         # If editing, show previously saved value, otherwise show 'Maanpäällinen'
         type_of_underground_id = plan_object.type_of_underground_id
@@ -83,15 +83,15 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
             type_of_underground = get_localized_text(
                 UndergroundTypeLayer.get_attribute_by_id("name", type_of_underground_id)
             )
-            self.feature_type_of_underground.setCurrentText(type_of_underground)
+            self.type_of_underground_selection.setCurrentText(type_of_underground)
         else:
-            self.feature_type_of_underground.setCurrentIndex(1)  # Maanpäällinen
+            self.type_of_underground_selection.setCurrentIndex(1)  # Maanpäällinen
 
         # Initialize attributes from template
         self.plan_object = plan_object
 
-        self.feature_name.set_value(plan_object.name)
-        self.feature_description.set_value(plan_object.description)
+        self.plan_object_name.set_value(plan_object.name)
+        self.plan_object_description.set_value(plan_object.description)
         self.regulation_groups_view.add_stored_plan_regulation_groups(plan_object.regulation_groups)
 
         # Validity start
@@ -129,10 +129,10 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
                     )
                 self.save_to_library_button.setMenu(self.plan_object_menu)
 
-    def _check_feature_name(self) -> bool:
+    def _check_plan_object_name(self) -> bool:
         """Feature must have a name if we are saving a plan object template."""
         # TODO: Find a better way to detect if we are saving a plan object template
-        if self.template_form and not self.feature_name.get_value():
+        if self.template_form and not self.plan_object_name.get_value():
             msg = "Kaavakohdepohjalla täytyy olla nimi."
             QMessageBox.critical(self, "Virhe", msg)
             return False
@@ -140,9 +140,9 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
 
     def into_model(self) -> PlanObject:
         model = PlanObject(
-            name=self.feature_name.get_value(),
-            type_of_underground_id=self.feature_type_of_underground.value(),
-            description=self.feature_description.get_value(),
+            name=self.plan_object_name.get_value(),
+            type_of_underground_id=self.type_of_underground_selection.value(),
+            description=self.plan_object_description.get_value(),
             lifecycle_status_id=self.plan_object.lifecycle_status_id,
             period_of_validity_start=self.plan_object.period_of_validity_start,
             period_of_validity_end=self.plan_object.period_of_validity_end,
@@ -162,7 +162,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
     def _on_ok_clicked(self):
         if (
             self.regulation_groups_view.check_multiple_regulation_groups_with_principal_intended_use_regulations()
-            and self._check_feature_name()
+            and self._check_plan_object_name()
         ):
             self.model = self.into_model()
             self.accept()

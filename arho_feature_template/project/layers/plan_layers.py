@@ -471,13 +471,13 @@ class RegulationGroupAssociationLayer(AbstractPlanLayer):
 
     @classmethod
     def get_associations_for_regulation_group_exclude_feature(
-        cls, group_id: str, excluded_feature_id: str, excluded_feature_layer_name: str
+        cls, group_id: str, excluded_plan_object_id: str, excluded_plan_object_layer_name: str
     ) -> list[QgsFeature]:
-        attribute = RegulationGroupAssociationLayer.layer_name_to_attribute_map.get(excluded_feature_layer_name)
+        attribute = RegulationGroupAssociationLayer.layer_name_to_attribute_map.get(excluded_plan_object_layer_name)
         return [
             association
             for association in cls.get_associations_for_regulation_group(group_id)
-            if association[attribute] != excluded_feature_id
+            if association[attribute] != excluded_plan_object_id
         ]
 
     @classmethod
@@ -823,7 +823,7 @@ def get_plan_object_layer_class_by_model(plan_object: PlanObject) -> type[PlanOb
     if not layer_name:
         msg = "Cannot save plan object without a target layer"
         raise ValueError(msg)
-    layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
+    layer_class = PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
     if not layer_class:
         msg = f"Could not find plan object layer class for layer name {layer_name}"
         raise ValueError(msg)
@@ -832,14 +832,14 @@ def get_plan_object_layer_class_by_model(plan_object: PlanObject) -> type[PlanOb
 
 
 def get_plan_object_layer_class_by_layer_name(layer_name: str) -> type[PlanObjectLayer]:
-    layer = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
+    layer = PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
     if not layer:
         msg = f"Could not find plan object layer class for layer name {layer_name}"
         raise ValueError(msg)
     return layer
 
 
-FEATURE_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanObjectLayer]] = {
+PLAN_OBJECT_LAYER_NAME_TO_CLASS_MAP: dict[str, type[PlanObjectLayer]] = {
     PointLayer.name: PointLayer,
     LineLayer.name: LineLayer,
     OtherAreaLayer.name: OtherAreaLayer,

@@ -24,7 +24,7 @@ LIBRARY_FORMAT_VERSION = 2
 
 
 class SignalManager(QObject):
-    feature_object_added_to_library = pyqtSignal()
+    plan_object_added_to_library = pyqtSignal()
 
 
 class TemplateManager:
@@ -175,5 +175,5 @@ class TemplateManager:
         library_file_paths = get_user_plan_object_library_config_files()
         library_file_paths_as_str = [str(path) for path in library_file_paths]
         set_user_plan_object_library_config_files(library_file_paths_as_str)
-        TemplateManager.signal_manager.feature_object_added_to_library.emit()
+        TemplateManager.signal_manager.plan_object_added_to_library.emit()
         logger.debug("Updated user plan object library config paths and emitted update signal")

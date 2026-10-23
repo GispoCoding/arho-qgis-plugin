@@ -73,7 +73,9 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         self.plan_object = plan_object
         self.layer_name: str | None = layer_name or (plan_object.layer_name if plan_object else None)
         if self.layer_name:
-            regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.layer_name)
+            regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_plan_object_layer_name(
+                self.layer_name
+            )
 
         self.matching_groups_in_db: list[RegulationGroup] = []
         self.from_model(regulation_group, other_linked_features_count)
@@ -96,7 +98,7 @@ class RegulationGroupWidget(QWidget, FormClass):  # type: ignore
         """The group is now for another plan object layer: it gets that layer's group type, and a
         new group looks for its twin again, since the type is part of the match."""
         self.layer_name = layer_name
-        self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(layer_name)
+        self.regulation_group.type_code_id = PlanRegulationGroupTypeLayer.get_id_by_plan_object_layer_name(layer_name)
         if self.regulation_group.id_ is None:
             self.update_matching_groups.emit(self)
 

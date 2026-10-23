@@ -69,7 +69,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.name_language_selection: CodeComboBox
         self.description_selection: QgsFieldComboBox
         self.description_language_selection: CodeComboBox
-        self.feature_type_of_underground_selection: CodeComboBox
+        self.type_of_underground_selection: CodeComboBox
 
         self.target_layer_selection: QgsMapLayerComboBox
 
@@ -128,9 +128,9 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
 
         # Underground type initialization
         # Remove NULL from the selections and set Maanpäällinen as default
-        self.feature_type_of_underground_selection.populate_from_code_layer(UndergroundTypeLayer)
-        self.feature_type_of_underground_selection.remove_item_by_text("NULL")
-        self.feature_type_of_underground_selection.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
+        self.type_of_underground_selection.populate_from_code_layer(UndergroundTypeLayer)
+        self.type_of_underground_selection.remove_item_by_text("NULL")
+        self.type_of_underground_selection.setCurrentIndex(1)  # Set default to Maanpäällinen (index 1)
 
         target_layer = self.target_layer_selection.currentLayer()
         self.regulation_groups_view = RegulationGroupsView(
@@ -209,13 +209,13 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
                 geometry.convertToMultiType()
             return geometry
 
-        type_of_underground_id = self.feature_type_of_underground_selection.value()
+        type_of_underground_id = self.type_of_underground_selection.value()
         source_layer_name_field = self.name_selection.currentField()
         source_layer_description_field = self.description_selection.currentField()
         regulation_groups = self.regulation_groups_view.into_model()
-        target_layer_id = PlanRegulationGroupTypeLayer.get_id_by_feature_layer_name(self.target_layer_name)
+        target_layer_id = PlanRegulationGroupTypeLayer.get_id_by_plan_object_layer_name(self.target_layer_name)
         for group in regulation_groups:
-            # Assign feature layer type for each group based on target layer (will overwrite type_code_id for
+            # Assign plan object layer type for each group based on target layer (will overwrite type_code_id for
             # existing regulation groups)
             group.type_code_id = target_layer_id
             # If the group is not yet in DB, save it now to get an ID and use the same group object for each
