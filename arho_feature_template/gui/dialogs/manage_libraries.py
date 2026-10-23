@@ -8,7 +8,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidget, QWidget
 
-from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
+from arho_feature_template.core.models import PlanObjectLibrary, RegulationGroupLibrary
 from arho_feature_template.gui.components.library_display_widget import LibaryDisplayWidget
 from arho_feature_template.resources.libraries.feature_templates import set_user_plan_feature_library_config_files
 from arho_feature_template.resources.libraries.regulation_groups import set_user_regulation_group_library_config_files
@@ -25,7 +25,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
     def __init__(
         self,
         regulation_group_libraries: list[RegulationGroupLibrary],
-        custom_plan_feature_libraries: list[PlanFeatureLibrary],
+        custom_plan_feature_libraries: list[PlanObjectLibrary],
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
@@ -60,13 +60,13 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             list(custom_regulation_group_libraries), RegulationGroupLibrary, list(regulation_group_libraries)
         )
         self.plan_feature_library_widget = LibaryDisplayWidget(
-            list(custom_plan_feature_libraries), PlanFeatureLibrary, list(regulation_group_libraries)
+            list(custom_plan_feature_libraries), PlanObjectLibrary, list(regulation_group_libraries)
         )
         self.library_tabs.addTab(self.regulation_group_library_widget, "Kaavamääräysryhmäpohjat")
         self.library_tabs.addTab(self.plan_feature_library_widget, "Kaavakohdepohjat")
 
         self.updated_regulation_group_libraries: list[RegulationGroupLibrary] = []
-        self.updated_plan_feature_libraries: list[PlanFeatureLibrary] = []
+        self.updated_plan_feature_libraries: list[PlanObjectLibrary] = []
 
         self.regulation_group_library_widget.library_elements_updated.connect(self._on_regulation_groups_updated)
         self.button_box.clicked.connect(self.reject)

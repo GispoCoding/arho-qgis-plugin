@@ -46,7 +46,7 @@ ui_path = resources.files(__package__) / "plan_features_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject, RegulationGroup
+    from arho_feature_template.core.models import PlanObject, PlanObjectLibrary, RegulationGroup
     from arho_feature_template.core.plan_manager import PlanManager
     from arho_feature_template.gui.components.push_button_edit_lifecycle import PushButtonEditLifecycle
 
@@ -492,7 +492,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
         iface.mapCanvas().flashGeometries(geometries=[plan_feature_model.geom])
         iface.mapCanvas().redrawAllLayers()
 
-    def _on_save_plan_object_to_library(self, plan_feature_model: PlanObject, library: PlanFeatureLibrary):
+    def _on_save_plan_object_to_library(self, plan_feature_model: PlanObject, library: PlanObjectLibrary):
         logger.debug(
             "Saving plan object to library plan_feature_id=%s library=%s", plan_feature_model.id_, library.name
         )

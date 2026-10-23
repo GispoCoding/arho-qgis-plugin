@@ -37,9 +37,9 @@ from arho_feature_template.core.lambda_service import LambdaService
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.models import (
     Plan,
-    PlanFeatureLibrary,
     PlanMatter,
     PlanObject,
+    PlanObjectLibrary,
     RegulationGroup,
     RegulationGroupLibrary,
 )
@@ -359,9 +359,9 @@ class PlanManager(QObject):
     def _initialize_plan_feature_libraries(self):
         """Make sure regulation group libraries are updated before initializing plan feature libraries."""
         self.plan_feature_libraries = [
-            PlanFeatureLibrary.from_template_dict(
-                data=TemplateManager.read_library_config_file(file_path, "plan_feature"),
-                library_type=PlanFeatureLibrary.LibraryType.CUSTOM,
+            PlanObjectLibrary.from_template_dict(
+                data=TemplateManager.read_library_config_file(file_path, "plan_object"),
+                library_type=PlanObjectLibrary.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
             for file_path in get_user_plan_feature_library_config_files()

@@ -96,30 +96,30 @@ class Library(ABC):
 
 
 @dataclass
-class PlanFeatureLibrary(Library):
-    """A collection of plan features."""
+class PlanObjectLibrary(Library):
+    """A collection of plan objects."""
 
-    plan_features: list[PlanObject] = field(default_factory=list, compare=False)
+    plan_objects: list[PlanObject] = field(default_factory=list, compare=False)
 
     @classmethod
     def from_template_dict(
         cls, data: dict, library_type: Library.LibraryType, file_path: str | None = None
-    ) -> PlanFeatureLibrary:
+    ) -> PlanObjectLibrary:
         if data == {}:
-            return PlanFeatureLibrary(file_path=file_path, status=False)
+            return PlanObjectLibrary(file_path=file_path, status=False)
 
         try:
-            return PlanFeatureLibrary(
+            return PlanObjectLibrary(
                 name=data.get("name", ""),
                 file_path=file_path,
                 version=data.get("version"),
                 description=data.get("description"),
                 status=True,
-                library_type=library_type,  # NOTE: All PlanFeatureLibraries are CUSTOM now
-                plan_features=[
-                    PlanObject.from_template_dict(plan_feature_data) for plan_feature_data in data["plan_features"]
+                library_type=library_type,  # NOTE: All PlanObjectLibraries are CUSTOM now
+                plan_objects=[
+                    PlanObject.from_template_dict(plan_object_data) for plan_object_data in data["plan_objects"]
                 ]
-                if data.get("plan_features")
+                if data.get("plan_objects")
                 else [],
             )
         except KeyError as e:
@@ -131,12 +131,12 @@ class PlanFeatureLibrary(Library):
             "file_path": self.file_path,
             "version": self.version,
             "description": self.description,
-            "plan_features": [plan_feature.into_template_dict() for plan_feature in self.plan_features],
+            "plan_objects": [plan_object.into_template_dict() for plan_object in self.plan_objects],
         }
 
     def into_hash_map(self) -> defaultdict[int, list]:
         plan_object_hash_map: defaultdict[int, list] = defaultdict(list)
-        for plan_object in self.plan_features:
+        for plan_object in self.plan_objects:
             plan_object_hash_map[plan_object.data_hash()].append(plan_object)
         return plan_object_hash_map
 

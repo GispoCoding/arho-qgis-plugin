@@ -14,10 +14,13 @@ from arho_feature_template.resources.libraries.feature_templates import (
 from arho_feature_template.utils.misc_utils import iface
 
 if TYPE_CHECKING:
-    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
+    from arho_feature_template.core.models import PlanObject, PlanObjectLibrary
 
 
 logger = logging.getLogger(__name__)
+
+# Version of the library file format. 1: no `format_version`, plan objects under `plan_features`.
+LIBRARY_FORMAT_VERSION = 2
 
 
 class SignalManager(QObject):
@@ -76,16 +79,28 @@ class TemplateManager:
             iface.messageBar().pushCritical("", fail_msg)
             return {}
 
-    # @classmethod
-    # def read_regulation_group_template_file(cls, file_path: Path | str) -> dict:
-    #     data = cls._read_from_yaml_file(
-    #         file_path=file_path if type(file_path) is Path else Path(file_path),
-    #         fail_msg=f"Kaavamääräyskirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
-    #     )
-    #     library_type = data.get("library_type")
-    #     if not library_type or library_type != "regulation_group":
-    #         return {}
-    #     return data
+    @classmethod
+    def _upgrade_library_data(cls, data: dict, file_path: Path | str) -> dict:
+        """Bring library data read from a file to the current format. Empty if the format is too new."""
+        format_version = data.get("format_version", 1)
+        if format_version > LIBRARY_FORMAT_VERSION:
+            logger.warning("Library format too new path=%s format_version=%s", file_path, format_version)
+            iface.messageBar().pushCritical(
+                "", f"Kirjaston tiedostomuoto on uudempi kuin lisäosa tukee: {format_version}"
+            )
+            return {}
+        if format_version < 2:  # noqa: PLR2004
+            # Format 1 called plan objects plan features
+            if data.get("library_type") == "plan_feature":
+                data["library_type"] = "plan_object"
+            if "plan_features" in data:
+                data["plan_objects"] = data.pop("plan_features")
+        data["format_version"] = LIBRARY_FORMAT_VERSION
+        return data
+
+    @classmethod
+    def _with_format(cls, config_data: dict, library_type: str) -> dict:
+        return {"format_version": LIBRARY_FORMAT_VERSION, **config_data, "library_type": library_type}
 
     @classmethod
     def read_library_config_file(cls, file_path: Path | str, expected_library_type: str) -> dict:
@@ -94,6 +109,11 @@ class TemplateManager:
             file_path=file_path if type(file_path) is Path else Path(file_path),
             fail_msg=f"Kirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
         )
+        if not data:
+            return {}
+        data = cls._upgrade_library_data(data, file_path)
+        if not data:
+            return {}
         library_type = data.get("library_type")
         if not library_type or library_type != expected_library_type:
             logger.warning("Library type mismatch path=%s found_type=%s", file_path, library_type)
@@ -102,17 +122,6 @@ class TemplateManager:
         logger.debug("Library config read successfully path=%s", file_path)
         return data
 
-    # @classmethod
-    # def read_plan_feature_template_file(cls, file_path: Path | str) -> dict:
-    #     data = cls._read_from_yaml_file(
-    #         file_path=file_path if type(file_path) is Path else Path(file_path),
-    #         fail_msg=f"Kaavakohdekirjastoa ei löytynyt määritellystä tiedostopolusta: {file_path}",
-    #     )
-    #     library_type = data.get("library_type")
-    #     if not library_type or library_type != "plan_feature":
-    #         return {}
-    #     return data
-
     @classmethod
     def write_regulation_group_template_file(
         cls,
@@ -120,27 +129,25 @@ class TemplateManager:
         file_path: Path | str,
     ):
         logger.debug("Writing regulation group template file path=%s", file_path)
-        regulation_group_config_data["library_type"] = "regulation_group"
         cls._write_to_yaml_file(
-            config_data=regulation_group_config_data,
+            config_data=cls._with_format(regulation_group_config_data, "regulation_group"),
             file_path=file_path if type(file_path) is Path else Path(file_path),
         )
 
     @classmethod
-    def write_plan_feature_template_file(
+    def write_plan_object_template_file(
         cls,
-        plan_feature_config_data: dict,
+        plan_object_config_data: dict,
         file_path: Path | str,
     ):
-        logger.debug("Writing plan feature template file path=%s", file_path)
-        plan_feature_config_data["library_type"] = "plan_feature"
+        logger.debug("Writing plan object template file path=%s", file_path)
         return cls._write_to_yaml_file(
-            config_data=plan_feature_config_data,
+            config_data=cls._with_format(plan_object_config_data, "plan_object"),
             file_path=file_path if type(file_path) is Path else Path(file_path),
         )
 
     @classmethod
-    def save_plan_object_to_library(cls, plan_object_model: PlanObject, library: PlanFeatureLibrary):
+    def save_plan_object_to_library(cls, plan_object_model: PlanObject, library: PlanObjectLibrary):
         logger.debug("Saving plan object to library library=%s", library.name)
         if not library.file_path:
             logger.warning("Library has no file path, skipping save")
@@ -158,9 +165,9 @@ class TemplateManager:
             iface.messageBar().pushMessage("", "Kaavakohde on jo tallennettu kaavakohdepohjakirjastoon.")
             return
 
-        library.plan_features.append(plan_object_model)
-        TemplateManager.write_plan_feature_template_file(
-            plan_feature_config_data=library.into_template_dict(), file_path=Path(library.file_path)
+        library.plan_objects.append(plan_object_model)
+        TemplateManager.write_plan_object_template_file(
+            plan_object_config_data=library.into_template_dict(), file_path=Path(library.file_path)
         )
         logger.debug("Plan object saved to library path=%s", library.file_path)
         iface.messageBar().pushSuccess("", "Kaavakohde tallennettu kaavakohdepohjakirjastoon.")

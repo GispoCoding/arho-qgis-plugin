@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from qgis.gui import QgsCollapsibleGroupBox
     from qgis.PyQt.QtWidgets import QLabel, QLineEdit
 
-    from arho_feature_template.core.models import PlanFeatureLibrary, RegulationGroupLibrary
+    from arho_feature_template.core.models import PlanObjectLibrary, RegulationGroupLibrary
     from arho_feature_template.gui.components.code_combobox import CodeComboBox
     from arho_feature_template.gui.components.value_input_widgets import (
         LocalizedMultilineTextInputWidget,
@@ -44,7 +44,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         plan_feature: PlanObject,
         form_title: str,
         regulation_group_libraries: list[RegulationGroupLibrary],
-        plan_feature_libraries: list[PlanFeatureLibrary] | None = None,
+        plan_feature_libraries: list[PlanObjectLibrary] | None = None,
         active_plan_regulation_groups_library: RegulationGroupLibrary | None = None,
         save_disabled_reason: str | None = None,
         template_form: bool = False,  # noqa: FBT001, FBT002

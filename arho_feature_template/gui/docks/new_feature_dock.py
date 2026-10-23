@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from qgis.gui import QgsFilterLineEdit
     from qgis.PyQt.QtWidgets import QComboBox, QWidget
 
-    from arho_feature_template.core.models import PlanFeatureLibrary, PlanObject
+    from arho_feature_template.core.models import PlanObject, PlanObjectLibrary
 
 ui_path = resources.files(__package__) / "new_feature_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
@@ -47,7 +47,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_feature_type: str | None = None
         self.active_feature_layer: str | None = None
         self.active_template: PlanObject | None = None
-        self.plan_feature_libraries: list[PlanFeatureLibrary] | None = None
+        self.plan_feature_libraries: list[PlanObjectLibrary] | None = None
         self.library_selection.currentIndexChanged.connect(self.set_active_plan_feature_library)
 
         self.template_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
@@ -73,7 +73,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
         else:
             self.new_feature_grid.setToolTip("")
 
-    def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanFeatureLibrary]):
+    def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanObjectLibrary]):
         logger.debug("Initializing plan feature libraries in new feature dock count=%s", len(plan_feature_libraries))
         self.plan_feature_libraries = plan_feature_libraries
         self.library_selection.clear()
@@ -155,9 +155,9 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
                 if index
                 else self.plan_feature_libraries[self.library_selection.currentIndex()]
             )
-            logger.debug("Using template library name=%s template_count=%s", library.name, len(library.plan_features))
+            logger.debug("Using template library name=%s template_count=%s", library.name, len(library.plan_objects))
 
-            for feature_template in library.plan_features:
+            for feature_template in library.plan_objects:
                 item = QListWidgetItem(
                     feature_template.name
                     if isinstance(feature_template.name, str)

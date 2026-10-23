@@ -9,8 +9,8 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTreeWid
 
 from arho_feature_template.core.models import (
     Library,
-    PlanFeatureLibrary,
     PlanObject,
+    PlanObjectLibrary,
     RegulationGroup,
     RegulationGroupLibrary,
 )
@@ -100,7 +100,7 @@ class TemplateSelectionForm(Generic[T], QDialog, FormClass):  # type: ignore
         library = self.libraries[i]
         if type(library) is RegulationGroupLibrary:
             self._populate_regulation_group_library(library)
-        elif type(library) is PlanFeatureLibrary:
+        elif type(library) is PlanObjectLibrary:
             self._populate_plan_object_library(library)
 
     def _populate_regulation_group_library(self, library: RegulationGroupLibrary):
@@ -124,7 +124,7 @@ class TemplateSelectionForm(Generic[T], QDialog, FormClass):  # type: ignore
             # Add group item to tree
             _ = self.template_selection_widget.add_item_to_tree(str(group), group, self.template_categories[category])
 
-    def _populate_plan_object_library(self, _library: PlanFeatureLibrary):
+    def _populate_plan_object_library(self, _library: PlanObjectLibrary):
         # TODO: Implement when needed
         pass
 
