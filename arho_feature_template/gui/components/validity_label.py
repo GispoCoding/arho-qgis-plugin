@@ -78,12 +78,12 @@ class ValidityLabel(QLabel):
 
 def validity_item_from_model(model: LifecycleBase) -> QStandardItem:
     """
-    Create a QStandardItem with valid icon, repealed icon or no icon depending on model status.
+    Create a QStandardItem with a lifecycle status icon, or no icon, depending on model status.
 
     Items are meant to be used in PlanObjectDock table.
 
     Each item has a validity number for sorting stored in `VALIDITY_SORT_ROLE`.
-    0 = valid, 1 = repealed, 0 = undefined.
+    0 = valid, 1 = repealed, 2 = no icon, 3 = other status with an icon.
     """
     item = QStandardItem("")
     item.setEditable(False)
@@ -123,10 +123,11 @@ def validity_item_from_model(model: LifecycleBase) -> QStandardItem:
         )  # type: ignore
         item.setData(0, VALIDITY_SORT_ROLE)
 
-    elif LifeCycleStatusLayer.is_under_appeal(lifecycle_status):
-        icon = LIFECYCLE_PIXMAPS[lifecycle_status]
-        item.setData(QIcon(icon), Qt.ItemDataRole.DecorationRole)
-        item.setData(get_localized_text(lifecycle_name), Qt.ItemDataRole.ToolTipRole)
-        item.setData(3, VALIDITY_SORT_ROLE)
+    else:
+        pixmap = LIFECYCLE_PIXMAPS.get(lifecycle_status)
+        if pixmap is not None:
+            item.setData(QIcon(pixmap), Qt.ItemDataRole.DecorationRole)
+            item.setData(get_localized_text(lifecycle_name), Qt.ItemDataRole.ToolTipRole)
+            item.setData(3, VALIDITY_SORT_ROLE)
 
     return item
