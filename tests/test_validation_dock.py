@@ -138,3 +138,60 @@ def test_regulation_groups_are_found_through_regulations_propositions_and_additi
     assert information_regulation_id not in dock.layer_features
     assert database.queries.count(PlanRegulationLayer) == 1
     assert database.queries.count(RegulationGroupLayer) == 1
+
+
+def test_the_tree_names_the_regulation_groups_without_more_queries(plugin: Plugin, database: _Database):
+    group_ids = [database.add(RegulationGroupLayer, name={"fin": f"Ryhmä {i}"}) for i in range(2)]
+    regulation_id = database.add(PlanRegulationLayer, plan_regulation_group_id=group_ids[0], name=None)
+    information_regulation_id = database.add(PlanRegulationLayer, plan_regulation_group_id=group_ids[1], name=None)
+    information_id = database.add(
+        AdditionalInformationLayer, plan_regulation_id=information_regulation_id, name={"fin": "Lisätieto"}
+    )
+    errors = [
+        _error("plan.planRegulationGroups[0].planRegulations[0].value", regulation_id),
+        _error("plan.planRegulationGroups[1].planRegulations[0].additionalInformations[0].type", information_id),
+    ]
+
+    plugin.validation_dock.list_validation_errors({"status": 400, "errors": errors, "warnings": []})
+
+    assert sorted(layer.name for layer in database.queries) == sorted(
+        [AdditionalInformationLayer.name, PlanRegulationLayer.name, RegulationGroupLayer.name]
+    )
+    groups = _child(_child(_errors(plugin), "Kaavasuunnitelma"), "Kaavamääräysryhmät")
+    assert [groups.child(row, 0).text() for row in range(groups.rowCount())] == ["Ryhmä 0", "Ryhmä 1"]
+
+
+def test_a_class_key_that_is_not_a_feature_id_lists_the_index(plugin: Plugin, database: _Database):
+    """Lifecycle errors carry the lifecycle status code URI as classKey."""
+    code_uri = "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/06"
+    errors = [
+        _error("plan.planObjects[0].lifeCycleStatus", code_uri),
+        _error("plan.planRegulationGroups[1].planRegulations[0].lifeCycleStatus", code_uri),
+    ]
+
+    plugin.validation_dock.list_validation_errors({"status": 400, "errors": errors, "warnings": []})
+
+    assert database.queries == []
+    plan = _child(_errors(plugin), "Kaavasuunnitelma")
+    plan_object = _child(_child(plan, "Kaavakohteet"), "[0]")
+    assert plan_object.feature_id is None
+    _child(_child(plan, "Kaavamääräysryhmät"), "[1]")
+
+
+def test_an_error_without_a_feature_is_listed(plugin: Plugin):
+    """The post plan matter dialog gives only the rule, the path and the message."""
+    tree_view = plugin.validation_dock.validation_result_tree_view
+
+    tree_view.add_error("rule__x", "planMatter.planMatterPhases[0]", "Virhe")
+
+    phases = _child(_child(_errors(plugin), "Kaava-asia"), "Kaava-asian vaiheet")
+    assert phases.child(0, 0).text() == "[0]"
+
+
+def test_a_large_result_is_listed(plugin: Plugin, database: _Database):
+    ids = [database.add(OtherAreaLayer, name={"fin": f"Alue {i}"}) for i in range(2000)]
+    errors = [_error(f"plan.planObjects[{i}].geometry", id_) for i, id_ in enumerate(ids)]
+
+    plugin.validation_dock.list_validation_errors({"status": 400, "errors": errors, "warnings": []})
+
+    assert _child(_child(_errors(plugin), "Kaavasuunnitelma"), "Kaavakohteet").rowCount() == 2000
