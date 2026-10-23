@@ -55,7 +55,8 @@ def default_geotiff_path(plan_matter_name: str, plan_name: str) -> str:
     directory = SettingsManager.get_geotiff_directory()
     if not directory or not os.path.isdir(directory):
         directory = QDir.homePath()
-    return os.path.join(directory, geotiff_file_name(plan_matter_name, plan_name))
+    # Qt separators ("/"), as QgsFileWidget shows them
+    return QDir.cleanPath(f"{directory}/{geotiff_file_name(plan_matter_name, plan_name)}")
 
 
 class GeoTiffCreator:
