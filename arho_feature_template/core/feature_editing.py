@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, cast
 
-from qgis.core import QgsProject
+from qgis.core import Qgis, QgsProject
 
 from arho_feature_template.project.layers.plan_layers import (
     AdditionalInformationLayer,
@@ -246,7 +246,18 @@ def delete_in_edit_buffer(feature: QgsFeature, layer: QgsVectorLayer, delete_tex
 @timed_function("commit_edit_buffer")
 def commit_edit_buffer(stop_editing: bool) -> bool:  # noqa: FBT001
     project = QgsProject.instance()
-    result, commit_errors = project.commitChanges(stopEditing=stop_editing)
+    commit_errors: list[str] = []
+    if (
+        not stop_editing
+        and project.transactionMode() == Qgis.TransactionMode.BufferedGroups
+        and not project.editBufferGroup().isEditing()
+    ):
+        # No layer is in edit mode, so there is nothing to commit: succeed, as QGIS does. But QGIS
+        # would also mark the group as editing, and then no layer could enter edit mode again.
+        logger.debug("No layer in edit mode, nothing to commit")
+        result = True
+    else:
+        result, commit_errors = project.commitChanges(stopEditing=stop_editing)
     try:
         if result:
             logger.debug("Committed succesfully. Details=%s", commit_errors)

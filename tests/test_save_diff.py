@@ -207,7 +207,14 @@ def test_a_failed_commit_leaves_the_model_as_it_was(layers: dict[str, QgsVectorL
     area = _read_area(layers)
     area.regulation_groups.append(_read_group(layers, "group-2"))
 
+    project = feature_editing.QgsProject.instance()
+
     class FailingProject:
+        """The real project, but its commit fails."""
+
+        def __getattr__(self, name: str):
+            return getattr(project, name)
+
         @staticmethod
         def commitChanges(stopEditing: bool) -> tuple[bool, list[str]]:  # noqa: ARG004
             return False, ["VIRHE"]
