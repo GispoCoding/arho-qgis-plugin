@@ -47,11 +47,11 @@ class NewPlanObjectDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_feature_type: str | None = None
         self.active_feature_layer: str | None = None
         self.active_template: PlanObject | None = None
-        self.plan_feature_libraries: list[PlanObjectLibrary] | None = None
-        self.library_selection.currentIndexChanged.connect(self.set_active_plan_feature_library)
+        self.plan_object_libraries: list[PlanObjectLibrary] | None = None
+        self.library_selection.currentIndexChanged.connect(self.set_active_plan_object_library)
 
         self.template_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-        self.search_box.valueChanged.connect(self.filter_plan_feature_templates)
+        self.search_box.valueChanged.connect(self.filter_plan_object_templates)
 
         # NOTE: If user moves selection with arrow keys, this is not registered currently
         self.template_list.clicked.connect(self.on_template_item_clicked)
@@ -73,28 +73,28 @@ class NewPlanObjectDock(QgsDockWidget, DockClass):  # type: ignore
         else:
             self.new_plan_object_grid.setToolTip("")
 
-    def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanObjectLibrary]):
-        logger.debug("Initializing plan feature libraries in new feature dock count=%s", len(plan_feature_libraries))
-        self.plan_feature_libraries = plan_feature_libraries
+    def initialize_plan_object_libraries(self, plan_object_libraries: list[PlanObjectLibrary]):
+        logger.debug("Initializing plan object libraries in new plan object dock count=%s", len(plan_object_libraries))
+        self.plan_object_libraries = plan_object_libraries
         self.library_selection.clear()
-        self.library_selection.addItems([library.name for library in self.plan_feature_libraries])
-        self.set_active_plan_feature_library(0)
+        self.library_selection.addItems([library.name for library in self.plan_object_libraries])
+        self.set_active_plan_object_library(0)
 
     def on_active_feature_type_changed(self, feature_name: str, layer_name: str):
         logger.debug("Active feature type changed feature=%s layer=%s", feature_name, layer_name)
         self.active_feature_type = feature_name if feature_name else None
         self.active_feature_layer = layer_name if layer_name else None
         self.clear_template_selection()
-        self.filter_plan_feature_templates()
+        self.filter_plan_object_templates()
         if self.active_feature_type:
             logger.debug("Emitting tool_activated for feature_type=%s", self.active_feature_type)
             self.tool_activated.emit()
 
-    def filter_plan_feature_templates(self) -> None:
-        # Consider both search text and active plan feature type
+    def filter_plan_object_templates(self) -> None:
+        # Consider both search text and active plan object type
         search_text = self.search_box.value().lower()
         logger.debug(
-            "Filtering plan feature templates search_text=%s active_layer=%s",
+            "Filtering plan object templates search_text=%s active_layer=%s",
             search_text,
             self.active_feature_layer,
         )
@@ -102,15 +102,15 @@ class NewPlanObjectDock(QgsDockWidget, DockClass):  # type: ignore
         for index in range(self.template_list.count()):
             item = self.template_list.item(index)
             item_text = item.text().lower()
-            plan_feature: PlanObject = item.data(Qt.ItemDataRole.UserRole)
+            plan_object: PlanObject = item.data(Qt.ItemDataRole.UserRole)
             text_matches = search_text in item_text
             feature_type_matches = (
-                plan_feature.layer_name == self.active_feature_layer if self.active_feature_layer else True
+                plan_object.layer_name == self.active_feature_layer if self.active_feature_layer else True
             )
             item.setHidden(not (text_matches and feature_type_matches))
 
             # Clear selection if the selected template was filtered
-            if self.active_template and self.active_template is plan_feature and item.isHidden():
+            if self.active_template and self.active_template is plan_object and item.isHidden():
                 logger.debug("Active template filtered out, clearing selection")
                 self.template_list.clearSelection()
 
@@ -142,18 +142,18 @@ class NewPlanObjectDock(QgsDockWidget, DockClass):  # type: ignore
         self.active_template = None
         self.template_list.clearSelection()
 
-    def set_active_plan_feature_library(self, index: int) -> None:
-        logger.debug("Setting active plan feature library index=%s", index)
+    def set_active_plan_object_library(self, index: int) -> None:
+        logger.debug("Setting active plan object library index=%s", index)
         self.update_template_list(index)
 
     def update_template_list(self, index: int | None = None) -> None:
         logger.debug("Updating template list requested_index=%s", index)
-        if self.plan_feature_libraries and len(self.plan_feature_libraries) > 0:
+        if self.plan_object_libraries and len(self.plan_object_libraries) > 0:
             self.template_list.clear()
             library = (
-                self.plan_feature_libraries[index]
+                self.plan_object_libraries[index]
                 if index
-                else self.plan_feature_libraries[self.library_selection.currentIndex()]
+                else self.plan_object_libraries[self.library_selection.currentIndex()]
             )
             logger.debug("Using template library name=%s template_count=%s", library.name, len(library.plan_objects))
 

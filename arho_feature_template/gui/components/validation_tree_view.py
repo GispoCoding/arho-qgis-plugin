@@ -148,7 +148,7 @@ class ValidationModel(QStandardItemModel):
                     self._parent_items[path] = new_item
                 current_parent = self._parent_items[path]
 
-        else:  # If object_path is simply "planobjects" or "planregulationgroups", plan has no plan features or regulation groups, respectively. Then, validation error has no feature_id.
+        else:  # If object_path is simply "planobjects" or "planregulationgroups", plan has no plan objects or regulation groups, respectively. Then, validation error has no feature_id.
             new_item = ValidationItem(category_map.get(object_path, object_path))
             current_parent.appendRow([new_item, ValidationItem("")])
 

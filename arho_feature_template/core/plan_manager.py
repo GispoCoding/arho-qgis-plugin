@@ -204,12 +204,12 @@ class PlanManager(QObject):
         # Project layers outlive the plugin too
         self._error_signal_layers: list[QgsMapLayer] = []
 
-        self.plan_feature_libraries = []
+        self.plan_object_libraries = []
         self.regulation_group_libraries = []
 
         # Initialize new feature dock
         self.new_plan_object_dock = NewPlanObjectDock(iface.mainWindow())
-        self.new_plan_object_dock.tool_activated.connect(self.add_new_plan_feature)
+        self.new_plan_object_dock.tool_activated.connect(self.add_new_plan_object)
         self.new_plan_object_dock.hide()
 
         # Initialize regulation groups dock
@@ -234,7 +234,7 @@ class PlanManager(QObject):
         self.update_active_plan_regulation_group_library()
         self.regulation_groups_dock.hide()
 
-        # Initialize plan features dock
+        # Initialize plan objects dock
         self.plan_objects_dock = PlanObjectsDock(self, iface.mainWindow())
         self.plan_objects_dock.hide()
 
@@ -243,17 +243,17 @@ class PlanManager(QObject):
         self.plan_digitize_map_tool.digitizingCompleted.connect(self._plan_geom_ready)
 
         self.feature_digitize_map_tool = PlanLayerDigitizeMapTool()
-        self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
+        self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_object_geom_digitized)
         self.feature_digitize_map_tool.digitizingFinished.connect(
             self.new_plan_object_dock.deactivate_and_clear_selections
         )
 
-        # Initialize plan feature inspect tool for the editable and the valid plan objects.
+        # Initialize plan object inspect tool for the editable and the valid plan objects.
         # The valid (Ajantasakaava) layers are searched only when no editable object is hit.
-        self.inspect_plan_feature_tool = InspectPlanObjects(
+        self.inspect_plan_object_tool = InspectPlanObjects(
             iface.mapCanvas(), plan_object_layers, fallback_layer_classes=valid_plan_object_layers
         )
-        self.inspect_plan_feature_tool.feature_identified.connect(self.on_plan_object_identified)
+        self.inspect_plan_object_tool.feature_identified.connect(self.on_plan_object_identified)
 
         # Initialize lambda service
         self.lambda_service = LambdaService(self)
@@ -329,9 +329,9 @@ class PlanManager(QObject):
         _cache_code_layers()
 
     def initialize_libraries(self):
-        logger.debug("Initializing regulation group and plan feature libraries")
+        logger.debug("Initializing regulation group and plan object libraries")
         self._initialize_regulation_group_libraries()
-        self._initialize_plan_feature_libraries()
+        self._initialize_plan_object_libraries()
 
     def _initialize_regulation_group_libraries(self):
         # Cannot initialize regulation group librarires if regulation layer is not found
@@ -358,9 +358,9 @@ class PlanManager(QObject):
         )
         logger.debug("Initialized regulation group libraries: count=%s", len(self.regulation_group_libraries))
 
-    def _initialize_plan_feature_libraries(self):
-        """Make sure regulation group libraries are updated before initializing plan feature libraries."""
-        self.plan_feature_libraries = [
+    def _initialize_plan_object_libraries(self):
+        """Make sure regulation group libraries are updated before initializing plan object libraries."""
+        self.plan_object_libraries = [
             PlanObjectLibrary.from_template_dict(
                 data=TemplateManager.read_library_config_file(file_path, "plan_object"),
                 library_type=PlanObjectLibrary.LibraryType.CUSTOM,
@@ -368,8 +368,8 @@ class PlanManager(QObject):
             )
             for file_path in get_user_plan_object_library_config_files()
         ]
-        self.new_plan_object_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
-        logger.debug("Initialized plan feature libraries: count=%s", len(self.plan_feature_libraries))
+        self.new_plan_object_dock.initialize_plan_object_libraries(self.plan_object_libraries)
+        logger.debug("Initialized plan object libraries: count=%s", len(self.plan_object_libraries))
 
     def open_manage_plans(self):
         logger.debug("Opening manage plans dialog")
@@ -487,17 +487,17 @@ class PlanManager(QObject):
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(
-        self, plan_features_by_layer: dict[str, list[QgsFeature]] | None = None
+        self, plan_object_features_by_layer: dict[str, list[QgsFeature]] | None = None
     ):
         """Re-read the regulation groups of the active plan and show them in the dock.
 
-        `plan_features_by_layer` are the features of the plan feature layers, if the caller has
+        `plan_object_features_by_layer` are the features of the plan object layers, if the caller has
         already read them; otherwise the dock reads what it needs.
         """
         logger.debug("Refreshing active plan regulation group library")
         self.active_plan_regulation_group_library = regulation_group_library_from_active_plan()
         self.regulation_groups_dock.update_regulation_groups(
-            self.active_plan_regulation_group_library, plan_features_by_layer
+            self.active_plan_regulation_group_library, plan_object_features_by_layer
         )
 
     def create_new_regulation_group(self, from_template: bool):  # noqa: FBT001
@@ -523,7 +523,7 @@ class PlanManager(QObject):
 
     def manage_libraries(self):
         with deleted_after_use(
-            ManageLibrariesForm(self.regulation_group_libraries, self.plan_feature_libraries, iface.mainWindow())
+            ManageLibrariesForm(self.regulation_group_libraries, self.plan_object_libraries, iface.mainWindow())
         ) as manage_libraries_form:
             result = manage_libraries_form.exec()
         # Close event return zero
@@ -591,7 +591,7 @@ class PlanManager(QObject):
                 for group in groups:
                     if group.id_ not in linked_group_ids:
                         save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
-        self.plan_objects_dock.create_plan_feature_view()
+        self.plan_objects_dock.create_plan_object_view()
 
     def remove_selected_regulation_groups_from_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
@@ -630,11 +630,11 @@ class PlanManager(QObject):
             logger.debug("Previous map tool is gone, falling back to pan")
             iface.actionPan().trigger()
 
-    def toggle_identify_plan_features(self, activate: bool):  # noqa: FBT001
-        logger.debug("Toggling identify plan features activate=%s", activate)
+    def toggle_identify_plan_objects(self, activate: bool):  # noqa: FBT001
+        logger.debug("Toggling identify plan objects activate=%s", activate)
         if activate:
             self.previous_map_tool = iface.mapCanvas().mapTool()
-            iface.mapCanvas().setMapTool(self.inspect_plan_feature_tool)
+            iface.mapCanvas().setMapTool(self.inspect_plan_object_tool)
         else:
             self.restore_previous_map_tool()
 
@@ -792,20 +792,20 @@ class PlanManager(QObject):
         if accepted:
             self.set_active_plan_matter(saved_id)
 
-    def add_new_plan_feature(self):
-        logger.debug("Adding new plan feature by digitizing")
+    def add_new_plan_object(self):
+        logger.debug("Adding new plan object by digitizing")
         if not handle_unsaved_changes():
             return
 
         layer_name = self.new_plan_object_dock.active_feature_layer
         if layer_name is None:
-            msg = "No plan feature type selected"
+            msg = "No plan object type selected"
             iface.messageBar().pushWarning("", msg)
             return
 
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
         if not layer_class:
-            msg = f"Could not find plan feature layer class for layer name {layer_name}"
+            msg = f"Could not find plan object layer class for layer name {layer_name}"
             logger.error(msg)
             raise ValueError(msg)
         layer = layer_class.get_from_project()
@@ -861,40 +861,40 @@ class PlanManager(QObject):
 
         return plan_saved
 
-    def _plan_feature_geom_digitized(self, feature: QgsFeature):
-        logger.debug("Plan feature geometry digitized")
+    def _plan_object_geom_digitized(self, feature: QgsFeature):
+        logger.debug("Plan object geometry digitized")
         # NOTE: What if user has changed dock selections while digitizng?
         if self.new_plan_object_dock.active_template:
-            plan_feat_template = self.new_plan_object_dock.active_template
-            plan_feature = PlanObject(
-                type_of_underground_id=plan_feat_template.type_of_underground_id,
-                layer_name=plan_feat_template.layer_name,
-                name=plan_feat_template.name,
-                description=plan_feat_template.description,
+            plan_object_template = self.new_plan_object_dock.active_template
+            plan_object = PlanObject(
+                type_of_underground_id=plan_object_template.type_of_underground_id,
+                layer_name=plan_object_template.layer_name,
+                name=plan_object_template.name,
+                description=plan_object_template.description,
                 # A copy: the form and the status stamp must not touch the library's own template
-                regulation_groups=copy.deepcopy(plan_feat_template.regulation_groups),
+                regulation_groups=copy.deepcopy(plan_object_template.regulation_groups),
             )
-            title = get_localized_text(plan_feature.name)
+            title = get_localized_text(plan_object.name)
         else:
-            plan_feature = PlanObject(layer_name=self.new_plan_object_dock.active_feature_layer)
+            plan_object = PlanObject(layer_name=self.new_plan_object_dock.active_feature_layer)
             title = self.new_plan_object_dock.active_feature_type
 
-        plan_feature.geom = feature.geometry()
+        plan_object.geom = feature.geometry()
         # A new object and its template regulations get the plan's current lifecycle status
-        plan_feature.set_lifecycle_status_of_new(PlanLayer.get_lifecycle_status_id())
+        plan_object.set_lifecycle_status_of_new(PlanLayer.get_lifecycle_status_id())
         with deleted_after_use(
             PlanObjectForm(
-                plan_feature,
+                plan_object,
                 title or "",
                 self.regulation_group_libraries,
-                self.plan_feature_libraries,
+                self.plan_object_libraries,
                 self.active_plan_regulation_group_library,
                 save_disabled_reason=self.save_disabled_reason(),
                 parent=iface.mainWindow(),
             )
         ) as attribute_form:
             if attribute_form.exec() and (saved := save_plan_object(attribute_form.model)) is not None:
-                logger.debug("Plan feature saved successfully from digitized geometry")
+                logger.debug("Plan object saved successfully from digitized geometry")
                 self._refresh_regulation_group_library_if_changed(saved)
 
     def _refresh_regulation_group_library_if_changed(self, saved: PlanObjectSaveResult) -> None:
@@ -910,31 +910,31 @@ class PlanManager(QObject):
     def on_plan_object_identified(self, feature: QgsFeature, layer_class: type[AbstractLayer]) -> None:
         """Open the clicked plan object: for editing, or read-only for a valid (Ajantasakaava) object."""
         if issubclass(layer_class, PlanObjectLayer):
-            self.edit_plan_feature(feature, layer_class.name)
+            self.edit_plan_object(feature, layer_class.name)
         elif issubclass(layer_class, ValidPlanObjectLayer):
             self.show_valid_plan_object(feature, layer_class)
         else:
             logger.warning("Identified a feature on an unexpected layer class %s", layer_class.__name__)
 
-    def edit_plan_feature(self, feature: QgsFeature, layer_name: str):
-        logger.debug("Editing plan feature layer=%s feature_id=%s", layer_name, feature.id())
+    def edit_plan_object(self, feature: QgsFeature, layer_name: str):
+        logger.debug("Editing plan object layer=%s feature_id=%s", layer_name, feature.id())
         layer_class = FEATURE_LAYER_NAME_TO_CLASS_MAP[layer_name]
-        plan_feature = layer_class.model_from_feature(feature)
+        plan_object = layer_class.model_from_feature(feature)
 
-        title = get_localized_text(plan_feature.name) or layer_name
+        title = get_localized_text(plan_object.name) or layer_name
         with deleted_after_use(
             PlanObjectForm(
-                plan_feature,
+                plan_object,
                 title,
                 self.regulation_group_libraries,
-                self.plan_feature_libraries,
+                self.plan_object_libraries,
                 self.active_plan_regulation_group_library,
                 save_disabled_reason=self.save_disabled_reason(),
                 parent=iface.mainWindow(),
             )
         ) as attribute_form:
             if attribute_form.exec() and (saved := save_plan_object(attribute_form.model)) is not None:
-                logger.debug("Plan feature saved successfully after edit")
+                logger.debug("Plan object saved successfully after edit")
                 self._refresh_regulation_group_library_if_changed(saved)
 
     def show_valid_plan_object(self, feature: QgsFeature, layer_class: type[ValidPlanObjectLayer]) -> None:
@@ -951,7 +951,7 @@ class PlanManager(QObject):
                 plan_object,
                 title,
                 self.regulation_group_libraries,
-                self.plan_feature_libraries,
+                self.plan_object_libraries,
                 active_plan_regulation_groups_library=None,
                 save_disabled_reason=VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
                 parent=iface.mainWindow(),
@@ -1106,15 +1106,15 @@ class PlanManager(QObject):
         if previously_in_edit_mode and not locked:
             plan_layer.startEditing()
 
-        # Both docks list the plan features, so read the (now filtered) layers once for both.
+        # Both docks list the plan objects, so read the (now filtered) layers once for both.
         # Without a plan the layers are hidden, so there is nothing to read.
-        plan_features_by_layer = (
-            _read_plan_features_by_layer() if plan_id else {layer.name: [] for layer in plan_object_layers}
+        plan_object_features_by_layer = (
+            _read_plan_object_features_by_layer() if plan_id else {layer.name: [] for layer in plan_object_layers}
         )
-        self.update_active_plan_regulation_group_library(plan_features_by_layer)
-        self.plan_objects_dock.create_plan_feature_view(
+        self.update_active_plan_regulation_group_library(plan_object_features_by_layer)
+        self.plan_objects_dock.create_plan_object_view(
             self.active_plan_regulation_group_library.regulation_groups,
-            plan_features_by_layer,
+            plan_object_features_by_layer,
             plan_model.lifecycle_status_id if plan_model else None,
         )
 
@@ -1416,8 +1416,8 @@ class PlanManager(QObject):
         # Plan digitize tool
         self.plan_digitize_map_tool.deleteLater()
 
-        # Inspect plan feature tool
-        self.inspect_plan_feature_tool.deleteLater()
+        # Inspect plan object tool
+        self.inspect_plan_object_tool.deleteLater()
 
         # Docks are unparented explicitly, because removeDockWidget only hides them: without this
         # they stay children of the main window until the deferred deletion is processed, which
@@ -1434,7 +1434,7 @@ class PlanManager(QObject):
         self.regulation_groups_dock.setParent(None)
         self.regulation_groups_dock.deleteLater()
 
-        # Plan features dock
+        # Plan objects dock
         self.plan_objects_dock.unload()
         iface.removeDockWidget(self.plan_objects_dock)
         self.plan_objects_dock.setParent(None)
@@ -1476,9 +1476,9 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
     )
 
 
-def _read_plan_features_by_layer() -> dict[str, list[QgsFeature]]:
-    """All features of every plan feature layer, keyed by layer name."""
-    with timed("read plan features"):
+def _read_plan_object_features_by_layer() -> dict[str, list[QgsFeature]]:
+    """All features of every plan object layer, keyed by layer name."""
+    with timed("read plan object features"):
         return {layer.name: list(layer.get_features()) for layer in plan_object_layers}
 
 

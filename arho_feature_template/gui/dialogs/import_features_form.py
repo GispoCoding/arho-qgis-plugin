@@ -103,7 +103,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         self.source_layer_selection.layerChanged.connect(self._on_layer_selections_changed)
 
         # Target layer initialization
-        # Set only plan feature layers as valid target layers
+        # Set only plan object layers as valid target layers
         self.target_layer_selection.setFilters(QgsMapLayerProxyModel.Filter.VectorLayer)
         self.target_layer_selection.clear()
         self.target_layer_selection.setAdditionalLayers(layer.get_from_project() for layer in plan_object_layers)
@@ -219,7 +219,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
             # existing regulation groups)
             group.type_code_id = target_layer_id
             # If the group is not yet in DB, save it now to get an ID and use the same group object for each
-            # plan feature
+            # plan object
             if group.id_ is None:
                 id_ = add_regulation_group_to_edit_buffer(group)
                 group.id_ = id_

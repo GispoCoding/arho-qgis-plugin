@@ -460,10 +460,10 @@ class Plugin:
             add_to_toolbar=True,
         )
 
-        self.identify_plan_features_action = self.add_action(
+        self.identify_plan_objects_action = self.add_action(
             text="Muokkaa kaavakohteita",
             icon=QIcon(resources_path("icons", "toolbar", "planObjectsEdit.svg")),
-            toggled_callback=self.plan_manager.toggle_identify_plan_features,
+            toggled_callback=self.plan_manager.toggle_identify_plan_objects,
             add_to_menu=False,
             add_to_toolbar=True,
             checkable=True,
@@ -555,7 +555,7 @@ class Plugin:
             self.serialize_plan_matter_action,
             self.plan_button,
             # The valid plan objects (Ajantasakaava) can be inspected without an open plan
-            self.identify_plan_features_action,
+            self.identify_plan_objects_action,
         ]
         self.plan_depending_actions = [
             self.edit_plan_action,
@@ -597,7 +597,7 @@ class Plugin:
         # plugin goes away, and Plugin Reloader re-inits before Python collects the old
         # `Plugin`. Track what was connected so `unload` can undo exactly that.
         self.plan_manager_connections: list[tuple[pyqtBoundSignal, Callable]] = [
-            (self.plan_manager.inspect_plan_feature_tool.deactivated, self.on_inspect_tool_deactivated),
+            (self.plan_manager.inspect_plan_object_tool.deactivated, self.on_inspect_tool_deactivated),
             (self.plan_manager.plan_set, self.on_active_plan_set),
             (self.plan_manager.plan_matter_set, self.on_active_plan_matter_set),
             (self.plan_manager.plan_unset, self.on_active_plan_unset),
@@ -807,7 +807,7 @@ class Plugin:
         self.finalize_plan_action.setVisible(False)
 
     def on_inspect_tool_deactivated(self):
-        self.identify_plan_features_action.setChecked(False)
+        self.identify_plan_objects_action.setChecked(False)
 
     def on_plan_lock_status_changed(self, locked: bool):  # noqa: FBT001
         logger.debug("Plan lock status changed locked=%s", locked)

@@ -78,7 +78,7 @@ def manager(plugin, plan_layer: QgsVectorLayer, monkeypatch: pytest.MonkeyPatch)
 @pytest.fixture
 def view_calls(manager: PlanManager, monkeypatch: pytest.MonkeyPatch) -> list[tuple]:
     calls: list[tuple] = []
-    monkeypatch.setattr(manager.plan_objects_dock, "create_plan_feature_view", lambda *args: calls.append(args))
+    monkeypatch.setattr(manager.plan_objects_dock, "create_plan_object_view", lambda *args: calls.append(args))
     return calls
 
 
@@ -121,7 +121,7 @@ def test_without_a_plan_the_feature_layers_are_not_read(manager: PlanManager, vi
 
         @staticmethod
         def get_features():
-            pytest.fail("plan feature layer read")
+            pytest.fail("plan object layer read")
 
     monkeypatch.setattr(plan_manager_module, "plan_object_layers", [HiddenLayerClass])
 

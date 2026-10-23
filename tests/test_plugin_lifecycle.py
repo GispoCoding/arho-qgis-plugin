@@ -162,7 +162,7 @@ def test_unload_removes_the_translator(plugin_factory, monkeypatch, tmp_path):
 def test_unload_runs_the_plan_manager_before_deleting_the_actions(plugin_factory, monkeypatch):
     """`PlanManager.unload` triggers actionPan, which reaches back into the actions.
 
-    `deactivated` -> `identify_plan_features_action.setChecked(False)` used to run on
+    `deactivated` -> `identify_plan_objects_action.setChecked(False)` used to run on
     actions that had already been passed to `deleteLater`.
     """
     plugin = plugin_factory()
@@ -187,8 +187,8 @@ def test_unload_runs_the_plan_manager_before_deleting_the_actions(plugin_factory
 def test_unload_with_the_identify_tool_active(plugin_factory, iface):
     """The pan trigger inside `PlanManager.unload` takes our tool off the canvas."""
     plugin = plugin_factory()
-    plugin.identify_plan_features_action.setChecked(True)
-    inspect_tool = plugin.plan_manager.inspect_plan_feature_tool
+    plugin.identify_plan_objects_action.setChecked(True)
+    inspect_tool = plugin.plan_manager.inspect_plan_object_tool
     assert iface.mapCanvas().mapTool() is inspect_tool
 
     plugin.unload()
@@ -226,7 +226,7 @@ def test_unload_disconnects_the_plan_manager_signals(plugin_factory):
     plugin = plugin_factory()
     manager = plugin.plan_manager
     pairs = [
-        (manager.inspect_plan_feature_tool.deactivated, plugin.on_inspect_tool_deactivated),
+        (manager.inspect_plan_object_tool.deactivated, plugin.on_inspect_tool_deactivated),
         (manager.plan_set, plugin.on_active_plan_set),
         (manager.plan_matter_set, plugin.on_active_plan_matter_set),
         (manager.plan_unset, plugin.on_active_plan_unset),
