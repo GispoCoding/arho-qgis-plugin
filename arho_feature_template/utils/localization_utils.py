@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qgis.core import QgsVariantUtils
+
 from arho_feature_template.core.settings_manager import SettingsManager
 
 if TYPE_CHECKING:
@@ -32,7 +34,8 @@ def get_localized_text(
     Pass `languages` from `languages_in_order()` when calling this for many texts: reading
     the settings for each text is slow.
     """
-    if localized_text is None:
+    # isNull catches a NULL QVariant on Qt 5, "is None" is for mypy
+    if localized_text is None or QgsVariantUtils.isNull(localized_text):
         return None
 
     if language_code:
