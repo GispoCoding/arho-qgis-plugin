@@ -226,27 +226,12 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         with timed("list_validation_errors", errors=len(errors), warnings=len(warnings)):
             self.load_features(errors + warnings)
 
-            # Sort so that errors with classKey are first
-            errors = sorted(errors, key=lambda x: "classKey" not in x)
-            for error in errors:
-                self.validation_result_tree_view.add_error(
-                    error.get("ruleId", ""),
-                    error.get("instance", ""),
-                    error.get("message", ""),
-                    error.get("classKey", ""),
-                    self.validation_features,
-                )
-
-            # Sort so that warnings with classKey are first
-            warnings = sorted(warnings, key=lambda x: "classKey" not in x)
-            for warning in warnings:
-                self.validation_result_tree_view.add_warning(
-                    warning.get("ruleId", ""),
-                    warning.get("instance", ""),
-                    warning.get("message", ""),
-                    warning.get("classKey", ""),
-                    self.validation_features,
-                )
+            # Sort so that entries with classKey are first
+            self.validation_result_tree_view.model.add_results(
+                sorted(errors, key=lambda x: "classKey" not in x),
+                sorted(warnings, key=lambda x: "classKey" not in x),
+                self.validation_features,
+            )
 
         # Always enable validation at the end
         logger.debug("Validation results populated feature_refs=%s", len(self.validation_features.by_id))

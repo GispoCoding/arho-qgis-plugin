@@ -93,25 +93,17 @@ class PostPlanDialog(QDialog, FormClass):  # type: ignore
             return
 
         success_found = False
-        errors_found = False
-        warnings_found = False
 
         response = next(iter(post_json.values()), {})
         status = response.get("status")
         if status in [200, 201]:
             success_found = True
 
-        for error in response.get("errors") or []:
-            self.validation_result_tree_view.add_error(
-                error.get("ruleId", ""), error.get("instance", ""), error.get("message", "")
-            )
-            errors_found = True
-
-        for warning in response.get("warnings") or []:
-            self.validation_result_tree_view.add_warning(
-                warning.get("ruleId", ""), warning.get("instance", ""), warning.get("message", "")
-            )
-            warnings_found = True
+        errors = response.get("errors") or []
+        warnings = response.get("warnings") or []
+        self.validation_result_tree_view.model.add_results(errors, warnings)
+        errors_found = bool(errors)
+        warnings_found = bool(warnings)
 
         # If the response includes errors or warnings, show validation_result_tree_view.
         if errors_found or warnings_found:
