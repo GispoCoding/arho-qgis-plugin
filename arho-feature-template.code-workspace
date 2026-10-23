@@ -18,20 +18,9 @@
             "test"
         ],
         "python.testing.unittestEnabled": false,
-        "json.schemas": [
-            {
-                "fileMatch": [
-                    "**/template_libraries/*.json"
-                ],
-                "url": "./arho_feature_template/resources/template_libraries/schema/template_library.schema.json"
-            }
-        ],
         "yaml.schemas": {
-            "./arho_feature_template/resources/template_libraries/schema/template_library.schema.json": [
-                "**/template_libraries/*.yaml"
-            ],
-            "./arho_feature_template/resources/libraries/feature_templates/schema/lisatiedonlaji.schema.json": [
-                "**/libraries/additional_information.yaml"
+            "./arho_feature_template/resources/configs/schema/lisatiedonlaji.schema.json": [
+                "**/configs/additional_information.yaml"
             ]
         }
     },
