@@ -32,7 +32,9 @@ repos:
           - pydantic
           - pytest
           - requests-mock
-          - sqlalchemy
+          # The version in requirements.txt, so that mypy checks the code against
+          # the SQLAlchemy it runs on. SQLAlchemy 2.1 types result rows differently.
+          - sqlalchemy==2.0.52
           - types-boto3
           - types-requests
           - types-shapely
