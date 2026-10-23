@@ -220,7 +220,8 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         # If no errors or warnings, display a message and exit
         if not errors and not warnings:
             logger.debug("Validation response contains no errors or warnings")
-            iface.messageBar().pushMessage("Virhe", "Ei virheitä havaittu.", level=1)
+            self.validation_label.setText("Ei validointivirheitä tai -varoituksia.")
+            self.validation_label.setStyleSheet("QLabel {color: green}")
             self.enable_validation()
             return
         with timed("list_validation_errors", errors=len(errors), warnings=len(warnings)):
