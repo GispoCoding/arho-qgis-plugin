@@ -3,6 +3,9 @@
 The menu is built once per regulation and proposition widget of a form, so a plan matter
 read here would repeat once per widget. The project has no plan matter layer at all: a
 read would raise `LayerNotFoundError`.
+
+Setting a row valid takes the plan's validity start, which only a valid plan has, instead of
+asking for a date.
 """
 
 from __future__ import annotations
@@ -11,20 +14,25 @@ from typing import Iterator
 
 import pytest
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
+from qgis.PyQt.QtCore import QDate
 
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue
+from arho_feature_template.gui.components import edit_lifecycle_menu
 from arho_feature_template.gui.components.edit_lifecycle_menu import EditLifecycleMenu
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, PlanTypeLayer
-from arho_feature_template.utils.misc_utils import set_active_plan_matter_plan_type_id
-from arho_feature_template.utils.project_utils import CODE_LAYER_GROUP_NAME
+from arho_feature_template.project.layers.plan_layers import PlanLayer
+from arho_feature_template.utils.misc_utils import set_active_plan_id, set_active_plan_matter_plan_type_id
+from arho_feature_template.utils.project_utils import CODE_LAYER_GROUP_NAME, PLAN_LAYER_GROUP_NAME
 
 REGIONAL_TYPE_ID = "type-regional"
 TOWN_TYPE_ID = "type-town"
 
 
-def _add_code_layer(project: QgsProject, layer_name: str, uri: str, rows: list[dict]) -> QgsVectorLayer:
+def _add_memory_layer(
+    project: QgsProject, layer_name: str, uri: str, rows: list[dict], group_name: str = CODE_LAYER_GROUP_NAME
+) -> QgsVectorLayer:
     root = project.layerTreeRoot()
-    group = root.findGroup(CODE_LAYER_GROUP_NAME) or root.addGroup(CODE_LAYER_GROUP_NAME)
+    group = root.findGroup(group_name) or root.addGroup(group_name)
     layer = QgsVectorLayer(uri, layer_name, "memory")
     assert layer.isValid()
     for row in rows:
@@ -40,13 +48,13 @@ def _add_code_layer(project: QgsProject, layer_name: str, uri: str, rows: list[d
 @pytest.fixture
 def code_layers(new_project: QgsProject) -> Iterator[QgsProject]:
     """The lifecycle statuses and the plan types, the only layers the menu needs."""
-    _add_code_layer(
+    _add_memory_layer(
         new_project,
         LifeCycleStatusLayer.name,
         "None?field=id:string&field=value:string&field=name:map",
         [{"id": f"lc-{value}", "value": value.value, "name": {"fin": value.name}} for value in LifeCycleStatusValue],
     )
-    _add_code_layer(
+    _add_memory_layer(
         new_project,
         PlanTypeLayer.name,
         "None?field=id:string&field=value:string",
@@ -102,3 +110,64 @@ def test_without_a_plan_matter_the_menu_still_builds(code_layers, make_menu):  #
 
     assert LifeCycleStatusValue.VALID_BEFORE_LEGAL_VALIDITY not in values
     assert len(values) == 7
+
+
+PLAN_START = QDate(2026, 5, 4)
+
+
+@pytest.fixture
+def ask_date_calls(monkeypatch) -> list:
+    """Stands in for the date dialog, which answers with a date of its own."""
+    calls: list = []
+
+    def fake_ask_date(*args):
+        calls.append(args)
+        return QDate(2000, 1, 1)
+
+    monkeypatch.setattr(edit_lifecycle_menu, "ask_date", fake_ask_date)
+    return calls
+
+
+def _add_active_plan(project: QgsProject, start: QDate | None) -> None:
+    _add_memory_layer(
+        project,
+        PlanLayer.name,
+        "None?field=id:string&field=period_of_validity_start:date",
+        [{"id": "plan-1", "period_of_validity_start": start}],
+        group_name=PLAN_LAYER_GROUP_NAME,
+    )
+    set_active_plan_id("plan-1")
+
+
+def _set_valid(menu: EditLifecycleMenu) -> list:
+    emitted: list = []
+    menu.lifecycle_change_requested.connect(lambda value, date: emitted.append((value, date)))
+    action = next(action for action in menu.actions() if action.data() == LifeCycleStatusValue.VALID)
+    menu.triggered.emit(action)
+    return emitted
+
+
+def test_a_valid_plan_gives_its_validity_start(code_layers, make_menu, ask_date_calls):
+    _add_active_plan(code_layers, PLAN_START)
+
+    emitted = _set_valid(make_menu())
+
+    assert emitted == [(LifeCycleStatusValue.VALID, PLAN_START)]
+    assert ask_date_calls == []
+
+
+def test_a_plan_without_a_validity_start_asks_the_date(code_layers, make_menu, ask_date_calls):
+    _add_active_plan(code_layers, None)
+
+    emitted = _set_valid(make_menu())
+
+    assert emitted == [(LifeCycleStatusValue.VALID, QDate(2000, 1, 1))]
+    assert len(ask_date_calls) == 1
+
+
+def test_without_an_active_plan_the_menu_asks_the_date(code_layers, make_menu, ask_date_calls):  # noqa: ARG001
+    set_active_plan_id(None)
+
+    _set_valid(make_menu())
+
+    assert len(ask_date_calls) == 1

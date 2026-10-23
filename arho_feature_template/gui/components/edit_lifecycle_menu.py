@@ -6,6 +6,7 @@ from qgis.PyQt.QtWidgets import QDateEdit, QDialog, QDialogButtonBox, QLabel, QM
 
 from arho_feature_template.core.lifecycles import LIFECYCLE_PIXMAPS, LifeCycleStatusValue
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer, PlanTypeLayer
+from arho_feature_template.project.layers.plan_layers import PlanLayer
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_plan_type_id
 
@@ -47,7 +48,7 @@ class EditLifecycleMenu(QMenu):
         lifecycle_value = action.data()
         date = None
         if lifecycle_value == LifeCycleStatusValue.VALID:
-            date = ask_date(self.parentWidget())
+            date = PlanLayer.get_validity_start() or ask_date(self.parentWidget())
             if date is None:
                 return
         if lifecycle_value:

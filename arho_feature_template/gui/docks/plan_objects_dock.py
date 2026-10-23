@@ -203,7 +203,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             visible = False
         else:
             if active_lifecycle_id is None:
-                active_lifecycle_id = PlanLayer.get_attribute_by_id("lifecycle_status_id", active_plan_id)
+                active_lifecycle_id = PlanLayer.get_lifecycle_status_id(active_plan_id)
             active_lifecycle_value = LifeCycleStatusLayer.get_lifecycle_status_by_id(active_lifecycle_id)
 
             visible = active_lifecycle_value is not None and int(active_lifecycle_value.value) >= int(

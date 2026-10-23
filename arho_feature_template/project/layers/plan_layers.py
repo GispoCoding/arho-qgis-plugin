@@ -5,9 +5,9 @@ from abc import abstractmethod
 from collections import defaultdict
 from string import Template
 from textwrap import dedent
-from typing import Any, ClassVar, Generator, Iterable, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Generator, Iterable, cast
 
-from qgis.core import NULL, QgsFeature
+from qgis.core import NULL, QgsFeature, QgsVariantUtils
 
 from arho_feature_template.core.models import (
     AdditionalInformation,
@@ -44,6 +44,9 @@ from arho_feature_template.utils.misc_utils import (
 )
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME
 from arho_feature_template.utils.timing import timed
+
+if TYPE_CHECKING:
+    from qgis.PyQt.QtCore import QDate
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +198,19 @@ class PlanLayer(AbstractPlanLayer):
         if not plan_id:
             return None
         return cast("str | None", cls.get_attribute_by_id("lifecycle_status_id", plan_id))
+
+    @classmethod
+    def get_validity_start(cls, plan_id: str | None = None) -> QDate | None:
+        """The validity start of the plan (the active plan by default), or None.
+
+        Only a valid plan has one. Plan objects under appeal get this date later, when the
+        user sets them valid.
+        """
+        plan_id = plan_id or get_active_plan_id()
+        if not plan_id:
+            return None
+        start = cls.get_attribute_by_id("period_of_validity_start", plan_id)
+        return None if QgsVariantUtils.isNull(start) else start
 
     @classmethod
     def feature_from_model(cls, model: Plan) -> QgsFeature:
