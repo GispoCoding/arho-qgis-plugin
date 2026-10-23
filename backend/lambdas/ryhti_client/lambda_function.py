@@ -108,10 +108,10 @@ ryhti_wfs_url = os.environ.get(
     "RYHTI_WFS_URL", "https://paikkatiedot.ymparisto.fi/geoserver/ryhti_plan/wfs"
 )
 # Presigned URLs require SigV4. In local development AWS_ENDPOINT_URL_S3 points
-# the client at MinIO. Against AWS, pin the client to the regional endpoint:
-# the global endpoint redirects (307) requests for newly created buckets until
-# DNS propagates, and clients cannot follow the redirect because the presigned
-# signature covers the Host header.
+# the client at a local S3 gateway. Against AWS, pin the client to the regional
+# endpoint: the global endpoint redirects (307) requests for newly created
+# buckets until DNS propagates, and clients cannot follow the redirect because
+# the presigned signature covers the Host header.
 s3_region = os.environ.get("AWS_REGION_NAME", "") or None
 s3_endpoint_url = os.environ.get("AWS_ENDPOINT_URL_S3", "") or (
     f"https://s3.{s3_region}.amazonaws.com" if s3_region else None

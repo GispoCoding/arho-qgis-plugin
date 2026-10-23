@@ -73,9 +73,9 @@ services:
       - XROAD_SYKE_CLIENT_ID=test-id
       - XROAD_SYKE_CLIENT_SECRET=test-secret
       - RYHTI_FILES_BUCKET=ryhti-files
-      - AWS_ENDPOINT_URL_S3=http://minio:9000
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_ENDPOINT_URL_S3=http://s3:9000
+      - AWS_ACCESS_KEY_ID=s3dev
+      - AWS_SECRET_ACCESS_KEY=s3devsecret
       - AWS_REGION_NAME=us-east-1
       # Without this the runtime drops our INFO logs, arho_timing lines included.
       - AWS_LAMBDA_LOG_LEVEL=${AWS_LAMBDA_LOG_LEVEL:-INFO}
@@ -84,7 +84,7 @@ services:
     depends_on:
       - db
       - mock_xroad
-      - minio
+      - s3
     volumes:
       - ./logs:/tmp/logs
       - ./lambdas/ryhti_client/ryhti_client:/var/task/ryhti_client
@@ -120,19 +120,15 @@ services:
     volumes:
       - ./test/test_services_mock_xroad.json:/config/initializerJson.json:Z
 
-  minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: server /data
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    ports:
-      - ${MINIO_PORT:-9000}:9000
-
-  createbucket:
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
-    depends_on:
-      - minio
+  s3:
+    # An S3 compatible gateway that stores objects as files. A bucket is a
+    # directory, so the ryhti-files bucket exists as soon as the gateway starts.
+    image: versity/versitygw:v1.8.0
     entrypoint: >
-      /bin/sh -c "until mc alias set local http://minio:9000 minioadmin minioadmin;
-      do sleep 1; done; mc mb -p local/ryhti-files"
+      /bin/sh -c "mkdir -p /data/ryhti-files && exec versitygw posix /data"
+    environment:
+      - ROOT_ACCESS_KEY_ID=s3dev
+      - ROOT_SECRET_ACCESS_KEY=s3devsecret
+      - VGW_PORT=:9000
+    ports:
+      - ${S3_PORT:-9000}:9000
