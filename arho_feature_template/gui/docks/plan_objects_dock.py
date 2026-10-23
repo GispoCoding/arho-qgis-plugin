@@ -217,13 +217,19 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
             layer = arho_layer.get_from_project()
 
             selected_features = layer.selectedFeatures()
+            if selected_features and not layer.isEditable():
+                feature_editing.start_editing(layer)
             for feature in selected_features:
                 feature["lifecycle_status_id"] = lifecycle_id
                 feature["period_of_validity_start"] = date
 
                 model = arho_layer.model_from_feature(feature)  # TODO: change to models_from_features
+                if not feature_editing.add_to_edit_buffer(
+                    feature=feature, layer=layer, id_=feature["id"], edit_text="Kaavakohteen elinkaaren muutos"
+                ):
+                    iface.messageBar().pushCritical("", "Kaavakohteen elinkaaren muuttaminen epäonnistui.")
+                    continue
                 feature_editing.created_object_models[feature["id"]] = model
-                layer.updateFeature(feature)
 
         feature_editing.commit_edit_buffer(stop_editing=False)
 
