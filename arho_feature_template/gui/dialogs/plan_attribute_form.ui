@@ -122,6 +122,12 @@
              </item>
              <item row="2" column="1">
               <widget class="QSpinBox" name="scale_spin_box">
+               <property name="specialValueText">
+                <string>Ei määritetty</string>
+               </property>
+               <property name="prefix">
+                <string>1 : </string>
+               </property>
                <property name="maximum">
                 <number>999999999</number>
                </property>
