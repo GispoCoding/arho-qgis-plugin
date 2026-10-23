@@ -10,7 +10,7 @@ from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox, QTabWidg
 
 from arho_feature_template.core.models import PlanObjectLibrary, RegulationGroupLibrary
 from arho_feature_template.gui.components.library_display_widget import LibaryDisplayWidget
-from arho_feature_template.resources.libraries.feature_templates import set_user_plan_feature_library_config_files
+from arho_feature_template.resources.libraries.plan_objects import set_user_plan_object_library_config_files
 from arho_feature_template.resources.libraries.regulation_groups import set_user_regulation_group_library_config_files
 
 ui_path = resources.files(__package__) / "manage_libraries.ui"
@@ -143,7 +143,7 @@ class ManageLibrariesForm(QDialog, FormClass):  # type: ignore
             set_user_regulation_group_library_config_files(
                 library.file_path for library in updated_regulation_group_libraries
             )
-            set_user_plan_feature_library_config_files(library.file_path for library in updated_plan_feature_libraries)
+            set_user_plan_object_library_config_files(library.file_path for library in updated_plan_feature_libraries)
 
             super().reject()
             logger.debug("ManageLibrariesForm closed")

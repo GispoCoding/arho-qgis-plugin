@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 import yaml
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 
-from arho_feature_template.resources.libraries.feature_templates import (
-    get_user_plan_feature_library_config_files,
-    set_user_plan_feature_library_config_files,
+from arho_feature_template.resources.libraries.plan_objects import (
+    get_user_plan_object_library_config_files,
+    set_user_plan_object_library_config_files,
 )
 from arho_feature_template.utils.misc_utils import iface
 
@@ -172,8 +172,8 @@ class TemplateManager:
         logger.debug("Plan object saved to library path=%s", library.file_path)
         iface.messageBar().pushSuccess("", "Kaavakohde tallennettu kaavakohdepohjakirjastoon.")
 
-        library_file_paths = get_user_plan_feature_library_config_files()
+        library_file_paths = get_user_plan_object_library_config_files()
         library_file_paths_as_str = [str(path) for path in library_file_paths]
-        set_user_plan_feature_library_config_files(library_file_paths_as_str)
+        set_user_plan_object_library_config_files(library_file_paths_as_str)
         TemplateManager.signal_manager.feature_object_added_to_library.emit()
         logger.debug("Updated user plan feature library config paths and emitted update signal")

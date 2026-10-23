@@ -101,8 +101,8 @@ from arho_feature_template.project.layers.valid_layers import (
     valid_plan_object_layers,
 )
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_path
-from arho_feature_template.resources.libraries.feature_templates import (
-    get_user_plan_feature_library_config_files,
+from arho_feature_template.resources.libraries.plan_objects import (
+    get_user_plan_object_library_config_files,
 )
 from arho_feature_template.resources.libraries.regulation_groups import (
     get_default_regulation_group_library_config_files,
@@ -364,7 +364,7 @@ class PlanManager(QObject):
                 library_type=PlanObjectLibrary.LibraryType.CUSTOM,
                 file_path=str(file_path),
             )
-            for file_path in get_user_plan_feature_library_config_files()
+            for file_path in get_user_plan_object_library_config_files()
         ]
         self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
         logger.debug("Initialized plan feature libraries: count=%s", len(self.plan_feature_libraries))

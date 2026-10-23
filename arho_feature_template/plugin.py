@@ -34,6 +34,7 @@ from arho_feature_template.qgis_plugin_tools.tools.custom_logging import (
 )
 from arho_feature_template.qgis_plugin_tools.tools.i18n import setup_translation
 from arho_feature_template.qgis_plugin_tools.tools.resources import plugin_name, resources_path
+from arho_feature_template.resources.libraries.plan_objects import migrate_user_plan_object_library_paths_key
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 from arho_feature_template.utils.widget_utils import deleted_after_use, remove_widget
 
@@ -51,6 +52,7 @@ class Plugin:
 
     def __init__(self) -> None:
         SettingsManager.migrate_log_level_keys()
+        migrate_user_plan_object_library_paths_key()
         self.set_file_log_level_if_not_set()
         self._setup_logger()
         # Rebuild the handlers when the settings page is applied, so a new level takes
