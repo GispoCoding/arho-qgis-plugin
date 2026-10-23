@@ -17,7 +17,7 @@ from qgis.PyQt.QtWidgets import QDialogButtonBox
 
 from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.gui.components.regulation_groups_view import RegulationGroupsView
-from arho_feature_template.gui.dialogs.plan_feature_form import (
+from arho_feature_template.gui.dialogs.plan_object_form import (
     PLAN_LOCKED_MESSAGE,
     VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
     PlanObjectForm,

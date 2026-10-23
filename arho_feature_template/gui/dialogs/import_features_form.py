@@ -32,8 +32,8 @@ from arho_feature_template.project.layers.code_layers import (
 )
 from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
-    plan_feature_layers,
     plan_layers,
+    plan_object_layers,
 )
 from arho_feature_template.utils.localization_utils import LANGUAGES
 from arho_feature_template.utils.misc_utils import iface, use_wait_cursor
@@ -106,7 +106,7 @@ class ImportFeaturesForm(QDialog, FormClass):  # type: ignore
         # Set only plan feature layers as valid target layers
         self.target_layer_selection.setFilters(QgsMapLayerProxyModel.Filter.VectorLayer)
         self.target_layer_selection.clear()
-        self.target_layer_selection.setAdditionalLayers(layer.get_from_project() for layer in plan_feature_layers)
+        self.target_layer_selection.setAdditionalLayers(layer.get_from_project() for layer in plan_object_layers)
         self.target_layer_selection.setCurrentIndex(0)
         self.target_layer_selection.layerChanged.connect(self._on_layer_selections_changed)
 

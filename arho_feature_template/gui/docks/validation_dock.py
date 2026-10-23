@@ -23,7 +23,7 @@ from arho_feature_template.project.layers.plan_layers import (
     PlanPropositionLayer,
     PlanRegulationLayer,
     RegulationGroupLayer,
-    plan_feature_layers,
+    plan_object_layers,
 )
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 
@@ -314,7 +314,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
         regulation_group_id = None
 
         if object_with_id == "planobjects":
-            for feature_layer in plan_feature_layers:
+            for feature_layer in plan_object_layers:
                 feature = feature_layer.get_feature_by_id(id_=key, no_geometries=False)
                 if feature:
                     break

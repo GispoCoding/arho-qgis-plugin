@@ -27,9 +27,9 @@ def test_init_gui_registers_ui(plugin, iface):
     docks = iface.dock_widgets()
     manager = plugin.plan_manager
     for dock in (
-        manager.new_feature_dock,
+        manager.new_plan_object_dock,
         manager.regulation_groups_dock,
-        manager.features_dock,
+        manager.plan_objects_dock,
         plugin.validation_dock,
     ):
         assert dock in docks
@@ -70,9 +70,9 @@ def test_unload_unparents_the_docks(plugin_factory, iface):
     plugin = plugin_factory()
     manager = plugin.plan_manager
     docks = [
-        manager.new_feature_dock,
+        manager.new_plan_object_dock,
         manager.regulation_groups_dock,
-        manager.features_dock,
+        manager.plan_objects_dock,
         plugin.validation_dock,
     ]
 
@@ -97,7 +97,7 @@ def test_unload_keeps_other_project_read_receivers(plugin_factory, iface):
 def test_unload_disconnects_template_library_singleton(plugin_factory):
     """`TemplateManager.signal_manager` is created at import time and outlives the plugin."""
     plugin = plugin_factory()
-    dock = plugin.plan_manager.new_feature_dock
+    dock = plugin.plan_manager.new_plan_object_dock
 
     plugin.unload()
 

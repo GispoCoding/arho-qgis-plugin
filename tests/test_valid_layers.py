@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from qgis.core import QgsProject, QgsVectorLayer
 
-from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, plan_feature_layers
+from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, plan_object_layers
 from arho_feature_template.project.layers.valid_layers import (
     ValidAdditionalInformationLayer,
     ValidLandUseAreaLayer,
@@ -31,7 +31,7 @@ def test_the_plan_object_layers_are_registered_but_their_base_is_not():
     assert valid_plan_object_layers == [ValidPointLayer, ValidLineLayer, ValidLandUseAreaLayer, ValidOtherAreaLayer]
     assert all(layer in valid_layers for layer in valid_plan_object_layers)
     assert ValidPlanObjectLayer not in valid_layers
-    assert all(layer not in plan_feature_layers for layer in valid_plan_object_layers)
+    assert all(layer not in plan_object_layers for layer in valid_plan_object_layers)
 
 
 def test_a_valid_plan_object_carries_the_editable_layer_name():

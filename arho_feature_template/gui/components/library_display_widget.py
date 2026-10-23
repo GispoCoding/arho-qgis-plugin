@@ -31,7 +31,7 @@ from arho_feature_template.core.models import (
     RegulationGroupLibrary,
 )
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
+from arho_feature_template.gui.dialogs.plan_object_form import PlanObjectForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.project.layers.plan_layers import LandUseAreaLayer, LineLayer, OtherAreaLayer, PointLayer
 from arho_feature_template.utils.misc_utils import iface
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 ui_path = resources.files(__package__) / "library_display_widget.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
-# TODO: Now almost duplicate version exists in NewFeatureGridWidget, both should be moved to a generic place
+# TODO: Now almost duplicate version exists in NewPlanObjectGridWidget, both should be moved to a generic place
 FEATURE_TYPE_TO_LAYER_NAME = {
     "Viiva": LineLayer.name,
     "Osa-alue": OtherAreaLayer.name,

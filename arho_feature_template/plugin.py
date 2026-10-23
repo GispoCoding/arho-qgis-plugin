@@ -234,24 +234,26 @@ class Plugin:
         self.plan_manager = PlanManager()
 
         # Docks
-        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.new_feature_dock)
+        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.new_plan_object_dock)
 
         iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.regulation_groups_dock)
         iface.mainWindow().tabifyDockWidget(
-            self.plan_manager.new_feature_dock, self.plan_manager.regulation_groups_dock
+            self.plan_manager.new_plan_object_dock, self.plan_manager.regulation_groups_dock
         )
 
-        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.features_dock)
-        iface.mainWindow().tabifyDockWidget(self.plan_manager.regulation_groups_dock, self.plan_manager.features_dock)
+        iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.plan_manager.plan_objects_dock)
+        iface.mainWindow().tabifyDockWidget(
+            self.plan_manager.regulation_groups_dock, self.plan_manager.plan_objects_dock
+        )
 
         self.validation_dock = ValidationDock(self.plan_manager)
         iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.validation_dock)
-        iface.mainWindow().tabifyDockWidget(self.plan_manager.new_feature_dock, self.validation_dock)
+        iface.mainWindow().tabifyDockWidget(self.plan_manager.new_plan_object_dock, self.validation_dock)
 
         # Hide the docks because they cannot be used before a plan has been selected/activated
-        self.plan_manager.new_feature_dock.hide()
+        self.plan_manager.new_plan_object_dock.hide()
         self.plan_manager.regulation_groups_dock.hide()
-        self.plan_manager.features_dock.hide()
+        self.plan_manager.plan_objects_dock.hide()
         self.validation_dock.hide()
         logger.debug("Docks initialized and hidden until plan context is active")
 
@@ -442,18 +444,18 @@ class Plugin:
         self.toolbar.addSeparator()
 
         #####  PLAN OBJECTS  #####
-        self.plan_features_dock_action = self.add_action(
+        self.plan_objects_dock_action = self.add_action(
             text="Kaavakohteet",
             icon=QIcon(resources_path("icons", "toolbar", "planObjectsTable.svg")),
-            triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.features_dock),
+            triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.plan_objects_dock),
             add_to_menu=True,
             add_to_toolbar=True,
         )
 
-        self.new_feature_dock_action = self.add_action(
+        self.new_plan_object_dock_action = self.add_action(
             text="Luo kaavakohde",
             icon=QIcon(resources_path("icons", "toolbar", "planObjectsNew.svg")),
-            triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.new_feature_dock),
+            triggered_callback=lambda _: self.toggle_dock_visibility(self.plan_manager.new_plan_object_dock),
             add_to_menu=True,
             add_to_toolbar=True,
         )
@@ -557,9 +559,9 @@ class Plugin:
         ]
         self.plan_depending_actions = [
             self.edit_plan_action,
-            self.new_feature_dock_action,
+            self.new_plan_object_dock_action,
             # self.new_plan_action,
-            self.plan_features_dock_action,
+            self.plan_objects_dock_action,
             self.regulation_groups_dock_action,
             self.manage_libraries_action,
             self.validation_dock_action,

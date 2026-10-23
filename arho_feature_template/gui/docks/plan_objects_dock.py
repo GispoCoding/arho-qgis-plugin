@@ -26,7 +26,7 @@ from arho_feature_template.core.feature_editing import save_plan_object
 from arho_feature_template.core.lifecycles import LifeCycleStatusValue
 from arho_feature_template.core.template_manager import TemplateManager
 from arho_feature_template.gui.components.validity_label import VALIDITY_SORT_ROLE, validity_item_from_model
-from arho_feature_template.gui.dialogs.plan_feature_form import PlanObjectForm
+from arho_feature_template.gui.dialogs.plan_object_form import PlanObjectForm
 from arho_feature_template.project.layers.code_layers import LifeCycleStatusLayer
 from arho_feature_template.project.layers.plan_layers import (
     LandUseAreaLayer,
@@ -34,15 +34,15 @@ from arho_feature_template.project.layers.plan_layers import (
     OtherAreaLayer,
     PlanLayer,
     PointLayer,
-    get_plan_feature_layer_class_by_layer_name,
-    get_plan_feature_layer_class_by_model,
-    plan_feature_layers,
+    get_plan_object_layer_class_by_layer_name,
+    get_plan_object_layer_class_by_model,
+    plan_object_layers,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
 from arho_feature_template.utils.widget_utils import deleted_after_use
 
-ui_path = resources.files(__package__) / "plan_features_dock.ui"
+ui_path = resources.files(__package__) / "plan_objects_dock.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 if TYPE_CHECKING:
@@ -213,7 +213,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def _on_lifecycle_change_requested(self, lifecycle_value: LifeCycleStatusValue, date: QDate | None):
         lifecycle_id = LifeCycleStatusLayer.get_id_from_lifecycle_status_value(lifecycle_value)
-        for arho_layer in plan_feature_layers:
+        for arho_layer in plan_object_layers:
             layer = arho_layer.get_from_project()
 
             selected_features = layer.selectedFeatures()
@@ -246,7 +246,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
     def initialize(self):
         logger.debug("Initializing PlanObjectsDock layer signal connections")
         self.disconnect_layer_signals()
-        for layer in plan_feature_layers:
+        for layer in plan_object_layers:
             vector_layer = layer.get_from_project()
             logger.debug("Connecting feature layer signals layer=%s", vector_layer.name())
             vector_layer.selectionChanged.connect(self._on_feature_selection_changed)
@@ -293,7 +293,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
         # Add all plan features to table view
         # Idea: add `get_models` method for all layer classes
-        for layer in plan_feature_layers:
+        for layer in plan_object_layers:
             features = (plan_features_by_layer or {}).get(layer.name)
             if features is None:
                 features = list(layer.get_features())
@@ -473,7 +473,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def _on_zoom_to_feature(self, plan_feature_model: PlanObject):
         logger.debug("Zoom to feature requested id=%s", plan_feature_model.id_)
-        layer_class = get_plan_feature_layer_class_by_model(plan_feature_model)
+        layer_class = get_plan_object_layer_class_by_model(plan_feature_model)
         feat = layer_class.feature_from_model(plan_feature_model)
 
         iface.mapCanvas().setExtent(feat.geometry().boundingBox().buffered(1000))
@@ -481,7 +481,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
 
     def _on_pan_to_feature(self, plan_feature_model: PlanObject):
         logger.debug("Pan to feature requested id=%s", plan_feature_model.id_)
-        layer_class = get_plan_feature_layer_class_by_model(plan_feature_model)
+        layer_class = get_plan_object_layer_class_by_model(plan_feature_model)
         feat = layer_class.feature_from_model(plan_feature_model)
 
         iface.mapCanvas().setCenter(feat.geometry().centroid().asPoint())
@@ -576,9 +576,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                     continue
                 plan_feature = data[0]
                 feat_id = data[1]
-                layer = get_plan_feature_layer_class_by_layer_name(
-                    cast(str, plan_feature.layer_name)
-                ).get_from_project()
+                layer = get_plan_object_layer_class_by_layer_name(cast(str, plan_feature.layer_name)).get_from_project()
                 layer.selectByIds([feat_id], Qgis.SelectBehavior.AddToSelection)
                 self.selected_plan_feature_ids[layer.name()].add(feat_id)
 
@@ -589,9 +587,7 @@ class PlanObjectsDock(QgsDockWidget, FormClass):  # type: ignore
                     continue
                 plan_feature = data[0]
                 feat_id = data[1]
-                layer = get_plan_feature_layer_class_by_layer_name(
-                    cast(str, plan_feature.layer_name)
-                ).get_from_project()
+                layer = get_plan_object_layer_class_by_layer_name(cast(str, plan_feature.layer_name)).get_from_project()
                 layer.deselect(feat_id)
                 self.selected_plan_feature_ids[layer.name()].discard(feat_id)
         finally:

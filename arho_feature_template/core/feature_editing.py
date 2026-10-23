@@ -18,7 +18,7 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     TypeOfVerbalRegulationAssociationLayer,
-    get_plan_feature_layer_class_by_model,
+    get_plan_object_layer_class_by_model,
 )
 from arho_feature_template.qgis_plugin_tools.tools.messages import MsgBar
 from arho_feature_template.utils.misc_utils import (
@@ -421,7 +421,7 @@ def add_plan_object_to_edit_buffer(
     assumed that all regulations groups of plan object to be added exist already and that the plan object
     is new.
     """
-    layer_class = get_plan_feature_layer_class_by_model(plan_object)
+    layer_class = get_plan_object_layer_class_by_model(plan_object)
     layer_name = cast(str, plan_object.layer_name)
     logger.debug(
         "Adding plan object to edit buffer layer=%s id=%s modified=%s enable_editing=%s",

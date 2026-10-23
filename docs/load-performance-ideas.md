@@ -46,7 +46,7 @@ test can use the same read (missing feature -> warn path).
 
 ## 3. Reuse the active-plan regulation group library in the features dock (~0.8 s) - done
 
-`PlanObjectsDock.create_plan_feature_view` (`gui/docks/plan_features_dock.py:279`)
+`PlanObjectsDock.create_plan_feature_view` (`gui/docks/plan_objects_dock.py:279`)
 calls `layer.models_from_features(features)` without `regulation_groups`, so
 `PlanObjectReader.models_from_features` (`project/layers/model_readers.py:102-106`)
 re-reads the groups and their regulations, additional information, theme and
@@ -64,7 +64,7 @@ that referenced one would otherwise lose it.
 `RegulationGroupsDock.update_regulation_groups` (`gui/docks/regulation_groups_dock.py:209-215`)
 reads the four plan feature layers (id + geometry, used to flash/select the
 objects of a group) and `create_plan_feature_view`
-(`plan_features_dock.py:276-277`) reads them again in full, right after.
+(`plan_objects_dock.py:276-277`) reads them again in full, right after.
 
 Idea: read once in `set_active_plan` and pass the features to both; keep the
 self-fetching behaviour when the argument is `None` for the other callers.
@@ -72,7 +72,7 @@ self-fetching behaviour when the argument is `None` for the other callers.
 ## 5. Read the plan row once in `set_active_plan` (~0.4 s) - done
 
 `:952` model, `:984` zoom (`zoom_to_active_plan` scans the layer), `:975` name,
-and `plan_features_dock.py:200` lifecycle status: four reads of one row.
+and `plan_objects_dock.py:200` lifecycle status: four reads of one row.
 
 Idea: `PlanLayer.get_feature_by_id(plan_id, no_geometries=False)` once; build
 the model, the name and the bounding box from it.

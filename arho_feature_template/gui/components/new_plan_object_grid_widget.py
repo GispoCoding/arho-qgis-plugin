@@ -18,7 +18,7 @@ FEATURE_BUTTON_WIDTH = 90
 FEATURE_BUTTON_HEIGHT = 90
 
 
-class NewFeatureGridWidget(QListWidget):
+class NewPlanObjectGridWidget(QListWidget):
     active_feature_type_changed = pyqtSignal(str, str)
 
     def __init__(self):

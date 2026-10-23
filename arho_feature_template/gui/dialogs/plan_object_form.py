@@ -26,7 +26,7 @@ if TYPE_CHECKING:
         LocalizedSinglelineTextInputWidget,
     )
 
-ui_path = resources.files(__package__) / "plan_feature_form.ui"
+ui_path = resources.files(__package__) / "plan_object_form.ui"
 FormClass, _ = uic.loadUiType(ui_path)
 
 PLAN_LOCKED_MESSAGE = "Kaavasuunnitelma on lukittu, kaavakohdetta ei voi muokata."
@@ -54,7 +54,7 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         self.setupUi(self)
 
         # TYPES
-        self.plan_feature_groupbox: QgsCollapsibleGroupBox
+        self.plan_object_groupbox: QgsCollapsibleGroupBox
         self.feature_name: LocalizedSinglelineTextInputWidget
         self.feature_description: LocalizedMultilineTextInputWidget
         self.feature_type_of_underground: CodeComboBox
@@ -98,13 +98,13 @@ class PlanObjectForm(QDialog, FormClass):  # type: ignore
         if plan_feature.period_of_validity_start:
             self.validity_start_date.setText(date_as_str(plan_feature.period_of_validity_start))
         else:
-            self.plan_feature_groupbox.layout().removeRow(self.validity_start_label)
+            self.plan_object_groupbox.layout().removeRow(self.validity_start_label)
 
         # Validity end
         if plan_feature.period_of_validity_end:
             self.validity_end_date.setText(date_as_str(plan_feature.period_of_validity_end))
         else:
-            self.plan_feature_groupbox.layout().removeRow(self.validity_end_label)
+            self.plan_object_groupbox.layout().removeRow(self.validity_end_label)
 
         self.plan_feature_libraries = plan_feature_libraries
         self._init_save_to_library_button()

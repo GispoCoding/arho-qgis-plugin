@@ -16,7 +16,7 @@ from qgis.PyQt.QtGui import QColor, QFont, QFontMetrics, QPainter, QPixmap
 from arho_feature_template.exceptions import NotPlanObjectLayerError
 from arho_feature_template.project.layers.plan_layers import (
     PlanObjectLayer,
-    plan_feature_layers,
+    plan_object_layers,
 )
 from arho_feature_template.utils.misc_utils import iface
 
@@ -32,7 +32,7 @@ class PlanObjectIconRenderer:
     def render_icons_for_layer(
         cls, layer: PlanObjectLayer, symbol_width: int = 40, symbol_height: int = 40
     ) -> dict[str, QPixmap]:
-        if layer not in plan_feature_layers:
+        if layer not in plan_object_layers:
             raise NotPlanObjectLayerError(layer.name)
 
         icons: dict[str, QPixmap] = {}

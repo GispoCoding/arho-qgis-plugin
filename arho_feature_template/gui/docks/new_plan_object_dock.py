@@ -10,7 +10,7 @@ from qgis.PyQt.QtCore import Qt, pyqtSignal
 from qgis.PyQt.QtWidgets import QListWidget, QListWidgetItem
 
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.gui.components.new_feature_grid_widget import NewFeatureGridWidget
+from arho_feature_template.gui.components.new_plan_object_grid_widget import NewPlanObjectGridWidget
 from arho_feature_template.utils.localization_utils import get_localized_text
 
 if TYPE_CHECKING:
@@ -19,13 +19,13 @@ if TYPE_CHECKING:
 
     from arho_feature_template.core.models import PlanObject, PlanObjectLibrary
 
-ui_path = resources.files(__package__) / "new_feature_dock.ui"
+ui_path = resources.files(__package__) / "new_plan_object_dock.ui"
 DockClass, _ = uic.loadUiType(ui_path)
 
 logger = logging.getLogger(__name__)
 
 
-class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
+class NewPlanObjectDock(QgsDockWidget, DockClass):  # type: ignore
     library_selection: QComboBox
     search_box: QgsFilterLineEdit
     template_list: QListWidget
@@ -36,12 +36,12 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setupUi(self)
-        logger.debug("Initializing NewFeatureDock")
+        logger.debug("Initializing NewPlanObjectDock")
 
         # INIT
         # 1. New feature grid
-        self.new_feature_grid = NewFeatureGridWidget()
-        self.dockWidgetContents.layout().insertWidget(1, self.new_feature_grid)
+        self.new_plan_object_grid = NewPlanObjectGridWidget()
+        self.dockWidgetContents.layout().insertWidget(1, self.new_plan_object_grid)
 
         # 2. Feature templates
         self.active_feature_type: str | None = None
@@ -55,23 +55,23 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
 
         # NOTE: If user moves selection with arrow keys, this is not registered currently
         self.template_list.clicked.connect(self.on_template_item_clicked)
-        self.new_feature_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
+        self.new_plan_object_grid.active_feature_type_changed.connect(self.on_active_feature_type_changed)
 
         TemplateManager.signal_manager.feature_object_added_to_library.connect(self.update_template_list)
 
     def unload(self):
-        logger.debug("Unloading NewFeatureDock")
+        logger.debug("Unloading NewPlanObjectDock")
         # `signal_manager` is a module level singleton that outlives the dock, so Qt cannot
         # drop this connection for us
         TemplateManager.signal_manager.feature_object_added_to_library.disconnect(self.update_template_list)
 
     def update_lock_status(self, locked: bool):  # noqa: FBT001
         logger.debug("Updating new feature dock lock status locked=%s", locked)
-        self.new_feature_grid.setEnabled(not locked)
+        self.new_plan_object_grid.setEnabled(not locked)
         if locked:
-            self.new_feature_grid.setToolTip("Kaavasuunnitelma on lukittu, kaavakohteita ei voi lisätä.")
+            self.new_plan_object_grid.setToolTip("Kaavasuunnitelma on lukittu, kaavakohteita ei voi lisätä.")
         else:
-            self.new_feature_grid.setToolTip("")
+            self.new_plan_object_grid.setToolTip("")
 
     def initialize_plan_feature_libraries(self, plan_feature_libraries: list[PlanObjectLibrary]):
         logger.debug("Initializing plan feature libraries in new feature dock count=%s", len(plan_feature_libraries))
@@ -134,7 +134,7 @@ class NewFeatureDock(QgsDockWidget, DockClass):  # type: ignore
     def deactivate_and_clear_selections(self):
         logger.debug("Deactivating new feature dock and clearing selections")
         self.on_active_feature_type_changed("", "")
-        self.new_feature_grid.clear_selections()
+        self.new_plan_object_grid.clear_selections()
         self.clear_template_selection()
 
     def clear_template_selection(self):

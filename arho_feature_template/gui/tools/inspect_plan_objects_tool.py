@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 LayerPairs = list[tuple[type["AbstractLayer"], QgsVectorLayer]]
 
 
-class InspectPlanFeatures(QgsMapToolIdentify):
+class InspectPlanObjects(QgsMapToolIdentify):
     """Identifies a plan object on the given layers and reports it with its layer class.
 
     Layer names repeat across the layer tree groups, so the layer class, not the name, says
