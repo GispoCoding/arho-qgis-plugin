@@ -53,20 +53,20 @@ from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMa
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
 from arho_feature_template.gui.dialogs.manage_plans import ManagePlans
 from arho_feature_template.gui.dialogs.plan_attribute_form import PlanAttributeForm
-from arho_feature_template.gui.dialogs.plan_feature_form import (
+from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMatterAttributeForm
+from arho_feature_template.gui.dialogs.plan_object_form import (
     PLAN_LOCKED_MESSAGE,
     VALID_PLAN_OBJECT_READ_ONLY_MESSAGE,
     PlanObjectForm,
 )
-from arho_feature_template.gui.dialogs.plan_matter_attribute_form import PlanMatterAttributeForm
 from arho_feature_template.gui.dialogs.plan_regulation_group_form import PlanRegulationGroupForm
 from arho_feature_template.gui.dialogs.serialize_plan import SerializePlan
 from arho_feature_template.gui.dialogs.serialize_plan_matter import SerializePlanMatter
 from arho_feature_template.gui.dialogs.template_selection_form import TemplateSelectionForm
-from arho_feature_template.gui.docks.new_feature_dock import NewFeatureDock
-from arho_feature_template.gui.docks.plan_features_dock import PlanObjectsDock
+from arho_feature_template.gui.docks.new_plan_object_dock import NewPlanObjectDock
+from arho_feature_template.gui.docks.plan_objects_dock import PlanObjectsDock
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
-from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
+from arho_feature_template.gui.tools.inspect_plan_objects_tool import InspectPlanObjects
 from arho_feature_template.project.layers.code_layers import (
     AdditionalInformationTypeLayer,
     LegalEffectsLayer,
@@ -91,9 +91,9 @@ from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupAssociationLayer,
     RegulationGroupLayer,
     plan_cancellation_layers,
-    plan_feature_layers,
     plan_layers,
     plan_matter_layers,
+    plan_object_layers,
 )
 from arho_feature_template.project.layers.valid_layers import (
     ValidPlanObjectLayer,
@@ -208,9 +208,9 @@ class PlanManager(QObject):
         self.regulation_group_libraries = []
 
         # Initialize new feature dock
-        self.new_feature_dock = NewFeatureDock(iface.mainWindow())
-        self.new_feature_dock.tool_activated.connect(self.add_new_plan_feature)
-        self.new_feature_dock.hide()
+        self.new_plan_object_dock = NewPlanObjectDock(iface.mainWindow())
+        self.new_plan_object_dock.tool_activated.connect(self.add_new_plan_feature)
+        self.new_plan_object_dock.hide()
 
         # Initialize regulation groups dock
         self.regulation_groups_dock = RegulationGroupsDock(iface.mainWindow())
@@ -235,8 +235,8 @@ class PlanManager(QObject):
         self.regulation_groups_dock.hide()
 
         # Initialize plan features dock
-        self.features_dock = PlanObjectsDock(self, iface.mainWindow())
-        self.features_dock.hide()
+        self.plan_objects_dock = PlanObjectsDock(self, iface.mainWindow())
+        self.plan_objects_dock.hide()
 
         # Initialize digitize tools
         self.plan_digitize_map_tool = PlanLayerDigitizeMapTool()
@@ -244,12 +244,14 @@ class PlanManager(QObject):
 
         self.feature_digitize_map_tool = PlanLayerDigitizeMapTool()
         self.feature_digitize_map_tool.digitizingCompleted.connect(self._plan_feature_geom_digitized)
-        self.feature_digitize_map_tool.digitizingFinished.connect(self.new_feature_dock.deactivate_and_clear_selections)
+        self.feature_digitize_map_tool.digitizingFinished.connect(
+            self.new_plan_object_dock.deactivate_and_clear_selections
+        )
 
         # Initialize plan feature inspect tool for the editable and the valid plan objects.
         # The valid (Ajantasakaava) layers are searched only when no editable object is hit.
-        self.inspect_plan_feature_tool = InspectPlanFeatures(
-            iface.mapCanvas(), plan_feature_layers, fallback_layer_classes=valid_plan_object_layers
+        self.inspect_plan_feature_tool = InspectPlanObjects(
+            iface.mapCanvas(), plan_object_layers, fallback_layer_classes=valid_plan_object_layers
         )
         self.inspect_plan_feature_tool.feature_identified.connect(self.on_plan_object_identified)
 
@@ -366,7 +368,7 @@ class PlanManager(QObject):
             )
             for file_path in get_user_plan_object_library_config_files()
         ]
-        self.new_feature_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
+        self.new_plan_object_dock.initialize_plan_feature_libraries(self.plan_feature_libraries)
         logger.debug("Initialized plan feature libraries: count=%s", len(self.plan_feature_libraries))
 
     def open_manage_plans(self):
@@ -481,7 +483,7 @@ class PlanManager(QObject):
     def _announce_lock_status(self, locked: bool):  # noqa: FBT001
         self.plan_lock_status_changed.emit(locked)
         self.regulation_groups_dock.update_lock_status(locked)
-        self.new_feature_dock.update_lock_status(locked)
+        self.new_plan_object_dock.update_lock_status(locked)
 
     @use_wait_cursor
     def update_active_plan_regulation_group_library(
@@ -589,7 +591,7 @@ class PlanManager(QObject):
                 for group in groups:
                     if group.id_ not in linked_group_ids:
                         save_regulation_group_association(cast(str, group.id_), feat_layer_name, feat_id)
-        self.features_dock.create_plan_feature_view()
+        self.plan_objects_dock.create_plan_feature_view()
 
     def remove_selected_regulation_groups_from_features(
         self, groups: list[RegulationGroup], features: list[tuple[str, Generator[str]]]
@@ -795,7 +797,7 @@ class PlanManager(QObject):
         if not handle_unsaved_changes():
             return
 
-        layer_name = self.new_feature_dock.active_feature_layer
+        layer_name = self.new_plan_object_dock.active_feature_layer
         if layer_name is None:
             msg = "No plan feature type selected"
             iface.messageBar().pushWarning("", msg)
@@ -862,8 +864,8 @@ class PlanManager(QObject):
     def _plan_feature_geom_digitized(self, feature: QgsFeature):
         logger.debug("Plan feature geometry digitized")
         # NOTE: What if user has changed dock selections while digitizng?
-        if self.new_feature_dock.active_template:
-            plan_feat_template = self.new_feature_dock.active_template
+        if self.new_plan_object_dock.active_template:
+            plan_feat_template = self.new_plan_object_dock.active_template
             plan_feature = PlanObject(
                 type_of_underground_id=plan_feat_template.type_of_underground_id,
                 layer_name=plan_feat_template.layer_name,
@@ -874,8 +876,8 @@ class PlanManager(QObject):
             )
             title = get_localized_text(plan_feature.name)
         else:
-            plan_feature = PlanObject(layer_name=self.new_feature_dock.active_feature_layer)
-            title = self.new_feature_dock.active_feature_type
+            plan_feature = PlanObject(layer_name=self.new_plan_object_dock.active_feature_layer)
+            title = self.new_plan_object_dock.active_feature_type
 
         plan_feature.geom = feature.geometry()
         # A new object and its template regulations get the plan's current lifecycle status
@@ -1107,10 +1109,10 @@ class PlanManager(QObject):
         # Both docks list the plan features, so read the (now filtered) layers once for both.
         # Without a plan the layers are hidden, so there is nothing to read.
         plan_features_by_layer = (
-            _read_plan_features_by_layer() if plan_id else {layer.name: [] for layer in plan_feature_layers}
+            _read_plan_features_by_layer() if plan_id else {layer.name: [] for layer in plan_object_layers}
         )
         self.update_active_plan_regulation_group_library(plan_features_by_layer)
-        self.features_dock.create_plan_feature_view(
+        self.plan_objects_dock.create_plan_feature_view(
             self.active_plan_regulation_group_library.regulation_groups,
             plan_features_by_layer,
             plan_model.lifecycle_status_id if plan_model else None,
@@ -1119,7 +1121,7 @@ class PlanManager(QObject):
         if plan_feature is not None:
             plan_type = self._active_plan_type()
             if plan_type:
-                for feature_layer in plan_feature_layers:
+                for feature_layer in plan_object_layers:
                     layer = feature_layer.get_from_project()
                     _apply_style(layer, plan_type)
             self.zoom_to_active_plan(plan_feature)
@@ -1342,7 +1344,7 @@ class PlanManager(QObject):
             return
 
         self.initialize_from_project()
-        self.features_dock.initialize()
+        self.plan_objects_dock.initialize()
         self.regulation_groups_dock.initialize()
 
         if self.check_compatible_project_version() and self.check_required_layers():
@@ -1421,10 +1423,10 @@ class PlanManager(QObject):
         # they stay children of the main window until the deferred deletion is processed, which
         # makes Plugin Reloader report them as duplicated widgets on reload.
         # New feature dock
-        self.new_feature_dock.unload()
-        iface.removeDockWidget(self.new_feature_dock)
-        self.new_feature_dock.setParent(None)
-        self.new_feature_dock.deleteLater()
+        self.new_plan_object_dock.unload()
+        iface.removeDockWidget(self.new_plan_object_dock)
+        self.new_plan_object_dock.setParent(None)
+        self.new_plan_object_dock.deleteLater()
 
         # Regulation group dock
         self.regulation_groups_dock.unload()
@@ -1433,10 +1435,10 @@ class PlanManager(QObject):
         self.regulation_groups_dock.deleteLater()
 
         # Plan features dock
-        self.features_dock.unload()
-        iface.removeDockWidget(self.features_dock)
-        self.features_dock.setParent(None)
-        self.features_dock.deleteLater()
+        self.plan_objects_dock.unload()
+        iface.removeDockWidget(self.plan_objects_dock)
+        self.plan_objects_dock.setParent(None)
+        self.plan_objects_dock.deleteLater()
 
         self.close_import_features_dialog()
         self.close_import_plan_dialog()
@@ -1477,7 +1479,7 @@ def regulation_group_library_from_active_plan() -> RegulationGroupLibrary:
 def _read_plan_features_by_layer() -> dict[str, list[QgsFeature]]:
     """All features of every plan feature layer, keyed by layer name."""
     with timed("read plan features"):
-        return {layer.name: list(layer.get_features()) for layer in plan_feature_layers}
+        return {layer.name: list(layer.get_features()) for layer in plan_object_layers}
 
 
 def _apply_style(layer: QgsVectorLayer, plan_type: PlanType) -> None:

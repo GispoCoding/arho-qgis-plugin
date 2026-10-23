@@ -27,12 +27,12 @@ and getting its form took ~3.7 s: 27 layer reads.
    counts the other linked objects of every stored group with
    `RegulationGroupAssociationLayer.count_other_linked_objects` and hands the count to
    each `RegulationGroupWidget`. A group added later into an open form still reads its
-   own count. N reads -> 1. Tests: `tests/test_plan_feature_form.py`.
-3. **Editable layers first on click.** `InspectPlanFeatures` takes
+   own count. N reads -> 1. Tests: `tests/test_plan_object_form.py`.
+3. **Editable layers first on click.** `InspectPlanObjects` takes
    `fallback_layer_classes`; the valid layers are searched only when the editable
    layers give nothing. 8 reads -> 4 for an editable object. A valid object under an
    editable one is no longer offered in the pick menu. Tests:
-   `tests/test_inspect_plan_features_tool.py`.
+   `tests/test_inspect_plan_objects_tool.py`.
 
 Measured after the three (2026-09-15 20:43, `logs/*-form-open-after.*`, a land use
 area with 2 groups and 3 regulations): 13 reads, ~1.9 s from the click to the form.

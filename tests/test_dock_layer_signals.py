@@ -15,7 +15,7 @@ pytestmark = pytest.mark.fake_iface
 
 
 class FakeLayerClass:
-    """Stands in for a `plan_feature_layers` entry."""
+    """Stands in for a `plan_object_layers` entry."""
 
     def __init__(self, layer: QgsVectorLayer):
         self.name = layer.name()
@@ -33,7 +33,7 @@ def plan_object_layer() -> QgsVectorLayer:
 def test_regulation_groups_dock_disconnects_layers_on_unload(monkeypatch, plan_object_layer):
     dock = RegulationGroupsDock()
     monkeypatch.setattr(
-        "arho_feature_template.gui.docks.regulation_groups_dock.plan_feature_layers",
+        "arho_feature_template.gui.docks.regulation_groups_dock.plan_object_layers",
         [FakeLayerClass(plan_object_layer)],
     )
 
@@ -48,9 +48,9 @@ def test_regulation_groups_dock_disconnects_layers_on_unload(monkeypatch, plan_o
 
 
 def test_plan_objects_dock_disconnects_layers_on_unload(monkeypatch, plan_object_layer, plugin):
-    dock = plugin.plan_manager.features_dock
+    dock = plugin.plan_manager.plan_objects_dock
     monkeypatch.setattr(
-        "arho_feature_template.gui.docks.plan_features_dock.plan_feature_layers",
+        "arho_feature_template.gui.docks.plan_objects_dock.plan_object_layers",
         [FakeLayerClass(plan_object_layer)],
     )
     # Needs a project with the code layer groups, and is not what this test is about
@@ -70,7 +70,7 @@ def test_regulation_groups_dock_does_not_stack_layer_connections(monkeypatch, pl
     """`initialize` runs on every project read."""
     dock = RegulationGroupsDock()
     monkeypatch.setattr(
-        "arho_feature_template.gui.docks.regulation_groups_dock.plan_feature_layers",
+        "arho_feature_template.gui.docks.regulation_groups_dock.plan_object_layers",
         [FakeLayerClass(plan_object_layer)],
     )
 

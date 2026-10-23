@@ -10,11 +10,11 @@ import pytest
 from qgis.core import QgsFeature, QgsField, QgsFields, QgsGeometry, QgsPointXY
 from qgis.PyQt.QtCore import QMetaType
 
-import arho_feature_template.gui.docks.plan_features_dock as plan_features_dock_module
+import arho_feature_template.gui.docks.plan_objects_dock as plan_objects_dock_module
 import arho_feature_template.gui.docks.regulation_groups_dock as regulation_groups_dock_module
 from arho_feature_template.core.models import PlanObject, RegulationGroup, RegulationGroupLibrary
-from arho_feature_template.gui.docks.plan_features_dock import DATA_COLUMN as FEATURE_DATA_COLUMN
-from arho_feature_template.gui.docks.plan_features_dock import DATA_ROLE as FEATURE_DATA_ROLE
+from arho_feature_template.gui.docks.plan_objects_dock import DATA_COLUMN as FEATURE_DATA_COLUMN
+from arho_feature_template.gui.docks.plan_objects_dock import DATA_ROLE as FEATURE_DATA_ROLE
 from arho_feature_template.gui.docks.regulation_groups_dock import DATA_COLUMN as GROUP_DATA_COLUMN
 from arho_feature_template.gui.docks.regulation_groups_dock import DATA_ROLE as GROUP_DATA_ROLE
 from arho_feature_template.gui.docks.regulation_groups_dock import RegulationGroupsDock
@@ -26,7 +26,7 @@ LAYER_NAME = "Aluevaraus"
 
 
 class NoReadLayerClass:
-    """Stands in for a `plan_feature_layers` entry that must not be read."""
+    """Stands in for a `plan_object_layers` entry that must not be read."""
 
     name = LAYER_NAME
 
@@ -57,7 +57,7 @@ def _plan_feature(fid: int, id_: str) -> QgsFeature:
 
 def test_regulation_groups_dock_uses_the_given_plan_features(monkeypatch):
     dock = RegulationGroupsDock()
-    monkeypatch.setattr(regulation_groups_dock_module, "plan_feature_layers", [NoReadLayerClass()])
+    monkeypatch.setattr(regulation_groups_dock_module, "plan_object_layers", [NoReadLayerClass()])
     monkeypatch.setattr(RegulationGroupAssociationLayer, "get_features", list)
     monkeypatch.setattr(
         RegulationGroupAssociationLayer,
@@ -76,10 +76,10 @@ def test_regulation_groups_dock_uses_the_given_plan_features(monkeypatch):
     assert fids_and_geoms[LAYER_NAME][1].asPoint() == QgsPointXY(1, 1)
 
 
-def test_plan_features_dock_uses_the_given_plan_features_and_groups(plugin, monkeypatch):
-    dock = plugin.plan_manager.features_dock
+def test_plan_objects_dock_uses_the_given_plan_features_and_groups(plugin, monkeypatch):
+    dock = plugin.plan_manager.plan_objects_dock
     layer_class = NoReadLayerClass()
-    monkeypatch.setattr(plan_features_dock_module, "plan_feature_layers", [layer_class])
+    monkeypatch.setattr(plan_objects_dock_module, "plan_object_layers", [layer_class])
     groups = [RegulationGroup(id_="group-1")]
     features = [_plan_feature(1, "area-1"), _plan_feature(2, "area-2")]
 
@@ -91,11 +91,11 @@ def test_plan_features_dock_uses_the_given_plan_features_and_groups(plugin, monk
     assert (model.id_, fid) == ("area-2", 2)
 
 
-def test_plan_features_dock_reads_a_layer_missing_from_the_given_features(plugin, monkeypatch):
-    dock = plugin.plan_manager.features_dock
+def test_plan_objects_dock_reads_a_layer_missing_from_the_given_features(plugin, monkeypatch):
+    dock = plugin.plan_manager.plan_objects_dock
     layer_class = NoReadLayerClass()
     layer_class.get_features = lambda: [_plan_feature(3, "area-3")]  # type: ignore[method-assign]
-    monkeypatch.setattr(plan_features_dock_module, "plan_feature_layers", [layer_class])
+    monkeypatch.setattr(plan_objects_dock_module, "plan_object_layers", [layer_class])
 
     dock.create_plan_feature_view(None, {"Piste": []})
 

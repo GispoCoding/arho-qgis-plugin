@@ -60,7 +60,7 @@ def plan_layer(new_project: QgsProject) -> QgsVectorLayer:
 def manager(plugin, plan_layer: QgsVectorLayer, monkeypatch: pytest.MonkeyPatch) -> PlanManager:  # noqa: ARG001
     """The plugin's manager with only the plan layer in the project."""
     monkeypatch.setattr(plan_manager_module, "plan_layers", [PlanLayer])
-    monkeypatch.setattr(plan_manager_module, "plan_feature_layers", [])
+    monkeypatch.setattr(plan_manager_module, "plan_object_layers", [])
     monkeypatch.setattr(plan_manager_module, "plan_cancellation_layers", [])
     for layer_class in (
         plan_layers_module.RegulationGroupAssociationLayer,
@@ -78,7 +78,7 @@ def manager(plugin, plan_layer: QgsVectorLayer, monkeypatch: pytest.MonkeyPatch)
 @pytest.fixture
 def view_calls(manager: PlanManager, monkeypatch: pytest.MonkeyPatch) -> list[tuple]:
     calls: list[tuple] = []
-    monkeypatch.setattr(manager.features_dock, "create_plan_feature_view", lambda *args: calls.append(args))
+    monkeypatch.setattr(manager.plan_objects_dock, "create_plan_feature_view", lambda *args: calls.append(args))
     return calls
 
 
@@ -123,7 +123,7 @@ def test_without_a_plan_the_feature_layers_are_not_read(manager: PlanManager, vi
         def get_features():
             pytest.fail("plan feature layer read")
 
-    monkeypatch.setattr(plan_manager_module, "plan_feature_layers", [HiddenLayerClass])
+    monkeypatch.setattr(plan_manager_module, "plan_object_layers", [HiddenLayerClass])
 
     manager.set_active_plan(None)
 
@@ -174,7 +174,7 @@ def test_the_cancellation_layers_are_not_required():
 
 
 def test_the_lifecycle_button_uses_the_given_status(plugin, monkeypatch):
-    dock = plugin.plan_manager.features_dock
+    dock = plugin.plan_manager.plan_objects_dock
     set_active_plan_id("plan-1")
     monkeypatch.setattr(PlanLayer, "get_attribute_by_id", lambda *_args: pytest.fail("PlanLayer read"))
     monkeypatch.setattr(LifeCycleStatusLayer, "get_lifecycle_status_by_id", lambda _id: LifeCycleStatusValue(_id))

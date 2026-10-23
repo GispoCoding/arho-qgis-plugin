@@ -12,7 +12,7 @@ import pytest
 from qgis.core import QgsFeature, QgsProject, QgsVectorLayer
 from qgis.gui import QgsMapToolIdentify
 
-from arho_feature_template.gui.tools.inspect_plan_features_tool import InspectPlanFeatures
+from arho_feature_template.gui.tools.inspect_plan_objects_tool import InspectPlanObjects
 from arho_feature_template.project.layers.plan_layers import PointLayer
 from arho_feature_template.project.layers.valid_layers import ValidLineLayer, ValidPointLayer
 from arho_feature_template.utils.project_utils import PLAN_LAYER_GROUP_NAME, VALID_LAYER_GROUP_NAME
@@ -41,10 +41,10 @@ def point_layers(new_project: QgsProject) -> tuple[QgsVectorLayer, QgsVectorLaye
 
 @pytest.fixture
 def make_tool(canvas: QgsMapCanvas) -> Iterator:
-    tools: list[InspectPlanFeatures] = []
+    tools: list[InspectPlanObjects] = []
 
-    def make(layer_classes, visible_only: bool, fallback_layer_classes=()) -> InspectPlanFeatures:
-        tool = InspectPlanFeatures(
+    def make(layer_classes, visible_only: bool, fallback_layer_classes=()) -> InspectPlanObjects:
+        tool = InspectPlanObjects(
             canvas, layer_classes, fallback_layer_classes=fallback_layer_classes, visible_only=visible_only
         )
         tools.append(tool)
@@ -55,7 +55,7 @@ def make_tool(canvas: QgsMapCanvas) -> Iterator:
         tool.deleteLater()
 
 
-def _fake_identify(tool: InspectPlanFeatures, hits: dict[str, QgsFeature], monkeypatch) -> list[list[str]]:
+def _fake_identify(tool: InspectPlanObjects, hits: dict[str, QgsFeature], monkeypatch) -> list[list[str]]:
     """Replace the spatial identify with a lookup by layer id; returns the layer id lists it was asked for."""
     asked: list[list[str]] = []
 

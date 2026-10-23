@@ -818,7 +818,7 @@ class CancelledGeneralRegulationGroupAssociationLayer(AbstractPlanCancellationLa
     filter_template = _by_plan_cancellation_info("cancelled_general_regulation_group_association")
 
 
-def get_plan_feature_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:
+def get_plan_object_layer_class_by_model(plan_feature: PlanObject) -> type[PlanObjectLayer]:
     layer_name = plan_feature.layer_name
     if not layer_name:
         msg = "Cannot save plan feature without a target layer"
@@ -831,7 +831,7 @@ def get_plan_feature_layer_class_by_model(plan_feature: PlanObject) -> type[Plan
     return layer_class
 
 
-def get_plan_feature_layer_class_by_layer_name(layer_name: str) -> type[PlanObjectLayer]:
+def get_plan_object_layer_class_by_layer_name(layer_name: str) -> type[PlanObjectLayer]:
     layer = FEATURE_LAYER_NAME_TO_CLASS_MAP.get(layer_name)
     if not layer:
         msg = f"Could not find plan feature layer class for layer name {layer_name}"
@@ -853,8 +853,8 @@ plan_layers = AbstractPlanLayer.__subclasses__()
 plan_layers.remove(PlanObjectLayer)
 plan_layers.remove(AbstractPlanCancellationLayer)
 
-plan_feature_layers = PlanObjectLayer.__subclasses__()
-plan_layers.extend(plan_feature_layers)
+plan_object_layers = PlanObjectLayer.__subclasses__()
+plan_layers.extend(plan_object_layers)
 
 plan_cancellation_layers = AbstractPlanCancellationLayer.__subclasses__()
 

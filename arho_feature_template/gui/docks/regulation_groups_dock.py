@@ -14,8 +14,8 @@ from qgis.PyQt.QtWidgets import QHeaderView, QMenu, QMessageBox, QPushButton, QT
 from arho_feature_template.core.models import RegulationGroup, RegulationGroupLibrary
 from arho_feature_template.project.layers.plan_layers import (
     RegulationGroupAssociationLayer,
-    get_plan_feature_layer_class_by_layer_name,
-    plan_feature_layers,
+    get_plan_object_layer_class_by_layer_name,
+    plan_object_layers,
 )
 from arho_feature_template.utils.localization_utils import get_localized_text
 from arho_feature_template.utils.misc_utils import iface
@@ -139,7 +139,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         # Connect feat remove signals for each plan object layer so the linked plan object counts
         # stay updated
         self.disconnect_layer_signals()
-        for plan_object_layer in plan_feature_layers:
+        for plan_object_layer in plan_object_layers:
             logger.debug("Connecting committedFeaturesRemoved for layer=%s", plan_object_layer.name)
             vector_layer = plan_object_layer.get_from_project()
             vector_layer.committedFeaturesRemoved.connect(self._on_feats_removed)
@@ -230,7 +230,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     @staticmethod
     def _read_plan_object_ids_and_geometries() -> dict[str, list[QgsFeature]]:
         plan_objects_by_layer: dict[str, list[QgsFeature]] = {}
-        for plan_object_layer in plan_feature_layers:
+        for plan_object_layer in plan_object_layers:
             layer = plan_object_layer.get_from_project()
             request = QgsFeatureRequest()
             request.setSubsetOfAttributes(["id"], layer.fields())
@@ -277,7 +277,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
     def get_selected_plan_object_ids(self) -> list[tuple[str, Generator[str]]]:
         """Returns selected plan object IDs for each plan object layer (name)."""
         logger.debug("Collecting selected plan object IDs from all plan feature layers")
-        return [(layer_class.name, layer_class.get_selected_feature_ids()) for layer_class in plan_feature_layers]
+        return [(layer_class.name, layer_class.get_selected_feature_ids()) for layer_class in plan_object_layers]
 
     def get_selected_regulation_groups(self) -> list[RegulationGroup]:
         groups: list[RegulationGroup] = []
@@ -421,7 +421,7 @@ class RegulationGroupsDock(QgsDockWidget, DockClass):  # type: ignore
         fids_and_geoms_map = self._get_common_associated_plan_object_fids_and_geoms_for_selected_groups()
         logger.debug("Selecting associated plan objects layers=%s", len(fids_and_geoms_map))
         for layer_name, fids_and_geoms in fids_and_geoms_map.items():
-            layer_class = get_plan_feature_layer_class_by_layer_name(layer_name)
+            layer_class = get_plan_object_layer_class_by_layer_name(layer_name)
             layer_class.get_from_project().selectByIds(list(fids_and_geoms.keys()), Qgis.SelectBehavior.SetSelection)
 
     def _on_highlight_plan_objects(self):
