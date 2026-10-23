@@ -48,6 +48,10 @@ def dpi_for(scale: float, pixel_size: float) -> float:
     return scale * METRES_PER_INCH / pixel_size
 
 
+def scale_for(pixel_size: float, dpi: float) -> float:
+    return pixel_size * dpi / METRES_PER_INCH
+
+
 def nearest_allowed_pixel_size(pixel_size: float) -> float:
     """The allowed pixel size nearest to the given one on a logarithmic scale."""
     exponent = round(math.log2(pixel_size))

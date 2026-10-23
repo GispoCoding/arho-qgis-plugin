@@ -43,19 +43,38 @@ def test_new_pixel_size_changes_the_dpi(dialog):
     assert dialog.dpi_spin_box.value() == pytest.approx(50.8)
 
 
-def test_new_dpi_picks_the_nearest_pixel_size(dialog):
-    dialog.dpi_spin_box.setValue(300)
-    dialog.dpi_spin_box.editingFinished.emit()
+@pytest.mark.parametrize(
+    ("dpi", "pixel_size", "scale"),
+    [
+        # 1000 * 0.0254 / 300 = 0.0847 m/px, nearest 0.0625; 0.0625 * 300 / 0.0254 = 738.2
+        (300, 0.0625, 738),
+        # 0.121 m/px, nearest 0.125 as before; 0.125 * 210 / 0.0254 = 1033.5
+        (210, 0.125, 1033),
+    ],
+)
+def test_typed_dpi_stays_and_fits_pixel_size_and_scale(dialog, dpi, pixel_size, scale):
+    dialog.dpi_spin_box.setValue(dpi)
 
-    assert dialog.pixel_size() == 0.0625
-    assert dialog.dpi_spin_box.value() == pytest.approx(406.4)
+    assert dialog.dpi() == dpi
+    assert dialog.pixel_size() == pixel_size
+    assert dialog.scale() == scale
 
 
-def test_new_scale_keeps_the_pixel_size(dialog):
-    dialog.scale_spin_box.setValue(2000)
+@pytest.mark.parametrize(
+    ("scale", "pixel_size", "dpi"),
+    [
+        # 10000 * 0.0254 / 203.2 = 1.25 m/px, nearest 1; 10000 * 0.0254 / 1 = 254
+        (10000, 1, 254),
+        # 0.25 m/px exactly, so the dpi stays 203.2
+        (2000, 0.25, 203.2),
+    ],
+)
+def test_typed_scale_stays_and_fits_pixel_size_and_dpi(dialog, scale, pixel_size, dpi):
+    dialog.scale_spin_box.setValue(scale)
 
-    assert dialog.pixel_size() == 0.125
-    assert dialog.dpi_spin_box.value() == pytest.approx(406.4)
+    assert dialog.scale() == scale
+    assert dialog.pixel_size() == pixel_size
+    assert dialog.dpi() == pytest.approx(dpi)
 
 
 def test_ok_needs_a_file_and_a_scale(dialog):
@@ -72,6 +91,12 @@ def test_unknown_scale_starts_from_half_a_metre(iface):
     with deleted_after_use(GeoTiffDialog(PLAN_EXTENT, None, parent=iface.mainWindow())) as dialog:
         assert dialog.pixel_size() == 0.5
         assert not dialog.dpi_spin_box.isEnabled()
+
+        dialog.scale_spin_box.setValue(1000)
+
+        assert dialog.pixel_size() == 0.5
+        assert dialog.dpi() == pytest.approx(50.8)
+        assert dialog.dpi_spin_box.isEnabled()
 
 
 def test_too_large_image_blocks_ok(dialog):
