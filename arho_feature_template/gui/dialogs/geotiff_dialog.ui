@@ -51,6 +51,9 @@
        <property name="toolTip">
         <string>Mittakaava, jossa kartta piirretään. Muutos ei tallennu kaavasuunnitelmaan.</string>
        </property>
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
        <property name="specialValueText">
         <string>Ei määritetty</string>
        </property>
@@ -96,6 +99,9 @@
        </property>
        <property name="buttonSymbols">
         <enum>QAbstractSpinBox::NoButtons</enum>
+       </property>
+       <property name="keyboardTracking">
+        <bool>false</bool>
        </property>
        <property name="specialValueText">
         <string>Ei määritetty</string>

@@ -5,7 +5,7 @@ from importlib import resources
 from typing import TYPE_CHECKING
 
 from qgis.PyQt import uic
-from qgis.PyQt.QtCore import QLocale
+from qgis.PyQt.QtCore import QLocale, QSignalBlocker
 from qgis.PyQt.QtWidgets import (
     QComboBox,
     QDialog,
@@ -25,6 +25,7 @@ from arho_feature_template.core.plan_scale import (
     nearest_allowed_pixel_size,
     pixel_size_for,
     plan_map_extent,
+    scale_for,
 )
 
 if TYPE_CHECKING:
@@ -45,8 +46,9 @@ FALLBACK_PIXEL_SIZE = 0.5
 class GeoTiffDialog(QDialog, FormClass):  # type: ignore
     """Asks the output file, scale, pixel size and dpi of the plan map GeoTIFF.
 
-    The three values are tied by pixel size = scale * 0.0254 / dpi. A new pixel size or a
-    new scale changes the dpi. A new dpi picks the nearest allowed pixel size.
+    The three values are tied by pixel size = scale * 0.0254 / dpi. A typed scale or dpi
+    stays: the other of the two picks the nearest allowed pixel size and is then fitted to
+    it. A new pixel size keeps the scale and changes the dpi.
     """
 
     file_widget: QgsFileWidget
@@ -80,7 +82,7 @@ class GeoTiffDialog(QDialog, FormClass):  # type: ignore
         self.file_widget.fileChanged.connect(self._check_inputs)
         self.scale_spin_box.valueChanged.connect(self._on_scale_changed)
         self.pixel_size_combo_box.currentIndexChanged.connect(self._on_pixel_size_changed)
-        self.dpi_spin_box.editingFinished.connect(self._on_dpi_edited)
+        self.dpi_spin_box.valueChanged.connect(self._on_dpi_changed)
         self.button_box.accepted.connect(self._on_ok_clicked)
 
     def file_path(self) -> str:
@@ -96,27 +98,39 @@ class GeoTiffDialog(QDialog, FormClass):  # type: ignore
         return PIXEL_SIZES[self.pixel_size_combo_box.currentIndex()]
 
     def dpi(self) -> float:
-        return dpi_for(self.scale(), self.pixel_size())
+        return self.dpi_spin_box.value()
 
     def _on_scale_changed(self):
+        # Without a scale before, the dpi is 0 and the pixel size stays
+        if self.scale() and self.dpi() > 0:
+            self._set_pixel_size(nearest_allowed_pixel_size(pixel_size_for(self.scale(), self.dpi())))
         self._update_dpi()
-        self._check_inputs()
+        self._update_image_size()
 
     def _on_pixel_size_changed(self):
         self._update_dpi()
         self._update_image_size()
 
-    def _on_dpi_edited(self):
-        dpi = self.dpi_spin_box.value()
-        if self.scale() and dpi > 0:
-            pixel_size = nearest_allowed_pixel_size(pixel_size_for(self.scale(), dpi))
+    def _on_dpi_changed(self):
+        dpi = self.dpi()
+        if not self.scale() or dpi <= 0:
+            self._update_dpi()
+            return
+        pixel_size = nearest_allowed_pixel_size(pixel_size_for(self.scale(), dpi))
+        scale = min(max(round(scale_for(pixel_size, dpi)), 1), self.scale_spin_box.maximum())
+        self._set_pixel_size(pixel_size)
+        with QSignalBlocker(self.scale_spin_box):
+            self.scale_spin_box.setValue(scale)
+        self._update_image_size()
+
+    def _set_pixel_size(self, pixel_size: float):
+        with QSignalBlocker(self.pixel_size_combo_box):
             self.pixel_size_combo_box.setCurrentIndex(PIXEL_SIZES.index(pixel_size))
-        # Show the dpi of the chosen pixel size, also when the pixel size did not change
-        self._update_dpi()
 
     def _update_dpi(self):
         self.dpi_spin_box.setEnabled(bool(self.scale()))
-        self.dpi_spin_box.setValue(self.dpi() if self.scale() else 0)
+        with QSignalBlocker(self.dpi_spin_box):
+            self.dpi_spin_box.setValue(dpi_for(self.scale(), self.pixel_size()) if self.scale() else 0)
 
     def _update_image_size(self):
         pixel_size = self.pixel_size()

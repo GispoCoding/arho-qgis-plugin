@@ -14,6 +14,7 @@ from arho_feature_template.core.plan_scale import (
     nearest_allowed_pixel_size,
     pixel_size_for,
     plan_map_extent,
+    scale_for,
 )
 from arho_feature_template.project.layers.code_layers import PlanType
 
@@ -37,9 +38,11 @@ def test_pixel_sizes_are_the_powers_of_two_ryhti_allows():
     assert 0.5 in PIXEL_SIZES
 
 
-def test_pixel_size_and_dpi_are_inverse():
+def test_pixel_size_dpi_and_scale_are_inverse():
     assert pixel_size_for(1000, 254) == pytest.approx(0.1)
     assert dpi_for(1000, 0.1) == pytest.approx(254)
+    assert scale_for(0.1, 254) == pytest.approx(1000)
+    assert scale_for(0.0625, 300) == pytest.approx(738.19, abs=0.01)
 
 
 @pytest.mark.parametrize(
