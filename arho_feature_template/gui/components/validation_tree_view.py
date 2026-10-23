@@ -7,12 +7,7 @@ from typing import cast
 from qgis.PyQt.QtGui import QStandardItem, QStandardItemModel
 from qgis.PyQt.QtWidgets import QTreeView
 
-from arho_feature_template.project.layers.plan_layers import (
-    AdditionalInformationLayer,
-    PlanPropositionLayer,
-    PlanRegulationLayer,
-    RegulationGroupLayer,
-)
+from arho_feature_template.project.layers.plan_layers import RegulationGroupLayer
 from arho_feature_template.utils.load_validation_errors import VALIDATION_ERRORS
 from arho_feature_template.utils.localization_utils import get_localized_text
 
@@ -31,6 +26,14 @@ category_map = {
     "planmatterphases": "Kaava-asian vaiheet",
     "plandecision": "Kaava-asian päätös",
 }
+
+
+def _feature_name(layer_features: dict, feature_id: str | None, layer: type | None = None) -> str | None:
+    """Name of the feature with the id in `layer_features`. With `layer`, only a feature of that layer counts."""
+    feature, feature_layer = layer_features.get(feature_id, (None, None))
+    if feature is None or (layer is not None and feature_layer is not layer):
+        return None
+    return get_localized_text(feature["name"])
 
 
 class ValidationItem(QStandardItem):
@@ -68,10 +71,14 @@ class ValidationModel(QStandardItemModel):
         error: str,
         object_path: str,
         message: str,
-        feature_id: str,
+        feature_id: str | None,
         layer_features: dict,
+        regulation_group_ids: dict[str, str],
     ) -> None:
         current_parent = cast(ValidationItem, self.item(root_index, 0))
+        # classKey is not always a feature id, e.g. lifecycle errors give the lifecycle status code URI
+        if feature_id not in layer_features:
+            feature_id = None
         # Remove square brackets so the string is splittable by '.'
         object_path = re.sub(r"\[(\d+)\]", r".\1", object_path).lower()
         path_parts = []
@@ -84,40 +91,16 @@ class ValidationModel(QStandardItemModel):
                     continue
 
                 if part == "planobjects":
-                    if not feature_id:
-                        feature_name = None
-                    else:
-                        feature, _ = layer_features[feature_id]
-                        feature_name = get_localized_text(feature["name"])
+                    feature_name = _feature_name(layer_features, feature_id)
 
                 elif part == "planregulationgroups":
-                    if not feature_id:
-                        feature_name = None
-                    else:
-                        feature, layer = layer_features[feature_id]
-                        if layer == AdditionalInformationLayer:
-                            plan_regulation_id = AdditionalInformationLayer.get_attribute_by_id(
-                                target_attribute="plan_regulation_id", id_=feature_id
-                            )
-                            if plan_regulation_id:
-                                regulation_feature = PlanRegulationLayer.get_feature_by_id(plan_regulation_id)
-                                if regulation_feature:
-                                    regulation_group_id = regulation_feature["plan_regulation_group_id"]
-                        elif layer in (PlanRegulationLayer, PlanPropositionLayer):
-                            regulation_group_id = feature["plan_regulation_group_id"]
-                        elif layer == RegulationGroupLayer:
-                            regulation_group_id = feature_id
-
-                        if regulation_group_id:
-                            feature, _ = layer_features[regulation_group_id]
-                            feature_name = get_localized_text(feature["name"])
-                        else:
-                            feature_name = None
+                    # A regulation group is not in regulation_group_ids, its own id is the group id
+                    regulation_group_id = regulation_group_ids.get(feature_id, feature_id) if feature_id else None
+                    feature_name = _feature_name(layer_features, regulation_group_id, RegulationGroupLayer)
 
                 elif part == "planregulations":
-                    if "additionalinformations" in parts and feature_id is not None and feature_id in layer_features:
-                        feature, _ = layer_features[feature_id]
-                        feature_name = get_localized_text(feature["name"])
+                    if "additionalinformations" in parts:
+                        feature_name = _feature_name(layer_features, feature_id)
                     else:
                         feature_name = None
 
@@ -140,8 +123,10 @@ class ValidationModel(QStandardItemModel):
                                 feature_id=feature_id,
                             )
                             new_item.setToolTip(tooltip_text)
-                        else:
+                        elif feature_id:
                             new_item = ValidationItem(text=feature_id[:6], feature_id=feature_id)
+                        else:
+                            new_item = ValidationItem(text=f"[{part}]")
                     else:
                         new_item = ValidationItem(category_map.get(part, part))
                     current_parent.appendRow([new_item, ValidationItem("")])
@@ -178,11 +163,43 @@ class ValidationModel(QStandardItemModel):
         message_item.setToolTip(message_tooltip)
         current_parent.appendRow([ValidationItem(""), message_item])
 
-    def add_error(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
-        self._add_item(self.ERROR_INDEX, error, object_path, message, feature_id, feature_names)
+    def add_error(
+        self,
+        error: str,
+        object_path: str,
+        message: str,
+        feature_id: str | None = None,
+        layer_features: dict | None = None,
+        regulation_group_ids: dict[str, str] | None = None,
+    ) -> None:
+        self._add_item(
+            self.ERROR_INDEX,
+            error,
+            object_path,
+            message,
+            feature_id,
+            layer_features or {},
+            regulation_group_ids or {},
+        )
 
-    def add_warning(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
-        self._add_item(self.WARNING_INDEX, error, object_path, message, feature_id, feature_names)
+    def add_warning(
+        self,
+        error: str,
+        object_path: str,
+        message: str,
+        feature_id: str | None = None,
+        layer_features: dict | None = None,
+        regulation_group_ids: dict[str, str] | None = None,
+    ) -> None:
+        self._add_item(
+            self.WARNING_INDEX,
+            error,
+            object_path,
+            message,
+            feature_id,
+            layer_features or {},
+            regulation_group_ids or {},
+        )
 
 
 class ValidationTreeView(QTreeView):
@@ -195,8 +212,24 @@ class ValidationTreeView(QTreeView):
     def clear_errors(self) -> None:
         self.model.clear()
 
-    def add_error(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
-        self.model.add_error(error, object_path, message, feature_id, feature_names)
+    def add_error(
+        self,
+        error: str,
+        object_path: str,
+        message: str,
+        feature_id: str | None = None,
+        layer_features: dict | None = None,
+        regulation_group_ids: dict[str, str] | None = None,
+    ) -> None:
+        self.model.add_error(error, object_path, message, feature_id, layer_features, regulation_group_ids)
 
-    def add_warning(self, error: str, object_path: str, message: str, feature_id: str, feature_names: dict) -> None:
-        self.model.add_warning(error, object_path, message, feature_id, feature_names)
+    def add_warning(
+        self,
+        error: str,
+        object_path: str,
+        message: str,
+        feature_id: str | None = None,
+        layer_features: dict | None = None,
+        regulation_group_ids: dict[str, str] | None = None,
+    ) -> None:
+        self.model.add_warning(error, object_path, message, feature_id, layer_features, regulation_group_ids)

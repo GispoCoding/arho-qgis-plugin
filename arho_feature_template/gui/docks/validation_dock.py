@@ -235,6 +235,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     error.get("message", ""),
                     error.get("classKey", ""),
                     self.layer_features,
+                    self.regulation_group_ids,
                 )
 
             # Sort so that warnings with classKey are first
@@ -246,6 +247,7 @@ class ValidationDock(QgsDockWidget, DockClass):  # type: ignore
                     warning.get("message", ""),
                     warning.get("classKey", ""),
                     self.layer_features,
+                    self.regulation_group_ids,
                 )
 
         # Always enable validation at the end
