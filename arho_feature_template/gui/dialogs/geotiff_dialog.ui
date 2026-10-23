@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GeoTiffDialog</class>
+ <widget class="QDialog" name="GeoTiffDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>480</width>
+    <height>220</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Tallenna kaavakartta GeoTIFF-muodossa</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="file_label">
+       <property name="text">
+        <string>Tallennuspolku:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QgsFileWidget" name="file_widget">
+       <property name="dialogTitle">
+        <string>Määritä GeoTIFF tallennuspolku</string>
+       </property>
+       <property name="filter">
+        <string>GeoTIFF Files (*.tif)</string>
+       </property>
+       <property name="storageMode">
+        <enum>QgsFileWidget::SaveFile</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="scale_label">
+       <property name="text">
+        <string>Mittakaava:</string>
+       </property>
+       <property name="buddy">
+        <cstring>scale_spin_box</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="scale_spin_box">
+       <property name="toolTip">
+        <string>Mittakaava, jossa kartta piirretään. Muutos ei tallennu kaavasuunnitelmaan.</string>
+       </property>
+       <property name="specialValueText">
+        <string>Ei määritetty</string>
+       </property>
+       <property name="prefix">
+        <string>1 : </string>
+       </property>
+       <property name="maximum">
+        <number>999999999</number>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="pixel_size_label">
+       <property name="text">
+        <string>Pikselin koko (m/px):</string>
+       </property>
+       <property name="buddy">
+        <cstring>pixel_size_combo_box</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="pixel_size_combo_box">
+       <property name="toolTip">
+        <string>Ryhti hyväksyy vain kahden potenssit väliltä 0,015625–256 m.</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="dpi_label">
+       <property name="text">
+        <string>DPI:</string>
+       </property>
+       <property name="buddy">
+        <cstring>dpi_spin_box</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QDoubleSpinBox" name="dpi_spin_box">
+       <property name="toolTip">
+        <string>Pikselin koko valitaan lähimmäksi sallituksi arvoksi.</string>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::NoButtons</enum>
+       </property>
+       <property name="specialValueText">
+        <string>Ei määritetty</string>
+       </property>
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <double>10000000.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="image_size_title_label">
+       <property name="text">
+        <string>Kuvan koko:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="image_size_label">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="warning_label">
+     <property name="styleSheet">
+      <string notr="true">color: red;</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsFileWidget</class>
+   <extends>QWidget</extends>
+   <header>qgsfilewidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>button_box</sender>
+   <signal>accepted()</signal>
+   <receiver>GeoTiffDialog</receiver>
+   <slot>accept()</slot>
+  </connection>
+  <connection>
+   <sender>button_box</sender>
+   <signal>rejected()</signal>
+   <receiver>GeoTiffDialog</receiver>
+   <slot>reject()</slot>
+  </connection>
+ </connections>
+</ui>

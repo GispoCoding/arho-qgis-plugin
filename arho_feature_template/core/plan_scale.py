@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import math
 
+from qgis.core import QgsRectangle
+
 from arho_feature_template.project.layers.code_layers import PlanType, PlanTypeLayer
 from arho_feature_template.utils.misc_utils import get_active_plan_matter_plan_type_id
 
@@ -26,6 +28,8 @@ MAX_PIXEL_SIZE_EXPONENT = 8
 PIXEL_SIZES = [2.0**exponent for exponent in range(MIN_PIXEL_SIZE_EXPONENT, MAX_PIXEL_SIZE_EXPONENT + 1)]
 
 DEFAULT_DPI = 250
+
+PLAN_MAP_MARGIN = 0.1
 
 
 def default_scale(plan_type: PlanType | None) -> int | None:
@@ -52,3 +56,19 @@ def nearest_allowed_pixel_size(pixel_size: float) -> float:
 
 def default_pixel_size(scale: float) -> float:
     return nearest_allowed_pixel_size(pixel_size_for(scale, DEFAULT_DPI))
+
+
+def plan_map_extent(plan_extent: QgsRectangle, pixel_size: float) -> QgsRectangle:
+    """The plan extent with a 10 % margin, snapped outwards to the pixel grid."""
+    margin = max(plan_extent.width(), plan_extent.height()) * PLAN_MAP_MARGIN
+    return QgsRectangle(
+        math.floor((plan_extent.xMinimum() - margin) / pixel_size) * pixel_size,
+        math.floor((plan_extent.yMinimum() - margin) / pixel_size) * pixel_size,
+        math.ceil((plan_extent.xMaximum() + margin) / pixel_size) * pixel_size,
+        math.ceil((plan_extent.yMaximum() + margin) / pixel_size) * pixel_size,
+    )
+
+
+def image_size(extent: QgsRectangle, pixel_size: float) -> tuple[int, int]:
+    """Width and height in pixels of an extent snapped to the pixel grid."""
+    return round(extent.width() / pixel_size), round(extent.height() / pixel_size)

@@ -13,10 +13,12 @@ import inspect
 import pkgutil
 
 import pytest
+from qgis.core import QgsRectangle
 from qgis.PyQt import sip
 from qgis.PyQt.QtWidgets import QDialog
 
 import arho_feature_template.gui.dialogs as dialogs_package
+from arho_feature_template.gui.dialogs.geotiff_dialog import GeoTiffDialog
 from arho_feature_template.gui.dialogs.import_plan_form import ImportPlanForm
 from arho_feature_template.gui.dialogs.load_plan_matter_dialog import LoadPlanMatterDialog
 from arho_feature_template.gui.dialogs.manage_libraries import ManageLibrariesForm
@@ -58,6 +60,7 @@ def test_every_dialog_takes_a_parent():
         pytest.param(lambda parent: LoadPlanMatterDialog(parent, []), id="LoadPlanMatterDialog"),
         pytest.param(lambda parent: ImportPlanForm(parent), id="ImportPlanForm"),
         pytest.param(lambda parent: PostPlanDialog(parent), id="PostPlanDialog"),
+        pytest.param(lambda parent: GeoTiffDialog(QgsRectangle(0, 0, 100, 100), 1000, parent), id="GeoTiffDialog"),
     ],
 )
 def test_dialog_becomes_a_child_of_its_parent(build, iface, flush_deferred_deletes):

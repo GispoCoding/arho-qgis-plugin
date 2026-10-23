@@ -11,15 +11,19 @@ from qgis.core import (
     QgsMapSettings,
     QgsMapSettingsUtils,
     QgsProject,
+    QgsVariantUtils,
 )
 from qgis.PyQt.QtCore import QSize, Qt
 from qgis.PyQt.QtGui import QColor
-from qgis.PyQt.QtWidgets import QApplication, QFileDialog
+from qgis.PyQt.QtWidgets import QApplication
 
+from arho_feature_template.core.plan_scale import default_scale_of_active_plan_matter, image_size, plan_map_extent
+from arho_feature_template.gui.dialogs.geotiff_dialog import MAX_FILE_BYTES, GeoTiffDialog
 from arho_feature_template.project.layers.plan_layers import (
     PlanLayer,
 )
 from arho_feature_template.utils.misc_utils import get_active_plan_id, iface
+from arho_feature_template.utils.widget_utils import deleted_after_use
 
 
 def visible_layers_in_render_order(root: QgsLayerTree) -> list[QgsMapLayer]:
@@ -38,9 +42,8 @@ def visible_layers_in_render_order(root: QgsLayerTree) -> list[QgsMapLayer]:
 
 
 class GeoTiffCreator:
-    def __init__(self, desired_pixel_size=0.5):
+    def __init__(self):
         """Initialize the CreateGeoTiff class and fetch the required data."""
-        self.desired_pixel_size = desired_pixel_size
         self.plan_layer = PlanLayer.get_from_project()
 
         if not self.plan_layer:
@@ -54,29 +57,33 @@ class GeoTiffCreator:
             return
 
     def select_output_file(self):
-        """Opens a file dialog for the user to select the output GeoTIFF file."""
-        geotiff_path, _ = QFileDialog.getSaveFileName(
-            None, "Määritä GeoTIFF tallennuspolku", "", "GeoTIFF Files (*.tif)"
-        )
-        if not geotiff_path:
-            iface.messageBar().pushWarning("", "Tallennuspolkua ei määritetty.")
-            return None
+        """Asks the output file, scale and resolution, then creates the GeoTIFF."""
+        if not self.plan_layer or not self.feature:
+            return
 
-        self.create_geotiff(geotiff_path)
+        scale = self.feature["scale"]
+        if QgsVariantUtils.isNull(scale) or not scale:
+            scale = default_scale_of_active_plan_matter()
 
-    def create_geotiff(self, geotiff_path):
-        """Creates a GeoTIFF from the active plan layer and feature."""
+        with deleted_after_use(
+            GeoTiffDialog(self.feature.geometry().boundingBox(), scale, iface.mainWindow())
+        ) as dialog:
+            if not dialog.exec():
+                return
+            self.create_geotiff(dialog.file_path(), dialog.pixel_size(), dialog.dpi())
+
+    def create_geotiff(self, geotiff_path: str, pixel_size: float, dpi: float):
+        """Creates a GeoTIFF from the active plan layer and feature.
+
+        The dpi makes the map render at the plan scale, so symbols and labels sized in
+        millimetres look as on a printed map.
+        """
         if not self.plan_layer or not self.feature:
             return
 
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
-        # Set buffered bounding box
-        bbox = self.feature.geometry().boundingBox()
-        buffer_percentage = 0.1
-        buffer_x = bbox.width() * buffer_percentage
-        buffer_y = bbox.height() * buffer_percentage
-        buffered_bbox = bbox.buffered(max(buffer_x, buffer_y))
+        extent = plan_map_extent(self.feature.geometry().boundingBox(), pixel_size)
 
         # Rendering settings
         settings = QgsMapSettings()
@@ -85,18 +92,9 @@ class GeoTiffCreator:
         settings.setLayers(visible_layers_in_render_order(layer_tree))
         settings.setDestinationCrs(QgsCoordinateReferenceSystem("EPSG:3067"))
         settings.setBackgroundColor(QColor(255, 255, 255))
-        width = int(buffered_bbox.width() / self.desired_pixel_size) * self.desired_pixel_size
-        height = int(buffered_bbox.height() / self.desired_pixel_size) * self.desired_pixel_size
-        buffered_bbox.setXMinimum(int(buffered_bbox.xMinimum()))
-        buffered_bbox.setYMinimum(int(buffered_bbox.yMinimum()))
-        buffered_bbox.setXMaximum(buffered_bbox.xMinimum() + width)
-        buffered_bbox.setYMaximum(buffered_bbox.yMinimum() + height)
-        settings.setExtent(buffered_bbox)
-
-        # Calculate image size
-        pixels_x = int(buffered_bbox.width() / self.desired_pixel_size)
-        pixels_y = int(buffered_bbox.height() / self.desired_pixel_size)
-        settings.setOutputSize(QSize(pixels_x, pixels_y))
+        settings.setExtent(extent)
+        settings.setOutputSize(QSize(*image_size(extent, pixel_size)))
+        settings.setOutputDpi(dpi)
 
         render = QgsMapRendererParallelJob(settings)
 
@@ -151,3 +149,7 @@ class GeoTiffCreator:
         )
 
         iface.messageBar().pushSuccess("", f"GeoTIFF tallennettu polkuun: {geotiff_path}")
+        if os.path.getsize(geotiff_path) > MAX_FILE_BYTES:
+            iface.messageBar().pushWarning(
+                "", "GeoTIFF on yli 1 Gt, eikä Ryhti hyväksy sitä. Valitse suurempi pikselin koko."
+            )
