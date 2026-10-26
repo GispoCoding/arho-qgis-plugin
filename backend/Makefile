@@ -71,8 +71,12 @@ stop:
 down:
 	docker compose -f docker-compose.dev.yml down -v
 
+# AWS Lambda rejects an image that has a provenance attestation. Docker 29 adds one by
+# default when it uses the containerd image store. Docker Compose 5.1 ignores the
+# provenance option of the compose file, so turn the attestation off with buildx's own
+# variable.
 build-lambda:
-	docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
+	BUILDX_NO_DEFAULT_ATTESTATIONS=1 docker compose -f docker-compose.dev.yml build db_manager koodistot_loader ryhti_client mml_loader
 
 revision:
 	DBA_USER=$(DBA_USER) \

@@ -22,9 +22,6 @@ services:
     build:
       context: .
       dockerfile: lambdas/db_manager/db_manager.Dockerfile
-      # AWS Lambda rejects an image that has a provenance attestation. Docker 29
-      # adds one by default when it uses the containerd image store.
-      provenance: false
     env_file:
       - .env
     environment:
@@ -45,7 +42,6 @@ services:
     build:
       context: .
       dockerfile: lambdas/koodistot_loader/koodistot_loader.Dockerfile
-      provenance: false
     env_file:
       - .env
     environment:
@@ -63,7 +59,6 @@ services:
     build:
       context: .
       dockerfile: lambdas/ryhti_client/ryhti_client.Dockerfile
-      provenance: false
     env_file:
       - .env
     environment:
@@ -106,7 +101,6 @@ services:
     build:
       context: .
       dockerfile: lambdas/mml_loader/mml_loader.Dockerfile
-      provenance: false
     env_file:
       - .env
     environment:
