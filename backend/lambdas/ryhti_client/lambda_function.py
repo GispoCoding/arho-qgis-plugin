@@ -24,6 +24,7 @@ from database.db_helper import (
     DbUser,
     get_connection_parameters,
     get_connection_string,
+    get_secret,
     get_user_credentials,
 )
 from database.enums import JobStatus
@@ -94,9 +95,7 @@ if os.environ.get("READ_FROM_AWS") == "1" and (
     ]
 else:
     xroad_syke_client_secret = os.environ.get("XROAD_SYKE_CLIENT_SECRET", "")
-public_api_key = os.environ.get("SYKE_APIKEY", "")
-if not public_api_key:
-    raise ValueError("Please set SYKE_APIKEY environment variable to run Ryhti client.")
+public_api_key = get_secret("SYKE_APIKEY")
 xroad_server_address = os.environ.get("XROAD_SERVER_ADDRESS", "")
 xroad_member_code = os.environ.get("XROAD_MEMBER_CODE", "")
 xroad_member_client_name = os.environ.get("XROAD_MEMBER_CLIENT_NAME", "")

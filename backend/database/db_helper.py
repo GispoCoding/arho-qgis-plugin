@@ -43,17 +43,40 @@ local_user_credentials = {
 }
 
 
-def get_user_credentials_from_aws_secretsmanager(secret_arn: str) -> UserCredentials:
+def get_secret_string_from_aws_secretsmanager(secret_arn: str) -> str:
     session = boto3.session.Session()
     client = session.client(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         service_name="secretsmanager", region_name=os.environ["AWS_REGION_NAME"]
     )
-    secret_string = cast(
+    return cast(
         "str",
         client.get_secret_value(SecretId=secret_arn)["SecretString"],  # pyright: ignore[reportUnknownMemberType]
     )
+
+
+def get_user_credentials_from_aws_secretsmanager(secret_arn: str) -> UserCredentials:
+    secret_string = get_secret_string_from_aws_secretsmanager(secret_arn)
     credentials = cast("UserCredentials", json.loads(secret_string))
     return credentials
+
+
+def get_secret(name: str) -> str:
+    """Return a secret, such as an API key, that the environment variable name holds.
+
+    In AWS, the variable <name>_SECRET_ARN holds the ARN of a Secrets Manager secret
+    instead, because a lambda shows its environment variables to anyone who can read
+    its configuration.
+    """
+    if os.environ.get("READ_FROM_AWS") == "1":
+        secret_arn = os.environ.get(f"{name}_SECRET_ARN")
+        if not secret_arn:
+            raise ValueError(f"{name}_SECRET_ARN is not set in environment variables.")
+        return get_secret_string_from_aws_secretsmanager(secret_arn)
+
+    secret = os.environ.get(name)
+    if not secret:
+        raise ValueError(f"{name} is not set in environment variables.")
+    return secret
 
 
 def get_user_credentials(user: DbUser) -> UserCredentials:

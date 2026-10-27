@@ -43,7 +43,8 @@ resource "aws_iam_policy" "secrets-policy" {
         Effect   = "Allow",
         Resource = [
           aws_secretsmanager_secret.hame-db-su.arn,
-          aws_secretsmanager_secret.hame-db-dba.arn
+          aws_secretsmanager_secret.hame-db-dba.arn,
+          aws_secretsmanager_secret.mml-apikey.arn
         ]
       }
     ]
@@ -123,6 +124,7 @@ resource "aws_iam_policy" "ryhti_client_secrets" {
         Effect = "Allow"
         Resource = compact([
           aws_secretsmanager_secret.hame-db-dba.arn,
+          aws_secretsmanager_secret.syke-apikey.arn,
           var.enable_x_road ? module.x-road["this"].client_secret_arn : null
         ])
       }

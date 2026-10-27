@@ -115,11 +115,13 @@ variable "arho_dba_secrets" {
 variable "syke_apikey" {
   description = "Syke API key for Ryhti public API client"
   type        = string
+  sensitive   = true
 }
 
 variable "mml_apikey" {
   description = "MML API key for MML Loader"
   type        = string
+  sensitive   = true
 }
 
 variable "syke_xroad_client_id" {

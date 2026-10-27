@@ -48,6 +48,8 @@ check-deployment-vars:
 push-lambdas: build push-db-manager push-koodistot-loader push-ryhti-client push-mml-loader
 	echo "All pushed"
 
+# update-function-code prints the whole function configuration, environment variables
+# too. Print only the name and the update status, so that no secret can show in a log.
 update-lambdas: update-db-manager update-koodistot-loader update-ryhti-client update-mml-loader
 	echo "All updated"
 
@@ -57,7 +59,8 @@ push-db-manager: check-deployment-vars
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
 
 update-db-manager: push-db-manager
-	aws lambda update-function-code --function-name $(prefix)-db_manager --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
+	aws lambda update-function-code --function-name $(prefix)-db_manager --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
 
 push-koodistot-loader: check-deployment-vars
 	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
@@ -65,7 +68,8 @@ push-koodistot-loader: check-deployment-vars
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
 
 update-koodistot-loader: push-koodistot-loader
-	aws lambda update-function-code --function-name $(prefix)-koodistot_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
+	aws lambda update-function-code --function-name $(prefix)-koodistot_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
 
 ## With ryhti client, we need to publish new version and update alias for provisioned concurrency.
 ## Also, we have to wait until the code update is complete before we publish the new version.
@@ -75,7 +79,8 @@ push-ryhti-client: check-deployment-vars
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
 
 update-ryhti-client: push-ryhti-client
-	aws lambda update-function-code --function-name $(prefix)-ryhti_client --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
+	aws lambda update-function-code --function-name $(prefix)-ryhti_client --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
 	aws lambda wait function-updated-v2 --function-name $(prefix)-ryhti_client
 # The alias keeps the routing config it already has when a call sends none, so a leftover
 # weighted split between two versions blocks every later alias move. The empty routing config
@@ -91,7 +96,8 @@ push-mml-loader: check-deployment-vars
 	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
 
 update-mml-loader: push-mml-loader
-	aws lambda update-function-code --function-name $(prefix)-mml_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
+	aws lambda update-function-code --function-name $(prefix)-mml_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
 
 log-db-manager: check-deployment-vars
 	aws logs tail "/aws/lambda/$(prefix)-db_manager"

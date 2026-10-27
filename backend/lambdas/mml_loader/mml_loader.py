@@ -24,6 +24,7 @@ from database.db_helper import (
     DbUser,
     get_connection_parameters,
     get_connection_string,
+    get_secret,
     get_user_credentials,
 )
 
@@ -234,11 +235,7 @@ class MMLLoader:
 def handler(event, _) -> Response:
     """Handler which is called when accessing the endpoint."""
     response: Response = {"statusCode": 200, "body": json.dumps("")}
-    api_key = os.environ.get("MML_APIKEY")
-    if not api_key:
-        raise ValueError(
-            "Please set MML_APIKEY environment variable to fetch geometries."
-        )
+    api_key = get_secret("MML_APIKEY")
 
     connection_params = get_connection_parameters(
         user_credentials, os.environ["DB_MAIN_NAME"]

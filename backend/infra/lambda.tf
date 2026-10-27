@@ -213,13 +213,13 @@ resource "aws_lambda_function" "mml_loader" {
   }
   environment {
     variables = {
-      AWS_REGION_NAME     = var.AWS_REGION_NAME
-      DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
-      DB_INSTANCE_PORT    = 5432
-      DB_MAIN_NAME        = var.hame_db_name
-      READ_FROM_AWS       = 1
-      DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
-      MML_APIKEY          = var.mml_apikey
+      AWS_REGION_NAME       = var.AWS_REGION_NAME
+      DB_INSTANCE_ADDRESS   = aws_db_instance.main_db.address
+      DB_INSTANCE_PORT      = 5432
+      DB_MAIN_NAME          = var.hame_db_name
+      READ_FROM_AWS         = 1
+      DB_SECRET_DBA_ARN     = aws_secretsmanager_secret.hame-db-dba.arn
+      MML_APIKEY_SECRET_ARN = aws_secretsmanager_secret.mml-apikey.arn
     }
   }
   tags = merge(local.default_tags, { Name = "${var.prefix}-mml_loader" })
@@ -246,15 +246,15 @@ locals {
     JOB_TIME_LIMIT_SECONDS = local.ryhti_client_timeout_seconds
   }
   ryhti_client_base_environment = {
-    AWS_REGION_NAME     = var.AWS_REGION_NAME
-    DB_INSTANCE_ADDRESS = aws_db_instance.main_db.address
-    DB_INSTANCE_PORT    = 5432
-    DB_MAIN_NAME        = var.hame_db_name
-    READ_FROM_AWS       = 1
-    SYKE_APIKEY         = var.syke_apikey
-    DB_SECRET_DBA_ARN   = aws_secretsmanager_secret.hame-db-dba.arn
-    PROJECT_SRID        = var.project_srid
-    RYHTI_FILES_BUCKET  = aws_s3_bucket.ryhti_files.id
+    AWS_REGION_NAME        = var.AWS_REGION_NAME
+    DB_INSTANCE_ADDRESS    = aws_db_instance.main_db.address
+    DB_INSTANCE_PORT       = 5432
+    DB_MAIN_NAME           = var.hame_db_name
+    READ_FROM_AWS          = 1
+    SYKE_APIKEY_SECRET_ARN = aws_secretsmanager_secret.syke-apikey.arn
+    DB_SECRET_DBA_ARN      = aws_secretsmanager_secret.hame-db-dba.arn
+    PROJECT_SRID           = var.project_srid
+    RYHTI_FILES_BUCKET     = aws_s3_bucket.ryhti_files.id
   }
   ryhti_client_x-road_environment = var.enable_x_road ? {
     XROAD_SERVER_ADDRESS         = module.x-road["this"].dns_record
