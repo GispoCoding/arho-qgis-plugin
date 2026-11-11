@@ -155,7 +155,7 @@ The instance specific configuration (backend settings, encrypted terraform varia
 ~/projects/arho-deploy
 ```
 
-The make targets in this directory find the configuration through the `ARHO_DEPLOY_DIR` variable, which defaults to `../../arho-deploy`. If your checkout is elsewhere, pass `ARHO_DEPLOY_DIR=/path/to/arho-deploy` to make. A sample variable file [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) remains in this repository as a template.
+The make targets in this directory find the configuration through the `ARHO_DEPLOY_DIR` variable, which defaults to `../../../arho-deploy`, a sibling of this repository. If your checkout is elsewhere, pass `ARHO_DEPLOY_DIR=/path/to/arho-deploy` to make. A sample variable file [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) remains in this repository as a template.
 
 ## Managing existing instances
 

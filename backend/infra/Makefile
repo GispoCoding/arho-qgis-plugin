@@ -1,7 +1,7 @@
 # Path to the private GispoCoding/arho-deploy checkout that holds the instance
 # specific configuration (backends/<name>/ and .sops.yaml).
 # Defaults to a sibling checkout of this repository.
-ARHO_DEPLOY_DIR ?= ../../arho-deploy
+ARHO_DEPLOY_DIR ?= ../../../arho-deploy
 WORKSPACE = $(shell terraform workspace show)
 # make tf-init records the backend it used. The config of each instance lives in the
 # folder of its backend, so two backends can have a workspace with the same name.
