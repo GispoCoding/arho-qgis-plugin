@@ -1,12 +1,30 @@
 # workflow name
-name: Tests
+name: Plugin tests
 
 # Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the wanted branches
+# events but only for the wanted branches, and only when the plugin changes.
 on:
   pull_request:
+    paths:
+      - "plugin/**"
+      - ".gitmodules"
+      - ".github/workflows/plugin-tests.yml"
   push:
     branches: [main]
+    paths:
+      - "plugin/**"
+      - ".gitmodules"
+      - ".github/workflows/plugin-tests.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# The plugin project is in plugin/. A step that runs before the checkout must set its
+# own working directory, because plugin/ does not exist yet.
+defaults:
+  run:
+    working-directory: plugin
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -27,6 +45,7 @@ jobs:
       # The QGIS images do not ship git, so actions/checkout would fall back to
       # the REST API download, which cannot fetch submodules.
       - name: Install git
+        working-directory: /
         run: |
           apt update && apt install git -y
 
@@ -71,6 +90,7 @@ jobs:
       # The QGIS images do not ship git, so actions/checkout would fall back to
       # the REST API download, which cannot fetch submodules.
       - name: Install git
+        working-directory: /
         run: |
           apt update && apt install git -y
 

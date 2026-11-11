@@ -1,24 +1,28 @@
-name: Tests
+name: Backend tests
 
 on:
   pull_request:
     branches:
       - "main"
     paths:
-      - "database/**"
-      - "migrations/**"
-      - "lambdas/**"
-      - "test/**"
-      - ".github/workflows/tests.yml"
+      - "backend/database/**"
+      - "backend/migrations/**"
+      - "backend/lambdas/**"
+      - "backend/test/**"
+      - "backend/requirements*.txt"
+      - "backend/pyproject.toml"
+      - ".github/workflows/backend-tests.yml"
   push:
     branches:
       - "main"
     paths:
-      - "database/**"
-      - "migrations/**"
-      - "lambdas/**"
-      - "test/**"
-      - ".github/workflows/tests.yml"
+      - "backend/database/**"
+      - "backend/migrations/**"
+      - "backend/lambdas/**"
+      - "backend/test/**"
+      - "backend/requirements*.txt"
+      - "backend/pyproject.toml"
+      - ".github/workflows/backend-tests.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -27,6 +31,9 @@ concurrency:
 jobs:
   test_functions:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4

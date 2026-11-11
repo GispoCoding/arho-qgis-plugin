@@ -1,4 +1,4 @@
-name: Release
+name: Plugin release
 on:
   release:
     types: [published]
@@ -23,7 +23,21 @@ jobs:
         run: |
           sudo apt update && sudo apt install qtbase5-dev qttools5-dev-tools
           sudo pip install qgis-plugin-ci --break-system-packages
+
+      # qgis-plugin-ci needs the plugin package at the top of a git repository, and it
+      # skips a submodule when the plugin path is nested. So copy plugin/ into a
+      # throwaway repository where the submodule files are ordinary files.
+      - name: Make a standalone plugin repository
+        run: |
+          cp -r plugin "$RUNNER_TEMP/plugin"
+          cd "$RUNNER_TEMP/plugin"
+          rm -f arho_feature_template/qgis_plugin_tools/.git
+          git init -q
+          git add -A
+          git -c user.name=ci -c user.email=ci@invalid commit -q -m "Release ${{ steps.version.outputs.tag }}"
+
       - name: Release
+        working-directory: ${{ runner.temp }}/plugin
         run: |
           qgis-plugin-ci release ${{ steps.version.outputs.version }} \
               --release-tag ${{ steps.version.outputs.tag }} \
