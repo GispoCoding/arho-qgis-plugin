@@ -11,6 +11,7 @@ packages = ["database", "lambdas/ryhti_client/ryhti_client"]
 
 
 [tool.pytest.ini_options]
+testpaths = ["test"]
 pythonpath = [
   "."
 ]
