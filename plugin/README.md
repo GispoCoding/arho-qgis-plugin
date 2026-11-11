@@ -33,11 +33,8 @@ folder of this repository and runs in Docker containers.
 
 ### VsCode setup
 
-On VS Code open the `plugin/` folder with the workspace [arho-feature-template.code-workspace](arho-feature-template.code-workspace).
-The workspace contains all the settings and extensions needed for development.
-
-Select the Python interpreter with Command Palette (Ctrl+Shift+P). Select `Python: Select Interpreter` and choose
-the one with the path `.venv\Scripts\python.exe`.
+Open the workspace [arho.code-workspace](../arho.code-workspace) at the repository root. It has the settings and
+extensions for the plugin and the backend. See [VS Code](../docs/development.md#vs-code) in the development setup.
 
 ## License
 This plugin is distributed under the terms of the [GNU General Public License, version 2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html) license.

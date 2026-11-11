@@ -108,6 +108,62 @@ If it is too slow for you, make a second clone in the WSL home folder for backen
 Install Python 3.13, Docker and GNU Make, then follow
 [backend/README.md](../backend/README.md) directly.
 
+## VS Code
+
+Open `arho.code-workspace` at the repository root (**File > Open Workspace from File**).
+Opening the root or one side as a plain folder gives none of the team settings.
+
+The workspace has three folders: `plugin`, `backend` and `arho (root)` for the shared
+files. Each side has its own Python interpreter, test tree, ruff and mypy configuration.
+
+### Interpreters
+
+Run **Python: Select Interpreter** once for each side and pick the `.venv` of that folder.
+
+| Folder | Interpreter | Made with |
+| --- | --- | --- |
+| `plugin` | `plugin/.venv` (QGIS 3) | `create_qgis_venv.py`, see [Plugin](#plugin) |
+| `backend` | `backend/.venv` (Python 3.13) | see [backend/README.md](../backend/README.md) |
+
+The Test Explorer runs the plugin tests with `plugin/.venv`. For the QGIS 4 tests run
+the task **plugin: pytest (Qt 6)** (**Terminal > Run Task**), which uses
+`plugin/.venv-qt6`.
+
+On Windows the backend runs in WSL, and a Windows VS Code window cannot use the WSL
+virtual environment. Make a second one for the editor only, with a Windows Python 3.13:
+
+```console
+cd backend
+py -3.13 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+It gives code completion, ruff and mypy in the editor. Keep running `make` and `pytest`
+in the WSL shell. If `ansible-core` does not install on Windows, remove its lines from a
+copy of `requirements-dev.txt` and install from the copy: the editor does not need it.
+
+### Debugging
+
+| Launch configuration | Attaches to | Port |
+| --- | --- | --- |
+| plugin: attach to QGIS | QGIS started with `QGIS_PLUGIN_USE_DEBUGGER=debugpy` and the profile `arho-dev` | 5678 |
+| backend: attach to ryhti_client (docker) | the container started with `make dev-debug-ryhti` | 5679 |
+
+Both can be attached at the same time.
+
+### Team and personal settings
+
+- Team settings, launch configurations, tasks and extension recommendations are in
+  `arho.code-workspace`.
+- Personal settings go into `plugin/.vscode/settings.json` and
+  `backend/.vscode/settings.json`. Git ignores those folders, and their settings win
+  over the workspace file.
+- In the Settings editor, use the **Folder** tab for a personal setting. The
+  **Workspace** tab writes to `arho.code-workspace`.
+- `.vscode/settings.json` at the repository root is tracked. It holds the settings of
+  the `arho (root)` folder only.
+
 ## Line endings
 
 `.gitattributes` gives every text file LF line endings on every platform, whatever your
