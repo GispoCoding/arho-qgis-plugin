@@ -69,7 +69,7 @@ split-on-trailing-comma = false
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"test/*" = [
+"**/test/*" = [
   "S101", # allow asserts in tests
   "ARG001", # allow unused arguments(fixtures) in test functions
   ]
@@ -78,7 +78,8 @@ convention = "google"
 skip-magic-trailing-comma = true
 
 [tool.mypy]
-mypy_path = "./,./lambdas/ryhti_client"
+# Relative to this file, so that mypy also works from the repository root (pre-commit).
+mypy_path = "$MYPY_CONFIG_FILE_DIR,$MYPY_CONFIG_FILE_DIR/lambdas/ryhti_client"
 
 exclude = [
   "migrations"

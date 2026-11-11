@@ -1,4 +1,6 @@
 extend = "pyproject.toml"
+# pre-commit runs ruff from the repository root, so the first-party code is in backend/.
+src = ["backend"]
 
 [lint]
 extend-fixable = ["F841", "F401"]
