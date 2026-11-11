@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=schema/lisatiedonlaji.schema.json
 version: 1
 additional_information:
   - code: poisluettavaKayttotarkoitus
