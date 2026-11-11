@@ -62,7 +62,7 @@ up:
 	docker compose -f docker-compose.dev.yml up -d
 
 dev-debug-ryhti:
-	@echo "Starting ryhti_client with debugpy on port 5678..."
+	@echo "Starting ryhti_client with debugpy on port 5679..."
 	docker compose -f docker-compose.dev.yml -f docker-compose.debug.yml up -d --force-recreate ryhti_client
 
 stop:

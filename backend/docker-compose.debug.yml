@@ -14,7 +14,8 @@ services:
     command:
       - pip install --quiet debugpy && exec /lambda-entrypoint.sh lambda_function.handler
     ports:
-      - "5678:5678"
+      # Host port 5679: QGIS listens on 5678 when the plugin is debugged.
+      - "5679:5678"
     environment:
       - DEBUGPY=1
       # Set DEBUGPY_WAIT=1 to block lambda startup until VS Code attaches
