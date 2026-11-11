@@ -1,0 +1,450 @@
+# ARHO Backend infra
+
+![diagram of AWS resources and their connections to software and APIs](architecture.svg)
+
+- [Setup](#setup)
+   - [AWS login on your computer](#aws-login-on-your-computer)
+- [Managing existing instances](#managing-existing-instances)
+   - [Adding ssh tunneling users](#adding-ssh-tunneling-users)
+   - [Rolling out ryhti_client jobs](#rolling-out-ryhti_client-jobs)
+- [Setting up another AWS account](#setting-up-another-aws-account)
+- [Configuring new instances](#configuring-new-instances)
+- [Deploying instances](#deploying-instances)
+   - [Configuring X-Road (Suomi.fi Palvelyväylä) access](#configuring-x-road-suomifi-palveluväylä-access)
+- [Teardown of instances](#teardown-of-instances)
+- [Manual interactions](#manual-interactions)
+
+## Setup
+
+Run these steps the first time.
+
+1. Install [Terraform](https://terraform.io), [AWS CLI version 2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and `jq`. Make sure all three are in your `PATH`.
+2. Set up your AWS login, see [AWS login on your computer](#aws-login-on-your-computer).
+3. To manage existing instances, install [sops](https://github.com/getsops/sops) to decrypt encrypted variable files in the repository.
+
+### AWS login on your computer
+
+You log in to AWS with an IAM user, an access key and multi-factor authentication (MFA):
+
+- The access key of your IAM user is stored in an AWS profile on your computer. Alone, it can do almost nothing, because the AWS accounts require MFA.
+- [get-mfa-vars.sh](get-mfa-vars.sh) uses the access key and a code from your MFA device to get a temporary session. The session is valid for 12 hours.
+- The session is stored in environment variables of your shell. Terraform, `make` and the aws cli then use it.
+
+If you work in more than one AWS account, you have one IAM user, one access key and one profile per account.
+
+#### 1. Get an access key and the ARN of your MFA device
+
+Do this once per AWS account.
+
+1. Log in to the AWS console of the account with your IAM user.
+2. Open **IAM → Users → your user → Security credentials**.
+3. If **Multi-factor authentication (MFA)** shows no device, click **Assign MFA device** and follow the steps. An authenticator app on your phone is fine.
+4. Copy the **Identifier** of the MFA device. It is an ARN like `arn:aws:iam::123456789012:mfa/my-phone`.
+5. Under **Access keys**, click **Create access key**. Pick the use case **Command Line Interface (CLI)**.
+6. Copy the **Access key ID** and the **Secret access key**. AWS shows the secret only once.
+
+#### 2. Store the access key in a profile
+
+Pick a short profile name for the account, for example `arho-test`. Then run:
+
+```shell
+aws configure --profile <profile>
+# AWS Access Key ID: the access key ID from step 1
+# AWS Secret Access Key: the secret access key from step 1
+# Default region name: the region of the account, for example eu-north-1
+# Default output format: json
+aws configure set mfa_serial <mfa-device-arn> --profile <profile>
+```
+
+The aws cli writes the key to `~/.aws/credentials` and the other settings to `~/.aws/config`. With two accounts, the files look like this:
+
+```ini
+# ~/.aws/credentials
+[arho-test]
+aws_access_key_id = AKIA...
+aws_secret_access_key = ...
+
+[arho-prod]
+aws_access_key_id = AKIA...
+aws_secret_access_key = ...
+```
+
+```ini
+# ~/.aws/config
+[profile arho-test]
+region = eu-north-1
+output = json
+mfa_serial = arn:aws:iam::111111111111:mfa/my-phone
+
+[profile arho-prod]
+region = eu-north-1
+output = json
+mfa_serial = arn:aws:iam::222222222222:mfa/my-phone
+```
+
+These files hold secrets. Never commit them and never copy them into a repository. Run `aws configure list-profiles` to see your profiles.
+
+#### 3. Start a session
+
+```shell
+cd infra
+. ./get-mfa-vars.sh <profile>
+aws sts get-caller-identity
+```
+
+The script asks for the code from your MFA device. It takes the MFA device ARN from `mfa_serial` of the profile. Check that the `Account` in the output of `aws sts get-caller-identity` is the account you want.
+
+If you leave out `<profile>`, the script uses `AWS_PROFILE` if it is set. If it is not set, the script shows a numbered list of your profiles, and you type the number of the one you want. If you have only one profile, the script uses it without asking.
+
+The script does not set `AWS_PROFILE` in your shell. After the script, your shell uses only the session variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN`. Do not also `export AWS_PROFILE`.
+
+The session exists only in that shell. A new terminal needs a new session. If you want to use the session in more than one terminal, run the script without `.` in front:
+
+```shell
+./get-mfa-vars.sh <profile>
+. /tmp/aws-mfa-token     # run this in each terminal
+rm /tmp/aws-mfa-token    # when you are done
+```
+
+The file `/tmp/aws-mfa-token` holds your session. Remove it when you do not need it anymore.
+
+For all options, run `./get-mfa-vars.sh --help`.
+
+#### 4. Change to another AWS account
+
+Run the same command with the profile of the other account. The script ignores the old session in your shell and replaces it only when the new session works:
+
+```shell
+. ./get-mfa-vars.sh <other-profile>
+aws sts get-caller-identity
+```
+
+Then select an instance in that account with `make tf-init ws=<workspace> backend=<name>`.
+
+#### 5. When the session expires
+
+After 12 hours, AWS refuses the session. You see errors like `ExpiredToken` or 403. Start a new session with the same command as in step 3.
+
+#### Troubleshooting
+
+- Terraform or the aws cli gives 400 or 403 errors: you have no valid session. Start one as in step 3.
+- `Failed to fetch session token`: the MFA code was wrong or too old, or the `mfa_serial` of the profile is wrong. Wait for a new code and try again, then check `aws configure get mfa_serial --profile <profile>`.
+- You are in the wrong account: `aws sts get-caller-identity` shows the account of your session. Start a session with the right profile.
+- `make tf-plan` wants to create every resource of an existing instance: see [Terraform backends and workspaces](#terraform-backends-and-workspaces).
+
+### Terraform backends and workspaces
+
+Use terraform workspaces to manage different deployments. The state of each deployment is stored in a workspace located in an S3 bucket. Each AWS account has its own state bucket, so [state.tf](state.tf) holds no backend settings. They live in the arho-deploy repository, one folder per AWS account in `backends/<name>/`. Its README says which workspace uses which backend.
+
+Run `make tf-init` instead of a bare `terraform init`. It initialises the backend from `backends/<name>/backend.hcl` and selects the workspace, and creates the workspace if it does not exist yet. It also records the backend name in `.terraform/backend-name`, so the other make targets find the config of the instance in `backends/<name>/`:
+
+```shell
+make tf-init ws=<workspace> backend=<name>
+```
+
+Run it again every time you change to another instance. To list the workspaces in the current backend, run `terraform workspace list`.
+
+If `make tf-plan` wants to create every resource of an existing instance, terraform found no state: the backend, the workspace name or the AWS session is wrong. Stop and check them before you apply anything.
+
+## Instance configuration repository
+
+The instance specific configuration (backend settings, encrypted terraform variable files and encrypted ssh public key lists) lives in the private [GispoCoding/arho-deploy](https://github.com/GispoCoding/arho-deploy) repository, together with the deploy workflows. Clone it as a sibling of this repository:
+
+```
+~/projects/arho-backend
+~/projects/arho-deploy
+```
+
+The make targets in this directory find the configuration through the `ARHO_DEPLOY_DIR` variable, which defaults to `../../arho-deploy`. If your checkout is elsewhere, pass `ARHO_DEPLOY_DIR=/path/to/arho-deploy` to make. A sample variable file [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) remains in this repository as a template.
+
+## Managing existing instances
+
+To manage existing instances, select the instance with `make tf-init ws=<workspace> backend=<name>` and decrypt the encrypted variable file by running `make decrypt-workspace-secrets`.
+
+To make changes to instances, first check that your variables and current infra is up to date with terraform state:
+
+```shell
+make tf-plan
+```
+
+This should report that terraform state is up to date with infra and configuration. You may make changes to configuration or variables and run `make tf-plan` again to check what your changes would mean to the infrastructure.
+
+When you are sure that you want to change AWS infra, run
+
+```shell
+make tf-apply
+```
+
+Please verify that the reported changes are desired, and respond `yes` to apply the changes to infrastructure.
+
+Remember to commit any changes you made to the terraform configuration. If you changed any variables, run `make encrypt-workspace-secrets` and commit the encrypted file in the arho-deploy repository.
+
+### Adding ssh tunneling users
+
+The most common infrastructure task is to add/removes ssh keys on the ssh tunneling EC2 server. This is done using the Ansible playbook in `infra/ansible/playbook.yml`. The playbook will add the public keys to the authorized keys of the ssh-tunnel user on the bastion host.
+
+Public ssh keys are stored in the `backends/<name>/public_keys` directory of the arho-deploy repository, and the playbook will read the public key file corresponding to the current terraform workspace. The public key files should be named according to the terraform workspace, e.g. `backends/<name>/public_keys/<workspace>`. The public key files are encrypted for security, so you should use `sops` to encrypt the public key files before committing them to the repository.
+
+To add a new ssh key:
+1. Fetch the latest ssh key files by running `git pull` in the arho-deploy repository
+2. Decrypt the public key file using `make decrypt-workspace-secrets`
+3. Add the public key to the `backends/<name>/public_keys/<workspace name>` file in arho-deploy, or create a new file if it does not exist.
+4. If you have not connected to this bastion host before, add its host key to your known hosts. Ansible refuses to connect to an unknown host, so `make update-ssh-keys` fails without this. The key is read from AWS SSM Parameter Store, where the deployment stored it, so you do not have to accept a fingerprint blindly. Run it once per bastion host. It also removes the fingerprint prompt from your own ssh tunnel sessions to the same host:
+```bash
+make bastion-known-host >> ~/.ssh/known_hosts
+```
+5. Run the Ansible playbook to add the public key to the bastion host (the ssh key to use to connect can be given with a `ssh_private_key` argument):
+```bash
+make update-ssh-keys
+# or with an explicit private key:
+make update-ssh-keys ssh_private_key=~/.ssh/my_private_key
+```
+6. Encrypt the public key file again using `make encrypt-workspace-secrets`
+7. Commit the changes to the arho-deploy repository.
+
+### Rolling out ryhti_client jobs
+
+The release that adds background jobs to `ryhti_client` (see
+[Running actions as background jobs](../README.md#running-actions-as-background-jobs))
+changes both terraform and the lambda code. It gives `ryhti_client` its own IAM role
+with the transfer bucket, the X-Road client secret and the right to invoke itself, and
+removes the bucket and the secret from the shared lambda role. It also raises the
+timeout to 900 seconds and sets `JOB_RUNNER` and `JOB_TIME_LIMIT_SECONDS`.
+
+Old plugin versions do not use job mode, so they keep working once the rollout is done.
+Release a plugin version that uses job mode only after the last step.
+
+The new code stops at cold start without `JOB_RUNNER` and `JOB_TIME_LIMIT_SECONDS`, so
+never run `make update-lambdas` before `make tf-apply`. The jobs table comes with the
+new `db_manager` image, so run `make migrate-db` after `make update-lambdas`.
+
+The order:
+
+```shell
+make tf-apply
+make push-lambdas
+make update-lambdas
+make migrate-db
+```
+
+This leaves a short gap between `make tf-apply` and `make update-lambdas`. A published
+lambda version keeps the role it was published with, and the `live` alias moves only
+with `make update-lambdas`. So in the gap the API gateway path still runs the old
+version on the shared role, which no longer has the transfer bucket or the X-Road
+client secret:
+
+- S3 transfers fail: presigned uploads and downloads, `import_plan` from S3 and the
+  `get_plan` export.
+- With X-Road on, a new lambda instance cannot start, because it cannot read the X-Road
+  client secret.
+
+So run `make push-lambdas` and `make update-lambdas` right after `make tf-apply`, at a
+quiet time.
+
+## Setting up another AWS account
+
+An instance can run in any AWS account. These steps are needed once per account, before the first instance in it.
+
+1. Get an IAM user in that account with administrator rights and an MFA device. Store its access key and MFA device ARN in a profile `<profile>`, see [AWS login on your computer](#aws-login-on-your-computer).
+2. Start a session in that account and check that it is the right one:
+```shell
+. ./get-mfa-vars.sh <profile>
+aws sts get-caller-identity
+```
+3. Create the state bucket and its KMS key. The script shows the account first and asks before it creates anything:
+```shell
+./bootstrap-state-bucket.sh <region>
+```
+4. Save the lines that the script prints as `backends/<name>/backend.hcl` in the arho-deploy repository and commit the file. It holds no secrets.
+5. Make sure a Route53 public hosted zone for the `AWS_HOSTED_DOMAIN` of the instance exists in that account. If you have no domain yet, see [An instance without a domain](#an-instance-without-a-domain).
+6. Make sure the account allows an IAM user with access keys. Terraform creates `AWS_LAMBDA_USER` for the deploy workflow.
+
+sops encrypts the variable files with the KMS key named in `.sops.yaml` of the arho-deploy repository. If that key is in another AWS account, run `make decrypt-workspace-secrets` and `make encrypt-workspace-secrets` with a session in that account, then change back to the session of the instance account for terraform (see [Change to another AWS account](#4-change-to-another-aws-account)).
+
+### An instance without a domain
+
+An instance can run without a domain. Set `"enable_route53_record": false` and `"enable_x_road": false` in its variable file. `AWS_HOSTED_DOMAIN` can then be `null`. Terraform does not look up a hosted zone, and the `bastion_address` output is the public IP of the bastion.
+
+The bastion gets a new IP when terraform replaces it. This occurs when AWS publishes a new Amazon Linux image, or when the bastion user data changes. After such an apply, run `make bastion-known-host >> ~/.ssh/known_hosts` again and give the new IP to the users. The host key does not change.
+
+To add a domain later, you need no code change:
+
+1. Create a public hosted zone in the account of the instance:
+```shell
+aws route53 create-hosted-zone --name <subdomain>.<parent-domain> --caller-reference "arho-$(date +%s)"
+```
+2. Get the four name servers of the zone:
+```shell
+aws route53 get-hosted-zone --id <zone-id> --query DelegationSet.NameServers
+```
+3. Ask the owner of `<parent-domain>` to add an `NS` record for `<subdomain>` with these name servers. Then check it:
+```shell
+dig +short NS <subdomain>.<parent-domain>
+```
+4. In the variable file, set `"AWS_HOSTED_DOMAIN": "<subdomain>.<parent-domain>"` and `"enable_route53_record": true`. Encrypt the file, commit it and run `make tf-apply`.
+5. Run `make bastion-known-host >> ~/.ssh/known_hosts` again. Tell the users to use the new DNS name in place of the IP.
+
+## Configuring new instances
+
+1. To create a new instance of ARHO Backend, copy [var-files/arho.tfvars.sample.json](var-files/arho.tfvars.sample.json) to a new file called `backends/<name>/var-files/your-deployment.tfvars.json` in the arho-deploy repository.
+2. Create an IAM user for CI/CD and take down the username and credentials. This can be used to configure CD deployment from Github. If CD is already configured, fill in existing user in `AWS_LAMBDA_USER` part in `your-deployment.tfvars.json`. Fill credentials in the Github environment secrets `AWS_LAMBDA_UPLOAD_ACCESS_KEY_ID` and `AWS_LAMBDA_UPLOAD_SECRET_ACCESS_KEY` of the arho-deploy repository.
+3. Change the values in `your-deployment.tfvars.json` as required
+4. Remember to encrypt your variables with `sops` to create `your-deployment.tfvars.enc.json` and commit the encrypted file. The encryption key to allow decrypting the file is safely stored in AWS.
+
+## Deploying instances
+
+A first deployment needs **two** `terraform apply` runs, because a lambda function cannot
+be created before its container image exists in ECR, and terraform does not build or push
+images. The first run creates the four ECR repositories only, then you push the images,
+then the second run creates everything else. No step is expected to fail.
+
+Change to the `infra` directory and start an AWS session in the account of the instance (see [AWS login on your computer](#aws-login-on-your-computer)):
+
+```shell
+cd infra
+. ./get-mfa-vars.sh <profile>
+aws sts get-caller-identity
+```
+
+Then follow these steps. The `make` targets read the variable file of the current
+terraform workspace from the arho-deploy repository, so create the workspace first. They
+take `prefix` and `AWS_REGION` from that file and `AWS_ACCOUNT_ID` from your AWS session,
+so nothing has to be exported by hand. Decrypt the variable file first with
+`make decrypt-workspace-secrets`. To work outside a workspace, set `prefix`, `AWS_REGION`
+or `AWS_ACCOUNT_ID` in the environment or on the command line, and that value wins.
+
+```shell
+# 1. Create the workspace and the variable file
+make tf-init ws=<instance-name> backend=<name>
+cp var-files/arho.tfvars.sample.json ../../arho-deploy/backends/<name>/var-files/<instance-name>.tfvars.json
+# Edit ../../arho-deploy/backends/<name>/var-files/<instance-name>.tfvars.json
+
+# 2. Generate the host key of the bastion host and store it in AWS SSM Parameter Store.
+#    The bastion host reads its host key from there, so that the key survives a reboot
+#    and your users get no warnings about a changed host key.
+ssh-keygen -t ed25519 -f bastion_key -N ""
+aws ssm put-parameter \
+    --name "/infra/<instance-name>-bastion/host_key_ed25519" \
+    --value "$(cat bastion_key)" \
+    --type "SecureString" \
+    --region <region>
+rm bastion_key
+
+# 3. Check what the plan would do
+make tf-plan
+
+# 4. Create the ECR repositories, then build and push the lambda images
+make tf-bootstrap-ecr
+make push-lambdas
+
+# 5. Create the rest of the infrastructure
+make tf-apply
+
+# 6. Add the bastion host key to your known hosts. It is read from SSM, where you
+#    stored it in step 2, so no fingerprint has to be accepted blindly. Without
+#    this, `make update-ssh-keys` and your own ssh tunnels cannot connect.
+make bastion-known-host >> ~/.ssh/known_hosts
+
+# 7. The infra is now deployed, but the database is still empty. Initialize it with:
+make create-db
+make migrate-db
+make load-koodistot
+make load-mml
+```
+
+Note: Setting up the instances takes a couple of minutes.
+
+Step 4 is only needed for a first deployment, when the ECR repositories are still empty.
+Later application changes need no terraform at all: `make update-lambdas` pushes the new
+images and, for `ryhti_client`, publishes a new version and moves the `live` alias to it.
+
+### Configuring X-Road (Suomi.fi Palveluväylä) access
+
+A simple X-Road security server sidecar container is included in the Terraform configuration. If you need to connect your ARHO Backend instance to Suomi.fi Palveluväylä to transfer official plan data to Ryhti, manual configuration is required. After going through the steps below, the configuration is saved in your AWS database and Elastic File System, and it is reused when you boot or update the X-Road security server container.
+
+This is because you need to apply for a separate permit for your subsystem to be connected to the Suomi.fi Palveluväylä, as well as a separate permit to connect to the Ryhti X-Road APIs once your X-Road server works. Follow the steps below:
+
+1. You must apply for permission to join the Palveluväylä test environment first: [Liittyminen kehitysympäristöön](https://palveluhallinta.suomi.fi/fi/sivut/palveluvayla/kayttoonotto/liittyminen-kehitysymparistoon). For the permission application, you will need
+   - a client name for your new client, which Palveluväylä requires to be of the form servicename-organization-client. So in our case `ryhti-<your_organization>-client`. Set the client name as your terraform variable `x-road_subdomain`.
+   - a proper domain name for your x-road server. This can be set using the terraform variables `AWS_HOSTED_DOMAIN` and `x-road_host`. The complete domain name for your X-road server will be `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`. Note that if you have multiple x-road environments (e.g. test and production) for the *same* organization, the subdomain will be the same (as the x-road client name will be the same in test and production). The host name should uniquely determine your x-road server instance as test or production instance for that organization.
+When your application is accepted, you are provided with the configuration anchor file needed later.
+2. Create an SSH key and add the public key to `bastion_ec2_user_public_keys` in `your-deployment.tfvars.json`.
+3. Fill in the desired admin username and password in `x-road_secrets`, your desired  `x-road_db_password` (password for x-road database) and your desired `x-road_token_pin` (for accessing authentication tokens), in `your-deployment.tfvars.json`.
+4. Apply the variables to AWS with `terraform apply --var-file var-files/your-deployment.tfvars.json`.
+5. Check the private IP address of your `your-deployment-x-road_securityserver` service task under your AWS Elastic Container Service `your-deployment-x-road_securityserver` cluster in your AWS web console.
+6. Open an SSH tunnel to the X-Road server admin interface (e.g. `ssh -N -L4001:<private-ip>:4000 -i "~/.ssh/arho-ec2-user.pem" ec2-user@your-deployment.<bastion_subdomain>.<aws_hosted_domain>`, where `arho-ec2-user.pem` contains your SSH key created in step 2, and `bastion_subdomain` and `aws_hosted_domain` are the settings in your `your-deployment.tfvars.json`).
+7. Point your web browser to [https://localhost:4001](https://localhost:4001). The connection
+must be HTTPS, and you must ignore the warning about invalid SSL certificate: the hostname is localhost instead of the server IP because of the SSH tunneling, and the certificate does not know that.
+8. Log in to the [https://localhost:4001](https://localhost:4001) admin interface with your x-road secrets that you selected in step 3.
+9. Configure your X-Road server following the general [X-Road security server installation guide](https://github.com/nordic-institute/X-Road/blob/master/doc/Manuals/ig-ss_x-road_v6_security_server_installation_guide.md#33-configuration) Chapter 3.3 (Configuration). Here, you will need the configuration anchor file provided when registering in step 1.
+10. Configure your X-Road server certificates following [Liityntäpalvelimen liittäminen testi- tai tuotantoympäristöön](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59145e7b14bbb10001966f72). This enables you to join the national X-Road Test instance (FI-TEST), once your certificates have been successfully signed by DVV and you have imported them back. During signing, if your domain is not registered as being owned by your client organization, DVV might request you to verify your possession of the public hostname `${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}` by adding a TXT record to the public hostname. Do this using terraform variable `x-road_verification_record`. Inside the private network, the same hostname is set to point to our X-Road server container.
+11. You must *activate* your imported server authentication key in X-road Admin (Clients and certificates > SIGN and AUTH keys > TOKEN: SOFTTOKEN-0 > AUTH Keys and Certificates > click on DVV TEST Service Certificates and click Activate). Make sure that both Authentication key and Signing key shows up as Good with STATUS Registered.
+12. Apply for permission for a subsystem to connect to X-Road following the instructions at
+[Uuden alijärjestelmän liittäminen liityntäpalvelimeen ja sen poistaminen](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/591ac1e314bbb10001966f9c), and follow the instructions for adding the subsystem in your admin interface.
+13. When the subsystem is added and shows as registered, make sure to allow connections to your subsystem using HTTP in our internal network, by selecting the client connection type HTTP with the instructions below: [Communication with information systems](https://docs.x-road.global/Manuals/ug-ss_x-road_6_security_server_user_guide.html#9-communication-with-information-systems).
+
+14. You may now try out X-Road test APIs to verify that your X-road server processes requests correctly: [Palveluväylän testipalvelut](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59cdf0e3cdd262007192ac3e).
+
+For testing purposes, you have to open the port 8080 from the AWS bastion security group to the AWS X-road server security group, i.e. for the duration of the tests, add
+
+```
+# TESTING ONLY: Allow traffic from bastion to x-road server client port
+resource "aws_security_group_rule" "x-road-bastion-test" {
+  description       = "X-road allow traffic from bastion"
+  type              = "ingress"
+
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+
+  source_security_group_id = aws_security_group.bastion.id
+  security_group_id = aws_security_group.x-road.id
+}
+```
+to [vpc.tf](vpc.tf). In production setup, only the lambda functions may access the X-road server.
+
+When the port is opened, you may try out the [Palveluväylän testipalvelut](https://palveluhallinta.suomi.fi/fi/tuki/artikkelit/59cdf0e3cdd262007192ac3e) X-road requests on your SSH server. On the SSH server the test HTTP (not HTTPS!) request will be
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'accept: application/json'  -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0245437-2/TestService/rest-test/random
+```
+
+, filling in all the variables from your `your-deployment.tfvars.json`, and it should return JSON containing a random number.
+
+*Don't forget to remove any added port openings for production use, since we don't want to allow SSH server users to directly connect to X-Road, bypassing our client.*
+
+15. Once you are properly connected to X-road, to get permission to access [X-Road Ryhti APIs](https://liityntakatalogi.test.suomi.fi/dataset/ryhti-syke-service/resource/8c7b68d4-0699-46c1-b639-9d80db6cb8c6), your organization must fill in an application with SYKE: [Tiedon tallentamisen rajapintapalvelut](https://ryhti.syke.fi/palvelut/tiedon-tallentamisen-rajapintapalvelut/). For API application, you need the public static IP of your X-Road server (`xroad_ip_address` in terraform output), as well as the full domain name of your X-Road server (`${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}`). SYKE will give you a Ryhti client id and secret, which you must fill in as variables `syke_xroad_client_id` and `syke_xroad_client_secret` in your `your-deployment.tfvars.json`file and deploy them.
+
+16. After SYKE have allowed access from your public IP, similarly to step 14, you must temporarily open the port 8080 if you want to test connecting to the SYKE Ryhti X-Road API from the SSH server with
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Status/health
+```
+
+, filling in all the variables from your `your-deployment.tfvars.json` again. The API should respond with `401 Unauthorized`, because you haven't authenticated yet. Try out authenticating with
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -d '"${var.syke_xroad_client_secret}"' -i -X POST http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Authenticate?clientId=${var.syke_xroad_client_id}
+```
+
+, filling in the client id and client secret that SYKE provided you with. The API should respond with a long string, which will be your authentication token. Now you can try the health check endpoint again, adding the token to the request, with
+
+```
+curl -k -H 'X-Road-Client: FI-TEST/MUN/${var.x-road_member_code}/${var.x-road_subdomain}' -H 'Accept: application/json' -H 'Content-Type: application/json' -H 'Authorization: Bearer {authentication token that you received}' -i http://${var.x-road_host}.${var.x-road_subdomain}.${var.AWS_HOSTED_DOMAIN}:8080/r1/FI-TEST/GOV/0996189-5/Ryhti-Syke-service/planService/api/Status/health
+```
+
+If everything works correctly, the health endpoint should return `{"entries":{"RyhtiDbContext":{"data":{},"duration":"00:00:00.0184940","status":"Healthy","tags":[]}},"status":"Healthy","totalDuration":"00:00:00.0188119"}` or something similar.
+
+Congratulations! You now have access to X-Road Ryhti APIs!
+
+*Don't forget to remove any added port openings for production use, since we don't want to allow SSH server users to directly connect to X-Road, bypassing our client.*
+
+## Teardown of instances
+
+Shut down and destroy the instances with `terraform destroy --var-file var-files/your-deployment.tfvars.json`
+
+## Manual interactions
+
+You can interact with the lambda functions using the [Makefile](./Makefile).
+
+> For example migrate the database with `make migrate-db`

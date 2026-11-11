@@ -1,0 +1,49 @@
+output "db_postgres_version" {
+  description = "The exact PostgreSQL version of the main db."
+  value       = aws_db_instance.main_db.engine_version_actual
+}
+
+output "lambda_db_manager" {
+  description = "Name of the db_manager Lambda function."
+  value       = aws_lambda_function.db_manager.function_name
+}
+
+output "lambda_koodistot_loader" {
+  description = "Name of the koodistot_loader Lambda function."
+  value       = aws_lambda_function.koodistot_loader.function_name
+}
+
+output "lambda_ryhti_client" {
+  description = "Name of the ryhti_loader Lambda function."
+  value       = aws_lambda_function.ryhti_client.function_name
+}
+
+output "ryhti_client_url" {
+  description = "Address of the ryhti_client lambda API. The API is private: call it from inside the VPC only."
+  value       = "${aws_api_gateway_stage.api_stage.invoke_url}${aws_api_gateway_resource.ryhti_client.path}"
+}
+
+output "lambda_update_user" {
+  description = "Name of the lambda function update user."
+  value       = aws_iam_user.lambda_update_user.name
+}
+
+output "bastion_address" {
+  description = "SSH tunneling server public address (DNS name, or IP when enable_route53_record is false)"
+  value       = var.enable_route53_record ? aws_route53_record.bastion[0].name : aws_instance.bastion-ec2-instance.public_ip
+}
+
+output "database_endpoint" {
+  description = "Database endpoint"
+  value       = aws_db_instance.main_db.endpoint
+}
+
+output "xroad_fqdn" {
+  description = "X-Road Security Server fully qualified domain name"
+  value       = try(module.x-road["this"].dns_record, null)
+}
+
+output "xroad_ip_address" {
+  description = "X-Road Security Server public IP address"
+  value       = aws_eip.eip.public_ip
+}

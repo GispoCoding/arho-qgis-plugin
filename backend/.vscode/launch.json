@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Attach to ryhti_client (docker)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/lambdas/ryhti_client",
+                    "remoteRoot": "/var/task"
+                },
+                {
+                    "localRoot": "${workspaceFolder}/database",
+                    "remoteRoot": "/var/task/database"
+                }
+            ],
+            "justMyCode": false
+        }
+    ]
+}

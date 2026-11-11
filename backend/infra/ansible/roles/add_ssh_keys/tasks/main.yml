@@ -1,0 +1,21 @@
+- name: Read public keys from local file
+  set_fact:
+    authorized_keys_content: "{{ lookup('file', ssh_key_file) }}"
+
+- name: Ensure .ssh directory exists
+  become: true
+  file:
+    path: "/home/{{ ssh_tunnel_user }}/.ssh"
+    state: directory
+    mode: '0700'
+    owner: "{{ ssh_tunnel_user }}"
+    group: "{{ ssh_tunnel_user }}"
+
+- name: Overwrite authorized_keys with local file content
+  become: true
+  copy:
+    content: "{{ authorized_keys_content }}"
+    dest: "/home/{{ ssh_tunnel_user }}/.ssh/authorized_keys"
+    owner: "{{ ssh_tunnel_user }}"
+    group: "{{ ssh_tunnel_user }}"
+    mode: '0600'

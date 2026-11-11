@@ -1,0 +1,42 @@
+exclude: .enc.json$|^migrations/versions
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+        exclude: docker-compose.clear-mounts.yml # yaml check don't like !reset tag
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: mixed-line-ending
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        args: [
+          "--fix",
+          "--config=.pre-commit-ruff-config.toml"
+        ]
+      # Run the formatter.
+      - id: ruff-format
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - alembic
+          - alembic_utils
+          - geoalchemy2
+          - psycopg[binary]
+          - pydantic
+          - pytest
+          - requests-mock
+          # The version in requirements.txt, so that mypy checks the code against
+          # the SQLAlchemy it runs on. SQLAlchemy 2.1 types result rows differently.
+          - sqlalchemy==2.0.52
+          - types-boto3
+          - types-requests
+          - types-shapely
+          - types-simplejson
+          - git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0#egg=ryhti_api_client

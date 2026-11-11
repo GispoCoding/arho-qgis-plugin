@@ -1,0 +1,10 @@
+-c ../../requirements.txt
+
+psycopg[binary]
+sqlalchemy
+geoalchemy2
+boto3
+
+requests
+pygml
+shapely

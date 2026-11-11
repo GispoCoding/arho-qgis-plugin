@@ -1,0 +1,1174 @@
+from __future__ import annotations
+
+from datetime import date, datetime  # Sqlalchemy uses this runtime
+from typing import TYPE_CHECKING, Any
+from uuid import UUID  # Sqlalchemy uses this runtime
+
+from geoalchemy2 import Geometry, WKBElement
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Enum as SQLAlchemyEnum,
+    ForeignKey,
+    Index,
+    Table,
+    Uuid,
+)
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.sql import func
+
+from database.base import (
+    PROJECT_SRID,
+    AttributeValueMixin,
+    Base,
+    DbId,
+    VersionedBase,
+    language_str,
+)
+from database.enums import JobStatus
+
+if TYPE_CHECKING:
+    from database.codes import (
+        AdministrativeRegion,
+        CategoryOfPublicity,
+        DigitalOrigin,
+        Language,
+        LegalEffectsOfMasterPlan,
+        LifeCycleStatus,
+        Municipality,
+        PersonalDataContent,
+        PlanTheme,
+        PlanType,
+        RetentionTime,
+        TypeOfAdditionalInformation,
+        TypeOfDocument,
+        TypeOfPlanRegulation,
+        TypeOfPlanRegulationGroup,
+        TypeOfSourceData,
+        TypeOfUnderground,
+        TypeOfVerbalPlanRegulation,
+    )
+
+regulation_group_association = Table(
+    "regulation_group_association",
+    Base.metadata,
+    Column[UUID]("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column[UUID](
+        "plan_regulation_group_id",
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    # General groups cannot actually be n2n but use this approach anyway
+    # to make the approach uniform with the plan objects
+    Column[UUID](
+        "plan_id",
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
+        index=True,
+        comment="A plan in which the regulation group is a general regulation group",
+    ),
+    Column[UUID](
+        "land_use_area_id",
+        ForeignKey(
+            "hame.land_use_area.id", name="land_use_area_id_fkey", ondelete="CASCADE"
+        ),
+        index=True,
+    ),
+    Column[UUID](
+        "other_area_id",
+        ForeignKey("hame.other_area.id", name="other_area_id_fkey", ondelete="CASCADE"),
+        index=True,
+    ),
+    Column[UUID](
+        "line_id",
+        ForeignKey("hame.line.id", name="line_id_fkey", ondelete="CASCADE"),
+        index=True,
+    ),
+    Column[UUID](
+        "point_id",
+        ForeignKey("hame.point.id", name="point_id_fkey", ondelete="CASCADE"),
+        index=True,
+    ),
+    schema="hame",
+)
+
+
+legal_effects_association = Table(
+    "legal_effects_association",
+    Base.metadata,
+    Column[UUID](
+        "plan_id",
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
+        primary_key=True,
+        # indexed by the primary key
+    ),
+    Column[UUID](
+        "legal_effects_of_master_plan_id",
+        ForeignKey(
+            "codes.legal_effects_of_master_plan.id",
+            name="legal_effects_of_master_plan_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+        # use separate index because not the leftmost column of the primary key
+        index=True,
+    ),
+    schema="hame",
+)
+
+
+plan_theme_association = Table(
+    "plan_theme_association",
+    Base.metadata,
+    Column[UUID]("id", Uuid, primary_key=True, server_default=func.gen_random_uuid()),
+    Column[UUID](
+        "plan_regulation_id",
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column[UUID](
+        "plan_proposition_id",
+        ForeignKey(
+            "hame.plan_proposition.id",
+            name="plan_proposition_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    ),
+    Column[UUID](
+        "plan_theme_id",
+        ForeignKey(
+            "codes.plan_theme.id", name="plan_theme_id_fkey", ondelete="CASCADE"
+        ),
+        index=True,
+        nullable=False,
+    ),
+    schema="hame",
+)
+
+
+class PlanMatter(VersionedBase):
+    __tablename__ = "plan_matter"
+
+    name: Mapped[language_str]
+    description: Mapped[language_str | None]
+    permanent_plan_identifier: Mapped[str | None]
+    producers_plan_identifier: Mapped[str | None]
+    case_identifier: Mapped[str | None]  # TODO: change to list
+    record_number: Mapped[str | None]  # TODO: change to list
+    # Kumoamiskaava: a plan matter whose plans repeal earlier valid plans. The
+    # cancellation info rows of its plans are filled by trigger, see
+    # generate_plan_cancellation_info_triggers in database/triggers.py.
+    repealing: Mapped[bool] = mapped_column(server_default="0", default=False)
+    # TODO: Add mandatory time_of_initiation: Mapped[datetime]
+    # TODO: Add related_binding_plot_division_matter_uris
+
+    digital_origin_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.digital_origin.id", name="digital_origin_id_fkey")
+    )
+    digital_origin: Mapped[DigitalOrigin] = relationship(
+        back_populates="plan_matters", lazy="joined"
+    )
+    plan_type_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.plan_type.id", name="plan_type_id_fkey")
+    )
+    # TODO: #Allow multiple administrative areas
+    organisation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hame.organisation.id", name="organisation_id_fkey")
+    )
+    # TODO: Add matter_annexes/attachment documents
+    # TODO: Add responsible_party
+    # TODO: Add participation_and_assessment_scheme
+    # TODO: Add related_plan_matters
+
+    source_data: Mapped[list[SourceData]] = relationship(
+        back_populates="plan_matter", cascade="all, delete-orphan"
+    )
+
+    plans: Mapped[list[Plan]] = relationship(back_populates="plan_matter")
+
+    # Let's load all the codes for objects joined.
+    plan_type: Mapped[PlanType] = relationship(
+        back_populates="plan_matters", lazy="joined"
+    )
+    organisation: Mapped[Organisation] = relationship(
+        back_populates="plan_matters", lazy="joined"
+    )
+
+
+class PlanBase(VersionedBase):
+    """All plan data tables should have additional date fields."""
+
+    __abstract__ = True
+
+    # Let's have exported at field for all plan data, because some of them may be
+    # exported and others added after the plan has last been exported? This will
+    # require finding all the exported objects in the database after export is done,
+    # is it worth the trouble?
+    exported_at: Mapped[datetime | None]
+
+
+class RyhtiLifecycleBase(Base):
+    """Mixin for period of validity fields."""
+
+    __abstract__ = True
+
+    lifecycle_status_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.lifecycle_status.id", name="plan_lifecycle_status_id_fkey"),
+        index=True,
+    )
+
+    # class reference in abstract base class, with backreference to class name:
+    @declared_attr
+    @classmethod
+    def lifecycle_status(cls) -> Mapped[LifeCycleStatus]:
+        return relationship(
+            "LifeCycleStatus", back_populates=f"{cls.__tablename__}s", lazy="joined"
+        )
+
+    period_of_validity_start: Mapped[date | None]
+    period_of_validity_end: Mapped[date | None]
+
+
+class Plan(PlanBase, RyhtiLifecycleBase):
+    """Maakuntakaava, compatible with Ryhti 2.0 specification"""
+
+    __tablename__ = "plan"
+
+    plan_matter_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "hame.plan_matter.id", onupdate="CASCADE", name="plan_matter_id_fkey"
+        ),
+        index=True,
+    )
+
+    name: Mapped[language_str]
+    description: Mapped[language_str | None]
+    scale: Mapped[int | None]
+    official_use_only: Mapped[bool | None]
+    approval_date: Mapped[date | None]
+    locked: Mapped[bool] = mapped_column(server_default="0", default=False)
+    # A plan is final when its content is complete and may be published
+    # through the read-only valid views. Only the finalize_plan action of the
+    # ryhti_client lambda sets it; arho_read_write has no update grant on the
+    # column, see the migration that grants the plan columns one by one.
+    final: Mapped[bool] = mapped_column(server_default="0", default=False)
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
+    # Only plan should have validated_at field, since validation is only done
+    # for complete plan objects. Also validation errors might concern multiple
+    # models, not just one field or one table in database.
+    validated_at: Mapped[datetime | None]
+    validation_errors: Mapped[dict[str, Any] | str | None]
+
+    plan_matter: Mapped[PlanMatter] = relationship(
+        back_populates="plans", lazy="joined"
+    )
+
+    # Load plan documents eagerly with a separate query
+    documents: Mapped[list[Document]] = relationship(
+        back_populates="plan", lazy="selectin", cascade="all, delete-orphan"
+    )
+    # Load plan objects ordered
+    land_use_areas: Mapped[list[LandUseArea]] = relationship(
+        order_by="LandUseArea.ordering",
+        back_populates="plan",
+        cascade="all, delete-orphan",
+    )
+    other_areas: Mapped[list[OtherArea]] = relationship(
+        order_by="OtherArea.ordering",
+        back_populates="plan",
+        cascade="all, delete-orphan",
+    )
+    lines: Mapped[list[Line]] = relationship(
+        order_by="Line.ordering", back_populates="plan", cascade="all, delete-orphan"
+    )
+    points: Mapped[list[Point]] = relationship(
+        order_by="Point.ordering", back_populates="plan", cascade="all, delete-orphan"
+    )
+
+    # Regulation groups belonging to a plan
+    regulation_groups: Mapped[list[PlanRegulationGroup]] = relationship(
+        back_populates="plan", cascade="all, delete-orphan"
+    )
+
+    general_plan_regulation_groups: Mapped[list[PlanRegulationGroup]] = relationship(
+        secondary=regulation_group_association,
+        lazy="selectin",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "points,lines,plan_regulation_groups"
+        ),
+    )
+    legal_effects_of_master_plan: Mapped[list[LegalEffectsOfMasterPlan]] = relationship(
+        "LegalEffectsOfMasterPlan",
+        secondary=legal_effects_association,
+        lazy="selectin",
+        back_populates="plans",
+    )
+
+    # Cancellation infos this plan issues, i.e. the plans this plan repeals.
+    plan_cancellation_infos: Mapped[list[PlanCancellationInfo]] = relationship(
+        back_populates="plan",
+        foreign_keys="PlanCancellationInfo.plan_id",
+        # A fixed order keeps the serialized plan the same between two runs.
+        order_by="PlanCancellationInfo.cancelled_plan_id",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    # Cancellation infos through which other plans repeal this plan. A plan that
+    # another plan repeals must not be deleted, so the orm never touches these
+    # rows and the foreign key of the database is left to speak.
+    cancelled_by: Mapped[list[PlanCancellationInfo]] = relationship(
+        back_populates="cancelled_plan",
+        foreign_keys="PlanCancellationInfo.cancelled_plan_id",
+        passive_deletes="all",
+    )
+
+
+class PlanObjectBase(PlanBase, RyhtiLifecycleBase):
+    """All plan object tables have the same fields, apart from geometry."""
+
+    __abstract__ = True
+
+    @declared_attr.directive
+    @classmethod
+    def __table_args__(cls) -> tuple:
+        return (
+            Index(
+                f"ix_{cls.__tablename__}_plan_id_ordering",
+                "plan_id",
+                "ordering",
+                unique=True,
+            ),
+            PlanBase.__table_args__,
+        )
+
+    name: Mapped[language_str | None]
+    description: Mapped[language_str | None]
+    source_data_object: Mapped[str | None]
+    height_min: Mapped[float | None]
+    height_max: Mapped[float | None]
+    height_unit: Mapped[str | None]
+    height_reference_point: Mapped[str | None]
+    ordering: Mapped[int | None]
+    type_of_underground_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.type_of_underground.id", name="type_of_underground_id_fkey")
+    )
+    plan_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey"), index=True
+    )
+
+    # Annotate the geom here and define columns in subclasses.
+    geom: Mapped[WKBElement]
+
+    # class reference in abstract base class, with backreference to class name
+    # Let's load all the codes for objects joined.
+    @declared_attr
+    @classmethod
+    def type_of_underground(cls) -> Mapped[TypeOfUnderground]:
+        return relationship(
+            "TypeOfUnderground", back_populates=f"{cls.__tablename__}s", lazy="joined"
+        )
+
+    # class reference in abstract base class, with backreference to class name:
+    @declared_attr
+    @classmethod
+    def plan(cls) -> Mapped[Plan]:
+        return relationship("Plan", back_populates=f"{cls.__tablename__}s")
+
+    # class reference in abstract base class, with backreference to class name:
+    @declared_attr
+    @classmethod
+    def plan_regulation_groups(cls) -> Mapped[list[PlanRegulationGroup]]:
+        return relationship(
+            "PlanRegulationGroup",
+            secondary="hame.regulation_group_association",
+            back_populates=f"{cls.__tablename__}s",
+            overlaps=(
+                "general_plan_regulation_groups,land_use_areas,other_areas,"
+                "points,lines,plan_regulation_groups"
+            ),
+            order_by="PlanRegulationGroup.ordering",
+            # selectin avoids joining the whole regulation group tree onto every
+            # plan object row, which is very slow for plans with many objects.
+            lazy="selectin",
+        )
+
+
+class LandUseArea(PlanObjectBase):
+    """Aluevaraus"""
+
+    __tablename__ = "land_use_area"
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
+
+
+class OtherArea(PlanObjectBase):
+    """Osa-alue"""
+
+    __tablename__ = "other_area"
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
+
+
+class Line(PlanObjectBase):
+    """Viivat"""
+
+    __tablename__ = "line"
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID)
+    )
+
+
+class Point(PlanObjectBase):
+    """Pisteet"""
+
+    __tablename__ = "point"
+
+    geom: Mapped[WKBElement] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+    )
+
+
+class PlanRegulationGroup(VersionedBase):
+    """Kaavamääräysryhmä"""
+
+    __tablename__ = "plan_regulation_group"
+    __table_args__ = (
+        Index("ix_plan_regulation_group_plan_id_ordering", "plan_id", "ordering"),
+        Index("ix_plan_regulation_group_plan_id_short_name", "plan_id", "short_name"),
+        VersionedBase.__table_args__,
+    )
+
+    short_name: Mapped[str | None]
+    name: Mapped[language_str | None]
+
+    plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
+        nullable=False,
+        comment="Plan to which this regulation group belongs",
+        index=True,
+    )
+    plan: Mapped[Plan] = relationship(back_populates="regulation_groups")
+
+    ordering: Mapped[int | None]
+
+    # värikoodi?
+    type_of_plan_regulation_group_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_plan_regulation_group.id",
+            name="type_of_plan_regulation_group_id_fkey",
+        )
+    )
+    type_of_plan_regulation_group: Mapped[TypeOfPlanRegulationGroup] = relationship(
+        back_populates="plan_regulation_groups", lazy="joined"
+    )
+
+    # Let's add backreference to allow lazy loading from this side.
+    plan_regulations: Mapped[list[PlanRegulation]] = relationship(
+        back_populates="plan_regulation_group",
+        lazy="selectin",
+        order_by="PlanRegulation.ordering",  # list regulations in right order
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    # Let's add backreference to allow lazy loading from this side. Unit tests
+    # will not detect missing eager loads, because currently fixtures are created
+    # and added in the same database session that is passed on to the unit tests
+    # for running. Therefore, any related objects returned by the session may be
+    # lazy loaded, because they are already added to the existing session.
+    # But why don't integration tests catch this missing, they contain propositions too?
+    # Maybe has something to do with the lifecycle of pytest session fixture?
+    plan_propositions: Mapped[list[PlanProposition]] = relationship(
+        back_populates="plan_regulation_group",
+        lazy="selectin",
+        order_by="PlanProposition.ordering",  # list propositions in right order
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    land_use_areas: Mapped[list[LandUseArea]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "points,lines,plan_regulation_groups"
+        ),
+    )
+    other_areas: Mapped[list[OtherArea]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "points,lines,plan_regulation_groups"
+        ),
+    )
+    lines: Mapped[list[Line]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "points,lines,plan_regulation_groups"
+        ),
+    )
+    points: Mapped[list[Point]] = relationship(
+        secondary="hame.regulation_group_association",
+        back_populates="plan_regulation_groups",
+        overlaps=(
+            "general_plan_regulation_groups,land_use_areas,other_areas,"
+            "points,lines,plan_regulation_groups"
+        ),
+    )
+
+
+class AdditionalInformation(VersionedBase, AttributeValueMixin):
+    """Kaavamääräyksen lisätieto"""
+
+    __tablename__ = "additional_information"
+
+    plan_regulation_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    )
+    type_additional_information_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_additional_information.id",
+            name="type_additional_information_id_fkey",
+        )
+    )
+
+    plan_regulation: Mapped[PlanRegulation] = relationship(
+        back_populates="additional_information"
+    )
+    type_of_additional_information: Mapped[TypeOfAdditionalInformation] = relationship(
+        lazy="joined"
+    )
+
+
+type_of_verbal_regulation_association = Table(
+    "type_of_verbal_regulation_association",
+    Base.metadata,
+    Column[UUID](
+        "plan_regulation_id",
+        ForeignKey(
+            "hame.plan_regulation.id",
+            name="plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+    ),
+    Column[UUID](
+        "type_of_verbal_plan_regulation_id",
+        ForeignKey(
+            "codes.type_of_verbal_plan_regulation.id",
+            name="type_of_verbal_plan_regulation_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+        index=True,
+    ),
+    schema="hame",
+)
+
+
+class PlanRegulation(PlanBase, AttributeValueMixin, RyhtiLifecycleBase):
+    """Kaavamääräys"""
+
+    __tablename__ = "plan_regulation"
+    __table_args__ = (
+        Index(
+            "ix_plan_regulation_plan_regulation_group_id_ordering",
+            "plan_regulation_group_id",
+            "ordering",
+            unique=True,
+        ),
+        PlanBase.__table_args__,
+    )
+
+    plan_regulation_group_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    )
+
+    type_of_plan_regulation_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "codes.type_of_plan_regulation.id", name="type_of_plan_regulation_id_fkey"
+        )
+    )
+
+    plan_regulation_group: Mapped[PlanRegulationGroup] = relationship(
+        back_populates="plan_regulations"
+    )
+    # Let's load all the codes for objects joined.
+    type_of_plan_regulation: Mapped[TypeOfPlanRegulation] = relationship(
+        back_populates="plan_regulations", lazy="joined"
+    )
+    # Let's load all the codes for objects joined.
+    types_of_verbal_plan_regulations: Mapped[list[TypeOfVerbalPlanRegulation]] = (
+        relationship(
+            "TypeOfVerbalPlanRegulation",
+            secondary=type_of_verbal_regulation_association,
+            back_populates="plan_regulations",
+            lazy="selectin",
+        )
+    )
+    plan_themes: Mapped[list[PlanTheme]] = relationship(
+        secondary=plan_theme_association,
+        overlaps="plan_propositions,plan_themes",
+        back_populates="plan_regulations",
+        lazy="selectin",
+    )
+
+    additional_information: Mapped[list[AdditionalInformation]] = relationship(
+        back_populates="plan_regulation",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    ordering: Mapped[int | None]
+    subject_identifiers: Mapped[list[str] | None]
+
+
+class PlanProposition(PlanBase, RyhtiLifecycleBase):
+    """Kaavasuositus"""
+
+    __tablename__ = "plan_proposition"
+    __table_args__ = (
+        Index(
+            "ix_plan_proposition_plan_regulation_group_id_ordering",
+            "plan_regulation_group_id",
+            "ordering",
+            unique=True,
+        ),
+        PlanBase.__table_args__,
+    )
+
+    plan_regulation_group_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    )
+
+    plan_regulation_group: Mapped[PlanRegulationGroup] = relationship(
+        back_populates="plan_propositions"
+    )
+    # Let's load all the codes for objects joined.
+    plan_themes: Mapped[list[PlanTheme]] = relationship(
+        secondary=plan_theme_association,
+        overlaps="plan_regulations,plan_themes",
+        back_populates="plan_propositions",
+        lazy="selectin",
+    )
+    text_value: Mapped[language_str | None]
+    ordering: Mapped[int | None]
+
+
+class SourceData(VersionedBase):
+    """Lähtötietoaineistot"""
+
+    __tablename__ = "source_data"
+
+    type_of_source_data_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.type_of_source_data.id", name="type_of_source_data_id_fkey")
+    )
+    plan_matter_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_matter.id", onupdate="CASCADE", name="plan_matter_id_fkey"
+        ),
+        index=True,
+    )
+
+    # Let's load all the codes for objects joined.
+    type_of_source_data: Mapped[TypeOfSourceData] = relationship(
+        back_populates="source_data", lazy="joined"
+    )
+    plan_matter: Mapped[PlanMatter] = relationship(back_populates="source_data")
+    name: Mapped[language_str | None]
+    additional_information_uri: Mapped[str]
+    detachment_date: Mapped[datetime]
+
+
+class Organisation(VersionedBase):
+    """Toimija"""
+
+    __tablename__ = "organisation"
+
+    name: Mapped[language_str | None]
+    business_id: Mapped[str]
+    municipality_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("codes.municipality.id", name="municipality_id_fkey")
+    )
+    administrative_region_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "codes.administrative_region.id", name="administrative_region_id_fkey"
+        )
+    )
+    # Let's load all the codes for objects joined.
+    municipality: Mapped[Municipality] = relationship(
+        back_populates="organisations", lazy="joined"
+    )
+    administrative_region: Mapped[AdministrativeRegion] = relationship(
+        back_populates="organisations", lazy="joined"
+    )
+
+    plan_matters: Mapped[list[PlanMatter]] = relationship(back_populates="organisation")
+
+
+class Document(VersionedBase):
+    """Asiakirja"""
+
+    __tablename__ = "document"
+
+    type_of_document_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.type_of_document.id", name="type_of_document_id_fkey")
+    )
+    plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"), index=True
+    )
+    category_of_publicity_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "codes.category_of_publicity.id", name="category_of_publicity_id_fkey"
+        )
+    )
+    personal_data_content_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "codes.personal_data_content.id", name="personal_data_content_id_fkey"
+        )
+    )
+    retention_time_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.retention_time.id", name="retention_time_id_fkey")
+    )
+    language_id: Mapped[UUID] = mapped_column(
+        ForeignKey("codes.language.id", name="language_id_fkey")
+    )
+
+    # Let's load all the codes for objects joined.
+    type_of_document: Mapped[TypeOfDocument] = relationship(
+        back_populates="documents", lazy="joined"
+    )
+    plan: Mapped[Plan] = relationship(back_populates="documents")
+    category_of_publicity: Mapped[CategoryOfPublicity] = relationship(
+        back_populates="documents", lazy="joined"
+    )
+    personal_data_content: Mapped[PersonalDataContent] = relationship(
+        back_populates="documents", lazy="joined"
+    )
+    retention_time: Mapped[RetentionTime] = relationship(
+        back_populates="documents", lazy="joined"
+    )
+    language: Mapped[Language] = relationship(back_populates="documents", lazy="joined")
+
+    permanent_document_identifier: Mapped[str | None]  # e.g. diaarinumero
+    name: Mapped[language_str | None]
+    exported_at: Mapped[datetime | None]
+    # Ryhti key for the latest file version that was uploaded:
+    exported_file_key: Mapped[UUID | None]
+    # Entity tag header for the latest file version that was uploaded:
+    exported_file_etag: Mapped[str | None]
+    arrival_date: Mapped[datetime | None]
+    confirmation_date: Mapped[datetime | None]
+    accessibility: Mapped[bool] = mapped_column(default=False, server_default="0")
+    decision_date: Mapped[datetime | None]
+    document_date: Mapped[datetime]
+    url: Mapped[str | None]
+
+
+# Kaavan kumoamistieto, i.e. a plan that repeals an earlier plan.
+#
+# The repealed plan, its plan objects and its regulation groups are referred to
+# by foreign key instead of by uri text: hame.plan.id is the Ryhti planKey and
+# hame.<plan object>.id the planObjectKey, so the uris are built from the ids
+# when the plan is serialized. import_wfs_plans brings the valid national plans
+# into hame, so the target of a cancellation is a row of this database.
+#
+# The foreign keys to the cancelled plan and its parts have no ondelete: a plan
+# that another plan repeals must not be deleted. They are deferred, because
+# import_plan and import_wfs_plans delete a plan and insert it again with the
+# same key inside one transaction.
+
+
+# Ryhti cancelledGeneralRegulationGroupUris. The link carries no data of its
+# own, so this is a plain association table like legal_effects_association.
+cancelled_general_regulation_group_association = Table(
+    "cancelled_general_regulation_group_association",
+    Base.metadata,
+    Column[UUID](
+        "plan_cancellation_info_id",
+        ForeignKey(
+            "hame.plan_cancellation_info.id",
+            name="plan_cancellation_info_id_fkey",
+            ondelete="CASCADE",
+        ),
+        primary_key=True,
+        # indexed by the primary key
+    ),
+    Column[UUID](
+        "plan_regulation_group_id",
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        primary_key=True,
+    ),
+    # Separate index because not the leftmost column of the primary key. The
+    # automatic name would be too long for PostgreSQL, so it is given here.
+    Index(
+        "ix_cancelled_general_regulation_group_plan_regulation_group_id",
+        "plan_regulation_group_id",
+    ),
+    schema="hame",
+)
+
+
+# Exactly one of the plan object columns of CancelledPlanObjectMixin is set.
+CANCELLED_PLAN_OBJECT_CHECK = (
+    "num_nonnulls(land_use_area_id, other_area_id, line_id, point_id) = 1"
+)
+
+
+class CancelledPlanObjectMixin(Base):
+    """Reference to one plan object of the cancelled plan.
+
+    Plan objects live in four tables, so the reference is spread over four
+    columns of which exactly one is set, like in regulation_group_association.
+    """
+
+    __abstract__ = True
+
+    @declared_attr
+    @classmethod
+    def land_use_area_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.land_use_area.id",
+                name="land_use_area_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def other_area_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.other_area.id",
+                name="other_area_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def line_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.line.id",
+                name="line_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def point_id(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            ForeignKey(
+                "hame.point.id",
+                name="point_id_fkey",
+                deferrable=True,
+                initially="DEFERRED",
+            ),
+            index=True,
+        )
+
+    @declared_attr
+    @classmethod
+    def land_use_area(cls) -> Mapped[LandUseArea | None]:
+        return relationship("LandUseArea")
+
+    @declared_attr
+    @classmethod
+    def other_area(cls) -> Mapped[OtherArea | None]:
+        return relationship("OtherArea")
+
+    @declared_attr
+    @classmethod
+    def line(cls) -> Mapped[Line | None]:
+        return relationship("Line")
+
+    @declared_attr
+    @classmethod
+    def point(cls) -> Mapped[Point | None]:
+        return relationship("Point")
+
+    @property
+    def plan_object_id(self) -> UUID:
+        """The id of the plan object the row names, whichever table it lives in."""
+        plan_object_id = (
+            self.land_use_area_id or self.other_area_id or self.line_id or self.point_id
+        )
+        if plan_object_id is None:
+            # Exactly one of the columns is set, see CANCELLED_PLAN_OBJECT_CHECK.
+            raise ValueError("The row names no plan object.")
+        return plan_object_id
+
+
+class PlanCancellationInfo(VersionedBase):
+    """Kaavan kumoamistieto"""
+
+    __tablename__ = "plan_cancellation_info"
+    __table_args__ = (
+        # A plan repeals another plan at most once. Several cancelled plan
+        # objects of the same plan belong to one cancellation info.
+        Index(
+            "ix_plan_cancellation_info_plan_id_cancelled_plan_id",
+            "plan_id",
+            "cancelled_plan_id",
+            unique=True,
+        ),
+        CheckConstraint(
+            "cancelled_plan_id <> plan_id",
+            name="ck_plan_cancellation_info_cancelled_plan_id",
+        ),
+        VersionedBase.__table_args__,
+    )
+
+    plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey("hame.plan.id", name="plan_id_fkey", ondelete="CASCADE"),
+        comment="The plan that repeals the cancelled plan",
+        # indexed by ix_plan_cancellation_info_plan_id_cancelled_plan_id
+    )
+    cancelled_plan_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan.id",
+            name="cancelled_plan_id_fkey",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        index=True,
+        comment="The plan that is repealed",
+    )
+    cancels_entire_plan: Mapped[bool]
+
+    plan: Mapped[Plan] = relationship(
+        back_populates="plan_cancellation_infos",
+        foreign_keys="PlanCancellationInfo.plan_id",
+    )
+    cancelled_plan: Mapped[Plan] = relationship(
+        back_populates="cancelled_by",
+        foreign_keys="PlanCancellationInfo.cancelled_plan_id",
+    )
+
+    plan_object_cancellation_infos: Mapped[list[PlanObjectCancellationInfo]] = (
+        relationship(
+            back_populates="plan_cancellation_info",
+            lazy="selectin",
+            cascade="all, delete-orphan",
+            passive_deletes=True,
+        )
+    )
+    cancelled_group_relations: Mapped[list[CancelledGroupRelation]] = relationship(
+        back_populates="plan_cancellation_info",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    cancelled_general_regulation_groups: Mapped[list[PlanRegulationGroup]] = (
+        relationship(
+            secondary=cancelled_general_regulation_group_association, lazy="selectin"
+        )
+    )
+
+
+class PlanObjectCancellationInfo(VersionedBase, CancelledPlanObjectMixin):
+    """Kaavakohteen kumoamistieto"""
+
+    __tablename__ = "plan_object_cancellation_info"
+    __table_args__ = (
+        # The automatic index name would be at the identifier length limit of
+        # PostgreSQL, so it is given here.
+        Index(
+            "ix_plan_object_cancellation_info_plan_cancellation_info_id",
+            "plan_cancellation_info_id",
+        ),
+        CheckConstraint(
+            CANCELLED_PLAN_OBJECT_CHECK,
+            name="ck_plan_object_cancellation_info_plan_object",
+        ),
+        # The geometry that stays valid is given when a part of the plan object
+        # is cancelled, and carries no meaning when the whole object is.
+        CheckConstraint(
+            "num_nonnulls("
+            "remaining_valid_geom_polygon, "
+            "remaining_valid_geom_line, "
+            "remaining_valid_geom_point"
+            ") = case when cancels_entire_plan_object then 0 else 1 end",
+            name="ck_plan_object_cancellation_info_remaining_valid_geom",
+        ),
+        # The geometry that stays valid has the geometry type of the cancelled
+        # plan object.
+        CheckConstraint(
+            "(remaining_valid_geom_polygon is null"
+            " or land_use_area_id is not null or other_area_id is not null)"
+            " and (remaining_valid_geom_line is null or line_id is not null)"
+            " and (remaining_valid_geom_point is null or point_id is not null)",
+            name="ck_plan_object_cancellation_info_remaining_valid_geom_type",
+        ),
+        VersionedBase.__table_args__,
+    )
+
+    plan_cancellation_info_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_cancellation_info.id",
+            name="plan_cancellation_info_id_fkey",
+            ondelete="CASCADE",
+        )
+        # indexed by ix_plan_object_cancellation_info_plan_cancellation_info_id
+    )
+    cancels_entire_plan_object: Mapped[bool]
+
+    # Ryhti validityGeometry: the part of the cancelled plan object that stays
+    # valid, not the part that is cancelled. There is a column per geometry
+    # type, so that PostgreSQL enforces the type of the geometry itself.
+    remaining_valid_geom_polygon: Mapped[WKBElement | None] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOLYGON", srid=PROJECT_SRID)
+    )
+    remaining_valid_geom_line: Mapped[WKBElement | None] = mapped_column(
+        type_=Geometry(geometry_type="MULTILINESTRING", srid=PROJECT_SRID)
+    )
+    remaining_valid_geom_point: Mapped[WKBElement | None] = mapped_column(
+        type_=Geometry(geometry_type="MULTIPOINT", srid=PROJECT_SRID)
+    )
+
+    plan_cancellation_info: Mapped[PlanCancellationInfo] = relationship(
+        back_populates="plan_object_cancellation_infos"
+    )
+
+    @property
+    def remaining_valid_geom(self) -> WKBElement | None:
+        """The geometry that stays valid, whichever geometry column holds it.
+
+        None when the whole plan object is repealed, see
+        ck_plan_object_cancellation_info_remaining_valid_geom.
+        """
+        return (
+            self.remaining_valid_geom_polygon
+            or self.remaining_valid_geom_line
+            or self.remaining_valid_geom_point
+        )
+
+
+class CancelledGroupRelation(VersionedBase, CancelledPlanObjectMixin):
+    """Kumottavan ryhmän kohdistus
+
+    The link between a regulation group and a plan object of the cancelled
+    plan. Both ends are given, unlike in
+    cancelled_general_regulation_group_association, which names no plan object.
+    """
+
+    __tablename__ = "cancelled_group_relation"
+    __table_args__ = (
+        CheckConstraint(
+            CANCELLED_PLAN_OBJECT_CHECK, name="ck_cancelled_group_relation_plan_object"
+        ),
+        VersionedBase.__table_args__,
+    )
+
+    plan_cancellation_info_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_cancellation_info.id",
+            name="plan_cancellation_info_id_fkey",
+            ondelete="CASCADE",
+        ),
+        index=True,
+    )
+    plan_regulation_group_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "hame.plan_regulation_group.id",
+            name="plan_regulation_group_id_fkey",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        index=True,
+    )
+
+    plan_cancellation_info: Mapped[PlanCancellationInfo] = relationship(
+        back_populates="cancelled_group_relations"
+    )
+    plan_regulation_group: Mapped[PlanRegulationGroup] = relationship()
+
+
+class Job(Base):
+    """A ryhti_client action run in the background.
+
+    The ryhti_client lambda stores the request, runs it later and stores the
+    response of the action as the result, so that the caller can poll for it. The table is no plan data: it
+    has no version columns or triggers, and the QGIS roles have no grants on it.
+    """
+
+    __tablename__ = "job"
+    __table_args__ = {"schema": "jobs"}
+
+    id: Mapped[DbId] = mapped_column(
+        type_=postgresql.UUID(as_uuid=False),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
+    )
+    action: Mapped[str]
+    # No foreign key: an import has no plan yet, and a plan may be deleted.
+    plan_id: Mapped[DbId | None] = mapped_column(type_=postgresql.UUID(as_uuid=False))
+    # The normalized request without the job flag, as run_action reads it.
+    request: Mapped[dict[str, Any]] = mapped_column(type_=postgresql.JSONB)
+    # The enum type lives in the jobs schema, next to the table.
+    status: Mapped[JobStatus] = mapped_column(
+        SQLAlchemyEnum(
+            JobStatus,
+            values_callable=lambda e: [x.value for x in e],
+            inherit_schema=True,
+        )
+    )
+    # The response of the action, {statusCode, body}, when the job is done.
+    result: Mapped[dict[str, Any] | None] = mapped_column(type_=postgresql.JSONB)
+    # A generic message when the job failed. The details go to the log only.
+    error: Mapped[str | None]
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    started_at: Mapped[datetime | None]
+    finished_at: Mapped[datetime | None]
