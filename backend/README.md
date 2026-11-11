@@ -151,7 +151,7 @@ infra README.
 The `ryhti_client` lambda can be debugged from VS Code while it runs in its dev Docker container.
 
 1. Bring up `ryhti_client` with debugpy enabled: `make dev-debug-ryhti`. This uses the `docker-compose.debug.yml` override to install `debugpy`, expose it on host port `5679`, and set `DEBUGPY=1`.
-2. In VS Code's Run and Debug panel pick **Python: Attach to ryhti_client (docker)** and start it. The debugger attaches via `localhost:5679`. QGIS uses port `5678` when the plugin is debugged, so both can be attached at once.
+2. In VS Code's Run and Debug panel pick **backend: attach to ryhti_client (docker)** (from `arho.code-workspace`) and start it. The debugger attaches via `localhost:5679`. QGIS uses port `5678` when the plugin is debugged, so both can be attached at once.
 3. Set breakpoints in `lambdas/ryhti_client/lambda_function.py`, `lambdas/ryhti_client/ryhti_client/`, or `database/` and invoke the lambda — e.g. `make dev-ryhti-validate uuid=<plan-uuid>`.
 
 To debug module-level / cold-start code, set `DEBUGPY_WAIT=1` in `docker-compose.debug.yml`; the container will block on startup until VS Code attaches.

@@ -6,7 +6,7 @@ name: arho
 # or:
 #   make dev-debug-ryhti
 #
-# Then attach VS Code using the "Python: Attach to ryhti_client (docker)" launch config.
+# Then attach VS Code using the "backend: attach to ryhti_client (docker)" launch config of arho.code-workspace.
 
 services:
   ryhti_client:

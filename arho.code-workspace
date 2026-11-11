@@ -1,0 +1,156 @@
+{
+    // Team settings for both sides. Personal overrides go into the `.vscode/settings.json`
+    // of `plugin/` or `backend/`: those folders are untracked and win over this file.
+    "folders": [
+        {
+            "path": "plugin"
+        },
+        {
+            "path": "backend"
+        },
+        {
+            "name": "arho (root)",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "[python]": {
+            "editor.formatOnSave": true,
+            "editor.defaultFormatter": "charliermarsh.ruff",
+            "editor.codeActionsOnSave": {
+                "source.organizeImports": "explicit",
+                "source.fixAll": "explicit"
+            }
+        },
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        // Keep VS Code from loading `.env` into the test environment: the backend tests
+        // read `.env.test` first, as they do in a shell.
+        "python.envFile": "",
+        "python.analysis.diagnosticSeverityOverrides": {
+            "reportUnknownArgumentType": "none"
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.mypy-type-checker",
+            "charliermarsh.ruff",
+            "editorconfig.editorconfig",
+            "redhat.vscode-yaml",
+            "tamasfe.even-better-toml",
+            "ms-azuretools.vscode-docker"
+        ]
+    },
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                // Start QGIS with QGIS_PLUGIN_USE_DEBUGGER=debugpy and the profile arho-dev.
+                "name": "plugin: attach to QGIS",
+                "type": "debugpy",
+                "request": "attach",
+                "connect": {
+                    "host": "localhost",
+                    "port": 5678
+                },
+                "windows": {
+                    "pathMappings": [
+                        {
+                            "localRoot": "${workspaceFolder:plugin}/arho_feature_template",
+                            "remoteRoot": "${env:APPDATA}/QGIS/QGIS3/profiles/arho-dev/python/plugins/arho_feature_template"
+                        },
+                        {
+                            "localRoot": "${workspaceFolder:plugin}/arho_feature_template",
+                            "remoteRoot": "${env:APPDATA}/QGIS/QGIS4/profiles/arho-dev/python/plugins/arho_feature_template"
+                        }
+                    ]
+                },
+                "osx": {
+                    "pathMappings": [
+                        {
+                            "localRoot": "${workspaceFolder:plugin}/arho_feature_template",
+                            "remoteRoot": "${env:HOME}/Library/Application Support/QGIS/QGIS3/profiles/arho-dev/python/plugins/arho_feature_template"
+                        },
+                        {
+                            "localRoot": "${workspaceFolder:plugin}/arho_feature_template",
+                            "remoteRoot": "${env:HOME}/Library/Application Support/QGIS/QGIS4/profiles/arho-dev/python/plugins/arho_feature_template"
+                        }
+                    ]
+                },
+                "linux": {
+                    "pathMappings": [
+                        {
+                            "localRoot": "${workspaceFolder:plugin}/arho_feature_template",
+                            "remoteRoot": "${env:HOME}/.local/share/QGIS/QGIS3/profiles/arho-dev/python/plugins/arho_feature_template"
+                        },
+                        {
+                            "localRoot": "${workspaceFolder:plugin}/arho_feature_template",
+                            "remoteRoot": "${env:HOME}/.local/share/QGIS/QGIS4/profiles/arho-dev/python/plugins/arho_feature_template"
+                        }
+                    ]
+                }
+            },
+            {
+                // Start the container with `make dev-debug-ryhti` in `backend/`.
+                "name": "backend: attach to ryhti_client (docker)",
+                "type": "debugpy",
+                "request": "attach",
+                "connect": {
+                    "host": "localhost",
+                    "port": 5679
+                },
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder:backend}/lambdas/ryhti_client",
+                        "remoteRoot": "/var/task"
+                    },
+                    {
+                        "localRoot": "${workspaceFolder:backend}/database",
+                        "remoteRoot": "/var/task/database"
+                    }
+                ],
+                "justMyCode": false
+            },
+            {
+                // Used by "Debug Test" in the Test Explorer.
+                "name": "Debug tests",
+                "type": "debugpy",
+                "request": "launch",
+                "purpose": [
+                    "debug-test"
+                ],
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "env": {
+                    "PYTEST_ADDOPTS": "--no-cov"
+                }
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                // The Test Explorer runs the tests with `.venv` (QGIS 3) only.
+                "label": "plugin: pytest (Qt 6)",
+                "type": "process",
+                "command": "${workspaceFolder:plugin}/.venv-qt6/bin/python",
+                "windows": {
+                    "command": "${workspaceFolder:plugin}\\.venv-qt6\\Scripts\\python.exe"
+                },
+                "args": [
+                    "-m",
+                    "pytest",
+                    "tests",
+                    "-q"
+                ],
+                "options": {
+                    "cwd": "${workspaceFolder:plugin}"
+                },
+                "group": "test",
+                "problemMatcher": []
+            }
+        ]
+    }
+}
