@@ -1,0 +1,3 @@
+# Build tool for the user manual. Keep the version pinned: Zensical is in beta
+# and releases often. Update on purpose and check the site after the update.
+zensical==0.1.1

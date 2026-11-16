@@ -1,0 +1,46 @@
+INHERIT: zensical-base.yml
+
+site_name: ARHO-användarmanual
+site_description: Användarmanual för planläggningsverktyget ARHO
+site_url: https://gispocoding.github.io/arho-qgis-plugin/sv/
+docs_dir: sv
+site_dir: site/sv
+edit_uri: edit/main/manual/sv/
+
+theme:
+  language: sv
+
+nav:
+  - index.md
+  - about.md
+  - qgis.md
+  - plugin.md
+  - project.md
+  - plan-matter.md
+  - Planutkast:
+      - plan/index.md
+      - plan/open.md
+      - plan/create.md
+      - plan/lock.md
+      - plan/export.md
+      - plan/import.md
+      - plan/edit.md
+  - plan-objects.md
+  - regulation-groups.md
+  - libraries.md
+  - validation.md
+  - multilingual.md
+  - geotiff.md
+  - legend.md
+  - lifecycle/index.md
+  - consolidated-plan.md
+  - plan-amendment.md
+  - ryhti.md
+  - Visualiseringar:
+      - styling/index.md
+      - styling/default-styles.md
+      - styling/rule-based.md
+      - styling/symbols-labels.md
+      - styling/filters.md
+  - api-errors.md
+  - digitizing.md
