@@ -48,6 +48,7 @@ class PrefixHandler(http.server.SimpleHTTPRequestHandler):
     def translate_path(self, path: str) -> str:
         if path == PREFIX:
             path = PREFIX + "/"
+        # Paths outside the prefix map to a file that does not exist: 404, like on Pages.
         path = path[len(PREFIX) :] if path.startswith(PREFIX + "/") else "/__not_found__"
         return super().translate_path(path)
 
@@ -56,7 +57,7 @@ class PrefixHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-class Server(http.server.ThreadingHTTPServer):
+class PreviewServer(http.server.ThreadingHTTPServer):
     # The default backlog of 5 refuses connections on Windows when a page
     # loads many files at once.
     request_queue_size = 64
@@ -64,7 +65,7 @@ class Server(http.server.ThreadingHTTPServer):
 
 def serve(port: int) -> None:
     handler = functools.partial(PrefixHandler, directory=str(SITE))
-    with Server(("localhost", port), handler) as server:
+    with PreviewServer(("localhost", port), handler) as server:
         print(f"Serving http://localhost:{port}{PREFIX}/ (Ctrl+C stops)")
         server.serve_forever()
 

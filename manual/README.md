@@ -37,7 +37,7 @@ The Markdown files here are the only source. There is no Word version.
       Det här kapitlet finns bara på finska än så länge. Läs den finska versionen: [Otsikko](/arho-qgis-plugin/<path>/).
   ```
 
-- **Screenshots**: put the PNG file in `fi/images/` with a name that starts with the page name, for example `plan-create-11.png`. Every image needs an alt text in the page language: `![Kaavasuunnitelma-valikko auki](../images/plan-create-11.png)`. A small button inside a sentence gets `{ .icon }`: `![Tallenna-painike](images/save.png){ .icon }`. For a smaller image, add a width in pixels: `{ width="400" }`.
+- **Screenshots**: put the PNG file in `fi/images/` with a name that starts with the page name, for example `plan-create-11.png`. Every image needs an alt text in the page language: `![Kaavasuunnitelma-valikko auki](../images/plan-create-11.png)`. A small button inside a sentence gets `{ .icon }`: `![Tallenna-painike](images/plan-export-3.png){ .icon }`. For a smaller image, add a width in pixels: `{ width="400" }`.
 - **Features that are not released yet**: put the new text in a box, so readers know which version has it:
 
   ```markdown
@@ -59,7 +59,8 @@ uv run --no-project --with-requirements manual/requirements.txt python manual/bu
 ```
 
 Open <http://localhost:8000/arho-qgis-plugin/>. Run the command again after changes.
-For live reload of one language, use `zensical serve`:
+For live reload of the Finnish site, use `zensical serve` (the language switch and,
+for the Swedish site, the screenshots work only through `build.py`):
 
 ```console
 uv run --no-project --with-requirements manual/requirements.txt zensical serve -f manual/zensical-fi.yml
@@ -69,7 +70,8 @@ uv run --no-project --with-requirements manual/requirements.txt zensical serve -
 
 `.github/workflows/manual.yml` builds and publishes the site when a push to `main`
 changes `manual/` or the workflow file. To publish without a change, open
-**Actions > User manual > Run workflow**.
+**Actions > User manual > Run workflow**. A pull request that changes `manual/`
+gets a build check that fails on warnings, for example a broken link or a missing image.
 
 ## Privacy
 
