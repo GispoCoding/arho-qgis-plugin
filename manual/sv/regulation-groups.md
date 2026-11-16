@@ -4,19 +4,19 @@
 
 Planbestämmelsegrupper hanteras med knappen *Kaavamääräysryhmät*. Knappen öppnar en panel där de planbestämmelsegrupper som används eller som användaren själv har skapat listas. Med detta verktyg kan du dessutom redigera bestämmelsegrupper för flera planobjekt samtidigt.
 
-1.  En ny planbestämmelsegrupp **skapas** med knappen ![](images/regulation-groups-1.png){ .icon } i *Kaavamääräysryhmät*-panelen.
+1.  En ny planbestämmelsegrupp **skapas** med knappen ![Knappen ”Luo uusi kaavamääräysryhmä”](images/regulation-groups-1.png){ .icon } i *Kaavamääräysryhmät*-panelen.
 
 2.  Genom att välja en befintlig planbestämmelsegrupp i listan så att den blir aktiv (raden blir blå) och trycka på Redigera (***Muokkaa***), kommer du åt att redigera planbestämmelserna. Genom att trycka på Ta bort (***Poista***) kan du radera den.
 
 3.  *Kaavakohdetoiminnot* är massfunktioner som gör det möjligt för dig att hantera flera planobjekt och planbestämmelsegrupper samtidigt.
 
-    ![](images/regulation-groups-2.png)
+    ![Panelen ”Kaavamääräysryhmät” med en vald grupp i blått, knapparna och menyn ”Kaavakohdetoiminnot”](images/regulation-groups-2.png)
 
 ## Skapa och redigera planbestämmelsegrupper { #create-edit }
 
-1.  En ny planbestämmelsegrupp skapas med knappen ***Luo kaavamääräysryhmä*** ![](images/regulation-groups-1.png){ .icon }. Du kan välja att skapa en ny helt från början (tom) eller utifrån en mall.
+1.  En ny planbestämmelsegrupp skapas med knappen ***Luo kaavamääräysryhmä*** ![Knappen ”Luo uusi kaavamääräysryhmä”](images/regulation-groups-1.png){ .icon }. Du kan välja att skapa en ny helt från början (tom) eller utifrån en mall.
 
-    ![](images/regulation-groups-3.png)
+    ![Plusknappens meny i panelen ”Kaavamääräysryhmät” med valen ”Tyhjä” och ”Pohjasta”](images/regulation-groups-3.png)
 
     1.  Med *Tyhjä* får du bygga upp planbestämmelsegruppen helt själv från grunden.
 
@@ -26,7 +26,7 @@ Planbestämmelsegrupper hanteras med knappen *Kaavamääräysryhmät*. Knappen �
 
 2.  På fliken ***Kaavamääräysryhmän tiedot***: Det rekommenderas att du anger en rubrik (*otsikko*) och en bokstavsbeteckning (*kirjaintunnus*). Typ av planbestämmelse (*Tyyppi*) är en obligatorisk uppgift.
 
-    ![](images/regulation-groups-4.png){ width="366" }
+    ![Fliken ”Kaavamääräysryhmän tiedot” i fönstret ”Luo kaavamääräysryhmä” där ”Tyyppi” är obligatoriskt](images/regulation-groups-4.png){ width="366" }
 
 3.  På fliken ***Kaavamääräykset*** utformas själva planbestämmelsegruppen genom att du lägger till bestämmelser.
 
@@ -38,11 +38,11 @@ Planbestämmelsegrupper hanteras med knappen *Kaavamääräysryhmät*. Knappen �
 
     4.  När du hittar den bestämmelse som behövs, ***dubbelklicka*** på den så att bestämmelsen flyttas till rutan till höger. Där kan du sedan ge den till exempel en ämnestagg (*aihetunniste*), ett planläggningstema (*kaavoitusteema*) osv.
 
-    ![](images/regulation-groups-5.png){ width="599" }
+    ![Fliken ”Kaavamääräykset” i fönstret ”Luo kaavamääräysryhmä” där ”Virkistysalue” har lagts till i rutan till höger](images/regulation-groups-5.png){ width="599" }
 
 4.  På fliken ***Suositukset*** kan du lägga till rekommendationer för gruppen.
 
-5.  Med verktyget ***Muokkaa valittua kaavamääräysryhmää*** ![](images/regulation-groups-6.png){ .icon } öppnas fönstret för den planbestämmelsegrupp som har markerats med blått i panelen för planbestämmelsegrupper, där du kan redigera gruppen. Fönstret *Muokkaa kaavamääräysryhmää* är mycket likt fönstret *Luo kaavamääräysryhmä*.
+5.  Med verktyget ***Muokkaa valittua kaavamääräysryhmää*** ![Knappen ”Muokkaa valittua kaavamääräysryhmää”](images/regulation-groups-6.png){ .icon } öppnas fönstret för den planbestämmelsegrupp som har markerats med blått i panelen för planbestämmelsegrupper, där du kan redigera gruppen. Fönstret *Muokkaa kaavamääräysryhmää* är mycket likt fönstret *Luo kaavamääräysryhmä*.
 
     1.  På fliken ***Kaavamääräysryhmän tiedot*** kan du ange basuppgifter för gruppen och definiera dess typ (områdesreservering, delområde osv.).
 
@@ -54,7 +54,7 @@ Planbestämmelsegrupper hanteras med knappen *Kaavamääräysryhmät*. Knappen �
 
 7.  Den nya gruppen flyttas till ***Käytössä olevat kaavamääräysryhmät*** och du kan använda den för nya och befintliga planobjekt.
 
-    ![](images/plan-objects-3.png){ width="438" }
+    ![Menyn ”Kaavamääräysryhmäkirjastot” öppen med biblioteken per plantyp och ”Käytössä olevat kaavamääräysryhmät”](images/plan-objects-3.png){ width="438" }
 
     I fönstret som öppnas efter att du har ritat ett planobjekt är ett av de tillgängliga biblioteken *Käytössä olevat kaavamääräysryhmät*.
 
@@ -62,15 +62,15 @@ Planbestämmelsegrupper hanteras med knappen *Kaavamääräysryhmät*. Knappen �
 
 Från panelen *Kaavakohteet* kan du hantera hur planbestämmelsegrupper kopplas till planobjekt. Du kan lägga till och ta bort valda planbestämmelsegrupper för valda planobjekt. Alla dessa funktioner förutsätter att du först väljer de planobjekt på kartan vars planbestämmelsegrupper du vill påverka.
 
-![](images/regulation-groups-7.png)
+![Menyn ”Kaavakohdetoiminnot” med funktioner för att lägga till och ta bort grupper för valda objekt](images/regulation-groups-7.png)
 
 1.  **Lägg till valda grupper till valda objekt** (*Lisää valitut ryhmät valituille kohteille*)
 
-    1.  Välj de objekt på kartan med QGIS vanliga markeringsverktyg ![](images/regulation-groups-8.png){ .icon } som du vill lägga till en eller flera planbestämmelsegrupper till.
+    1.  Välj de objekt på kartan med QGIS vanliga markeringsverktyg ![Verktyget Välj objekt](images/regulation-groups-8.png){ .icon } som du vill lägga till en eller flera planbestämmelsegrupper till.
 
     2.  Välj därefter den eller de planbestämmelsegrupper i listan som du vill lägga till för objekten (gruppen markeras med blått). Välj slutligen ***Kaavakohdetoiminnot*** → ***Lisää valitut ryhmät valituille kohteille***.
 
-        ![](images/regulation-groups-9.png){ width="354" }
+        ![Menyn ”Kaavakohdetoiminnot” öppen med valet ”Lisää valitut ryhmät valituille kohteille” markerat](images/regulation-groups-9.png){ width="354" }
 
 2.  **Ta bort alla grupper från valda objekt** (*Poista kaikki ryhmät valituilta kohteilta*)
 
@@ -84,7 +84,7 @@ Från panelen *Kaavakohteet* kan du hantera hur planbestämmelsegrupper kopplas 
 
     2.  Välj den grupp i listan som du vill ta bort från objekten.
 
-        ![](images/regulation-groups-10.png)
+        ![Panelen ”Kaavamääräysryhmät” där gruppen ”VR - Retkeily- ja ulkoilualue” är vald i listan](images/regulation-groups-10.png)
 
     3.  Välj ***Kaavakohdetoiminnot*** → ***Poista valitut ryhmät valituilta kohteilta***.
 
@@ -92,7 +92,7 @@ Från panelen *Kaavakohteet* kan du hantera hur planbestämmelsegrupper kopplas 
 
 Fliken *Kaavamääräysryhmän tiedot*:
 
-![](images/regulation-groups-11.png)
+![Fliken ”Kaavamääräysryhmän tiedot” i fönstret ”Muokkaa kaavamääräysryhmää” med uppgift om gruppens användning](images/regulation-groups-11.png)
 
 Rubriken (*Otsikko*) och bokstavsbeteckningen (*kirjaintunnus*) rekommenderas att följa Katja-förordningen, förutsatt att en liknande planbestämmelsegrupp finns i Katja. Om det finns små skillnader i bestämmelserna kan man lägga till ett index till bokstavsbeteckningen (t.ex. A-1 och A-2).
 

@@ -4,6 +4,6 @@ Arho tallentaa visualisoinnit sisältävät QML-tiedostot lisäosan tietoihin k�
 
 Asetuksista on mahdollista katsoa tuo sijainti ja vaihtaa Arho käyttämään jotain muuta QML-tiedostoa kaavojen visualisoinnissa kullekin kaavatasolle erikseen. Mikäli vaihdat tiedostot, käynnistä QGIS uudelleen, jotta saat muutokset voimaan.
 
-![](../images/styling-default-styles-1.png)
+![Asetusten ”QML-tiedostot”-osio, jossa on kaavatasoittain QML-tiedostojen polut kullekin kohdetasolle](../images/styling-default-styles-1.png)
 
 Huomaa, että Arho-lisäosa päivittää oletustyylien tiedostot jokaisen lisäosapäivityksen yhteydessä.

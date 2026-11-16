@@ -4,10 +4,10 @@ Kun työn alla oleva kaavasuunnitelma tulee valmiiksi, eikä sitä saa enää mu
 
 Avaa kaavasuunnitelman tiedot (**Kaavasuunnitelma > Kaavasuunnitelman tiedot**, tai tuplaklikkaamalla kaavasuunnitelmat-listauksesta haluamaasi suunnitelmaa), ruksi kohta **Lukittu** ja paina **OK**.
 
-![](../images/plan-lock-1.png)
+![”Kaavasuunnitelma”-ikkunan ”Perustiedot”-välilehti, jossa punaisella korostettu ”Lukittu”-valinta on ruksattu](../images/plan-lock-1.png)
 
 Lukittu kaavasuunnitelma näkyy kaavasuunnitelmat-listauksessa lukkokuvakkeen kanssa.
 
-![](../images/plan-lock-2.png)
+![”Kaavasuunnitelmat”-lista, jossa lukittu kaavasuunnitelma näkyy lukkokuvakkeen kanssa](../images/plan-lock-2.png)
 
 Lukitun kaavasuunnitelman tietoja voi tarkastella, mutta sitä ei voi muokata.

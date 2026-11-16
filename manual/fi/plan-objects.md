@@ -4,7 +4,7 @@
 
 1.  Aloita kaavakohteen luominen valitsemalla **Luo kaavakohde**. Valitse painikkeista kaavakohteen tyyppi sen mukaan, minkä kohteen haluat piirtää.
 
-    ![](images/plan-objects-1.png) ![](images/plan-objects-2.png){ width="297" }
+    ![Arhon työkalupalkin ”Luo kaavakohde” -painike korostettuna](images/plan-objects-1.png) ![”Luo kaavakohde” -paneeli, jossa kaavakohteen tyypin painikkeet ”Aluevaraus”, ”Osa-alue”, ”Viiva” ja ”Piste”](images/plan-objects-2.png){ width="297" }
 
 2.  Kun olet valinnut kaavakohteen tyypin, voit piirtää kohteen kartalle hiirellä klikkailemalla.
 
@@ -14,27 +14,27 @@
 
 Kun kaavakohde on piirretty, avautuu ikkuna, jossa pääset liittämään kohteelle kaavamääräyksiä. Valitse kohteelle sopivat kaavamääräysryhmät ja kaavamääräykset ***kaksoisklikkaamalla*** sopivaa kaavamääräysryhmäkirjaston alla olevaa kaavamääräysryhmää. Huomaa, että voit valita, mitä kirjastoa kulloinkin haluat käyttää (asema-, yleis- tai maakuntakaavan kirjasto, käytössä olevat tai itse luotu kirjasto). Hakukentän avulla voit etsiä sopivaa kaavamääräysryhmää sanahaun avulla.
 
-![](images/plan-objects-3.png){ width="438" }
+![”Kaavamääräysryhmäkirjastot”-valikko auki, vaihtoehtoina kaavalajien kirjastot ja ”Käytössä olevat kaavamääräysryhmät”](images/plan-objects-3.png){ width="438" }
 
-![](images/plan-objects-4.png)
+![Kaavakohteen lomake, jossa haulla ”virkis” löytynyt kaavamääräysryhmä on liitetty kohteelle](images/plan-objects-4.png)
 
 Voit etsiä sopivia ryhmiä hakutoiminnolla. Kun oikea kaavamääräysryhmä löytyy, ***kaksoisklikkaa kohdetta***, jotta se tulee valituksi. Tee tarvittavat muokkaukset.
 
-- ![](images/plan-objects-5.png){ .icon } Rattaasta pääsee muokkaamaan kaavamääräysryhmän tietoja, kaavamääräystä tai -määräyksiä ja kaavasuosituksia (katso [Kaavamääräysryhmän luominen ja muokkaaminen](regulation-groups.md#create-edit)).
-- ![](images/plan-objects-6.png){ .icon } Roskakori poistaa kaavamääräysryhmän.
-- ![](images/plan-objects-7.png){ .icon } Plussasta saa määritettyä aihetunnisteen, kaavoitusteeman ja lisätiedon.
+- ![Rataspainike](images/plan-objects-5.png){ .icon } Rattaasta pääsee muokkaamaan kaavamääräysryhmän tietoja, kaavamääräystä tai -määräyksiä ja kaavasuosituksia (katso [Kaavamääräysryhmän luominen ja muokkaaminen](regulation-groups.md#create-edit)).
+- ![Roskakori-painike](images/plan-objects-6.png){ .icon } Roskakori poistaa kaavamääräysryhmän.
+- ![Plus-painike ja alasvetovalikko](images/plan-objects-7.png){ .icon } Plussasta saa määritettyä aihetunnisteen, kaavoitusteeman ja lisätiedon.
 
-    ![](images/plan-objects-8.png)
+    ![Plus-painikkeen valikko, jossa valinnat ”Aihetunniste”, ”Kaavoitusteema” ja ”Lisätieto”](images/plan-objects-8.png)
 
 - Mikäli valitsit sanallisen määräyksen, syötä **Arvo**-kenttään määräyksen sanallinen kuvaus ja valitse määräykselle sopiva sanallisen määräyksen laji.
 
-    ![](images/plan-objects-9.png)
+    ![”Kaavamääräys”-lomake, jossa ”Arvo”-kenttä korostettuna ja sen alla ”Sanallisen määräyksen laji”](images/plan-objects-9.png)
 
 Paina lopuksi **OK**.
 
 ## Olemassa olevan kaavakohteen muokkaus ja poistaminen
 
-![](images/plan-objects-10.png)
+![Arhon työkalupalkki, jossa ”Muokkaa kaavakohteita” -työkalu on korostettu punaisella](images/plan-objects-10.png)
 
 1.  Jos haluat muokata olemassa olevia kaavakohteita, valitse **Muokkaa kaavakohteita**.
 
@@ -46,9 +46,9 @@ Paina lopuksi **OK**.
 
 ## Kaavakohdepaneeli { #panel }
 
-**Kaavakohteet**-työkalusta ![](images/plan-objects-11.png){ .icon } aukeaa kaavakohdepaneeli.
+**Kaavakohteet**-työkalusta ![”Kaavakohteet”-painike](images/plan-objects-11.png){ .icon } aukeaa kaavakohdepaneeli.
 
-![](images/plan-objects-12.png)
+![”Kaavakohteet”-paneeli, jossa tyyppipainikkeet, hakukenttä ja kaavakohteiden luettelo](images/plan-objects-12.png)
 
 Tästä taulukkonäkymästä näet kaikki kaavasuunnitelmassasi olevat kaavakohteet. Koska kohteita voi olla paljon, voi olla kätevää suodattaa niitä tyypin mukaan tai etsiä hakusanalla.
 
@@ -56,7 +56,7 @@ Voit käyttää kaavakohdepaneelia kaavakohteiden valitsemiseen. Kun valitset ri
 
 Klikkaamalla kohteen riviä hiiren oikealla painikkeella saat käyttöön neljä (tai viisi) toimintoa.
 
-![](images/plan-objects-13.png)
+![Kaavakohdepaneelin rivin pikavalikko, jossa mm. ”Näytä lomake”, ”Zoomaa kohteeseen” ja ”Väläytä kohdetta”](images/plan-objects-13.png)
 
 - **Näytä lomake** avaa kaavakohteen lomakkeen. Lomakkeen saa auki myös tuplaklikkaamalla riviä. Lomakkeella voit muokata kohteen tietoja.
 - **Zoomaa kohteeseen** lähentää karttanäkymän valitsemaasi kohteeseen.
@@ -68,11 +68,11 @@ Klikkaamalla kohteen riviä hiiren oikealla painikkeella saat käyttöön neljä
 
 Arho mahdollistaa kohteiden tuomisen muista aineistoista **Tuo kaavakohteita** -työkalulla.
 
-![](images/plan-objects-14.png)
+![Arhon työkalupalkki, jossa ”Tuo kaavakohteita” -painike korostettuna](images/plan-objects-14.png)
 
 Valitse työkalu, ja eteesi aukeaa **Tuo kaavakohteita** -ikkuna.
 
-![](images/plan-objects-15.png)
+![”Tuo kaavakohteita” -ikkuna, jossa valitaan tuontitaso, kohdetaso, kopioitavat tiedot ja kaavamääräysryhmät](images/plan-objects-15.png)
 
 ### Tasot
 

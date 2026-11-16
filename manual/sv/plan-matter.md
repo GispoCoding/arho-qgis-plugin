@@ -2,7 +2,7 @@
 
 För hantering av planärenden har tre funktioner lagts till i insticksprogrammet.
 
-![](images/plan-matter-1.png)
+![Menyn ”Kaava-asia” med ”Uusi kaava-asia”, ”Avaa kaava-asia” och ”Kaava-asian tiedot”](images/plan-matter-1.png)
 
 ## Skapa ett nytt planärende
 
@@ -12,7 +12,7 @@ Du kan lägga till ett nytt planärende på följande sätt:
 
 2.  Fyll i uppgifterna i formuläret som öppnas. Obligatoriska fält är markerade med en röd stjärna.
 
-    ![](images/sv-plan-matter-1.png){ width="521" }
+    ![Det tomma formuläret ”Kaava-asia” där obligatoriska fält är markerade med en röd stjärna](images/sv-plan-matter-1.png){ width="521" }
 
 3.  Tryck slutligen på **OK**. Då sparas det nya planärendet i databasen och ställs in som aktivt. ***Ett planutkast som eventuellt har varit aktivt tidigare inaktiveras.***
 
@@ -30,7 +30,7 @@ Insticksprogrammet tillåter endast att ett planärende är aktivt åt gången. 
 
 1.  Detta öppnar ett fönster där alla sparade planärenden visas.
 
-    ![](images/plan-matter-3.png){ width="589" }
+    ![Fönstret ”Avaa kaava-asia” med en lista över sparade planärenden](images/plan-matter-3.png){ width="589" }
 
 2.  Välj det planärende i listan som du vill aktivera. Det valda planärendet markeras med blå färg, som i bilden ovan.
 

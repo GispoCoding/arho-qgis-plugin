@@ -10,7 +10,7 @@ Kaavasuunnitelman luominen aloitetaan antamalla sille ulkoraja. Tämä voidaan t
 
 1.  Aloita uuden kaavan tekeminen valitsemalla **Uusi kaavasuunnitelma > Luo uusi kaavasuunnitelma piirtämällä ulkoraja**.
 
-    ![](../images/plan-create-1.png)
+    ![Valikko ”Uusi kaavasuunnitelma” auki ja valinta ”Luo uusi kaavasuunnitelma piirtämällä ulkoraja” korostettuna](../images/plan-create-1.png)
 
 2.  Kun piirrät uuden ulkorajan, karttaikkunaan tulevat näkyviin tietokannassa olevat muiden kaavasuunnitelmien ulkorajat, jotta näihin voi tarvittaessa tarttua.
 
@@ -30,15 +30,15 @@ Kaavasuunnitelman luominen aloitetaan antamalla sille ulkoraja. Tämä voidaan t
 
 1.  Ennen kuin aloitat kaavasuunnitelman ulkorajan tuontia, tarkista QGISin tarttumisen ja topologiatyökalujen asetukset. Jos on mahdollista, että uusi raja voi mennä päällekkäin kartalla jo olevien kohteiden kanssa, varmista, että et ole kieltänyt topologiatyökaluissa kohteiden päällekkäisyyttä.
 
-    ![](../images/plan-create-2.png)
+    ![QGISin päällekkäisyysvalikko auki, valittuna ”Salli päällekkäisyys”](../images/plan-create-2.png)
 
-2.  Kun topologia-asetukset ovat kunnossa, aloita kaavasuunnitelman ulkorajan tuonti valitsemalla QGIS-projektin joltain tasolta kohde, jonka haluat tuoda kaavan ulkorajaksi. Esim. maakuntatasolta valitaan QGISin valintatyökalulla ![](../images/plan-create-3.png){ .icon } yksi maakunta aktiiviseksi.
+2.  Kun topologia-asetukset ovat kunnossa, aloita kaavasuunnitelman ulkorajan tuonti valitsemalla QGIS-projektin joltain tasolta kohde, jonka haluat tuoda kaavan ulkorajaksi. Esim. maakuntatasolta valitaan QGISin valintatyökalulla ![Valitse kohteita -työkalu](../images/plan-create-3.png){ .icon } yksi maakunta aktiiviseksi.
 
-    ![](../images/plan-create-4.png)
+    ![Kartta, jolla yksi maakunta on valittuna (keltainen) kaavan ulkorajaksi tuotavaksi](../images/plan-create-4.png)
 
 3.  Seuraavaksi valitse **Uusi kaava > Tuo kaavan ulkoraja**. Täytä auenneeseen lomakkeeseen tarvittavat tiedot kaavasta.
 
-    ![](../images/plan-create-5.png)
+    ![”Kaavasuunnitelma”-valikon ”Uusi kaavasuunnitelma” -alavalikosta valittuna ”Luo uusi kaavasuunnitelma tuomalla ulkoraja”](../images/plan-create-5.png)
 
 4.  ***Varmista ennen tuontia, että tuotavan tason koordinaatisto on sama kuin projektilla (useimmiten EPSG:3067).***
 
@@ -46,9 +46,9 @@ Kaavasuunnitelman luominen aloitetaan antamalla sille ulkoraja. Tämä voidaan t
 
 ***Tätä toimintoa on mahdollista käyttää vain, jos kaava-asialle on jo luotu vähintään yksi kaavasuunnitelma.***
 
-1.  Avaa **Kaavasuunnitelmat** ja paina ikkunan vasemmassa yläkulmassa olevaa ![](../images/plan-create-6.png){ .icon } -merkkiä.
+1.  Avaa **Kaavasuunnitelmat** ja paina ikkunan vasemmassa yläkulmassa olevaa ![Luo uusi kaavasuunnitelma -painike (vihreä plus)](../images/plan-create-6.png){ .icon } -merkkiä.
 
-    ![](../images/plan-create-7.png)
+    ![”Kaavasuunnitelmat”-ikkunan plus-painike korostettuna ja auennut ”Uusi kaavasuunnitelma” -ikkuna](../images/plan-create-7.png)
 
 2.  Valitse pudotusvalikosta, mistä suunnitelmasta haluat luoda uuden version. Valitse samalla, haluatko vain kopion aiemmasta, vai oletko siirtämässä kaavaa ja sen kohteita uuteen elinkaaren vaiheeseen.
 
@@ -68,7 +68,7 @@ Kaavasuunnitelman luominen aloitetaan antamalla sille ulkoraja. Tämä voidaan t
 
 Kun kaavasuunnitelmalla on ulkoraja, aukeaa ikkuna, johon syötetään kaavasuunnitelman tiedot. Pääset kaavasuunnitelman lomakkeelle myös **Kaavasuunnitelma**-valikosta kohdasta **Kaavasuunnitelman tiedot** tai tuplaklikkaamalla suunnitelman riviä **Kaavasuunnitelmat**-ikkunassa.
 
-![](../images/plan-create-8.png)
+![”Kaava”-lomakkeen ”Perustiedot”-välilehti, jolle kaavasuunnitelman tiedot syötetään](../images/plan-create-8.png)
 
 Kaavasuunnitelman nimi näkyy Arhossa kaavasuunnitelmat-listauksessa ja se on Arhon käytön kannalta pakollinen tieto, mutta sitä ei viedä Ryhtiin. Kaavasuunnitelman nimeksi kannattaa antaa oman organisaation nimeämiskäytänteiden mukainen nimi, joka on sisäisessä käytössä kuvaava.
 
@@ -76,11 +76,11 @@ Kaavasuunnitelman nimi näkyy Arhossa kaavasuunnitelmat-listauksessa ja se on Ar
 
 Yleismääräykset annetaan omalla välilehdellään. Lisää ensin yleismääräysryhmä.
 
-![](../images/plan-create-9.png)
+![”Kaavasuunnitelma”-ikkunan ”Yleismääräysryhmät”-välilehti ja ”Lisää yleismääräysryhmä” -painikkeella lisätty ryhmä](../images/plan-create-9.png)
 
 Lisää sitten yleismääräysryhmään määräyksiä ja suosituksia. Anna määräyksille arvo ja valitse oikea sanallisen määräyksen laji. Tarvittaessa voit lisätä määräykselle useamman lajin.
 
-![](../images/plan-create-10.png)
+![”Kaavasuunnitelma”-ikkunan ”Yleismääräysryhmät”-välilehti, jossa sanallisen määräyksen ”Arvo” ja ”Laji”](../images/plan-create-10.png)
 
 ### Asiakirjat
 

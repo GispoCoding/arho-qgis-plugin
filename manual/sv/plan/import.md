@@ -6,4 +6,4 @@ Med funktionen *Tuo kaavasuunnitelma* kan en JSON-fil i Ryhti-format importeras 
 2.  Ge planutkastet ett namn (detta namn överförs inte till Ryhti).
 3.  Tryck slutligen på **OK**.
 
-![](../images/plan-import-1.png){ width="456" }
+![Fönstret ”Tuo kaavasuunnitelma” där planutkastets JSON-fil väljs och ett namn anges](../images/plan-import-1.png){ width="456" }

@@ -2,11 +2,11 @@
 
 Jos kaavasta tehdään valitus, voi valitus koskea koko kaavaa tai tiettyjä kaavakohteita ja -määräyksiä. Arholla nämä on mahdollista merkitä omaan kaavasuunnitelmaan, jonka elinkaaren vaihe on valituksenalainen. Seuraavat vaiheet riippuvat siitä, mikä on valitusten käsittelyn lopputulos. Kaikki, mikä koskee valituksenalaista, koskee myös oikaisukehotuksen alaista ja valituksen- ja oikaisukehotuksen alaista. Tätä kokonaisuutta on havainnollistettu alla olevassa kuvassa.
 
-![](../images/lifecycle-appeal-1.png)
+![Kaavio valituksen alaisten kaavojen käsittelystä Arhossa: kaavasuunnitelmat ja elinkaaren tilat hyväksymisestä voimaan](../images/lifecycle-appeal-1.png)
 
 Kun hyväksytystä kaavasta tehdään valitus, luo uusi kaavasuunnitelma hyväksytystä ja valitse elinkaaren tilaksi *valituksenalainen*.
 
-![](../images/lifecycle-appeal-2.png)
+![”Uusi kaavasuunnitelma” -ikkuna: elinkaaren tilana ”Valituksen alainen” ja laajuusvalikko auki](../images/lifecycle-appeal-2.png)
 
 Samalla määritetään, koskeeko valitus / oikaisukehotus koko kaavaa vai vain osaa kaavasta.
 
@@ -22,15 +22,15 @@ Avaa kaavasuunnitelma, jonka tilaksi on asetettu valituksenalainen, oikaisukehot
 
 1.  Avaa [kaavakohdepaneeli](../plan-objects.md#panel) Arhon työkalupalkista.
 
-    ![](../images/lifecycle-appeal-3.png)
+    ![Arhon työkalupalkin ”Kaavakohteet”-painike](../images/lifecycle-appeal-3.png)
 
 2.  Valitse listasta siniseksi kohteet, joiden elinkaaren tilaa haluat muuttaa.
 
-    ![](../images/lifecycle-appeal-4.png)
+    ![Kaavakohdepaneeli, jossa valittu kohde näkyy sinisenä ja alareunassa on ”Vaihda elinkaaren tilaa” -painike](../images/lifecycle-appeal-4.png)
 
 3.  Paneelin alareunassa on työkalu **Vaihda elinkaaren tilaa**. Valitse sieltä, mihin elinkaaren tilaan haluat vaihtaa valittuna olevat kohteet.
 
-    ![](../images/lifecycle-appeal-5.png)
+    ![”Vaihda elinkaaren tilaa” -valikko auki, vaihtoehtoina mm. ”Lainvoimainen”, ”Voimassa” ja ”Kumoutunut”](../images/lifecycle-appeal-5.png)
 
 4.  Kaavakohteiden listaukseen ilmestyy symboli.
 
@@ -45,7 +45,7 @@ Kokonaisen kohteen sijaan valitus ja/tai oikaisukehotus voidaan kohdistaa vain k
 
 2.  Määräyksen perässä näet symbolin, joka kertoo sen elinkaaren tilasta. Harmaa väkänen kertoo voimassa olevasta kaavasta. Klikkaa sitä, ja voit vaihtaa kyseisen määräyksen elinkaaren tilan.
 
-    ![](../images/lifecycle-appeal-6.png)
+    ![Kaavakohteen lomake, jossa kaavamääräyksen elinkaaren tilan valikko on auki, esim. ”Valituksen alainen”](../images/lifecycle-appeal-6.png)
 
 Kun kaikki kaavakohteet ja -määräykset, joihin liittyy valituksia, on merkitty, kaavasuunnitelma kannattaa lukita.
 
@@ -64,7 +64,7 @@ Luo uusi kaavasuunnitelma olemassa olevasta:
     - Jos tässä kohdassa ei ole valintaa, Arho muuttaa kaikille kohteille ja määräyksille elinkaaren tilaksi **Lainvoimainen / Voimassa**.
     - Jos tässä on valinta, valituksen tai oikaisukehotuksen alaisiksi asetettujen kaavakohteiden ja -määräysten elinkaaren tila pysyy sellaisena, ja muut kaavakohteet ja määräykset asetetaan lainvoimaisiksi / voimassa oleviksi.
 
-    ![](../images/lifecycle-appeal-7.png){ width="464" }
+    ![”Uusi kaavasuunnitelma” -ikkuna: elinkaaren tila ”Voimassa” ja valituksen alaisten tilan säilyttävä valinta ruksattuna](../images/lifecycle-appeal-7.png){ width="464" }
 
 4.  Luo suunnitelma.
 

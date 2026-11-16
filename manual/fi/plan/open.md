@@ -2,11 +2,11 @@
 
 1.  Aloita painamalla **Kaavasuunnitelma**-valikosta **Kaavasuunnitelmat**.
 
-    ![](../images/plan-open-1.png)
+    ![”Kaavasuunnitelma”-valikko, jossa ”Kaavasuunnitelmat” on valittuna](../images/plan-open-1.png)
 
 2.  Valitse listalta kaavasuunnitelma, jonka haluat avata.
 
-    ![](../images/plan-open-2.png)
+    ![”Kaavasuunnitelmat”-ikkuna, jossa on kaavasuunnitelmien lista elinkaaren vaiheineen sekä ”Avaa”-painike](../images/plan-open-2.png)
 
     - Aktiivisen kaavasuunnitelman edessä on vihreä pallo.
     - Rivin alussa oleva lukko kertoo, onko kaavasuunnitelma lukittu muutoksilta vai muokattavissa.

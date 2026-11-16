@@ -9,6 +9,6 @@ Validoinnin virheviestit tulevat Syken rajapinnan kautta. Virheiden tulkinnan ja
 - Klikkaamalla kerran virheviestiä virheellinen kohde välähtää kartalla punaisella.
 - Kaksoisklikkaamalla virheviestiä aukeavat kohteen tiedot, ja voit korjata virheen muokkaamalla tietoja.
 
-![](images/validation-1.png)
+![”Validointi”-paneeli, jossa kaavan validointivirhe ja sen vihjeteksti virhekoodeineen](images/validation-1.png)
 
 Tietoa Ryhdin validointisäännöistä löytyy [Syken sivuilta](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/kaavasuunnitelman-validointisaannot/). Myös [Kaavatiedon-validointisaannot-ja-paluuarvot.pdf](https://ryhti.syke.fi/wp-content/uploads/sites/2/2023/11/Kaavatiedon-validointisaannot-ja-paluuarvot.pdf) -dokumenttiin kannattaa tutustua. Esimerkiksi validointivirhe `lifecycle__req_dateonly_incorrect_type, The date must be in the format yyyy-mm-dd` voi tarkoittaa myös, että jokin vaadittu päivämäärä puuttuu.

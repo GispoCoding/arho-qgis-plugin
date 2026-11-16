@@ -11,26 +11,26 @@ Arho innehåller färdiga bibliotek med planbestämmelsegrupper som följer Katj
 ### Skapa ett bibliotek
 
 1.  Välj fliken ***Kaavamääräysryhmäpohjat***.
-2.  Skapa ett nytt bibliotek i fönstret som öppnas genom att trycka på den översta knappen ![](images/libraries-1.png){ .icon }.
+2.  Skapa ett nytt bibliotek i fönstret som öppnas genom att trycka på den översta knappen ![Knappen ”Luo uusi kirjasto”](images/libraries-1.png){ .icon }.
 3.  Ge biblioteket ett namn.
-4.  Ange lagringssökvägen för biblioteket via knappen med tre punkter ![](images/libraries-2.png){ .icon }.
-5.  Utforma och lägg till de planbestämmelsegrupper du vill ha i biblioteket med knappen ![](images/libraries-3.png){ .icon }. Formuläret som öppnas är mycket likt det som används när man skapar vanliga planbestämmelsegrupper.
+4.  Ange lagringssökvägen för biblioteket via knappen med tre punkter ![Bläddringsknappen med tre punkter](images/libraries-2.png){ .icon }.
+5.  Utforma och lägg till de planbestämmelsegrupper du vill ha i biblioteket med knappen ![Knappen Lägg till](images/libraries-3.png){ .icon }. Formuläret som öppnas är mycket likt det som används när man skapar vanliga planbestämmelsegrupper.
 6.  Tryck slutligen på *Tallenna*.
 
-![](images/libraries-4.png){ width="549" }
+![Fliken ”Kaavamääräysryhmäpohjat” i fönstret ”Kirjastojen hallinta” med nya bibliotekets uppgifter och ”Tallenna” markerade](images/libraries-4.png){ width="549" }
 
 ### Redigera ett bibliotek
 
 1.  Öppna *Kirjastojen hallinta* via knappen *Kirjastot*.
 2.  Välj det bibliotek som du vill redigera och gör dina ändringar.
 
-![](images/libraries-5.png){ width="503" }
+![Fönstret ”Kirjastojen hallinta” där biblioteket som ska redigeras väljs i listan ”Kirjasto”](images/libraries-5.png){ width="503" }
 
 ### Använda ett bibliotek
 
 1.  Det sparade biblioteket blir synligt under biblioteken för planbestämmelsegrupper.
 
-    ![](images/libraries-6.png)
+    ![Formuläret ”Aluevaraus” där det sparade biblioteket ”Demokirjasto” väljs i listan över bibliotek](images/libraries-6.png)
 
 2.  Du kan använda ditt eget bibliotek för att koppla planbestämmelsegrupper till planobjekt.
 
@@ -48,11 +48,11 @@ Bibliotek för planobjektsmallar hanteras på samma sätt som bibliotek för pla
 
 3.  Ge biblioteket ett namn.
 
-4.  Skapa ett nytt bibliotek för planobjektsmallar i fönstret som öppnas genom att trycka på den översta knappen ![](images/libraries-1.png){ .icon }.
+4.  Skapa ett nytt bibliotek för planobjektsmallar i fönstret som öppnas genom att trycka på den översta knappen ![Knappen ”Luo uusi kirjasto”](images/libraries-1.png){ .icon }.
 
-5.  Ange lagringssökvägen för biblioteket via knappen med tre punkter ![](images/libraries-2.png){ .icon }.
+5.  Ange lagringssökvägen för biblioteket via knappen med tre punkter ![Bläddringsknappen med tre punkter](images/libraries-2.png){ .icon }.
 
-6.  Lägg till en ny mall i biblioteket med knappen ![](images/libraries-3.png){ .icon }.
+6.  Lägg till en ny mall i biblioteket med knappen ![Knappen Lägg till](images/libraries-3.png){ .icon }.
 
     1.  Välj det geometrilager som planobjektsmallen ska utarbetas för.
     2.  Utforma planbestämmelsegruppen (*kaavamääräysryhmä*).
@@ -67,4 +67,4 @@ Bibliotek för planobjektsmallar hanteras på samma sätt som bibliotek för pla
 2.  Välj först planobjektets geometrityp under ***Kaavakohteen tyyppi***.
 3.  Under ***Alusta kaavakohde pohjasta*** välj en lämplig mall och digitalisera objektet.
 
-![](images/libraries-7.png)
+![Panelen ”Luo kaavakohde” där planobjektets typ och en mall under ”Alusta kaavakohde pohjasta” väljs](images/libraries-7.png)

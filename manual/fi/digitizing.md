@@ -2,7 +2,7 @@
 
 Alla olevassa taulukossa on suositukset QGISin asetuksista, kun digitoit Arholla.
 
-| Mitä digitoidaan? | Tarttuminen ![](images/digitizing-snapping.png){ .icon } ![](images/digitizing-snapping-2.png){ .icon } | Topologinen editointi ![](images/digitizing-topology.png){ .icon } | Päällekkäisyys ![](images/digitizing-overlap.png){ .icon } | Seuraaminen ![](images/digitizing-tracing.png){ .icon } |
+| Mitä digitoidaan? | Tarttuminen ![”Ota tarttuminen käyttöön” -painike (magneetti)](images/digitizing-snapping.png){ .icon } ![Tarttuminen digitoitavaan tasoon -painike](images/digitizing-snapping-2.png){ .icon } | Topologinen editointi ![Topologisen editoinnin painike](images/digitizing-topology.png){ .icon } | Päällekkäisyys ![Päällekkäisyyden asetuspainike](images/digitizing-overlap.png){ .icon } | Seuraaminen ![Aktivoi seuraaminen -painike](images/digitizing-tracing.png){ .icon } |
 |---|---|---|---|---|
 | **Kaavan ulkoraja** | Laita tarttuminen päälle, jos haluat, että kaavan ulkoraja rajautuu tarkasti muihin tietokannan kaavan ulkorajoihin. | Ota topologinen editointi pois päältä. Jos topologinen editointi on päällä ja kaavasi ulkoraja rajautuu toiseen kaavan ulkorajaan, tulet muokanneeksi molempia ulkorajoja muokatessasi toista, mikä tuskin on tarkoituksenmukaista. | Salli päällekkäisyys, jos kaavan ulkoraja saa mennä päällekkäin toisen kanssa. Vältä, jos ei saa. | Aseta päälle, jos kaavasi ulkorajan tulee rajautua tarkasti viereiseen kaavan ulkorajaan. |
 | **Aluevaraus** | Laita tarttuminen päälle. Suositeltavaa asettaa tarttuminen aktiiviseen tasoon ja pisteisiin. Tämä auttaa muodostamaan yhtenäisen pohjan aluevarauksista. | Kun kahdella alueella on yhteinen raja ja topologinen editointi on päällä, yhteisen rajan muokkaus muokkaa molempia alueita. Tämä auttaa säilyttämään yhtenäisen kaavapohjan. Vaarana viereisen alueen vahinkomuokkaukset, joten ole tarkkana. | Aseta **Vältä päällekkäisyyttä** päälle. Aluevaraukset eivät saa olla päällekkäin, ja tämä asetus estää sen. | Aseta päälle, niin aluevarauksesi rajautuu muihin aluevarauksiin ja kaavan ulkorajaan. Voit hyödyntää myös muita aineistoja, joita käytät apuna. |
@@ -12,10 +12,10 @@ Alla olevassa taulukossa on suositukset QGISin asetuksista, kun digitoit Arholla
 
 Lisäksi suositellaan käytettäväksi topologista muokkausta päällä aina, paitsi silloin kun ei nimenomaan haluta, että viereiset kohteet liikkuvat. Kun tämä vaihtoehto on käytössä, QGIS havaitsee yhteiset rajat. Kun siirrät yhteisiä verteksejä tai segmenttejä, QGIS siirtää niitä myös naapurikohteiden geometrioissa, ja näin vältytään päällekkäisiltä aluevarauksilta tai raoilta aluevarausten välissä.
 
-![](images/digitizing-1.png)
+![QGISin tarttumisen työkalupalkki, jossa topologisen muokkauksen painike on korostettu punaisella](images/digitizing-1.png)
 
 Lisäksi suositellaan käytettäväksi tarttumista viivoihin ja vertekseihin. Jos tarttuu viivaan ja topologinen editointi on päällä, piirrettävään kohteeseen muodostuu toisen kohteen verteksi.
 
-![](images/digitizing-2.png)
+![QGISin tarttumisen työkalurivi, jossa tarttumisen magneettipainike on korostettu punaisella](images/digitizing-2.png)
 
 Lisää QGISin editointi- ja digitointityökalujen ominaisuuksista voi lukea [QGISin käyttöohjeesta](https://docs.qgis.org/3.40/en/docs/user_manual/working_with_vector/editing_geometry_attributes.html#editing).

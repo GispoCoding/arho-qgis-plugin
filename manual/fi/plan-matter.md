@@ -2,7 +2,7 @@
 
 Kaava-asioiden hallintaa varten lisäosaan on lisätty kolme toimintoa.
 
-![](images/plan-matter-1.png)
+![”Kaava-asia”-valikko: ”Uusi kaava-asia”, ”Avaa kaava-asia” ja ”Kaava-asian tiedot”](images/plan-matter-1.png)
 
 ## Uuden kaava-asian luonti
 
@@ -12,7 +12,7 @@ Uuden kaava-asian voi lisätä seuraavasti:
 
 2.  Täytä auenneen lomakkeen tiedot. Vaaditut tietueet on merkitty punaisella tähdellä \*.
 
-    ![](images/plan-matter-2.png){ width="584" }
+    ![Tyhjä ”Kaava-asia”-lomake, jossa pakolliset kentät on merkitty punaisella tähdellä](images/plan-matter-2.png){ width="584" }
 
 3.  Lopuksi paina **OK**. Tällöin uusi kaava-asia tallennetaan kantaan ja se asetetaan aktiiviseksi. ***Aikaisemmin mahdollisesti aktiiviseksi asetettu kaavasuunnitelma deaktivoituu.***
 
@@ -30,7 +30,7 @@ Lisäosa mahdollistaa vain yhden kaava-asian aktivoinnin kerrallaan. Kaava-asian
 
 1.  Tämä avaa ikkunan, jossa näkyviin tulevat kaikki tallennetut kaava-asiat.
 
-    ![](images/plan-matter-3.png){ width="589" }
+    ![”Avaa kaava-asia” -ikkuna, jossa tallennetut kaava-asiat on listattu](images/plan-matter-3.png){ width="589" }
 
 2.  Valitse listalta kaava-asia, jonka haluat aktivoida. Valittu kaava-asia korostetaan sinisellä värillä, kuten yllä olevassa kuvassa.
 

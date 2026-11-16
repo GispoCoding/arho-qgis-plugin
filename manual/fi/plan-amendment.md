@@ -4,7 +4,7 @@ Arhon tämänhetkisessä versiossa kaavamuutos on toiminto, jolla uusi voimaan a
 
 Kun tällaista kumoavaa kaavaa lähdetään Arhossa tekemään, tulee kaava-asiaa luodessa merkitä kaava kumoavaksi kaavaksi. Näin Arho tietää, että pitää luoda kumoamistiedot kohteille, jotka kaava tulee kumoamaan astuessaan voimaan.
 
-![](images/plan-amendment-1.png){ width="363" }
+![”Kaava-asia”-lomake, jossa ”Kumoava kaava-asia” -valintaruutu on korostettu](images/plan-amendment-1.png){ width="363" }
 
 Laadi kaava kuten muutenkin ja aseta se voimaan. Arho tuottaa kumoamistiedot kumoutuvista kohteista ja päivittää ajantasakaavaa / kaavayhdistelmää vastaavalla tavalla.
 

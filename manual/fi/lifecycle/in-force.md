@@ -2,7 +2,7 @@
 
 Kaava merkitään Arhossa lainvoimaiseksi ja voimassa olevaksi luomalla jälleen uusi kaavasuunnitelma **Kaavasuunnitelmat**-ikkunan vihreästä plus-nappulasta.
 
-![](../images/lifecycle-in-force-1.png)
+![”Uusi kaavasuunnitelma” -ikkuna, jossa elinkaaren tilaksi on valittu ”Voimassa” ja annettu ”Voimassa alkaen” -päivä](../images/lifecycle-in-force-1.png)
 
 1.  Valitse, minkä suunnitelman pohjalta teet lainvoimaisen / voimassa olevan kaavan.
 
@@ -16,10 +16,10 @@ Kaava merkitään Arhossa lainvoimaiseksi ja voimassa olevaksi luomalla jälleen
 
     1.  Näkyviin on tullut **Aseta lopulliseksi** -työkalu Arhon työkalupalkissa.
 
-        ![](../images/lifecycle-in-force-2.png)
+        ![Arhon työkalupalkin ”Aseta lopulliseksi” -työkalu, jonka kuvakkeena on vihreä valintamerkki](../images/lifecycle-in-force-2.png)
 
     2.  Toimenpidettä ei voi perua, ja Arho varoittaa tästä.
 
-        ![](../images/lifecycle-in-force-3.png){ width="376" }
+        ![”Aseta lopulliseksi” -vahvistusikkuna, joka varoittaa, ettei toimenpidettä voi perua](../images/lifecycle-in-force-3.png){ width="376" }
 
         Kaava ja sen kaavakohteet määräyksineen liitetään osaksi voimassa olevaa [ajantasakaavaa](../consolidated-plan.md) Arhon tietokannassa voimaantulopäivänään.
