@@ -1,0 +1,325 @@
+/* Gispo look for the ARHO user manual.
+ *
+ * Colours (from gispo.fi):
+ *   violet #7a3884  links, buttons, active navigation
+ *   navy   #434662  headings, header, footer, shadow tint
+ *   mauve  #ab8b9b  hover backgrounds only, never text (contrast 3.0:1)
+ *   peach  #ffe1cd  text and links on navy
+ * Fonts: Inter 800 for headings, Karla for body text.
+ * Shapes: square corners, soft navy shadows.
+ */
+
+:root {
+  --arho-violet: #7a3884;
+  --arho-violet-dark: #5e2a66;
+  --arho-violet-light: #c58fce;
+  --arho-navy: #434662;
+  --arho-navy-dark: #2f3147;
+  --arho-mauve: #ab8b9b;
+  --arho-peach: #ffe1cd;
+  --arho-heading-font: "Inter", Arial, Helvetica, sans-serif;
+  --arho-shadow: 4px 4px 14px #4346621a;
+  --arho-shadow-strong: 6px 6px 14px #43466240;
+}
+
+/* Light mode */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--arho-violet);
+  --md-primary-fg-color--light: #96579f;
+  --md-primary-fg-color--dark: var(--arho-violet-dark);
+  --md-primary-bg-color: #fff;
+  --md-primary-bg-color--light: #ffffffb3;
+  --md-accent-fg-color: var(--arho-violet-dark);
+  --md-accent-fg-color--transparent: #ab8b9b26;
+  --md-accent-bg-color: #fff;
+  --md-default-bg-color: #fbfbfb;
+  --md-typeset-color: #444;
+  --md-typeset-a-color: var(--arho-violet);
+  --arho-heading-color: var(--arho-navy);
+  --arho-card-bg: #fff;
+}
+
+/* Dark mode: navy-tinted slate */
+[data-md-color-scheme="slate"] {
+  --md-hue: 234deg;
+  --md-primary-fg-color: var(--arho-violet);
+  --md-primary-fg-color--light: #96579f;
+  --md-primary-fg-color--dark: var(--arho-violet-dark);
+  --md-primary-bg-color: #fff;
+  --md-accent-fg-color: var(--arho-violet-light);
+  --md-accent-fg-color--transparent: #ab8b9b33;
+  --md-typeset-a-color: var(--arho-violet-light);
+  --arho-heading-color: var(--arho-peach);
+  --arho-card-bg: hsla(var(--md-hue), 15%, 9%, 1);
+  --arho-shadow: 4px 4px 14px #00000059;
+  --arho-shadow-strong: 6px 6px 14px #00000080;
+}
+
+/* Square corners everywhere */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+/* Typography */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-family: var(--arho-heading-font);
+  font-weight: 800;
+  color: var(--arho-heading-color);
+  letter-spacing: -0.01em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1,
+[data-md-color-scheme="slate"] .md-typeset h2,
+[data-md-color-scheme="slate"] .md-typeset h3,
+[data-md-color-scheme="slate"] .md-typeset h4 {
+  color: var(--arho-heading-color);
+}
+
+.md-typeset {
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.md-typeset a:hover {
+  color: var(--md-accent-fg-color);
+}
+
+/* Header: navy bar with white text */
+.md-header {
+  background-color: var(--arho-navy);
+  color: #fff;
+  box-shadow: var(--arho-shadow-strong);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.md-header .md-header__button,
+.md-header .md-header__title {
+  color: #fff;
+}
+
+.md-header .md-header__button:hover {
+  background-color: #ab8b9b40;
+}
+
+/* The header shows the "ARHO" logo text; hide the repeated site name.
+   The page title still appears in the header after scrolling. */
+.md-header__topic:first-child {
+  visibility: hidden;
+}
+
+.arho-logo {
+  font-family: var(--arho-heading-font);
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.6rem;
+  letter-spacing: 0.06em;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.md-nav__title .arho-logo {
+  color: inherit;
+}
+
+/* Navigation */
+.md-nav__link:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+.md-nav__item .md-nav__link--active {
+  color: var(--md-typeset-a-color);
+  font-weight: 700;
+}
+
+/* Buttons */
+.md-typeset .md-button {
+  border-color: var(--arho-violet);
+  color: var(--arho-violet);
+}
+
+.md-typeset .md-button--primary,
+.md-typeset .md-button:hover {
+  background-color: var(--arho-violet);
+  border-color: var(--arho-violet);
+  color: #fff;
+}
+
+.md-typeset .md-button--primary:hover {
+  background-color: var(--arho-violet-dark);
+  border-color: var(--arho-violet-dark);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) {
+  border-color: var(--arho-violet-light);
+  color: var(--arho-violet-light);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary):hover {
+  background-color: var(--arho-violet);
+  border-color: var(--arho-violet);
+  color: #fff;
+}
+
+/* Screenshots: keep inside the column, soft navy shadow */
+.md-typeset img {
+  max-width: 100%;
+  height: auto;
+}
+
+.md-typeset img:not(.icon) {
+  box-shadow: var(--arho-shadow);
+}
+
+/* Small toolbar icons inside the text */
+.md-typeset img.icon {
+  display: inline-block;
+  vertical-align: middle;
+  box-shadow: none;
+}
+
+/* Admonitions, tables, code */
+.md-typeset .admonition,
+.md-typeset details {
+  box-shadow: var(--arho-shadow);
+  border-width: 0 0 0 0.2rem;
+}
+
+.md-typeset table:not([class]) {
+  box-shadow: var(--arho-shadow);
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--arho-navy);
+  color: #fff;
+}
+
+.md-typeset table:not([class]) tbody tr:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+/* Keep function names in the first table column on one line */
+.md-typeset table:not([class]) td:first-child code {
+  white-space: nowrap;
+}
+
+/* Home page band */
+.arho-hero {
+  background: linear-gradient(110deg, var(--arho-navy) 0%, var(--arho-navy) 35%, var(--arho-violet) 100%);
+  color: #fff;
+  box-shadow: var(--arho-shadow-strong);
+}
+
+.arho-hero__inner {
+  padding: 2.4rem 0.8rem 2.6rem;
+}
+
+.arho-hero__title {
+  margin: 0 0 0.6rem;
+  font-family: var(--arho-heading-font);
+  font-weight: 800;
+  font-size: 2rem;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.arho-hero__text {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--arho-peach);
+}
+
+/* Home page chapter cards */
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  background-color: var(--arho-card-bg);
+  border: 0;
+  box-shadow: var(--arho-shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid > .card:hover {
+  transform: scale(1.02);
+  box-shadow: var(--arho-shadow-strong);
+}
+
+/* Footer: navy with the Gispo logo */
+.md-footer,
+.md-footer-meta {
+  background-color: var(--arho-navy);
+  color: #fff;
+}
+
+.md-footer-meta {
+  background-color: var(--arho-navy-dark);
+}
+
+.md-footer__link,
+.md-footer__title,
+.md-footer__direction {
+  color: #fff;
+}
+
+.md-footer__link:hover .md-footer__title {
+  color: var(--arho-peach);
+}
+
+.md-footer-meta.md-typeset a,
+.arho-footer a {
+  color: var(--arho-peach);
+}
+
+.arho-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.2rem;
+  color: #ffffffcc;
+}
+
+.arho-footer__gispo {
+  display: inline-block;
+  line-height: 0;
+  transition: transform 0.2s;
+}
+
+.arho-footer__gispo:hover {
+  transform: scale(1.02);
+}
+
+.arho-footer__gispo img {
+  display: block;
+  width: 115px;
+  height: auto;
+}
+
+/* "!!! new" box for features that are not released yet ("Uusi versiossa X.Y") */
+:root {
+  --arho-admonition-icon--new: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'><path d='m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z'/></svg>");
+}
+
+.md-typeset .admonition.new,
+.md-typeset details.new {
+  border-color: var(--arho-violet);
+  background-color: #7a38841a;
+}
+
+.md-typeset .new > .admonition-title::before,
+.md-typeset .new > summary::before {
+  background-color: var(--arho-violet);
+  -webkit-mask-image: var(--arho-admonition-icon--new);
+  mask-image: var(--arho-admonition-icon--new);
+}
+
+[data-md-color-scheme="slate"] .md-typeset .new > .admonition-title::before,
+[data-md-color-scheme="slate"] .md-typeset .new > summary::before {
+  background-color: var(--arho-violet-light);
+}

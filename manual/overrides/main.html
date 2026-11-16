@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{#- Inter (headings) next to the theme font Karla. The privacy plugin downloads
+    both at build time, so visitors never load anything from Google. -#}
+{% block fonts %}
+  {{ super() }}
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@800&amp;display=fallback">
+{% endblock %}

@@ -1,0 +1,16 @@
+<div class="md-copyright arho-footer">
+  <a class="arho-footer__gispo" href="https://www.gispo.fi" title="Gispo Oy">
+    <img src="{{ 'assets/images/gispo-logo-white.svg' | url }}" alt="Gispo" width="115" height="39">
+  </a>
+  {% if config.copyright %}
+    <div class="md-copyright__highlight">
+      {{ config.copyright }}
+    </div>
+  {% endif %}
+  {% if not config.extra.generator == false %}
+    <div class="arho-footer__generator">
+      Made with
+      <a href="https://zensical.org/" target="_blank" rel="noopener">Zensical</a>
+    </div>
+  {% endif %}
+</div>
