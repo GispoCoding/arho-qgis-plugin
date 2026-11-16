@@ -9,6 +9,21 @@ edit_uri: edit/main/manual/fi/
 
 theme:
   language: fi
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: lucide/moon
+        name: Vaihda tummaan tilaan
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: lucide/sun
+        name: Vaihda vaaleaan tilaan
 
 nav:
   - index.md

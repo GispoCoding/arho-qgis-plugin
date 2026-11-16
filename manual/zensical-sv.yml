@@ -9,6 +9,21 @@ edit_uri: edit/main/manual/sv/
 
 theme:
   language: sv
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: lucide/moon
+        name: Byt till mörkt läge
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: lucide/sun
+        name: Byt till ljust läge
 
 nav:
   - index.md

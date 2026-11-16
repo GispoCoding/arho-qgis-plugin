@@ -7,8 +7,6 @@ hide:
   - toc
 ---
 
-# Tervetuloa
-
 Arho on QGISin päällä toimiva avoimen lähdekoodin kaavoitustyökalu. Tämä ohje kertoo, miten Arhoa käytetään. Aloita kohdasta [Arhosta](about.md) tai valitse aihe alta.
 
 <div class="grid cards" markdown>

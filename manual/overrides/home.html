@@ -1,7 +1,8 @@
 {% extends "main.html" %}
 
 {#- Home page: a navy-to-violet band above the content.
-    Set "template: home.html", "hero_title" and "hero_text" in the page front matter. -#}
+    Set "template: home.html", "hero_title" and "hero_text" in the page front matter.
+    The band holds the page's only <h1>, so the page itself has no heading. -#}
 {% block hero %}
   <section class="arho-hero">
     <div class="md-grid arho-hero__inner">
@@ -9,4 +10,10 @@
       <p class="arho-hero__text">{{ page.meta.hero_text }}</p>
     </div>
   </section>
+{% endblock %}
+
+{#- Same as partials/content.html, without the automatic page title. -#}
+{% block content %}
+  {% include "partials/actions.html" %}
+  {{ page.content }}
 {% endblock %}

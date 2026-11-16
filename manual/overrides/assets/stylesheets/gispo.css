@@ -14,21 +14,25 @@
   --arho-violet-dark: #5e2a66;
   --arho-violet-light: #c58fce;
   --arho-navy: #434662;
-  --arho-navy-dark: #2f3147;
-  --arho-mauve: #ab8b9b;
   --arho-peach: #ffe1cd;
   --arho-heading-font: "Inter", Arial, Helvetica, sans-serif;
   --arho-shadow: 4px 4px 14px #4346621a;
   --arho-shadow-strong: 6px 6px 14px #43466240;
+  /* Star icon of the "!!! new" box */
+  --arho-admonition-icon--new: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'><path d='m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z'/></svg>");
 }
 
-/* Light mode */
-[data-md-color-scheme="default"] {
+/* Both modes */
+[data-md-color-scheme] {
   --md-primary-fg-color: var(--arho-violet);
   --md-primary-fg-color--light: #96579f;
   --md-primary-fg-color--dark: var(--arho-violet-dark);
   --md-primary-bg-color: #fff;
   --md-primary-bg-color--light: #ffffffb3;
+}
+
+/* Light mode */
+[data-md-color-scheme="default"] {
   --md-accent-fg-color: var(--arho-violet-dark);
   --md-accent-fg-color--transparent: #ab8b9b26;
   --md-accent-bg-color: #fff;
@@ -39,13 +43,10 @@
   --arho-card-bg: #fff;
 }
 
-/* Dark mode: navy-tinted slate */
+/* Dark mode: navy-tinted slate. Plain violet is too dark on a dark background
+   (contrast 2.4:1), so links use a light violet and headings use peach. */
 [data-md-color-scheme="slate"] {
   --md-hue: 234deg;
-  --md-primary-fg-color: var(--arho-violet);
-  --md-primary-fg-color--light: #96579f;
-  --md-primary-fg-color--dark: var(--arho-violet-dark);
-  --md-primary-bg-color: #fff;
   --md-accent-fg-color: var(--arho-violet-light);
   --md-accent-fg-color--transparent: #ab8b9b33;
   --md-typeset-a-color: var(--arho-violet-light);
@@ -71,13 +72,6 @@
   font-weight: 800;
   color: var(--arho-heading-color);
   letter-spacing: -0.01em;
-}
-
-[data-md-color-scheme="slate"] .md-typeset h1,
-[data-md-color-scheme="slate"] .md-typeset h2,
-[data-md-color-scheme="slate"] .md-typeset h3,
-[data-md-color-scheme="slate"] .md-typeset h4 {
-  color: var(--arho-heading-color);
 }
 
 .md-typeset {
@@ -259,7 +253,7 @@
 }
 
 .md-footer-meta {
-  background-color: var(--arho-navy-dark);
+  border-top: 1px solid #ffffff1f;
 }
 
 .md-footer__link,
@@ -302,10 +296,6 @@
 }
 
 /* "!!! new" box for features that are not released yet ("Uusi versiossa X.Y") */
-:root {
-  --arho-admonition-icon--new: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'><path d='m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z'/></svg>");
-}
-
 .md-typeset .admonition.new,
 .md-typeset details.new {
   border-color: var(--arho-violet);

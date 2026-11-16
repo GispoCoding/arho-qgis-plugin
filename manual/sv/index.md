@@ -7,8 +7,6 @@ hide:
   - toc
 ---
 
-# Välkommen
-
 Arho är ett planläggningsverktyg baserat på öppen källkod som körs ovanpå QGIS. Den här manualen beskriver hur du använder Arho. Börja med [Om Arho](about.md) eller välj ett ämne nedan.
 
 Arhos användargränssnitt finns bara på finska. Därför står de finska namnen på knappar och menyer i kursiv stil i texten.
