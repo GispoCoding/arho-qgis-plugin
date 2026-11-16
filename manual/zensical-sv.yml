@@ -32,7 +32,12 @@ nav:
   - multilingual.md
   - geotiff.md
   - legend.md
-  - lifecycle/index.md
+  - Livscykelskeden:
+      - lifecycle/index.md
+      - lifecycle/preparation.md
+      - lifecycle/approved.md
+      - lifecycle/in-force.md
+      - lifecycle/appeal.md
   - consolidated-plan.md
   - plan-amendment.md
   - ryhti.md
