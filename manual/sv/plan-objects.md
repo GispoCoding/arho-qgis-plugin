@@ -4,7 +4,7 @@
 
 1.  Börja skapa ett planobjekt genom att välja Skapa planobjekt (*Luo kaavakohde*). Välj typ av planobjekt bland knapparna beroende på vilket objekt du vill rita.
 
-    ![](images/plan-objects-1.png) ![](images/plan-objects-2.png){ width="297" }
+    ![Knappen ”Luo kaavakohde” markerad i Arhos verktygsfält](images/plan-objects-1.png) ![Panelen ”Luo kaavakohde” med knappar för planobjektets typ: ”Aluevaraus”, ”Osa-alue”, ”Viiva” och ”Piste”](images/plan-objects-2.png){ width="297" }
 
 2.  När du har valt planobjektstyp kan du rita objektet på kartan genom att trycka på musen.
 
@@ -14,17 +14,17 @@
 
 När ett planobjekt har ritats öppnas ett fönster där du kan koppla planbestämmelser till objektet. Välj lämpliga planbestämmelsegrupper och planbestämmelser för objektet genom att ***dubbelklicka*** på önskad planbestämmelsegrupp under *Kaavamääräysryhmäkirjastot*. Observera att du kan välja vilket bibliotek du vill använda för tillfället (detaljplane-, generalplane-, landskapsplanebiblioteket, *Käytössä olevat* eller ett självskapat bibliotek). Med hjälp av sökfältet kan du söka efter en lämplig planbestämmelsegrupp med ordsökning.
 
-![](images/plan-objects-3.png){ width="438" }
+![Menyn ”Kaavamääräysryhmäkirjastot” öppen med biblioteken per plantyp och ”Käytössä olevat kaavamääräysryhmät”](images/plan-objects-3.png){ width="438" }
 
-![](images/plan-objects-4.png)
+![Planobjektets formulär där en planbestämmelsegrupp som hittats med sökningen ”virkis” har kopplats till objektet](images/plan-objects-4.png)
 
 Du kan söka efter lämpliga grupper med sökfunktionen. När du hittar rätt planbestämmelsegrupp, ***dubbelklicka på objektet*** så att det blir valt. Gör de ändringar som behövs.
 
-- Via kugghjulsikonen ![](images/plan-objects-5.png){ .icon } kommer du åt att redigera planbestämmelsegruppens uppgifter, planbestämmelsen/-bestämmelserna och planrekommendationerna (se [Skapa och redigera planbestämmelsegrupper](regulation-groups.md#create-edit)).
-- ![](images/plan-objects-6.png){ .icon } Papperskorgen tar bort planbestämmelsegruppen.
-- ![](images/plan-objects-7.png){ .icon } Via plusknappen kan du definiera ämnestaggar (*Aihetunniste*), plantema (*Kaavoitusteema*) och ytterligare information (*Lisätieto*).
+- Via kugghjulsikonen ![Kugghjulsknappen](images/plan-objects-5.png){ .icon } kommer du åt att redigera planbestämmelsegruppens uppgifter, planbestämmelsen/-bestämmelserna och planrekommendationerna (se [Skapa och redigera planbestämmelsegrupper](regulation-groups.md#create-edit)).
+- ![Papperskorgsknappen](images/plan-objects-6.png){ .icon } Papperskorgen tar bort planbestämmelsegruppen.
+- ![Plusknappen med rullgardinsmeny](images/plan-objects-7.png){ .icon } Via plusknappen kan du definiera ämnestaggar (*Aihetunniste*), plantema (*Kaavoitusteema*) och ytterligare information (*Lisätieto*).
 
-    ![](images/plan-objects-8.png)
+    ![Plusknappens meny med valen ”Aihetunniste”, ”Kaavoitusteema” och ”Lisätieto”](images/plan-objects-8.png)
 
 - Om du valde *Sanallinen määräys*, ange den skriftliga beskrivningen av bestämmelsen i fältet *Arvo* och välj en lämplig typ av skriftlig bestämmelse (*Sanallisen määräyksen laji*) för den.
 
@@ -32,13 +32,13 @@ Tryck slutligen på **OK**.
 
 ## Redigera och ta bort ett befintligt planobjekt
 
-![](images/plan-objects-10.png){ width="215" }
+![Arhos verktygsfält där verktyget ”Muokkaa kaavakohteita” är markerat med rött](images/plan-objects-10.png){ width="215" }
 
 1.  Om du vill redigera befintliga planobjekt, välj *Muokkaa kaavakohteita*.
 
     1.  Om du vill redigera ett objekts uppgifter, tryck på objektet med musen så att dess formulär öppnas.
 
-        ![](images/plan-objects-9.png)
+        ![Formuläret ”Kaavamääräys” med fältet ”Arvo” markerat och ”Sanallisen määräyksen laji” under det](images/plan-objects-9.png)
 
     2.  Om du vill redigera ett objekts geometri, välj till exempel QGIS brytpunktsverktyg (*Taitepistetyökalu*) eller något av tilläggsverktygen för digitalisering, och redigera det önskade objektet.
 
@@ -46,9 +46,9 @@ Tryck slutligen på **OK**.
 
 ## Planobjektspanelen (Kaavakohdepaneeli) { #panel }
 
-Från verktyget *Kaavakohteet* ![](images/plan-objects-11.png){ .icon } öppnas planobjektspanelen.
+Från verktyget *Kaavakohteet* ![Knappen ”Kaavakohteet”](images/plan-objects-11.png){ .icon } öppnas planobjektspanelen.
 
-![](images/plan-objects-12.png)
+![Panelen ”Kaavakohteet” med typknappar, sökfält och en lista över planobjekt](images/plan-objects-12.png)
 
 I denna tabellvy kan du se alla planobjekt som finns i ditt planutkast. Eftersom det kan finnas många objekt kan det vara praktiskt att filtrera dem efter typ eller söka med ett sökord.
 
@@ -56,7 +56,7 @@ Du kan använda planobjektspanelen för att välja planobjekt. När du väljer e
 
 Genom att högerklicka på ett objekts rad får du tillgång till fyra (eller fem) funktioner:
 
-![](images/plan-objects-13.png)
+![Snabbmenyn för en rad i planobjektspanelen med bland annat ”Näytä lomake”, ”Zoomaa kohteeseen” och ”Väläytä kohdetta”](images/plan-objects-13.png)
 
 - *Näytä lomake* öppnar planobjektets formulär. Formuläret kan också öppnas genom att dubbelklicka på raden. I formuläret kan du redigera objektets uppgifter.
 - *Zoomaa kohteeseen* zoomar in kartvyn till det valda objektet.
@@ -68,11 +68,11 @@ Genom att högerklicka på ett objekts rad får du tillgång till fyra (eller fe
 
 Arho gör det möjligt att importera objekt från andra material med verktyget *Tuo kaavakohteita*.
 
-![](images/plan-objects-14.png)
+![Arhos verktygsfält med knappen ”Tuo kaavakohteita” markerad](images/plan-objects-14.png)
 
 När du väljer verktyget öppnas fönstret *Tuo kaavakohteita*.
 
-![](images/plan-objects-15.png)
+![Fönstret ”Tuo kaavakohteita” där importlager, mållager, uppgifter som kopieras och planbestämmelsegrupper väljs](images/plan-objects-15.png)
 
 ### Lager (Tasot)
 

@@ -9,6 +9,6 @@ Valideringens felmeddelanden kommer via Sykes gränssnitt. För att underlätta 
 - Genom att trycka en gång på felmeddelandet blinkar det felaktiga objektet med rött på kartan.
 - Genom att dubbelklicka på felmeddelandet öppnas objektets uppgifter, och du kan åtgärda felet genom att redigera informationen.
 
-![](images/validation-1.png)
+![Panelen ”Validointi” med ett valideringsfel för planen och dess verktygstips med felkod](images/validation-1.png)
 
 Information om Ryhtis valideringsregler finns på [Miljöcentralens webbplats](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/kaavasuunnitelman-validointisaannot/). Det lönar sig även att bekanta sig med dokumentet [Kaavatiedon-validointisaannot-ja-paluuarvot.pdf](https://ryhti.syke.fi/wp-content/uploads/sites/2/2023/11/Kaavatiedon-validointisaannot-ja-paluuarvot.pdf). Till exempel kan valideringsfelet `lifecycle__req_dateonly_incorrect_type, The date must be in the format yyyy-mm-dd` också innebära att ett obligatoriskt datum saknas helt.

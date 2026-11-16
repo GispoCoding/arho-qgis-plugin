@@ -13,26 +13,26 @@ Omien kaavamääräysryhmäkirjastojen hallinta tapahtuu ***Kirjastot***-painikk
 ### Kirjaston luominen
 
 1.  Valitse välilehti ***Kaavamääräysryhmäpohjat***.
-2.  Luo uusi kirjasto auenneessa ikkunassa painamalla ylimpänä olevaa ![](images/libraries-1.png){ .icon } -painiketta.
+2.  Luo uusi kirjasto auenneessa ikkunassa painamalla ylimpänä olevaa ![”Luo uusi kirjasto” -painike](images/libraries-1.png){ .icon } -painiketta.
 3.  Anna kirjastolle nimi.
-4.  Määritä kirjastolle tallennuspolku kolmen pisteen ![](images/libraries-2.png){ .icon } kautta.
-5.  Muodosta ja lisää kirjastoon haluamasi kaavamääräysryhmät ![](images/libraries-3.png){ .icon } -painikkeella. Aukeava lomake on hyvin samanlainen kuin kaavamääräysryhmien luomisessa.
+4.  Määritä kirjastolle tallennuspolku kolmen pisteen ![Kolmen pisteen selauspainike](images/libraries-2.png){ .icon } kautta.
+5.  Muodosta ja lisää kirjastoon haluamasi kaavamääräysryhmät ![Lisää-painike](images/libraries-3.png){ .icon } -painikkeella. Aukeava lomake on hyvin samanlainen kuin kaavamääräysryhmien luomisessa.
 6.  Paina lopuksi **Tallenna**.
 
-![](images/libraries-4.png){ width="549" }
+![”Kirjastojen hallinta” -ikkunan ”Kaavamääräysryhmäpohjat”-välilehti, jossa korostettuna uuden kirjaston tiedot ja ”Tallenna”](images/libraries-4.png){ width="549" }
 
 ### Kirjaston muokkaaminen
 
 1.  Avaa **Kirjastojen hallinta** **Kirjastot**-painikkeesta.
 2.  Valitse kirjasto, jota haluat muokata, ja tee muutokset.
 
-![](images/libraries-5.png){ width="503" }
+![”Kirjastojen hallinta” -ikkuna, jossa muokattava kirjasto valitaan ”Kirjasto”-pudotusvalikosta](images/libraries-5.png){ width="503" }
 
 ### Kirjaston käyttäminen
 
 1.  Tallennettu kirjasto tulee näkyville kaavamääräysryhmäkirjastoihin.
 
-    ![](images/libraries-6.png)
+    ![”Aluevaraus”-lomake, jossa kaavamääräysryhmäkirjastojen listasta valitaan tallennettu ”Demokirjasto”](images/libraries-6.png)
 
 2.  Voit käyttää omaa kirjastoasi liittääksesi kaavakohteille kaavamääräysryhmiä.
 
@@ -50,11 +50,11 @@ Kaavakohdepohjakirjastoja hallitaan samalla tavalla kuin kaavamääräysryhmäki
 
 3.  Anna kirjastolle nimi.
 
-4.  Luo uusi kaavakohdepohjakirjasto auenneessa ikkunassa painamalla ylimpänä olevaa ![](images/libraries-1.png){ .icon } -painiketta.
+4.  Luo uusi kaavakohdepohjakirjasto auenneessa ikkunassa painamalla ylimpänä olevaa ![”Luo uusi kirjasto” -painike](images/libraries-1.png){ .icon } -painiketta.
 
-5.  Määritä kirjastolle tallennuspolku kolmen pisteen ![](images/libraries-2.png){ .icon } kautta.
+5.  Määritä kirjastolle tallennuspolku kolmen pisteen ![Kolmen pisteen selauspainike](images/libraries-2.png){ .icon } kautta.
 
-6.  Lisää uusi pohja kirjastoon ![](images/libraries-3.png){ .icon } -painikkeella.
+6.  Lisää uusi pohja kirjastoon ![Lisää-painike](images/libraries-3.png){ .icon } -painikkeella.
 
     1.  Valitse geometriataso, jolle kaavakohdepohja laaditaan.
     2.  Muodosta kaavamääräysryhmä.
@@ -69,4 +69,4 @@ Kaavakohdepohjakirjastoja hallitaan samalla tavalla kuin kaavamääräysryhmäki
 2.  Valitse ensin kaavakohteen geometriatyyppi ***Kaavakohteiden tyypit*** -kohdan alta.
 3.  Valitse ***Alusta kaavakohde pohjasta*** -kohdasta sopiva mallipohja ja digitoi kohde.
 
-![](images/libraries-7.png)
+![”Luo kaavakohde” -paneeli, jossa valitaan kaavakohteen tyyppi ja mallipohja kohdasta ”Alusta kaavakohde pohjasta”](images/libraries-7.png)

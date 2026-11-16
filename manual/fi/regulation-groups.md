@@ -4,19 +4,19 @@
 
 Kaavamääräysryhmiä hallinnoidaan **Kaavamääräysryhmät**-painikkeella. Painike avaa paneelin, jossa on listattuna käytössä olevat kaavamääräysryhmät tai kaavamääräysryhmät, jotka käyttäjä on itse luonut. Lisäksi tällä työkalulla voi muokata kerralla kaavakohteiden määräysryhmiä usealle kohteelle samanaikaisesti.
 
-1.  Uusi kaavamääräysryhmä **luodaan** kaavamääräysryhmäpaneelin ![](images/regulation-groups-1.png){ .icon } -painikkeella.
+1.  Uusi kaavamääräysryhmä **luodaan** kaavamääräysryhmäpaneelin ![Luo uusi kaavamääräysryhmä -painike](images/regulation-groups-1.png){ .icon } -painikkeella.
 
 2.  Valitsemalla listalta jonkin olemassa olevan kaavamääräysryhmän aktiiviseksi (rivi muuttuu siniseksi) ja painamalla ***Muokkaa*** pääset muokkaamaan kaavamääräyksiä, tai painamalla ***Poista*** saat poistettua sen.
 
 3.  Kaavakohdetoiminnot ovat massatoimintoja, joiden avulla voit käsitellä samalla useita kaavakohteita ja kaavamääräysryhmiä.
 
-    ![](images/regulation-groups-2.png)
+    ![”Kaavamääräysryhmät”-paneeli, jossa valittu ryhmä näkyy sinisenä, sekä painikkeet ja ”Kaavakohdetoiminnot”-valikko](images/regulation-groups-2.png)
 
 ## Kaavamääräysryhmän luominen ja muokkaaminen { #create-edit }
 
-1.  Uusi kaavamääräysryhmä luodaan ***Luo kaavamääräysryhmä*** ![](images/regulation-groups-1.png){ .icon } -painikkeella. Voit valita, luotko uuden tyhjästä vai pohjasta.
+1.  Uusi kaavamääräysryhmä luodaan ***Luo kaavamääräysryhmä*** ![Luo uusi kaavamääräysryhmä -painike](images/regulation-groups-1.png){ .icon } -painikkeella. Voit valita, luotko uuden tyhjästä vai pohjasta.
 
-    ![](images/regulation-groups-3.png)
+    ![”Kaavamääräysryhmät”-paneelin plus-painikkeen valikko, vaihtoehtoina ”Tyhjä” ja ”Pohjasta”](images/regulation-groups-3.png)
 
     1.  Tyhjästä aloittamalla pääset rakentamaan kaavamääräysryhmän alusta asti itse.
 
@@ -26,7 +26,7 @@ Kaavamääräysryhmiä hallinnoidaan **Kaavamääräysryhmät**-painikkeella. Pa
 
 2.  **Kaavamääräysryhmän tiedot**: On suositeltavaa antaa otsikko ja kirjaintunnus. Tyyppi on pakollinen tieto.
 
-    ![](images/regulation-groups-4.png){ width="366" }
+    ![”Luo kaavamääräysryhmä” -ikkunan ”Kaavamääräysryhmän tiedot” -välilehti, jossa ”Tyyppi” on pakollinen](images/regulation-groups-4.png){ width="366" }
 
 3.  Välilehdellä **Kaavamääräykset** muodostetaan itse kaavamääräysryhmä lisäämällä määräyksiä.
 
@@ -38,11 +38,11 @@ Kaavamääräysryhmiä hallinnoidaan **Kaavamääräysryhmät**-painikkeella. Pa
 
     4.  Kun löydät tarvittavan määräyksen, ***kaksoisklikkaa*** sitä, jolloin määräys siirtyy oikealla olevaan laatikkoon ja pääset antamaan sille esim. aihetunnisteen, kaavoitusteeman jne.
 
-    ![](images/regulation-groups-5.png){ width="599" }
+    ![”Luo kaavamääräysryhmä” -ikkunan ”Kaavamääräykset”-välilehti, jossa ”Virkistysalue” on lisätty oikeaan laatikkoon](images/regulation-groups-5.png){ width="599" }
 
 4.  **Suositukset**-välilehdellä voit lisätä ryhmän suosituksia.
 
-5.  ***Muokkaa valittua kaavamääräysryhmää*** ![](images/regulation-groups-6.png){ .icon } -työkalulla aukeaa kaavamääräysryhmäpaneelista siniseksi valitun kaavamääräysryhmän ikkuna, jossa pääset muokkaamaan ryhmää. **Muokkaa kaavamääräysryhmää** -ikkuna on hyvin samanlainen kuin **Luo kaavamääräysryhmä**.
+5.  ***Muokkaa valittua kaavamääräysryhmää*** ![”Muokkaa valittua kaavamääräysryhmää” -painike](images/regulation-groups-6.png){ .icon } -työkalulla aukeaa kaavamääräysryhmäpaneelista siniseksi valitun kaavamääräysryhmän ikkuna, jossa pääset muokkaamaan ryhmää. **Muokkaa kaavamääräysryhmää** -ikkuna on hyvin samanlainen kuin **Luo kaavamääräysryhmä**.
 
     1.  ***Kaavamääräysryhmän tiedot*** -välilehdellä pääset antamaan ryhmälle perustietoja ja määrittämään tyypin (aluevaraus, osa-alue jne.).
 
@@ -54,7 +54,7 @@ Kaavamääräysryhmiä hallinnoidaan **Kaavamääräysryhmät**-painikkeella. Pa
 
 7.  Uusi ryhmä siirtyy ***Käytössä oleviin kaavamääräysryhmiin***, ja voit käyttää sitä uusille ja olemassa oleville kaavakohteille.
 
-    ![](images/plan-objects-3.png){ width="438" }
+    ![”Kaavamääräysryhmäkirjastot”-valikko auki, vaihtoehtoina kaavalajien kirjastot ja ”Käytössä olevat kaavamääräysryhmät”](images/plan-objects-3.png){ width="438" }
 
     Kaavakohteen piirtämisen jälkeen aukeavassa ikkunassa yksi tarjolla oleva kirjasto on **Käytössä olevat kaavamääräysryhmät**.
 
@@ -62,29 +62,29 @@ Kaavamääräysryhmiä hallinnoidaan **Kaavamääräysryhmät**-painikkeella. Pa
 
 Kaavakohdepaneelista pääset hallitsemaan kaavamääräysryhmien liittymistä kaavakohteille. Voit lisätä ja poistaa valitsemiasi kaavamääräysryhmiä valitsemillesi kaavakohteille. Kaikki nämä toiminnot edellyttävät, että valitset ensin kartalta ne kaavakohteet, joiden kaavamääräysryhmiin haluat vaikuttaa.
 
-![](images/regulation-groups-7.png)
+![”Kaavakohdetoiminnot”-valikko, jossa ryhmien lisäys- ja poistotoiminnot valituille kohteille](images/regulation-groups-7.png)
 
 1.  **Lisää valitut ryhmät valituille kohteille**
 
-    1.  Valitse kartalta QGISin perusvalintatyökalulla ![](images/regulation-groups-8.png){ .icon } kohteet, joille haluat lisätä yhden tai useamman kaavamääräysryhmän.
+    1.  Valitse kartalta QGISin perusvalintatyökalulla ![Valitse kohteita -työkalu](images/regulation-groups-8.png){ .icon } kohteet, joille haluat lisätä yhden tai useamman kaavamääräysryhmän.
 
     2.  Valitse tämän jälkeen listalta kaavamääräysryhmä (tai ryhmiä), jonka haluat lisätä kohteille (ryhmä muuttuu siniseksi), ja valitse viimeiseksi ***Kaavakohdetoiminnot > Lisää valitut ryhmät valituille kohteille***.
 
-        ![](images/regulation-groups-9.png){ width="354" }
+        ![”Kaavakohdetoiminnot”-valikko auki, valittuna ”Lisää valitut ryhmät valituille kohteille”](images/regulation-groups-9.png){ width="354" }
 
 2.  **Poista kaikki ryhmät valituilta kohteilta**
 
-    1.  Valitse kartalta QGISin perusvalintatyökalulla ![](images/regulation-groups-8.png){ .icon } kohteet, joilta haluat poistaa kaavamääräysryhmiä.
+    1.  Valitse kartalta QGISin perusvalintatyökalulla ![Valitse kohteita -työkalu](images/regulation-groups-8.png){ .icon } kohteet, joilta haluat poistaa kaavamääräysryhmiä.
 
     2.  Valitse ***Kaavakohdetoiminnot > Poista kaikki ryhmät***.
 
 3.  **Poista valitut ryhmät valituilta kohteilta**
 
-    1.  Valitse kartalta QGISin perusvalintatyökalulla ![](images/regulation-groups-8.png){ .icon } kohteet, joilta haluat poistaa ryhmiä.
+    1.  Valitse kartalta QGISin perusvalintatyökalulla ![Valitse kohteita -työkalu](images/regulation-groups-8.png){ .icon } kohteet, joilta haluat poistaa ryhmiä.
 
     2.  Valitse listalta ryhmä, jonka haluat poistaa kohteilta.
 
-        ![](images/regulation-groups-10.png)
+        ![”Kaavamääräysryhmät”-paneeli, jossa listalta valittuna ryhmä ”VR - Retkeily- ja ulkoilualue”](images/regulation-groups-10.png)
 
     3.  Valitse ***Kaavakohdetoiminnot > Poista valitut ryhmät valituilta kohteilta***.
 
@@ -92,7 +92,7 @@ Kaavakohdepaneelista pääset hallitsemaan kaavamääräysryhmien liittymistä k
 
 **Kaavamääräysryhmän tiedot** -välilehti:
 
-![](images/regulation-groups-11.png)
+![”Muokkaa kaavamääräysryhmää” -ikkunan ”Kaavamääräysryhmän tiedot” -välilehti ja tieto ryhmän käytöstä kaavakohteilla](images/regulation-groups-11.png)
 
 Otsikon ja kirjaintunnuksen suositellaan olevan Katja-asetuksen mukaisia, mikäli Katjasta löytyy samanlainen kaavamääräysryhmä. Jos määräyksissä on pieniä eroja, voi kirjaintunnukseen lisätä indeksin (A-1 ja A-2).
 

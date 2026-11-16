@@ -6,4 +6,4 @@
 2.  Anna kaavasuunnitelmalle nimi (tätä nimeä ei viedä Ryhtiin).
 3.  Paina lopuksi **OK**.
 
-![](../images/plan-import-1.png){ width="456" }
+![”Tuo kaavasuunnitelma” -ikkuna, jossa valitaan kaavasuunnitelman JSON-tiedosto ja annetaan nimi](../images/plan-import-1.png){ width="456" }

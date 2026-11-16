@@ -2,11 +2,11 @@
 
 1.  Börja med att trycka på *Kaavasuunnitelmat* i menyn *Kaavasuunnitelma*.
 
-    ![](../images/plan-open-1.png)
+    ![Menyn ”Kaavasuunnitelma” med ”Kaavasuunnitelmat” valt](../images/plan-open-1.png)
 
 2.  Välj det planutkast i listan som du vill öppna.
 
-    ![](../images/plan-open-2.png)
+    ![Fönstret ”Kaavasuunnitelmat” med listan över planutkast och deras livscykelstatus samt knappen ”Avaa”](../images/plan-open-2.png)
 
     - En grön boll framför planutkastet visar att det är aktivt.
     - Hänglåset i början av raden visar om planutkastet är låst för ändringar eller om det kan redigeras.

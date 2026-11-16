@@ -4,6 +4,6 @@ Arho sparar de QML-filer som innehåller visualiseringarna i insticksprogrammet 
 
 I inställningarna är det möjligt att kontrollera platsen för QML-filerna och ändra så att Arho använder någon annan QML-fil för planernas visualisering, separat för varje planlager. Om du byter ut filerna ska du starta om QGIS för att ändringarna ska träda i kraft.
 
-![](../images/styling-default-styles-1.png)
+![Avsnittet ”QML-tiedostot” i inställningarna med sökvägar till QML-filerna per plannivå och objektlager](../images/styling-default-styles-1.png)
 
 Observera att Arho-insticksprogrammet uppdaterar standardstilarna i samband med varje uppdatering av insticksprogrammet.

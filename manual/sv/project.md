@@ -8,17 +8,17 @@ Projektfilen *kaavoitus* har sparats i databasen. Varje användare måste spara 
 
 1.  Tryck upp PostgreSQL-lagren i QGIS-panelen Datakällor (*Selain*) så att du under ***Arho-databasanslutningen*** hittar schemat `qgis_projects` eller `public` (beroende på projektet) och där under projektet *kaavoitusprojekti* (i exemplet heter databasen `arho_test`).
 
-    ![](images/project-1.png)
+    ![QGIS-panelen Datakällor: PostgreSQL → arho_test → qgis_projects med kaavoitusprojekti-projekten](images/project-1.png)
 
 2.  Öppna planläggningsprojektet genom att till exempel dubbelklicka med vänster musknapp på projektfilen.
 
 3.  Spara projektet på nytt direkt genom att välja *Projekti* → *Tallenna tiedostoon* → *PostgreSQL*.
 
-    ![](images/project-2.png)
+    ![Menyn ”Projekti” i QGIS med ”Tallenna tiedostoon” → ”PostgreSQL...” valt](images/project-2.png)
 
 4.  I fönstret som öppnas ska du se till att du sparar ditt eget projekt i samma schema som planläggningsprojektet låg i (`qgis_projects` eller `public`) och ge projektet namnet `kaavoitus_dittförnamn` i fältet *Projekti*. Tryck slutligen på **OK**. Nu har du ett eget projekt som du kan öva med.
 
-    ![](images/project-3.png){ width="325" }
+    ![Fönstret ”Tallenna projekti PostgreSQL:ään” med fälten ”Yhteys”, ”Skeema” och ”Projekti”](images/project-3.png){ width="325" }
 
 !!! warning "Obs!"
 
@@ -32,8 +32,8 @@ När Arho-implementationen uppdateras kan det bli nödvändigt att även uppdate
 
 Efter några utvecklingsrundor kan du ha för många projekt och du vill kanske ta bort några emellanåt. Att ta bort ett projekt från databasen görs via samma menyfunktion som när man sparar projektet i databasen, det vill säga *Projekti* → *Tallenna tiedostoon* → *PostgreSQL*:
 
-![](images/project-4.png){ width="328" }
+![Menyn ”Projekti” i QGIS med ”Tallenna tiedostoon” → ”PostgreSQL…” valt](images/project-4.png){ width="328" }
 
 I fönstret som öppnas väljer du först det projekt du vill ta bort, och därefter väljer du *Poista projekti* under knappen *Hallitse projekteja*.
 
-![](images/project-5.png){ width="337" }
+![Fönstret ”Tallenna projekti PostgreSQL:ään” med ”Poista projekti” valt under ”Hallitse projekteja”](images/project-5.png){ width="337" }
