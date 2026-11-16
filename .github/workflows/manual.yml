@@ -1,0 +1,56 @@
+name: User manual
+
+# Builds the user manual (manual/) and publishes it on GitHub Pages:
+# https://gispocoding.github.io/arho-qgis-plugin/ (Finnish) and .../sv/ (Swedish).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "manual/**"
+      - ".github/workflows/manual.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; let a running deployment finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: manual/requirements.txt
+
+      - name: Install Zensical
+        run: pip install -r manual/requirements.txt
+
+      - name: Build the Finnish and the Swedish site
+        run: python manual/build.py
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: manual/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
