@@ -23,21 +23,7 @@ theme:
     - navigation.tracking
     - search.highlight
     - toc.follow
-  palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: custom
-      accent: custom
-      toggle:
-        icon: lucide/moon
-        name: Tumma tila / Mörkt läge
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: custom
-      accent: custom
-      toggle:
-        icon: lucide/sun
-        name: Vaalea tila / Ljust läge
+  # palette: in zensical-fi.yml and zensical-sv.yml (the toggle text is per language)
 
 extra_css:
   - assets/stylesheets/gispo.css
