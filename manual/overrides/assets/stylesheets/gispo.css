@@ -1,12 +1,12 @@
-/* Gispo look for the ARHO user manual.
+/* Light look for the ARHO user manual, with Gispo colours as accents.
  *
  * Colours (from gispo.fi):
- *   violet #7a3884  links, buttons, active navigation
- *   navy   #434662  headings, header, footer, shadow tint
+ *   violet #7a3884  links, logo text, active navigation, accents
+ *   navy   #434662  headings
  *   mauve  #ab8b9b  hover backgrounds only, never text (contrast 3.0:1)
- *   peach  #ffe1cd  text and links on navy
- * Fonts: Inter 800 for headings, Karla for body text.
- * Shapes: square corners, soft navy shadows.
+ *   peach  #ffe1cd  soft tint in the home page band
+ * Large areas (header, footer, home band, table headers) stay light.
+ * Fonts: Inter 700 for headings, Karla for body text. Square corners.
  */
 
 :root {
@@ -14,10 +14,7 @@
   --arho-violet-dark: #5e2a66;
   --arho-violet-light: #c58fce;
   --arho-navy: #434662;
-  --arho-peach: #ffe1cd;
   --arho-heading-font: "Inter", Arial, Helvetica, sans-serif;
-  --arho-shadow: 4px 4px 14px #4346621a;
-  --arho-shadow-strong: 6px 6px 14px #43466240;
   /* Star icon of the "!!! new" box */
   --arho-admonition-icon--new: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'><path d='m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z'/></svg>");
 }
@@ -34,26 +31,33 @@
 /* Light mode */
 [data-md-color-scheme="default"] {
   --md-accent-fg-color: var(--arho-violet-dark);
-  --md-accent-fg-color--transparent: #ab8b9b26;
+  --md-accent-fg-color--transparent: #ab8b9b1f;
   --md-accent-bg-color: #fff;
-  --md-default-bg-color: #fbfbfb;
-  --md-typeset-color: #444;
+  --md-typeset-color: #3d3d3d;
   --md-typeset-a-color: var(--arho-violet);
   --arho-heading-color: var(--arho-navy);
-  --arho-card-bg: #fff;
+  --arho-logo-color: var(--arho-violet);
+  --arho-line: #e7e5ea;
+  --arho-tint: #f6f2f7;
+  --arho-hero-bg: linear-gradient(110deg, #f4eef6 0%, #faf6f9 55%, #fff4ec 100%);
+  --arho-footer-bg: #f7f6f8;
+  --arho-shadow: 0 1px 4px #4346621a;
 }
 
 /* Dark mode: navy-tinted slate. Plain violet is too dark on a dark background
-   (contrast 2.4:1), so links use a light violet and headings use peach. */
+   (contrast 2.4:1), so links and accents use a light violet. */
 [data-md-color-scheme="slate"] {
   --md-hue: 234deg;
   --md-accent-fg-color: var(--arho-violet-light);
-  --md-accent-fg-color--transparent: #ab8b9b33;
+  --md-accent-fg-color--transparent: #ab8b9b26;
   --md-typeset-a-color: var(--arho-violet-light);
-  --arho-heading-color: var(--arho-peach);
-  --arho-card-bg: hsla(var(--md-hue), 15%, 9%, 1);
-  --arho-shadow: 4px 4px 14px #00000059;
-  --arho-shadow-strong: 6px 6px 14px #00000080;
+  --arho-heading-color: hsla(0, 0%, 100%, 0.92);
+  --arho-logo-color: var(--arho-violet-light);
+  --arho-line: hsla(var(--md-hue), 15%, 90%, 0.12);
+  --arho-tint: hsla(var(--md-hue), 15%, 14%, 1);
+  --arho-hero-bg: linear-gradient(110deg, hsla(var(--md-hue), 15%, 11%, 1) 0%, #241b28 100%);
+  --arho-footer-bg: hsla(var(--md-hue), 15%, 8%, 1);
+  --arho-shadow: 0 1px 4px #00000040;
 }
 
 /* Square corners everywhere */
@@ -69,7 +73,7 @@
 .md-typeset h3,
 .md-typeset h4 {
   font-family: var(--arho-heading-font);
-  font-weight: 800;
+  font-weight: 700;
   color: var(--arho-heading-color);
   letter-spacing: -0.01em;
 }
@@ -83,22 +87,15 @@
   color: var(--md-accent-fg-color);
 }
 
-/* Header: navy bar with white text */
+/* Header: page background with a thin line under it */
 .md-header {
-  background-color: var(--arho-navy);
-  color: #fff;
-  box-shadow: var(--arho-shadow-strong);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.md-header .md-header__button,
-.md-header .md-header__title {
-  color: #fff;
+  background-color: var(--md-default-bg-color);
+  box-shadow: none;
+  border-bottom: 1px solid var(--arho-line);
 }
 
 .md-header .md-header__button:hover {
-  background-color: #ab8b9b40;
+  background-color: var(--md-accent-fg-color--transparent);
 }
 
 /* The header shows the "ARHO" logo text; hide the repeated site name.
@@ -109,16 +106,12 @@
 
 .arho-logo {
   font-family: var(--arho-heading-font);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1rem;
   line-height: 1.6rem;
   letter-spacing: 0.06em;
-  color: #fff;
+  color: var(--arho-logo-color);
   white-space: nowrap;
-}
-
-.md-nav__title .arho-logo {
-  color: inherit;
 }
 
 /* Navigation */
@@ -133,8 +126,8 @@
 
 /* Buttons */
 .md-typeset .md-button {
-  border-color: var(--arho-violet);
-  color: var(--arho-violet);
+  border-color: var(--md-typeset-a-color);
+  color: var(--md-typeset-a-color);
 }
 
 .md-typeset .md-button--primary,
@@ -149,24 +142,14 @@
   border-color: var(--arho-violet-dark);
 }
 
-[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) {
-  border-color: var(--arho-violet-light);
-  color: var(--arho-violet-light);
-}
-
-[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary):hover {
-  background-color: var(--arho-violet);
-  border-color: var(--arho-violet);
-  color: #fff;
-}
-
-/* Screenshots: keep inside the column, soft navy shadow */
+/* Screenshots: keep inside the column, thin frame */
 .md-typeset img {
   max-width: 100%;
   height: auto;
 }
 
 .md-typeset img:not(.icon) {
+  border: 1px solid var(--arho-line);
   box-shadow: var(--arho-shadow);
 }
 
@@ -174,23 +157,23 @@
 .md-typeset img.icon {
   display: inline-block;
   vertical-align: middle;
-  box-shadow: none;
 }
 
-/* Admonitions, tables, code */
+/* Boxes and tables */
 .md-typeset .admonition,
 .md-typeset details {
-  box-shadow: var(--arho-shadow);
+  box-shadow: none;
   border-width: 0 0 0 0.2rem;
 }
 
 .md-typeset table:not([class]) {
-  box-shadow: var(--arho-shadow);
+  border: 1px solid var(--arho-line);
+  box-shadow: none;
 }
 
 .md-typeset table:not([class]) th {
-  background-color: var(--arho-navy);
-  color: #fff;
+  background-color: var(--arho-tint);
+  color: var(--arho-heading-color);
 }
 
 .md-typeset table:not([class]) tbody tr:hover {
@@ -202,73 +185,70 @@
   white-space: nowrap;
 }
 
-/* Home page band */
+/* Home page band: a soft tint with a thin violet line */
 .arho-hero {
-  background: linear-gradient(110deg, var(--arho-navy) 0%, var(--arho-navy) 35%, var(--arho-violet) 100%);
-  color: #fff;
-  box-shadow: var(--arho-shadow-strong);
+  background: var(--arho-hero-bg);
+  border-bottom: 1px solid var(--arho-line);
+  border-top: 3px solid var(--arho-violet);
 }
 
 .arho-hero__inner {
-  padding: 2.4rem 0.8rem 2.6rem;
+  padding: 2rem 0.8rem 2.2rem;
 }
 
 .arho-hero__title {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.5rem;
   font-family: var(--arho-heading-font);
-  font-weight: 800;
-  font-size: 2rem;
+  font-weight: 700;
+  font-size: 1.8rem;
   line-height: 1.2;
-  color: #fff;
+  color: var(--arho-heading-color);
 }
 
 .arho-hero__text {
   max-width: 34rem;
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.5;
-  color: var(--arho-peach);
+  color: var(--md-default-fg-color--light);
 }
 
 /* Home page chapter cards */
 .md-typeset .grid.cards > ul > li,
 .md-typeset .grid > .card {
-  background-color: var(--arho-card-bg);
-  border: 0;
-  box-shadow: var(--arho-shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--arho-line);
+  box-shadow: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .md-typeset .grid.cards > ul > li:hover,
 .md-typeset .grid > .card:hover {
-  transform: scale(1.02);
-  box-shadow: var(--arho-shadow-strong);
+  border-color: var(--md-typeset-a-color);
+  box-shadow: var(--arho-shadow);
 }
 
-/* Footer: navy with the Gispo logo */
+/* Footer: light, with the Gispo logo */
 .md-footer,
 .md-footer-meta {
-  background-color: var(--arho-navy);
-  color: #fff;
+  background-color: var(--arho-footer-bg);
+  color: var(--md-default-fg-color);
+}
+
+.md-footer {
+  border-top: 1px solid var(--arho-line);
 }
 
 .md-footer-meta {
-  border-top: 1px solid #ffffff1f;
-}
-
-.md-footer__link,
-.md-footer__title,
-.md-footer__direction {
-  color: #fff;
+  border-top: 1px solid var(--arho-line);
 }
 
 .md-footer__link:hover .md-footer__title {
-  color: var(--arho-peach);
+  color: var(--md-typeset-a-color);
 }
 
 .md-footer-meta.md-typeset a,
 .arho-footer a {
-  color: var(--arho-peach);
+  color: var(--md-typeset-a-color);
 }
 
 .arho-footer {
@@ -276,40 +256,36 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem 1.2rem;
-  color: #ffffffcc;
+  color: var(--md-default-fg-color--light);
 }
 
 .arho-footer__gispo {
   display: inline-block;
   line-height: 0;
-  transition: transform 0.2s;
-}
-
-.arho-footer__gispo:hover {
-  transform: scale(1.02);
 }
 
 .arho-footer__gispo img {
   display: block;
-  width: 115px;
+  width: 96px;
   height: auto;
+}
+
+/* Violet logo in light mode, white logo in dark mode */
+[data-md-color-scheme="default"] .arho-footer__logo--dark,
+[data-md-color-scheme="slate"] .arho-footer__logo--light {
+  display: none;
 }
 
 /* "!!! new" box for features that are not released yet ("Uusi versiossa X.Y") */
 .md-typeset .admonition.new,
 .md-typeset details.new {
-  border-color: var(--arho-violet);
-  background-color: #7a38841a;
+  border-color: var(--md-typeset-a-color);
+  background-color: #7a384814;
 }
 
 .md-typeset .new > .admonition-title::before,
 .md-typeset .new > summary::before {
-  background-color: var(--arho-violet);
+  background-color: var(--md-typeset-a-color);
   -webkit-mask-image: var(--arho-admonition-icon--new);
   mask-image: var(--arho-admonition-icon--new);
-}
-
-[data-md-color-scheme="slate"] .md-typeset .new > .admonition-title::before,
-[data-md-color-scheme="slate"] .md-typeset .new > summary::before {
-  background-color: var(--arho-violet-light);
 }
