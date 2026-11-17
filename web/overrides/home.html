@@ -1,7 +1,10 @@
 {% extends "main.html" %}
 
 {#- Home page: a light band with a hexagon field above the content.
-    Set "template: home.html", "hero_title" and "hero_text" in the page front matter.
+    Set "template: home.html", "hero_title", "hero_text" and "hero_buttons"
+    in the page front matter. A button has "text" and either "link" (a page
+    of this site, for example "manual/") or "href" (a full address). The first
+    button is the primary one.
     The band holds the page's only <h1>, so the page itself has no heading.
     The band goes in the tabs block after the tabs: the theme's hero block
     comes before the tabs, which would put the tabs below the band. -#}
@@ -12,12 +15,19 @@
     <div class="md-grid arho-hero__inner">
       <h1 class="arho-hero__title">{{ page.meta.hero_title }}</h1>
       <p class="arho-hero__text">{{ page.meta.hero_text }}</p>
+      {% if page.meta.hero_buttons %}
+        <div class="md-typeset arho-hero__actions">
+          {% for button in page.meta.hero_buttons %}
+            <a class="md-button{% if loop.first %} md-button--primary{% endif %}" href="{% if button.href %}{{ button.href }}{% else %}{{ button.link | url }}{% endif %}">{{ button.text }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
   </section>
 {% endblock %}
 
-{#- Same as partials/content.html, without the automatic page title. -#}
+{#- Same as partials/content.html, without the automatic page title and
+    without the edit button: the home page is not a manual page. -#}
 {% block content %}
-  {% include "partials/actions.html" %}
   {{ page.content }}
 {% endblock %}

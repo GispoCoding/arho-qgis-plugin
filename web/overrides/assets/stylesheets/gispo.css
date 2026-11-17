@@ -184,29 +184,13 @@
 }
 
 .arho-logo {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
   font-family: var(--arho-heading-font);
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 1.1rem;
   line-height: 1.6rem;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   color: var(--md-typeset-a-color);
   white-space: nowrap;
-}
-
-.arho-logo__sub {
-  font-family: var(--md-text-font-family, "Karla"), Arial, Helvetica, sans-serif;
-  font-weight: 400;
-  font-size: 0.8rem;
-  letter-spacing: 0;
-  color: var(--arho-muted);
-}
-
-/* The mobile menu shows the logo in a small square: the name alone fits */
-.md-nav__title .arho-logo__sub {
-  display: none;
 }
 
 .md-search__form {
@@ -379,21 +363,24 @@
   white-space: nowrap;
 }
 
-/* Buttons */
+/* Buttons: a violet outline on white, or solid violet (primary). The theme
+   only fades a button on hover; here it turns solid violet. */
 .md-typeset .md-button {
-  border-color: var(--md-typeset-a-color);
+  background-color: var(--arho-surface);
+  border: 1px solid var(--md-typeset-a-color);
   color: var(--md-typeset-a-color);
   text-decoration: none;
 }
 
 .md-typeset .md-button--primary,
-.md-typeset .md-button:hover {
+.md-typeset .md-button:is(:hover, :focus) {
   background-color: var(--arho-violet);
   border-color: var(--arho-violet);
   color: #fff;
+  opacity: 1;
 }
 
-.md-typeset .md-button--primary:hover {
+.md-typeset .md-button--primary:is(:hover, :focus) {
   background-color: var(--arho-violet-dark);
   border-color: var(--arho-violet-dark);
 }
@@ -500,6 +487,23 @@
   color: var(--arho-muted);
 }
 
+/* Buttons: the first is solid violet, the others an outline */
+.arho-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  width: fit-content;
+  margin-top: 1.6rem;
+}
+
+.md-typeset .arho-hero__actions .md-button {
+  margin: 0;
+  padding: 0.55em 1.4em;
+  font-family: var(--arho-heading-font);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
 @media screen and (max-width: 44.984375em) {
   .arho-hexes {
     width: 100%;
@@ -572,6 +576,57 @@
 
 .md-typeset .grid.cards > ul > li > ul a:hover {
   text-decoration: underline;
+}
+
+/* Lead paragraph of the home page: larger, and short lines although the
+   home page has no side menus */
+.md-typeset .arho-lead {
+  max-width: 36rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Feature cards of the home page: three columns of an icon above the
+   title, one sentence, and the manual pages as links at the bottom */
+.md-typeset .grid.cards.arho-features {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.md-typeset .arho-features > ul > li {
+  display: flex;
+  flex-direction: column;
+}
+
+.md-typeset .arho-features > ul > li > p {
+  margin: 0;
+}
+
+.md-typeset .arho-features > ul > li > p:first-child {
+  font-size: 0.95rem;
+}
+
+.md-typeset .arho-features .twemoji {
+  display: block;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-bottom: 0.7rem;
+  color: var(--md-typeset-a-color);
+}
+
+.md-typeset .arho-features .twemoji svg {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  stroke-width: 1.75;
+}
+
+.md-typeset .arho-features > ul > li > p:nth-child(2) {
+  margin-bottom: 0.9rem;
+}
+
+.md-typeset .arho-features > ul > li > p:last-child {
+  margin-top: auto;
+  font-size: 0.8rem;
 }
 
 /* ---------------------------------------------------------------- Footer */

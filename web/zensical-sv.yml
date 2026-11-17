@@ -1,7 +1,7 @@
 INHERIT: zensical-base.yml
 
-site_name: ARHO-användarmanual
-site_description: Användarmanual för planläggningsverktyget ARHO
+site_name: Arho
+site_description: Datamodellbaserad planläggning med QGIS
 site_url: https://gispocoding.github.io/arho-qgis-plugin/sv/
 docs_dir: sv
 site_dir: site/sv
