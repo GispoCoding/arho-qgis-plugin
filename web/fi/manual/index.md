@@ -5,15 +5,15 @@ hide:
 
 # Käyttöohje
 
-Tämä ohje kertoo, miten Arhoa käytetään. Aloita kohdasta [Arhosta](../about.md) tai valitse aihe alta.
+Tämä ohje kertoo, miten Arhoa käytetään. Jos aloitat Arhon käytön, lue ensin [Käyttöönotto](setup.md). Muuten valitse aihe alta.
 
 <div class="grid cards" markdown>
 
 -   **Aloitus**
 
     - [Arhosta](../about.md)
-    - [QGIS](qgis.md)
-    - [Arho-lisäosa](plugin.md)
+    - [Käyttöönotto](setup.md)
+    - [Arhon käyttöliittymä](interface.md)
     - [Kaavoitusprojekti](project.md)
 
 -   **Kaava-asia ja kaavasuunnitelma**

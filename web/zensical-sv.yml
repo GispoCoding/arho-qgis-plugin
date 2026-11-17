@@ -31,8 +31,8 @@ nav:
   - Om Arho: about.md
   - Användarmanual:
       - manual/index.md
-      - manual/qgis.md
-      - manual/plugin.md
+      - manual/setup.md
+      - manual/interface.md
       - manual/project.md
       - manual/plan-matter.md
       - Planutkast:
