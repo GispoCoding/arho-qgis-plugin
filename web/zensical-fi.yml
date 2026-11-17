@@ -25,42 +25,45 @@ theme:
         icon: lucide/sun
         name: Vaihda vaaleaan tilaan
 
+# Three tabs (navigation.tabs): home, about and the manual.
 nav:
-  - index.md
-  - about.md
-  - qgis.md
-  - plugin.md
-  - project.md
-  - plan-matter.md
-  - Kaavasuunnitelma:
-      - plan/index.md
-      - plan/open.md
-      - plan/create.md
-      - plan/lock.md
-      - plan/export.md
-      - plan/import.md
-      - plan/edit.md
-  - plan-objects.md
-  - regulation-groups.md
-  - libraries.md
-  - validation.md
-  - multilingual.md
-  - geotiff.md
-  - legend.md
-  - Elinkaaren vaiheet:
-      - lifecycle/index.md
-      - lifecycle/preparation.md
-      - lifecycle/approved.md
-      - lifecycle/in-force.md
-      - lifecycle/appeal.md
-  - consolidated-plan.md
-  - plan-amendment.md
-  - ryhti.md
-  - Visualisoinnit:
-      - styling/index.md
-      - styling/default-styles.md
-      - styling/rule-based.md
-      - styling/symbols-labels.md
-      - styling/filters.md
-  - api-errors.md
-  - digitizing.md
+  - Etusivu: index.md
+  - Arhosta: about.md
+  - Käyttöohje:
+      - manual/index.md
+      - manual/qgis.md
+      - manual/plugin.md
+      - manual/project.md
+      - manual/plan-matter.md
+      - Kaavasuunnitelma:
+          - manual/plan/index.md
+          - manual/plan/open.md
+          - manual/plan/create.md
+          - manual/plan/lock.md
+          - manual/plan/export.md
+          - manual/plan/import.md
+          - manual/plan/edit.md
+      - manual/plan-objects.md
+      - manual/regulation-groups.md
+      - manual/libraries.md
+      - manual/validation.md
+      - manual/multilingual.md
+      - manual/geotiff.md
+      - manual/legend.md
+      - Elinkaaren vaiheet:
+          - manual/lifecycle/index.md
+          - manual/lifecycle/preparation.md
+          - manual/lifecycle/approved.md
+          - manual/lifecycle/in-force.md
+          - manual/lifecycle/appeal.md
+      - manual/consolidated-plan.md
+      - manual/plan-amendment.md
+      - manual/ryhti.md
+      - Visualisoinnit:
+          - manual/styling/index.md
+          - manual/styling/default-styles.md
+          - manual/styling/rule-based.md
+          - manual/styling/symbols-labels.md
+          - manual/styling/filters.md
+      - manual/api-errors.md
+      - manual/digitizing.md

@@ -2,8 +2,11 @@
 
 {#- Home page: a light band with a hexagon field above the content.
     Set "template: home.html", "hero_title" and "hero_text" in the page front matter.
-    The band holds the page's only <h1>, so the page itself has no heading. -#}
-{% block hero %}
+    The band holds the page's only <h1>, so the page itself has no heading.
+    The band goes in the tabs block after the tabs: the theme's hero block
+    comes before the tabs, which would put the tabs below the band. -#}
+{% block tabs %}
+  {{ super() }}
   <section class="arho-hero">
     {% include "partials/hexes.html" %}
     <div class="md-grid arho-hero__inner">
