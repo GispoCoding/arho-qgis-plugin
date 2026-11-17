@@ -1,18 +1,18 @@
-name: User manual
+name: Website
 
-# Builds the user manual (manual/) and publishes it on GitHub Pages:
+# Builds the website with the user manual (web/) and publishes it on GitHub Pages:
 # https://gispocoding.github.io/arho-qgis-plugin/ (Finnish) and .../sv/ (Swedish).
 # Pull requests only get the build, which fails on warnings (broken links, missing images).
 on:
   push:
     branches: [main]
     paths:
-      - "manual/**"
-      - ".github/workflows/manual.yml"
+      - "web/**"
+      - ".github/workflows/web.yml"
   pull_request:
     paths:
-      - "manual/**"
-      - ".github/workflows/manual.yml"
+      - "web/**"
+      - ".github/workflows/web.yml"
   workflow_dispatch:
 
 permissions:
@@ -20,7 +20,7 @@ permissions:
 
 # One deployment at a time; let a running deployment finish.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('manual-{0}', github.ref) || 'pages' }}
+  group: ${{ github.event_name == 'pull_request' && format('web-{0}', github.ref) || 'pages' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -33,18 +33,18 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: manual/requirements.txt
+          cache-dependency-path: web/requirements.txt
 
       - name: Install Zensical
-        run: pip install -r manual/requirements.txt
+        run: pip install -r web/requirements.txt
 
       - name: Build the Finnish and the Swedish site
-        run: python manual/build.py --strict
+        run: python web/build.py --strict
 
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
-          path: manual/site
+          path: web/site
 
   deploy:
     if: github.event_name != 'pull_request'

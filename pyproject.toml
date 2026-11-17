@@ -32,7 +32,7 @@ unfixable = [
 [tool.ruff.lint.per-file-ignores]
 "**/scripts/*" = ["INP001", "T201"]
 "ci/*" = ["INP001", "T201"] # standalone scripts run inside a QGIS container
-"manual/build.py" = ["INP001", "T201"] # standalone build script of the user manual
+"web/build.py" = ["INP001", "T201"] # standalone build script of the website
 "**/tests/**/*" = [
     "PLC1901",
     "PLR2004",
