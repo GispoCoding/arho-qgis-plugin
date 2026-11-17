@@ -80,7 +80,8 @@ gets a build check that fails on warnings, for example a broken link or a missin
 
 Visitors' browsers load files only from the site itself. The `privacy` plugin
 downloads the Google fonts (Inter, Karla, JetBrains Mono) and the image zoom script at build time,
-and `overrides/partials/source.html` turns off the GitHub repository widget.
+and `overrides/partials/source.html` shows the GitHub repository link without the
+star and fork counts, which the theme would fetch from the GitHub API.
 Do not add scripts, fonts or images from other servers.
 
 ## Update Zensical
