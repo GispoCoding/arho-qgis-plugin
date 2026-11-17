@@ -1,6 +1,6 @@
-# ARHO user manual
+# ARHO website
 
-The user manual of the ARHO plugin, in Finnish and Swedish, built with
+The website of ARHO with the user manual of the ARHO plugin, in Finnish and Swedish, built with
 [Zensical](https://zensical.org/) and published on GitHub Pages:
 
 - Finnish: <https://gispocoding.github.io/arho-qgis-plugin/>
@@ -55,7 +55,7 @@ The Markdown files here are the only source. There is no Word version.
 From the repository root, with [uv](https://docs.astral.sh/uv/):
 
 ```console
-uv run --no-project --with-requirements manual/requirements.txt python manual/build.py --serve
+uv run --no-project --with-requirements web/requirements.txt python web/build.py --serve
 ```
 
 Open <http://localhost:8000/arho-qgis-plugin/>. Run the command again after changes.
@@ -63,14 +63,14 @@ For live reload of the Finnish site, use `zensical serve` (the language switch a
 for the Swedish site, the screenshots work only through `build.py`):
 
 ```console
-uv run --no-project --with-requirements manual/requirements.txt zensical serve -f manual/zensical-fi.yml
+uv run --no-project --with-requirements web/requirements.txt zensical serve -f web/zensical-fi.yml
 ```
 
 ## Publish
 
-`.github/workflows/manual.yml` builds and publishes the site when a push to `main`
-changes `manual/` or the workflow file. To publish without a change, open
-**Actions > User manual > Run workflow**. A pull request that changes `manual/`
+`.github/workflows/web.yml` builds and publishes the site when a push to `main`
+changes `web/` or the workflow file. To publish without a change, open
+**Actions > Website > Run workflow**. A pull request that changes `web/`
 gets a build check that fails on warnings, for example a broken link or a missing image.
 
 ## Privacy

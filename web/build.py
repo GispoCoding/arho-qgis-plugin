@@ -1,13 +1,13 @@
-"""Build the ARHO user manual (Finnish and Swedish) into manual/site.
+"""Build the ARHO website with the user manual (Finnish and Swedish) into web/site.
 
 Usage (from the repository root):
 
-    uv run --no-project --with-requirements manual/requirements.txt python manual/build.py
-    uv run --no-project --with-requirements manual/requirements.txt python manual/build.py --serve
+    uv run --no-project --with-requirements web/requirements.txt python web/build.py
+    uv run --no-project --with-requirements web/requirements.txt python web/build.py --serve
 
-The Finnish site goes to manual/site/ and the Swedish site to manual/site/sv/.
-Both use the screenshots in manual/fi/images/. The script copies them to
-manual/sv/images/ (ignored by git) before the Swedish build.
+The Finnish site goes to web/site/ and the Swedish site to web/site/sv/.
+Both use the screenshots in web/fi/images/. The script copies them to
+web/sv/images/ (ignored by git) before the Swedish build.
 
 --serve starts a local web server at http://localhost:8000/arho-qgis-plugin/,
 the same path as on GitHub Pages, so the language switch works.
@@ -23,27 +23,27 @@ import subprocess
 import sys
 from pathlib import Path
 
-MANUAL = Path(__file__).resolve().parent
-SITE = MANUAL / "site"
+WEB = Path(__file__).resolve().parent
+SITE = WEB / "site"
 PREFIX = "/arho-qgis-plugin"
 
 
 def copy_shared_images() -> None:
-    source = MANUAL / "fi" / "images"
-    target = MANUAL / "sv" / "images"
+    source = WEB / "fi" / "images"
+    target = WEB / "sv" / "images"
     shutil.rmtree(target, ignore_errors=True)
     shutil.copytree(source, target)
 
 
 def build(config: str, *, strict: bool) -> None:
-    command = [sys.executable, "-m", "zensical", "build", "-f", str(MANUAL / config)]
+    command = [sys.executable, "-m", "zensical", "build", "-f", str(WEB / config)]
     if strict:
         command.append("--strict")
     subprocess.run(command, check=True, stdin=subprocess.DEVNULL)
 
 
 class PrefixHandler(http.server.SimpleHTTPRequestHandler):
-    """Serve manual/site under /arho-qgis-plugin/ like GitHub Pages does."""
+    """Serve web/site under /arho-qgis-plugin/ like GitHub Pages does."""
 
     def translate_path(self, path: str) -> str:
         if path == PREFIX:
@@ -78,8 +78,8 @@ def main() -> None:
     args = parser.parse_args()
 
     copy_shared_images()
-    build("zensical-fi.yml", strict=args.strict)  # cleans manual/site first
-    build("zensical-sv.yml", strict=args.strict)  # writes manual/site/sv
+    build("zensical-fi.yml", strict=args.strict)  # cleans web/site first
+    build("zensical-sv.yml", strict=args.strict)  # writes web/site/sv
     if args.serve:
         serve(args.port)
 

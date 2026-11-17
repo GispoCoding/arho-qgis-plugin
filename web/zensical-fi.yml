@@ -1,14 +1,14 @@
 INHERIT: zensical-base.yml
 
-site_name: ARHO-användarmanual
-site_description: Användarmanual för planläggningsverktyget ARHO
-site_url: https://gispocoding.github.io/arho-qgis-plugin/sv/
-docs_dir: sv
-site_dir: site/sv
-edit_uri: edit/main/manual/sv/
+site_name: ARHO-käyttöohje
+site_description: ARHO-kaavoitustyökalun käyttöohje
+site_url: https://gispocoding.github.io/arho-qgis-plugin/
+docs_dir: fi
+site_dir: site
+edit_uri: edit/main/web/fi/
 
 theme:
-  language: sv
+  language: fi
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -16,14 +16,14 @@ theme:
       accent: custom
       toggle:
         icon: lucide/moon
-        name: Byt till mörkt läge
+        name: Vaihda tummaan tilaan
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: custom
       accent: custom
       toggle:
         icon: lucide/sun
-        name: Byt till ljust läge
+        name: Vaihda vaaleaan tilaan
 
 nav:
   - index.md
@@ -32,7 +32,7 @@ nav:
   - plugin.md
   - project.md
   - plan-matter.md
-  - Planutkast:
+  - Kaavasuunnitelma:
       - plan/index.md
       - plan/open.md
       - plan/create.md
@@ -47,7 +47,7 @@ nav:
   - multilingual.md
   - geotiff.md
   - legend.md
-  - Livscykelskeden:
+  - Elinkaaren vaiheet:
       - lifecycle/index.md
       - lifecycle/preparation.md
       - lifecycle/approved.md
@@ -56,7 +56,7 @@ nav:
   - consolidated-plan.md
   - plan-amendment.md
   - ryhti.md
-  - Visualiseringar:
+  - Visualisoinnit:
       - styling/index.md
       - styling/default-styles.md
       - styling/rule-based.md

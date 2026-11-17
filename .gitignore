@@ -163,7 +163,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# User manual build output (manual/build.py)
-/manual/site/
-/manual/.cache/
-/manual/sv/images/
+# Website build output (web/build.py)
+/web/site/
+/web/.cache/
+/web/sv/images/
