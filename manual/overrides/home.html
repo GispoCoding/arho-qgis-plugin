@@ -1,10 +1,11 @@
 {% extends "main.html" %}
 
-{#- Home page: a navy-to-violet band above the content.
+{#- Home page: a light band with a hexagon field above the content.
     Set "template: home.html", "hero_title" and "hero_text" in the page front matter.
     The band holds the page's only <h1>, so the page itself has no heading. -#}
 {% block hero %}
   <section class="arho-hero">
+    {% include "partials/hexes.html" %}
     <div class="md-grid arho-hero__inner">
       <h1 class="arho-hero__title">{{ page.meta.hero_title }}</h1>
       <p class="arho-hero__text">{{ page.meta.hero_text }}</p>

@@ -30,6 +30,7 @@ extra_css:
 
 extra_javascript:
   - assets/javascripts/language.js
+  - assets/javascripts/hexes.js
 
 extra:
   alternate:
