@@ -7,4 +7,4 @@ hide:
   - toc
 ---
 
-Arho on QGISin päällä toimiva avoimen lähdekoodin kaavoitustyökalu. Lue [Arhosta](about.md) tai siirry [käyttöohjeeseen](manual/index.md).
+Arho on QGISin päällä toimiva avoimen lähdekoodin kaavoitustyökalu. Lue [Arhosta](about/index.md) tai siirry [käyttöohjeeseen](manual/index.md).

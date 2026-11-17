@@ -11,7 +11,7 @@ Tämä ohje kertoo, miten Arhoa käytetään. Jos aloitat Arhon käytön, lue en
 
 -   **Aloitus**
 
-    - [Arhosta](../about.md)
+    - [Arhosta](../about/index.md)
     - [Käyttöönotto](setup.md)
     - [Arhon käyttöliittymä](interface.md)
     - [Kaavoitusprojekti](project.md)

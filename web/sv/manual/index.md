@@ -13,7 +13,7 @@ Arhos användargränssnitt finns bara på finska. Därför står de finska namne
 
 -   **Kom igång**
 
-    - [Om Arho](../about.md)
+    - [Om Arho](../about/index.md)
     - [Ibruktagande](setup.md)
     - [Arhos användargränssnitt](interface.md)
     - [Planläggningsprojekt](project.md)
