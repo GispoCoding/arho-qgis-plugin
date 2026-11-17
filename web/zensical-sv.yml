@@ -28,7 +28,9 @@ theme:
 # Three tabs (navigation.tabs): home, about and the manual.
 nav:
   - Startsida: index.md
-  - Om Arho: about.md
+  - Om Arho:
+      - about/index.md
+      - about/deployment.md
   - Användarmanual:
       - manual/index.md
       - manual/setup.md

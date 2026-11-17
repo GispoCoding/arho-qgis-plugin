@@ -7,4 +7,4 @@ hide:
   - toc
 ---
 
-Arho är ett planläggningsverktyg baserat på öppen källkod som körs ovanpå QGIS. Läs [Om Arho](about.md) eller gå till [användarmanualen](manual/index.md).
+Arho är ett planläggningsverktyg baserat på öppen källkod som körs ovanpå QGIS. Läs [Om Arho](about/index.md) eller gå till [användarmanualen](manual/index.md).

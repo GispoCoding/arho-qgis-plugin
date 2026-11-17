@@ -28,7 +28,9 @@ theme:
 # Three tabs (navigation.tabs): home, about and the manual.
 nav:
   - Etusivu: index.md
-  - Arhosta: about.md
+  - Arhosta:
+      - about/index.md
+      - about/deployment.md
   - Käyttöohje:
       - manual/index.md
       - manual/setup.md
