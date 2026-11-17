@@ -166,4 +166,4 @@ cython_debug/
 # Website build output (web/build.py)
 /web/site/
 /web/.cache/
-/web/sv/images/
+/web/sv/manual/images/

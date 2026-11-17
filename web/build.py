@@ -6,8 +6,8 @@ Usage (from the repository root):
     uv run --no-project --with-requirements web/requirements.txt python web/build.py --serve
 
 The Finnish site goes to web/site/ and the Swedish site to web/site/sv/.
-Both use the screenshots in web/fi/images/. The script copies them to
-web/sv/images/ (ignored by git) before the Swedish build.
+Both use the screenshots in web/fi/manual/images/. The script copies them to
+web/sv/manual/images/ (ignored by git) before the Swedish build.
 
 --serve starts a local web server at http://localhost:8000/arho-qgis-plugin/,
 the same path as on GitHub Pages, so the language switch works.
@@ -29,8 +29,8 @@ PREFIX = "/arho-qgis-plugin"
 
 
 def copy_shared_images() -> None:
-    source = WEB / "fi" / "images"
-    target = WEB / "sv" / "images"
+    source = WEB / "fi" / "manual" / "images"
+    target = WEB / "sv" / "manual" / "images"
     shutil.rmtree(target, ignore_errors=True)
     shutil.copytree(source, target)
 

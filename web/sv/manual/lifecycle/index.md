@@ -2,7 +2,7 @@
 
 !!! info "Inte översatt ännu"
 
-    Det här kapitlet finns i sin helhet bara på finska. Läs den finska versionen: [Elinkaaren vaiheet ja niiden hallinta Arhossa](/arho-qgis-plugin/lifecycle/). Nedan finns en kort sammanfattning på svenska.
+    Det här kapitlet finns i sin helhet bara på finska. Läs den finska versionen: [Elinkaaren vaiheet ja niiden hallinta Arhossa](/arho-qgis-plugin/manual/lifecycle/). Nedan finns en kort sammanfattning på svenska.
 
 Ryhti definierar planens livscykelskeden i plandatamodellens [livscykel- och kvalitetsregler](https://ryhti.syke.fi/alueidenkaytto/tietomallimuotoinen-kaavoitus/kaavatietomallin-elinkaari-ja-laatusaannot/). Med Arho är det möjligt att producera planmaterial i alla planens livscykelskeden. Varje livscykelskede behöver ett eget planutkast, som kan skapas utifrån det föregående skedets planutkast (se [Nytt planutkast från ett befintligt planutkast](../plan/create.md#from-existing)) eller helt från början.
 

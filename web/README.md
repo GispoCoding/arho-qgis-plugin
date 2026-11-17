@@ -18,10 +18,13 @@ The Markdown files here are the only source. There is no Word version.
 
 | Path | What |
 |---|---|
-| `fi/`, `sv/` | Pages, one folder per language. The same file name in both, for example `fi/plan/create.md` and `sv/plan/create.md`. |
-| `fi/images/` | All screenshots, shared by both languages. `build.py` copies them to `sv/images/` (not in git). |
+| `fi/`, `sv/` | Pages, one folder per language. The same file name in both, for example `fi/manual/plan/create.md` and `sv/manual/plan/create.md`. |
+| `fi/index.md`, `sv/index.md` | Home page (tab "Etusivu" / "Startsida"). |
+| `fi/about.md`, `sv/about.md` | About Arho (tab "Arhosta" / "Om Arho"). |
+| `fi/manual/`, `sv/manual/` | The user manual (tab "Käyttöohje" / "Användarmanual"). |
+| `fi/manual/images/` | All screenshots, shared by both languages. `build.py` copies them to `sv/manual/images/` (not in git). |
 | `zensical-base.yml` | Settings shared by both sites. |
-| `zensical-fi.yml`, `zensical-sv.yml` | Site name, address and menu (`nav`) of each language. |
+| `zensical-fi.yml`, `zensical-sv.yml` | Site name, address and menu (`nav`, one top item per tab) of each language. |
 | `overrides/` | Gispo look: CSS, templates, logos, favicon, language switch script. |
 | `build.py` | Builds both sites into `site/` (Finnish) and `site/sv/` (Swedish). |
 | `requirements.txt` | The pinned Zensical version. |
@@ -34,10 +37,10 @@ The Markdown files here are the only source. There is no Word version.
   ```markdown
   !!! info "Inte översatt ännu"
 
-      Det här kapitlet finns bara på finska än så länge. Läs den finska versionen: [Otsikko](/arho-qgis-plugin/<path>/).
+      Det här kapitlet finns bara på finska än så länge. Läs den finska versionen: [Otsikko](/arho-qgis-plugin/manual/<path>/).
   ```
 
-- **Screenshots**: put the PNG file in `fi/images/` with a name that starts with the page name, for example `plan-create-11.png`. Every image needs an alt text in the page language: `![Kaavasuunnitelma-valikko auki](../images/plan-create-11.png)`. A small button inside a sentence gets `{ .icon }`: `![Tallenna-painike](images/plan-export-3.png){ .icon }`. For a smaller image, add a width in pixels: `{ width="400" }`.
+- **Screenshots**: put the PNG file in `fi/manual/images/` with a name that starts with the page name, for example `plan-create-11.png`. Every image needs an alt text in the page language: `![Kaavasuunnitelma-valikko auki](../images/plan-create-11.png)`. A small button inside a sentence gets `{ .icon }`: `![Tallenna-painike](images/plan-export-3.png){ .icon }`. For a smaller image, add a width in pixels: `{ width="400" }`.
 - **Features that are not released yet**: put the new text in a box, so readers know which version has it:
 
   ```markdown
