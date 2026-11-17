@@ -2,14 +2,17 @@
 # zensical-fi.yml and zensical-sv.yml inherit this file (INHERIT).
 # Mappings are merged; lists and plain values in the child file replace these.
 
-# repo_url gives the "Edit this page" button (edit_uri is in the child files).
-# overrides/partials/source.html hides the repository widget, which would make
-# every visitor's browser call the GitHub API.
+# repo_url gives the repository link in the header and the "Edit this page"
+# button (edit_uri is in the child files). overrides/partials/source.html keeps
+# the link from calling the GitHub API in every visitor's browser.
 repo_url: https://github.com/GispoCoding/arho-qgis-plugin
+repo_name: GispoCoding/arho-qgis-plugin
 
 theme:
   custom_dir: overrides
   favicon: assets/images/favicon.svg
+  icon:
+    repo: fontawesome/brands/github
   font:
     text: Karla
     code: JetBrains Mono
