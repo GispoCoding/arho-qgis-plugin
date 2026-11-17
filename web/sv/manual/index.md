@@ -5,7 +5,7 @@ hide:
 
 # Användarmanual
 
-Den här manualen beskriver hur du använder Arho. Börja med [Om Arho](../about.md) eller välj ett ämne nedan.
+Den här manualen beskriver hur du använder Arho. Om du börjar använda Arho, läs först [Ibruktagande](setup.md). Annars välj ett ämne nedan.
 
 Arhos användargränssnitt finns bara på finska. Därför står de finska namnen på knappar och menyer i kursiv stil i texten.
 
@@ -14,8 +14,8 @@ Arhos användargränssnitt finns bara på finska. Därför står de finska namne
 -   **Kom igång**
 
     - [Om Arho](../about.md)
-    - [QGIS](qgis.md)
-    - [Insticksprogrammet](plugin.md)
+    - [Ibruktagande](setup.md)
+    - [Arhos användargränssnitt](interface.md)
     - [Planläggningsprojekt](project.md)
 
 -   **Planärende och planutkast**
