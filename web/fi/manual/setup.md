@@ -13,7 +13,7 @@ QGISissä on suositeltavaa käyttää Arhoa varten luotua käyttäjäprofiilia, 
 Arho-lisäosa asennetaan QGISin **Lisäosat > Hallitse ja asenna lisäosia** -valikosta. Arho asennetaan kokeellisena lisäosana osoitteesta:
 
 ```text
-https://github.com/GispoCoding/arho-feature-template/releases/latest/download/plugins.xml
+https://github.com/GispoCoding/arho-qgis-plugin/releases/latest/download/plugins.xml
 ```
 
 ## Yhteyden tarkistus { #connection }

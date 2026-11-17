@@ -13,7 +13,7 @@ Det är rekommenderat att använda en specifik användarprofil som skapats för 
 Arho-insticksprogrammet installeras via QGIS-menyn *Lisäosat* → *Hallitse ja asenna lisäosia*. Arho installeras som ett experimentellt insticksprogram från URL-adressen:
 
 ```text
-https://github.com/GispoCoding/arho-feature-template/releases/latest/download/plugins.xml
+https://github.com/GispoCoding/arho-qgis-plugin/releases/latest/download/plugins.xml
 ```
 
 ## Kontroll av anslutningen { #connection }
