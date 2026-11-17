@@ -1,7 +1,7 @@
 INHERIT: zensical-base.yml
 
-site_name: ARHO-käyttöohje
-site_description: ARHO-kaavoitustyökalun käyttöohje
+site_name: Arho
+site_description: Tietomallimuotoista kaavoitusta QGISillä
 site_url: https://gispocoding.github.io/arho-qgis-plugin/
 docs_dir: fi
 site_dir: site

@@ -19,7 +19,7 @@ The Markdown files here are the only source. There is no Word version.
 | Path | What |
 |---|---|
 | `fi/`, `sv/` | Pages, one folder per language. The same file name in both, for example `fi/manual/plan/create.md` and `sv/manual/plan/create.md`. |
-| `fi/index.md`, `sv/index.md` | Home page (tab "Etusivu" / "Startsida"). |
+| `fi/index.md`, `sv/index.md` | Home page (tab "Etusivu" / "Startsida"). The band title, text and buttons are in the front matter (see `overrides/home.html`). |
 | `fi/about/`, `sv/about/` | About Arho and its deployment (tab "Arhosta" / "Om Arho"). |
 | `fi/manual/`, `sv/manual/` | The user manual (tab "Käyttöohje" / "Användarmanual"). |
 | `fi/manual/images/` | All screenshots, shared by both languages. `build.py` copies them to `sv/manual/images/` (not in git). |

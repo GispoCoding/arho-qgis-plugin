@@ -63,6 +63,10 @@ markdown_extensions:
       permalink: true
   - pymdownx.betterem
   - pymdownx.details
+  # Icons such as :lucide-palette: as inline SVG (home page cards)
+  - pymdownx.emoji:
+      emoji_index: zensical.extensions.emoji.twemoji
+      emoji_generator: zensical.extensions.emoji.to_svg
   - pymdownx.highlight
   - pymdownx.inlinehilite
   - pymdownx.keys
