@@ -15,38 +15,41 @@ Arhos användargränssnitt finns bara på finska. Därför står de finska namne
 
 -   **Kom igång**
 
-    ---
-
-    [Om Arho](about.md) · [QGIS](qgis.md) · [Insticksprogrammet](plugin.md) · [Planläggningsprojekt](project.md)
+    - [Om Arho](about.md)
+    - [QGIS](qgis.md)
+    - [Insticksprogrammet](plugin.md)
+    - [Planläggningsprojekt](project.md)
 
 -   **Planärende och planutkast**
 
-    ---
-
-    [Planärende](plan-matter.md) · [Planutkast](plan/index.md) · [Nytt planutkast](plan/create.md)
+    - [Planärende](plan-matter.md)
+    - [Planutkast](plan/index.md)
+    - [Nytt planutkast](plan/create.md)
 
 -   **Planobjekt och bestämmelser**
 
-    ---
-
-    [Planobjekt](plan-objects.md) · [Planbestämmelsegrupper](regulation-groups.md) · [Bibliotek](libraries.md)
+    - [Planobjekt](plan-objects.md)
+    - [Planbestämmelsegrupper](regulation-groups.md)
+    - [Bibliotek](libraries.md)
 
 -   **Kontroll och utskrifter**
 
-    ---
-
-    [Validering](validation.md) · [Flerspråkig plan](multilingual.md) · [Plankarta](geotiff.md) · [Bestämmelsedel](legend.md)
+    - [Validering](validation.md)
+    - [Flerspråkig plan](multilingual.md)
+    - [Plankarta](geotiff.md)
+    - [Bestämmelsedel](legend.md)
 
 -   **Livscykel och Ryhti**
 
-    ---
-
-    [Livscykelskeden](lifecycle/index.md) · [Plansammanställning](consolidated-plan.md) · [Planändring](plan-amendment.md) · [Informationsleden](ryhti.md)
+    - [Livscykelskeden](lifecycle/index.md)
+    - [Plansammanställning](consolidated-plan.md)
+    - [Planändring](plan-amendment.md)
+    - [Informationsleden](ryhti.md)
 
 -   **Visualiseringar och bilagor**
 
-    ---
-
-    [Visualiseringar](styling/index.md) · [Fel vid gränssnittsanrop](api-errors.md) · [Inställningar för digitalisering](digitizing.md)
+    - [Visualiseringar](styling/index.md)
+    - [Fel vid gränssnittsanrop](api-errors.md)
+    - [Inställningar för digitalisering](digitizing.md)
 
 </div>

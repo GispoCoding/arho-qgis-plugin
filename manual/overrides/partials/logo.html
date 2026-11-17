@@ -1,2 +1,3 @@
-{#- The repository has no ARHO logo, so the header shows the name as text. -#}
-<span class="arho-logo">ARHO</span>
+{#- The repository has no ARHO logo, so the header shows the name as text:
+    "ARHO" and the rest of the site name ("käyttöohje", "användarmanual"). -#}
+<span class="arho-logo">ARHO<span class="arho-logo__sub">{{ config.site_name | replace("ARHO-", "") }}</span></span>

@@ -13,38 +13,41 @@ Arho on QGISin päällä toimiva avoimen lähdekoodin kaavoitustyökalu. Tämä 
 
 -   **Aloitus**
 
-    ---
-
-    [Arhosta](about.md) · [QGIS](qgis.md) · [Arho-lisäosa](plugin.md) · [Kaavoitusprojekti](project.md)
+    - [Arhosta](about.md)
+    - [QGIS](qgis.md)
+    - [Arho-lisäosa](plugin.md)
+    - [Kaavoitusprojekti](project.md)
 
 -   **Kaava-asia ja kaavasuunnitelma**
 
-    ---
-
-    [Kaava-asia](plan-matter.md) · [Kaavasuunnitelma](plan/index.md) · [Uusi kaavasuunnitelma](plan/create.md)
+    - [Kaava-asia](plan-matter.md)
+    - [Kaavasuunnitelma](plan/index.md)
+    - [Uusi kaavasuunnitelma](plan/create.md)
 
 -   **Kaavakohteet ja määräykset**
 
-    ---
-
-    [Kaavakohteet](plan-objects.md) · [Kaavamääräysryhmät](regulation-groups.md) · [Kirjastot](libraries.md)
+    - [Kaavakohteet](plan-objects.md)
+    - [Kaavamääräysryhmät](regulation-groups.md)
+    - [Kirjastot](libraries.md)
 
 -   **Tarkistus ja tulosteet**
 
-    ---
-
-    [Validointi](validation.md) · [Monikielinen kaava](multilingual.md) · [Kaavakartta](geotiff.md) · [Määräysosa](legend.md)
+    - [Validointi](validation.md)
+    - [Monikielinen kaava](multilingual.md)
+    - [Kaavakartta](geotiff.md)
+    - [Määräysosa](legend.md)
 
 -   **Elinkaari ja Ryhti**
 
-    ---
-
-    [Elinkaaren vaiheet](lifecycle/index.md) · [Ajantasakaava](consolidated-plan.md) · [Kaavamuutos](plan-amendment.md) · [Palveluväylä](ryhti.md)
+    - [Elinkaaren vaiheet](lifecycle/index.md)
+    - [Ajantasakaava](consolidated-plan.md)
+    - [Kaavamuutos](plan-amendment.md)
+    - [Palveluväylä](ryhti.md)
 
 -   **Visualisoinnit ja liitteet**
 
-    ---
-
-    [Visualisoinnit](styling/index.md) · [Rajapintakutsujen virheet](api-errors.md) · [Digitoinnin asetukset](digitizing.md)
+    - [Visualisoinnit](styling/index.md)
+    - [Rajapintakutsujen virheet](api-errors.md)
+    - [Digitoinnin asetukset](digitizing.md)
 
 </div>
