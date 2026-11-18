@@ -32,6 +32,7 @@ resource "aws_lambda_function" "db_manager" {
 resource "aws_ecr_repository" "db_manager" {
   name                 = "${var.prefix}-db_manager"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true # destroy deletes the images too
 
   image_scanning_configuration {
     scan_on_push = true
@@ -72,6 +73,7 @@ resource "aws_lambda_function" "koodistot_loader" {
 resource "aws_ecr_repository" "koodistot_loader" {
   name                 = "${var.prefix}-koodistot_loader"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true # destroy deletes the images too
 
   image_scanning_configuration {
     scan_on_push = true
@@ -128,6 +130,7 @@ resource "aws_lambda_function" "ryhti_client" {
 resource "aws_ecr_repository" "ryhti_client" {
   name                 = "${var.prefix}-ryhti_client"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true # destroy deletes the images too
 
   image_scanning_configuration {
     scan_on_push = true
@@ -228,6 +231,7 @@ resource "aws_lambda_function" "mml_loader" {
 resource "aws_ecr_repository" "mml_loader" {
   name                 = "${var.prefix}-mml_loader"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true # destroy deletes the images too
 
   image_scanning_configuration {
     scan_on_push = true
