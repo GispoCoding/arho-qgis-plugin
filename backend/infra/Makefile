@@ -176,6 +176,9 @@ tf-plan: check-backend
 tf-apply: check-backend
 	terraform apply -var-file=$(TFVARS)
 
+tf-destroy: check-backend
+	terraform destroy -var-file=$(TFVARS)
+
 update-ssh-keys: check-backend
 	ansible-playbook ansible/playbook.yml \
 	-i ansible/inventory/hosts.yml \
