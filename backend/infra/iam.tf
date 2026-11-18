@@ -175,6 +175,7 @@ resource "aws_iam_role_policy_attachment" "ryhti_client_invoke_self" {
 # Lambda update user
 resource "aws_iam_user" "lambda_update_user" {
   name               = var.AWS_LAMBDA_USER
+  force_destroy      = true # destroy deletes the access keys too
   tags               = merge(local.default_tags, { Name = "${var.prefix}_lambda_update" })
 }
 
