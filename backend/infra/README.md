@@ -441,7 +441,15 @@ Congratulations! You now have access to X-Road Ryhti APIs!
 
 ## Teardown of instances
 
-Shut down and destroy the instances with `terraform destroy --var-file var-files/your-deployment.tfvars.json`
+The RDS database has a delete protection enabled. Remove that from the AWS web portal.
+
+1. `cd infra`
+2. Login to the AWS with `source get-mfa-vars.sh`
+3. Activate the right backend and workspace with `make tf-init backend=<backend name> ws=<workspace name>`
+4. Shut down and destroy the instances with `make tf-destroy`
+5. Check that `terraform state list` prints nothing.
+6. Delete the terraform workspace with `terraform workspace select default` and `terraform workspace delete <workspace name>`
+7. Delete the tfvars and public key files from the `arho-deploy` repo.
 
 ## Manual interactions
 
