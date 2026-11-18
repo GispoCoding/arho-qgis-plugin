@@ -13,6 +13,10 @@ The plugin supports QGIS 3.40 (LTR) and newer, including QGIS 4.
 
 The plugin is expected to be used with the [arho-ryhti](https://github.com/GispoCoding/arho-ryhti) backend system, which provides the necessary database and backend services.
 
+## Documentation
+
+The user manual is on the Arho website in Finnish and Swedish: <https://gispocoding.github.io/arho-qgis-plugin/>
+
 ## Development
 
 Clone the project with the following command to include the [qgis_plugin_tools](https://github.com/GispoCoding/qgis_plugin_tools) submodule.
