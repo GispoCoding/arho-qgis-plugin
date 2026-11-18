@@ -44,6 +44,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+USER_MANUAL_URL = "https://gispocoding.github.io/arho-qgis-plugin/manual/"
+
 
 class Plugin:
     """QGIS Plugin Implementation."""
@@ -520,6 +522,17 @@ class Plugin:
         )
 
         #####  OTHER  #####
+        self.user_manual_action = self.add_action(
+            text="ARHO-käyttöohje",
+            icon=QgsApplication.getThemeIcon("mActionHelpContents.svg"),
+            triggered_callback=self.open_user_manual,
+            add_to_menu=True,
+            add_to_toolbar=False,
+            status_tip="Avaa ARHO-käyttöohje selaimessa",
+        )
+        # Also in Help → Plugins, where QGIS asks plugins to put their help actions
+        iface.pluginHelpMenu().addAction(self.user_manual_action)
+
         self.plugin_about = self.add_action(
             text="Tietoja",
             triggered_callback=self.open_about,
@@ -628,6 +641,10 @@ class Plugin:
         folder = get_log_folder()
         logger.debug("Opening log folder path=%s", folder)
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+
+    def open_user_manual(self) -> None:
+        logger.debug("Opening user manual url=%s", USER_MANUAL_URL)
+        QDesktopServices.openUrl(QUrl(USER_MANUAL_URL))
 
     def toggle_dock_visibility(self, dock_widget: QgsDockWidget):
         logger.debug(
@@ -835,7 +852,9 @@ class Plugin:
         # reach `setChecked`/`setEnabled` on actions already passed to `deleteLater`.
         self.plan_manager.unload()
 
-        # Handle actions
+        # Handle actions. `deleteLater` waits for the event loop, and Plugin Reloader
+        # re-inits before that, so take the action out of the QGIS help menu here.
+        iface.pluginHelpMenu().removeAction(self.user_manual_action)
         for action in self.actions:
             iface.removePluginMenu(Plugin.name, action)
             iface.removeToolBarIcon(action)
