@@ -1,4 +1,9 @@
+# Every deployment is a workspace, e.g. test or prod, and the workspace name is the
+# environment name used in resource names and labels. There is no separate variable for it,
+# so the two cannot disagree. The make targets refuse the default workspace and names that
+# are not valid here.
 locals {
+  environment = terraform.workspace
   name_prefix = "arho-${local.environment}"
   labels = {
     project     = "arho"

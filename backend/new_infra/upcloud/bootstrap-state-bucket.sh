@@ -42,7 +42,7 @@ Credentials: UPCLOUD_TOKEN, or UPCLOUD_USERNAME and UPCLOUD_PASSWORD, or the tok
 ~/.config/upctl.yaml.
 
 Example:
-  ./bootstrap-state-bucket.sh
+  ./upcloud/bootstrap-state-bucket.sh
 EOF
 }
 
@@ -216,7 +216,7 @@ fi
 # run and is not in the environment, print placeholders instead of the key.
 cat <<EOF
 
-Done. In arho-deploy, save these lines as backends/<name>/backend.hcl (no secrets):
+Done. In arho-deploy, save these lines as backends/<backend>/backend.hcl (no secrets):
 
 bucket = "$BUCKET"
 endpoints = {
@@ -224,13 +224,13 @@ endpoints = {
 }
 
 Then save the keys encrypted, never in plaintext. From the arho-deploy root, run
-\`sops edit backends/<name>/credentials.enc.env\` and enter:
+\`sops edit backends/<backend>/credentials.enc.env\` and enter:
 
 AWS_ACCESS_KEY_ID=${access_key:-<the saved access key of $STATE_USER>}
 AWS_SECRET_ACCESS_KEY=${secret_key:-<the saved secret key of $STATE_USER>}
 TF_VAR_state_encryption_passphrase=$(openssl rand -base64 32)
 
-The passphrase above is new and random. It encrypts the state (encryption.tf), so use it
+The passphrase above is new and random. It encrypts the state (tofu-encrypted.sh), so use it
 only for a backend that has no state yet. If the file already has a passphrase, keep that
 one: without it the existing state cannot be read.
 EOF
@@ -243,5 +243,5 @@ fi
 cat <<EOF
 
 Then initialise the configuration:
-  make tf-init ws=<workspace> backend=<name>
+  make tf-init dir=upcloud ws=<workspace> backend=<backend>   (in new_infra)
 EOF

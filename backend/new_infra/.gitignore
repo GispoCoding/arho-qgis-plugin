@@ -8,3 +8,5 @@ backend.hcl
 *.tfvars.json
 *.env
 tfplan
+# The configuration directory that make tf-init selected.
+.terraform-dir

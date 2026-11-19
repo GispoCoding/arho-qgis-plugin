@@ -1,29 +1,38 @@
-# ARHO platform on UpCloud
+# ARHO platform infrastructure
 
-OpenTofu root for the shared ARHO platform on UpCloud (plan.md, task 02). It replaces the
+OpenTofu configurations for the shared ARHO platform (plan.md, task 02). They replace the
 AWS configuration in `../infra` once the AWS instances have moved.
+
+This folder holds what every configuration shares: the `Makefile`, which handles the state
+backend, the workspaces and the secrets, and this README. Each configuration is an OpenTofu
+root module in a subdirectory of its own:
+
+| Directory | Configuration |
+|---|---|
+| [upcloud/](upcloud/) | The ARHO platform on UpCloud. |
+
+The make targets work for any configuration whose state is in an S3-compatible bucket. Pick
+the configuration with `dir=<directory>` when you run `make tf-init`. The examples use the
+UpCloud configuration. In them, `<backend>` is the name of a backend folder in arho-deploy,
+`backends/<backend>/`: list that folder to see the backends you can use.
 
 Use OpenTofu 1.10 or later (`brew install opentofu`). Terraform is not supported: the lock
 file holds OpenTofu registry hashes, the make targets run `tofu`, and the configuration may
 use OpenTofu-only features. The language keeps Terraform's names, so the configuration still
 has `terraform {}` blocks, `terraform.workspace` and a `.terraform/` folder.
 
-## What it creates
-
-- A router and a private network with DHCP and a default route through the router.
-- A NAT gateway for outbound traffic from servers without a public interface.
-
 ## Configuration and secrets
 
 Nothing deployment-specific is stored in this public repository. The private arho-deploy
-repository has one folder per UpCloud account, `backends/<name>/` (the Gispo account is
-`gispo-upcloud`), with:
+repository has one folder per state backend, `backends/<backend>/`, with:
 
 | File | Contents |
 |---|---|
-| `backend.hcl` | State bucket and endpoint. Plaintext, no secrets. |
-| `credentials.enc.env` | `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` of the Object Storage user `terraform`, and `TF_VAR_state_encryption_passphrase`. sops. |
+| `backend.hcl` | State bucket and endpoint. Plaintext, no secrets. [backend.example.hcl](backend.example.hcl) shows the format. |
+| `credentials.enc.env` | `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` of the state bucket user, and `TF_VAR_state_encryption_passphrase`. sops. |
 | `var-files/<workspace>.tfvars.enc.json` | The variables of each platform. sops. |
+
+A backend is one state bucket, usually one cloud account.
 
 sops encrypts these with age keys listed in `.sops.yaml` of arho-deploy. The `Makefile` here
 decrypts them only while a command runs: the keys into its environment, the variable file
@@ -86,7 +95,7 @@ key is shared. Access to the secrets is the list of public keys in `.sops.yaml`.
    the new list from the arho-deploy root and commit:
 
    ```sh
-   for f in backends/gispo-upcloud/credentials.enc.env backends/gispo-upcloud/var-files/*.enc.json; do
+   for f in backends/<backend>/credentials.enc.env backends/<backend>/var-files/*.enc.json; do
      sops updatekeys -y "$f"
    done
    ```
@@ -101,7 +110,7 @@ key is shared. Access to the secrets is the list of public keys in `.sops.yaml`.
 
    ```sh
    cd ../../arho-deploy   # the root of your arho-deploy checkout
-   sops -d backends/gispo-upcloud/credentials.enc.env >/dev/null && echo ok
+   sops -d backends/<backend>/credentials.enc.env >/dev/null && echo ok
    ```
 
 To remove someone, take their key out of `.sops.yaml`, run `sops updatekeys -y` and
@@ -112,128 +121,178 @@ README has the details.
 
 Do this once per backend, after its rule in arho-deploy's `.sops.yaml` has at least one age
 key. sops picks the keys from the first rule whose `path_regex` matches the file, so the
-files must be under `backends/<name>/`. Run every command from the arho-deploy root:
+files must be under `backends/<backend>/`. Run every command from the arho-deploy root:
 
 ```sh
 cd ../../arho-deploy   # the root of your arho-deploy checkout
 ```
 
-The examples use the `gispo-upcloud` backend and the `test` workspace.
+The examples use the `test` workspace. Replace `<backend>` with the name of the backend.
 
 **The variable file of each workspace.** If a plaintext file exists, encrypt it to the
 `.enc.json` name and delete the plaintext:
 
 ```sh
-sops -e backends/gispo-upcloud/var-files/test.tfvars.json \
-  > backends/gispo-upcloud/var-files/test.tfvars.enc.json
-rm backends/gispo-upcloud/var-files/test.tfvars.json
+sops -e backends/<backend>/var-files/test.tfvars.json \
+  > backends/<backend>/var-files/test.tfvars.enc.json
+rm backends/<backend>/var-files/test.tfvars.json
 ```
 
-`make ws=test backend=gispo-upcloud encrypt` in arho-deploy does the same encryption. For a
+`make ws=test backend=<backend> encrypt` in arho-deploy does the same encryption. For a
 workspace that has no file yet, create it straight in encrypted form. sops opens your
 editor with example content (`"hello": "Welcome to SOPS!..."`); replace all of it with the
 variables, save and close. If you close without changes, sops creates no file:
 
 ```sh
-sops edit backends/gispo-upcloud/var-files/prod.tfvars.enc.json
+sops edit backends/<backend>/var-files/prod.tfvars.enc.json
 ```
 
 **The backend secrets.** Create `credentials.enc.env` the same way, so the secrets are never
 written to disk in plaintext:
 
 ```sh
-sops edit backends/gispo-upcloud/credentials.enc.env
+sops edit backends/<backend>/credentials.enc.env
 ```
 
 Replace the example content with these three lines, save and close:
 
 ```sh
-AWS_ACCESS_KEY_ID=<access key of the Object Storage user terraform>
-AWS_SECRET_ACCESS_KEY=<secret key of the Object Storage user terraform>
+AWS_ACCESS_KEY_ID=<access key of the state bucket user>
+AWS_SECRET_ACCESS_KEY=<secret key of the state bucket user>
 TF_VAR_state_encryption_passphrase=<output of: openssl rand -base64 32>
 ```
 
-The keys are the ones `bootstrap-state-bucket.sh` printed. Make a new passphrase only for a
+The keys are those of the user that can write the state bucket, e.g. the Object Storage user
+`terraform` that [upcloud/bootstrap-state-bucket.sh](upcloud/bootstrap-state-bucket.sh)
+printed. Make a new passphrase only for a
 backend that has no state yet; for an existing state, use the passphrase it was encrypted
 with.
 
 **Check the result.** Each file must list your age key, and no KMS key. A KMS ARN means the
-file matched the AWS rule instead, e.g. because it is outside `backends/<name>/`:
+file matched the AWS rule instead, e.g. because it is outside `backends/<backend>/`:
 
 ```sh
 jq '{age: [.sops.age[]?.recipient], kms: [.sops.kms[]?.arn]}' \
-  backends/gispo-upcloud/var-files/test.tfvars.enc.json
-grep -E '^sops_(age__list_[0-9]+__map_recipient|kms)' backends/gispo-upcloud/credentials.enc.env
+  backends/<backend>/var-files/test.tfvars.enc.json
+grep -E '^sops_(age__list_[0-9]+__map_recipient|kms)' backends/<backend>/credentials.enc.env
 ```
 
 To check that the secrets decrypt, print only the variable names:
 
 ```sh
-sops -d backends/gispo-upcloud/credentials.enc.env | cut -d= -f1
-sops -d backends/gispo-upcloud/var-files/test.tfvars.enc.json | jq 'keys'
+sops -d backends/<backend>/credentials.enc.env | cut -d= -f1
+sops -d backends/<backend>/var-files/test.tfvars.enc.json | jq 'keys'
 ```
 
 **Commit.** `git status` may show only `.sops.yaml`, `backend.hcl` and files ending in
 `.enc.json` or `.enc.env` under the backend. `.gitignore` blocks the plaintext names, but
 check anyway. Then delete any other plaintext copies of the keys, such as an old
-`backend.hcl` with `access_key` lines in new_infra, and run `make tf-init` once, which
-rewrites the `.terraform` cache without the keys.
+`backend.hcl` with `access_key` lines in new_infra or a configuration directory, and run
+`make tf-init` once, which rewrites the `.terraform` cache of the configuration without the
+keys.
 
 Later changes go through `make edit-vars` and `make edit-credentials`, or `sops edit` on the
 file. Never decrypt into a file to edit it.
 
-### UpCloud API token
+### Cloud provider credentials
 
-The UpCloud API token is separate and personal. The provider reads it from `UPCLOUD_TOKEN`
-or from the system keyring, where `upctl account login --with-token` saves it.
+The credentials of the cloud provider are separate and personal, and the make targets do
+not handle them. Each provider reads its own from the environment or the system keyring (see
+[UpCloud](#upcloud) below).
 
 ## Usage
 
-Clone arho-deploy next to this repository, or pass `ARHO_DEPLOY_DIR=<path>` to make.
+Clone arho-deploy next to this repository, or pass `ARHO_DEPLOY_DIR=<path>` to make. Run
+make in this folder:
 
 ```sh
-make tf-init ws=test backend=gispo-upcloud   # init the backend, select or create the workspace
+make tf-init dir=upcloud ws=test backend=<backend>   # init the backend, select or create the workspace
 make tf-plan
 make tf-apply
 make edit-vars          # edit the variable file of the current workspace
 make edit-credentials   # edit the state keys of the current backend
 ```
 
-### A new UpCloud account
+`make tf-init` remembers the configuration directory (in `.terraform-dir`) and, inside the
+directory, the backend, so the other targets need no arguments. To run a single command in
+another configuration that has already been initialised, add `dir=<directory>`, e.g.
+`make tf-plan dir=upcloud`.
 
-1. Create the state bucket once per account with `./bootstrap-state-bucket.sh` (needs curl,
-   jq, openssl and the aws cli). It prints the backend file, the keys and a new passphrase.
-2. In arho-deploy, save the backend file as `backends/<name>/backend.hcl`, add an age rule
-   for `backends/<name>/` to `.sops.yaml`, and from the arho-deploy root run
-   `sops edit backends/<name>/credentials.enc.env` to save the keys and the passphrase.
-3. `make tf-init ws=<workspace> backend=<name>`, then `make edit-vars` to create the variable
-   file of the workspace.
+### A new state backend
+
+1. Create the state bucket and a user with access keys that can read and write it. For
+   UpCloud, see [A new UpCloud account](#a-new-upcloud-account).
+2. In arho-deploy, save the bucket and endpoint as `backends/<backend>/backend.hcl` (format in
+   [backend.example.hcl](backend.example.hcl)), add an age rule for `backends/<backend>/` to
+   `.sops.yaml`, and from the arho-deploy root run
+   `sops edit backends/<backend>/credentials.enc.env` to save the keys and a new passphrase.
+3. `make tf-init dir=<directory> ws=<workspace> backend=<backend>`, then `make edit-vars` to
+   create the variable file of the workspace.
+
+### A new configuration
+
+A configuration works with the make targets when its directory has:
+
+- a `backend "s3"` block without `bucket` and `endpoints`, which come from `backend.hcl`,
+  and with any settings that its S3 service needs, e.g. the skipped AWS-only checks in
+  [upcloud/backend.tf](upcloud/backend.tf).
+
+Give its state a `workspace_key_prefix` of its own if it shares a bucket with another
+configuration, so that their workspaces do not overwrite each other's state.
 
 ## Workspaces
 
 Each deployment (test, prod) is a workspace in the same state bucket, stored at
-`arho/<workspace>/terraform.tfstate` with its own lock file. The workspace name is also the
-environment name in resource names (`arho-<workspace>-*`) and labels, so there is no
-`environment` variable. [workspace.tf](workspace.tf) stops a plan in the `default` workspace
-and in a workspace whose name is not valid in UpCloud names.
+`<prefix>/<workspace>/terraform.tfstate` with its own lock file. The prefix is the
+`workspace_key_prefix` of the configuration, `arho` for UpCloud. The workspace name is also
+the environment name in resource names (`arho-<workspace>-*`) and labels, so there is no
+`environment` variable. The make targets refuse the `default` workspace, whose state would
+sit at the bare key outside the prefix, and any name other than lowercase letters, digits
+and hyphens starting with a letter.
 
 ## State encryption
 
-OpenTofu encrypts the state and saved plan files on this machine before they are stored
-([encryption.tf](encryption.tf)), so the bucket only holds ciphertext. The key comes from
-`TF_VAR_state_encryption_passphrase` in `credentials.enc.env`, one passphrase per backend.
-Encryption is enforced: OpenTofu refuses to read or write unencrypted state.
+OpenTofu encrypts the state and saved plan files on this machine before they are stored, so
+the bucket only holds ciphertext. The key comes from `TF_VAR_state_encryption_passphrase` in
+`credentials.enc.env`, one passphrase per backend. Encryption is enforced: OpenTofu refuses
+to read or write unencrypted state.
+
+The encryption config is the same for every configuration, so it is not in any of them. The
+make targets run tofu through [tofu-encrypted.sh](tofu-encrypted.sh), which passes the config
+to tofu in the `TF_ENCRYPTION` environment variable. A bare `tofu` command in a configuration
+directory has no encryption config: it cannot read the encrypted state of an existing
+workspace, and it would store a new workspace in plaintext. Run tofu through make, or through
+the script inside `sops exec-env <credentials.enc.env>` for commands the Makefile has no
+target for.
 
 **Losing the passphrase loses the state**, and bucket versioning does not help. Its only
 copy is the sops file in arho-deploy, so keep at least two people's age keys on it.
-encryption.tf describes how to change the passphrase.
+tofu-encrypted.sh describes how to change the passphrase.
 
-The HashiCorp Terraform extension for VS Code marks the `encryption` block as an error,
-because Terraform has no such block. Use the OpenTofu extension instead.
+## UpCloud
+
+The [upcloud/](upcloud/) configuration creates:
+
+- A router and a private network with DHCP and a default route through the router.
+- A NAT gateway for outbound traffic from servers without a public interface.
+
+Its state is in UpCloud Managed Object Storage, through its S3-compatible API.
+
+### UpCloud API token
+
+The UpCloud API token is personal. The provider reads it from `UPCLOUD_TOKEN` or from the
+system keyring, where `upctl account login --with-token` saves it.
+
+### A new UpCloud account
+
+1. Create the state bucket once per account with `./upcloud/bootstrap-state-bucket.sh`
+   (needs curl, jq, openssl and the aws cli). It prints the backend file, the keys and a new
+   passphrase.
+2. Save them in arho-deploy as in step 2 of [A new state backend](#a-new-state-backend).
+3. `make tf-init dir=upcloud ws=<workspace> backend=<backend>`, then `make edit-vars` to create
+   the variable file of the workspace.
 
 ## Open points
 
-- State locking (`use_lockfile`) in UpCloud Object Storage is still to be confirmed: run two
-  plans at once and check that the second one waits or fails on the lock.
 - The UpCloud provider has no DNS resources, so the DNS zone needs another provider.
 - `private_network_cidr` of the test platform is a placeholder until the range is agreed.
