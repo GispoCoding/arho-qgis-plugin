@@ -1,11 +1,12 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 #
-# pre-commit reads only this one file. The plugin and the backend still have their
-# own ruff and mypy rules, so each of those hooks has a `files:` filter for its side.
+# pre-commit reads only this one file. The plugin, the backend and the website still
+# have their own ruff and mypy rules, so each of those hooks has a `files:` filter for
+# its part.
 exclude: \.enc\.json$|^backend/migrations/versions/
 repos:
-  # --- Both sides ---------------------------------------------------------------
+  # --- All parts ----------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -90,3 +91,16 @@ repos:
           - types-shapely
           - types-simplejson
           - git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0#egg=ryhti_api_client
+
+  # --- Website ------------------------------------------------------------------
+  # ruff reads web/pyproject.toml, the nearest config of each file.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff-check
+        name: ruff (web)
+        files: ^web/
+        args: ["--fix"]
+      - id: ruff-format
+        name: ruff-format (web)
+        files: ^web/
