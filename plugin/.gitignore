@@ -165,3 +165,8 @@ cython_debug/
 
 # Personal VS Code settings; the team settings are in arho.code-workspace
 .vscode/
+
+# Website build output (web/build.py)
+/web/site/
+/web/.cache/
+/web/sv/manual/images/

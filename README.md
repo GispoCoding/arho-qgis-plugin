@@ -11,6 +11,10 @@ system. This repository holds both parts of it.
 
 Each part is its own Python project. The README of each part has its details.
 
+## Documentation
+
+The user manual is on the Arho website in Finnish and Swedish: <https://gispocoding.github.io/arho-qgis-plugin/>
+
 ## Development
 
 Clone with the submodule of the plugin:

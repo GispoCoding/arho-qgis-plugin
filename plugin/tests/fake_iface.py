@@ -138,6 +138,9 @@ class FakeQgisInterface(QgisInterface):
 
         self._plugins_menu = window.menuBar().addMenu("Plugins")
         self._plugin_menus: dict[str, QMenu] = {}
+        # QgisApp: Help → Plugins, the sub menu that `pluginHelpMenu` returns
+        self._help_menu = window.menuBar().addMenu("Help")
+        self._plugin_help_menu = self._help_menu.addMenu("Plugins")
 
         self._plugin_toolbar = QToolBar("Plugins Toolbar", window)
         self._plugin_toolbar.setObjectName("PluginToolBar")
@@ -182,6 +185,8 @@ class FakeQgisInterface(QgisInterface):
             self._plugins_menu.removeAction(menu.menuAction())
             menu.deleteLater()
         self._plugin_menus.clear()
+        # The plugin owns its actions; `clear` deletes only actions the menu owns
+        self._plugin_help_menu.clear()
 
         self.options_factories.clear()
         self.opened_layouts.clear()
@@ -219,6 +224,10 @@ class FakeQgisInterface(QgisInterface):
         """Actions in the Plugins sub menu called ``name``."""
         menu = self._plugin_menus.get(name)
         return list(menu.actions()) if menu is not None else []
+
+    def plugin_help_actions(self) -> list[QAction]:
+        """Actions in the Help → Plugins sub menu."""
+        return list(self._plugin_help_menu.actions())
 
     def toolbar_icons(self) -> list[QAction]:
         """Actions added with ``addToolBarIcon``."""
@@ -340,6 +349,9 @@ class FakeQgisInterface(QgisInterface):
             self._plugins_menu.removeAction(menu.menuAction())
             menu.deleteLater()
             del self._plugin_menus[name]
+
+    def pluginHelpMenu(self) -> QMenu:
+        return self._plugin_help_menu
 
     # options and layouts
 

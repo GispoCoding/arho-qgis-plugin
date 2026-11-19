@@ -1,0 +1,76 @@
+# Settings shared by the Finnish and the Swedish site.
+# zensical-fi.yml and zensical-sv.yml inherit this file (INHERIT).
+# Mappings are merged; lists and plain values in the child file replace these.
+
+# repo_url gives the repository link in the header and the "Edit this page"
+# button (edit_uri is in the child files). overrides/partials/source.html keeps
+# the link from calling the GitHub API in every visitor's browser.
+repo_url: https://github.com/GispoCoding/arho-qgis-plugin
+repo_name: GispoCoding/arho-qgis-plugin
+
+theme:
+  custom_dir: overrides
+  favicon: assets/images/favicon.svg
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Karla
+    code: JetBrains Mono
+  features:
+    - content.action.edit
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.path
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - toc.follow
+  # palette: in zensical-fi.yml and zensical-sv.yml (the toggle text is per language)
+
+extra_css:
+  - assets/stylesheets/gispo.css
+
+extra_javascript:
+  - assets/javascripts/language.js
+  - assets/javascripts/hexes.js
+
+extra:
+  alternate:
+    - name: Suomi
+      link: /arho-qgis-plugin/
+      lang: fi
+    - name: Svenska
+      link: /arho-qgis-plugin/sv/
+      lang: sv
+
+plugins:
+  - search
+  # Self-host the web fonts and the image zoom script at build time.
+  - privacy:
+      assets_include:
+        - fonts.googleapis.com/*
+        - fonts.gstatic.com/*
+        - unpkg.com/glightbox@*
+  - glightbox:
+      skip_classes:
+        - icon
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.betterem
+  - pymdownx.details
+  # Icons such as :lucide-palette: as inline SVG (home page cards)
+  - pymdownx.emoji:
+      emoji_index: zensical.extensions.emoji.twemoji
+      emoji_generator: zensical.extensions.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.superfences

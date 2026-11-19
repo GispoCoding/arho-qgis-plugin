@@ -9,12 +9,12 @@ from __future__ import annotations
 import pytest
 import qgis.utils
 from qgis.core import QgsProject
-from qgis.PyQt.QtCore import QCoreApplication
+from qgis.PyQt.QtCore import QCoreApplication, QUrl
 from qgis.PyQt.QtWidgets import QDialog, QDockWidget
 
 from arho_feature_template.core.plan_manager import PlanManager
 from arho_feature_template.core.template_manager import TemplateManager
-from arho_feature_template.plugin import Plugin
+from arho_feature_template.plugin import USER_MANUAL_URL, Plugin
 
 pytestmark = pytest.mark.fake_iface
 
@@ -35,8 +35,20 @@ def test_init_gui_registers_ui(plugin, iface):
         assert dock in docks
         assert dock.isHidden()
 
-    assert iface.plugin_menu_actions(Plugin.name)
+    assert plugin.user_manual_action in iface.plugin_menu_actions(Plugin.name)
+    assert plugin.user_manual_action in iface.plugin_help_actions()
     assert len(iface.options_factories) == 1
+
+
+def test_user_manual_action_opens_the_manual(plugin, monkeypatch):
+    import arho_feature_template.plugin as plugin_module
+
+    opened = []
+    monkeypatch.setattr(plugin_module.QDesktopServices, "openUrl", staticmethod(opened.append))
+
+    plugin.user_manual_action.trigger()
+
+    assert opened == [QUrl(USER_MANUAL_URL)]
 
 
 def test_missing_pgtz_shows_a_warning(plugin_factory, messages, monkeypatch):
@@ -56,6 +68,7 @@ def test_unload_leaves_iface_clean(plugin_factory, iface):
     assert iface.toolbars() == [iface.pluginToolBar()]
     assert iface.dock_widgets() == [iface.cadDockWidget()]
     assert iface.plugin_menu_actions(Plugin.name) == []
+    assert iface.plugin_help_actions() == []
     assert iface.toolbar_icons() == []
     assert iface.options_factories == []
     assert qgis.utils.showException is show_exception_before

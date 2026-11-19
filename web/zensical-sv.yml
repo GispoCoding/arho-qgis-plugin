@@ -1,0 +1,71 @@
+INHERIT: zensical-base.yml
+
+site_name: Arho
+site_description: Datamodellbaserad planläggning med QGIS
+site_url: https://gispocoding.github.io/arho-qgis-plugin/sv/
+docs_dir: sv
+site_dir: site/sv
+edit_uri: edit/main/web/sv/
+
+theme:
+  language: sv
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: lucide/moon
+        name: Byt till mörkt läge
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: lucide/sun
+        name: Byt till ljust läge
+
+# Three tabs (navigation.tabs): home, about and the manual.
+nav:
+  - Startsida: index.md
+  - Om Arho:
+      - about/index.md
+      - about/deployment.md
+  - Användarmanual:
+      - manual/index.md
+      - manual/setup.md
+      - manual/interface.md
+      - manual/project.md
+      - manual/plan-matter.md
+      - Planutkast:
+          - manual/plan/index.md
+          - manual/plan/open.md
+          - manual/plan/create.md
+          - manual/plan/lock.md
+          - manual/plan/export.md
+          - manual/plan/import.md
+          - manual/plan/edit.md
+      - manual/plan-objects.md
+      - manual/regulation-groups.md
+      - manual/libraries.md
+      - manual/validation.md
+      - manual/multilingual.md
+      - manual/geotiff.md
+      - manual/legend.md
+      - Livscykelskeden:
+          - manual/lifecycle/index.md
+          - manual/lifecycle/preparation.md
+          - manual/lifecycle/approved.md
+          - manual/lifecycle/in-force.md
+          - manual/lifecycle/appeal.md
+      - manual/consolidated-plan.md
+      - manual/plan-amendment.md
+      - manual/ryhti.md
+      - Visualiseringar:
+          - manual/styling/index.md
+          - manual/styling/default-styles.md
+          - manual/styling/rule-based.md
+          - manual/styling/symbols-labels.md
+          - manual/styling/filters.md
+      - manual/api-errors.md
+      - manual/digitizing.md

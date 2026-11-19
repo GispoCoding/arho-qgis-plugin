@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+
+{#- Inter (headings, 700 and 800) next to the theme font Karla, as on gispo.fi.
+    The privacy plugin downloads both at build time, so visitors never load
+    anything from Google. -#}
+{% block fonts %}
+  {{ super() }}
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800&amp;display=fallback">
+{% endblock %}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#7a3884"/>
+  <!-- "A" of Inter ExtraBold (800), the heading font, as a path: a favicon cannot load web fonts -->
+  <path fill="#fff" d="M5.06 27 12.4 5H19.37L26.94 27H21.09L18.03 17.38Q17.3 14.98 16.61 12.27Q15.92 9.57 15.24 6.65H16.4Q15.73 9.58 15.11 12.29Q14.49 15 13.79 17.38L10.85 27ZM10.04 22.32V18.34H21.96V22.32Z"/>
+</svg>

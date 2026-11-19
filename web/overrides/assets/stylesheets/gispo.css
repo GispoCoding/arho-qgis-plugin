@@ -1,0 +1,718 @@
+/* Light look for the ARHO user manual, in the colours of gispo.fi.
+ *
+ * Colours (from the gispo.fi theme):
+ *   paper  #fbfbfb  page background
+ *   ink    #444444  body text
+ *   navy   #434662  headings
+ *   violet #7a3884  links, logo, "you are here", thin accents
+ *   mauve  #ab8b9b  hairlines, hover tints, hexagons; never text (contrast 3.0:1)
+ *   peach  #ffe1cd  hexagons only
+ * Large areas stay light. Dark navy and violet are for text and thin lines.
+ *
+ * One rule for depth: anything raised (cards, screenshots) is white on the
+ * paper background with the offset shadow of gispo.fi (4px 4px 14px).
+ * Fonts: Inter 800/700 for headings, Karla for body text. Square corners.
+ */
+
+:root {
+  --arho-violet: #7a3884;
+  --arho-violet-dark: #5e2a66;
+  --arho-violet-light: #c58fce;
+  --arho-navy: #434662;
+  --arho-mauve: #ab8b9b;
+  --arho-peach: #ffe1cd;
+  --arho-heading-font: "Inter", Arial, Helvetica, sans-serif;
+  /* Star icon of the "!!! new" box */
+  --arho-admonition-icon--new: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24'><path d='m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6-4.5-4.2 6.1-.7z'/></svg>");
+}
+
+/* ---------------------------------------------------------------- Tokens */
+
+[data-md-color-scheme] {
+  --md-primary-fg-color: var(--arho-violet);
+  --md-primary-fg-color--light: #96579f;
+  --md-primary-fg-color--dark: var(--arho-violet-dark);
+  --md-primary-bg-color: #fff;
+  --md-primary-bg-color--light: #ffffffb3;
+}
+
+[data-md-color-scheme="default"] {
+  --md-default-bg-color: #fbfbfb;
+  --md-accent-fg-color: var(--arho-violet-dark);
+  --md-accent-fg-color--transparent: #ab8b9b1f;
+  --md-accent-bg-color: #fff;
+  --md-typeset-color: #444;
+  --md-typeset-a-color: var(--arho-violet);
+  --md-code-bg-color: #f4eff5;
+  --md-code-fg-color: #3f2f4a;
+  --arho-heading-color: var(--arho-navy);
+  --arho-muted: #5f6070;
+  --arho-surface: #fff;
+  --arho-header-bg: #ffffffe6;
+  --arho-line: #e8e4ea;
+  --arho-tint: #f6f2f7;
+  --arho-underline: #7a388459;
+  --arho-raise: 4px 4px 14px #4346621a;
+  --arho-raise--hover: 6px 6px 18px #4346622e;
+  --arho-hex-a: var(--arho-violet);
+  --arho-hex-b: var(--arho-mauve);
+  --arho-hex-c: var(--arho-peach);
+  --arho-hex-line: #ab8b9b5c;
+  /* Solid, so the neighbours do not show through the grown hexagon */
+  --arho-hex-hover: color-mix(in srgb, var(--md-primary-fg-color--light) 80%, var(--arho-surface));
+}
+
+/* Dark mode: navy-tinted slate. Plain violet is too dark on a dark background
+   (contrast 2.4:1), so links and accents use a light violet. */
+[data-md-color-scheme="slate"] {
+  --md-hue: 234deg;
+  --md-accent-fg-color: var(--arho-violet-light);
+  --md-accent-fg-color--transparent: #ab8b9b26;
+  --md-typeset-a-color: var(--arho-violet-light);
+  --arho-heading-color: hsla(0, 0%, 100%, 0.92);
+  --arho-muted: hsla(var(--md-hue), 15%, 90%, 0.68);
+  --arho-surface: hsla(var(--md-hue), 15%, 17%, 1);
+  --arho-header-bg: var(--md-default-bg-color--light);
+  --arho-line: hsla(var(--md-hue), 15%, 90%, 0.12);
+  --arho-tint: hsla(var(--md-hue), 15%, 19%, 1);
+  --arho-underline: #c58fce66;
+  --arho-raise: 4px 4px 14px #00000040;
+  --arho-raise--hover: 6px 6px 18px #00000059;
+  --arho-hex-a: var(--arho-violet-light);
+  --arho-hex-b: var(--arho-mauve);
+  --arho-hex-c: var(--arho-mauve);
+  --arho-hex-line: #ab8b9b1d;
+  --arho-hex-hover: color-mix(in srgb, var(--arho-violet-light) 80%, var(--arho-surface));
+}
+
+/* The hexagons are light tints; on a dark background they must stay faint.
+   Faint per hexagon, not on the whole field, so a hovered one can be bright. */
+[data-md-color-scheme="slate"] :is(.arho-hexes__a, .arho-hexes__b, .arho-hexes__c) {
+  fill-opacity: 0.45;
+}
+
+/* Square corners everywhere, as on gispo.fi */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+/* ------------------------------------------------------------ Typography */
+
+.md-typeset {
+  font-size: 0.85rem;
+  line-height: 1.65;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-family: var(--arho-heading-font);
+  font-weight: 700;
+  color: var(--arho-heading-color);
+}
+
+.md-typeset h1 {
+  margin-bottom: 0.9em;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.md-typeset h2 {
+  margin: 2em 0 0.6em;
+  font-size: 1.4em;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.md-typeset h3 {
+  margin: 1.6em 0 0.5em;
+  font-size: 1.15em;
+  letter-spacing: -0.01em;
+}
+
+.md-typeset h4 {
+  font-size: 1em;
+}
+
+/* Links: violet with a soft underline that turns solid on hover */
+.md-typeset a {
+  color: var(--md-typeset-a-color);
+  text-decoration: underline;
+  text-decoration-color: var(--arho-underline);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.md-typeset a:hover {
+  color: var(--md-accent-fg-color);
+  text-decoration-color: currentcolor;
+}
+
+.md-typeset a.headerlink {
+  text-decoration: none;
+}
+
+.md-typeset a:focus-visible,
+.md-nav__link:focus-visible,
+.md-footer__link:focus-visible {
+  outline: 2px solid var(--md-typeset-a-color);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- Header */
+
+.md-header {
+  background-color: var(--arho-header-bg);
+  box-shadow: none;
+  border-bottom: 1px solid var(--arho-line);
+}
+
+.md-header .md-header__button:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+/* On wide screens the header shows the logo text, so hide the repeated site
+   name. The page title still appears in the header after scrolling. On narrow
+   screens the theme hides the logo, so the site name stays. */
+@media screen and (min-width: 76.25em) {
+  .md-header__topic:first-child {
+    visibility: hidden;
+  }
+}
+
+.arho-logo {
+  font-family: var(--arho-heading-font);
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1.6rem;
+  letter-spacing: -0.01em;
+  color: var(--md-typeset-a-color);
+  white-space: nowrap;
+}
+
+.md-search__form {
+  background-color: var(--arho-tint);
+  box-shadow: inset 0 0 0 1px var(--arho-line);
+}
+
+/* ------------------------------------------------------------ Navigation */
+
+/* Tabs (Etusivu, Arhosta, Käyttöohje): white like the header. The open tab
+   is violet with a violet line, like "you are here" in the menu. */
+.md-tabs {
+  background-color: var(--arho-surface);
+  box-shadow: inset 0 -1px 0 var(--arho-line);
+}
+
+.md-tabs__link {
+  font-family: var(--arho-heading-font);
+  font-weight: 700;
+  color: var(--arho-heading-color);
+}
+
+.md-tabs__link:hover {
+  color: var(--md-typeset-a-color);
+}
+
+.md-tabs__item--active {
+  border-bottom: 2px solid var(--md-typeset-a-color);
+}
+
+.md-tabs__item--active .md-tabs__link {
+  color: var(--md-typeset-a-color);
+}
+
+.md-nav__link:hover,
+.md-nav--primary .md-nav__link[for]:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+/* "You are here": violet text and a violet bar on the left */
+.md-nav--primary .md-nav__item .md-nav__link--active {
+  color: var(--md-typeset-a-color);
+  font-weight: 700;
+  background: none;
+  box-shadow: inset 2px 0 0 var(--md-typeset-a-color);
+}
+
+.md-nav--secondary .md-nav__title {
+  font-family: var(--arho-heading-font);
+  color: var(--arho-heading-color);
+  background: var(--md-default-bg-color);
+}
+
+.md-nav--secondary .md-nav__link--active {
+  color: var(--md-typeset-a-color);
+}
+
+.md-path {
+  color: var(--arho-muted);
+}
+
+/* ------------------------------------------------------------- Content */
+
+/* Screenshots: white, a thin frame and the gispo.fi shadow */
+.md-typeset img {
+  max-width: 100%;
+  height: auto;
+}
+
+.md-typeset img:not(.icon) {
+  background-color: #fff;
+  border: 1px solid var(--arho-line);
+  box-shadow: var(--arho-raise);
+}
+
+/* Toolbar pictures in tables and the footer logo are not screenshots */
+.md-typeset table img:not(.icon),
+.md-typeset .arho-footer__gispo img {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Small toolbar icons inside the text */
+.md-typeset img.icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Boxes: a coloured bar on the left and a faint tint of the same colour */
+.md-typeset .admonition,
+.md-typeset details {
+  --arho-box: #448aff;
+  padding: 0.1rem 1rem 0.2rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  border: 0;
+  border-left: 3px solid var(--arho-box);
+  box-shadow: none;
+}
+
+.md-typeset .admonition.note,
+.md-typeset details.note {
+  --arho-box: #448aff;
+}
+
+.md-typeset .admonition.info,
+.md-typeset details.info {
+  --arho-box: #00b8d4;
+}
+
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  --arho-box: #00bfa5;
+}
+
+.md-typeset .admonition.warning,
+.md-typeset details.warning {
+  --arho-box: #ff9100;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-family: var(--arho-heading-font);
+  font-weight: 700;
+  font-size: 0.95em;
+  color: var(--arho-heading-color);
+}
+
+/* "!!! new" box for features that are not released yet ("Uusi versiossa X.Y") */
+.md-typeset .admonition.new,
+.md-typeset details.new {
+  --arho-box: var(--md-typeset-a-color);
+  background-color: #7a388412;
+}
+
+.md-typeset .new > .admonition-title::before,
+.md-typeset .new > summary::before {
+  background-color: var(--md-typeset-a-color);
+  -webkit-mask-image: var(--arho-admonition-icon--new);
+  mask-image: var(--arho-admonition-icon--new);
+}
+
+/* Tables */
+.md-typeset table:not([class]) {
+  background-color: var(--arho-surface);
+  border: 1px solid var(--arho-line);
+  box-shadow: none;
+  font-size: 0.72rem;
+}
+
+.md-typeset table:not([class]) th {
+  font-family: var(--arho-heading-font);
+  font-size: 0.95em;
+  color: var(--arho-heading-color);
+  background-color: var(--arho-tint);
+  border-bottom: 1px solid var(--arho-line);
+}
+
+.md-typeset table:not([class]) td {
+  border-top-color: var(--arho-line);
+}
+
+.md-typeset table:not([class]) tbody tr:hover {
+  background-color: var(--md-accent-fg-color--transparent);
+}
+
+/* Keep function names in the first table column on one line */
+.md-typeset table:not([class]) td:first-child code {
+  white-space: nowrap;
+}
+
+/* Buttons: a violet outline on white, or solid violet (primary). The theme
+   only fades a button on hover; here it turns solid violet. */
+.md-typeset .md-button {
+  background-color: var(--arho-surface);
+  border: 1px solid var(--md-typeset-a-color);
+  color: var(--md-typeset-a-color);
+  text-decoration: none;
+}
+
+.md-typeset .md-button--primary,
+.md-typeset .md-button:is(:hover, :focus) {
+  background-color: var(--arho-violet);
+  border-color: var(--arho-violet);
+  color: #fff;
+  opacity: 1;
+}
+
+.md-typeset .md-button--primary:is(:hover, :focus) {
+  background-color: var(--arho-violet-dark);
+  border-color: var(--arho-violet-dark);
+}
+
+/* ------------------------------------------------------------- Home page */
+
+/* Band: white, with a field of hexagons on the right that fades out
+   towards the title */
+.arho-hero {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--arho-surface);
+  border-bottom: 1px solid var(--arho-line);
+}
+
+.arho-hexes {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(64%, 46rem);
+  height: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40%);
+  mask-image: linear-gradient(to right, transparent, #000 40%);
+}
+
+.arho-hexes__a {
+  fill: var(--arho-hex-a);
+}
+
+.arho-hexes__b {
+  fill: var(--arho-hex-b);
+}
+
+.arho-hexes__c {
+  fill: var(--arho-hex-c);
+}
+
+.arho-hexes__d {
+  fill: none;
+  stroke: var(--arho-hex-line);
+  stroke-width: 1;
+}
+
+/* Hover: the hexagon under the mouse turns violet and grows a little, like
+   a selected map feature. Mouse only, so a tap on a phone does not leave one
+   coloured. The band text lets the mouse through to the hexagons below it.
+   A ring in the band colour keeps the normal gap around the grown hexagon:
+   it covers the edges of the neighbours. hexes.js draws the hovered hexagon
+   on top of them. The ring is 1.76 units outside the fill (the normal gap):
+   half of the stroke, times the scale, 3.15 / 2 * 1.12. */
+@media (hover: hover) and (pointer: fine) {
+  .arho-hero__inner {
+    pointer-events: none;
+  }
+
+  .arho-hero__inner > * {
+    pointer-events: auto;
+  }
+
+  /* An outline hexagon needs a fill to catch the mouse on its inside, and
+     an invisible fill (not "none") can fade in */
+  .arho-hexes__d {
+    fill: var(--arho-hex-hover);
+    fill-opacity: 0;
+  }
+
+  .arho-hexes polygon {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .arho-hexes polygon:hover {
+    fill: var(--arho-hex-hover);
+    fill-opacity: 1;
+    opacity: 1;
+    stroke: var(--arho-surface);
+    stroke-width: 3.15;
+    paint-order: stroke;
+    transform: scale(1.12);
+  }
+}
+
+.arho-hero__inner {
+  position: relative;
+  padding: 3.2rem 0.8rem 3.4rem;
+}
+
+.arho-hero__title {
+  max-width: 18em;
+  margin: 0 0 0.6rem;
+  font-family: var(--arho-heading-font);
+  font-weight: 800;
+  font-size: 2.2rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--arho-heading-color);
+}
+
+.arho-hero__text {
+  max-width: 31rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--arho-muted);
+}
+
+/* Buttons: the first is solid violet, the others an outline */
+.arho-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  width: fit-content;
+  margin-top: 1.6rem;
+}
+
+.md-typeset .arho-hero__actions .md-button {
+  margin: 0;
+  padding: 0.55em 1.4em;
+  font-family: var(--arho-heading-font);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+@media screen and (max-width: 44.984375em) {
+  .arho-hexes {
+    width: 100%;
+    opacity: 0.45;
+    -webkit-mask-image: linear-gradient(to right, transparent 20%, #000 90%);
+    mask-image: linear-gradient(to right, transparent 20%, #000 90%);
+  }
+
+  /* Dark mode hexagons are already faint one by one */
+  [data-md-color-scheme="slate"] .arho-hexes {
+    opacity: 1;
+  }
+
+  .arho-hero__inner {
+    padding: 2.2rem 0.8rem 2.4rem;
+  }
+
+  .arho-hero__title {
+    font-size: 1.6rem;
+  }
+
+  .arho-hero__text {
+    font-size: 0.9rem;
+  }
+}
+
+/* Chapter cards: white on paper with the gispo.fi shadow. A bold title,
+   then the pages as a plain list of links. */
+.md-typeset .grid.cards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+  gap: 1rem;
+  margin-top: 1.6em;
+}
+
+.md-typeset .grid.cards > ul > li {
+  padding: 1rem 1.1rem 1.1rem;
+  background-color: var(--arho-surface);
+  border: 0;
+  box-shadow: var(--arho-raise);
+}
+
+.md-typeset .grid.cards > ul > li:hover,
+.md-typeset .grid.cards > ul > li:focus-within {
+  border: 0;
+  box-shadow: var(--arho-raise--hover);
+}
+
+.md-typeset .grid.cards > ul > li > p:first-child {
+  margin: 0 0 0.6em;
+  font-family: var(--arho-heading-font);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--arho-heading-color);
+}
+
+[dir] .md-typeset .grid.cards > ul > li > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[dir] .md-typeset .grid.cards > ul > li > ul > li {
+  margin: 0;
+  padding: 0.15em 0;
+}
+
+.md-typeset .grid.cards > ul > li > ul a {
+  text-decoration: none;
+}
+
+.md-typeset .grid.cards > ul > li > ul a:hover {
+  text-decoration: underline;
+}
+
+/* Lead paragraph of the home page: larger, and short lines although the
+   home page has no side menus */
+.md-typeset .arho-lead {
+  max-width: 36rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Feature cards of the home page: three columns of an icon above the
+   title, one sentence, and the manual pages as links at the bottom */
+.md-typeset .grid.cards.arho-features {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.md-typeset .arho-features > ul > li {
+  display: flex;
+  flex-direction: column;
+}
+
+.md-typeset .arho-features > ul > li > p {
+  margin: 0;
+}
+
+.md-typeset .arho-features > ul > li > p:first-child {
+  font-size: 0.95rem;
+}
+
+.md-typeset .arho-features .twemoji {
+  display: block;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-bottom: 0.7rem;
+  color: var(--md-typeset-a-color);
+}
+
+.md-typeset .arho-features .twemoji svg {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  stroke-width: 1.75;
+}
+
+.md-typeset .arho-features > ul > li > p:nth-child(2) {
+  margin-bottom: 0.9rem;
+}
+
+.md-typeset .arho-features > ul > li > p:last-child {
+  margin-top: auto;
+  font-size: 0.8rem;
+}
+
+/* ---------------------------------------------------------------- Footer */
+
+.md-footer,
+.md-footer-meta {
+  background-color: var(--arho-surface);
+  color: var(--md-default-fg-color);
+  border-top: 1px solid var(--arho-line);
+}
+
+.md-footer__title {
+  font-family: var(--arho-heading-font);
+  font-weight: 700;
+  color: var(--arho-heading-color);
+}
+
+.md-footer__direction {
+  font-family: var(--md-text-font-family, "Karla"), Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  color: var(--arho-muted);
+  opacity: 1;
+}
+
+.md-footer__link:hover .md-footer__title {
+  color: var(--md-typeset-a-color);
+}
+
+.md-footer-meta.md-typeset a,
+.arho-footer a {
+  color: var(--md-typeset-a-color);
+}
+
+.arho-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.2rem;
+  color: var(--arho-muted);
+}
+
+.arho-footer__gispo {
+  display: inline-block;
+  line-height: 0;
+}
+
+.arho-footer__gispo img {
+  display: block;
+  width: 96px;
+  height: auto;
+}
+
+/* Violet logo in light mode, white logo in dark mode */
+[data-md-color-scheme="default"] .arho-footer__logo--dark,
+[data-md-color-scheme="slate"] .arho-footer__logo--light {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  .md-typeset .grid.cards > ul > li {
+    transition: box-shadow 0.2s ease-out;
+  }
+
+  /* A hovered hexagon colours at once and fades back slowly, so a moving
+     mouse leaves a short trail across the field. Fill-opacity fades late
+     (ease-in): where it fades together with opacity (dark mode), the trail
+     would otherwise be much shorter. */
+  .arho-hexes polygon {
+    transition:
+      fill 1.6s ease-out,
+      fill-opacity 1.6s ease-in,
+      opacity 1.6s ease-out,
+      transform 0.4s ease-out;
+  }
+
+  /* Same order as above: the colour is there at once, the grow is soft */
+  .arho-hexes polygon:hover {
+    transition-duration: 0.06s, 0.06s, 0.06s, 0.15s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .grid.cards > ul > li,
+  .arho-hexes polygon {
+    transition: none;
+  }
+}
