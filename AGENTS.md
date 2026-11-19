@@ -40,5 +40,11 @@ Change both sides of a contract in the same pull request.
 
 - Keep commit messages brief: a subject line, and body lines only for what the diff
   does not show.
-- Commit messages and pull request descriptions carry no session link.
+- Start the subject with the part the commit changes: `plugin: `, `backend: `, `web: `,
+  or `repo: ` for the shared root files (`AGENTS.md`, `.github/`, `docs/`). A workflow
+  that serves one part takes that part's prefix. Split a change to several parts into one
+  commit per part.
+- End every commit message and pull request description with the line
+  `Assisted-by: Claude Code`. It replaces the `Co-Authored-By` trailer and the session
+  link: those stay out.
 - Merge with a merge commit or a rebase when the history of the commits matters.

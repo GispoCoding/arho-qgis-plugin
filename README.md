@@ -37,3 +37,14 @@ pre-commit run --all-files
 Each CI workflow runs only when its own part changes (`plugin-*.yml`, `backend-*.yml`,
 `web-*.yml`).
 The releases of this repository are plugin releases.
+
+### Commit messages
+
+- Start the subject with the part the commit changes: `plugin: `, `backend: `, `web: `,
+  or `repo: ` for the shared root files. For example `plugin: Add a user manual action`.
+- Split a change to several parts into one commit per part.
+- Keep the message brief: a subject line, and body lines only for what the diff does
+  not show.
+- When an AI assistant helped, end the commit message and the pull request description
+  with an `Assisted-by:` trailer that names the tool, for example
+  `Assisted-by: Claude Code`.
