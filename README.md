@@ -2,14 +2,15 @@
 
 ARHO is a land use planning system that is compatible with
 [Ryhti](https://ryhti.syke.fi/en/), the Finnish national built environment information
-system. This repository holds both parts of it.
+system. This repository holds all its parts.
 
 | Folder | What | License |
 | --- | --- | --- |
 | [`plugin/`](plugin/README.md) | QGIS plugin for drawing land use plans | [GPL v2](plugin/LICENSE) |
 | [`backend/`](backend/README.md) | PostGIS database, AWS lambdas and Terraform | [MIT](backend/LICENSE) |
+| [`web/`](web/README.md) | Website with the user manual, built with Zensical | [GPL v2](plugin/LICENSE) |
 
-Each part is its own Python project. The README of each part has its details.
+Each part is its own project. The README of each part has its details.
 
 ## Documentation
 
@@ -26,12 +27,13 @@ git clone --recurse-submodules https://github.com/GispoCoding/arho.git
 Then follow [docs/development.md](docs/development.md). It covers Windows, macOS and
 Ubuntu.
 
-One `pre-commit` config at the root checks both parts:
+One `pre-commit` config at the root checks all parts:
 
 ```console
 pre-commit install
 pre-commit run --all-files
 ```
 
-Each CI workflow runs only when its own part changes (`plugin-*.yml`, `backend-*.yml`).
+Each CI workflow runs only when its own part changes (`plugin-*.yml`, `backend-*.yml`,
+`web-*.yml`).
 The releases of this repository are plugin releases.

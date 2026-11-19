@@ -1,10 +1,11 @@
 {
     // Settings of the "arho (root)" folder of arho.code-workspace only.
-    // `plugin/` and `backend/` are workspace folders of their own.
+    // `plugin/`, `backend/` and `web/` are workspace folders of their own.
     "files.exclude": {
         "plugin": true,
-        "backend": true
+        "backend": true,
+        "web": true
     },
-    // The tests belong to the two sides, each with its own interpreter.
+    // The tests belong to the plugin and the backend, each with its own interpreter.
     "python.testing.pytestEnabled": false
 }

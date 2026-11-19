@@ -1,12 +1,15 @@
 {
-    // Team settings for both sides. Personal overrides go into the `.vscode/settings.json`
-    // of `plugin/` or `backend/`: those folders are untracked and win over this file.
+    // Team settings for all parts. Personal overrides go into the `.vscode/settings.json`
+    // of `plugin/`, `backend/` or `web/`: those folders are untracked and win over this file.
     "folders": [
         {
             "path": "plugin"
         },
         {
             "path": "backend"
+        },
+        {
+            "path": "web"
         },
         {
             "name": "arho (root)",

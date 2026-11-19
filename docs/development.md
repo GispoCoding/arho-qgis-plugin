@@ -1,10 +1,11 @@
 # Development setup
 
-The repository has two Python projects. `plugin/` needs the Python of a QGIS
+The repository has three projects. `plugin/` needs the Python of a QGIS
 installation. `backend/` needs Python 3.13, Docker and GNU Make; its infrastructure
-tools (Terraform, Ansible, sops, the AWS CLI) run on Linux and macOS only.
+tools (Terraform, Ansible, sops, the AWS CLI) run on Linux and macOS only. `web/` needs
+[uv](https://docs.astral.sh/uv/).
 
-Use one clone for both parts, so that one branch can change both.
+Use one clone for all parts, so that one branch can change several.
 
 ## Where to clone
 
@@ -108,22 +109,29 @@ If it is too slow for you, make a second clone in the WSL home folder for backen
 Install Python 3.13, Docker and GNU Make, then follow
 [backend/README.md](../backend/README.md) directly.
 
+## Web
+
+All commands run in `web/`, on every platform. [web/README.md](../web/README.md) has the
+build, the local preview and the writing rules.
+
 ## VS Code
 
 Open `arho.code-workspace` at the repository root (**File > Open Workspace from File**).
 Opening the root or one side as a plain folder gives none of the team settings.
 
-The workspace has three folders: `plugin`, `backend` and `arho (root)` for the shared
-files. Each side has its own Python interpreter, test tree, ruff and mypy configuration.
+The workspace has four folders: `plugin`, `backend`, `web` and `arho (root)` for the
+shared files. Each part has its own Python interpreter and ruff configuration; the plugin
+and the backend also have their own test tree and mypy configuration.
 
 ### Interpreters
 
-Run **Python: Select Interpreter** once for each side and pick the `.venv` of that folder.
+Run **Python: Select Interpreter** once for each part and pick the `.venv` of that folder.
 
 | Folder | Interpreter | Made with |
 | --- | --- | --- |
 | `plugin` | `plugin/.venv` (QGIS 3) | `create_qgis_venv.py`, see [Plugin](#plugin) |
 | `backend` | `backend/.venv` (Python 3.13) | see [backend/README.md](../backend/README.md) |
+| `web` | `web/.venv` (for the editor only) | `uv venv` and `uv pip install -r requirements.txt` in `web/` |
 
 The Test Explorer runs the plugin tests with `plugin/.venv`. For the QGIS 4 tests run
 the task **plugin: pytest (Qt 6)** (**Terminal > Run Task**), which uses
@@ -156,9 +164,9 @@ Both can be attached at the same time.
 
 - Team settings, launch configurations, tasks and extension recommendations are in
   `arho.code-workspace`.
-- Personal settings go into `plugin/.vscode/settings.json` and
-  `backend/.vscode/settings.json`. Git ignores those folders, and their settings win
-  over the workspace file.
+- Personal settings go into `plugin/.vscode/settings.json`,
+  `backend/.vscode/settings.json` and `web/.vscode/settings.json`. Git ignores those
+  folders, and their settings win over the workspace file.
 - In the Settings editor, use the **Folder** tab for a personal setting. The
   **Workspace** tab writes to `arho.code-workspace`.
 - `.vscode/settings.json` at the repository root is tracked. It holds the settings of
