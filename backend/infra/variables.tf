@@ -1,0 +1,211 @@
+variable "AWS_REGION_NAME" {
+  description = "AWS Region name."
+  type        = string
+}
+
+variable "AWS_LAMBDA_USER" {
+  description = "AWS user for updating lambda functions"
+  type        = string
+}
+
+variable "AWS_HOSTED_DOMAIN" {
+  description = "Domain for create route53 record. Needed only when enable_route53_record or enable_x_road is true."
+  type        = string
+  default     = null
+}
+
+variable enable_x_road {
+  description = "Whether to enable X-road server or not"
+  type        = bool
+  default     = true
+}
+variable "bastion_subdomain" {
+  description = "Subdomain for ssh tunneling server"
+  type        = string
+}
+
+variable "apigateway_subdomain" {
+  description = "Subdomain for private API gateway to lambda"
+  type        = string
+  default     = "lambda-api"
+}
+
+variable "x-road_host" {
+  description = "Host name for X-Road security server"
+  type        = string
+  default = null
+}
+
+variable "x-road_subdomain" {
+  description = "Subdomain for X-road security server"
+  type     = string
+  default = null
+}
+
+variable "x-road_verification_record" {
+  description = "Domain verification string to set for x-road DNS record"
+  type     = string
+  default = null
+}
+
+variable "x-road_instance" {
+  description = "X-road instance to connect to (test or production). Default is FI-TEST."
+  type     = string
+  default  = "FI-TEST"
+}
+
+variable "x-road_member_class" {
+  description = "X-road member class of your organization (government, municipality etc.). Default is MUN."
+  type     = string
+  default  = "MUN"
+}
+
+variable "x-road_member_code" {
+  description = "Member code to set for x-road client instance. Usually this is Y-tunnus of your organization."
+  type     = string
+  default = null
+}
+
+variable "enable_route53_record" {
+  type    = bool
+  default = false
+}
+
+variable "bastion_ec2_user_public_keys" {
+  description = "Public ssh key for bastion EC2 superuser"
+  type        = list
+}
+
+variable "db_storage" {
+  description = "DB Storage in GB"
+  type        = number
+  default     = 15
+}
+
+variable "db_instance_type" {
+  description = "AWS instance type of the DB. Default: db.t3.small"
+  type        = string
+  default     = "db.t3.small"
+}
+
+variable "db_postgres_version" {
+  description = "Version number of the PostgreSQL DB. Default: 17.9"
+  type        = string
+  default     = "17.9"
+}
+
+variable "hame_db_name" {
+  description = "Hame DB Name"
+  type        = string
+  default     = "db"
+}
+
+variable "arho_su_secrets" {
+  description = "Superuser username and password for the RDS instance"
+  type        = map(string)
+  nullable = false
+}
+
+variable "arho_dba_secrets" {
+  description = "DBA user username and password for the RDS instance"
+  type        = map(string)
+  nullable = false
+}
+
+variable "syke_apikey" {
+  description = "Syke API key for Ryhti public API client"
+  type        = string
+  sensitive   = true
+}
+
+variable "mml_apikey" {
+  description = "MML API key for MML Loader"
+  type        = string
+  sensitive   = true
+}
+
+variable "syke_xroad_client_id" {
+  description = "Syke client id for Ryhti X-road API client"
+  type        = string
+  default = null
+}
+
+variable "syke_xroad_client_secret" {
+  description = "Syke secret for Ryhti X-road API client"
+  type        = string
+  default = null
+}
+
+variable "public-subnet-count" {
+  description = "TODO"
+  type        = number
+  default     = 2
+}
+
+variable "private-subnet-count" {
+  description = "TODO"
+  type        = number
+  default     = 2
+}
+
+variable "x-road_securityserver_cpu" {
+  description = "CPU for X-Road Security Server"
+  type        = number
+  default     = 2048
+}
+
+variable "x-road_securityserver_memory" {
+  description = "Memory for X-Road Security Server"
+  type        = number
+  default     = 4096
+}
+
+variable "x-road_securityserver_image" {
+  description = "Image for X-Road Security Server"
+  default     = "docker.io/niis/xroad-security-server-sidecar:7.3.2-slim-fi"
+}
+
+variable "x-road_secrets" {
+  description = "Admin username and password for X-Road Security Server"
+  type        = map(string)
+  default     = null
+}
+
+variable "x-road_db_password" {
+  description = "Password for the X-Road database."
+  type        = string
+  default     = null
+}
+
+variable "x-road_token_pin" {
+  description = "PIN for accessing x-road authentication tokens"
+  type        = string
+  default     = null
+}
+
+variable "prefix" {
+  description = "Prefix to be used in resource names"
+  type        = string
+}
+
+variable "project_srid" {
+  description = "SRID to use for geometries in the database"
+  type        = number
+  default     = 3067
+}
+
+variable "extra_tags" {
+  description = "Some extra tags for all resources. Use JSON format"
+  type        = any
+  default     = {}
+}
+
+locals {
+  bastion_dns_alias    = var.enable_route53_record ? "${var.prefix}.${var.bastion_subdomain}.${var.AWS_HOSTED_DOMAIN}" : null
+
+  default_tags         = merge(var.extra_tags, {
+    "Prefix"    = var.prefix
+    "Name"      = var.prefix
+    "Terraform" = "true"
+  })
+}

@@ -1,9 +1,9 @@
 """Build the ARHO website with the user manual (Finnish and Swedish) into web/site.
 
-Usage (from the repository root):
+Usage (from web/):
 
-    uv run --no-project --with-requirements web/requirements.txt python web/build.py
-    uv run --no-project --with-requirements web/requirements.txt python web/build.py --serve
+    uv run --no-project --with-requirements requirements.txt python build.py
+    uv run --no-project --with-requirements requirements.txt python build.py --serve
 
 The Finnish site goes to web/site/ and the Swedish site to web/site/sv/.
 Both use the screenshots in web/fi/manual/images/. The script copies them to

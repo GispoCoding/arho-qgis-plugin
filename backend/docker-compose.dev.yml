@@ -1,0 +1,140 @@
+name: arho
+
+volumes:
+  postgis-data:
+
+services:
+  db:
+    image: postgis/postgis:17-master
+    ports:
+      - ${DB_INSTANCE_PORT:-5434}:5432
+    environment:
+      - POSTGRES_DB=${DB_MAINTENANCE_NAME}
+      - POSTGRES_USER=${SU_USER}
+      - POSTGRES_PASSWORD=${SU_USER_PW}
+    volumes:
+      - postgis-data:/var/lib/postgresql/data
+      - ./pg_dumps:/opt/pg_backups
+
+    command: ["postgres", "-c", "log_statement=all"]
+
+  db_manager:
+    build:
+      context: .
+      dockerfile: lambdas/db_manager/db_manager.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DB_INSTANCE_ADDRESS=db
+      - DB_INSTANCE_PORT=5432
+      - DBA_USER=${DBA_USER}
+      - DBA_USER_PW=${DBA_USER_PW}
+    ports:
+      - ${DB_MANAGER_PORT:-8081}:8080
+    depends_on:
+      - db
+    volumes:
+      - ./lambdas/db_manager/db_manager.py:/var/task/db_manager.py
+      - ./database:/var/task/database
+      - ./migrations:/var/task/migrations
+
+  koodistot_loader:
+    build:
+      context: .
+      dockerfile: lambdas/koodistot_loader/koodistot_loader.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DB_INSTANCE_ADDRESS=db
+      - DB_INSTANCE_PORT=5432
+    ports:
+      - ${KOODISTOT_LOADER_PORT:-8082}:8080
+    depends_on:
+      - db
+    volumes:
+      - ./lambdas/koodistot_loader/koodistot_loader.py:/var/task/koodistot_loader.py
+      - ./database:/var/task/database
+
+  ryhti_client:
+    build:
+      context: .
+      dockerfile: lambdas/ryhti_client/ryhti_client.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DB_INSTANCE_ADDRESS=db
+      - DB_INSTANCE_PORT=5432
+      - SYKE_APIKEY
+      - XROAD_HTTP_PORT=1080
+      - XROAD_SERVER_ADDRESS=mock_xroad
+      - XROAD_MEMBER_CLASS=COM
+      - XROAD_MEMBER_CODE=2455538-5
+      - XROAD_MEMBER_CLIENT_NAME=ryhti-gispo-client
+      - XROAD_SYKE_CLIENT_ID=test-id
+      - XROAD_SYKE_CLIENT_SECRET=test-secret
+      - RYHTI_FILES_BUCKET=ryhti-files
+      - AWS_ENDPOINT_URL_S3=http://s3:9000
+      - AWS_ACCESS_KEY_ID=s3dev
+      - AWS_SECRET_ACCESS_KEY=s3devsecret
+      - AWS_REGION_NAME=us-east-1
+      # The local Lambda emulator cannot invoke itself, so jobs run at once
+      # inside the submit call.
+      - JOB_RUNNER=inline
+      # A job still queued or running after this long has crashed. The same
+      # value as Terraform sets in AWS.
+      - JOB_TIME_LIMIT_SECONDS=900
+      # Without this the runtime drops our INFO logs, arho_timing lines included.
+      - AWS_LAMBDA_LOG_LEVEL=${AWS_LAMBDA_LOG_LEVEL:-INFO}
+    ports:
+      - ${RYHTI_CLIENT_PORT:-8083}:8080
+    depends_on:
+      - db
+      - mock_xroad
+      - s3
+    volumes:
+      - ./logs:/tmp/logs
+      - ./lambdas/ryhti_client/ryhti_client:/var/task/ryhti_client
+      - ./lambdas/ryhti_client/lambda_function.py:/var/task/lambda_function.py
+      - ./database:/var/task/database
+
+  mml_loader:
+    build:
+      context: .
+      dockerfile: lambdas/mml_loader/mml_loader.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DB_INSTANCE_ADDRESS=db
+      - DB_INSTANCE_PORT=5432
+      - MML_APIKEY
+    ports:
+      - ${MML_LOADER_PORT:-8085}:8080
+    depends_on:
+      - db
+    volumes:
+      - ./lambdas/mml_loader/mml_loader.py:/var/task/mml_loader.py
+      - ./database:/var/task/database
+
+  mock_xroad:
+    image: mockserver/mockserver:latest
+    ports:
+      - ${MOCK_SERVER_PORT:-8443}:1080
+    environment:
+      - MOCKSERVER_WATCH_INITIALIZATION_JSON="true"
+      - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
+      - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/initializerJson.json
+    volumes:
+      - ./test/test_services_mock_xroad.json:/config/initializerJson.json:Z
+
+  s3:
+    # An S3 compatible gateway that stores objects as files. A bucket is a
+    # directory, so the ryhti-files bucket exists as soon as the gateway starts.
+    image: versity/versitygw:v1.8.0
+    entrypoint: >
+      /bin/sh -c "mkdir -p /data/ryhti-files && exec versitygw posix /data"
+    environment:
+      - ROOT_ACCESS_KEY_ID=s3dev
+      - ROOT_SECRET_ACCESS_KEY=s3devsecret
+      - VGW_PORT=:9000
+    ports:
+      - ${S3_PORT:-9000}:9000

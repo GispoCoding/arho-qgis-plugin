@@ -1,0 +1,32 @@
+name: Backend Terraform config
+
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "backend/infra/**"
+      - ".github/workflows/backend-terraform.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test_terraform_config:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/infra
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Init Terraform
+        run: terraform init -input=false -backend=false
+
+      - name: Validate Terraform configuration
+        run: terraform validate -no-color

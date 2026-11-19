@@ -1,0 +1,50 @@
+name: Backend tests
+
+on:
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "backend/database/**"
+      - "backend/migrations/**"
+      - "backend/lambdas/**"
+      - "backend/test/**"
+      - "backend/requirements*.txt"
+      - "backend/pyproject.toml"
+      - ".github/workflows/backend-tests.yml"
+  push:
+    branches:
+      - "main"
+    paths:
+      - "backend/database/**"
+      - "backend/migrations/**"
+      - "backend/lambdas/**"
+      - "backend/test/**"
+      - "backend/requirements*.txt"
+      - "backend/pyproject.toml"
+      - ".github/workflows/backend-tests.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test_functions:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Copy .env file
+        run: cp .env.dev .env
+      - name: Test
+        run: pytest --no-docker-mounts
+        env:
+          SYKE_APIKEY: ${{ secrets.SYKE_APIKEY }}

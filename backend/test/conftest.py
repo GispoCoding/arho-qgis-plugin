@@ -1,0 +1,2771 @@
+from __future__ import annotations
+
+import os
+import sys
+import time
+import timeit
+import uuid
+from collections.abc import Callable, Generator, Mapping
+from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
+from typing import TYPE_CHECKING, TypeVar
+from zoneinfo import ZoneInfo
+
+import psycopg
+import pytest
+import sqlalchemy
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from geoalchemy2.shape import from_shape
+from shapely import LineString, MultiPolygon, Point, box
+from shapely.geometry import MultiLineString, MultiPoint, shape
+from sqlalchemy.orm import Session, sessionmaker
+
+from database import codes, enums, models
+from database.base import PROJECT_SRID
+from database.db_helper import (
+    ConnectionParameters,
+    DbUser,
+    get_connection_parameters,
+    get_connection_string,
+    get_user_credentials,
+)
+from database.enums import AttributeValueDataType
+from lambdas.db_manager import db_manager
+
+if TYPE_CHECKING:
+    from geoalchemy2 import WKBElement
+    from pytest_docker.plugin import Services
+
+# A little hack to make sure the ryhti_client package can be found during tests
+sys.path.append("lambdas/ryhti_client")
+
+
+USE_DOCKER = (
+    "1"  # Use "" if you don't want pytest-docker to start and destroy the containers
+)
+
+LOCAL_TZ = ZoneInfo("Europe/Helsinki")
+
+
+def pytest_addoption(parser, pluginmanager) -> None:
+    parser.addoption(
+        "--no-docker-mounts",
+        action="store_true",
+        default=False,
+        help="Run tests without mounting dev files to containers.",
+    )
+
+
+@pytest.fixture(scope="session")
+def root_db_params() -> ConnectionParameters:
+    return {
+        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
+        "port": os.environ.get("DB_INSTANCE_PORT", ""),
+        "dbname": os.environ.get("DB_MAINTENANCE_NAME", ""),
+        "user": os.environ.get("SU_USER", ""),
+        "password": os.environ.get("SU_USER_PW", ""),
+    }
+
+
+@pytest.fixture(scope="session")
+def main_db_params() -> ConnectionParameters:
+    return {
+        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
+        "port": os.environ.get("DB_INSTANCE_PORT", ""),
+        "dbname": os.environ.get("DB_MAIN_NAME", ""),
+        "user": os.environ.get("DBA_USER", ""),
+        "password": os.environ.get("DBA_USER", ""),
+    }
+
+
+@pytest.fixture(scope="session")
+def main_db_params_with_root_user() -> ConnectionParameters:
+    return {
+        "host": os.environ.get("DB_INSTANCE_ADDRESS", ""),
+        "port": os.environ.get("DB_INSTANCE_PORT", ""),
+        "dbname": os.environ.get("DB_MAIN_NAME", ""),
+        "user": os.environ.get("SU_USER", ""),
+        "password": os.environ.get("SU_USER_PW", ""),
+    }
+
+
+@pytest.fixture(scope="session")
+def docker_compose_file(pytestconfig: pytest.Config):
+    compose_files = [Path(__file__).parent.parent / "docker-compose.dev.yml"]
+
+    if pytestconfig.getoption("no_docker_mounts"):
+        compose_files.append(
+            Path(__file__).parent.parent / "docker-compose.clear-mounts.yml"
+        )
+
+    return [str(f) for f in compose_files]
+
+
+if os.environ.get("MANAGE_DOCKER", USE_DOCKER):
+
+    @pytest.fixture(scope="session", autouse=True)
+    def wait_for_services(
+        docker_services: Services,
+        main_db_params: ConnectionParameters,
+        root_db_params: ConnectionParameters,
+    ) -> None:
+        def is_responsive(params) -> bool:
+            succeeds = False
+            try:
+                with psycopg.connect(**root_db_params):
+                    succeeds = True
+            except psycopg.OperationalError:
+                pass
+            return succeeds
+
+        wait_until_responsive(
+            timeout=20, pause=0.5, check=lambda: is_responsive(root_db_params)
+        )
+
+else:
+
+    @pytest.fixture(scope="session", autouse=True)
+    def wait_for_services(
+        main_db_params: ConnectionParameters, root_db_params: ConnectionParameters
+    ) -> None:
+        wait_until_responsive(
+            timeout=20, pause=0.5, check=lambda: is_responsive(root_db_params)
+        )
+
+
+@pytest.fixture(scope="session")
+def alembic_cfg() -> Config:
+    return Config(Path(__file__).parent.parent / "alembic.ini")
+
+
+@pytest.fixture
+def current_head_version_id(alembic_cfg: Config) -> str | None:
+    script_dir = ScriptDirectory.from_config(alembic_cfg)
+    return script_dir.get_current_head()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def hame_database_migrated(
+    wait_for_services: None,
+    root_db_params: ConnectionParameters,
+    main_db_params: ConnectionParameters,
+) -> None:
+    event = db_manager.Event(action="migrate_db")
+    response = db_manager.handler(event, None)
+    assert response["statusCode"] == 200, response["body"]
+
+
+def wait_until_responsive(check, timeout, pause, clock=timeit.default_timer) -> None:
+    """Wait until a service is responsive.
+    Taken from docker_services.wait_until_responsive
+    """
+    ref = clock()
+    now = ref
+    while (now - ref) < timeout:
+        if check():
+            return
+        time.sleep(pause)
+        now = clock()
+
+    raise Exception("Timeout reached while waiting on service!")
+
+
+def is_responsive(params):
+    succeeds = False
+    try:
+        with psycopg.connect(**params):
+            succeeds = True
+    except psycopg.OperationalError:
+        pass
+    return succeeds
+
+
+@pytest.fixture
+def su_session() -> Generator[Session]:
+    user = get_user_credentials(DbUser.SU)
+    connection_parameters = get_connection_parameters(user)
+    connection_string = get_connection_string(**connection_parameters)
+    engine = sqlalchemy.create_engine(connection_string)
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        yield session
+
+
+@pytest.fixture(scope="session")
+def dba_connection_string() -> str:
+    user = get_user_credentials(DbUser.DBA)
+    connection_parameters = get_connection_parameters(user)
+    return get_connection_string(**connection_parameters)
+
+
+@pytest.fixture
+def dba_session(dba_connection_string: str) -> Generator[Session]:
+    engine = sqlalchemy.create_engine(dba_connection_string)
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        yield session
+
+
+@pytest.fixture
+def session(
+    dba_connection_string: str, hame_database_migrated: str | None
+) -> Generator[Session]:
+    engine = sqlalchemy.create_engine(dba_connection_string)
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        yield session
+
+
+@pytest.fixture
+def test_data_dir() -> Path:
+    return Path(__file__).parent / "test_data"
+
+
+@pytest.fixture
+def get_test_json(test_data_dir: Path) -> Callable[[str], str]:
+    def _get_test_json(file_name: str) -> str:
+        return (test_data_dir / file_name).read_text(encoding="utf-8")
+
+    return _get_test_json
+
+
+@pytest.fixture
+def complete_plan_json(
+    get_test_json: Callable[[str], str], remove_plan: Callable[[str], None]
+) -> Generator[str]:
+    yield get_test_json("complete_plan.json")
+
+    remove_plan("09c62caa-c56f-474d-9c0a-1ba4c4188cb2")
+
+
+@pytest.fixture
+def invalid_plan_json(
+    get_test_json: Callable[[str], str], remove_plan: Callable[[str], None]
+) -> Generator[str]:
+    yield get_test_json("invalid_plan.json")
+
+    remove_plan("5e928c8f-1a4d-4912-853b-c92c844ae8ec")
+
+
+@pytest.fixture
+def simple_plan_json(
+    get_test_json: Callable[[str], str], remove_plan: Callable[[str], None]
+) -> Generator[str]:
+    yield get_test_json("simple_plan.json")
+
+    remove_plan("7f522b2f-8b45-4a17-b433-5f47271b579e")
+
+
+@pytest.fixture
+def remove_plan(session: Session) -> Callable[[str], None]:
+    def _remove_plan(plan_id: str) -> None:
+        if plan := session.get(models.Plan, plan_id):
+            session.delete(plan)
+            session.commit()
+
+    return _remove_plan
+
+
+@pytest.fixture(autouse=True)
+def truncate_after(su_session: Session) -> Generator[None]:
+    """Truncate all tables after each test to have a clean state
+
+    If a test needs data to persist between tests, it should use an override fixture
+    """
+    yield
+
+    meta = models.Base.metadata
+    # Disable triggers to avoid issues with foreign keys
+    su_session.execute(sqlalchemy.text("SET session_replication_role = replica"))
+    for table in meta.sorted_tables:
+        su_session.execute(table.delete())
+    su_session.execute(sqlalchemy.text("SET session_replication_role = DEFAULT"))
+    su_session.commit()
+
+
+T = TypeVar("T", bound=models.Base)
+type ReturnSame[T] = Callable[[T], T]
+
+
+@pytest.fixture
+def temp_session_feature(session: Session) -> ReturnSame[T]:
+    def add_instance(instance: T) -> T:
+        session.add(instance)
+        session.commit()
+        return instance
+
+    return add_instance
+
+
+# Code fixtures
+
+
+@pytest.fixture
+def code_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="test", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_code_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="test2", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def pending_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="02", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def preparation_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="03", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_proposal_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="04", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def approved_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="06", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def valid_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="13", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def repealed_status_instance(
+    temp_session_feature: ReturnSame[codes.LifeCycleStatus],
+) -> codes.LifeCycleStatus:
+    instance = codes.LifeCycleStatus(value="14", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_type_instance(
+    temp_session_feature: ReturnSame[codes.PlanType],
+) -> codes.PlanType:
+    # Let's use real code to allow testing API endpoints that require this
+    # code value as parameter
+    # https://koodistot.suomi.fi/codescheme;registryCode=rytj;schemeCode=RY_Kaavalaji
+    # 11: Kokonaismaakuntakaava
+    instance = codes.PlanType(value="11", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_underground_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfUnderground],
+) -> codes.TypeOfUnderground:
+    instance = codes.TypeOfUnderground(value="01", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
+) -> codes.TypeOfPlanRegulationGroup:
+    instance = codes.TypeOfPlanRegulationGroup(value="test", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_general_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
+) -> codes.TypeOfPlanRegulationGroup:
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="generalRegulations", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_land_use_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
+) -> codes.TypeOfPlanRegulationGroup:
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="landUseRegulations", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_other_area_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
+) -> codes.TypeOfPlanRegulationGroup:
+    instance = codes.TypeOfPlanRegulationGroup(
+        value="otherAreaRegulations", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_line_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
+) -> codes.TypeOfPlanRegulationGroup:
+    instance = codes.TypeOfPlanRegulationGroup(value="lineRegulations", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_point_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulationGroup],
+) -> codes.TypeOfPlanRegulationGroup:
+    instance = codes.TypeOfPlanRegulationGroup(value="pointRegulations", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(value="asumisenAlue", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_allowed_area_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(value="sallittuKerrosala", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_number_of_stories_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(
+        value="maanpaallinenKerroslukuArvovali", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_ground_elevation_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(
+        value="maanpinnanKorkeusasema", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_verbal_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(value="sanallinenMaarays", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_street_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(value="katu", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_plan_regulation_construction_area_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfPlanRegulation],
+) -> codes.TypeOfPlanRegulation:
+    instance = codes.TypeOfPlanRegulation(value="rakennusala", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_verbal_plan_regulation_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfVerbalPlanRegulation],
+) -> codes.TypeOfVerbalPlanRegulation:
+    instance = codes.TypeOfVerbalPlanRegulation(value="perustaminen", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_main_use_additional_information_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
+) -> codes.TypeOfAdditionalInformation:
+    instance = codes.TypeOfAdditionalInformation(
+        value="paakayttotarkoitus", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_proportion_of_intended_use_additional_information_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
+) -> codes.TypeOfAdditionalInformation:
+    instance = codes.TypeOfAdditionalInformation(
+        value="kayttotarkoituksenOsuusKerrosalastaK-m2", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_sub_area_additional_information_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
+) -> codes.TypeOfAdditionalInformation:
+    instance = codes.TypeOfAdditionalInformation(value="osaAlue", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_intended_use_allocation_additional_information_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfAdditionalInformation],
+) -> codes.TypeOfAdditionalInformation:
+    instance = codes.TypeOfAdditionalInformation(
+        value="kayttotarkoituskohdistus", status="LOCAL"
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_source_data_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfSourceData],
+) -> codes.TypeOfSourceData:
+    instance = codes.TypeOfSourceData(value="test", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_document_plan_map_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
+) -> codes.TypeOfDocument:
+    instance = codes.TypeOfDocument(value="03", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_document_oas_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
+) -> codes.TypeOfDocument:
+    instance = codes.TypeOfDocument(value="14", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_document_plan_description_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
+) -> codes.TypeOfDocument:
+    instance = codes.TypeOfDocument(value="06", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def type_of_document_other_instance(
+    temp_session_feature: ReturnSame[codes.TypeOfDocument],
+) -> codes.TypeOfDocument:
+    instance = codes.TypeOfDocument(value="99", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def category_of_publicity_public_instance(
+    temp_session_feature: ReturnSame[codes.CategoryOfPublicity],
+) -> codes.CategoryOfPublicity:
+    instance = codes.CategoryOfPublicity(value="1", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def personal_data_content_no_personal_data_instance(
+    temp_session_feature: ReturnSame[codes.PersonalDataContent],
+) -> codes.PersonalDataContent:
+    instance = codes.PersonalDataContent(value="1", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def retention_time_permanent_instance(
+    temp_session_feature: ReturnSame[codes.RetentionTime],
+) -> codes.RetentionTime:
+    instance = codes.RetentionTime(value="01", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def language_finnish_instance(
+    temp_session_feature: ReturnSame[codes.Language],
+) -> codes.Language:
+    instance = codes.Language(value="fi", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def legal_effects_of_master_plan_without_legal_effects_instance(
+    temp_session_feature: ReturnSame[codes.LegalEffectsOfMasterPlan],
+) -> codes.LegalEffectsOfMasterPlan:
+    instance = codes.LegalEffectsOfMasterPlan(value="2", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def municipality_instance(
+    temp_session_feature: ReturnSame[codes.Municipality],
+) -> codes.Municipality:
+    instance = codes.Municipality(value="577", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def administrative_region_instance(
+    temp_session_feature: ReturnSame[codes.AdministrativeRegion],
+) -> codes.AdministrativeRegion:
+    instance = codes.AdministrativeRegion(value="01", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_administrative_region_instance(
+    temp_session_feature: ReturnSame[codes.AdministrativeRegion],
+) -> codes.AdministrativeRegion:
+    instance = codes.AdministrativeRegion(value="02", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_theme_instance(
+    temp_session_feature: ReturnSame[codes.PlanTheme],
+) -> codes.PlanTheme:
+    instance = codes.PlanTheme(value="01", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def digital_origin_instance(
+    temp_session_feature: ReturnSame[codes.DigitalOrigin],
+) -> codes.DigitalOrigin:
+    instance = codes.DigitalOrigin(value="04", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def codes_loaded(
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+    pending_status_instance: codes.LifeCycleStatus,
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+    approved_status_instance: codes.LifeCycleStatus,
+    valid_status_instance: codes.LifeCycleStatus,
+    plan_type_instance: codes.PlanType,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+    type_of_general_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+    type_of_land_use_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+    type_of_other_area_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+    type_of_line_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+    type_of_point_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    type_of_plan_regulation_allowed_area_instance: codes.TypeOfPlanRegulation,
+    type_of_plan_regulation_number_of_stories_instance: codes.TypeOfPlanRegulation,
+    type_of_plan_regulation_ground_elevation_instance: codes.TypeOfPlanRegulation,
+    type_of_plan_regulation_verbal_instance: codes.TypeOfPlanRegulation,
+    type_of_plan_regulation_street_instance: codes.TypeOfPlanRegulation,
+    type_of_plan_regulation_construction_area_instance: codes.TypeOfPlanRegulation,
+    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
+    type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_sub_area_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_intended_use_allocation_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_source_data_instance: codes.TypeOfSourceData,
+    type_of_document_plan_map_instance: codes.TypeOfDocument,
+    type_of_document_oas_instance: codes.TypeOfDocument,
+    type_of_document_plan_description_instance: codes.TypeOfDocument,
+    type_of_document_other_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
+    legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
+    municipality_instance: codes.Municipality,
+    administrative_region_instance: codes.AdministrativeRegion,
+    another_administrative_region_instance: codes.AdministrativeRegion,
+    plan_theme_instance: codes.PlanTheme,
+    digital_origin_instance: codes.DigitalOrigin,
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_sending_out_for_opinions_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+    decisionmaker_type: codes.TypeOfDecisionMaker,
+) -> None:
+    """Fixture that ensures all codes are loaded to the database.
+
+    Used on import tests to ensure codes are there before import.
+    """
+    return
+
+
+# Plan fixtures
+
+
+@pytest.fixture
+def plan_matter_instance(
+    temp_session_feature: ReturnSame[models.PlanMatter],
+    organisation_instance: codes.Organisation,
+    another_organisation_instance: codes.Organisation,
+    plan_type_instance: codes.PlanType,
+    digital_origin_instance: codes.DigitalOrigin,
+) -> models.PlanMatter:
+    instance = models.PlanMatter(
+        name={"fin": "Test Plan Matter"},
+        organisation=organisation_instance,
+        plan_type=plan_type_instance,
+        digital_origin=digital_origin_instance,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_instance(
+    temp_session_feature: ReturnSame[models.Plan],
+    plan_matter_instance: models.PlanMatter,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> models.Plan:
+    # Any status and organisation instances that may be added to the plan later
+    # have to be included above. If they are only created later, they will be torn
+    # down too early and teardown will fail, because plan cannot have empty
+    # status or organisation.
+    instance = models.Plan(
+        # The id column is a string uuid, so other plans in the same flush sort.
+        id=str(uuid.uuid4()),
+        plan_matter=plan_matter_instance,
+        name={"fin": "Test Plan 1"},
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        scale=1,
+        description={"fin": "test_plan"},
+        lifecycle_status=preparation_status_instance,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_plan_matter_instance(
+    temp_session_feature: ReturnSame[models.PlanMatter],
+    organisation_instance: codes.Organisation,
+    another_organisation_instance: codes.Organisation,
+    plan_type_instance: codes.PlanType,
+    digital_origin_instance: codes.DigitalOrigin,
+) -> models.PlanMatter:
+    instance = models.PlanMatter(
+        name={"fin": "Test Plan Matter"},
+        organisation=organisation_instance,
+        plan_type=plan_type_instance,
+        digital_origin=digital_origin_instance,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_plan_instance(
+    temp_session_feature: ReturnSame[models.Plan],
+    another_plan_matter_instance: models.PlanMatter,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> models.Plan:
+    # Any status and organisation instances that may be added to the plan later
+    # have to be included above. If they are only created later, they will be torn
+    # down too early and teardown will fail, because plan cannot have empty
+    # status or organisation.
+    instance = models.Plan(
+        plan_matter=another_plan_matter_instance,
+        name={"fin": "Test Plan 2"},
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        scale=1,
+        description={"fin": "another_test_plan"},
+        lifecycle_status=preparation_status_instance,
+    )
+    return temp_session_feature(instance)
+
+
+# Organisation fixtures
+
+
+@pytest.fixture
+def organisation_instance(
+    temp_session_feature: ReturnSame[models.Organisation],
+    administrative_region_instance: codes.AdministrativeRegion,
+) -> models.Organisation:
+    instance = models.Organisation(
+        business_id="test", administrative_region=administrative_region_instance
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_organisation_instance(
+    temp_session_feature: ReturnSame[models.Organisation],
+    another_administrative_region_instance: codes.AdministrativeRegion,
+) -> models.Organisation:
+    instance = models.Organisation(
+        business_id="other-test",
+        administrative_region=another_administrative_region_instance,
+    )
+    return temp_session_feature(instance)
+
+
+# Plan object fixtures
+
+
+@pytest.fixture
+def land_use_area_instance(
+    temp_session_feature: ReturnSame[models.LandUseArea],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: codes.Plan,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+    numeric_plan_regulation_group_instance: codes.PlanRegulationGroup,
+    decimal_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.LandUseArea:
+    instance = models.LandUseArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680000.0],
+                                [386378.427863708813675, 6680000.0],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        name={"fin": "test_land_use_area"},
+        description={"fin": "test_land_use_area"},
+        height_min=0.0,
+        height_max=1.0,
+        height_unit="m",
+        ordering=1,
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[
+            plan_regulation_group_instance,
+            numeric_plan_regulation_group_instance,
+            decimal_plan_regulation_group_instance,
+        ],
+    )
+    return temp_session_feature(instance)
+
+
+# This land use area is used to test land use regulations with additional information with
+# code values, i.e. käyttötarkoituskohdistus.
+@pytest.fixture
+def pedestrian_street_instance(
+    temp_session_feature: ReturnSame[models.LandUseArea],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: codes.Plan,
+    pedestrian_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.LandUseArea:
+    instance = models.LandUseArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6680000.0],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6680000.0],
+                                [381849.834412134019658, 6680000.0],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        name={"fin": "test_pedestrian_street"},
+        description={"fin": "test_pedestrian_street"},
+        height_min=0.0,
+        height_max=1.0,
+        height_unit="m",
+        ordering=2,
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[pedestrian_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def other_area_instance(
+    temp_session_feature: ReturnSame[models.OtherArea],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: codes.Plan,
+    construction_area_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.OtherArea:
+    instance = models.OtherArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [382953, 6678582],
+                                [382953, 6679385],
+                                [383825, 6679385],
+                                [383825, 6678582],
+                                [382953, 6678582],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[construction_area_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def line_instance(
+    temp_session_feature: ReturnSame[models.Line],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: codes.Plan,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.Line:
+    instance = models.Line(
+        geom=from_shape(MultiLineString([[[382000, 6678000], [383000, 6678000]]])),
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def point_instance(
+    temp_session_feature: ReturnSame[models.Point],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: codes.Plan,
+    point_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.Point:
+    instance = models.Point(
+        geom=from_shape(MultiPoint([[382000, 6678000]])),
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=plan_instance,
+        plan_regulation_groups=[point_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+# Plan regulation fixtures
+
+
+@pytest.fixture
+def plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="K",
+        plan=plan_instance,
+        ordering=2,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+# Construction area must have its own plan regulation group
+@pytest.fixture
+def construction_area_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="R",
+        plan=plan_instance,
+        ordering=6,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_construction_area_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+# Multiple numerical/decimal regulations cannot be in the same plan regulation group.
+# Therefore, these plan regulations require their own groups.
+@pytest.fixture
+def numeric_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="N",
+        plan=plan_instance,
+        ordering=3,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_numeric_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def decimal_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="D",
+        plan=plan_instance,
+        ordering=4,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_decimal_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def pedestrian_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="jk/pp",
+        plan=plan_instance,
+        ordering=5,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_pedestrian_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def point_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="L",
+        plan=plan_instance,
+        ordering=1,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_point_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def general_regulation_group_instance(
+    session: Session,
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    plan_instance: codes.Plan,
+    type_of_general_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="Y",
+        plan=plan_instance,
+        ordering=6,
+        type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
+        name={"fin": "test_general_regulation_group"},
+    )
+    instance = temp_session_feature(instance)
+
+    plan_instance.general_plan_regulation_groups.append(instance)
+
+    return instance
+
+
+@pytest.fixture
+def empty_value_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=1,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def construction_area_plan_regulation_instance(
+    session: Session,
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    construction_area_plan_regulation_group_instance: codes.PlanRegulationGroup,
+    type_of_plan_regulation_construction_area_instance: codes.TypeOfPlanRegulation,
+    make_additional_information_instance_of_type: Callable[
+        [codes.TypeOfAdditionalInformation], models.AdditionalInformation
+    ],
+    type_of_sub_area_additional_information_instance: codes.TypeOfAdditionalInformation,
+) -> models.PlanRegulation:
+    sub_area_additional_information = make_additional_information_instance_of_type(
+        type_of_sub_area_additional_information_instance
+    )
+    instance = models.PlanRegulation(
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_construction_area_instance,
+        plan_regulation_group=construction_area_plan_regulation_group_instance,
+        additional_information=[sub_area_additional_information],
+        ordering=1,
+    )
+    instance = temp_session_feature(instance)
+    return instance
+
+
+@pytest.fixture
+def numeric_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_allowed_area_instance: codes.TypeOfPlanRegulation,
+    numeric_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.POSITIVE_NUMERIC,
+        numeric_value=1,
+        unit="k-m2",
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_allowed_area_instance,
+        plan_regulation_group=numeric_plan_regulation_group_instance,
+        ordering=1,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def decimal_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_ground_elevation_instance: codes.TypeOfPlanRegulation,
+    decimal_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.DECIMAL,
+        numeric_value=1.0,
+        unit="m",
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_ground_elevation_instance,
+        plan_regulation_group=decimal_plan_regulation_group_instance,
+        ordering=1,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def numeric_range_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_number_of_stories_instance: codes.TypeOfPlanRegulation,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.POSITIVE_NUMERIC_RANGE,
+        numeric_range_min=2,
+        numeric_range_max=3,
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_number_of_stories_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=3,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def text_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
+        text_value={"fin": "test_value"},
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        additional_information=[],
+        ordering=4,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def pedestrian_street_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_street_instance: codes.TypeOfPlanRegulation,
+    pedestrian_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_street_instance,
+        plan_regulation_group=pedestrian_plan_regulation_group_instance,
+        ordering=1,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def point_text_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    point_plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
+        text_value={"fin": "test_value"},
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=point_plan_regulation_group_instance,
+        ordering=1,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def verbal_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_verbal_instance: codes.TypeOfPlanRegulation,
+    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    """Looks like verbal plan regulations have to be serialized differently, type of
+    verbal plan regulation is not allowed in other plan regulations. No idea how
+    they differ from text regulations otherwise, though.
+    """
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
+        text_value={"fin": "test_value"},
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_verbal_instance,
+        types_of_verbal_plan_regulations=[type_of_verbal_plan_regulation_instance],
+        plan_regulation_group=plan_regulation_group_instance,
+        ordering=5,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def general_plan_regulation_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulation],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    general_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanRegulation:
+    instance = models.PlanRegulation(
+        subject_identifiers=["#test_regulation"],
+        value_data_type=AttributeValueDataType.LOCALIZED_TEXT,
+        text_value={"fin": "test_value"},
+        lifecycle_status=preparation_status_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=general_regulation_group_instance,
+        ordering=1,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_proposition_instance(
+    temp_session_feature: ReturnSame[models.PlanProposition],
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_regulation_group_instance: codes.PlanRegulationGroup,
+) -> models.PlanProposition:
+    instance = models.PlanProposition(
+        lifecycle_status=preparation_status_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+        text_value={"fin": "test_recommendation"},
+    )
+    return temp_session_feature(instance)
+
+
+# Source data fixtures
+
+
+@pytest.fixture
+def source_data_instance(
+    temp_session_feature: ReturnSame[models.SourceData],
+    plan_matter_instance: codes.PlanMatter,
+    type_of_source_data_instance: codes.TypeOfSourceData,
+) -> models.SourceData:
+    instance = models.SourceData(
+        additional_information_uri="http://test.fi",
+        detachment_date=datetime.now(tz=LOCAL_TZ),
+        plan_matter=plan_matter_instance,
+        type_of_source_data=type_of_source_data_instance,
+    )
+    return temp_session_feature(instance)
+
+
+# Document fixtures
+
+
+@pytest.fixture
+def document_instance(
+    temp_session_feature: ReturnSame[models.Document],
+    plan_instance: codes.Plan,
+    type_of_document_oas_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
+) -> models.Document:
+    instance = models.Document(
+        name={"fin": "Osallistumis- ja arviointisuunnitelma"},
+        type_of_document=type_of_document_oas_instance,
+        permanent_document_identifier="HEL 2024-016009",
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_report_instance(
+    temp_session_feature: ReturnSame[models.Document],
+    plan_instance: codes.Plan,
+    type_of_document_plan_description_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
+) -> models.Document:
+    instance = models.Document(
+        name={"fin": "Kaavaselostus"},
+        type_of_document=type_of_document_plan_description_instance,
+        permanent_document_identifier="HEL 2024-016009",
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def other_document_instance(
+    temp_session_feature: ReturnSame[models.Document],
+    plan_instance: codes.Plan,
+    type_of_document_other_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
+) -> models.Document:
+    instance = models.Document(
+        name={"fin": "Muu asiakirja"},
+        type_of_document=type_of_document_other_instance,
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_map_instance(
+    temp_session_feature: ReturnSame[models.Document],
+    plan_instance: codes.Plan,
+    type_of_document_plan_map_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
+) -> models.Document:
+    instance = models.Document(
+        name={"fin": "Kaavakartta"},
+        type_of_document=type_of_document_plan_map_instance,
+        category_of_publicity=category_of_publicity_public_instance,
+        personal_data_content=personal_data_content_no_personal_data_instance,
+        retention_time=retention_time_permanent_instance,
+        language=language_finnish_instance,
+        document_date=datetime(2024, 1, 1, tzinfo=LOCAL_TZ),
+        plan=plan_instance,
+        url="https://raw.githubusercontent.com/GeoTIFF/test-data/refs/heads/main/files/GeogToWGS84GeoKey5.tif",
+    )
+    return temp_session_feature(instance)
+
+
+# Additional information fixtures
+
+
+@pytest.fixture
+def main_use_additional_information_instance(
+    temp_session_feature: ReturnSame[models.AdditionalInformation],
+    type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    empty_value_plan_regulation_instance: codes.PlanRegulation,
+) -> models.AdditionalInformation:
+    instance = models.AdditionalInformation(
+        plan_regulation=empty_value_plan_regulation_instance,
+        type_of_additional_information=type_of_main_use_additional_information_instance,
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def proportion_of_intended_use_additional_information_instance(
+    temp_session_feature: ReturnSame[models.AdditionalInformation],
+    type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    empty_value_plan_regulation_instance: codes.PlanRegulation,
+) -> models.AdditionalInformation:
+    instance = models.AdditionalInformation(
+        plan_regulation=empty_value_plan_regulation_instance,
+        type_of_additional_information=type_of_proportion_of_intended_use_additional_information_instance,
+        value_data_type=enums.AttributeValueDataType.POSITIVE_NUMERIC,
+        numeric_value=2500,
+        unit="k-m2",
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def make_additional_information_instance_of_type(
+    session: Session,
+) -> Callable[[codes.TypeOfAdditionalInformation], models.AdditionalInformation]:
+    def _make_additional_information_instance_of_type(
+        type_of_additional_information: codes.TypeOfAdditionalInformation,
+    ) -> models.AdditionalInformation:
+        instance = models.AdditionalInformation(
+            type_of_additional_information=type_of_additional_information
+        )
+        return instance
+
+    return _make_additional_information_instance_of_type
+
+
+# Plan cancellation info fixtures
+
+# The cancelled plan is another plan, because a plan may only repeal another
+# plan matter. Its regulation groups and plan objects are the parts a partial
+# cancellation points at.
+
+
+@pytest.fixture
+def cancelled_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    another_plan_instance: models.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="C",
+        plan=another_plan_instance,
+        ordering=1,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_cancelled_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def another_cancelled_plan_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    another_plan_instance: models.Plan,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="D",
+        plan=another_plan_instance,
+        ordering=2,
+        type_of_plan_regulation_group=type_of_plan_regulation_group_instance,
+        name={"fin": "test_another_cancelled_plan_regulation_group"},
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def cancelled_general_regulation_group_instance(
+    temp_session_feature: ReturnSame[models.PlanRegulationGroup],
+    another_plan_instance: models.Plan,
+    type_of_general_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> models.PlanRegulationGroup:
+    instance = models.PlanRegulationGroup(
+        short_name="Y",
+        plan=another_plan_instance,
+        ordering=3,
+        type_of_plan_regulation_group=type_of_general_plan_regulation_group_instance,
+        name={"fin": "test_cancelled_general_regulation_group"},
+    )
+    instance = temp_session_feature(instance)
+
+    another_plan_instance.general_plan_regulation_groups.append(instance)
+
+    return instance
+
+
+@pytest.fixture
+def cancelled_land_use_area_instance(
+    temp_session_feature: ReturnSame[models.LandUseArea],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    another_plan_instance: models.Plan,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> models.LandUseArea:
+    instance = models.LandUseArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680000.0],
+                                [386378.427863708813675, 6680000.0],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+        name={"fin": "test_cancelled_land_use_area"},
+        ordering=1,
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=another_plan_instance,
+        plan_regulation_groups=[cancelled_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def cancelled_point_instance(
+    temp_session_feature: ReturnSame[models.Point],
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    another_plan_instance: models.Plan,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> models.Point:
+    instance = models.Point(
+        geom=from_shape(MultiPoint([[382000, 6678000]])),
+        lifecycle_status=preparation_status_instance,
+        type_of_underground=type_of_underground_instance,
+        plan=another_plan_instance,
+        plan_regulation_groups=[cancelled_plan_regulation_group_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_cancellation_info_instance(
+    temp_session_feature: ReturnSame[models.PlanCancellationInfo],
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+    cancelled_general_regulation_group_instance: models.PlanRegulationGroup,
+) -> models.PlanCancellationInfo:
+    instance = models.PlanCancellationInfo(
+        plan=plan_instance,
+        cancelled_plan=another_plan_instance,
+        cancels_entire_plan=False,
+        cancelled_general_regulation_groups=[
+            cancelled_general_regulation_group_instance
+        ],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_object_cancellation_info_instance(
+    temp_session_feature: ReturnSame[models.PlanObjectCancellationInfo],
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> models.PlanObjectCancellationInfo:
+    instance = models.PlanObjectCancellationInfo(
+        plan_cancellation_info=plan_cancellation_info_instance,
+        land_use_area=cancelled_land_use_area_instance,
+        cancels_entire_plan_object=False,
+        # The part of the cancelled land use area that stays valid.
+        remaining_valid_geom_polygon=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [382000.0, 6678000.0],
+                                [382000.0, 6679000.0],
+                                [383000.0, 6679000.0],
+                                [383000.0, 6678000.0],
+                                [382000.0, 6678000.0],
+                            ]
+                        ]
+                    ],
+                }
+            ),
+            srid=PROJECT_SRID,
+            extended=True,
+        ),
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def cancelled_group_relation_instance(
+    temp_session_feature: ReturnSame[models.CancelledGroupRelation],
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> models.CancelledGroupRelation:
+    instance = models.CancelledGroupRelation(
+        plan_cancellation_info=plan_cancellation_info_instance,
+        plan_regulation_group=cancelled_plan_regulation_group_instance,
+        land_use_area=cancelled_land_use_area_instance,
+    )
+    return temp_session_feature(instance)
+
+
+# Complete fixtures
+
+
+@pytest.fixture
+def complete_test_plan(
+    session: Session,
+    document_instance: models.Document,
+    plan_report_instance: models.Document,
+    other_document_instance: models.Document,
+    plan_map_instance: models.Document,
+    plan_instance: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    pedestrian_street_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    point_instance: models.Point,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
+    numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
+    decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
+    pedestrian_street_plan_regulation_instance: models.PlanRegulation,
+    construction_area_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
+    numeric_plan_regulation_instance: models.PlanRegulation,
+    decimal_plan_regulation_instance: models.PlanRegulation,
+    numeric_range_plan_regulation_instance: models.PlanRegulation,
+    verbal_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    proportion_of_intended_use_additional_information_instance: models.AdditionalInformation,
+    legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
+    plan_theme_instance: codes.PlanTheme,
+    type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_proportion_of_intended_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+    type_of_intended_use_allocation_additional_information_instance: codes.TypeOfAdditionalInformation,
+    make_additional_information_instance_of_type: Callable[
+        [codes.TypeOfAdditionalInformation], models.AdditionalInformation
+    ],
+    participation_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_material_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    draft_plan_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_sending_out_for_opinions_decision: codes.NameOfPlanCaseDecision,
+    plan_proposal_presenting_for_public_decision: codes.NameOfPlanCaseDecision,
+    participation_plan_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_material_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_presenting_for_public_event: codes.TypeOfProcessingEvent,
+    plan_proposal_requesting_for_opinions_event: codes.TypeOfProcessingEvent,
+    presentation_to_the_public_interaction: codes.TypeOfInteractionEvent,
+    decisionmaker_type: codes.TypeOfDecisionMaker,
+) -> models.Plan:
+    """Plan data that might be more or less complete, to be tested and validated with the
+    Ryhti API.
+
+    For the plan *matter* to be validated, we also need extra code objects (that are not
+    linked to the plan in the database) to be committed to the database, and some
+    dates for the plan lifecycle statuses to be set.
+    """
+    # Add the optional (nullable) relationships. We don't want them to be present in
+    # all fixtures.
+    plan_instance.legal_effects_of_master_plan.append(
+        legal_effects_of_master_plan_without_legal_effects_instance
+    )
+
+    empty_value_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # empty value plan regulation may have intended use
+    empty_value_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_of_type(
+            type_of_main_use_additional_information_instance
+        )
+    )
+    # empty value plan regulation may have proportion of intended use
+    empty_value_plan_regulation_instance.additional_information.append(
+        proportion_of_intended_use_additional_information_instance
+    )
+
+    numeric_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # allowed area numeric value cannot be used with intended use regulation type
+
+    decimal_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # elevation decimal value cannot be used with intended use regulation type
+
+    text_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # text value plan regulation may have intended use
+    text_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_of_type(
+            type_of_main_use_additional_information_instance
+        )
+    )
+
+    point_text_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # point cannot *currently* be used with intended use regulation type
+
+    numeric_range_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # numeric range cannot be used with intended use regulation type
+
+    verbal_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # verbal plan regulation cannot be used with intended use regulation type
+
+    general_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # general plan regulation cannot be used with intended use regulation type
+
+    pedestrian_street_plan_regulation_instance.plan_themes.append(plan_theme_instance)
+    # pedestrian street must have intended use *and* two intended use allocations
+    # (käyttötarkoituskohdistus):
+    pedestrian_street_plan_regulation_instance.additional_information.append(
+        make_additional_information_instance_of_type(
+            type_of_main_use_additional_information_instance
+        )
+    )
+    pedestrian_intended_use_allocation = make_additional_information_instance_of_type(
+        type_of_intended_use_allocation_additional_information_instance
+    )
+    pedestrian_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
+    pedestrian_intended_use_allocation.code_list = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+    )
+    pedestrian_intended_use_allocation.code_value = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/jalankulkualue"
+    )
+    pedestrian_intended_use_allocation.code_title = {
+        "eng": "Pedestrian area",
+        "fin": "Jalankulkualue",
+        "swe": "Fotgångarområde",
+    }
+    pedestrian_street_plan_regulation_instance.additional_information.append(
+        pedestrian_intended_use_allocation
+    )
+    cycling_intended_use_allocation = make_additional_information_instance_of_type(
+        type_of_intended_use_allocation_additional_information_instance
+    )
+    cycling_intended_use_allocation.value_data_type = AttributeValueDataType.CODE
+    cycling_intended_use_allocation.code_list = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji"
+    )
+    cycling_intended_use_allocation.code_value = (
+        "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/pyorailyalue"
+    )
+    cycling_intended_use_allocation.code_title = {
+        "eng": "Cycling area",
+        "fin": "Pyöräilyalue",
+        "swe": "Cykelområde",
+    }
+    pedestrian_street_plan_regulation_instance.additional_information.append(
+        cycling_intended_use_allocation
+    )
+
+    plan_proposition_instance.plan_themes.append(plan_theme_instance)
+    session.commit()
+    return plan_instance
+
+
+@pytest.fixture
+def another_test_plan(
+    session: Session, another_plan_instance: codes.Plan
+) -> models.Plan:
+    return another_plan_instance
+
+
+@pytest.fixture
+def participation_plan_presenting_for_public_decision(
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(
+        value="04", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_material_presenting_for_public_decision(
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(
+        value="05", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def draft_plan_presenting_for_public_decision(
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(
+        value="06", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_proposal_sending_out_for_opinions_decision(
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(
+        value="07", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_proposal_presenting_for_public_decision(
+    temp_session_feature: ReturnSame[codes.NameOfPlanCaseDecision],
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> codes.NameOfPlanCaseDecision:
+    instance = codes.NameOfPlanCaseDecision(
+        value="08", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def participation_plan_presenting_for_public_event(
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(
+        value="05", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_material_presenting_for_public_event(
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(
+        value="06", status="LOCAL", allowed_statuses=[preparation_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_proposal_presenting_for_public_event(
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(
+        value="07", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def plan_proposal_requesting_for_opinions_event(
+    temp_session_feature: ReturnSame[codes.TypeOfProcessingEvent],
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> codes.TypeOfProcessingEvent:
+    instance = codes.TypeOfProcessingEvent(
+        value="08", status="LOCAL", allowed_statuses=[plan_proposal_status_instance]
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def presentation_to_the_public_interaction(
+    temp_session_feature: ReturnSame[codes.TypeOfInteractionEvent],
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_proposal_status_instance: codes.LifeCycleStatus,
+) -> codes.TypeOfInteractionEvent:
+    instance = codes.TypeOfInteractionEvent(
+        value="01",
+        status="LOCAL",
+        allowed_statuses=[preparation_status_instance, plan_proposal_status_instance],
+    )
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def decisionmaker_type(
+    temp_session_feature: ReturnSame[codes.TypeOfDecisionMaker],
+) -> codes.TypeOfDecisionMaker:
+    instance = codes.TypeOfDecisionMaker(value="01", status="LOCAL")
+    return temp_session_feature(instance)
+
+
+@pytest.fixture
+def desired_plan_dict(
+    complete_test_plan: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    pedestrian_street_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    point_instance: models.Point,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
+    decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
+    pedestrian_plan_regulation_group_instance: models.PlanRegulationGroup,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
+    text_plan_regulation_instance: models.PlanRegulation,
+    pedestrian_street_plan_regulation_instance: models.PlanRegulation,
+    construction_area_plan_regulation_instance: models.PlanRegulation,
+    point_text_plan_regulation_instance: models.PlanRegulation,
+    numeric_plan_regulation_instance: models.PlanRegulation,
+    decimal_plan_regulation_instance: models.PlanRegulation,
+    numeric_range_plan_regulation_instance: models.PlanRegulation,
+    verbal_plan_regulation_instance: models.PlanRegulation,
+    general_plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+) -> dict:
+    """Plan dict based on https://github.com/sykefi/Ryhti-rajapintakuvaukset/blob/main/OpenApi/Kaavoitus/Avoin/ryhti-plan-public-validate-api.json
+
+    Let's 1) write explicitly the complex fields, and 2) just check that the simple fields have
+    the same values as the original plan fixture in the database.
+    """
+    return {
+        "planKey": complete_test_plan.id,
+        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+        "legalEffectOfLocalMasterPlans": [
+            "http://uri.suomi.fi/codelist/rytj/oikeusvaik_YK/code/2"
+        ],
+        "scale": complete_test_plan.scale,
+        "geographicalArea": {
+            "srid": str(PROJECT_SRID),
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [381849.834412134019658, 6677967.973336197435856],
+                        [381849.834412134019658, 6680613.389312859624624],
+                        [386378.427863708813675, 6680613.389312859624624],
+                        [386378.427863708813675, 6677967.973336197435856],
+                        [381849.834412134019658, 6677967.973336197435856],
+                    ]
+                ],
+            },
+        },
+        "planMaps": [],
+        "planAnnexes": [],
+        "otherPlanMaterials": [],
+        "generalRegulationGroups": [
+            {
+                "generalRegulationGroupKey": general_regulation_group_instance.id,
+                "titleOfPlanRegulation": general_regulation_group_instance.name,
+                "groupNumber": general_regulation_group_instance.ordering,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": general_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": general_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": general_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            general_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    }
+                ],
+                "planRecommendations": [],
+            }
+        ],
+        # TODO: should this be a single language string? why?
+        "planDescription": "test_plan",
+        "planObjects": [
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680000.0],
+                                [386378.427863708813675, 6680000.0],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ],
+                    },
+                },
+                "name": land_use_area_instance.name,
+                "description": land_use_area_instance.description,
+                "objectNumber": land_use_area_instance.ordering,
+                "verticalLimit": {
+                    "dataType": "DecimalRange",
+                    "minimumValue": land_use_area_instance.height_min,
+                    "maximumValue": land_use_area_instance.height_max,
+                    "unitOfMeasure": land_use_area_instance.height_unit,
+                },
+            },
+            {
+                "planObjectKey": pedestrian_street_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [381849.834412134019658, 6680000.0],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6680000.0],
+                                [381849.834412134019658, 6680000.0],
+                            ]
+                        ],
+                    },
+                },
+                "name": pedestrian_street_instance.name,
+                "description": pedestrian_street_instance.description,
+                "objectNumber": pedestrian_street_instance.ordering,
+                "verticalLimit": {
+                    "dataType": "DecimalRange",
+                    "minimumValue": pedestrian_street_instance.height_min,
+                    "maximumValue": pedestrian_street_instance.height_max,
+                    "unitOfMeasure": pedestrian_street_instance.height_unit,
+                },
+            },
+            {
+                "planObjectKey": other_area_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [382953.0, 6678582.0],
+                                [382953.0, 6679385.0],
+                                [383825.0, 6679385.0],
+                                [383825.0, 6678582.0],
+                                [382953.0, 6678582.0],
+                            ]
+                        ],
+                    },
+                },
+                "relatedPlanObjectKeys": [land_use_area_instance.id],
+            },
+            {
+                "planObjectKey": point_instance.id,
+                "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                "undergroundStatus": "http://uri.suomi.fi/codelist/rytj/RY_MaanalaisuudenLaji/code/01",
+                "geometry": {
+                    "srid": str(PROJECT_SRID),
+                    "geometry": {"type": "Point", "coordinates": [382000.0, 6678000.0]},
+                },
+            },
+        ],
+        # groups will not be in order by object, because we join all the group ids together to find
+        # common groups across all objects:
+        "planRegulationGroups": [
+            {
+                "planRegulationGroupKey": point_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": point_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": point_text_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": point_text_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": point_text_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            point_text_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": point_plan_regulation_group_instance.short_name,
+                "groupNumber": point_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
+            {
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": empty_value_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "subjectIdentifiers": empty_value_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            },
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituksenOsuusKerrosalastaK-m2",
+                                "value": {
+                                    "dataType": "PositiveNumeric",
+                                    "number": 2500,
+                                    "unitOfMeasure": "k-m2",
+                                },
+                            },
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            empty_value_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    },
+                    {
+                        "planRegulationKey": numeric_range_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpaallinenKerroslukuArvovali",
+                        "value": {
+                            "dataType": "PositiveNumericRange",
+                            "minimumValue": (
+                                int(
+                                    numeric_range_plan_regulation_instance.numeric_range_min
+                                )
+                                if numeric_range_plan_regulation_instance.numeric_range_min
+                                else None
+                            ),
+                            "maximumValue": (
+                                int(
+                                    numeric_range_plan_regulation_instance.numeric_range_max
+                                )
+                                if numeric_range_plan_regulation_instance.numeric_range_max
+                                else None
+                            ),
+                            # "unitOfMeasure": numeric_range_plan_regulation_instance.unit,  #  floor range does not have unit
+                        },
+                        "subjectIdentifiers": numeric_range_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            numeric_range_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    },
+                    {
+                        "planRegulationKey": text_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/asumisenAlue",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": text_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": text_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            }
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(text_plan_regulation_instance.ordering),
+                        # TODO: plan regulation documents to be added.
+                    },
+                    {
+                        "planRegulationKey": verbal_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sanallinenMaarays",
+                        "value": {
+                            "dataType": "LocalizedText",
+                            "text": verbal_plan_regulation_instance.text_value,
+                        },
+                        "subjectIdentifiers": verbal_plan_regulation_instance.subject_identifiers,
+                        "verbalRegulations": [
+                            "http://uri.suomi.fi/codelist/rytj/RY_Sanallisen_Kaavamaarayksen_Laji/code/perustaminen"
+                        ],
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            verbal_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    },
+                ],
+                "planRecommendations": [
+                    {
+                        "planRecommendationKey": plan_proposition_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "value": plan_proposition_instance.text_value,
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # TODO: plan recommendation documents to be added.
+                    }
+                ],
+                "letterIdentifier": plan_regulation_group_instance.short_name,
+                "groupNumber": plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
+            {
+                "planRegulationGroupKey": numeric_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": numeric_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": numeric_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/sallittuKerrosala",
+                        "value": {
+                            "dataType": "PositiveNumeric",
+                            "number": (
+                                int(numeric_plan_regulation_instance.numeric_value)
+                                if numeric_plan_regulation_instance.numeric_value
+                                else None
+                            ),
+                            "unitOfMeasure": numeric_plan_regulation_instance.unit,
+                        },
+                        "subjectIdentifiers": numeric_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            numeric_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": numeric_plan_regulation_group_instance.short_name,
+                "groupNumber": numeric_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
+            {
+                "planRegulationGroupKey": decimal_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": decimal_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": decimal_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/maanpinnanKorkeusasema",
+                        "value": {
+                            "dataType": "Decimal",
+                            "number": decimal_plan_regulation_instance.numeric_value,
+                            "unitOfMeasure": decimal_plan_regulation_instance.unit,
+                        },
+                        "subjectIdentifiers": decimal_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            decimal_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": decimal_plan_regulation_group_instance.short_name,
+                "groupNumber": decimal_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
+            {
+                "planRegulationGroupKey": pedestrian_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": pedestrian_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": pedestrian_street_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/katu",
+                        "subjectIdentifiers": pedestrian_street_plan_regulation_instance.subject_identifiers,
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/paakayttotarkoitus"
+                            },
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituskohdistus",
+                                "value": {
+                                    "dataType": "Code",
+                                    "code": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/jalankulkualue",
+                                    "codeList": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                                    "title": {
+                                        "eng": "Pedestrian area",
+                                        "fin": "Jalankulkualue",
+                                        "swe": "Fotgångarområde",
+                                    },
+                                },
+                            },
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/kayttotarkoituskohdistus",
+                                "value": {
+                                    "dataType": "Code",
+                                    "code": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/pyorailyalue",
+                                    "codeList": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji",
+                                    "title": {
+                                        "eng": "Cycling area",
+                                        "fin": "Pyöräilyalue",
+                                        "swe": "Cykelområde",
+                                    },
+                                },
+                            },
+                        ],
+                        "planThemes": [
+                            "http://uri.suomi.fi/codelist/rytj/kaavoitusteema/code/01"
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            pedestrian_street_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": pedestrian_plan_regulation_group_instance.short_name,
+                "groupNumber": pedestrian_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
+            {
+                "planRegulationGroupKey": construction_area_plan_regulation_group_instance.id,
+                "titleOfPlanRegulation": construction_area_plan_regulation_group_instance.name,
+                "planRegulations": [
+                    {
+                        "planRegulationKey": construction_area_plan_regulation_instance.id,
+                        "lifeCycleStatus": "http://uri.suomi.fi/codelist/rytj/kaavaelinkaari/code/03",
+                        "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayslaji/code/rakennusala",
+                        "additionalInformations": [
+                            {
+                                "type": "http://uri.suomi.fi/codelist/rytj/RY_Kaavamaarayksen_Lisatiedonlaji/code/osaAlue"
+                            }
+                        ],
+                        # oh great, integer has to be string here for reasons unknown.
+                        "regulationNumber": str(
+                            construction_area_plan_regulation_instance.ordering
+                        ),
+                        # TODO: plan regulation documents to be added.
+                    }
+                ],
+                "planRecommendations": [],
+                "letterIdentifier": construction_area_plan_regulation_group_instance.short_name,
+                "groupNumber": construction_area_plan_regulation_group_instance.ordering,
+                "colorNumber": "#FFFFFF",
+            },
+        ],
+        "planRegulationGroupRelations": [
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "planRegulationGroupKey": numeric_plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "planRegulationGroupKey": decimal_plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": land_use_area_instance.id,
+                "planRegulationGroupKey": plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": other_area_instance.id,
+                "planRegulationGroupKey": construction_area_plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": pedestrian_street_instance.id,
+                "planRegulationGroupKey": pedestrian_plan_regulation_group_instance.id,
+            },
+            {
+                "planObjectKey": point_instance.id,
+                "planRegulationGroupKey": point_plan_regulation_group_instance.id,
+            },
+        ],
+    }
+
+
+def assert_lists_equal(
+    list1: list,
+    list2: list,
+    ignore_keys: list | None = None,
+    ignore_order_for_keys: list | None = None,
+    ignore_list_order: bool | None = False,
+    path: str = "",
+) -> None:
+    assert len(list1) == len(list2), f"Lists differ in length in path {path}"
+    for i, item1 in enumerate(list1):
+        current_path = f"{path}[{i}]" if path else f"[{i}]"
+        items_to_compare = list2 if ignore_list_order else [list2[i]]
+        deepest_error = AssertionError()
+        error_depth = 0
+        for item2 in items_to_compare:
+            try:
+                deepcompare(
+                    item1,
+                    item2,
+                    ignore_keys=ignore_keys,
+                    ignore_order_for_keys=ignore_order_for_keys,
+                    path=current_path,
+                )
+            except AssertionError as error:
+                # Now this is a hack if I ever saw one:
+                depth = str(error).count(".") + str(error).count("[")
+                if depth > error_depth:
+                    deepest_error = error
+                    error_depth = depth
+                continue
+            else:
+                break
+        else:
+            raise deepest_error
+
+
+def assert_dicts_equal(
+    dict1: Mapping,
+    dict2: Mapping,
+    ignore_keys: list | None = None,
+    ignore_order_for_keys: list | None = None,
+    path: str = "",
+) -> None:
+    assert len(dict1) == len(dict2), (
+        f"Dicts differ in length in {path}. Dict1 keys: {dict1.keys()}. Dict2 keys: {dict2.keys()}"
+    )
+    for key in dict2:
+        if not ignore_keys or key not in ignore_keys:
+            assert key in dict1, f"Key {key} missing in {path}"
+    for key, value in dict1.items():
+        current_path = f"{path}.{key}" if path else key
+        if not ignore_keys or key not in ignore_keys:
+            deepcompare(
+                dict2[key],
+                value,
+                ignore_keys=ignore_keys,
+                ignore_order_for_keys=ignore_order_for_keys,
+                ignore_list_order=(
+                    key in ignore_order_for_keys if ignore_order_for_keys else False
+                ),
+                path=current_path,
+            )
+
+
+def deepcompare(
+    item1: object,
+    item2: object,
+    ignore_keys: list[str] | None = None,
+    ignore_order_for_keys: list[str] | None = None,
+    ignore_list_order: bool | None = False,
+    path: str = "",
+) -> None:
+    """Recursively check that dicts and lists in two items have the same items (type and value)
+    in the same order.
+
+    Optionally, certain keys (e.g. random UUIDs set by the database, our script or
+    the remote Ryhti API) can be ignored when comparing dicts in the lists, because
+    they are not provided in the incoming data. Also, order of lists under certain keys
+    in dicts may be ignored, or order of this list itself may be ignored.
+    """
+    assert type(item1) is type(item2), f"Item types differ at {path}"
+    if isinstance(item1, dict) and isinstance(item2, dict):
+        assert_dicts_equal(
+            item1,
+            item2,
+            ignore_keys=ignore_keys,
+            ignore_order_for_keys=ignore_order_for_keys,
+            path=path,
+        )
+    elif isinstance(item1, list) and isinstance(item2, list):
+        assert_lists_equal(
+            item1,
+            item2,
+            ignore_keys=ignore_keys,
+            ignore_order_for_keys=ignore_order_for_keys,
+            ignore_list_order=ignore_list_order,
+            path=path,
+        )
+    else:
+        assert item1 == item2, f"Items differ at {path}"
+
+
+# Fixtures for the plan cancellation info (kumoamistieto) tests, shared by
+# test/database/test_cancellation_triggers.py and
+# test/ryhti_client/test_finalize_plan.py.
+# The test geometries live in one 100 by 100 metre square of EPSG:3067, given
+# in metres from its south west corner. The repealing plan covers the western
+# half of the square, so everything east of MIDDLE stays valid.
+ORIGIN_X = 380000.0
+ORIGIN_Y = 6670000.0
+SIDE = 100.0
+MIDDLE = 50.0
+
+
+def area(x0: float, y0: float, x1: float, y1: float) -> WKBElement:
+    """A rectangle of the test square as a MultiPolygon."""
+    corners = box(ORIGIN_X + x0, ORIGIN_Y + y0, ORIGIN_X + x1, ORIGIN_Y + y1)
+    return from_shape(MultiPolygon([corners]), srid=PROJECT_SRID)
+
+
+def line(x0: float, y0: float, x1: float, y1: float) -> WKBElement:
+    """A line of the test square as a MultiLineString."""
+    ends = [(ORIGIN_X + x0, ORIGIN_Y + y0), (ORIGIN_X + x1, ORIGIN_Y + y1)]
+    return from_shape(MultiLineString([LineString(ends)]), srid=PROJECT_SRID)
+
+
+def point(x: float, y: float) -> WKBElement:
+    """A point of the test square as a MultiPoint."""
+    return from_shape(
+        MultiPoint([Point(ORIGIN_X + x, ORIGIN_Y + y)]), srid=PROJECT_SRID
+    )
+
+
+def yesterday() -> date:
+    """The day before the current date of the database, whatever its time zone."""
+    return datetime.now(UTC).date() - timedelta(days=1)
+
+
+@pytest.fixture
+def cancelled_plan(
+    session: Session,
+    plan_matter_instance: models.PlanMatter,
+    valid_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+) -> models.Plan:
+    """A valid plan that covers the test square, with four plan objects.
+
+    The plan objects are placed so that the western half of the square holds
+    one whole area and one whole point, and cuts one area and one line in two.
+    """
+    plan = models.Plan(
+        id=str(uuid.uuid4()),
+        plan_matter=plan_matter_instance,
+        name={"fin": "Kumottava kaava"},
+        geom=area(0, 0, SIDE, SIDE),
+        lifecycle_status=valid_status_instance,
+        final=True,
+        period_of_validity_start=yesterday(),
+    )
+    object_geometries = {
+        "covered_area": area(10, 10, 30, 30),
+        "split_area": area(40, 10, 60, 30),
+    }
+    plan.land_use_areas = [
+        models.LandUseArea(
+            name={"fin": name},
+            geom=geom,
+            lifecycle_status=valid_status_instance,
+            type_of_underground=type_of_underground_instance,
+            period_of_validity_start=yesterday(),
+        )
+        for name, geom in object_geometries.items()
+    ]
+    plan.lines = [
+        models.Line(
+            name={"fin": "split_line"},
+            geom=line(40, 50, 60, 50),
+            lifecycle_status=valid_status_instance,
+            type_of_underground=type_of_underground_instance,
+            period_of_validity_start=yesterday(),
+        )
+    ]
+    plan.points = [
+        models.Point(
+            name={"fin": "covered_point"},
+            geom=point(20, 70),
+            lifecycle_status=valid_status_instance,
+            type_of_underground=type_of_underground_instance,
+            period_of_validity_start=yesterday(),
+        ),
+        models.Point(
+            name={"fin": "outside_point"},
+            geom=point(80, 70),
+            lifecycle_status=valid_status_instance,
+            type_of_underground=type_of_underground_instance,
+            period_of_validity_start=yesterday(),
+        ),
+    ]
+    session.add(plan)
+    session.commit()
+    return plan
+
+
+def named(plan: models.Plan, name: str) -> models.PlanObjectBase:
+    """Look up a plan object of the plan by its Finnish name."""
+    objects: list[models.PlanObjectBase] = [
+        *plan.land_use_areas,
+        *plan.lines,
+        *plan.points,
+    ]
+    return next(o for o in objects if o.name is not None and o.name["fin"] == name)
+
+
+@pytest.fixture
+def repealing_plan_matter(
+    session: Session, another_plan_matter_instance: models.PlanMatter
+) -> models.PlanMatter:
+    """A plan matter marked as a repealing plan (kumoamiskaava)."""
+    another_plan_matter_instance.repealing = True
+    session.commit()
+    return another_plan_matter_instance
+
+
+@pytest.fixture
+def repealing_plan(
+    session: Session,
+    repealing_plan_matter: models.PlanMatter,
+    cancelled_plan: models.Plan,  # noqa: ARG001  # must exist before the insert
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> models.Plan:
+    """A repealing plan that covers the western half of the test square."""
+    plan = models.Plan(
+        id=str(uuid.uuid4()),
+        plan_matter=repealing_plan_matter,
+        name={"fin": "Kumoava kaava"},
+        geom=area(0, 0, MIDDLE, SIDE),
+        lifecycle_status=preparation_status_instance,
+    )
+    session.add(plan)
+    session.commit()
+    return plan

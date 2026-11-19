@@ -1,0 +1,197 @@
+# Path to the private GispoCoding/arho-deploy checkout that holds the instance
+# specific configuration (backends/<name>/ and .sops.yaml).
+# Defaults to a sibling checkout of this repository.
+ARHO_DEPLOY_DIR ?= ../../../arho-deploy
+WORKSPACE = $(shell terraform workspace show)
+# make tf-init records the backend it used. The config of each instance lives in the
+# folder of its backend, so two backends can have a workspace with the same name.
+BACKEND := $(shell cat .terraform/backend-name 2>/dev/null)
+BACKEND_DIR := $(ARHO_DEPLOY_DIR)/backends/$(BACKEND)
+TFVARS := $(BACKEND_DIR)/var-files/$(WORKSPACE).tfvars.json
+TFVARS_ENC := $(BACKEND_DIR)/var-files/$(WORKSPACE).tfvars.enc.json
+PUBLIC_KEYS := $(BACKEND_DIR)/public_keys/$(WORKSPACE)
+
+# The deployment values come from the decrypted variable file of the current
+# terraform workspace and from the AWS credentials in use, so that a make target
+# cannot use a different prefix, region or account than the one terraform deploys
+# to. Set any of them in the environment or on the command line to work without a
+# variable file. Simple assignment, so each value is looked up once per make run
+# instead of once per reference.
+ifndef prefix
+prefix := $(shell jq -re '.prefix // empty' $(TFVARS) 2>/dev/null)
+endif
+ifndef AWS_REGION
+AWS_REGION := $(shell jq -re '.AWS_REGION_NAME // empty' $(TFVARS) 2>/dev/null)
+endif
+ifndef AWS_ACCOUNT_ID
+AWS_ACCOUNT_ID := $(shell aws sts get-caller-identity --query Account --output text 2>/dev/null)
+endif
+
+# create-db, migrate-db and the log targets give the aws cli no --region option, so
+# they relied on the region being exported. Export it from here instead.
+export AWS_REGION
+
+# The aws cli v2 sends output to a pager when it writes to a terminal, which stops a
+# make recipe until the pager is closed. An empty AWS_PAGER disables the pager. CI
+# never saw this, because the cli uses no pager when the output is not a terminal.
+export AWS_PAGER :=
+
+build:
+	make build-lambda -C ..
+
+# The likely causes of an empty value are a variable file that is still encrypted and
+# an expired MFA session, so say that instead of letting aws fail on a malformed
+# resource name.
+check-deployment-vars:
+	@$(if $(and $(prefix),$(AWS_REGION),$(AWS_ACCOUNT_ID)),,$(error prefix, AWS_REGION and AWS_ACCOUNT_ID are not all set. Run `make tf-init ws=<workspace> backend=<name>` and `make decrypt-workspace-secrets` for workspace "$(WORKSPACE)" and check that your AWS session is valid, or pass the values on the command line))
+
+push-lambdas: build push-db-manager push-koodistot-loader push-ryhti-client push-mml-loader
+	echo "All pushed"
+
+# update-function-code prints the whole function configuration, environment variables
+# too. Print only the name and the update status, so that no secret can show in a log.
+update-lambdas: update-db-manager update-koodistot-loader update-ryhti-client update-mml-loader
+	echo "All updated"
+
+push-db-manager: check-deployment-vars
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+	docker tag arho-db_manager:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest
+
+update-db-manager: push-db-manager
+	aws lambda update-function-code --function-name $(prefix)-db_manager --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-db_manager:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
+
+push-koodistot-loader: check-deployment-vars
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+	docker tag arho-koodistot_loader:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest
+
+update-koodistot-loader: push-koodistot-loader
+	aws lambda update-function-code --function-name $(prefix)-koodistot_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-koodistot_loader:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
+
+## With ryhti client, we need to publish new version and update alias for provisioned concurrency.
+## Also, we have to wait until the code update is complete before we publish the new version.
+push-ryhti-client: check-deployment-vars
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+	docker tag arho-ryhti_client:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest
+
+update-ryhti-client: push-ryhti-client
+	aws lambda update-function-code --function-name $(prefix)-ryhti_client --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-ryhti_client:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
+	aws lambda wait function-updated-v2 --function-name $(prefix)-ryhti_client
+# The alias keeps the routing config it already has when a call sends none, so a leftover
+# weighted split between two versions blocks every later alias move. The empty routing config
+# clears it. A shell variable carries the version, because an "xargs -I {}" replace string
+# would also match the {} inside the JSON.
+	version=$$(aws lambda publish-version --function-name $(prefix)-ryhti_client --query "Version" --output text) && \
+		aws lambda update-alias --function-name $(prefix)-ryhti_client --name live \
+			--function-version "$$version" --routing-config '{"AdditionalVersionWeights":{}}'
+
+push-mml-loader: check-deployment-vars
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+	docker tag arho-mml_loader:latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest
+
+update-mml-loader: push-mml-loader
+	aws lambda update-function-code --function-name $(prefix)-mml_loader --image-uri $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(prefix)-mml_loader:latest \
+		--query "[FunctionName, LastUpdateStatus]" --output text
+
+log-db-manager: check-deployment-vars
+	aws logs tail "/aws/lambda/$(prefix)-db_manager"
+
+log-koodistot-loader: check-deployment-vars
+	aws logs tail "/aws/lambda/$(prefix)-koodistot_loader"
+
+log-ryhti-client: check-deployment-vars
+	aws logs tail "/aws/lambda/$(prefix)-ryhti_client"
+
+## Commands to invoke lambda functions
+create-db: check-deployment-vars
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "create_db"}' ../logs/response_create_db.json
+
+migrate-db: check-deployment-vars
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-db_manager --payload '{"action": "migrate_db"}' ../logs/response_migrate_db.json
+
+load-koodistot: check-deployment-vars
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-koodistot_loader --payload '{}' ../logs/response_load_koodistot.json
+
+load-mml: check-deployment-vars
+	aws lambda invoke --region $(AWS_REGION) --cli-binary-format raw-in-base64-out --function-name $(prefix)-mml_loader --payload '{}' ../logs/response_load_mml.json
+
+# The import runs on the live alias, the same version the API gateway calls. A cli read
+# timeout of 0 waits for the whole 120 second function timeout instead of the default 60.
+ryhti-import-wfs: check-deployment-vars
+	@echo "Importing WFS plans for municipality $(mun)..."
+	aws lambda invoke --region $(AWS_REGION) --cli-read-timeout 0 --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --qualifier live --payload '{"action": "import_wfs_plans", "data": {"municipality_code": "$(mun)"}}' ../logs/response_import_wfs.json
+	@cat ../logs/response_import_wfs.json
+
+ryhti-import-wfs-region: check-deployment-vars
+	@echo "Importing WFS plans for region $(region)..."
+	aws lambda invoke --region $(AWS_REGION) --cli-read-timeout 0 --cli-binary-format raw-in-base64-out --function-name $(prefix)-ryhti_client --qualifier live --payload '{"action": "import_wfs_plans", "data": {"region_code": "$(region)"}}' ../logs/response_import_wfs.json
+	@cat ../logs/response_import_wfs.json
+
+
+check-backend:
+	@$(if $(BACKEND),,$(error the backend is not known. Run make tf-init ws=<workspace> backend=<name>))
+
+decrypt-workspace-secrets: check-backend
+	sops -d $(PUBLIC_KEYS).enc > $(PUBLIC_KEYS)
+	sops -d $(TFVARS_ENC) > $(TFVARS)
+
+# sops discovers .sops.yaml from the working directory, so the config of the
+# arho-deploy repository must be passed explicitly when encrypting from here.
+encrypt-workspace-secrets: check-backend
+	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(PUBLIC_KEYS) > $(PUBLIC_KEYS).enc
+	sops --config $(ARHO_DEPLOY_DIR)/.sops.yaml -e $(TFVARS) > $(TFVARS_ENC)
+
+# The backend settings differ per AWS account, so they live in arho-deploy in
+# backends/<name>/backend.hcl. Its README says which workspace uses which backend. The
+# selected workspace of the previous backend may not exist in this one, so it is
+# forgotten first. The backend name is recorded for the targets that read the config.
+tf-init:
+	@$(if $(ws),,$(error set ws=<workspace>, e.g. make tf-init ws=<workspace> backend=<name>))
+	@$(if $(backend),,$(error set backend=<name>, see $(ARHO_DEPLOY_DIR)/backends/))
+	rm -f .terraform/environment .terraform/backend-name
+	terraform init -reconfigure -backend-config=$(ARHO_DEPLOY_DIR)/backends/$(backend)/backend.hcl
+	echo $(backend) > .terraform/backend-name
+	terraform workspace select -or-create $(ws)
+
+# A lambda function cannot be created before its container image exists in ECR, and
+# terraform does not build or push images. So the first deployment creates the four
+# repositories on their own, pushes the images with push-lambdas, and only then runs
+# tf-apply for the rest of the infrastructure.
+tf-bootstrap-ecr: check-backend
+	terraform apply -var-file=$(TFVARS) \
+		-target=aws_ecr_repository.db_manager \
+		-target=aws_ecr_repository.koodistot_loader \
+		-target=aws_ecr_repository.ryhti_client \
+		-target=aws_ecr_repository.mml_loader
+
+tf-plan: check-backend
+	terraform plan -var-file=$(TFVARS)
+
+tf-apply: check-backend
+	terraform apply -var-file=$(TFVARS)
+
+update-ssh-keys: check-backend
+	ansible-playbook ansible/playbook.yml \
+	-i ansible/inventory/hosts.yml \
+	--extra-vars " \
+		bastion_host=$(shell terraform output -raw bastion_address) \
+		ssh_key_file=$(abspath $(PUBLIC_KEYS)) \
+	" \
+	$(if $(ssh_private_key),--private-key $(ssh_private_key))
+
+# The bastion reads its host key from SSM, so the fingerprint can be verified
+# against SSM instead of being accepted blindly on the first connection.
+# Append the printed line to your known hosts:
+#   make bastion-known-host >> ~/.ssh/known_hosts
+bastion-known-host: check-deployment-vars
+	@key=$$(mktemp) && trap 'rm -f "$$key"' EXIT && \
+	aws ssm get-parameter \
+		--name "/infra/$(prefix)-bastion/host_key_ed25519" \
+		--with-decryption --query Parameter.Value --output text > "$$key" && \
+	echo "$$(terraform output -raw bastion_address) $$(ssh-keygen -y -f "$$key" | cut -d' ' -f1,2)"

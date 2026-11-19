@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import os
+import uuid
+from datetime import datetime
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, cast
+
+from sqlalchemy import FetchedValue
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.sql import func
+from sqlalchemy.types import ARRAY, TEXT, TIMESTAMP, Enum as SQLAlchemyEnum
+
+from database.enums import AttributeValueDataType
+
+if TYPE_CHECKING:
+    from sqlalchemy import Table
+
+PROJECT_SRID = int(os.environ.get("PROJECT_SRID", "3067"))
+
+
+class Base(DeclarativeBase):
+    """Here we link any postgres specific data types to type annotations."""
+
+    type_annotation_map: ClassVar[dict[Any, Any]] = {
+        uuid.UUID: postgresql.UUID(as_uuid=False),
+        dict[str, str]: postgresql.JSONB,  # Used for multi language text fields
+        dict[str, Any] | str: postgresql.JSONB,  # Used for validation errors
+        list[str]: ARRAY(TEXT),
+        datetime: TIMESTAMP(timezone=True),
+    }
+
+
+"""
+Here we define any custom type annotations we want to use for columns
+"""
+
+unique_str = Annotated[str, mapped_column(unique=True, index=True)]
+language_str = dict[str, str]
+
+metadata = Base.metadata
+
+type DbId = str
+
+
+class VersionedBase(Base):
+    """Versioned data tables should have some uniform fields."""
+
+    __abstract__ = True
+    __table_args__: Any = {"schema": "hame"}  # noqa: RUF012  # No can do, sqlalchemy has Any annotation for this
+
+    subclasses: ClassVar[list[type[VersionedBase]]] = []
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        # SQLAlchemy sets __table__ only on mapped (non-abstract) classes.
+        if not cls.__dict__.get("__abstract__", False) and hasattr(cls, "__table__"):
+            VersionedBase.subclasses.append(cls)
+
+    @classmethod
+    def subclass_names(cls) -> list[tuple[str, str]]:
+        return [
+            (cast("Table", cls.__table__).schema or "", cls.__tablename__)
+            for cls in VersionedBase.subclasses
+        ]
+
+    # Go figure. We have to *explicitly state* id is a mapped column, because id will
+    # have to be defined inside all the subclasses for relationship remote_side
+    # definition to work. So even if there is an id field in all the classes,
+    # self-relationships will later break if id is only defined by type annotation.
+    id: Mapped[DbId] = mapped_column(
+        type_=postgresql.UUID(as_uuid=False),
+        primary_key=True,
+        server_default=func.gen_random_uuid(),
+    )
+    creator: Mapped[str | None]
+    created_at: Mapped[datetime | None] = mapped_column(
+        server_default=FetchedValue()
+    )  # Set always in before insert trigger. Must be nullable for clients
+    modified_at: Mapped[datetime | None] = mapped_column(
+        server_default=FetchedValue(), server_onupdate=FetchedValue()
+    )  # Set always in before insert/update trigger. Must be nullable for clients
+    modifier: Mapped[str | None]
+
+
+class AttributeValueMixin:
+    """Common attributes for property values."""
+
+    value_data_type: Mapped[AttributeValueDataType | None] = mapped_column(
+        SQLAlchemyEnum(
+            AttributeValueDataType, values_callable=lambda e: [x.value for x in e]
+        )
+    )
+
+    numeric_value: Mapped[float | None]
+    numeric_range_min: Mapped[float | None]
+    numeric_range_max: Mapped[float | None]
+
+    unit: Mapped[str | None]
+
+    text_value: Mapped[language_str | None]
+    text_syntax: Mapped[str | None]
+
+    code_list: Mapped[str | None]
+    code_value: Mapped[str | None]
+    code_title: Mapped[language_str | None]
+
+    height_reference_point: Mapped[str | None]

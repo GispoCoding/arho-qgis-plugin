@@ -1,9 +1,15 @@
 name: code-style
 
+# One pre-commit config covers the plugin and the backend, and each hook filters on
+# its own side, so this runs for every change.
 on:
   pull_request:
   push:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   code-style:
@@ -11,4 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
       - uses: pre-commit/action@v3.0.1

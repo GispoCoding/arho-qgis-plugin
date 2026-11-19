@@ -1,0 +1,16 @@
+services:
+  db:
+    volumes: !reset null
+
+  db_manager:
+    volumes: !reset null
+
+  koodistot_loader:
+    volumes: !reset null
+
+  ryhti_client:
+    volumes: !override
+      - ./logs:/var/task/logs
+
+  mml_loader:
+    volumes: !reset null

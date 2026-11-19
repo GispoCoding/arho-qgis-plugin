@@ -1,0 +1,9 @@
+# The website is not a Python package. This file holds the tool settings of web/;
+# the build dependencies are in requirements.txt.
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
