@@ -1,4 +1,4 @@
-# Which side a pull request changes.
+# Which part a pull request changes.
 plugin:
   - changed-files:
       - any-glob-to-match-file: "plugin/**"
@@ -6,6 +6,10 @@ plugin:
 backend:
   - changed-files:
       - any-glob-to-match-file: "backend/**"
+
+web:
+  - changed-files:
+      - any-glob-to-match-file: "web/**"
 
 # Changelog category from the branch name.
 enhancement:

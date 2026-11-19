@@ -8,15 +8,21 @@ on:
     branches: [main]
     paths:
       - "web/**"
-      - ".github/workflows/web.yml"
+      - ".github/workflows/web-pages.yml"
   pull_request:
     paths:
       - "web/**"
-      - ".github/workflows/web.yml"
+      - ".github/workflows/web-pages.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# The website project is in web/. The `with:` paths of the actions stay relative to
+# the repository root.
+defaults:
+  run:
+    working-directory: web
 
 # One deployment at a time; let a running deployment finish.
 concurrency:
@@ -36,10 +42,10 @@ jobs:
           cache-dependency-path: web/requirements.txt
 
       - name: Install Zensical
-        run: pip install -r web/requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Build the Finnish and the Swedish site
-        run: python web/build.py --strict
+        run: python build.py --strict
 
       - if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
