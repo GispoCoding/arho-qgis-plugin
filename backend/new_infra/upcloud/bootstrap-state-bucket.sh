@@ -4,9 +4,9 @@
 # state, so this runs once per account, before the first `tofu init`. It skips what already
 # exists, so it is safe to run again.
 #
-# Needs curl, jq, openssl and the aws cli (for the S3 versioning call). UpCloud credentials come from
-# UPCLOUD_TOKEN, or UPCLOUD_USERNAME and UPCLOUD_PASSWORD, as for the UpCloud provider.
-# Without them, the script reads the token from the upctl config, ~/.config/upctl.yaml.
+# Needs curl, jq, openssl and the aws cli (for the S3 versioning call). UpCloud credentials
+# come from UPCLOUD_TOKEN, or UPCLOUD_USERNAME and UPCLOUD_PASSWORD. Without them, the script
+# reads the token from the upctl config, ~/.config/upctl.yaml. The system keyring is not read.
 set -euo pipefail
 
 # The aws cli would otherwise stop at a pager after every call that prints output.
@@ -39,7 +39,7 @@ Creates, in the UpCloud account of the current credentials:
 REGION is an Object Storage region, default europe-1 (primary zone fi-hel1).
 
 Credentials: UPCLOUD_TOKEN, or UPCLOUD_USERNAME and UPCLOUD_PASSWORD, or the token in
-~/.config/upctl.yaml.
+~/.config/upctl.yaml. The system keyring is not read.
 
 Example:
   ./upcloud/bootstrap-state-bucket.sh

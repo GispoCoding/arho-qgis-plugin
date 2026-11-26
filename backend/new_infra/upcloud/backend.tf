@@ -5,9 +5,10 @@
 # first init.
 terraform {
   backend "s3" {
-    # Each workspace keeps its state at arho/<workspace>/terraform.tfstate. Setting the prefix
-    # avoids the default "env:" prefix, which would put colons in the paths. The default
-    # workspace would use the bare key, so the make targets refuse to run in it.
+    # Each workspace keeps its state at arho/<workspace>/terraform.tfstate. The prefix marks
+    # the state as ARHO state and is "arho" in every provider; it also avoids the default
+    # "env:" prefix, which would put colons in the paths. The default workspace would use
+    # the bare key, so the make targets refuse to run in it.
     key                  = "terraform.tfstate"
     workspace_key_prefix = "arho"
     region               = "europe-1"

@@ -10,6 +10,7 @@ terraform {
   }
 }
 
-# Credentials come from the environment: UPCLOUD_TOKEN, or UPCLOUD_USERNAME and
-# UPCLOUD_PASSWORD. Never put them in this repository.
+# Credentials come from UPCLOUD_TOKEN, or UPCLOUD_USERNAME and UPCLOUD_PASSWORD, or the system
+# keyring that `upctl account login` writes (see "UpCloud API token" in ../README.md). Never
+# put them in this repository.
 provider "upcloud" {}

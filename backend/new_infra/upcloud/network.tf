@@ -32,7 +32,8 @@ resource "upcloud_network" "private" {
 }
 
 # Outbound internet access for servers that have no public interface. Its public address is
-# also the X-Road security server's address, registered with DVV (plan.md, tasks 01 and 13).
+# also the X-Road security server's address, registered with DVV
+# (docs/transition-plan.md, tasks 01 and 12).
 # UpCloud cannot give a gateway a reserved address, so a new gateway gets a new one and the
 # DVV registration must change. prevent_destroy stops any plan that would delete or replace
 # the gateway; remove it only on purpose, after agreeing the change with DVV.

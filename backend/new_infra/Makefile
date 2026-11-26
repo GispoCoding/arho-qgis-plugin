@@ -1,6 +1,7 @@
 # Runs OpenTofu for the ARHO platforms with the deployment config from the private
-# arho-deploy repository. Each OpenTofu configuration is a subdirectory here (upcloud/ for
-# UpCloud); these targets work for any of them whose state is in an S3-compatible bucket.
+# arho-deploy repository. Each provider has one OpenTofu configuration, in a subdirectory here
+# (upcloud/ for UpCloud); these targets work for any of them whose state is in an
+# S3-compatible bucket.
 #
 # Each backend in arho-deploy has a folder backends/<backend>/ with
 #   backend.hcl                         the state bucket and endpoint (plaintext)

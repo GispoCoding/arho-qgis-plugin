@@ -1,19 +1,27 @@
 # ARHO platform infrastructure
 
-OpenTofu configurations for the shared ARHO platform (plan.md, task 02). They replace the
-AWS configuration in `../infra` once the AWS instances have moved.
+OpenTofu configurations for the shared ARHO platform
+([transition plan](../docs/transition-plan.md), task 02). They replace the AWS configuration
+in `../infra` once the AWS instances have moved. Until then, `../infra` only keeps the AWS
+instances running: new platform work goes here, and does not copy its AWS patterns.
 
-This folder holds what every configuration shares: the `Makefile`, which handles the state
-backend, the workspaces and the secrets, and this README. Each configuration is an OpenTofu
-root module in a subdirectory of its own:
+The platform is not tied to one cloud. It needs only servers, a managed PostgreSQL database
+and S3-compatible object storage, so it can run on any cloud or in a data center that offers
+them. UpCloud is the only provider today.
+
+This folder holds what every provider shares: the `Makefile`, which handles the state
+backend, the workspaces and the secrets, `tofu-encrypted.sh`, which encrypts the state, and
+this README. Each provider has one configuration, an OpenTofu root module in a subdirectory
+of its own, which holds everything specific to that provider. This README has a section per
+provider.
 
 | Directory | Configuration |
 |---|---|
 | [upcloud/](upcloud/) | The ARHO platform on UpCloud. |
 
-The make targets work for any configuration whose state is in an S3-compatible bucket. Pick
-the configuration with `dir=<directory>` when you run `make tf-init`. The examples use the
-UpCloud configuration. In them, `<backend>` is the name of a backend folder in arho-deploy,
+The make targets work for any provider whose state is in an S3-compatible bucket. Pick the
+provider's configuration with `dir=<directory>` when you run `make tf-init`. The examples use
+the UpCloud configuration. In them, `<backend>` is the name of a backend folder in arho-deploy,
 `backends/<backend>/`: list that folder to see the backends you can use.
 
 Use OpenTofu 1.10 or later (`brew install opentofu`). Terraform is not supported: the lock
@@ -32,7 +40,8 @@ repository has one folder per state backend, `backends/<backend>/`, with:
 | `credentials.enc.env` | `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` of the state bucket user, and `TF_VAR_state_encryption_passphrase`. sops. |
 | `var-files/<workspace>.tfvars.enc.json` | The variables of each platform. sops. |
 
-A backend is one state bucket, usually one cloud account.
+A backend is one state bucket, usually one cloud account, and belongs to one provider.
+Providers never share a backend: each has its own bucket, keys and passphrase.
 
 sops encrypts these with age keys listed in `.sops.yaml` of arho-deploy. The `Makefile` here
 decrypts them only while a command runs: the keys into its environment, the variable file
@@ -218,6 +227,9 @@ directory, the backend, so the other targets need no arguments. To run a single 
 another configuration that has already been initialised, add `dir=<directory>`, e.g.
 `make tf-plan dir=upcloud`.
 
+Run `make tf-apply` only when you mean to change the platform, and read its plan before you
+answer `yes`.
+
 ### A new state backend
 
 1. Create the state bucket and a user with access keys that can read and write it. For
@@ -229,26 +241,40 @@ another configuration that has already been initialised, add `dir=<directory>`, 
 3. `make tf-init dir=<directory> ws=<workspace> backend=<backend>`, then `make edit-vars` to
    create the variable file of the workspace.
 
-### A new configuration
+### A new provider
 
-A configuration works with the make targets when its directory has:
+A new provider gets one configuration, in a directory of its own next to `upcloud/`. Do not
+split a provider into several configurations. It works with the make targets when its
+directory has:
 
 - a `backend "s3"` block without `bucket` and `endpoints`, which come from `backend.hcl`,
   and with any settings that its S3 service needs, e.g. the skipped AWS-only checks in
-  [upcloud/backend.tf](upcloud/backend.tf).
+  [upcloud/backend.tf](upcloud/backend.tf). It sets `workspace_key_prefix = "arho"`, the
+  same in every provider (see [Workspaces](#workspaces)).
 
-Give its state a `workspace_key_prefix` of its own if it shares a bucket with another
-configuration, so that their workspaces do not overwrite each other's state.
+It also needs a backend of its own, see [A new state backend](#a-new-state-backend). It does
+not store its state in another provider's bucket by default.
+
+Keep everything specific to the provider in its directory: resources, provider settings,
+backend settings and scripts that call the provider's API. A new provider also
+gets a section of its own in this README, like [UpCloud](#upcloud). The shared files may use
+UpCloud in examples, but only for things that other providers also have.
 
 ## Workspaces
 
-Each deployment (test, prod) is a workspace in the same state bucket, stored at
-`<prefix>/<workspace>/terraform.tfstate` with its own lock file. The prefix is the
-`workspace_key_prefix` of the configuration, `arho` for UpCloud. The workspace name is also
-the environment name in resource names (`arho-<workspace>-*`) and labels, so there is no
-`environment` variable. The make targets refuse the `default` workspace, whose state would
-sit at the bare key outside the prefix, and any name other than lowercase letters, digits
-and hyphens starting with a letter.
+Each deployment (test, prod) is a workspace in the provider's state bucket, stored at
+`arho/<workspace>/terraform.tfstate` with its own lock file. The prefix `arho` is the
+`workspace_key_prefix`, the same in every provider. It marks the state as ARHO state, apart
+from anything else in the same bucket or account; it does not tell providers apart, as each
+provider has its own backend. The workspace name is also the environment name in resource
+names (`arho-<workspace>-*`) and labels, so there is no `environment` variable. The make
+targets refuse the `default` workspace, whose state would sit at the bare key outside the
+prefix, and any name other than lowercase letters, digits and hyphens starting with a
+letter.
+
+Tenants are not workspaces. Each tenant's database cluster will live in the platform's
+workspace, one per entry in the tenant registry in arho-deploy
+([ADR 0003](../docs/adr/0003-tenant-registry.md)).
 
 ## State encryption
 
@@ -280,14 +306,23 @@ Its state is in UpCloud Managed Object Storage, through its S3-compatible API.
 
 ### UpCloud API token
 
-The UpCloud API token is personal. The provider reads it from `UPCLOUD_TOKEN` or from the
-system keyring, where `upctl account login --with-token` saves it.
+The UpCloud API token is personal. Create it in the UpCloud console, copy it and save it in
+the system keyring, where tofu and upctl find it:
+
+```sh
+upctl account login --with-token   # paste the token
+```
+
+`UPCLOUD_TOKEN` in the environment works too. A token in `~/.config/upctl.yaml` works for
+upctl and the bootstrap script, but tofu does not read it.
 
 ### A new UpCloud account
 
 1. Create the state bucket once per account with `./upcloud/bootstrap-state-bucket.sh`
-   (needs curl, jq, openssl and the aws cli). It prints the backend file, the keys and a new
-   passphrase.
+   (needs curl, jq, openssl and the aws cli). It reads the token from `upctl.yaml` but not
+   from the keyring, so without `upctl.yaml` paste it into the command:
+   `UPCLOUD_TOKEN=<token> ./upcloud/bootstrap-state-bucket.sh`. It prints the backend file,
+   the keys and a new passphrase.
 2. Save them in arho-deploy as in step 2 of [A new state backend](#a-new-state-backend).
 3. `make tf-init dir=upcloud ws=<workspace> backend=<backend>`, then `make edit-vars` to create
    the variable file of the workspace.
