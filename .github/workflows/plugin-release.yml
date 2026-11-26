@@ -1,0 +1,46 @@
+name: Plugin release
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: version
+        id: version
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          version="${tag#v}"
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
+          echo "version=${version}" >> $GITHUB_OUTPUT
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install qtbase5-dev qttools5-dev-tools
+          sudo pip install qgis-plugin-ci --break-system-packages
+
+      # qgis-plugin-ci needs the plugin package at the top of a git repository, and it
+      # skips a submodule when the plugin path is nested. So copy plugin/ into a
+      # throwaway repository where the submodule files are ordinary files.
+      - name: Make a standalone plugin repository
+        run: |
+          cp -r plugin "$RUNNER_TEMP/plugin"
+          cd "$RUNNER_TEMP/plugin"
+          rm -f arho_feature_template/qgis_plugin_tools/.git
+          git init -q
+          git add -A
+          git -c user.name=ci -c user.email=ci@invalid commit -q -m "Release ${{ steps.version.outputs.tag }}"
+
+      - name: Release
+        working-directory: ${{ runner.temp }}/plugin
+        run: |
+          qgis-plugin-ci release ${{ steps.version.outputs.version }} \
+              --release-tag ${{ steps.version.outputs.tag }} \
+              --disable-submodule-update \
+              --github-token ${{ secrets.GITHUB_TOKEN }} \
+              --create-plugin-repo

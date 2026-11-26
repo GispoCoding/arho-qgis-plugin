@@ -1,0 +1,2 @@
+ssh_user: ec2-user  # Default SSH user for the bastion host
+ssh_tunnel_user: ec2-tunnel # Default SSH user for the tunnel

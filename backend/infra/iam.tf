@@ -1,0 +1,396 @@
+
+# Lambda role
+resource "aws_iam_role" "lambda_exec" {
+  # Separate roles for each hame instance
+  name               = "${var.prefix}_serverless_lambda"
+  assume_role_policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Sid       = ""
+        Principal = { Service = "lambda.amazonaws.com" }
+      }
+    ]
+  })
+  tags               = merge(local.default_tags, { Name = "${var.prefix}_serverless_lambda" })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy" {
+  role       = aws_iam_role.lambda_exec.name
+  # Lambda must have rights to connect to VPC
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# Create the policy to access secrets manager in the region
+resource "aws_iam_policy" "secrets-policy" {
+  # We need a separate policy for each hame instance, since they have separate secrets
+  name        = "${var.prefix}-lambda-secrets-policy"
+  path        = "/"
+  description = "Lambda secrets policy"
+
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action   = [
+          "secretsmanager:GetResourcePolicy",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecretVersionIds"
+        ],
+        Effect   = "Allow",
+        Resource = [
+          aws_secretsmanager_secret.hame-db-su.arn,
+          aws_secretsmanager_secret.hame-db-dba.arn,
+          aws_secretsmanager_secret.mml-apikey.arn
+        ]
+      }
+    ]
+  })
+  tags   = merge(local.default_tags, { Name = "${var.prefix}-lambda-secrets-policy" })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_secrets_attachment" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.secrets-policy.arn
+}
+
+# Create the policy to access the ryhti files transfer bucket
+resource "aws_iam_policy" "s3-transfer-policy" {
+  # We need a separate policy for each hame instance, since they have separate buckets
+  name        = "${var.prefix}-lambda-s3-transfer-policy"
+  path        = "/"
+  description = "Lambda ryhti files bucket policy"
+
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Action   = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ],
+        Effect   = "Allow",
+        Resource = "${aws_s3_bucket.ryhti_files.arn}/*"
+      },
+      {
+        # Required so a missing key raises NoSuchKey instead of AccessDenied
+        Action   = ["s3:ListBucket"],
+        Effect   = "Allow",
+        Resource = aws_s3_bucket.ryhti_files.arn
+      }
+    ]
+  })
+  tags   = merge(local.default_tags, { Name = "${var.prefix}-lambda-s3-transfer-policy" })
+}
+
+# ryhti_client role. ryhti_client uses the transfer bucket and the X-Road client
+# secret and invokes itself to run jobs, so it does not share a role with the
+# other lambdas.
+resource "aws_iam_role" "ryhti_client_exec" {
+  name = "${var.prefix}_ryhti_client_lambda"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Principal = { Service = "lambda.amazonaws.com" }
+      }
+    ]
+  })
+  tags = merge(local.default_tags, { Name = "${var.prefix}_ryhti_client_lambda" })
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_vpc_access" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "aws_iam_policy" "ryhti_client_secrets" {
+  name        = "${var.prefix}-ryhti-client-secrets-policy"
+  path        = "/"
+  description = "ryhti_client lambda secrets policy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        # The cold start only reads the secret values.
+        Action = ["secretsmanager:GetSecretValue"]
+        Effect = "Allow"
+        Resource = compact([
+          aws_secretsmanager_secret.hame-db-dba.arn,
+          aws_secretsmanager_secret.syke-apikey.arn,
+          var.enable_x_road ? module.x-road["this"].client_secret_arn : null
+        ])
+      }
+    ]
+  })
+  tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti-client-secrets-policy" })
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_secrets" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = aws_iam_policy.ryhti_client_secrets.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_s3_transfer" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = aws_iam_policy.s3-transfer-policy.arn
+}
+
+# A job starts with an asynchronous invocation of the same function, on the
+# qualifier of the submit call (the live alias or the unpublished version).
+resource "aws_iam_policy" "ryhti_client_invoke_self" {
+  name        = "${var.prefix}-ryhti-client-invoke-self-policy"
+  path        = "/"
+  description = "ryhti_client lambda may invoke itself to run jobs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = ["lambda:InvokeFunction"]
+        Effect = "Allow"
+        Resource = [
+          aws_lambda_function.ryhti_client.arn,
+          "${aws_lambda_function.ryhti_client.arn}:*"
+        ]
+      }
+    ]
+  })
+  tags = merge(local.default_tags, { Name = "${var.prefix}-ryhti-client-invoke-self-policy" })
+}
+
+resource "aws_iam_role_policy_attachment" "ryhti_client_invoke_self" {
+  role       = aws_iam_role.ryhti_client_exec.name
+  policy_arn = aws_iam_policy.ryhti_client_invoke_self.arn
+}
+
+
+# Lambda update user
+resource "aws_iam_user" "lambda_update_user" {
+  name               = var.AWS_LAMBDA_USER
+  force_destroy      = true # destroy deletes the access keys too
+  tags               = merge(local.default_tags, { Name = "${var.prefix}_lambda_update" })
+}
+
+# Create the policy to update lambda functions
+resource "aws_iam_policy" "lambda_update_policy" {
+  # We need a separate policy for each hame instance, since they have separate lambda functions
+  name        = "${var.prefix}-lambda_update_policy"
+  path        = "/"
+  description = "Github CI lambda update policy"
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          # Necessary IAM permission to publish an image in ECR
+          "ecr:DescribeImages",
+          "ecr:DescribeRepositories",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage"
+        ],
+        "Resource" : [
+          aws_ecr_repository.db_manager.arn,
+          aws_ecr_repository.koodistot_loader.arn,
+          aws_ecr_repository.ryhti_client.arn,
+          aws_ecr_repository.mml_loader.arn
+          ]
+      },
+      {
+          "Action": [
+              "ecr:GetAuthorizationToken"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+      },
+      {
+        # Lambda upload user is used in Github actions for both updating the function
+        # AND invoking the db manager after update.
+        "Effect" : "Allow",
+        "Action" : [
+          "lambda:GetFunction",
+          "lambda:CreateFunction",
+          "lambda:UpdateFunctionCode",
+          "lambda:InvokeFunction",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:PublishVersion",
+          "lambda:UpdateAlias"
+         ],
+        "Resource" : [
+          aws_lambda_function.db_manager.arn,
+          aws_lambda_function.koodistot_loader.arn,
+          aws_lambda_function.ryhti_client.arn,
+          aws_lambda_function.mml_loader.arn,
+        ]
+      }
+    ]
+  })
+  tags   = merge(local.default_tags, { Name = "${var.prefix}-lambda_update_policy" })
+}
+
+resource "aws_iam_policy_attachment" "lambda_update_attachment" {
+  name       = "${var.prefix}-lambda_update_attachment"
+  users      = [aws_iam_user.lambda_update_user.name]
+  policy_arn = aws_iam_policy.lambda_update_policy.arn
+}
+
+# This IAM role will be used by the docker daemon
+resource "aws_iam_role" "backend-task-execution" {
+  name               = "${var.prefix}-backend-task-execution"
+  assume_role_policy = jsonencode(
+  {
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+  tags               = merge(local.default_tags, { Name = "${var.prefix}-backend-task-execution" })
+
+}
+
+# The IAM role above will be allowed to pull docker image from ECR, and to create Cloudwatch log groups
+# See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html
+resource "aws_iam_role_policy_attachment" "backend" {
+  role       = aws_iam_role.backend-task-execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+
+# This IAM role will be used by API gateway to create Cloudwatch log groups
+resource "aws_iam_role" "api-gateway-cloudwatch" {
+  name               = "${var.prefix}-api-gateway-cloudwatch"
+  assume_role_policy = jsonencode(
+  {
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = {
+          Service = "apigateway.amazonaws.com"
+        }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+  tags               = merge(local.default_tags, { Name = "${var.prefix}-api-gateway-cloudwatch" })
+
+}
+
+# Apparently this is an existing policy that allows pushing to cloudwatch
+resource "aws_iam_role_policy_attachment" "api-gateway-cloudwatch" {
+  role       = aws_iam_role.api-gateway-cloudwatch.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
+
+#
+# Bastion
+#
+
+data "aws_iam_policy_document" "bastion_trust" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+data "aws_iam_policy_document" "bastion_ssm_read" {
+  statement {
+    sid     = "AllowReadingBastionHostKey"
+    actions = ["ssm:GetParameter"]
+
+    resources = [
+      "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/infra/${var.prefix}-bastion/host_key_ed25519"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "bastion_ssm_read_policy" {
+  name        = "${var.prefix}-bastion-ssm-read-policy"
+  description = "Allows bastion to read its own host key from SSM"
+  policy      = data.aws_iam_policy_document.bastion_ssm_read.json
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-bastion_ssm_read_policy"
+  })
+}
+
+# Adding a role for the EC2 machine allows making AWS service APIs available via IAM policies
+resource "aws_iam_role" "ec2-role" {
+  name               = "${var.prefix}-ec2-iam-role"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.bastion_trust.json
+
+  tags = merge(local.default_tags, {
+    Name = "${var.prefix}-ec2-iam-role"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_attach" {
+  role       = aws_iam_role.ec2-role.name
+  policy_arn = aws_iam_policy.bastion_ssm_read_policy.arn
+}
+
+resource "aws_iam_instance_profile" "ec2-iam-profile" {
+  name = "${var.prefix}-ec2-iam-profile"
+  role = aws_iam_role.ec2-role.name
+}
+
+resource "aws_iam_role_policy_attachment" "ssm-policy-attachment" {
+  role       = aws_iam_role.ec2-role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# We need an extra policy to allow calling ryhti client URL from the EC2 server
+# without authentication or user role.
+resource "aws_iam_policy" "ec2-invoke-ryhti-client" {
+  name        = "${var.prefix}-ec2_invoke_ryhti_client_policy"
+  path        = "/"
+  description = "EC2 Ryhti client invoke policy"
+
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        # Only allow calling Ryhti client lambda
+        "Effect" : "Allow",
+        "Action" : [
+          "lambda:InvokeFunction",
+         ],
+        "Resource" : [
+          aws_lambda_function.ryhti_client.arn,
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ec2-invoke-ryhti-client-attachment" {
+  role       = aws_iam_role.ec2-role.name
+  policy_arn = aws_iam_policy.ec2-invoke-ryhti-client.arn
+}

@@ -1,0 +1,547 @@
+from datetime import UTC, datetime
+
+import pytest
+from geoalchemy2.shape import from_shape
+from shapely.geometry import MultiLineString, MultiPoint, MultiPolygon, Polygon, shape
+from sqlalchemy.orm import Session
+
+from database import codes, models
+
+
+@pytest.fixture
+def plan(preparation_status_instance: codes.LifeCycleStatus) -> models.Plan:
+    return models.Plan(
+        name={"fin": "Test Plan"},
+        geom=from_shape(
+            MultiPolygon(
+                [
+                    Polygon(
+                        (
+                            (381849, 6677967),
+                            (381849, 6680000),
+                            (386378, 6680000),
+                            (386378, 6677967),
+                            (381849, 6677967),
+                        )
+                    )
+                ]
+            ),
+            srid=3067,
+        ),
+        lifecycle_status=preparation_status_instance,
+    )
+
+
+def test_trigger_adds_a_created_at(session: Session, plan: models.Plan) -> None:
+    """Test that the created_at trigger adds a timestamp on insert."""
+    session.add(plan)
+    session.flush()
+    session.refresh(plan)
+
+    try:
+        assert plan.created_at is not None
+    finally:
+        session.rollback()
+
+
+def test_trigger_ignores_client_set_created_at(
+    session: Session, plan: models.Plan
+) -> None:
+    """Test that the created_at trigger overrides any client set value."""
+    initial_created_at = datetime(2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+    plan.created_at = initial_created_at
+    session.add(plan)
+    session.flush()
+    session.refresh(plan)
+
+    try:
+        assert plan.created_at is not None
+        assert plan.created_at != initial_created_at
+    finally:
+        session.rollback()
+
+
+def test_created_at_is_unmodifiable(session: Session, plan: models.Plan) -> None:
+    """Test that the created_at trigger prevents any updates to created_at."""
+    session.add(plan)
+    session.flush()
+    session.refresh(plan)
+
+    original_created_at = plan.created_at
+
+    plan.created_at = datetime(2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+    session.flush()
+    session.refresh(plan)
+    try:
+        assert plan.created_at is not None
+        assert plan.created_at == original_created_at
+    finally:
+        session.rollback()
+
+
+def test_modified_at_triggers(
+    session: Session,
+    plan_instance: models.Plan,
+    land_use_area_instance: models.LandUseArea,
+    other_area_instance: models.OtherArea,
+    line_instance: models.Line,
+    point_instance: models.Point,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    text_plan_regulation_instance: models.PlanRegulation,
+    plan_proposition_instance: models.PlanProposition,
+    source_data_instance: models.SourceData,
+    organisation_instance: models.Organisation,
+    plan_map_instance: models.Document,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    plan_object_cancellation_info_instance: models.PlanObjectCancellationInfo,
+    cancelled_group_relation_instance: models.CancelledGroupRelation,
+    another_cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    # Save old modified_at timestamps
+    plan_old_modified_at = plan_instance.modified_at
+    land_use_area_instance_old_modified_at = land_use_area_instance.modified_at
+    other_area_instance_old_modified_at = other_area_instance.modified_at
+    line_instance_old_modified_at = line_instance.modified_at
+    point_instance_old_modified_at = point_instance.modified_at
+    plan_regulation_group_instance_old_modified_at = (
+        plan_regulation_group_instance.modified_at
+    )
+    plan_regulation_old_modified_at = text_plan_regulation_instance.modified_at
+    plan_proposition_instance_old_modified_at = plan_proposition_instance.modified_at
+    source_data_instance_old_modified_at = source_data_instance.modified_at
+    organisation_instance_old_modified_at = organisation_instance.modified_at
+    plan_map_instance_old_modified_at = plan_map_instance.modified_at
+    plan_cancellation_info_old_modified_at = plan_cancellation_info_instance.modified_at
+    plan_object_cancellation_info_old_modified_at = (
+        plan_object_cancellation_info_instance.modified_at
+    )
+    cancelled_group_relation_old_modified_at = (
+        cancelled_group_relation_instance.modified_at
+    )
+
+    # Edit tables to fire the triggers
+    plan_instance.exported_at = datetime.now()
+    land_use_area_instance.height_unit = "blah"
+    other_area_instance.height_unit = "blah"
+    line_instance.height_unit = "blah"
+    point_instance.height_unit = "blah"
+    plan_regulation_group_instance.short_name = "foo"
+    text_plan_regulation_instance.text_value = {"fin": "foo"}
+    plan_proposition_instance.text_value = {"fin": "foo"}
+    source_data_instance.additional_information_uri = "http://test2.fi"
+    organisation_instance.business_id = "foo"
+    plan_map_instance.name = {"fin": "foo"}
+    plan_cancellation_info_instance.cancels_entire_plan = True
+    plan_object_cancellation_info_instance.cancels_entire_plan_object = True
+    plan_object_cancellation_info_instance.remaining_valid_geom_polygon = None
+    # Every other column of the cancelled group relation is a foreign key.
+    cancelled_group_relation_instance.plan_regulation_group = (
+        another_cancelled_plan_regulation_group_instance
+    )
+
+    session.flush()
+    session.refresh(plan_instance)
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(point_instance)
+    session.refresh(plan_regulation_group_instance)
+    session.refresh(text_plan_regulation_instance)
+    session.refresh(plan_proposition_instance)
+    session.refresh(source_data_instance)
+    session.refresh(organisation_instance)
+    session.refresh(plan_map_instance)
+    session.refresh(plan_cancellation_info_instance)
+    session.refresh(plan_object_cancellation_info_instance)
+    session.refresh(cancelled_group_relation_instance)
+
+    assert plan_instance.modified_at != plan_old_modified_at
+    assert land_use_area_instance.modified_at != land_use_area_instance_old_modified_at
+    assert other_area_instance.modified_at != other_area_instance_old_modified_at
+    assert line_instance.modified_at != line_instance_old_modified_at
+    assert point_instance.modified_at != point_instance_old_modified_at
+    assert (
+        plan_regulation_group_instance.modified_at
+        != plan_regulation_group_instance_old_modified_at
+    )
+    assert text_plan_regulation_instance.modified_at != plan_regulation_old_modified_at
+    assert (
+        plan_proposition_instance.modified_at
+        != plan_proposition_instance_old_modified_at
+    )
+    assert source_data_instance.modified_at != source_data_instance_old_modified_at
+    assert organisation_instance.modified_at != organisation_instance_old_modified_at
+    assert plan_map_instance != plan_map_instance_old_modified_at
+    assert (
+        plan_cancellation_info_instance.modified_at
+        != plan_cancellation_info_old_modified_at
+    )
+    assert (
+        plan_object_cancellation_info_instance.modified_at
+        != plan_object_cancellation_info_old_modified_at
+    )
+    assert (
+        cancelled_group_relation_instance.modified_at
+        != cancelled_group_relation_old_modified_at
+    )
+
+
+def test_lifecycle_status_is_set_by_trigger_if_null(
+    session: Session,
+    plan_instance: models.Plan,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    type_of_underground_instance: codes.TypeOfUnderground,
+) -> None:
+    """Test that
+    if lifecycle status is not given on new objects it is set to the same as the plan,
+    if lifecycle status is given it is used as is.
+    """
+    assert plan_instance.general_plan_regulation_groups == [
+        general_regulation_group_instance
+    ]
+
+    plan_instance.lifecycle_status = another_code_instance
+    session.flush()
+
+    # Create new objects in the plan area (geometry creates link to plan instance)
+    land_use_area_instance = models.LandUseArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    other_area_instance = models.OtherArea(
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    line_instance = models.Line(
+        geom=from_shape(MultiLineString([[[382000, 6678000], [383000, 6678000]]])),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    point_instance = models.Point(
+        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(land_use_area_instance)
+    session.add(other_area_instance)
+    session.add(line_instance)
+    session.add(point_instance)
+    session.flush()
+
+    # Create new regulations in regulation groups already linked to plan
+    general_regulation_instance = models.PlanRegulation(
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=general_regulation_group_instance,
+    )
+    general_proposition_instance = models.PlanProposition(
+        plan_regulation_group=general_regulation_group_instance
+    )
+    plan_regulation_instance = models.PlanRegulation(
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    plan_proposition_instance = models.PlanProposition(
+        plan_regulation_group=plan_regulation_group_instance
+    )
+    session.add(general_regulation_instance)
+    session.add(general_proposition_instance)
+    session.add(plan_regulation_instance)
+    session.add(plan_proposition_instance)
+    session.flush()
+
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(point_instance)
+    session.refresh(general_regulation_instance)
+    session.refresh(general_proposition_instance)
+    session.refresh(plan_regulation_instance)
+    session.refresh(plan_proposition_instance)
+
+    # Check that new features and regulations have same status as plan
+    assert land_use_area_instance.lifecycle_status == another_code_instance
+    assert other_area_instance.lifecycle_status == another_code_instance
+    assert line_instance.lifecycle_status == another_code_instance
+    assert point_instance.lifecycle_status == another_code_instance
+    assert general_regulation_instance.lifecycle_status == another_code_instance
+    assert general_proposition_instance.lifecycle_status == another_code_instance
+    assert plan_regulation_instance.lifecycle_status == another_code_instance
+    assert plan_proposition_instance.lifecycle_status == another_code_instance
+
+    # Delete created objects from the test database
+    session.rollback()
+
+
+def test_lifecycle_status_is_not_set_by_trigger_if_given(
+    session: Session,
+    plan_instance: models.Plan,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    type_of_underground_instance: codes.TypeOfUnderground,
+) -> None:
+    """Test that
+    if lifecycle status is not given on new objects it is set to the same as the plan,
+    if lifecycle status is given it is used as is.
+    """
+    assert plan_instance.general_plan_regulation_groups == [
+        general_regulation_group_instance
+    ]
+
+    plan_instance.lifecycle_status = another_code_instance
+    session.flush()
+
+    # Create new objects in the plan area (geometry creates link to plan instance)
+    land_use_area_instance = models.LandUseArea(
+        lifecycle_status=code_instance,
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    other_area_instance = models.OtherArea(
+        lifecycle_status=code_instance,
+        geom=from_shape(
+            shape(
+                {
+                    "type": "MultiPolygon",
+                    "coordinates": [
+                        [
+                            [
+                                [381849.834412134019658, 6677967.973336197435856],
+                                [381849.834412134019658, 6680613.389312859624624],
+                                [386378.427863708813675, 6680613.389312859624624],
+                                [386378.427863708813675, 6677967.973336197435856],
+                                [381849.834412134019658, 6677967.973336197435856],
+                            ]
+                        ]
+                    ],
+                }
+            )
+        ),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    line_instance = models.Line(
+        lifecycle_status=code_instance,
+        geom=from_shape(MultiLineString([[[382000, 6678000], [383000, 6678000]]])),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    point_instance = models.Point(
+        lifecycle_status=code_instance,
+        geom=from_shape(MultiPoint([[382000, 6678000], [383000, 6678000]])),
+        plan=plan_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(land_use_area_instance)
+    session.add(other_area_instance)
+    session.add(line_instance)
+    session.add(point_instance)
+    session.flush()
+
+    # Create new regulations in regulation groups already linked to plan
+    general_regulation_instance = models.PlanRegulation(
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=general_regulation_group_instance,
+    )
+    general_proposition_instance = models.PlanProposition(
+        lifecycle_status=code_instance,
+        plan_regulation_group=general_regulation_group_instance,
+    )
+    plan_regulation_instance = models.PlanRegulation(
+        lifecycle_status=code_instance,
+        type_of_plan_regulation=type_of_plan_regulation_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    plan_proposition_instance = models.PlanProposition(
+        lifecycle_status=code_instance,
+        plan_regulation_group=plan_regulation_group_instance,
+    )
+    session.add(general_regulation_instance)
+    session.add(general_proposition_instance)
+    session.add(plan_regulation_instance)
+    session.add(plan_proposition_instance)
+    session.flush()
+
+    session.refresh(land_use_area_instance)
+    session.refresh(other_area_instance)
+    session.refresh(line_instance)
+    session.refresh(point_instance)
+    session.refresh(general_regulation_instance)
+    session.refresh(general_proposition_instance)
+    session.refresh(plan_regulation_instance)
+    session.refresh(plan_proposition_instance)
+
+    # Check that new features and regulations have same status as plan
+    assert land_use_area_instance.lifecycle_status == code_instance
+    assert other_area_instance.lifecycle_status == code_instance
+    assert line_instance.lifecycle_status == code_instance
+    assert point_instance.lifecycle_status == code_instance
+    assert general_regulation_instance.lifecycle_status == code_instance
+    assert general_proposition_instance.lifecycle_status == code_instance
+    assert plan_regulation_instance.lifecycle_status == code_instance
+    assert plan_proposition_instance.lifecycle_status == code_instance
+
+    # Delete created objects from the test database
+    session.rollback()
+
+
+def test_add_plan_id_fkey_triggers(
+    session: Session,
+    plan_instance: models.Plan,
+    code_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    # Add another plan instance
+    another_plan_instance = models.Plan(
+        name={"fin": "Test Plan"},
+        geom=from_shape(
+            MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
+        ),
+        lifecycle_status=code_instance,
+    )
+    session.add(another_plan_instance)
+
+    # Geometries inside either plan instance
+    polygon_1 = MultiPolygon(
+        [
+            (
+                (
+                    (382000.0, 6678000.0),
+                    (386000.0, 6678000.0),
+                    (386000.0, 6680000.0),
+                    (382000.0, 6680000.0),
+                ),
+            )
+        ]
+    )
+    point_1 = MultiPoint([[(383000.0, 6678500.0)], [384000.0, 6679500.0]])
+    polygon_2 = MultiPolygon([(((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)),)])
+    point_2 = MultiPoint([[1.25, 1.25], [1.75, 1.75]])
+    line_1 = MultiLineString([[[383000.0, 6678500.0], [384000.0, 6679500.0]]])
+    line_2 = MultiLineString([[[1.25, 1.25], [1.75, 1.75]]])
+
+    # Add new plan object instances to fire the triggers
+    another_land_use_area_instance = models.LandUseArea(
+        geom=from_shape(polygon_1),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(another_land_use_area_instance)
+
+    another_area_instance = models.OtherArea(
+        geom=from_shape(polygon_2),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(another_area_instance)
+
+    another_line_instance = models.Line(
+        geom=from_shape(line_1),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(another_line_instance)
+    another_another_line_instance = models.Line(
+        geom=from_shape(line_2),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(another_another_line_instance)
+
+    another_point_instance = models.Point(
+        geom=from_shape(point_2),
+        lifecycle_status=code_instance,
+        type_of_underground=type_of_underground_instance,
+        plan_regulation_groups=[plan_regulation_group_instance],
+    )
+    session.add(another_point_instance)
+    session.flush()
+
+    session.refresh(another_land_use_area_instance)
+    session.refresh(another_area_instance)
+    session.refresh(another_line_instance)
+    session.refresh(another_another_line_instance)
+    session.refresh(another_point_instance)
+
+    assert another_land_use_area_instance.plan_id == plan_instance.id
+    assert another_area_instance.plan_id == another_plan_instance.id
+    assert another_line_instance.plan_id == plan_instance.id
+    assert another_another_line_instance.plan_id == another_plan_instance.id
+    assert another_point_instance.plan_id == another_plan_instance.id
+
+    # Delete created objects from the test database
+    session.rollback()

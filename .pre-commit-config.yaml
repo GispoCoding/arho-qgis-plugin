@@ -1,31 +1,106 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+#
+# pre-commit reads only this one file. The plugin, the backend and the website still
+# have their own ruff and mypy rules, so each of those hooks has a `files:` filter for
+# its part.
+exclude: \.enc\.json$|^backend/migrations/versions/
 repos:
+  # --- All parts ----------------------------------------------------------------
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
       - id: check-yaml
+        exclude: docker-compose.clear-mounts.yml # yaml check don't like !reset tag
       - id: check-added-large-files
+      - id: mixed-line-ending
+
+  # --- Plugin -------------------------------------------------------------------
   - repo: local
     hooks:
       - id: check-qgz-version
         name: check qgisprojekti.qgz is saved with QGIS 3.40
         language: python
-        entry: python scripts/check_qgz_version.py
-        files: ^qgisprojekti\.qgz$
+        entry: python plugin/scripts/check_qgz_version.py
+        files: ^plugin/qgisprojekti\.qgz$
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2
     hooks:
       - id: mypy
+        name: mypy (plugin)
+        files: ^plugin/
+        # mypy reads its config from the working directory only, which is the
+        # repository root here. The first two are the defaults of the hook.
+        args:
+          - --ignore-missing-imports
+          - --scripts-are-modules
+          - --config-file=plugin/pyproject.toml
         additional_dependencies: ["types-PyYAML"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.2
     hooks:
       # Run the linter.
       - id: ruff
+        name: ruff (plugin)
+        files: ^plugin/
         args: ["--extend-fixable=F841,F401"]
       # Run the formatter.
       - id: ruff-format
+        name: ruff-format (plugin)
+        files: ^plugin/
+
+  # --- Backend ------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        name: ruff (backend)
+        files: ^backend/
+        args: ["--fix", "--config=backend/.pre-commit-ruff-config.toml"]
+      # Run the formatter.
+      - id: ruff-format
+        name: ruff-format (backend)
+        files: ^backend/
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        name: mypy (backend)
+        files: ^backend/
+        args:
+          - --ignore-missing-imports
+          - --scripts-are-modules
+          - --config-file=backend/pyproject.toml
+        additional_dependencies:
+          - alembic
+          - alembic_utils
+          - geoalchemy2
+          - psycopg[binary]
+          - pydantic
+          - pytest
+          - requests-mock
+          # The version in requirements.txt, so that mypy checks the code against
+          # the SQLAlchemy it runs on. SQLAlchemy 2.1 types result rows differently.
+          - sqlalchemy==2.0.52
+          - types-boto3
+          - types-requests
+          - types-shapely
+          - types-simplejson
+          - git+https://github.com/GispoCoding/ryhti-api-client@v2026.8.0#egg=ryhti_api_client
+
+  # --- Website ------------------------------------------------------------------
+  # ruff reads web/pyproject.toml, the nearest config of each file.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.0
+    hooks:
+      - id: ruff-check
+        name: ruff (web)
+        files: ^web/
+        args: ["--fix"]
+      - id: ruff-format
+        name: ruff-format (web)
+        files: ^web/

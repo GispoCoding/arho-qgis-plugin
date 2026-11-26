@@ -1,0 +1,12 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+# Deployment config and secrets live in arho-deploy, never here.
+backend.hcl
+*.tfvars
+*.tfvars.json
+*.env
+tfplan
+# The configuration directory that make tf-init selected.
+.terraform-dir

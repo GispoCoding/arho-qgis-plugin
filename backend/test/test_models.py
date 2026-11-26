@@ -1,0 +1,778 @@
+import pytest
+from geoalchemy2.shape import from_shape
+from psycopg import sql
+from shapely.geometry import MultiPoint, shape
+from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from database import codes, models
+from database.base import PROJECT_SRID
+
+"""Tests that check all relationships in sqlalchemy classes are defined correctly.
+This caused a lot of trouble with koodistot loader.
+
+When non-nullable fields or relations are added, the fixtures must be updated accordingly."""
+
+
+def test_codes(
+    session: Session,
+    code_instance: codes.LifeCycleStatus,
+    another_code_instance: codes.LifeCycleStatus,
+) -> None:
+    # nullable code relations
+    assert code_instance.parent is None
+    assert code_instance.children == []
+    assert another_code_instance.parent is None
+    assert another_code_instance.children == []
+    another_code_instance.parent = code_instance
+    session.flush()
+    assert code_instance.parent is None
+    assert code_instance.children == [another_code_instance]
+    assert another_code_instance.parent is code_instance
+    assert another_code_instance.children == []
+    session.rollback()
+
+
+def test_plan_matter(
+    organisation_instance: models.Organisation,
+    plan_type_instance: codes.PlanType,
+    plan_matter_instance: models.PlanMatter,
+) -> None:
+    assert plan_matter_instance.organisation is organisation_instance
+    assert organisation_instance.plan_matters == [plan_matter_instance]
+
+    assert plan_matter_instance.plan_type is plan_type_instance
+    assert plan_type_instance.plan_matters == [plan_matter_instance]
+
+
+def test_plan(
+    session: Session,
+    plan_instance: models.Plan,
+    preparation_status_instance: codes.LifeCycleStatus,
+    general_regulation_group_instance: models.PlanRegulationGroup,
+    legal_effects_of_master_plan_without_legal_effects_instance: codes.LegalEffectsOfMasterPlan,
+) -> None:
+    # non-nullable plan relations
+    assert plan_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.plans == [plan_instance]
+
+    # Let's not change plan instance lifecycle status here. It's just asking
+    # for trouble, and we will test all those triggers in test_triggers anyway.
+    # nullable plan relations
+    assert plan_instance.general_plan_regulation_groups == [
+        general_regulation_group_instance
+    ]
+    # General regulation group belongs to the plan
+    assert general_regulation_group_instance.plan == plan_instance
+
+    # Add a legal effects of master plan to the plan
+    plan_instance.legal_effects_of_master_plan.append(
+        legal_effects_of_master_plan_without_legal_effects_instance
+    )
+    session.flush()
+    session.refresh(plan_instance)
+    session.refresh(legal_effects_of_master_plan_without_legal_effects_instance)
+    assert plan_instance.legal_effects_of_master_plan == [
+        legal_effects_of_master_plan_without_legal_effects_instance
+    ]
+    assert legal_effects_of_master_plan_without_legal_effects_instance.plans == [
+        plan_instance
+    ]
+
+
+def test_land_use_area(
+    land_use_area_instance: models.LandUseArea,
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: models.Plan,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    numeric_plan_regulation_group_instance: models.PlanRegulationGroup,
+    decimal_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    # non-nullable plan object relations
+    assert land_use_area_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.land_use_areas == [land_use_area_instance]
+    assert land_use_area_instance.type_of_underground is type_of_underground_instance
+    assert type_of_underground_instance.land_use_areas == [land_use_area_instance]
+    assert land_use_area_instance.plan is plan_instance
+    assert plan_instance.land_use_areas == [land_use_area_instance]
+    assert land_use_area_instance.plan_regulation_groups == [
+        plan_regulation_group_instance,
+        numeric_plan_regulation_group_instance,
+        decimal_plan_regulation_group_instance,
+    ]
+
+    assert plan_regulation_group_instance.land_use_areas == [land_use_area_instance]
+
+
+def test_other_area(
+    other_area_instance: models.OtherArea,
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: models.Plan,
+    construction_area_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    # non-nullable plan object relations
+    assert other_area_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.other_areas == [other_area_instance]
+    assert other_area_instance.type_of_underground is type_of_underground_instance
+    assert type_of_underground_instance.other_areas == [other_area_instance]
+    assert other_area_instance.plan is plan_instance
+    assert plan_instance.other_areas == [other_area_instance]
+    assert other_area_instance.plan_regulation_groups == [
+        construction_area_plan_regulation_group_instance
+    ]
+    assert construction_area_plan_regulation_group_instance.other_areas == [
+        other_area_instance
+    ]
+
+
+def test_line(
+    line_instance: models.Line,
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: models.Plan,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    # non-nullable plan object relations
+    assert line_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.lines == [line_instance]
+    assert line_instance.type_of_underground is type_of_underground_instance
+    assert type_of_underground_instance.lines == [line_instance]
+    assert line_instance.plan is plan_instance
+    assert plan_instance.lines == [line_instance]
+    assert line_instance.plan_regulation_groups == [plan_regulation_group_instance]
+    assert plan_regulation_group_instance.lines == [line_instance]
+
+
+def test_point(
+    point_instance: models.Point,
+    preparation_status_instance: codes.LifeCycleStatus,
+    type_of_underground_instance: codes.TypeOfUnderground,
+    plan_instance: models.Plan,
+    point_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    # non-nullable plan object relations
+    assert point_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.points == [point_instance]
+    assert point_instance.type_of_underground is type_of_underground_instance
+    assert type_of_underground_instance.points == [point_instance]
+    assert point_instance.plan is plan_instance
+    assert plan_instance.points == [point_instance]
+    assert point_instance.plan_regulation_groups == [
+        point_plan_regulation_group_instance
+    ]
+
+    assert point_plan_regulation_group_instance.points == [point_instance]
+
+
+def test_plan_regulation_group(
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    type_of_plan_regulation_group_instance: codes.TypeOfPlanRegulationGroup,
+) -> None:
+    # non-nullable plan regulation group relations
+    assert (
+        plan_regulation_group_instance.type_of_plan_regulation_group
+        is type_of_plan_regulation_group_instance
+    )
+    assert (
+        plan_regulation_group_instance
+        in type_of_plan_regulation_group_instance.plan_regulation_groups
+    )
+
+
+def test_plan_regulation(
+    session: Session,
+    text_plan_regulation_instance: models.PlanRegulation,
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    type_of_plan_regulation_instance: codes.TypeOfPlanRegulation,
+    type_of_verbal_plan_regulation_instance: codes.TypeOfVerbalPlanRegulation,
+    plan_theme_instance: codes.PlanTheme,
+) -> None:
+    # non-nullable plan regulation relations
+    assert text_plan_regulation_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.plan_regulations == [
+        text_plan_regulation_instance
+    ]
+    assert (
+        text_plan_regulation_instance.plan_regulation_group
+        is plan_regulation_group_instance
+    )
+    assert plan_regulation_group_instance.plan_regulations == [
+        text_plan_regulation_instance
+    ]
+    assert (
+        text_plan_regulation_instance.type_of_plan_regulation
+        is type_of_plan_regulation_instance
+    )
+    assert type_of_plan_regulation_instance.plan_regulations == [
+        text_plan_regulation_instance
+    ]
+    # nullable plan regulation relations
+    assert text_plan_regulation_instance.types_of_verbal_plan_regulations == []
+    assert type_of_verbal_plan_regulation_instance.plan_regulations == []
+    assert text_plan_regulation_instance.plan_themes == []
+    assert plan_theme_instance.plan_regulations == []
+    text_plan_regulation_instance.types_of_verbal_plan_regulations = [
+        type_of_verbal_plan_regulation_instance
+    ]
+    text_plan_regulation_instance.plan_themes = [plan_theme_instance]
+
+    assert text_plan_regulation_instance.additional_information == []
+
+    session.flush()
+
+    assert text_plan_regulation_instance.types_of_verbal_plan_regulations == [
+        type_of_verbal_plan_regulation_instance
+    ]
+    assert type_of_verbal_plan_regulation_instance.plan_regulations == [
+        text_plan_regulation_instance
+    ]
+    assert text_plan_regulation_instance.plan_themes == [plan_theme_instance]
+    assert plan_theme_instance.plan_regulations == [text_plan_regulation_instance]
+
+
+def test_additional_information(
+    main_use_additional_information_instance: models.AdditionalInformation,
+    empty_value_plan_regulation_instance: models.PlanRegulation,
+    type_of_main_use_additional_information_instance: codes.TypeOfAdditionalInformation,
+) -> None:
+    assert (
+        main_use_additional_information_instance.type_of_additional_information
+        is type_of_main_use_additional_information_instance
+    )
+    assert (
+        main_use_additional_information_instance.plan_regulation
+        is empty_value_plan_regulation_instance
+    )
+
+    assert empty_value_plan_regulation_instance.additional_information == [
+        main_use_additional_information_instance
+    ]
+
+
+def test_plan_proposition(
+    session: Session,
+    plan_proposition_instance: models.PlanProposition,
+    preparation_status_instance: codes.LifeCycleStatus,
+    plan_regulation_group_instance: models.PlanRegulationGroup,
+    plan_theme_instance: codes.PlanTheme,
+) -> None:
+    # non-nullable plan proposition relations
+    assert plan_proposition_instance.lifecycle_status is preparation_status_instance
+    assert preparation_status_instance.plan_propositions == [plan_proposition_instance]
+    assert (
+        plan_proposition_instance.plan_regulation_group
+        is plan_regulation_group_instance
+    )
+    assert plan_regulation_group_instance.plan_propositions == [
+        plan_proposition_instance
+    ]
+    # nullable plan proposition relations
+    assert plan_proposition_instance.plan_themes == []
+    assert plan_theme_instance.plan_propositions == []
+    plan_proposition_instance.plan_themes = [plan_theme_instance]
+
+    session.flush()
+
+    assert plan_proposition_instance.plan_themes == [plan_theme_instance]
+    assert plan_theme_instance.plan_propositions == [plan_proposition_instance]
+
+
+def test_source_data(
+    session: Session,
+    source_data_instance: models.SourceData,
+    type_of_source_data_instance: codes.TypeOfSourceData,
+    plan_matter_instance: models.PlanMatter,
+) -> None:
+    # non-nullable source data relations
+    assert source_data_instance.plan_matter is plan_matter_instance
+    assert plan_matter_instance.source_data == [source_data_instance]
+    assert source_data_instance.type_of_source_data is type_of_source_data_instance
+    assert type_of_source_data_instance.source_data == [source_data_instance]
+
+
+def test_organisation(
+    session: Session,
+    organisation_instance: models.Organisation,
+    administrative_region_instance: codes.AdministrativeRegion,
+) -> None:
+    # non-nullable organisation relations
+    assert organisation_instance.administrative_region is administrative_region_instance
+    assert administrative_region_instance.organisations == [organisation_instance]
+    session.flush()
+
+
+def test_document(
+    session: Session,
+    plan_map_instance: models.Document,
+    type_of_document_plan_map_instance: codes.TypeOfDocument,
+    category_of_publicity_public_instance: codes.CategoryOfPublicity,
+    personal_data_content_no_personal_data_instance: codes.PersonalDataContent,
+    retention_time_permanent_instance: codes.RetentionTime,
+    language_finnish_instance: codes.Language,
+    plan_instance: models.Plan,
+) -> None:
+    # non-nullable document relations
+    assert plan_map_instance.type_of_document is type_of_document_plan_map_instance
+    assert type_of_document_plan_map_instance.documents == [plan_map_instance]
+    assert plan_map_instance.plan is plan_instance
+    assert plan_instance.documents == [plan_map_instance]
+    assert (
+        plan_map_instance.category_of_publicity is category_of_publicity_public_instance
+    )
+    assert category_of_publicity_public_instance.documents == [plan_map_instance]
+    assert (
+        plan_map_instance.personal_data_content
+        is personal_data_content_no_personal_data_instance
+    )
+    assert personal_data_content_no_personal_data_instance.documents == [
+        plan_map_instance
+    ]
+    assert plan_map_instance.retention_time is retention_time_permanent_instance
+    assert retention_time_permanent_instance.documents == [plan_map_instance]
+    assert plan_map_instance.language is language_finnish_instance
+    assert language_finnish_instance.documents == [plan_map_instance]
+    session.flush()
+
+
+@pytest.mark.parametrize(
+    ("parent_fixture_name", "child_fixture_name", "child_collection_name"),
+    [
+        pytest.param(
+            "plan_regulation_group_instance",
+            "empty_value_plan_regulation_instance",
+            "plan_regulations",
+            id="plan_regulation",
+        ),
+        pytest.param(
+            "plan_regulation_group_instance",
+            "plan_proposition_instance",
+            "plan_propositions",
+            id="plan_proposition",
+        ),
+        pytest.param(
+            "empty_value_plan_regulation_instance",
+            "main_use_additional_information_instance",
+            "additional_information",
+            id="additional_information",
+        ),
+        pytest.param(
+            "plan_instance",
+            "plan_cancellation_info_instance",
+            "plan_cancellation_infos",
+            id="plan_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "plan_object_cancellation_info_instance",
+            "plan_object_cancellation_infos",
+            id="plan_object_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "cancelled_group_relation_instance",
+            "cancelled_group_relations",
+            id="cancelled_group_relation",
+        ),
+    ],
+)
+def test_cascade_delete_using_orm(
+    session: Session,
+    request: pytest.FixtureRequest,
+    parent_fixture_name: str,
+    child_fixture_name: str,
+    child_collection_name: str,
+) -> None:
+    """Test that deleting a parent object cascades to the child table when using ORM.
+    This makes sure that the cascade options are configured correctly in the SqlAlchemy models.
+    """
+    parent_object = request.getfixturevalue(parent_fixture_name)
+    child_object = request.getfixturevalue(child_fixture_name)
+
+    assert len(getattr(parent_object, child_collection_name)) == 1
+
+    session.delete(parent_object)
+    session.commit()
+
+    assert inspect(child_object).was_deleted
+
+
+@pytest.mark.parametrize(
+    ("parent_fixture_name", "child_fixture_name"),
+    [
+        pytest.param(
+            "plan_regulation_group_instance",
+            "empty_value_plan_regulation_instance",
+            id="plan_regulation",
+        ),
+        pytest.param(
+            "plan_regulation_group_instance",
+            "plan_proposition_instance",
+            id="plan_proposition",
+        ),
+        pytest.param(
+            "empty_value_plan_regulation_instance",
+            "main_use_additional_information_instance",
+            id="additional_information",
+        ),
+        pytest.param(
+            "plan_instance",
+            "plan_cancellation_info_instance",
+            id="plan_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "plan_object_cancellation_info_instance",
+            id="plan_object_cancellation_info",
+        ),
+        pytest.param(
+            "plan_cancellation_info_instance",
+            "cancelled_group_relation_instance",
+            id="cancelled_group_relation",
+        ),
+    ],
+)
+def test_cascade_delete_using_db(
+    session: Session,
+    request: pytest.FixtureRequest,
+    parent_fixture_name: str,
+    child_fixture_name: str,
+) -> None:
+    """Test that deleting a parent object cascades to the child table when using raw SQL.
+    This makes sure that the ON DELETE cascade options are configured correctly for the foreign keys in the database.
+    """
+    parent_object = request.getfixturevalue(parent_fixture_name)
+    child_object = request.getfixturevalue(child_fixture_name)
+
+    connection = session.connection().connection
+    cur = connection.cursor()
+
+    def child_object_exists() -> bool:
+        cur.execute(
+            sql.SQL("SELECT EXISTS (SELECT id FROM {table} WHERE id=%s)").format(
+                table=sql.Identifier(
+                    child_object.__table__.schema, child_object.__table__.name
+                )
+            ),
+            (child_object.id,),
+        )
+        row = cur.fetchone()
+        return bool(row[0]) if row else False
+
+    def delete_parent_object() -> None:
+        cur.execute(
+            sql.SQL("DELETE FROM {table} WHERE id=%s").format(
+                table=sql.Identifier(
+                    parent_object.__table__.schema, parent_object.__table__.name
+                )
+            ),
+            (parent_object.id,),
+        )
+
+    assert child_object_exists()
+    delete_parent_object()
+    assert not child_object_exists()
+
+    cur.close()
+    connection.rollback()
+
+
+# Plan cancellation info tests
+
+# A geometry that stays valid when a part of the cancelled land use area is
+# repealed. It is a MultiPolygon, like the land use area itself.
+REMAINING_VALID_AREA = {
+    "type": "MultiPolygon",
+    "coordinates": [
+        [
+            [
+                [382000.0, 6678000.0],
+                [382000.0, 6679000.0],
+                [383000.0, 6679000.0],
+                [383000.0, 6678000.0],
+                [382000.0, 6678000.0],
+            ]
+        ]
+    ],
+}
+
+
+def remaining_valid_area() -> object:
+    """Returns the geometry that stays valid, in the projection of the project."""
+    return from_shape(shape(REMAINING_VALID_AREA), srid=PROJECT_SRID, extended=True)
+
+
+def assert_flush_violates(
+    session: Session, instance: object, constraint_name: str
+) -> None:
+    """Adds the instance and checks that the named constraint rejects it."""
+    session.add(instance)
+    with pytest.raises(IntegrityError) as excinfo:
+        session.flush()
+    assert constraint_name in str(excinfo.value)
+    session.rollback()
+
+
+def test_plan_cancellation_info(
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    plan_object_cancellation_info_instance: models.PlanObjectCancellationInfo,
+    cancelled_group_relation_instance: models.CancelledGroupRelation,
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+    cancelled_general_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    assert plan_cancellation_info_instance.plan is plan_instance
+    assert plan_instance.plan_cancellation_infos == [plan_cancellation_info_instance]
+
+    assert plan_cancellation_info_instance.cancelled_plan is another_plan_instance
+    assert another_plan_instance.cancelled_by == [plan_cancellation_info_instance]
+
+    assert plan_cancellation_info_instance.plan_object_cancellation_infos == [
+        plan_object_cancellation_info_instance
+    ]
+    assert plan_cancellation_info_instance.cancelled_group_relations == [
+        cancelled_group_relation_instance
+    ]
+    assert plan_cancellation_info_instance.cancelled_general_regulation_groups == [
+        cancelled_general_regulation_group_instance
+    ]
+
+
+def test_plan_object_cancellation_info(
+    plan_object_cancellation_info_instance: models.PlanObjectCancellationInfo,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert (
+        plan_object_cancellation_info_instance.plan_cancellation_info
+        is plan_cancellation_info_instance
+    )
+    assert (
+        plan_object_cancellation_info_instance.land_use_area
+        is cancelled_land_use_area_instance
+    )
+    assert plan_object_cancellation_info_instance.other_area is None
+    assert plan_object_cancellation_info_instance.line is None
+    assert plan_object_cancellation_info_instance.point is None
+    assert (
+        plan_object_cancellation_info_instance.remaining_valid_geom_polygon is not None
+    )
+    assert plan_object_cancellation_info_instance.remaining_valid_geom_line is None
+    assert plan_object_cancellation_info_instance.remaining_valid_geom_point is None
+
+
+def test_cancelled_group_relation(
+    cancelled_group_relation_instance: models.CancelledGroupRelation,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert (
+        cancelled_group_relation_instance.plan_cancellation_info
+        is plan_cancellation_info_instance
+    )
+    assert (
+        cancelled_group_relation_instance.plan_regulation_group
+        is cancelled_plan_regulation_group_instance
+    )
+    assert (
+        cancelled_group_relation_instance.land_use_area
+        is cancelled_land_use_area_instance
+    )
+    assert cancelled_group_relation_instance.other_area is None
+    assert cancelled_group_relation_instance.line is None
+    assert cancelled_group_relation_instance.point is None
+
+
+def test_cancelled_plan_cannot_be_deleted(
+    session: Session, plan_instance: models.Plan, another_plan_instance: models.Plan
+) -> None:
+    """A plan that another plan repeals must not be deleted.
+
+    The foreign key is deferred, so the error comes at commit, not at flush.
+    """
+    session.add(
+        models.PlanCancellationInfo(
+            plan=plan_instance,
+            cancelled_plan=another_plan_instance,
+            cancels_entire_plan=True,
+        )
+    )
+    session.commit()
+
+    session.delete(another_plan_instance)
+    with pytest.raises(IntegrityError) as excinfo:
+        session.commit()
+    assert "cancelled_plan_id_fkey" in str(excinfo.value)
+    session.rollback()
+
+
+def test_cancelled_plan_can_be_replaced_in_one_transaction(
+    session: Session,
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+    another_plan_matter_instance: models.PlanMatter,
+    preparation_status_instance: codes.LifeCycleStatus,
+) -> None:
+    """A cancelled plan may be deleted and inserted again with the same key.
+
+    This is what import_plan and import_wfs_plans do when they read the plan
+    again from Ryhti. The deferred foreign key allows it inside one transaction.
+    """
+    session.add(
+        models.PlanCancellationInfo(
+            plan=plan_instance,
+            cancelled_plan=another_plan_instance,
+            cancels_entire_plan=True,
+        )
+    )
+    session.commit()
+
+    plan_id = another_plan_instance.id
+    geom = another_plan_instance.geom
+
+    session.delete(another_plan_instance)
+    session.flush()
+    session.add(
+        models.Plan(
+            id=plan_id,
+            plan_matter=another_plan_matter_instance,
+            name={"fin": "Test Plan 2, imported again"},
+            geom=geom,
+            lifecycle_status=preparation_status_instance,
+        )
+    )
+    session.commit()
+
+    assert session.get(models.Plan, plan_id) is not None
+
+
+def test_plan_cannot_repeal_itself(
+    session: Session, plan_instance: models.Plan
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanCancellationInfo(
+            plan=plan_instance, cancelled_plan=plan_instance, cancels_entire_plan=True
+        ),
+        "ck_plan_cancellation_info_cancelled_plan_id",
+    )
+
+
+def test_plan_repeals_another_plan_only_once(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    plan_instance: models.Plan,
+    another_plan_instance: models.Plan,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanCancellationInfo(
+            plan=plan_instance,
+            cancelled_plan=another_plan_instance,
+            cancels_entire_plan=True,
+        ),
+        "ix_plan_cancellation_info_plan_id_cancelled_plan_id",
+    )
+
+
+def test_plan_object_cancellation_info_needs_a_plan_object(
+    session: Session, plan_cancellation_info_instance: models.PlanCancellationInfo
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            cancels_entire_plan_object=True,
+        ),
+        "ck_plan_object_cancellation_info_plan_object",
+    )
+
+
+def test_plan_object_cancellation_info_needs_only_one_plan_object(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+    cancelled_point_instance: models.Point,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            point=cancelled_point_instance,
+            cancels_entire_plan_object=True,
+        ),
+        "ck_plan_object_cancellation_info_plan_object",
+    )
+
+
+def test_partly_cancelled_plan_object_needs_a_remaining_geometry(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            cancels_entire_plan_object=False,
+        ),
+        "ck_plan_object_cancellation_info_remaining_valid_geom",
+    )
+
+
+def test_fully_cancelled_plan_object_has_no_remaining_geometry(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            cancels_entire_plan_object=True,
+            remaining_valid_geom_polygon=remaining_valid_area(),
+        ),
+        "ck_plan_object_cancellation_info_remaining_valid_geom",
+    )
+
+
+def test_remaining_geometry_must_match_the_plan_object(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_land_use_area_instance: models.LandUseArea,
+) -> None:
+    """A land use area cannot keep a point geometry."""
+    assert_flush_violates(
+        session,
+        models.PlanObjectCancellationInfo(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            land_use_area=cancelled_land_use_area_instance,
+            cancels_entire_plan_object=False,
+            remaining_valid_geom_point=from_shape(
+                MultiPoint([[382000, 6678000]]), srid=PROJECT_SRID, extended=True
+            ),
+        ),
+        "ck_plan_object_cancellation_info_remaining_valid_geom_type",
+    )
+
+
+def test_cancelled_group_relation_needs_exactly_one_plan_object(
+    session: Session,
+    plan_cancellation_info_instance: models.PlanCancellationInfo,
+    cancelled_plan_regulation_group_instance: models.PlanRegulationGroup,
+) -> None:
+    assert_flush_violates(
+        session,
+        models.CancelledGroupRelation(
+            plan_cancellation_info=plan_cancellation_info_instance,
+            plan_regulation_group=cancelled_plan_regulation_group_instance,
+        ),
+        "ck_cancelled_group_relation_plan_object",
+    )

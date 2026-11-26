@@ -29,6 +29,10 @@ categories:
 exclude-labels:
   - "skip-changelog"
 
+# The releases are plugin releases: leave out pull requests that change only the backend.
+include-paths:
+  - "plugin/"
+
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 

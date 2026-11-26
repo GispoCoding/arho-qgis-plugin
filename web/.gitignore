@@ -1,0 +1,10 @@
+# Build output of build.py
+/site/
+/.cache/
+# build.py copies the shared screenshots here from fi/manual/images/
+/sv/manual/images/
+
+.venv/
+
+# Personal VS Code settings; the team settings are in arho.code-workspace
+.vscode/
